@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Bitbucket webhook event source flavor."""
+
 from typing import ClassVar, Type
 
 from zenml.event_sources.webhooks.base_webhook_event_source import (
@@ -29,9 +30,9 @@ class BitbucketWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
     """Enables users to configure Bitbucket event sources."""
 
     FLAVOR: ClassVar[str] = BITBUCKET_EVENT_FLAVOR
-    PLUGIN_CLASS: ClassVar[
-        Type[BitbucketWebhookEventSourceHandler]
-    ] = BitbucketWebhookEventSourceHandler
+    PLUGIN_CLASS: ClassVar[Type[BitbucketWebhookEventSourceHandler]] = (
+        BitbucketWebhookEventSourceHandler
+    )
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[

@@ -118,10 +118,10 @@ class DeepchecksValidationCheck(StrEnum):
         cls.validate_check_name(check_name)
 
         try:
-            check_class: Type[
-                BaseCheck
-            ] = source_utils.load_and_validate_class(
-                check_name, expected_class=BaseCheck
+            check_class: Type[BaseCheck] = (
+                source_utils.load_and_validate_class(
+                    check_name, expected_class=BaseCheck
+                )
             )
         except AttributeError:
             raise ValueError(

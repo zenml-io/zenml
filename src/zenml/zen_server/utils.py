@@ -121,18 +121,25 @@ def initialize_rbac() -> None:
 
 
 def initialize_workload_manager() -> None:
-    """Initialize the workload manager component."""
+    """Initialize the workload manager component.
+
+    This does not fail if the source can't be loaded but only logs a warning.
+    """
     global _workload_manager
 
     if source := server_config().workload_manager_implementation_source:
         from zenml.utils import source_utils
 
-        workload_manager_class: Type[
-            WorkloadManagerInterface
-        ] = source_utils.load_and_validate_class(
-            source=source, expected_class=WorkloadManagerInterface
-        )
-        _workload_manager = workload_manager_class()
+        try:
+            workload_manager_class: Type[WorkloadManagerInterface] = (
+                source_utils.load_and_validate_class(
+                    source=source, expected_class=WorkloadManagerInterface
+                )
+            )
+        except (ModuleNotFoundError, KeyError):
+            logger.warning("Unable to load workload manager source.")
+        else:
+            _workload_manager = workload_manager_class()
 
 
 def initialize_plugins() -> None:

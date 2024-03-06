@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for code repositories."""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type
 from uuid import UUID
@@ -74,10 +75,10 @@ class BaseCodeRepository(ABC):
         Returns:
             The loaded code repository object.
         """
-        class_: Type[
-            BaseCodeRepository
-        ] = source_utils.load_and_validate_class(
-            source=model.source, expected_class=BaseCodeRepository
+        class_: Type[BaseCodeRepository] = (
+            source_utils.load_and_validate_class(
+                source=model.source, expected_class=BaseCodeRepository
+            )
         )
         return class_(id=model.id, config=model.config)
 

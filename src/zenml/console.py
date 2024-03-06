@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML console implementation."""
 
-
 from rich.console import Console
 from rich.style import Style
 from rich.theme import Theme

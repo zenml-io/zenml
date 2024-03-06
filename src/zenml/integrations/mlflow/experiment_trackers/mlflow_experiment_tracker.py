@@ -299,13 +299,13 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         else:
             os.environ[MLFLOW_TRACKING_URI] = tracking_uri
             if self.config.tracking_username:
-                os.environ[
-                    MLFLOW_TRACKING_USERNAME
-                ] = self.config.tracking_username
+                os.environ[MLFLOW_TRACKING_USERNAME] = (
+                    self.config.tracking_username
+                )
             if self.config.tracking_password:
-                os.environ[
-                    MLFLOW_TRACKING_PASSWORD
-                ] = self.config.tracking_password
+                os.environ[MLFLOW_TRACKING_PASSWORD] = (
+                    self.config.tracking_password
+                )
             if self.config.tracking_token:
                 os.environ[MLFLOW_TRACKING_TOKEN] = self.config.tracking_token
 

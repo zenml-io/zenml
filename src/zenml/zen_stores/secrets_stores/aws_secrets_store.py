@@ -148,9 +148,9 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
 
     config: AWSSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AWS
-    CONFIG_TYPE: ClassVar[
-        Type[ServiceConnectorSecretsStoreConfiguration]
-    ] = AWSSecretsStoreConfiguration
+    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
+        AWSSecretsStoreConfiguration
+    )
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = AWS_CONNECTOR_TYPE
     SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = AWS_RESOURCE_TYPE
 

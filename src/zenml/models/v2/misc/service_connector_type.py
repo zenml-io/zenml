@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Model definitions for ZenML service connectors."""
+
 import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID

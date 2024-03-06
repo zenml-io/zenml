@@ -26,6 +26,7 @@ from zenml.artifacts.utils import (
     load_model_from_metadata,
     save_model_metadata,
 )
+from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.materializers.numpy_materializer import NUMPY_FILENAME
 from zenml.models import ArtifactVersionResponse, Page
@@ -65,12 +66,14 @@ def test_save_model_metadata(model_artifact):
 
 
 @pytest.fixture
-def model_metadata_dir(model_artifact):
+def model_metadata_dir(model_artifact, clean_client: "Client"):
     # Save the model metadata to a temporary file
     file_path = save_model_metadata(model_artifact)
 
     # Move the file to a temporary directory
-    temp_dir = tempfile.mkdtemp()
+    temp_dir = tempfile.mkdtemp(
+        dir=clean_client.active_stack.artifact_store.path
+    )
     shutil.move(
         file_path, os.path.join(temp_dir, MODEL_METADATA_YAML_FILE_NAME)
     )
@@ -119,9 +122,11 @@ def test_load_artifact_from_response(mocker, model_artifact):
 
 
 @pytest.fixture
-def numpy_file_uri():
+def numpy_file_uri(clean_client: "Client"):
     # Create a temporary file to save the numpy array
-    temp_dir = tempfile.mkdtemp()
+    temp_dir = tempfile.mkdtemp(
+        dir=clean_client.active_stack.artifact_store.path
+    )
     numpy_file = os.path.join(temp_dir, NUMPY_FILENAME)
 
     # Save a numpy array to the temporary file

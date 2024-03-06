@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Secrets Store."""
 
-
 import json
 import os
 from typing import (
@@ -112,9 +111,9 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
                     "Please use the `auth_method` and `auth_config` attributes "
                     "instead."
                 )
-                values[
-                    "auth_method"
-                ] = GCPAuthenticationMethods.SERVICE_ACCOUNT
+                values["auth_method"] = (
+                    GCPAuthenticationMethods.SERVICE_ACCOUNT
+                )
                 values["auth_config"] = dict(
                     project_id=values.get("project_id"),
                 )
@@ -136,9 +135,9 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
     config: GCPSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.GCP
-    CONFIG_TYPE: ClassVar[
-        Type[ServiceConnectorSecretsStoreConfiguration]
-    ] = GCPSecretsStoreConfiguration
+    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
+        GCPSecretsStoreConfiguration
+    )
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = GCP_CONNECTOR_TYPE
     SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = GCP_RESOURCE_TYPE
 

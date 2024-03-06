@@ -152,7 +152,7 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
 
-    if manual_save and fileio.exists(uri):
+    if manual_save and artifact_store.exists(uri):
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
         other_artifacts = client.list_artifact_versions(uri=uri, size=1)
@@ -162,7 +162,7 @@ def save_artifact(
                 f"{uri} because the URI is already used by artifact "
                 f"{other_artifact.name} (version {other_artifact.version})."
             )
-    fileio.makedirs(uri)
+    artifact_store.makedirs(uri)
 
     # Find and initialize the right materializer class
     if isinstance(materializer, type):
@@ -752,6 +752,7 @@ def _load_file_from_artifact_store(
     Raises:
         DoesNotExistException: If the file does not exist in the artifact store.
         NotImplementedError: If the artifact store cannot open the file.
+        IOError: If the artifact store rejects the request.
     """
     try:
         with artifact_store.open(uri, mode) as text_file:
@@ -761,6 +762,8 @@ def _load_file_from_artifact_store(
             f"File '{uri}' does not exist in artifact store "
             f"'{artifact_store.name}'."
         )
+    except IOError as e:
+        raise e
     except Exception as e:
         logger.exception(e)
         link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
@@ -819,7 +822,8 @@ def load_model_from_metadata(model_uri: str) -> Any:
         The ML model object loaded into memory.
     """
     # Load the model from its metadata
-    with fileio.open(
+    artifact_store = Client().active_stack.artifact_store
+    with artifact_store.open(
         os.path.join(model_uri, MODEL_METADATA_YAML_FILE_NAME), "r"
     ) as f:
         metadata = read_yaml(f.name)

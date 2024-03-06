@@ -5,6 +5,7 @@ Revises: 6a28c4fd0ef2
 Create Date: 2022-11-24 19:07:24.698583
 
 """
+
 from alembic import op
 from sqlalchemy.engine.reflection import Inspector
 
