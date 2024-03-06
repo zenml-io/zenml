@@ -4,6 +4,11 @@ description: >-
   external resources.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Service Connectors guide
 
 This documentation section contains everything that you need to use Service Connectors to connect ZenML to external resources. A lot of information is covered, so it might be useful to use the following guide to navigate it:
