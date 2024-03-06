@@ -37,7 +37,6 @@ if TYPE_CHECKING:
         ModelVersionArtifactSchema,
         ModelVersionPipelineRunSchema,
         ModelVersionSchema,
-        ModelVersionServiceSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
         PipelineRunSchema,
@@ -149,13 +148,6 @@ class WorkspaceSchema(NamedSchema, table=True):
     ] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
-    )
-
-    model_versions_services_links: List["ModelVersionServiceSchema"] = (
-        Relationship(
-            back_populates="workspace",
-            sa_relationship_kwargs={"cascade": "delete"},
-        )
     )
 
     @classmethod

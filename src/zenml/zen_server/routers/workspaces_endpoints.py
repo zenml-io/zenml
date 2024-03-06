@@ -58,8 +58,6 @@ from zenml.models import (
     ModelVersionPipelineRunResponse,
     ModelVersionRequest,
     ModelVersionResponse,
-    ModelVersionServiceRequest,
-    ModelVersionServiceResponse,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -1476,65 +1474,4 @@ def create_service(
         request_model=service,
         resource_type=ResourceType.SERVICE,
         create_method=zen_store().create_service,
-    )
-
-
-@router.post(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_id}"
-    + SERVICES,
-    response_model=ModelVersionServiceResponse,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_model_version_service_link(
-    workspace_name_or_id: Union[str, UUID],
-    model_version_id: UUID,
-    model_version_service_link: ModelVersionServiceRequest,
-    auth_context: AuthContext = Security(authorize),
-) -> ModelVersionServiceResponse:
-    """Create a new model version to service link.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        model_version_id: ID of the model version.
-        model_version_service_link: The model version to service link to create.
-        auth_context: Authentication context.
-
-    Returns:
-        - If Model Version to Pipeline Run Link already exists - returns the existing link.
-        - Otherwise, returns the newly created model version to service link.
-
-    Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            model version does not match the current workspace or authenticated
-            user.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-    if str(model_version_id) != str(model_version_service_link.model_version):
-        raise IllegalOperationError(
-            f"The model version id in your path `{model_version_id}` does not "
-            f"match the model version specified in the request model "
-            f"`{model_version_service_link.model_version}`"
-        )
-
-    if model_version_service_link.workspace != workspace.id:
-        raise IllegalOperationError(
-            "Creating model versions outside of the workspace scope "
-            f"of this endpoint `{workspace_name_or_id}` is "
-            f"not supported."
-        )
-    if model_version_service_link.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating models for a user other than yourself "
-            "is not supported."
-        )
-
-    model_version = zen_store().get_model_version(model_version_id)
-    verify_permission_for_model(model_version, action=Action.UPDATE)
-
-    return zen_store().create_model_version_service_link(
-        model_version_service_link
     )

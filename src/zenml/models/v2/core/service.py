@@ -44,7 +44,7 @@ from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
 if TYPE_CHECKING:
-    pass
+    from zenml.models.v2.core.model_version import ModelVersionResponse
 
 # ------------------ Request Model ------------------
 
@@ -100,6 +100,11 @@ class ServiceRequest(WorkspaceScopedRequest):
         title="The service health check URL.",
     )
 
+    model_version_id: Optional[UUID] = Field(
+        default=None,
+        title="The model version id linked to the service.",
+    )
+
 
 # ------------------ Update Model ------------------
 
@@ -142,9 +147,15 @@ class ServiceUpdate(BaseModel):
     health_check_url: Optional[str] = Field(
         title="The service health check URL.",
     )
+
     labels: Optional[Dict[str, str]] = Field(
         default=None,
         title="The service labels.",
+    )
+
+    model_version_id: Optional[UUID] = Field(
+        default=None,
+        title="The model version id linked to the service.",
     )
 
 
@@ -166,6 +177,10 @@ class ServiceResponseBody(WorkspaceScopedResponseBody):
     )
     updated: datetime = Field(
         title="The timestamp when this component was last updated.",
+    )
+    state: Optional[ServiceState] = Field(
+        default=None,
+        title="The current state of the service.",
     )
 
 
@@ -200,6 +215,11 @@ class ServiceResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ServiceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the service entity."""
+
+    model_version: Optional["ModelVersionResponse"] = Field(
+        default=None,
+        title="The model version linked to the service.",
+    )
 
 
 class ServiceResponse(
@@ -325,6 +345,24 @@ class ServiceResponse(
         """
         return self.get_metadata().health_check_url
 
+    @property
+    def state(self) -> Optional[ServiceState]:
+        """The `state` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().state
+
+    @property
+    def model_version(self) -> Optional["ModelVersionResponse"]:
+        """The `model_version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().model_version
+
 
 # ------------------ Filter Model ------------------
 
@@ -367,14 +405,12 @@ class ServiceFilter(WorkspaceScopedFilter):
         default=None,
         description="Pipeline step name responsible for deploying the service",
     )
-    model_name: Optional[str] = Field(
-        default=None, description="Model name linked to the service"
-    )
-    model_version: Optional[str] = Field(
-        default=None, description="Model version linked to the service"
-    )
     running: Optional[bool] = Field(
         default=None, description="Whether the service is running"
+    )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="By the event source this trigger is attached to.",
     )
 
     def set_type(self, type: str) -> None:
@@ -400,8 +436,6 @@ class ServiceFilter(WorkspaceScopedFilter):
         "type",
         "run_name",
         "pipeline_step_name",
-        "model_name",
-        "model_version",
         "running",
         "pipeline_name",
     ]
@@ -413,8 +447,6 @@ class ServiceFilter(WorkspaceScopedFilter):
         "type",
         "run_name",
         "pipeline_step_name",
-        "model_name",
-        "model_version",
         "running",
         "pipeline_name",
     ]
@@ -459,15 +491,5 @@ class ServiceFilter(WorkspaceScopedFilter):
                 getattr(table, "pipeline_step_name") == self.pipeline_step_name
             )
             base_filter = and_(base_filter, pipeline_step_name_filter)
-
-        if self.model_name:
-            model_name_filter = getattr(table, "model_name") == self.model_name
-            base_filter = and_(base_filter, model_name_filter)
-
-        if self.model_version:
-            model_version_filter = (
-                getattr(table, "model_version") == self.model_version
-            )
-            base_filter = and_(base_filter, model_version_filter)
 
         return base_filter

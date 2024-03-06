@@ -161,9 +161,6 @@ from zenml.models import (
     ModelVersionPipelineRunResponse,
     ModelVersionRequest,
     ModelVersionResponse,
-    ModelVersionServiceFilter,
-    ModelVersionServiceRequest,
-    ModelVersionServiceResponse,
     ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceInternalRequest,
@@ -280,7 +277,6 @@ from zenml.zen_stores.schemas import (
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
     ModelVersionSchema,
-    ModelVersionServiceSchema,
     NamedSchema,
     OAuthDeviceSchema,
     PipelineBuildSchema,
@@ -1855,7 +1851,9 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get service with ID {service_id}: No "
                     "service with this ID found."
                 )
-            return service.to_model(include_metadata=hydrate)
+            return service.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
 
     def list_services(
         self, filter_model: ServiceFilter, hydrate: bool = False
@@ -1909,7 +1907,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_service)
             session.commit()
             session.refresh(existing_service)
-            return existing_service.to_model(include_metadata=True)
+            return existing_service.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_service(self, service_id: UUID) -> None:
         """Delete a service.
@@ -8578,7 +8578,9 @@ class SqlZenStore(BaseZenStore):
                     f"`{model_version_id}`: No model version with this "
                     f"ID found."
                 )
-            return model_version.to_model(include_metadata=hydrate)
+            return model_version.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
 
     def list_model_versions(
         self,
@@ -8727,7 +8729,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_model_version)
 
-            return existing_model_version.to_model(include_metadata=True)
+            return existing_model_version.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     # ------------------------ Model Versions Artifacts ------------------------
 
@@ -9005,132 +9009,6 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(model_version_pipeline_run_link)
-            session.commit()
-
-    # ----------------------------- Model Versions Services -----------------------------
-
-    def create_model_version_service_link(
-        self,
-        model_version_service_link: ModelVersionServiceRequest,
-    ) -> ModelVersionServiceResponse:
-        """Creates a new model version to service link.
-
-        Args:
-            model_version_service_link: the Model Version to Service
-                Link to be created.
-
-        Returns:
-            - If Model Version to Service Link already exists - returns
-                the existing link.
-            - Otherwise, returns the newly created model version to servicelink.
-        """
-        with Session(self.engine) as session:
-            # If the link already exists, return it
-            existing_model_version_service_link = session.exec(
-                select(ModelVersionServiceSchema)
-                .where(
-                    ModelVersionServiceSchema.model_version_id
-                    == model_version_service_link.model_version
-                )
-                .where(
-                    ModelVersionServiceSchema.service_id
-                    == model_version_service_link.service,
-                )
-            ).first()
-            if existing_model_version_service_link is not None:
-                logger.debug(
-                    "Returning existing model version service link: %s",
-                    existing_model_version_service_link,
-                )
-                return existing_model_version_service_link.to_model()
-
-            # Otherwise, create a new link
-            model_version_service_link_schema = (
-                ModelVersionServiceSchema.from_request(
-                    model_version_service_link
-                )
-            )
-            session.add(model_version_service_link_schema)
-            session.commit()
-            logger.debug(
-                "Created new model version service link: %s",
-                model_version_service_link_schema,
-            )
-            return model_version_service_link_schema.to_model(
-                include_metadata=True
-            )
-
-    def list_model_version_service_links(
-        self,
-        model_version_service_link_filter_model: ModelVersionServiceFilter,
-        hydrate: bool = False,
-    ) -> Page[ModelVersionServiceResponse]:
-        """Get all model version to pipeline run links by filter.
-
-        Args:
-            model_version_service_link_filter_model: All filter parameters
-                including pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A page of all model version to service links.
-        """
-        query = select(ModelVersionServiceSchema)
-        with Session(self.engine) as session:
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=ModelVersionServiceSchema,
-                filter_model=model_version_service_link_filter_model,
-                hydrate=hydrate,
-            )
-
-    def delete_model_version_service_link(
-        self,
-        model_version_id: UUID,
-        model_version_service_link_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Deletes a model version to service link.
-
-        Args:
-            model_version_id: name or ID of the model version containing the
-                link.
-            model_version_service_link_name_or_id: name or ID of the model
-                version to service link to be deleted.
-
-        Raises:
-            KeyError: specified ID not found.
-        """
-        with Session(self.engine) as session:
-            model_version = self.get_model_version(
-                model_version_id=model_version_id
-            )
-            query = select(ModelVersionServiceSchema).where(
-                ModelVersionServiceSchema.model_version_id == model_version.id
-            )
-            try:
-                UUID(str(model_version_service_link_name_or_id))
-                query = query.where(
-                    ModelVersionServiceSchema.id
-                    == model_version_service_link_name_or_id
-                )
-            except ValueError:
-                query = query.where(
-                    ModelVersionServiceSchema.service_id == ServiceSchema.id
-                ).where(
-                    ServiceSchema.name == model_version_service_link_name_or_id
-                )
-
-            model_version_service_link = session.exec(query).first()
-            if model_version_service_link is None:
-                raise KeyError(
-                    f"Unable to delete model version link with name "
-                    f"`{model_version_service_link_name_or_id}`: "
-                    f"No model version link with this name found."
-                )
-
-            session.delete(model_version_service_link)
             session.commit()
 
     #################

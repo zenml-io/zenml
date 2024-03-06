@@ -25,7 +25,6 @@ from zenml.metadata.metadata_types import MetadataType
 from zenml.model.model import Model
 from zenml.models import (
     ModelVersionArtifactRequest,
-    ModelVersionServiceRequest,
 )
 from zenml.new.steps.step_context import get_step_context
 
@@ -115,7 +114,7 @@ def link_service_to_model(
         service_id: The ID of the service.
         model: The model to link to.
     """
-    client = Client()
+    # client = Client()
 
     if model:
         model_version_response = model._get_or_create_model_version()
@@ -124,14 +123,6 @@ def link_service_to_model(
                 "Failed to get or create model version. Please make sure that "
                 "the model is created and linked to the pipeline."
             )
-        request = ModelVersionServiceRequest(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-            service=service_id,
-            model=model_version_response.model.id,
-            model_version=model_version_response.id,
-        )
-        client.zen_store.create_model_version_service_link(request)
 
 
 def link_artifact_config_to_model(

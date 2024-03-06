@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field, PrivateAttr, validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
 from zenml.models.v2.base.filter import AnyQuery
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -29,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
+from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -39,7 +41,6 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.run_metadata import (
         RunMetadataResponse,
     )
-    from zenml.models.v2.core.service import ServiceResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -155,10 +156,6 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
         description="Pipeline runs linked to the model version",
         default={},
     )
-    service_ids: Dict[str, UUID] = Field(
-        description="Services linked to the model version",
-        default={},
-    )
     tags: List[TagResponse] = Field(
         title="Tags associated with the model version", default=[]
     )
@@ -180,6 +177,10 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ModelVersionResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the model version entity."""
+
+    services: Page[ServiceResponse] = Field(
+        description="Services linked to the model version",
+    )
 
 
 class ModelVersionResponse(
@@ -259,15 +260,6 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_body().pipeline_run_ids
-
-    @property
-    def service_ids(self) -> Dict[str, UUID]:
-        """The `service_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().service_ids
 
     @property
     def tags(self) -> List[TagResponse]:
@@ -417,20 +409,6 @@ class ModelVersionResponse(
             for name, pr in self.pipeline_run_ids.items()
         }
 
-    @property
-    def services(self) -> Dict[str, "ServiceResponse"]:
-        """Get all services linked to this version.
-
-        Returns:
-            Dictionary of Services as ServiceResponseModel
-        """
-        from zenml.client import Client
-
-        return {
-            name: Client().get_service(s)
-            for name, s in self.service_ids.items()
-        }
-
     def _get_linked_object(
         self,
         collection: Dict[str, Dict[str, UUID]],
@@ -553,19 +531,6 @@ class ModelVersionResponse(
         from zenml.client import Client
 
         return Client().get_pipeline_run(self.pipeline_run_ids[name])
-
-    def get_service(self, name: str) -> "ServiceResponse":
-        """Get service linked to this version.
-
-        Args:
-            name: The name of the service to retrieve.
-
-        Returns:
-            Service as ServiceResponseModel
-        """
-        from zenml.client import Client
-
-        return Client().get_service(self.service_ids[name])
 
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False

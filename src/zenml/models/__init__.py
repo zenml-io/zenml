@@ -96,6 +96,7 @@ from zenml.models.v2.core.service import (
     ServiceUpdate,
     ServiceFilter,
     ServiceRequest,
+    ServiceResponseResources,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
@@ -165,6 +166,7 @@ from zenml.models.v2.core.model_version import (
     ModelVersionResponseMetadata,
     ModelVersionFilter,
     ModelVersionUpdate,
+    ModelVersionResponseResources,
 )
 from zenml.models.v2.core.model_version_artifact import (
     ModelVersionArtifactFilter,
@@ -177,12 +179,6 @@ from zenml.models.v2.core.model_version_pipeline_run import (
     ModelVersionPipelineRunRequest,
     ModelVersionPipelineRunResponse,
     ModelVersionPipelineRunResponseBody,
-)
-from zenml.models.v2.core.model_version_service import (
-    ModelVersionServiceRequest,
-    ModelVersionServiceResponseBody,
-    ModelVersionServiceResponse,
-    ModelVersionServiceFilter,
 )
 from zenml.models.v2.core.pipeline import (
     PipelineRequest,
@@ -422,6 +418,9 @@ ServiceResponseBody.update_forward_refs(
 ServiceResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
+ServiceResponseResources.update_forward_refs(
+    ModelVersionResponse=ModelVersionResponse,
+)
 ModelResponseBody.update_forward_refs(
     UserResponse=UserResponse,
     TagResponse=TagResponse,
@@ -438,14 +437,14 @@ ModelVersionResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     RunMetadataResponse=RunMetadataResponse,
 )
+ModelVersionResponseResources.update_forward_refs(
+    ServiceResponse=ServiceResponse,
+)
 ModelVersionArtifactResponseBody.update_forward_refs(
     ArtifactVersionResponse=ArtifactVersionResponse,
 )
 ModelVersionPipelineRunResponseBody.update_forward_refs(
     PipelineRunResponse=PipelineRunResponse
-)
-ModelVersionServiceResponseBody.update_forward_refs(
-    ServiceResponse=ServiceResponse,
 )
 OAuthDeviceResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -662,6 +661,7 @@ __all__ = [
     "ModelVersionResponse",
     "ModelVersionResponseBody",
     "ModelVersionResponseMetadata",
+    "ModelVersionResponseResources",
     "ModelVersionUpdate",
     "ModelVersionArtifactFilter",
     "ModelVersionArtifactRequest",
@@ -671,10 +671,6 @@ __all__ = [
     "ModelVersionPipelineRunRequest",
     "ModelVersionPipelineRunResponse",
     "ModelVersionPipelineRunResponseBody",
-    "ModelVersionServiceRequest",
-    "ModelVersionServiceResponseBody",
-    "ModelVersionServiceResponse",
-    "ModelVersionServiceFilter",
     "OAuthDeviceUpdate",
     "OAuthDeviceFilter",
     "OAuthDeviceResponse",
@@ -798,6 +794,7 @@ __all__ = [
     "ServiceUpdate",
     "ServiceFilter",
     "ServiceRequest",
+    "ServiceResponseResources",
     # V2 Misc
     "AuthenticationMethodModel",
     "ServiceConnectorResourcesModel",

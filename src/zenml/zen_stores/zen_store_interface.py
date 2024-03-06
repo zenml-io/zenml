@@ -63,9 +63,6 @@ from zenml.models import (
     ModelVersionPipelineRunResponse,
     ModelVersionRequest,
     ModelVersionResponse,
-    ModelVersionServiceFilter,
-    ModelVersionServiceRequest,
-    ModelVersionServiceResponse,
     ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceResponse,
@@ -2747,61 +2744,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: specified ID not found.
-        """
-
-    # -------------------- Model Versions Services --------------------
-
-    @abstractmethod
-    def create_model_version_service_link(
-        self,
-        model_version_service_link: ModelVersionServiceRequest,
-    ) -> ModelVersionServiceResponse:
-        """Creates a new model version to service link.
-
-        Args:
-            model_version_service_link: the Model Version to Service Link to
-                be created.
-
-        Returns:
-            The newly created model version to service link.
-
-        Raises:
-            EntityExistsError: If a link with the given name already exists.
-        """
-
-    @abstractmethod
-    def list_model_version_service_links(
-        self,
-        model_version_service_link_filter_model: ModelVersionServiceFilter,
-        hydrate: bool = False,
-    ) -> Page[ModelVersionServiceResponse]:
-        """Get all model version to service links by filter.
-
-        Args:
-            model_version_service_link_filter_model: All filter parameters
-                including pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A page of all model version to service links.
-        """
-
-    @abstractmethod
-    def delete_model_version_service_link(
-        self,
-        model_version_id: UUID,
-        model_version_service_link_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Deletes a model version to service link.
-
-        Args:
-            model_version_id: ID of the model version containing the link.
-            model_version_service_link_name_or_id: name or ID of the model
-                version to service link to be deleted.
-
-        Raises:
-            KeyError: specified ID or name not found.
         """
 
     #################

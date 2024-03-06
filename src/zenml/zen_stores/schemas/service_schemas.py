@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -28,17 +28,17 @@ from zenml.models.v2.core.service import (
     ServiceResponse,
     ServiceResponseBody,
     ServiceResponseMetadata,
+    ServiceResponseResources,
     ServiceUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.model_schemas import (
-        ModelVersionServiceSchema,
-    )
+    pass
 
 
 class ServiceSchema(NamedSchema, table=True):
@@ -87,14 +87,16 @@ class ServiceSchema(NamedSchema, table=True):
     pipeline_step_name: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
-    model_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    model_version: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-
-    model_versions_services_links: List["ModelVersionServiceSchema"] = (
-        Relationship(
-            back_populates="service",
-            sa_relationship_kwargs={"cascade": "delete"},
-        )
+    model_version_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ModelVersionSchema.__tablename__,
+        source_column="model_version_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    model_version: Optional["ModelVersionSchema"] = Relationship(
+        back_populates="services",
     )
 
     def to_model(
@@ -113,6 +115,16 @@ class ServiceSchema(NamedSchema, table=True):
         Returns:
             The created `ServiceResponse`.
         """
+        body = ServiceResponseBody(
+            user=self.user.to_model() if self.user else None,
+            workspace=self.workspace.to_model(),
+            created=self.created,
+            updated=self.updated,
+            service_type=json.loads(self.service_type),
+            labels=json.loads(base64.b64decode(self.labels).decode())
+            if self.labels
+            else None,
+        )
         metadata = None
         if include_metadata:
             metadata = ServiceResponseMetadata(
@@ -129,23 +141,19 @@ class ServiceSchema(NamedSchema, table=True):
                 prediction_url=self.prediction_url or None,
                 health_check_url=self.health_check_url,
             )
-
-        body = ServiceResponseBody(
-            user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
-            created=self.created,
-            updated=self.updated,
-            service_type=json.loads(self.service_type),
-            labels=json.loads(base64.b64decode(self.labels).decode())
-            if self.labels
-            else None,
-        )
-
+        resources = None
+        if include_resources:
+            resources = ServiceResponseResources(
+                model_version=self.model_version.to_model()
+                if self.model_version
+                else None,
+            )
         return ServiceResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(
@@ -247,6 +255,7 @@ class ServiceSchema(NamedSchema, table=True):
             )
             if service_request.endpoint
             else None,
+            model_version_id=service_request.model_version_id,
             prediction_url=service_request.prediction_url,
             health_check_url=service_request.health_check_url,
             pipeline_name=service_request.config.get("pipeline_name"),
@@ -254,6 +263,4 @@ class ServiceSchema(NamedSchema, table=True):
             pipeline_step_name=service_request.config.get(
                 "pipeline_step_name"
             ),
-            model_name=service_request.config.get("model_name"),
-            model_version=service_request.config.get("model_version"),
         )

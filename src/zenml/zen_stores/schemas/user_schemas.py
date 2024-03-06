@@ -45,7 +45,6 @@ if TYPE_CHECKING:
         ModelVersionArtifactSchema,
         ModelVersionPipelineRunSchema,
         ModelVersionSchema,
-        ModelVersionServiceSchema,
         OAuthDeviceSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
@@ -141,9 +140,6 @@ class UserSchema(NamedSchema, table=True):
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
     ] = Relationship(back_populates="user")
-    model_versions_services_links: List["ModelVersionServiceSchema"] = (
-        Relationship(back_populates="user")
-    )
     auth_devices: List["OAuthDeviceSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},

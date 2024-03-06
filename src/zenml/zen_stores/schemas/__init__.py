@@ -67,7 +67,6 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionSchema,
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
-    ModelVersionServiceSchema,
 )
 
 __all__ = [
@@ -110,6 +109,5 @@ __all__ = [
     "ModelVersionSchema",
     "ModelVersionArtifactSchema",
     "ModelVersionPipelineRunSchema",
-    "ModelVersionServiceSchema",
     "WorkspaceSchema",
 ]

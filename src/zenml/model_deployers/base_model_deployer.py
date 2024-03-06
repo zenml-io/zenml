@@ -180,6 +180,11 @@ class BaseModelDeployer(StackComponent, ABC):
             service_response = client.create_service(
                 config=config,
                 service_type=service_type,
+                model_version_id=client.get_model_version(
+                    config.model_name, config.model_version
+                ).id
+                if config.model_name
+                else None,
             )
             service = self.perform_deploy_model(
                 id=service_response.id,
@@ -288,7 +293,6 @@ class BaseModelDeployer(StackComponent, ABC):
             the input search criteria.
         """
         client = Client()
-
         service_responses = client.list_services(
             sort_by="desc:created",
             id=service_uuid,
@@ -297,8 +301,11 @@ class BaseModelDeployer(StackComponent, ABC):
             pipeline_name=pipeline_name,
             run_name=run_name,
             pipeline_step_name=pipeline_step_name,
-            model_name=model_name,
-            model_version=model_version,
+            model_version_id=client.get_model_version(
+                model_name, model_version
+            ).id
+            if model_name
+            else None,
             type=type or service_type.type if service_type else None,
             flavor=flavor or service_type.flavor if service_type else None,
             hydrate=True,

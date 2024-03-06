@@ -23,7 +23,6 @@ from zenml.constants import (
     ARTIFACTS,
     MODEL_VERSION_ARTIFACTS,
     MODEL_VERSION_PIPELINE_RUNS,
-    MODEL_VERSION_SERVICES,
     MODEL_VERSIONS,
     RUNS,
     VERSION_1,
@@ -35,8 +34,6 @@ from zenml.models import (
     ModelVersionPipelineRunFilter,
     ModelVersionPipelineRunResponse,
     ModelVersionResponse,
-    ModelVersionServiceFilter,
-    ModelVersionServiceResponse,
     ModelVersionUpdate,
 )
 from zenml.models.v2.base.page import Page
@@ -349,72 +346,4 @@ def delete_model_version_pipeline_run_link(
     zen_store().delete_model_version_pipeline_run_link(
         model_version_id=model_version_id,
         model_version_pipeline_run_link_name_or_id=model_version_pipeline_run_link_name_or_id,
-    )
-
-
-##############################
-# Model Version Services
-##############################
-
-
-model_version_services_router = APIRouter(
-    prefix=API + VERSION_1 + MODEL_VERSION_SERVICES,
-    tags=["model_version_services"],
-    responses={401: error_response},
-)
-
-
-@model_version_services_router.get(
-    "",
-    response_model=Page[ModelVersionServiceResponse],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_model_version_service_links(
-    model_version_service_link_filter_model: ModelVersionServiceFilter = Depends(
-        make_dependable(ModelVersionServiceFilter)
-    ),
-    hydrate: bool = False,
-    _: AuthContext = Security(authorize),
-) -> Page[ModelVersionServiceResponse]:
-    """Get model version to pipeline run links according to query filters.
-
-    Args:
-        model_version_service_link_filter_model: Filter model used for
-            pagination, sorting, and filtering.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-
-    Returns:
-        The model version to pipeline run links according to query filters.
-    """
-    return zen_store().list_model_version_service_links(
-        model_version_service_link_filter_model=model_version_service_link_filter_model,
-        hydrate=hydrate,
-    )
-
-
-@router.delete(
-    "/{model_version_id}" + RUNS + "/{model_version_service_link_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version_service_link(
-    model_version_id: UUID,
-    model_version_service_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
-) -> None:
-    """Deletes a model version link.
-
-    Args:
-        model_version_id: name or ID of the model version containing the link.
-        model_version_service_link_name_or_id: name or ID of the model
-            version link to be deleted.
-    """
-    model_version = zen_store().get_model_version(model_version_id)
-    verify_permission_for_model(model_version, action=Action.UPDATE)
-
-    zen_store().delete_model_version_service_link(
-        model_version_id=model_version_id,
-        model_version_service_link_name_or_id=model_version_service_link_name_or_id,
     )
