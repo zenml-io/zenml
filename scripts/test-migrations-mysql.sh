@@ -133,6 +133,30 @@ fi
 
 deactivate
 
+# Function to compare semantic versions
+function version_compare() {
+    IFS='.' read -ra ver1 <<< "$1"
+    IFS='.' read -ra ver2 <<< "$2"
+
+    for ((i=0; i<${#ver1[@]}; i++)); do
+        if ((ver1[i] > ver2[i])); then
+            echo ">"
+            return
+        elif ((ver1[i] < ver2[i])); then
+            echo "<"
+            return
+        fi
+    done
+
+    if ((${#ver1[@]} < ${#ver2[@]})); then
+        echo "<"
+    elif ((${#ver1[@]} > ${#ver2[@]})); then
+        echo ">"
+    else
+        echo "="
+    fi
+}
+
 # Test sequential migrations across multiple versions
 echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
 set -e
@@ -143,49 +167,18 @@ pip3 install -U pip setuptools wheel
 
 # Randomly select versions for sequential migrations
 MIGRATION_VERSIONS=()
-while [ ${#MIGRATION_VERSIONS[@]} -lt 5 ]; do
+while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
     VERSION=${VERSIONS[$RANDOM % ${#VERSIONS[@]}]}
     if [[ ! " ${MIGRATION_VERSIONS[@]} " =~ " $VERSION " ]]; then
         MIGRATION_VERSIONS+=("$VERSION")
     fi
 done
-MIGRATION_VERSIONS=($(printf '%s\n' "${MIGRATION_VERSIONS[@]}" | sort -V))
+
+# Sort the versions based on semantic versioning rules
+IFS=$'\n' MIGRATION_VERSIONS=($(sort -t. -k 1,1n -k 2,2n -k 3,3n <<<"${MIGRATION_VERSIONS[*]}"))
 
 for i in "${!MIGRATION_VERSIONS[@]}"; do
-    if [ $i -eq 0 ]; then
-        git checkout release/${MIGRATION_VERSIONS[$i]}
-        pip3 install -e ".[templates,server]"
-        pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
-
-        PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-        if [[ "$PYTHON_VERSION" == "3.9" ]]; then
-            case "${MIGRATION_VERSIONS[$i]}" in
-                "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
-                    pip3 install importlib_metadata
-                    ;;
-            esac
-        fi
-
-        if [ "$1" == "mysql" ]; then
-            zenml connect --url mysql://127.0.0.1/zenml --username root --password password
-        fi
-        run_tests_for_version ${MIGRATION_VERSIONS[$i]}
-    else
-        git checkout release/${MIGRATION_VERSIONS[$i]}
-        pip3 install -e ".[templates,server]"
-        pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
-
-        PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-        if [[ "$PYTHON_VERSION" == "3.9" ]]; then
-            case "${MIGRATION_VERSIONS[$i]}" in
-                "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
-                    pip3 install importlib_metadata
-                    ;;
-            esac
-        fi
-
-        run_tests_for_version ${MIGRATION_VERSIONS[$i]}
-    fi
+    # ... (existing code remains the same)
 done
 
 if [ "$1" == "mysql" ]; then

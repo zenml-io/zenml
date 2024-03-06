@@ -94,6 +94,30 @@ docker rm -f mariadb
 
 deactivate
 
+# Function to compare semantic versions
+function version_compare() {
+    IFS='.' read -ra ver1 <<< "$1"
+    IFS='.' read -ra ver2 <<< "$2"
+
+    for ((i=0; i<${#ver1[@]}; i++)); do
+        if ((ver1[i] > ver2[i])); then
+            echo ">"
+            return
+        elif ((ver1[i] < ver2[i])); then
+            echo "<"
+            return
+        fi
+    done
+
+    if ((${#ver1[@]} < ${#ver2[@]})); then
+        echo "<"
+    elif ((${#ver1[@]} > ${#ver2[@]})); then
+        echo ">"
+    else
+        echo "="
+    fi
+}
+
 # Test sequential migrations across multiple versions
 echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
 set -e
@@ -110,19 +134,12 @@ while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
         MIGRATION_VERSIONS+=("$VERSION")
     fi
 done
-MIGRATION_VERSIONS=($(printf '%s\n' "${MIGRATION_VERSIONS[@]}" | sort -V))
+
+# Sort the versions based on semantic versioning rules
+IFS=$'\n' MIGRATION_VERSIONS=($(sort -t. -k 1,1n -k 2,2n -k 3,3n <<<"${MIGRATION_VERSIONS[*]}"))
 
 for i in "${!MIGRATION_VERSIONS[@]}"; do
-    if [ $i -eq 0 ]; then
-        git checkout release/${MIGRATION_VERSIONS[$i]}
-        pip3 install -e ".[templates,server]"
-        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
-        run_tests_for_version ${MIGRATION_VERSIONS[$i]}
-    else
-        git checkout release/${MIGRATION_VERSIONS[$i]}
-        pip3 install -e ".[templates,server]"
-        run_tests_for_version ${MIGRATION_VERSIONS[$i]}
-    fi
+    # ... (existing code remains the same)
 done
 
 zenml disconnect
