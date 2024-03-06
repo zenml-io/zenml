@@ -35,6 +35,10 @@ class GreatExpectationsIntegration(Integration):
         "great-expectations>=0.15.0,<=0.15.47",
         # typing_extensions 4.6.0 and above doesn't work with GE
         "typing_extensions<4.6.0",
+        # We need to add this as an extra dependency to manually downgrade
+        # SQLModel. Otherwise, the initial installation of ZenML installs
+        # a higher version SQLModel and a version mismatch is created.
+        "sqlmodel>=0.0.9,<=0.0.16",
     ]
 
     @staticmethod
