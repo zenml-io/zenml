@@ -1802,7 +1802,7 @@ class SqlZenStore(BaseZenStore):
 
         if existing_domain_service:
             raise EntityExistsError(
-                "Unable to create service with the given configuration: "
+                f"Unable to create service '{service_request.name}' with the given configuration: "
                 "A service with the same configuration already exists."
             )
 
@@ -1908,6 +1908,7 @@ class SqlZenStore(BaseZenStore):
 
             # Update the schema itself.
             existing_service.update(update=update)
+            logger.debug("Updated service: %s", existing_service)
             session.add(existing_service)
             session.commit()
             session.refresh(existing_service)
@@ -9015,17 +9016,16 @@ class SqlZenStore(BaseZenStore):
         self,
         model_version_service_link: ModelVersionServiceRequest,
     ) -> ModelVersionServiceResponse:
-        """Creates a new model version to pipeline run link.
+        """Creates a new model version to service link.
 
         Args:
-            model_version_service_link: the Model Version to Pipeline Run
+            model_version_service_link: the Model Version to Service
                 Link to be created.
 
         Returns:
-            - If Model Version to Pipeline Run Link already exists - returns
+            - If Model Version to Service Link already exists - returns
                 the existing link.
-            - Otherwise, returns the newly created model version to pipeline
-                run link.
+            - Otherwise, returns the newly created model version to servicelink.
         """
         with Session(self.engine) as session:
             # If the link already exists, return it
@@ -9069,7 +9069,7 @@ class SqlZenStore(BaseZenStore):
                 by including metadata fields in the response.
 
         Returns:
-            A page of all model version to pipeline run links.
+            A page of all model version to service links.
         """
         query = select(ModelVersionServiceSchema)
         with Session(self.engine) as session:
@@ -9086,13 +9086,13 @@ class SqlZenStore(BaseZenStore):
         model_version_id: UUID,
         model_version_service_link_name_or_id: Union[str, UUID],
     ) -> None:
-        """Deletes a model version to pipeline run link.
+        """Deletes a model version to service link.
 
         Args:
             model_version_id: name or ID of the model version containing the
                 link.
             model_version_service_link_name_or_id: name or ID of the model
-                version to pipeline run link to be deleted.
+                version to service link to be deleted.
 
         Raises:
             KeyError: specified ID not found.
