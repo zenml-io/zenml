@@ -302,7 +302,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Args:
             service: The service to start.
             timeout: Timeout in seconds to wait for the service to start.
-        
+
         Returns:
             The started service.
         """

@@ -226,7 +226,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
             service: The service to stop.
             timeout: Timeout in seconds to wait for the service to stop.
             force: If True, force the service to stop.
-        
+
         Returns:
             The service that was stopped.
         """
@@ -243,7 +243,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Args:
             service: The service to start.
             timeout: Timeout in seconds to wait for the service to start.
-        
+
         Returns:
             The service that was started.
         """

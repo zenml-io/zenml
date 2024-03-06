@@ -410,7 +410,7 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 provisioning the service, without waiting for it to become
                 active.
-        
+
         Raises:
             RuntimeError: if the model server is not found.
         """
@@ -469,7 +469,7 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 deprovisioning the service, without waiting for it to stop.
             force: if True, force the service to stop.
-        
+
         Raises:
             RuntimeError: if the model server is not found.
         """
