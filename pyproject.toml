@@ -416,7 +416,6 @@ module = [
     "flask.*",
     "kfp.*",
     "kubernetes.*",
-    "kserve.*",
     "urllib3.*",
     "kfp_server_api.*",
     "sagemaker.*",

@@ -37,7 +37,6 @@ from zenml.integrations.great_expectations import (  # noqa
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.hyperai import HyperAIIntegration  # noqa
 from zenml.integrations.kaniko import KanikoIntegration  # noqa
-from zenml.integrations.kserve import KServeIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
 from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
