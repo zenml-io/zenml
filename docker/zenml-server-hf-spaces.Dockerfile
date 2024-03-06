@@ -60,4 +60,4 @@ ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 # ENV ZENML_SECRETS_STORE_MAX_VERSIONS=""
 
 ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
-CMD ["--proxy-headers", "--port", "8080", "--host",  "0.0.0.0"]
+CMD ["--port", "8080", "--host",  "0.0.0.0"]
