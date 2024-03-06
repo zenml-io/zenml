@@ -135,26 +135,53 @@ deactivate
 
 # Function to compare semantic versions
 function version_compare() {
-    IFS='.' read -ra ver1 <<< "$1"
-    IFS='.' read -ra ver2 <<< "$2"
+    local regex="^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$"
+    local ver1="$1"
+    local ver2="$2"
 
-    for ((i=0; i<${#ver1[@]}; i++)); do
-        if ((ver1[i] > ver2[i])); then
+    if ! [[ $ver1 =~ $regex ]]; then
+        echo "First argument does not conform to semantic version format" >&2
+        return 1
+    fi
+
+    if ! [[ $ver2 =~ $regex ]]; then
+        echo "Second argument does not conform to semantic version format" >&2
+        return 1
+    fi
+
+    # Compare major, minor, and patch versions
+    IFS='.' read -ra ver1_parts <<< "$ver1"
+    IFS='.' read -ra ver2_parts <<< "$ver2"
+
+    for ((i=0; i<3; i++)); do
+        if ((ver1_parts[i] > ver2_parts[i])); then
             echo ">"
             return
-        elif ((ver1[i] < ver2[i])); then
+        elif ((ver1_parts[i] < ver2_parts[i])); then
             echo "<"
             return
         fi
     done
 
-    if ((${#ver1[@]} < ${#ver2[@]})); then
+    # Extend comparison to pre-release versions if necessary
+    # This is a simplified comparison that may need further refinement
+    if [[ -n ${ver1_parts[3]} && -z ${ver2_parts[3]} ]]; then
         echo "<"
-    elif ((${#ver1[@]} > ${#ver2[@]})); then
+        return
+    elif [[ -z ${ver1_parts[3]} && -n ${ver2_parts[3]} ]]; then
         echo ">"
-    else
-        echo "="
+        return
+    elif [[ -n ${ver1_parts[3]} && -n ${ver2_parts[3]} ]]; then
+        if [[ ${ver1_parts[3]} > ${ver2_parts[3]} ]]; then
+            echo ">"
+            return
+        elif [[ ${ver1_parts[3]} < ${ver2_parts[3]} ]]; then
+            echo "<"
+            return
+        fi
     fi
+
+    echo "="
 }
 
 # Test sequential migrations across multiple versions
