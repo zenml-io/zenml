@@ -14,7 +14,6 @@
 """Lazy loading functionality for Client methods."""
 
 import contextlib
-import inspect
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
 from pydantic import BaseModel, PrivateAttr
@@ -154,9 +153,6 @@ def client_lazy_loader(
         return None
 
 
-_original_args_specs: Dict[str, inspect.FullArgSpec] = {}
-
-
 def evaluate_all_lazy_load_args_in_client_methods(
     cls: Type["Client"],
 ) -> Type["Client"]:
@@ -168,13 +164,11 @@ def evaluate_all_lazy_load_args_in_client_methods(
     Returns:
         Wrapped class.
     """
+    import inspect
 
     def _evaluate_args(func: Callable[..., Any]) -> Any:
         def _inner(*args: Any, **kwargs: Any) -> Any:
-            _original_args_specs[func.__name__] = inspect.getfullargspec(func)
-            is_instance_method = (
-                "self" in _original_args_specs[func.__name__].args
-            )
+            is_instance_method = "self" in inspect.getfullargspec(func).args
 
             args_ = list(args)
             if not is_instance_method:
