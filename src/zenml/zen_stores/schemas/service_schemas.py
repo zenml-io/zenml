@@ -72,6 +72,7 @@ class ServiceSchema(NamedSchema, table=True):
     type: str = Field(sa_column=Column(TEXT, nullable=False))
     flavor: str = Field(sa_column=Column(TEXT, nullable=False))
     admin_state: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    state: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     labels: Optional[bytes]
     config: bytes
     status: Optional[bytes]
@@ -124,6 +125,7 @@ class ServiceSchema(NamedSchema, table=True):
             labels=json.loads(base64.b64decode(self.labels).decode())
             if self.labels
             else None,
+            state=self.state,
         )
         metadata = None
         if include_metadata:
@@ -198,6 +200,16 @@ class ServiceSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()
+        self.state = update.status.get("state") if update.status else None
+        self.pipeline_name = (
+            update.config.get("pipeline_name") if update.config else None
+        )
+        self.run_name = (
+            update.config.get("run_name") if update.config else None
+        )
+        self.pipeline_step_name = (
+            update.config.get("pipeline_step_name") if update.config else None
+        )
         return self
 
     @classmethod
@@ -254,6 +266,9 @@ class ServiceSchema(NamedSchema, table=True):
                 ).encode("utf-8")
             )
             if service_request.endpoint
+            else None,
+            state=service_request.status.get("state")
+            if service_request.status
             else None,
             model_version_id=service_request.model_version_id,
             prediction_url=service_request.prediction_url,
