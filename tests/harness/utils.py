@@ -235,17 +235,38 @@ def clean_workspace_session(
 
 
 class TheMetaZenRemembers(type):
-    def __getattr__(cls: "TheZenRemembers", name: str) -> Any:
-        val = getattr(Client, name)
-        if callable(val) and name.startswith("create_"):
-            return TheZenRemembers.memory(val, name)
-        return val
+    """The Meta Class to create TheZenRemembers class."""
+
+    def __getattr__(self, name: str) -> Any:
+        """Class level attribute getter.
+
+        Needed for operations like `Client.class_method()`.
+
+        Args:
+            name: The name of the attribute to access.
+
+        Returns:
+            The value of the attribute.
+        """
+        return getattr(Client, name)
 
 
 class TheZenRemembers(metaclass=TheMetaZenRemembers):
+    """The Class to create TheZenRemembers class.
+
+    This a class that is used to create a proxy to the Client class.
+    It memorizes the created objects and deletes them on `destroy`.
+    """
+
     mem: ClassVar[Dict[bool, List[Tuple[str, Any]]]] = {False: [], True: []}
+    interface: Union[Client, BaseZenStore]
 
     def __init__(self, interface: Optional[BaseZenStore] = None):
+        """Initialize TheZenRemembers.
+
+        Args:
+            interface: The interface to use.
+        """
         if interface is None:
             self.interface = Client()
             self.zen_store = TheZenRemembers(self.interface.zen_store)
@@ -271,6 +292,15 @@ class TheZenRemembers(metaclass=TheMetaZenRemembers):
         return val
 
     def __call__(self, *args: Any, **kwargs: Any) -> "TheZenRemembers":
+        """Simulate Client(), but return self.
+
+        Args:
+            args: The positional arguments.
+            kwargs: The keyword arguments.
+
+        Returns:
+            self
+        """
         return self
 
     @staticmethod
@@ -314,7 +344,9 @@ class TheZenRemembers(metaclass=TheMetaZenRemembers):
                 return create_name.replace("get_or_create_", "delete_")
             return create_name.replace("create_", "delete_")
 
-        def parse_annotations(spec: inspect.FullArgSpec, response_model: Any):
+        def parse_annotations(
+            spec: inspect.FullArgSpec, response_model: Any
+        ) -> Dict[str, Any]:
             annotations = spec.annotations
             kwargs = {}
             for arg_name, arg_type in annotations.items():
