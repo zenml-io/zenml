@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Dict,
     Generator,
     List,
@@ -44,11 +45,10 @@ import pytest
 from tests.harness.environment import TestEnvironment
 from tests.harness.harness import TestHarness
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_DEBUG
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
 from zenml.stack.stack import Stack
 from zenml.zen_stores.base_zen_store import BaseZenStore
-
-MagicMock
 
 
 def cleanup_folder(path: str) -> None:
@@ -234,9 +234,6 @@ def clean_workspace_session(
     client.delete_workspace(workspace_name)
 
 
-mem: Dict[bool, List[Tuple[str, Any]]] = {False: [], True: []}
-
-
 class TheMetaZenRemembers(type):
     def __getattr__(cls: "TheZenRemembers", name: str) -> Any:
         val = getattr(Client, name)
@@ -246,6 +243,8 @@ class TheMetaZenRemembers(type):
 
 
 class TheZenRemembers(metaclass=TheMetaZenRemembers):
+    mem: ClassVar[Dict[bool, List[Tuple[str, Any]]]] = {False: [], True: []}
+
     def __init__(self, interface: Optional[BaseZenStore] = None):
         if interface is None:
             self.interface = Client()
@@ -254,7 +253,6 @@ class TheZenRemembers(metaclass=TheMetaZenRemembers):
         else:
             self.interface = interface
             self.is_store = True
-        self.mem = mem
 
     def __getattr__(self, name: str) -> Any:
         """Proxy attribute access to the client.
@@ -302,7 +300,7 @@ class TheZenRemembers(metaclass=TheMetaZenRemembers):
             """
             ret = func(*args, **kwargs)
             if not isinstance(ret, MagicMock):
-                mem[is_store].append((name, ret))
+                TheZenRemembers.mem[is_store].append((name, ret))
             return ret
 
         return run_and_memorize
@@ -367,8 +365,8 @@ class TheZenRemembers(metaclass=TheMetaZenRemembers):
 
 
 @contextmanager
-def clean_default_client_session() -> Generator[TheZenRemembers, None, None]:
-    """Context manager to initialize and use a clean local default ZenML client.
+def self_cleaning_client_session() -> Generator[TheZenRemembers, None, None]:
+    """Context manager to initialize and use a self cleaning ZenML client.
 
     This context manager creates a ZenML client with memory and cleans up
     resource created during the session.
@@ -385,6 +383,63 @@ def clean_default_client_session() -> Generator[TheZenRemembers, None, None]:
         yield memory_client
     finally:
         memory_client.destroy()
+
+
+@contextmanager
+def clean_default_client_session(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Generator[Client, None, None]:
+    """Context manager to initialize and use a clean local default ZenML client.
+
+    This context manager creates a clean ZenML client with its own global
+    configuration and local database.
+
+    Args:
+        tmp_path_factory: A pytest fixture that provides a temporary directory.
+
+    Yields:
+        A clean ZenML client.
+    """
+    # save the current global configuration and client singleton instances
+    # to restore them later, then reset them
+    orig_cwd = os.getcwd()
+    original_config = GlobalConfiguration.get_instance()
+    original_client = Client.get_instance()
+    orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
+
+    GlobalConfiguration._reset_instance()
+    Client._reset_instance()
+
+    # change the working directory to a fresh temp path
+    tmp_path = tmp_path_factory.mktemp("pytest-clean-client")
+    os.chdir(tmp_path)
+
+    os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+
+    # initialize the global config client and store at the new path
+    gc = GlobalConfiguration()
+    gc.analytics_opt_in = False
+    client = Client()
+    _ = client.zen_store
+
+    logging.info(f"Tests are running in clean environment: {tmp_path}")
+
+    yield client
+
+    # restore the global configuration path
+    if orig_config_path:
+        os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
+    else:
+        del os.environ[ENV_ZENML_CONFIG_PATH]
+
+    # restore the global configuration and the client
+    GlobalConfiguration._reset_instance(original_config)
+    Client._reset_instance(original_client)
+
+    # remove all traces, and change working directory back to base path
+    os.chdir(orig_cwd)
+    cleanup_folder(str(tmp_path))
 
 
 def check_test_requirements(
