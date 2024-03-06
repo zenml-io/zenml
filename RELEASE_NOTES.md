@@ -3,10 +3,10 @@
 
 This patch contains a number of bug fixes and security improvements.
 
-We improve the isolation of artifact stores so that various artifacts 
+We improved the isolation of artifact stores so that various artifacts 
 cannot be stored or accessed outside of the configured artifact store scope.
-Such unsafe operations are no longer allowed. This may have
-impact on existing codebase if you have used unsafe file operations in the past.
+Such unsafe operations are no longer allowed. This may have an
+impact on existing codebases if you have used unsafe file operations in the past.
 To illustrate such a side effect, let's consider a remote S3 
 artifact store is configured for the path `s3://some_bucket/some_sub_folder`. 
 and in the code you use 
