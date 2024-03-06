@@ -118,6 +118,8 @@ from zenml.models import (
     ModelVersionPipelineRunResponse,
     ModelVersionRequest,
     ModelVersionResponse,
+    ModelVersionServiceFilter,
+    ModelVersionServiceResponse,
     ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceResponse,
@@ -1518,7 +1520,7 @@ class Client(metaclass=ClientMetaClass):
         """
 
         def type_scoped_list_method(
-            hydrate: bool = False,
+            hydrate: bool = True,
             **kwargs: Any,
         ) -> Page[ServiceResponse]:
             """Call `zen_store.list_services` with type scoping.
@@ -5940,6 +5942,67 @@ class Client(metaclass=ClientMetaClass):
                 model_version_id=model_version_id,
                 pipeline_run_id=pipeline_run_id,
                 pipeline_run_name=pipeline_run_name,
+            ),
+            hydrate=hydrate,
+        )
+
+    #################################################
+    # Model Versions Services
+    #
+    # Only view capabilities are exposed via client.
+    #################################################
+
+    def list_model_version_service_links(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[UUID, str]] = None,
+        user_id: Optional[Union[UUID, str]] = None,
+        model_id: Optional[Union[UUID, str]] = None,
+        model_version_id: Optional[Union[UUID, str]] = None,
+        service_id: Optional[Union[UUID, str]] = None,
+        service_name: Optional[str] = None,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionServiceResponse]:
+        """Get all model version to pipeline run links by filter.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: Use the workspace id for filtering
+            user_id: Use the user id for filtering
+            model_id: Use the model id for filtering
+            model_version_id: Use the model version id for filtering
+            service_id: Use the service id for filtering
+            service_name: Use the service name for filtering
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response
+
+        Returns:
+            A page of all model version to pipeline run links.
+        """
+        return self.zen_store.list_model_version_service_links(
+            ModelVersionServiceFilter(
+                sort_by=sort_by,
+                logical_operator=logical_operator,
+                page=page,
+                size=size,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                model_id=model_id,
+                model_version_id=model_version_id,
+                service_id=service_id,
+                service_name=service_name,
             ),
             hydrate=hydrate,
         )

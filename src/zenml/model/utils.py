@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for linking step outputs to model versions."""
 
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Set, Union
 from uuid import UUID
 
 from zenml.artifacts.artifact_config import ArtifactConfig
@@ -78,12 +78,12 @@ def link_step_artifacts_to_model(
 
 
 def link_service_to_model_from_artifacts(
-    artifact_version_ids: Dict[str, UUID],
+    service_ids: Set[UUID],
 ) -> None:
     """Links the created service to the model from the artifacts.
 
     Args:
-        artifact_version_ids: The IDs of the published output artifacts.
+        service_ids: The IDs of the services to link.
 
     Raises:
         RuntimeError: If called outside of a step.
@@ -101,25 +101,8 @@ def link_service_to_model_from_artifacts(
         model = None
         logger.debug("No model context found, unable to auto-link artifacts.")
 
-    for artifact_name, artifact_version_id in artifact_version_ids.items():
-        materializer_classes = step_context._get_output(
-            artifact_name
-        ).materializer_classes
-        for materializer_class in materializer_classes:
-            # Implicit linking
-            if (
-                materializer_class.__qualname__ == "ServiceMaterializer"
-                and model
-            ):
-                # Implicitly linking service to model
-                logger.info(
-                    f"Implicitly linking service to model "
-                    f"`{model.name}` version `{model.version}`."
-                )
-                link_service_to_model(
-                    service_id=artifact_version_id,
-                    model=model,
-                )
+    for service_id in service_ids:
+        link_service_to_model(service_id=service_id, model=model)
 
 
 def link_service_to_model(
@@ -135,8 +118,12 @@ def link_service_to_model(
     client = Client()
 
     if model:
-        model._get_or_create_model_version()
-        model_version_response = model._get_model_version()
+        model_version_response = model._get_or_create_model_version()
+        if model_version_response is None:
+            raise RuntimeError(
+                "Failed to get or create model version. Please make sure that "
+                "the model is created and linked to the pipeline."
+            )
         request = ModelVersionServiceRequest(
             user=client.active_user.id,
             workspace=client.active_workspace.id,

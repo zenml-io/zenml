@@ -1828,7 +1828,7 @@ class SqlZenStore(BaseZenStore):
             session.add(service_schema)
             session.commit()
 
-            return service_schema.to_model(hydrate=True)
+            return service_schema.to_model(include_metadata=True)
 
     def get_service(
         self, service_id: UUID, hydrate: bool = True
@@ -1855,7 +1855,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get service with ID {service_id}: No "
                     "service with this ID found."
                 )
-            return service.to_model(hydrate=hydrate)
+            return service.to_model(include_metadata=hydrate)
 
     def list_services(
         self, filter_model: ServiceFilter, hydrate: bool = False
@@ -9038,6 +9038,10 @@ class SqlZenStore(BaseZenStore):
                 )
             ).first()
             if existing_model_version_service_link is not None:
+                logger.debug(
+                    "Returning existing model version service link: %s",
+                    existing_model_version_service_link,
+                )
                 return existing_model_version_service_link.to_model()
 
             # Otherwise, create a new link
@@ -9048,6 +9052,10 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_service_link_schema)
             session.commit()
+            logger.debug(
+                "Created new model version service link: %s",
+                model_version_service_link_schema,
+            )
             return model_version_service_link_schema.to_model(
                 include_metadata=True
             )

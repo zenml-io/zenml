@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and services."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import Any, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -31,9 +31,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
 )
-
-if TYPE_CHECKING:
-    from zenml.models.v2.core.service import ServiceResponse
+from zenml.models.v2.core.service import ServiceResponse
 
 # ------------------ Request Model ------------------
 
@@ -58,7 +56,7 @@ class ModelVersionServiceResponseBody(BaseDatedResponseBody):
 
     model: UUID
     model_version: UUID
-    service: "ServiceResponse"
+    service: ServiceResponse
 
 
 class ModelVersionServiceResponseResources(BaseResponseResources):
