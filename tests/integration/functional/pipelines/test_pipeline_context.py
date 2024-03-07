@@ -83,16 +83,12 @@ def consumer_pipe():
     asserter_step(mv.get_artifact("producer_pipe::promoter_step::output"))
 
 
-def test_that_argument_can_be_a_get_artifact_of_model_in_pipeline_context(
-    clean_client: "Client",
-):
+def test_that_argument_can_be_a_get_artifact_of_model_in_pipeline_context():
     producer_pipe(True)
     consumer_pipe()
 
 
-def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not_found(
-    clean_client: "Client",
-):
+def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not_found():
     producer_pipe(False)
     with pytest.raises(RuntimeError):
         consumer_pipe()
@@ -119,9 +115,7 @@ def asserter(artifact: str, artifact_metadata: str, model_metadata: str):
     assert model_metadata == "model_meta_" + ver
 
 
-def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode(
-    clean_client: "Client",
-):
+def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode():
     """Tests that user can load model artifacts and metadata in lazy mode in pipeline codes."""
 
     model_name = "foo"
@@ -137,8 +131,9 @@ def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode(
             artifact, artifact_metadata, model_metadata, after=["producer"]
         )
 
+    client = Client()
     with pytest.raises(KeyError):
-        clean_client.get_model(model_name)
+        client.get_model(model_name)
     with pytest.raises(KeyError):
-        clean_client.get_artifact_version("bar")
+        client.get_artifact_version("bar")
     dummy()
