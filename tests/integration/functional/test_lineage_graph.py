@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Tests for the lineage graph."""
 
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from typing_extensions import Annotated
@@ -24,6 +23,7 @@ from tests.integration.functional.zen_stores.utils import (
 )
 from zenml import load_artifact, pipeline, save_artifact, step
 from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml.client import Client
 from zenml.enums import MetadataResourceTypes
 from zenml.lineage_graph.lineage_graph import (
     ARTIFACT_PREFIX,
@@ -33,19 +33,15 @@ from zenml.lineage_graph.lineage_graph import (
 from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
 from zenml.models import PipelineRunResponse
 
-if TYPE_CHECKING:
-    from zenml.client import Client
 
-
-def test_generate_run_nodes_and_edges(
-    clean_client: "Client", connected_two_step_pipeline
-):
+def test_generate_run_nodes_and_edges(connected_two_step_pipeline):
     """Tests that the created lineage graph has the right nodes and edges.
 
     We also write some mock metadata for both pipeline runs and steps runs here
     to test that they are correctly added to the lineage graph.
     """
-    active_stack_model = clean_client.active_stack_model
+    client = Client()
+    active_stack_model = client.active_stack_model
     orchestrator_id = active_stack_model.components["orchestrator"][0].id
 
     # Create and retrieve a pipeline run
@@ -54,12 +50,10 @@ def test_generate_run_nodes_and_edges(
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = clean_client.get_pipeline(
-        "connected_two_step_pipeline"
-    ).runs[0]
+    pipeline_run = client.get_pipeline("connected_two_step_pipeline").runs[0]
 
     # Write some metadata for the pipeline run
-    clean_client.create_run_metadata(
+    client.create_run_metadata(
         metadata={"orchestrator_url": Uri("https://www.ariaflow.org")},
         resource_id=pipeline_run.id,
         resource_type=MetadataResourceTypes.PIPELINE_RUN,
@@ -69,7 +63,7 @@ def test_generate_run_nodes_and_edges(
     # Write some metadata for all steps
     steps = pipeline_run.steps
     for step_ in steps.values():
-        clean_client.create_run_metadata(
+        client.create_run_metadata(
             metadata={
                 "experiment_tracker_url": Uri("https://www.aria_and_blupus.ai")
             },
@@ -80,16 +74,14 @@ def test_generate_run_nodes_and_edges(
 
         # Write some metadata for all artifacts
         for output_artifact in step_.outputs.values():
-            clean_client.create_run_metadata(
+            client.create_run_metadata(
                 metadata={"aria_loves_alex": True},
                 resource_id=output_artifact.id,
                 resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
             )
 
     # Get the run again so all the metadata is loaded
-    pipeline_run = clean_client.get_pipeline(
-        "connected_two_step_pipeline"
-    ).runs[0]
+    pipeline_run = client.get_pipeline("connected_two_step_pipeline").runs[0]
 
     # Generate a lineage graph for the pipeline run
     graph = LineageGraph()
@@ -146,7 +138,7 @@ def pipeline_with_direct_edge():
     str_step(after=["int_step"])
 
 
-def test_add_direct_edges(clean_client: "Client"):
+def test_add_direct_edges():
     """Test that direct `.after(...)` edges are added to the lineage graph."""
 
     # Create and retrieve a pipeline run
@@ -191,7 +183,7 @@ def second_pipeline(artifact_version_id: UUID):
     external_artifact_loader_step(a=ExternalArtifact(id=artifact_version_id))
 
 
-def test_add_external_artifacts(clean_client: "Client"):
+def test_add_external_artifacts():
     """Test that external artifacts are added to the lineage graph."""
 
     # Create and retrieve a pipeline run
@@ -258,7 +250,7 @@ def saving_loading_pipeline():
     manual_artifact_loading_step(input=output)
 
 
-def test_manual_save_load_artifact(clean_client):
+def test_manual_save_load_artifact():
     """Test that manually saved and loaded artifacts are added to the graph."""
 
     # Save an artifact before the pipeline run
