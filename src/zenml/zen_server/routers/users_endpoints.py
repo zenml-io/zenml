@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 
 from zenml.analytics.utils import email_opt_int
 from zenml.constants import (
@@ -283,6 +283,12 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             The updated user.
         """
         user = zen_store().get_user(user_name_or_id)
+
+        if user.is_admin != user_update.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot update admin status of a user during activation.",
+            )
 
         # NOTE: if the activation token is not set, this will raise an
         # exception
