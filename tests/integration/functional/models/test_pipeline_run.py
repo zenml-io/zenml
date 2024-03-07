@@ -19,17 +19,15 @@ from tests.integration.functional.conftest import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
+from zenml.client import Client
 from zenml.config.schedule import Schedule
 from zenml.environment import get_run_environment_dict
 
 if TYPE_CHECKING:
-    from zenml.client import Client
     from zenml.pipelines.base_pipeline import BasePipeline
 
 
-def test_pipeline_run_artifacts(
-    clean_client: "Client", connected_two_step_pipeline
-):
+def test_pipeline_run_artifacts(connected_two_step_pipeline):
     """Integration test for `run.artifacts` property."""
     pipeline_instance: BasePipeline = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
@@ -52,7 +50,7 @@ def test_pipeline_run_artifacts(
 
 
 def test_pipeline_run_has_client_and_orchestrator_environment(
-    clean_client: "Client", connected_two_step_pipeline
+    connected_two_step_pipeline,
 ):
     """Test that the run has correct client and orchestrator environments."""
     pipeline_instance = connected_two_step_pipeline(
@@ -60,17 +58,13 @@ def test_pipeline_run_has_client_and_orchestrator_environment(
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = clean_client.get_pipeline(
-        "connected_two_step_pipeline"
-    ).runs[0]
+    pipeline_run = Client().get_pipeline("connected_two_step_pipeline").runs[0]
     test_environment = get_run_environment_dict()
     assert pipeline_run.client_environment == test_environment
     assert pipeline_run.orchestrator_environment == test_environment
 
 
-def test_scheduled_pipeline_run_has_schedule_id(
-    clean_client: "Client", connected_two_step_pipeline
-):
+def test_scheduled_pipeline_run_has_schedule_id(connected_two_step_pipeline):
     """Test that a scheduled pipeline run has a schedule ID."""
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
@@ -78,7 +72,5 @@ def test_scheduled_pipeline_run_has_schedule_id(
     )
     schedule = Schedule(cron_expression="*/5 * * * *")
     pipeline_instance.run(schedule=schedule)
-    pipeline_run = clean_client.get_pipeline(
-        "connected_two_step_pipeline"
-    ).runs[0]
+    pipeline_run = Client().get_pipeline("connected_two_step_pipeline").runs[0]
     assert pipeline_run.schedule is not None

@@ -23,16 +23,16 @@ from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
+from zenml.client import Client
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 
 if TYPE_CHECKING:
-    from zenml.client import Client
     from zenml.models import StepRunResponse
     from zenml.pipelines.base_pipeline import BasePipeline
 
 
-def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
+def test_step_run_linkage(one_step_pipeline):
     """Integration test for `step.run` property."""
     step_ = constant_int_output_test_step()
     pipe: "BasePipeline" = one_step_pipeline(step_)
@@ -42,7 +42,7 @@ def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
     pipeline_run = pipe.model.last_run
     step_run = pipeline_run.steps["step_"]
 
-    run = clean_client.get_pipeline_run(step_run.pipeline_run_id)
+    run = Client().get_pipeline_run(step_run.pipeline_run_id)
 
     assert run == pipeline_run
 
@@ -53,10 +53,9 @@ def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
     assert step_run_2.status == ExecutionStatus.CACHED
 
 
-def test_step_run_parent_steps_linkage(
-    clean_client: "Client", connected_two_step_pipeline
-):
+def test_step_run_parent_steps_linkage(connected_two_step_pipeline):
     """Integration test for `step.parent_steps` property."""
+    client = Client()
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
@@ -67,28 +66,25 @@ def test_step_run_parent_steps_linkage(
     step_2 = pipeline_run.steps["step_2"]
 
     parent_steps = [
-        clean_client.get_run_step(step_id)
-        for step_id in step_1.parent_step_ids
+        client.get_run_step(step_id) for step_id in step_1.parent_step_ids
     ]
     assert parent_steps == []
 
     parent_steps = [
-        clean_client.get_run_step(step_id)
-        for step_id in step_2.parent_step_ids
+        client.get_run_step(step_id) for step_id in step_2.parent_step_ids
     ]
     assert parent_steps == [step_1]
 
 
-def test_step_run_has_source_code(clean_client, connected_two_step_pipeline):
+def test_step_run_has_source_code(connected_two_step_pipeline):
     """Test that the step run has correct source code."""
+    client = Client()
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = clean_client.get_pipeline(
-        "connected_two_step_pipeline"
-    ).runs[0]
+    pipeline_run = client.get_pipeline("connected_two_step_pipeline").runs[0]
     step_1 = pipeline_run.steps["step_1"]
     step_2 = pipeline_run.steps["step_2"]
     assert step_1.source_code == inspect.getsource(
@@ -100,10 +96,11 @@ def test_step_run_has_source_code(clean_client, connected_two_step_pipeline):
 
 
 def test_step_run_with_too_long_source_code_is_truncated(
-    clean_client, connected_two_step_pipeline, mocker
+    connected_two_step_pipeline, mocker
 ):
     """Test that the step source code gets truncated if it is too long."""
 
+    client = Client()
     random_source = "".join(random.choices(string.ascii_uppercase, k=1000000))
     mocker.patch("zenml.steps.base_step.BaseStep.source_code", random_source)
     pipeline_instance = connected_two_step_pipeline(
@@ -111,9 +108,7 @@ def test_step_run_with_too_long_source_code_is_truncated(
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = clean_client.get_pipeline(
-        "connected_two_step_pipeline"
-    ).runs[0]
+    pipeline_run = client.get_pipeline("connected_two_step_pipeline").runs[0]
     step_1 = pipeline_run.steps["step_1"]
     step_2 = pipeline_run.steps["step_2"]
     assert len(step_1.source_code) == TEXT_FIELD_MAX_LENGTH
@@ -128,16 +123,15 @@ def test_step_run_with_too_long_source_code_is_truncated(
     )
 
 
-def test_step_run_has_docstring(clean_client, connected_two_step_pipeline):
+def test_step_run_has_docstring(connected_two_step_pipeline):
     """Test that the step run has correct docstring."""
+    client = Client()
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = clean_client.get_pipeline(
-        "connected_two_step_pipeline"
-    ).runs[0]
+    pipeline_run = client.get_pipeline("connected_two_step_pipeline").runs[0]
     step_1 = pipeline_run.steps["step_1"]
     step_2 = pipeline_run.steps["step_2"]
     assert step_1.docstring == constant_int_output_test_step.entrypoint.__doc__
@@ -145,9 +139,10 @@ def test_step_run_has_docstring(clean_client, connected_two_step_pipeline):
 
 
 def test_step_run_with_too_long_docstring_is_truncated(
-    clean_client, connected_two_step_pipeline, mocker
+    connected_two_step_pipeline, mocker
 ):
     """Test that the step docstring gets truncated if it is too long."""
+    client = Client()
     random_docstring = "".join(
         random.choices(string.ascii_uppercase, k=1000000)
     )
@@ -157,9 +152,7 @@ def test_step_run_with_too_long_docstring_is_truncated(
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = clean_client.get_pipeline(
-        "connected_two_step_pipeline"
-    ).runs[0]
+    pipeline_run = client.get_pipeline("connected_two_step_pipeline").runs[0]
     step_1 = pipeline_run.steps["step_1"]
     step_2 = pipeline_run.steps["step_2"]
     assert len(step_1.docstring) == TEXT_FIELD_MAX_LENGTH
@@ -174,7 +167,7 @@ def test_step_run_with_too_long_docstring_is_truncated(
     )
 
 
-def test_disabling_step_logs(clean_client: "Client", one_step_pipeline):
+def test_disabling_step_logs(one_step_pipeline):
     """Test that disabling step logs works."""
 
     # By default, step logs should be enabled

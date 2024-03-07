@@ -22,13 +22,10 @@ from tests.integration.functional.conftest import (
 )
 
 if TYPE_CHECKING:
-    from zenml.client import Client
     from zenml.pipelines.base_pipeline import BasePipeline
 
 
-def test_pipeline_run_linkage(
-    clean_client: "Client", connected_two_step_pipeline
-):
+def test_pipeline_run_linkage(connected_two_step_pipeline):
     """Integration test for `pipeline.get_runs()` and related properties."""
     pipeline_instance: BasePipeline = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
