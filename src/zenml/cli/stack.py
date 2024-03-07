@@ -1366,7 +1366,7 @@ def _get_deployment_params_interactively(
     "-md",
     "model_deployer",
     required=False,
-    type=click.Choice(["kserve", "seldon"]),
+    type=click.Choice(["mlflow", "seldon"]),
     help="The flavor of model deployer to use. ",
 )
 @click.option(
