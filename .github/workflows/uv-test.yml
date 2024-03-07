@@ -22,7 +22,13 @@ jobs:
       - name: gather requirements
         shell: bash
         run: |
-          pip install -e '.[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]'
+          pip install uv
+          touch basic-requirements.txt
+          echo "-e '.[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]'" >> basic-requirements.txt
+          cp basic-requirements.txt basic-requirements.in
+
+          uv pip compile basic-requirements.in -o basic-requirements-compiled.txt
+          pip install -r basic-requirements-compiled.txt
 
           # figure out the python version
           python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
@@ -47,10 +53,12 @@ jobs:
           echo "pyyaml>=6.0.1" >> integration-requirements.txt
           echo "pyopenssl" >> integration-requirements.txt
           echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> integration-requirements.txt
+          cp integration-requirements.txt integration-requirements.in
+          uv pip compile integration-requirements.in -o integration-requirements-compiled.txt
       - name: Install dependencies with pip
         shell: bash
         run: |
-          pip install -r integration-requirements.txt
+          pip install -r integration-requirements-compiled.txt
       - name: Log collections version and defaultdict type with pip
         shell: bash
         run: |
@@ -58,6 +66,7 @@ jobs:
           python -c "import collections; print(f'collections module file path: {collections.__file__}')"
           python -c "import collections; print(f'collections module name: {collections.__name__}')"
           python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
+          python -c "import sys; from collections import defaultdict; from zenml.config.source import Source, SourceType; from zenml.utils import source_utils; print(f'source_utils.resolve(defaultdict): {source_utils.resolve(defaultdict)}'); print(f'Source object: {Source(module=defaultdict.__module__, attribute=defaultdict.__name__, type=SourceType.BUILTIN)}')"
           python -c "import sys; print(f'Python executable: {sys.executable}')"
           python -c "import sys; print(f'Module search paths: {sys.path}')"
           echo "PYTHONPATH: $PYTHONPATH"
@@ -115,6 +124,7 @@ jobs:
           python -c "import collections; print(f'collections module file path: {collections.__file__}')"
           python -c "import collections; print(f'collections module name: {collections.__name__}')"
           python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
+          python -c "import sys; from collections import defaultdict; from zenml.config.source import Source, SourceType; from zenml.utils import source_utils; print(f'source_utils.resolve(defaultdict): {source_utils.resolve(defaultdict)}'); print(f'Source object: {Source(module=defaultdict.__module__, attribute=defaultdict.__name__, type=SourceType.BUILTIN)}')"
           python -c "import sys; print(f'Python executable: {sys.executable}')"
           python -c "import sys; print(f'Module search paths: {sys.path}')"
           echo "PYTHONPATH: $PYTHONPATH"
