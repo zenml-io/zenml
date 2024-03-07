@@ -22,6 +22,7 @@ from typing import (
     List,
     Optional,
     Type,
+    cast,
 )
 from uuid import UUID
 
@@ -581,7 +582,8 @@ def _get_model_version_id_if_exists(
     if model_name:
         try:
             model_version_id = client.get_model_version(
-                name=model_name, model_version_name_or_number_or_id=model_version
+                name=model_name,
+                model_version_name_or_number_or_id=model_version,
             ).id
             return model_version_id
         except KeyError:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for linking step outputs to model versions."""
 
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from zenml.artifacts.artifact_config import ArtifactConfig
@@ -73,26 +73,6 @@ def link_step_artifacts_to_model(
                 artifact_config=artifact_config,
                 artifact_version_id=artifact_version_id,
                 model=model,
-            )
-
-def link_service_to_model(
-    service_id: UUID,
-    model: Optional["Model"] = None,
-) -> None:
-    """Link the service to the model.
-
-    Args:
-        service_id: The ID of the service.
-        model: The model to link to.
-    """
-    # client = Client()
-
-    if model:
-        model_version_response = model._get_or_create_model_version()
-        if model_version_response is None:
-            raise RuntimeError(
-                "Failed to get or create model version. Please make sure that "
-                "the model is created and linked to the pipeline."
             )
 
 
