@@ -49,6 +49,9 @@ def cleanup_after_test():
                         )
                 except KeyError:
                     pass
+        while code_repositories := client.list_code_repositories().items:
+            for cr in code_repositories:
+                client.delete_code_repository(cr.id)
         while deployments := client.list_deployments().items:
             for d in deployments:
                 client.delete_deployment(str(d.id))
