@@ -90,8 +90,6 @@ zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 run_tests_for_version current_branch_mariadb
 
 zenml disconnect
-docker rm -f mariadb
-
 deactivate
 
 # Function to compare semantic versions
