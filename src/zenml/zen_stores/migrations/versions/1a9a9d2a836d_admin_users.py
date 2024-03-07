@@ -1,7 +1,7 @@
 """admin users [1a9a9d2a836d].
 
 Revision ID: 1a9a9d2a836d
-Revises: 72675226b2de
+Revises: 0.55.5
 Create Date: 2024-03-04 15:48:16.580871
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1a9a9d2a836d"
-down_revision = "72675226b2de"
+down_revision = "0.55.5"
 branch_labels = None
 depends_on = None
 
