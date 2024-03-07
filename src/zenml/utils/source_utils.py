@@ -155,7 +155,9 @@ def resolve(
     if source_type == SourceType.USER:
         from zenml.utils import code_repository_utils
 
-        local_repo_context = code_repository_utils.find_active_code_repository()
+        local_repo_context = (
+            code_repository_utils.find_active_code_repository()
+        )
 
         if local_repo_context and not local_repo_context.has_local_changes:
             module_name = _resolve_module(module)
@@ -188,7 +190,9 @@ def resolve(
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
 
-    return Source(module=module_name, attribute=attribute_name, type=source_type)
+    return Source(
+        module=module_name, attribute=attribute_name, type=source_type
+    )
 
 
 def get_source_root() -> str:
@@ -293,11 +297,14 @@ def is_standard_lib_file(file_path: str) -> bool:
     # Default library path
     stdlib_paths.add(Path(get_python_lib(standard_lib=True)).resolve())
     # Other common standard library locations, considering virtual environments
-    stdlib_paths.update(Path(p).resolve() for p in sys.path if "site-packages" not in p)
+    stdlib_paths.update(
+        Path(p).resolve() for p in sys.path if "site-packages" not in p
+    )
 
     # Check if file path is within any known standard library path
     if any(
-        normalized_file_path.is_relative_to(stdlib_path) for stdlib_path in stdlib_paths
+        normalized_file_path.is_relative_to(stdlib_path)
+        for stdlib_path in stdlib_paths
     ):
         return True
 
@@ -321,7 +328,8 @@ def is_standard_lib_file(file_path: str) -> bool:
         source_file = inspect.getsourcefile(normalized_file_path)
         if source_file and Path(source_file).resolve().is_file():
             return any(
-                Path(source_file).resolve().is_relative_to(p) for p in stdlib_paths
+                Path(source_file).resolve().is_relative_to(p)
+                for p in stdlib_paths
             )
     except Exception:
         pass
@@ -374,7 +382,9 @@ def get_source_type(module: ModuleType) -> SourceType:
     if is_internal_module(module_name=module.__name__):
         return SourceType.INTERNAL
 
-    if is_distribution_package_file(file_path=file_path, module_name=module.__name__):
+    if is_distribution_package_file(
+        file_path=file_path, module_name=module.__name__
+    ):
         return SourceType.DISTRIBUTION_PACKAGE
 
     if is_standard_lib_file(file_path=file_path):
@@ -511,7 +521,9 @@ def _resolve_module(module: ModuleType) -> str:
     return module_source
 
 
-def _load_module(module_name: str, import_root: Optional[str] = None) -> ModuleType:
+def _load_module(
+    module_name: str, import_root: Optional[str] = None
+) -> ModuleType:
     """Load a module.
 
     Args:
