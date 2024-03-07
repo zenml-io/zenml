@@ -254,6 +254,5 @@ for i in "${!MIGRATION_VERSIONS[@]}"; do
 done
 
 if [ "$1" == "mysql" ]; then
-    zenml disconnect
     docker rm -f mysql
 fi

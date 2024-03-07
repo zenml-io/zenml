@@ -176,5 +176,4 @@ for i in "${!MIGRATION_VERSIONS[@]}"; do
     deactivate
 done
 
-zenml disconnect
 docker rm -f mariadb
