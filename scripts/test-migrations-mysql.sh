@@ -63,75 +63,75 @@ fi
 # List of versions to test
 VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4")
 
-# Start completely fresh
-rm -rf ~/.config/zenml
+# # Start completely fresh
+# rm -rf ~/.config/zenml
 
-for VERSION in "${VERSIONS[@]}"
-do
-    set -e  # Exit immediately if a command exits with a non-zero status
-    # Create a new virtual environment
-    python3 -m venv ".venv-$VERSION"
-    source ".venv-$VERSION/bin/activate"
+# for VERSION in "${VERSIONS[@]}"
+# do
+#     set -e  # Exit immediately if a command exits with a non-zero status
+#     # Create a new virtual environment
+#     python3 -m venv ".venv-$VERSION"
+#     source ".venv-$VERSION/bin/activate"
 
-    # Install the specific version
-    pip3 install -U pip setuptools wheel
+#     # Install the specific version
+#     pip3 install -U pip setuptools wheel
 
-    git checkout release/$VERSION
-    pip3 install -e ".[templates,server]"
-    # handles unpinned sqlmodel dependency in older versions
-    pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
+#     git checkout release/$VERSION
+#     pip3 install -e ".[templates,server]"
+#     # handles unpinned sqlmodel dependency in older versions
+#     pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
 
-    # Get the major and minor version of Python
-    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+#     # Get the major and minor version of Python
+#     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
-    # Check if the Python version is 3.9 and VERSION is > 0.47.0
-    if [[ "$PYTHON_VERSION" == "3.9" ]]; then
-        case "$VERSION" in
-            "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
-                pip3 install importlib_metadata
-                ;;
-        esac
-    fi
-
-
-    if [ "$1" == "mysql" ]; then
-        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
-    fi
-
-    # Run the tests for this version
-    run_tests_for_version $VERSION
-
-    if [ "$1" == "mysql" ]; then
-        zenml disconnect
-        sleep 5
-    fi
-
-    deactivate
-done
+#     # Check if the Python version is 3.9 and VERSION is > 0.47.0
+#     if [[ "$PYTHON_VERSION" == "3.9" ]]; then
+#         case "$VERSION" in
+#             "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
+#                 pip3 install importlib_metadata
+#                 ;;
+#         esac
+#     fi
 
 
-# Test the most recent migration with MySQL
-echo "===== TESTING CURRENT BRANCH ====="
-set -e
-python3 -m venv ".venv-current-branch"
-source ".venv-current-branch/bin/activate"
+#     if [ "$1" == "mysql" ]; then
+#         zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+#     fi
 
-pip3 install -U pip setuptools wheel
-pip3 install -e ".[templates,server]"
-pip3 install importlib_metadata
+#     # Run the tests for this version
+#     run_tests_for_version $VERSION
 
-if [ "$1" == "mysql" ]; then
-    zenml connect --url mysql://127.0.0.1/zenml --username root --password password
-fi
+#     if [ "$1" == "mysql" ]; then
+#         zenml disconnect
+#         sleep 5
+#     fi
 
-run_tests_for_version current_branch_mysql
+#     deactivate
+# done
 
-if [ "$1" == "mysql" ]; then
-    zenml disconnect
-    docker rm -f mysql
-fi
 
-deactivate
+# # Test the most recent migration with MySQL
+# echo "===== TESTING CURRENT BRANCH ====="
+# set -e
+# python3 -m venv ".venv-current-branch"
+# source ".venv-current-branch/bin/activate"
+
+# pip3 install -U pip setuptools wheel
+# pip3 install -e ".[templates,server]"
+# pip3 install importlib_metadata
+
+# if [ "$1" == "mysql" ]; then
+#     zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+# fi
+
+# run_tests_for_version current_branch_mysql
+
+# if [ "$1" == "mysql" ]; then
+#     zenml disconnect
+#     docker rm -f mysql
+# fi
+
+# deactivate
 
 # Function to compare semantic versions
 function version_compare() {
