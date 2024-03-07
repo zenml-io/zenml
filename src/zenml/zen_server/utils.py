@@ -349,6 +349,9 @@ def rate_limit_requests(
 
     Returns:
         Decorated function.
+
+    Raises:
+        ValueError: If both day_limit and minute_limit are None.
     """
     limiter = Limiter(
         key_func=get_ipaddr, enabled=server_config().rate_limit_enabled
