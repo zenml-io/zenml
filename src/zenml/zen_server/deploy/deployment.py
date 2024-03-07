@@ -94,5 +94,5 @@ class ServerDeployment(BaseModel):
         """
         return (
             self.status is not None
-            and self.status.status == ServiceState.RUNNING
+            and self.status.status == ServiceState.ACTIVE
         )

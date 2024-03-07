@@ -215,20 +215,20 @@ class SeldonDeploymentService(BaseDeploymentService):
 
         if deployment.is_available():
             return (
-                ServiceState.RUNNING,
+                ServiceState.ACTIVE,
                 f"Seldon Core deployment '{name}' is available",
             )
 
         if deployment.is_failed():
             return (
-                ServiceState.FAILED,
+                ServiceState.ERROR,
                 f"Seldon Core deployment '{name}' failed: "
                 f"{deployment.get_error()}",
             )
 
         pending_message = deployment.get_pending_message() or ""
         return (
-            ServiceState.INITIALIZING,
+            ServiceState.PENDING_STARTUP,
             "Seldon Core deployment is being created: " + pending_message,
         )
 

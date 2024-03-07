@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 def update_service_status(
     pre_status: Optional[ServiceState] = None,
     post_status: Optional[ServiceState] = None,
-    error_status: ServiceState = ServiceState.FAILED,
+    error_status: ServiceState = ServiceState.ERROR,
 ) -> Callable[[T], T]:
     """A decorator to update the service status before and after a method call.
 
@@ -278,7 +278,7 @@ class BaseService(BaseTypedModel):
                 f"Failed to update status for service '{self}': {e}",
                 exc_info=True,
             )
-            self.status.update_state(ServiceState.FAILED, str(e))
+            self.status.update_state(ServiceState.ERROR, str(e))
 
     def get_service_status_message(self) -> str:
         """Get a service status message.
@@ -310,7 +310,7 @@ class BaseService(BaseTypedModel):
         """
         time_remaining = timeout
         while True:
-            if self.admin_state == ServiceState.RUNNING and self.is_running:
+            if self.admin_state == ServiceState.ACTIVE and self.is_running:
                 return True
             if self.admin_state == ServiceState.INACTIVE and self.is_stopped:
                 return True
@@ -342,7 +342,7 @@ class BaseService(BaseTypedModel):
             responsive, if any are configured), otherwise False.
         """
         self.update_status()
-        return self.status.state == ServiceState.RUNNING and (
+        return self.status.state == ServiceState.ACTIVE and (
             not self.endpoint or self.endpoint.is_active()
         )
 
@@ -370,7 +370,7 @@ class BaseService(BaseTypedModel):
             True if the service is in a failure state, otherwise False.
         """
         self.update_status()
-        return self.status.state == ServiceState.FAILED
+        return self.status.state == ServiceState.ERROR
 
     def provision(self) -> None:
         """Provisions resources to run the service.
@@ -406,8 +406,8 @@ class BaseService(BaseTypedModel):
         self.config = config
 
     @update_service_status(
-        pre_status=ServiceState.INITIALIZING,
-        post_status=ServiceState.RUNNING,
+        pre_status=ServiceState.PENDING_STARTUP,
+        post_status=ServiceState.ACTIVE,
     )
     def start(self, timeout: int = 0) -> None:
         """Start the service and optionally wait for it to become active.
@@ -418,7 +418,7 @@ class BaseService(BaseTypedModel):
                 the service status.
         """
         with console.status(f"Starting service '{self}'.\n"):
-            self.admin_state = ServiceState.RUNNING
+            self.admin_state = ServiceState.ACTIVE
             self.provision()
             if timeout > 0:
                 if not self.poll_service_status(timeout):
@@ -428,7 +428,7 @@ class BaseService(BaseTypedModel):
                     )
 
     @update_service_status(
-        pre_status=ServiceState.TERMINATING,
+        pre_status=ServiceState.PENDING_SHUTDOWN,
         post_status=ServiceState.INACTIVE,
     )
     def stop(self, timeout: int = 0, force: bool = False) -> None:

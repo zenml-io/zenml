@@ -1126,13 +1126,13 @@ def get_service_state_emoji(state: "ServiceState") -> str:
     """
     from zenml.services.service_status import ServiceState
 
-    if state == ServiceState.RUNNING:
+    if state == ServiceState.ACTIVE:
         return ":white_check_mark:"
     if state == ServiceState.INACTIVE:
         return ":pause_button:"
-    if state == ServiceState.FAILED:
+    if state == ServiceState.ERROR:
         return ":heavy_exclamation_mark:"
-    if state == ServiceState.INITIALIZING:
+    if state == ServiceState.PENDING_STARTUP:
         return ":hourglass:"
     return ":hourglass_not_done:"
 

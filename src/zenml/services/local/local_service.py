@@ -281,7 +281,7 @@ class LocalDaemonService(BaseService):
             return ServiceState.INACTIVE, "service daemon is not running"
 
         # the daemon is running
-        return ServiceState.RUNNING, ""
+        return ServiceState.ACTIVE, ""
 
     def _get_daemon_cmd(self) -> Tuple[List[str], Dict[str, str]]:
         """Get the command to run the service daemon.

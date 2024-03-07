@@ -157,14 +157,14 @@ class TerraformService(BaseService):
         )
 
         if code == 0:
-            return (ServiceState.RUNNING, "The deployment is active.")
+            return (ServiceState.ACTIVE, "The deployment is active.")
         elif code == 2:
             return (
                 ServiceState.INACTIVE,
                 "The deployment isn't active or needs an update.",
             )
         else:
-            return (ServiceState.FAILED, f"Deployment error: \n{err}")
+            return (ServiceState.ERROR, f"Deployment error: \n{err}")
 
     def _update_service_config(self) -> None:
         """Update the service configuration file.
@@ -353,7 +353,7 @@ class TerraformService(BaseService):
                 If set to 0, the method will return immediately after checking
                 the service status.
         """
-        self.admin_state = ServiceState.RUNNING
+        self.admin_state = ServiceState.ACTIVE
         self.provision()
 
     def stop(self, timeout: int = 0, force: bool = False) -> None:
