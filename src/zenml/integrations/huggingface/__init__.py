@@ -26,7 +26,11 @@ class HuggingfaceIntegration(Integration):
     """Definition of Huggingface integration for ZenML."""
 
     NAME = HUGGINGFACE
-    REQUIREMENTS = ["transformers<=4.31", "datasets", "huggingface_hub>0.19.0"]
+    REQUIREMENTS = [
+        "transformers<=4.31",
+        "datasets",
+        "huggingface_hub>0.19.0",
+    ]
 
     @classmethod
     def activate(cls) -> None:

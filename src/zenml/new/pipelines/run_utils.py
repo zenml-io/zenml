@@ -1,4 +1,5 @@
 """Utility functions for running pipelines."""
+
 from collections import defaultdict
 from datetime import datetime
 from types import FunctionType

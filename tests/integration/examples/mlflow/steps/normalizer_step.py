@@ -27,6 +27,6 @@ def normalizer(
     Annotated[np.ndarray, "X_test_normed"],
 ]:
     """Normalize the values for all the images so they are between 0 and 1."""
-    x_train_normed = X_train / 255.0
-    x_test_normed = X_test / 255.0
+    x_train_normed = X_train / 16.0
+    x_test_normed = X_test / 16.0
     return x_train_normed, x_test_normed

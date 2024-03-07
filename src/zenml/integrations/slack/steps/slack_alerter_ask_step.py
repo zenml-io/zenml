@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Step that allows you to send messages to Slack and wait for a response."""
+
 from typing import Optional
 
 from zenml import get_step_context, step

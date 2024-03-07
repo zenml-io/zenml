@@ -49,7 +49,7 @@ class StackComponentSchema(NamedSchema, table=True):
 
     __tablename__ = "stack_component"
 
-    type: StackComponentType
+    type: str
     flavor: str
     configuration: bytes
     labels: Optional[bytes]
@@ -127,6 +127,8 @@ class StackComponentSchema(NamedSchema, table=True):
                 self.labels = base64.b64encode(
                     json.dumps(component_update.labels).encode("utf-8")
                 )
+            elif field == "type":
+                self.type = component_update.type.value
             else:
                 setattr(self, field, value)
 
@@ -151,7 +153,7 @@ class StackComponentSchema(NamedSchema, table=True):
             A `ComponentModel`
         """
         body = ComponentResponseBody(
-            type=self.type,
+            type=StackComponentType(self.type),
             flavor=self.flavor,
             user=self.user.to_model() if self.user else None,
             created=self.created,

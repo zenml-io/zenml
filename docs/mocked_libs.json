@@ -117,7 +117,6 @@
     "kfp_tekton",
     "kfp_tekton.compiler",
     "kfp_tekton.compiler.pipeline_utils",
-    "kserve",
     "kubernetes",
     "kubernetes.client",
     "kubernetes.client.rest",

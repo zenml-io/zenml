@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML servers."""
 
+from typing import Dict
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -72,6 +73,14 @@ class ServerModel(BaseModel):
     )
     auth_scheme: AuthScheme = Field(
         title="The authentication scheme that the server is using.",
+    )
+    base_url: str = Field(
+        "",
+        title="The Base URL of the server.",
+    )
+    metadata: Dict[str, str] = Field(
+        {},
+        title="The metadata associated with the server.",
     )
 
     def is_local(self) -> bool:

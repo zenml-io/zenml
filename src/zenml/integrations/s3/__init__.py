@@ -42,7 +42,7 @@ class S3Integration(Integration):
     # here to avoid the dependency resolution overhead.
     REQUIREMENTS = [
         "s3fs>2022.3.0",
-        "boto3<=1.26.76",
+        "boto3",
         # The following dependencies are only required for the AWS connector.
         "aws-profile-manager",
     ]

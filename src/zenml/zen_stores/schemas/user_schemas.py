@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -65,6 +65,7 @@ class UserSchema(NamedSchema, table=True):
     """SQL Model for users."""
 
     __tablename__ = "user"
+    __table_args__ = (UniqueConstraint("name", "is_service_account"),)
 
     is_service_account: bool = Field(default=False)
     full_name: str
@@ -131,9 +132,9 @@ class UserSchema(NamedSchema, table=True):
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="user",
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(back_populates="user")
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(back_populates="user")
+    )
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
     ] = Relationship(back_populates="user")

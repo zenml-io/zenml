@@ -14,7 +14,8 @@
 from typing import Tuple
 
 import numpy as np
-import tensorflow as tf
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
 from typing_extensions import Annotated
 
 from zenml import step
@@ -30,6 +31,10 @@ def importer() -> (
     ]
 ):
     """Download the MNIST data store it as an artifact."""
-    train, test = tf.keras.datasets.mnist.load_data()
-    (X_train, y_train), (X_test, y_test) = train, test
+    digits = datasets.load_digits()
+    X = digits.images.reshape((len(digits.images), -1))
+    y = digits.target
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, shuffle=False
+    )
     return X_train, X_test, y_train, y_test

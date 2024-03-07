@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
+
 from abc import ABC
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union

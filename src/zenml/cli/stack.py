@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
+
 import getpass
 import os
 from pathlib import Path
@@ -248,13 +249,13 @@ def register_stack(
         if step_operator:
             components[StackComponentType.STEP_OPERATOR] = step_operator
         if experiment_tracker:
-            components[
-                StackComponentType.EXPERIMENT_TRACKER
-            ] = experiment_tracker
+            components[StackComponentType.EXPERIMENT_TRACKER] = (
+                experiment_tracker
+            )
         if container_registry:
-            components[
-                StackComponentType.CONTAINER_REGISTRY
-            ] = container_registry
+            components[StackComponentType.CONTAINER_REGISTRY] = (
+                container_registry
+            )
 
         try:
             created_stack = client.create_stack(
@@ -1365,7 +1366,7 @@ def _get_deployment_params_interactively(
     "-md",
     "model_deployer",
     required=False,
-    type=click.Choice(["kserve", "seldon"]),
+    type=click.Choice(["mlflow", "seldon"]),
     help="The flavor of model deployer to use. ",
 )
 @click.option(

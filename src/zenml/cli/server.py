@@ -130,7 +130,7 @@ def up(
     gc = GlobalConfiguration()
 
     # Raise an error if the client is already connected to a remote server.
-    if gc.store is not None and gc.store.type == StoreType.REST:
+    if gc.store_configuration.type == StoreType.REST:
         if not gc.zen_store.is_local_store():
             cli_utils.error(
                 "Your ZenML client is already connected to a remote server. If "
@@ -196,8 +196,6 @@ def up(
             f"'{DEFAULT_USERNAME}' username and an empty password."
         )
     server = deployer.deploy_server(server_config)
-
-    assert gc.store is not None
 
     if not blocking:
         from zenml.constants import (
@@ -495,19 +493,16 @@ def status() -> None:
     gc = GlobalConfiguration()
     client = Client()
 
-    store_cfg = gc.store
+    store_cfg = gc.store_configuration
 
     # Write about the current ZenML server
     cli_utils.declare("-----ZenML Server Status-----")
-    if store_cfg is not None:
-        if gc.uses_default_store():
-            cli_utils.declare(
-                f"Connected to a local ZenML database: ('{store_cfg.url}')"
-            )
-        else:
-            cli_utils.declare(
-                f"Connected to a ZenML server: '{store_cfg.url}'"
-            )
+    if gc.uses_default_store():
+        cli_utils.declare(
+            f"Connected to a local ZenML database: ('{store_cfg.url}')"
+        )
+    else:
+        cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")
 
     # Write about the active entities
     scope = "repository" if client.uses_local_configuration else "global"
@@ -815,11 +810,7 @@ def disconnect_server() -> None:
 
     gc = GlobalConfiguration()
 
-    if gc.store is None:
-        cli_utils.warning("No ZenML server is currently connected.")
-        return
-
-    url = gc.store.url
+    url = gc.store_configuration.url
     store_type = BaseZenStore.get_store_type(url)
     if store_type == StoreType.REST:
         deployer = ServerDeployer()

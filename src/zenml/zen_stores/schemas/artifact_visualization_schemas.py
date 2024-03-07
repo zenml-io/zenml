@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact visualization table."""
+
 from typing import Any
 from uuid import UUID
 
@@ -36,7 +37,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     __tablename__ = "artifact_visualization"
 
     # Fields
-    type: VisualizationType
+    type: str
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
 
     # Foreign Keys
@@ -70,7 +71,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
             The `ArtifactVisualizationSchema`.
         """
         return cls(
-            type=artifact_visualization_request.type,
+            type=artifact_visualization_request.type.value,
             uri=artifact_visualization_request.uri,
             artifact_version_id=artifact_version_id,
         )
@@ -94,7 +95,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
             The `Visualization`.
         """
         body = ArtifactVisualizationResponseBody(
-            type=self.type,
+            type=VisualizationType(self.type),
             uri=self.uri,
             created=self.created,
             updated=self.updated,

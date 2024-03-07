@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML store configurations."""
 
-from pathlib import PurePath
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, root_validator
@@ -46,40 +45,6 @@ class StoreConfiguration(BaseModel):
     url: str
     secrets_store: Optional[SecretsStoreConfiguration] = None
     backup_secrets_store: Optional[SecretsStoreConfiguration] = None
-
-    @classmethod
-    def copy_configuration(
-        cls,
-        config: "StoreConfiguration",
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> "StoreConfiguration":
-        """Create a copy of the store config using a different configuration path.
-
-        This method is used to create a copy of the store configuration that can
-        be loaded using a different configuration path or in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.).
-
-        Args:
-            config: The store configuration to copy.
-            config_path: new path where the configuration copy will be loaded
-                from.
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-
-        Returns:
-            A new store configuration object that reflects the new configuration
-            path.
-        """
-        return config.copy()
 
     @classmethod
     def supports_url_scheme(cls, url: str) -> bool:
