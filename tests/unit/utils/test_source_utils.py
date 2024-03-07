@@ -107,15 +107,10 @@ def test_basic_source_resolving(mocker):
     assert source_utils.resolve(int) == Source(
         module=int.__module__, attribute=int.__name__, type=SourceType.BUILTIN
     )
-    if sys.platform == "win32":
-        # On Windows, defaultdict might be classified as SourceType.UNKNOWN
-        expected_type = SourceType.UNKNOWN
-    else:
-        expected_type = SourceType.BUILTIN
     assert source_utils.resolve(defaultdict) == Source(
         module=defaultdict.__module__,
         attribute=defaultdict.__name__,
-        type=expected_type,
+        type=SourceType.BUILTIN,
     )
     assert source_utils.resolve(source_utils) == Source(
         module=source_utils.__name__,
@@ -214,12 +209,9 @@ def test_module_type_detection(mocker):
     assert source_utils.get_source_type(builtin_module) == SourceType.BUILTIN
 
     standard_lib_module = sys.modules[defaultdict.__module__]
-    if sys.platform == "win32":
-        # On Windows, the module containing defaultdict might be classified as SourceType.DISTRIBUTION_PACKAGE
-        expected_type = SourceType.DISTRIBUTION_PACKAGE
-    else:
-        expected_type = SourceType.BUILTIN
-    assert source_utils.get_source_type(standard_lib_module) == expected_type
+    assert (
+        source_utils.get_source_type(standard_lib_module) == SourceType.BUILTIN
+    )
     assert source_utils.is_standard_lib_file(standard_lib_module.__file__)
 
     internal_module = sys.modules[source_utils.__name__]
