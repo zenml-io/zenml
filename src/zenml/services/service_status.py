@@ -22,6 +22,7 @@ from zenml.utils.typed_model import BaseTypedModel
 logger = get_logger(__name__)
 
 
+# TODO: Deal with service status breaking changes
 class ServiceState(StrEnum):
     """Possible states for the service and service endpoint."""
 
