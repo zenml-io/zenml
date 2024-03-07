@@ -31,8 +31,6 @@ jobs:
           uv pip install --system darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
-        env:
-          VIRTUAL_ENV: ./.venv
   sqlite-db-migration-testing:
     runs-on: arc-runner-set
     env:
