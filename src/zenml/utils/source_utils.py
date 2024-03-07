@@ -15,7 +15,6 @@
 
 import contextlib
 import importlib
-import importlib.util
 import inspect
 import os
 import site
@@ -287,54 +286,12 @@ def is_standard_lib_file(file_path: str) -> bool:
         file_path: The file path to check.
 
     Returns:
-        True if the file belongs to the Python standard library, False otherwise.
+        True if the file belongs to the Python standard library, False
+        otherwise.
     """
-    # Normalize file path for reliable comparison
-    normalized_file_path = Path(file_path).resolve()
-
-    # Gather possible locations of the standard library
-    stdlib_paths = set()
-    # Default library path
-    stdlib_paths.add(Path(get_python_lib(standard_lib=True)).resolve())
-    # Other common standard library locations, considering virtual environments
-    stdlib_paths.update(
-        Path(p).resolve() for p in sys.path if "site-packages" not in p
-    )
-
-    # Check if file path is within any known standard library path
-    if any(
-        normalized_file_path.is_relative_to(stdlib_path)
-        for stdlib_path in stdlib_paths
-    ):
-        return True
-
-    # As a fallback, check if the module is a built-in module
-    module_name = Path(file_path).stem
-    try:
-        spec = importlib.util.find_spec(module_name)
-        if spec and (
-            spec.origin == "built-in"
-            or (
-                spec.loader is not None
-                and "built-in" in spec.loader.__class__.__name__.lower()
-            )
-        ):
-            return True
-    except (ImportError, AttributeError):
-        pass
-
-    # Fallback to inspect (for dynamically loaded modules, etc.)
-    try:
-        source_file = inspect.getsourcefile(normalized_file_path)
-        if source_file and Path(source_file).resolve().is_file():
-            return any(
-                Path(source_file).resolve().is_relative_to(p)
-                for p in stdlib_paths
-            )
-    except Exception:
-        pass
-
-    return False
+    stdlib_root = get_python_lib(standard_lib=True)
+    logger.debug("Standard library root: %s", stdlib_root)
+    return Path(stdlib_root).resolve() in Path(file_path).resolve().parents
 
 
 def is_distribution_package_file(file_path: str, module_name: str) -> bool:
