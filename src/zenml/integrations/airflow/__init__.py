@@ -39,8 +39,8 @@ class AirflowIntegration(Integration):
         # SQLModel. Otherwise, the initial installation of ZenML installs
         # a higher version SQLModel and a version mismatch is created.
         "sqlmodel>=0.0.9,<=0.0.16",
-        # Unless we pin this, zenml up fails due to a version mismatch.
-        "starlette==0.27.0"
+        # Unless we don't limit this, zenml up fails due to a version mismatch.
+        "starlette<=0.27.0"
     ]
 
     @classmethod
