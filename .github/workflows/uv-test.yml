@@ -63,20 +63,6 @@ jobs:
         python -c "import collections; print(f'collections version: {collections.__version__}')"
         python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
 
-    - name: Install dependencies with uv
-      shell: bash
-      run: |
-        pip install uv
-        uv venv uvtest
-        source uvtest/bin/activate
-        uv pip install --system -r integration-requirements.txt
-
-    - name: Log collections version and defaultdict type with pip
-      shell: bash
-      run: |
-        python -c "import collections; print(f'collections version: {collections.__version__}')"
-        python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
-
         python -c "import sys; print(f'Python executable: {sys.executable}')"
         python -c "import sys; print(f'Module search paths: {sys.path}')"
 
