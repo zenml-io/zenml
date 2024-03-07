@@ -120,15 +120,27 @@ def list_users(ctx: click.Context, **kwargs: Any) -> None:
     required=False,
     type=str,
 )
+@click.option(
+    "--is_admin",
+    is_flag=True,
+    help=(
+        "Whether the user should be an admin. If not specified, the user will "
+        "be a regular user."
+    ),
+    required=False,
+    default=False,
+)
 def create_user(
     user_name: str,
     password: Optional[str] = None,
+    is_admin: bool = False,
 ) -> None:
     """Create a new user.
 
     Args:
         user_name: The name of the user to create.
         password: The password of the user to create.
+        is_admin: Whether the user should be an admin.
     """
     client = Client()
     if not password:
@@ -146,7 +158,9 @@ def create_user(
             )
 
     try:
-        new_user = client.create_user(name=user_name, password=password)
+        new_user = client.create_user(
+            name=user_name, password=password, is_admin=is_admin
+        )
 
         cli_utils.declare(f"Created user '{new_user.name}'.")
     except EntityExistsError as err:
@@ -191,11 +205,30 @@ def create_user(
     required=False,
     help="New user email.",
 )
+@click.option(
+    "--password",
+    "-p",
+    "updated_password",
+    type=str,
+    required=False,
+    help="New user password.",
+)
+@click.option(
+    "--is_admin",
+    "-a",
+    "updated_is_admin",
+    is_flag=True,
+    required=False,
+    default=False,
+    help="Whether the user should be an admin.",
+)
 def update_user(
     user_name_or_id: str,
     updated_name: Optional[str] = None,
     updated_full_name: Optional[str] = None,
     updated_email: Optional[str] = None,
+    updated_password: Optional[str] = None,
+    updated_is_admin: Optional[bool] = None,
 ) -> None:
     """Create a new user.
 
@@ -204,13 +237,27 @@ def update_user(
         updated_name: The name of the user to create.
         updated_full_name: The name of the user to create.
         updated_email: The name of the user to create.
+        updated_password: The name of the user to create.
+        updated_is_admin: Whether the user should be an admin.
     """
     try:
+        current_user = Client().get_user(
+            user_name_or_id, allow_name_prefix_match=False
+        )
+        if current_user.is_admin and not updated_is_admin:
+            confirmation = cli_utils.confirmation(
+                f"Currently user `{current_user.name}` is an admin, are you sure you to make they regular user?"
+            )
+            if not confirmation:
+                cli_utils.declare("User update canceled.")
+                return
         Client().update_user(
             name_id_or_prefix=user_name_or_id,
             updated_name=updated_name,
             updated_full_name=updated_full_name,
             updated_email=updated_email,
+            updated_password=updated_password,
+            updated_is_admin=updated_is_admin,
         )
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
