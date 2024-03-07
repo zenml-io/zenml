@@ -16,7 +16,6 @@ import random
 import time
 import uuid
 from contextlib import ExitStack as does_not_raise
-from contextlib import contextmanager
 from datetime import datetime
 from string import ascii_lowercase
 from threading import Thread
@@ -383,29 +382,6 @@ def test_deleting_default_workspace_fails():
 
 class TestAdminUser:
     default_pwd = "".join(random.choices(ascii_lowercase, k=10))
-    test_user = "test_user"
-
-    @contextmanager
-    def _login(
-        self,
-        zen_store: RestZenStore,
-        user_name: str,
-        password: str,
-    ):
-        zen_store.clear_session()
-        orig_user_name = zen_store.config.username
-        zen_store.config.username = user_name
-        orig_password = zen_store.config.password
-        zen_store.config.password = password
-        zen_store.session
-
-        try:
-            yield
-        finally:
-            zen_store.clear_session()
-            zen_store.config.username = orig_user_name
-            zen_store.config.password = orig_password
-            zen_store.session
 
     def test_creation_as_admin_and_non_admin(self):
         """Tests creating a user as an admin and as a non-admin."""
@@ -418,7 +394,7 @@ class TestAdminUser:
             with pytest.raises(IllegalOperationError):
                 zen_store.create_user(
                     UserRequest(
-                        name=sample_name(self.test_user),
+                        name=sample_name("test_user"),
                         password=self.default_pwd,
                     )
                 )
@@ -434,7 +410,9 @@ class TestAdminUser:
             assert users.total >= 2
 
             # this is limited to self only for non-admin users
-            with LoginContext(user_name=test_user.name, password=self.default_pwd):
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
                 zen_store = Client().zen_store
                 users = zen_store.list_users(UserFilter())
                 assert users.total == 1
@@ -451,7 +429,9 @@ class TestAdminUser:
             assert user.id == test_user.id
 
             # this is not allowed for non-admin users
-            with LoginContext(user_name=test_user.name, password=self.default_pwd):
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
                 zen_store = Client().zen_store
                 with pytest.raises(IllegalOperationError):
                     zen_store.get_user(DEFAULT_USERNAME)
@@ -481,13 +461,15 @@ class TestAdminUser:
                     )
 
             # user is allowed to update itself
-            with LoginContext(user_name=test_user.name, password=self.default_pwd):
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
                 zen_store = Client().zen_store
                 user = zen_store.update_user(
                     test_user.id,
                     UserUpdate(full_name="bar@foo.io"),
                 )
-                    
+
                 assert user.full_name == "bar@foo.io"
 
     def test_deactivate_users(self):
@@ -498,9 +480,10 @@ class TestAdminUser:
         zen_store: RestZenStore = Client().zen_store
         with UserContext(password=self.default_pwd) as test_user:
             with UserContext() as test_user2:
-
                 # this is not allowed for non-admin users
-                with LoginContext(user_name=test_user.name, password=self.default_pwd):
+                with LoginContext(
+                    user_name=test_user.name, password=self.default_pwd
+                ):
                     new_zen_store: RestZenStore = Client().zen_store
                     with pytest.raises(IllegalOperationError):
                         new_zen_store.put(
@@ -521,9 +504,10 @@ class TestAdminUser:
         zen_store: RestZenStore = Client().zen_store
         with UserContext(password=self.default_pwd) as test_user:
             with UserContext() as test_user2:
-
                 # this is not allowed for non-admin users
-                with LoginContext(user_name=test_user.name, password=self.default_pwd):
+                with LoginContext(
+                    user_name=test_user.name, password=self.default_pwd
+                ):
                     new_zen_store: RestZenStore = Client().zen_store
                     with pytest.raises(IllegalOperationError):
                         new_zen_store.delete_user(test_user2.id)
