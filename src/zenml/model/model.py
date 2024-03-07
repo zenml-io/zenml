@@ -731,6 +731,10 @@ class Model(BaseModel):
                 logger.info(
                     f"Model version dashboard URL: {model_version_url}"
                 )
+            else:
+                logger.info(
+                    "You can now view your Models in the ZenML dashboard using ZenML Cloud."
+                )
         self._id = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number

@@ -111,11 +111,15 @@ def get_model_version_url(model_version_id: str) -> Optional[str]:
     Returns:
         the URL to the model version if the dashboard is available, else None.
     """
-    base_url = get_base_url()
-    if base_url:
-        # TODO MODEL_VERSIONS resolves to /model_versions but on the
-        # cloud, the URL is /model-versions. This should be fixed?
-        return f"{base_url}{constants.MODEL_VERSIONS}/{model_version_id}"
+    server_config = ServerConfiguration.get_server_config()
+    # if organization_id exists as key in server_config.metadata
+    # only then output a URL.
+    if server_config.metadata.get("organization_id"):
+        base_url = get_base_url()
+        if base_url:
+            # TODO MODEL_VERSIONS resolves to /model_versions but on the
+            # cloud, the URL is /model-versions. This should be fixed?
+            return f"{base_url}{constants.MODEL_VERSIONS}/{model_version_id}"
     return None
 
 
