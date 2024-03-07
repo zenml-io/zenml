@@ -49,9 +49,7 @@ def test_ZenMLCLI_formatter():
     assert isinstance(formatter, ZenFormatter)
 
 
-def test_cli_sets_custom_source_root_if_outside_of_repository(
-    clean_client, mocker
-):
+def test_cli_sets_custom_source_root_if_outside_of_repository(mocker):
     """Tests that the CLI root group sets a custom source root if outside of a
     ZenML repository."""
     mock_set_custom_source_root = mocker.patch(
