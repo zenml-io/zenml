@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Hugging Face model deployer flavor."""
+
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import BaseModel
