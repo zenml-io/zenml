@@ -90,6 +90,7 @@ zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 run_tests_for_version current_branch_mariadb
 
 zenml disconnect
+docker rm -f mariadb
 deactivate
 
 # Function to compare semantic versions
@@ -118,6 +119,11 @@ function version_compare() {
 
 # Start fresh again for this part
 rm -rf ~/.config/zenml
+
+# run a fresh mariadb instance in docker
+docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:10.6
+# mariadb takes a while to start up
+sleep $DB_STARTUP_DELAY
 
 # Test sequential migrations across multiple versions
 echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
