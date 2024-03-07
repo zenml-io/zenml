@@ -154,6 +154,7 @@ class ServerConfiguration(BaseModel):
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
     )
 
+    rate_limit_enabled: bool = False
     login_rate_limit_minute: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE
     login_rate_limit_day: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY
 

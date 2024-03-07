@@ -16,11 +16,22 @@
 import inspect
 import os
 from functools import wraps
-from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 from urllib.parse import urlparse
 
+from fastapi import Response
 from pydantic import BaseModel, ValidationError
 from slowapi import Limiter
+from slowapi.util import get_ipaddr
 from starlette.requests import Request
 
 from zenml.config.global_config import GlobalConfiguration
@@ -42,6 +53,10 @@ from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+if TYPE_CHECKING:
+    from zenml.zen_server.routers.auth_endpoints import OAuthLoginRequestForm
+
 
 logger = get_logger(__name__)
 
@@ -320,43 +335,60 @@ def handle_exceptions(func: F) -> F:
     return cast(F, decorated)
 
 
-def ignore_limiter_on_success(
-    limiter: Limiter, api_path: str
+def rate_limit_requests(
+    api_route: str,
+    day_limit: Optional[int] = None,
+    minute_limit: Optional[int] = None,
 ) -> Callable[..., Any]:
     """Decorator to handle exceptions in the API.
 
     Args:
-        limiter: Limiter to use.
-        api_path: API path to use.
+        api_route: API route.
+        day_limit: Number of requests allowed per day.
+        minute_limit: Number of requests allowed per minute.
 
     Returns:
         Decorated function.
     """
+    limiter = Limiter(
+        key_func=get_ipaddr, enabled=server_config().rate_limit_enabled
+    )
+    if day_limit is None and minute_limit is None:
+        raise ValueError("Pass either day or minuter limits, or both.")
+    limit_str = ""
+    if day_limit:
+        limit_str += f"{day_limit}/day;"
+    if minute_limit:
+        limit_str += f"{minute_limit}/minute"
 
     def decorator(func: F) -> F:
+        @limiter.limit(limit_str)
         @wraps(func)
-        def decorated(*args: Any, **kwargs: Any) -> Any:
+        def decorated(
+            request: Request,
+            response: Response,
+            auth_form_data: "OAuthLoginRequestForm",
+        ) -> Any:
             try:
-                ret = func(*args, **kwargs)
+                ret = func(
+                    request=request,
+                    response=response,
+                    auth_form_data=auth_form_data,
+                )
             except Exception as e:
                 raise e
             else:
-                for a in list(args) + list(kwargs.values()):
-                    if isinstance(a, Request):
-                        request = a
-                        identifier = limiter._key_func(request)
-                        if "memory" not in (
-                            limiter._storage.STORAGE_SCHEME or []
-                        ):
-                            raise NotImplementedError(
-                                "Limiter not running in memory is not yet supported."
-                            )
-                        for k in limiter._storage.storage.keys():  # type: ignore[union-attr]
-                            if api_path in k:
-                                _, identifier_ = k.split("//")[0].split("/")
-                                if identifier_ == identifier:
-                                    limiter._storage.storage[k] -= 1  # type: ignore[union-attr]
-                        break
+                if server_config().rate_limit_enabled:
+                    identifier = limiter._key_func(request)
+                    if "memory" not in (limiter._storage.STORAGE_SCHEME or []):
+                        raise NotImplementedError(
+                            "Limiter not running in memory is not yet supported."
+                        )
+                    for k in limiter._storage.storage.keys():  # type: ignore[union-attr]
+                        if api_route in k:
+                            _, identifier_ = k.split("//")[0].split("/")
+                            if identifier_ == identifier:
+                                limiter._storage.storage[k] -= 1  # type: ignore[union-attr]
             return ret
 
         return cast(F, decorated)
