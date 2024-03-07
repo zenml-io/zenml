@@ -54,7 +54,9 @@ jobs:
       - name: Log collections version and defaultdict type with pip
         shell: bash
         run: |
-          python -c "import collections; print(f'collections version: {collections.__version__}')"
+          python -c "import sys; print(f'Python version: {sys.version}')"
+          python -c "import collections; print(f'collections module file path: {collections.__file__}')"
+          python -c "import collections; print(f'collections module name: {collections.__name__}')"
           python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
           python -c "import sys; print(f'Python executable: {sys.executable}')"
           python -c "import sys; print(f'Module search paths: {sys.path}')"
@@ -109,7 +111,9 @@ jobs:
       - name: Log collections version and defaultdict type with uv
         shell: bash
         run: |-
-          python -c "import collections; print(f'collections version: {collections.__version__}')"
+          python -c "import sys; print(f'Python version: {sys.version}')"
+          python -c "import collections; print(f'collections module file path: {collections.__file__}')"
+          python -c "import collections; print(f'collections module name: {collections.__name__}')"
           python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
           python -c "import sys; print(f'Python executable: {sys.executable}')"
           python -c "import sys; print(f'Module search paths: {sys.path}')"
