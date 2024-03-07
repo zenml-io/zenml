@@ -17,6 +17,7 @@ from typing import Optional
 
 from zenml import constants
 from zenml.client import Client
+from zenml.config.server_config import ServerConfiguration
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
@@ -34,6 +35,13 @@ def get_base_url() -> Optional[str]:
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
+        # if the server config has a base URL use that
+        server_config = ServerConfiguration.get_server_config()
+        if server_config.base_url:
+            return (
+                server_config.base_url
+                + f"{constants.WORKSPACES}/{client.active_workspace.name}"
+            )
         url = (
             client.zen_store.url
             + f"{constants.WORKSPACES}/{client.active_workspace.name}"
@@ -91,6 +99,23 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
             return f"{base_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
         else:
             return f"{base_url}/all-runs/{run.id}/dag"
+    return None
+
+
+def get_model_version_url(model_version_id: str) -> Optional[str]:
+    """Function to get the dashboard URL of a given model version.
+
+    Args:
+        model_version_id: the id of the model version.
+
+    Returns:
+        the URL to the model version if the dashboard is available, else None.
+    """
+    base_url = get_base_url()
+    if base_url:
+        # TODO MODEL_VERSIONS resolves to /model_versions but on the
+        # cloud, the URL is /model-versions. This should be fixed?
+        return f"{base_url}{constants.MODEL_VERSIONS}/{model_version_id}"
     return None
 
 
