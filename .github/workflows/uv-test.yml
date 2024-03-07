@@ -24,7 +24,7 @@ jobs:
     - name: gather requirements
       shell: bash
       run: |
-        pip install --system "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
+        pip install -e '.[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]'
 
         # figure out the python version
         python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
@@ -95,7 +95,7 @@ jobs:
       shell: bash
       run: |
         pip install uv
-        uv pip install --system "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
+        uv pip install --system -e '.[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]'
 
         # figure out the python version
         python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
