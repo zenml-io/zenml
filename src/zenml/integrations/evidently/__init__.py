@@ -54,7 +54,13 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently>0.2.6,<0.4.5"]  # supports pyyaml 6
+    REQUIREMENTS = [
+        "evidently>0.2.6,<0.4.5",  # supports pyyaml 6
+        # We need to add this as an extra dependency to manually downgrade
+        # SQLModel. Otherwise, the initial installation of ZenML installs
+        # a higher version SQLModel and a version mismatch is created.
+        "sqlmodel>=0.0.9,<=0.0.16"
+    ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

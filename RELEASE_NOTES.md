@@ -1,4 +1,38 @@
 <!-- markdown-link-check-disable -->
+# 0.55.5
+
+This patch contains a number of bug fixes and security improvements.
+
+We improved the isolation of artifact stores so that various artifacts 
+cannot be stored or accessed outside of the configured artifact store scope.
+Such unsafe operations are no longer allowed. This may have an
+impact on existing codebases if you have used unsafe file operations in the past.
+To illustrate such a side effect, let's consider a remote S3 
+artifact store is configured for the path `s3://some_bucket/some_sub_folder`. 
+and in the code you use 
+`artifact_store.open("s3://some_bucket/some_other_folder/dummy.txt","w")` 
+-> this operation is considered unsafe as it accesses the data outside the scope 
+of the artifact store. If you really need this to achieve your goals, 
+consider switching to `s3fs` or similar libraries for such cases.
+
+Also with this release, the server global configuration is no longer stored on the 
+server file system to prevent exposure of sensitive information.
+
+User entities are now uniquely constrained to prevent the creation of duplicate 
+users under certain race conditions.
+
+## What's Changed
+* Change runnerset name to ubuntu-runners by @safoinme in https://github.com/zenml-io/zenml/pull/2489
+* Allow latest `ruff` versions by @strickvl in https://github.com/zenml-io/zenml/pull/2487
+* Uniquely constrained users table by @avishniakov in https://github.com/zenml-io/zenml/pull/2483
+* Add option to add base URL for zenml server (with support for cloud) by @wjayesh in https://github.com/zenml-io/zenml/pull/2464
+* Improve Artifact Store isolation by @avishniakov in https://github.com/zenml-io/zenml/pull/2490
+* Don't write the global config to file on server by @stefannica in https://github.com/zenml-io/zenml/pull/2491
+* Add versions for DB migration testing by @strickvl in https://github.com/zenml-io/zenml/pull/2486
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.55.4...0.55.5
+
 # 0.55.4
 
 This release brings a host of enhancements and fixes across the board, including
