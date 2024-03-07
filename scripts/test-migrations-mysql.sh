@@ -207,16 +207,9 @@ done
 # Sort the versions based on semantic versioning rules
 IFS=$'\n' MIGRATION_VERSIONS=($(sort -t. -k 1,1n -k 2,2n -k 3,3n <<<"${MIGRATION_VERSIONS[*]}"))
 
-# echo the sorted list of migraton versions
-# add some padding so it stands out in logs
-echo "============================="
-echo "============================="
-echo "============================="
+# Echo the sorted list of migration versions
 echo "============================="
 echo "TESTING MIGRATION_VERSIONS: ${MIGRATION_VERSIONS[@]}"
-echo "============================="
-echo "============================="
-echo "============================="
 echo "============================="
 
 for i in "${!MIGRATION_VERSIONS[@]}"; do
@@ -228,9 +221,9 @@ for i in "${!MIGRATION_VERSIONS[@]}"; do
     # Install the specific version
     pip3 install -U pip setuptools wheel
 
-    git checkout release/$VERSION
+    git checkout release/${MIGRATION_VERSIONS[$i]}
     pip3 install -e ".[templates,server]"
-    # handles unpinned sqlmodel dependency in older versions
+    # Handles unpinned sqlmodel dependency in older versions
     pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1" importlib_metadata
 
     # Get the major and minor version of Python
@@ -241,7 +234,7 @@ for i in "${!MIGRATION_VERSIONS[@]}"; do
     fi
 
     # Run the tests for this version
-    run_tests_for_version $VERSION
+    run_tests_for_version ${MIGRATION_VERSIONS[$i]}
 
     if [ "$1" == "mysql" ]; then
         zenml disconnect
