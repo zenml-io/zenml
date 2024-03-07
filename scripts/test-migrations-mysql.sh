@@ -187,6 +187,15 @@ function version_compare() {
 # Start fresh again for this part
 rm -rf ~/.config/zenml
 
+# fresh mysql for sequential testing
+if [ "$1" == "mysql" ]; then
+    echo "===== Testing MySQL ====="
+    # run a mysql instance in docker
+    docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:latest
+    # mysql takes a while to start up
+    sleep $DB_STARTUP_DELAY
+fi
+
 # Test sequential migrations across multiple versions
 echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
 set -e
