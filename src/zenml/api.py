@@ -17,7 +17,6 @@ Everything defined/imported here should be highly import-optimized so we don't
 slow down the CLI.
 """
 
-
 from typing import Optional
 
 from zenml.logger import get_logger

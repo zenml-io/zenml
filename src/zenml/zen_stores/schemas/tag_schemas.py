@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List
 from uuid import UUID
@@ -109,7 +108,11 @@ class TagSchema(NamedSchema, table=True):
             The updated `TagSchema`.
         """
         for field, value in update.dict(exclude_unset=True).items():
-            setattr(self, field, value)
+            if field == "color":
+                setattr(self, field, value.value)
+            else:
+                setattr(self, field, value)
+
         self.updated = datetime.utcnow()
         return self
 

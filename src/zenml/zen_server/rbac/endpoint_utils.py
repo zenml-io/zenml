@@ -1,4 +1,5 @@
 """High-level helper functions to write endpoints with RBAC."""
+
 from typing import Any, Callable, TypeVar, Union
 from uuid import UUID
 

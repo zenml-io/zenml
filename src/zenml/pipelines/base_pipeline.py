@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Legacy ZenML pipeline class definition."""
+
 import inspect
 from abc import ABC, abstractmethod
 from types import FunctionType

@@ -151,9 +151,9 @@ class BaseServiceMeta(BaseTypedModelMeta):
                     "`service_type` is a reserved attribute name for BaseService "
                     "subclasses"
                 )
-            dct.setdefault("__annotations__", dict())[
-                "service_type"
-            ] = ServiceType
+            dct.setdefault("__annotations__", dict())["service_type"] = (
+                ServiceType
+            )
             dct["service_type"] = Field(service_type, allow_mutation=False)
 
         cls = cast(Type["BaseService"], super().__new__(mcs, name, bases, dct))

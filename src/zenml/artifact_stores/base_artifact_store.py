@@ -12,8 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """The base interface to extend the ZenML artifact store."""
+
+import inspect
 import textwrap
 from abc import abstractmethod
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -43,50 +46,93 @@ logger = get_logger(__name__)
 PathType = Union[bytes, str]
 
 
-def _sanitize_potential_path(potential_path: Any) -> Any:
-    """Sanitizes the input if it is a path.
-
-    If the input is a **remote** path, this function replaces backslash path
-    separators by forward slashes.
-
-    Args:
-        potential_path: Value that potentially refers to a (remote) path.
-
-    Returns:
-        The original input or a sanitized version of it in case of a remote
-        path.
-    """
-    if isinstance(potential_path, bytes):
-        path = fileio.convert_to_str(potential_path)
-    elif isinstance(potential_path, str):
-        path = potential_path
-    else:
-        # Neither string nor bytes, this is not a path
-        return potential_path
-
-    if io_utils.is_remote(path):
-        # If we have a remote path, replace windows path separators with
-        # slashes
-        import ntpath
-        import posixpath
-
-        path = path.replace(ntpath.sep, posixpath.sep)
-
-    return path
-
-
-def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
+class _sanitize_paths:
     """Sanitizes path inputs before calling the original function.
 
+    Extra decoration layer is needed to pass in fixed artifact store root
+    path for static methods that are called on filesystems directly.
+
     Args:
-        _func: The function for which to sanitize the inputs.
+        func: The function to decorate.
+        fixed_root_path: The fixed artifact store root path.
+        is_static: Whether the function is static or not.
 
     Returns:
         Function that calls the input function with sanitized path inputs.
     """
 
-    def inner_function(*args: Any, **kwargs: Any) -> Any:
-        """Inner function.
+    def __init__(self, func: Callable[..., Any], fixed_root_path: str) -> None:
+        """Initializes the decorator.
+
+        Args:
+            func: The function to decorate.
+            fixed_root_path: The fixed artifact store root path.
+        """
+        self.func = func
+        self.fixed_root_path = fixed_root_path
+
+        self.path_args: List[int] = []
+        self.path_kwargs: List[str] = []
+        for i, param in enumerate(
+            inspect.signature(self.func).parameters.values()
+        ):
+            if param.annotation == PathType:
+                self.path_kwargs.append(param.name)
+                if param.default == inspect.Parameter.empty:
+                    self.path_args.append(i)
+
+    def _validate_path(self, path: str) -> None:
+        """Validates a path.
+
+        Args:
+            path: The path to validate.
+
+        Raises:
+            FileNotFoundError: If the path is outside of the artifact store
+                bounds.
+        """
+        if not path.startswith(self.fixed_root_path):
+            raise FileNotFoundError(
+                f"File `{path}` is outside of "
+                f"artifact store bounds `{self.fixed_root_path}`"
+            )
+
+    def _sanitize_potential_path(self, potential_path: Any) -> Any:
+        """Sanitizes the input if it is a path.
+
+        If the input is a **remote** path, this function replaces backslash path
+        separators by forward slashes.
+
+        Args:
+            potential_path: Value that potentially refers to a (remote) path.
+
+        Returns:
+            The original input or a sanitized version of it in case of a remote
+            path.
+        """
+        if isinstance(potential_path, bytes):
+            path = fileio.convert_to_str(potential_path)
+        elif isinstance(potential_path, str):
+            path = potential_path
+        else:
+            # Neither string nor bytes, this is not a path
+            return potential_path
+
+        if io_utils.is_remote(path):
+            # If we have a remote path, replace windows path separators with
+            # slashes
+            import ntpath
+            import posixpath
+
+            path = path.replace(ntpath.sep, posixpath.sep)
+            self._validate_path(path)
+        else:
+            self._validate_path(str(Path(path).absolute().resolve()))
+
+        return path
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Decorator function that sanitizes paths before calling the original function.
 
         Args:
             *args: Positional args.
@@ -95,15 +141,28 @@ def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
         Returns:
             Output of the input function called with sanitized paths.
         """
-        args = tuple(_sanitize_potential_path(arg) for arg in args)
+        # verify if `self` is part of the args
+        has_self = bool(args and isinstance(args[0], BaseArtifactStore))
+
+        # sanitize inputs for relevant args and kwargs, keep rest unchanged
+        args = tuple(
+            self._sanitize_potential_path(
+                arg,
+            )
+            if i + has_self in self.path_args
+            else arg
+            for i, arg in enumerate(args)
+        )
         kwargs = {
-            key: _sanitize_potential_path(value)
+            key: self._sanitize_potential_path(
+                value,
+            )
+            if key in self.path_kwargs
+            else value
             for key, value in kwargs.items()
         }
 
-        return _func(*args, **kwargs)
-
-    return inner_function
+        return self.func(*args, **kwargs)
 
 
 class BaseArtifactStoreConfig(StackComponentConfig):
@@ -322,6 +381,7 @@ class BaseArtifactStore(StackComponent):
             The stat descriptor.
         """
 
+    @abstractmethod
     def size(self, path: PathType) -> Optional[int]:
         """Get the size of a file in bytes.
 
@@ -375,30 +435,30 @@ class BaseArtifactStore(StackComponent):
         from zenml.io.filesystem_registry import default_filesystem_registry
         from zenml.io.local_filesystem import LocalFilesystem
 
+        overloads: Dict[str, Any] = {
+            "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
+        }
+        for abc_method in inspect.getmembers(BaseArtifactStore):
+            if getattr(abc_method[1], "__isabstractmethod__", False):
+                sanitized_method = _sanitize_paths(
+                    getattr(self, abc_method[0]), self.path
+                )
+                # prepare overloads for filesystem methods
+                overloads[abc_method[0]] = staticmethod(sanitized_method)
+
+                # decorate artifact store methods
+                setattr(
+                    self,
+                    abc_method[0],
+                    sanitized_method,
+                )
+
         # Local filesystem is always registered, no point in doing it again.
         if isinstance(self, LocalFilesystem):
             return
 
         filesystem_class = type(
-            self.__class__.__name__,
-            (BaseFilesystem,),
-            {
-                "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
-                "open": staticmethod(_sanitize_paths(self.open)),
-                "copyfile": staticmethod(_sanitize_paths(self.copyfile)),
-                "exists": staticmethod(_sanitize_paths(self.exists)),
-                "glob": staticmethod(_sanitize_paths(self.glob)),
-                "isdir": staticmethod(_sanitize_paths(self.isdir)),
-                "listdir": staticmethod(_sanitize_paths(self.listdir)),
-                "makedirs": staticmethod(_sanitize_paths(self.makedirs)),
-                "mkdir": staticmethod(_sanitize_paths(self.mkdir)),
-                "remove": staticmethod(_sanitize_paths(self.remove)),
-                "rename": staticmethod(_sanitize_paths(self.rename)),
-                "rmtree": staticmethod(_sanitize_paths(self.rmtree)),
-                "size": staticmethod(_sanitize_paths(self.size)),
-                "stat": staticmethod(_sanitize_paths(self.stat)),
-                "walk": staticmethod(_sanitize_paths(self.walk)),
-            },
+            self.__class__.__name__, (BaseFilesystem,), overloads
         )
 
         default_filesystem_registry.register(filesystem_class)

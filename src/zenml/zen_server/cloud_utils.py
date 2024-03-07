@@ -91,7 +91,7 @@ class ZenMLCloudSession:
 
         try:
             response.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError:
             if response.status_code == 402:
                 raise UpgradeRequiredError("Subscription limit reached. Please "
                                            "upgrade your subscription or "

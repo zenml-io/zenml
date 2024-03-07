@@ -304,6 +304,16 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     def _write_config(self) -> None:
         """Writes the global configuration options to disk."""
+        # We never write the configuration file in a ZenML server environment
+        # because this is a long-running process and the global configuration
+        # variables are supplied via environment variables.
+        if ENV_ZENML_SERVER in os.environ:
+            logger.info(
+                "Not writing the global configuration to disk in a ZenML "
+                "server environment."
+            )
+            return
+
         config_file = self._config_file
         yaml_dict = json.loads(self.json(exclude_none=True))
         logger.debug(f"Writing config to {config_file}")
@@ -450,9 +460,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
 
         for key, value in secrets_store_dict.items():
-            environment_vars[
-                ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()
-            ] = str(value)
+            environment_vars[ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()] = (
+                str(value)
+            )
 
         for key, value in backup_secrets_store_dict.items():
             environment_vars[

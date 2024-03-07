@@ -156,8 +156,9 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 
         Example:
         ```
+        artifact_store = Client().active_stack.artifact_store
         visualization_uri = os.path.join(self.uri, "visualization.html")
-        with fileio.open(visualization_uri, "w") as f:
+        with artifact_store.open(visualization_uri, "w") as f:
             f.write("<html><body>data</body></html>")
 
         visualization_uri_2 = os.path.join(self.uri, "visualization.png")

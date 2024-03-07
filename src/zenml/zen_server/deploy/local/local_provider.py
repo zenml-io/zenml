@@ -47,9 +47,9 @@ class LocalServerProvider(BaseServerProvider):
     """Local ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.LOCAL
-    CONFIG_TYPE: ClassVar[
-        Type[ServerDeploymentConfig]
-    ] = LocalServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
+        LocalServerDeploymentConfig
+    )
 
     @staticmethod
     def check_local_server_dependencies() -> None:
@@ -61,7 +61,6 @@ class LocalServerProvider(BaseServerProvider):
         try:
             # Make sure the ZenML Server dependencies are installed
             import fastapi  # noqa
-            import fastapi_utils  # noqa
             import jwt  # noqa
             import multipart  # noqa
             import uvicorn  # noqa

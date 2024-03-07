@@ -27,8 +27,9 @@ from zenml.exceptions import (
     SecretExistsError,
     StackComponentExistsError,
     StackExistsError,
+    UpgradeRequiredError,
     ValidationError,
-    ZenKeyError, UpgradeRequiredError,
+    ZenKeyError,
 )
 
 if TYPE_CHECKING:

@@ -18,8 +18,8 @@ from typing import Any, ClassVar, Dict, Tuple, Type, Union
 
 import pandas as pd
 
+from zenml.client import Client
 from zenml.enums import ArtifactType, VisualizationType
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import DType, MetadataType
@@ -77,9 +77,10 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        if fileio.exists(self.parquet_path):
+        artifact_store = Client().active_stack.artifact_store
+        if artifact_store.exists(self.parquet_path):
             if self.pyarrow_exists:
-                with fileio.open(self.parquet_path, mode="rb") as f:
+                with artifact_store.open(self.parquet_path, mode="rb") as f:
                     df = pd.read_parquet(f)
             else:
                 raise ImportError(
@@ -90,7 +91,7 @@ class PandasMaterializer(BaseMaterializer):
                     "'`pip install pyarrow fastparquet`'."
                 )
         else:
-            with fileio.open(self.csv_path, mode="rb") as f:
+            with artifact_store.open(self.csv_path, mode="rb") as f:
                 df = pd.read_csv(f, index_col=0, parse_dates=True)
 
         # validate the type of the data.
@@ -122,14 +123,15 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe or series to write.
         """
+        artifact_store = Client().active_stack.artifact_store
         if isinstance(df, pd.Series):
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:
-            with fileio.open(self.parquet_path, mode="wb") as f:
+            with artifact_store.open(self.parquet_path, mode="wb") as f:
                 df.to_parquet(f, compression=COMPRESSION_TYPE)
         else:
-            with fileio.open(self.csv_path, mode="wb") as f:
+            with artifact_store.open(self.csv_path, mode="wb") as f:
                 df.to_csv(f, index=True)
 
     def save_visualizations(
@@ -143,9 +145,10 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
+        artifact_store = Client().active_stack.artifact_store
         describe_uri = os.path.join(self.uri, "describe.csv")
         describe_uri = describe_uri.replace("\\", "/")
-        with fileio.open(describe_uri, mode="wb") as f:
+        with artifact_store.open(describe_uri, mode="wb") as f:
             df.describe().to_csv(f)
         return {describe_uri: VisualizationType.CSV}
 

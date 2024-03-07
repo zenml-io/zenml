@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of a default container registry class."""
+
 from typing import Optional
 
 from zenml.container_registries.base_container_registry import (

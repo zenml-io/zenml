@@ -46,9 +46,9 @@ class DockerServerProvider(BaseServerProvider):
     """Docker ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.DOCKER
-    CONFIG_TYPE: ClassVar[
-        Type[ServerDeploymentConfig]
-    ] = DockerServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
+        DockerServerDeploymentConfig
+    )
 
     @classmethod
     def _get_service_configuration(

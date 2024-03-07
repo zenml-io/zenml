@@ -121,9 +121,9 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     """
 
     name: str
-    type: Optional[
-        SeldonDeploymentPredictiveUnitType
-    ] = SeldonDeploymentPredictiveUnitType.MODEL
+    type: Optional[SeldonDeploymentPredictiveUnitType] = (
+        SeldonDeploymentPredictiveUnitType.MODEL
+    )
     implementation: Optional[str] = None
     modelUri: Optional[str] = None
     parameters: Optional[List[SeldonDeploymentPredictorParameter]] = None
