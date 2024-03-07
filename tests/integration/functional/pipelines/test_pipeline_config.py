@@ -196,9 +196,7 @@ def assert_input_params_with_defaults(
     assert this_will_be_default == "bar"
 
 
-def test_pipeline_config_from_file_works_with_pipeline_parameters(
-    clean_workspace, tmp_path
-):
+def test_pipeline_config_from_file_works_with_pipeline_parameters(tmp_path):
     """Test that the pipeline can be configured with parameters
     from a yaml file.
     """
@@ -225,7 +223,7 @@ def test_pipeline_config_from_file_works_with_pipeline_parameters(
 
 
 def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_with_step_parameters(
-    clean_workspace, tmp_path
+    tmp_path,
 ):
     """Test that the pipeline will fail with error, if configured with parameters
     from a yaml file for the steps and same parameters are passed over in code.
@@ -258,7 +256,7 @@ def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_wi
 
 
 def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_with_pipeline_parameters(
-    clean_workspace, tmp_path
+    tmp_path,
 ):
     """Test that the pipeline will fail with error, if configured with parameters
     from a yaml file for the steps and same parameters are passed over in code.
@@ -286,7 +284,7 @@ def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_wi
 
 
 def test_pipeline_config_from_file_works_with_pipeline_parameters_on_conflict_with_default_parameters(
-    clean_workspace, tmp_path
+    tmp_path,
 ):
     """Test that the pipeline will not fail with error.
 
