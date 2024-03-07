@@ -238,7 +238,7 @@ def test_activating_a_stack_updates_the_config_file():
     stack = _create_local_stack(stack_name="new_stack")
     client.activate_stack(stack.id)
 
-    assert Client(client.root).active_stack_model.name == stack.name
+    assert client.active_stack_model.name == stack.name
 
 
 def test_registering_a_stack():
