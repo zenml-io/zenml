@@ -19,7 +19,6 @@ ZenML test framework. Most of these functions can be used to create fixtures
 that are used in the tests.
 """
 
-import inspect
 import logging
 import os
 import shutil
@@ -27,18 +26,11 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
     Generator,
     List,
     Optional,
     Tuple,
-    Union,
 )
-from unittest.mock import MagicMock
-from uuid import UUID
 
 import pytest
 
@@ -48,7 +40,6 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
 from zenml.stack.stack import Stack
-from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
 def cleanup_folder(path: str) -> None:
@@ -232,189 +223,6 @@ def clean_workspace_session(
     # change the active workspace back to what it was
     client.set_active_workspace(original_workspace)
     client.delete_workspace(workspace_name)
-
-
-class TheMetaZenRemembers(type):
-    """The Meta Class to create TheZenRemembers class."""
-
-    def __getattr__(self, name: str) -> Any:
-        """Class level attribute getter.
-
-        Needed for operations like `Client.class_method()`.
-
-        Args:
-            name: The name of the attribute to access.
-
-        Returns:
-            The value of the attribute.
-        """
-        return getattr(Client, name)
-
-
-class TheZenRemembers(metaclass=TheMetaZenRemembers):
-    """The Class to create TheZenRemembers class.
-
-    This a class that is used to create a proxy to the Client class.
-    It memorizes the created objects and deletes them on `destroy`.
-    """
-
-    mem: ClassVar[Dict[bool, List[Tuple[str, Any]]]] = {False: [], True: []}
-    interface: Union[Client, BaseZenStore]
-
-    def __init__(self, interface: Optional[BaseZenStore] = None):
-        """Initialize TheZenRemembers.
-
-        Args:
-            interface: The interface to use.
-        """
-        if interface is None:
-            self.interface = Client()
-            self.zen_store = TheZenRemembers(self.interface.zen_store)
-            self.is_store = False
-        else:
-            self.interface = interface
-            self.is_store = True
-
-    def __getattr__(self, name: str) -> Any:
-        """Proxy attribute access to the client.
-
-        Args:
-            name: The name of the attribute to access.
-
-        Returns:
-            The value of the attribute.
-        """
-        val = getattr(self.interface, name)
-        if callable(val) and (
-            name.startswith("create_") or name.startswith("get_or_create_")
-        ):
-            return TheZenRemembers.memory(val, name, self.is_store)
-        return val
-
-    def __call__(self, *args: Any, **kwargs: Any) -> "TheZenRemembers":
-        """Simulate Client(), but return self.
-
-        Args:
-            args: The positional arguments.
-            kwargs: The keyword arguments.
-
-        Returns:
-            self
-        """
-        return self
-
-    @staticmethod
-    def memory(
-        func: Callable[..., Any], name: str, is_store: bool
-    ) -> Callable[..., Any]:
-        """Decorator to remember which objects have been created.
-
-        Args:
-            func: The function to decorate.
-            name: The name of the function.
-            is_store: Whether the function is a ZenStore function.
-
-        Returns:
-            The decorated function.
-        """
-
-        def run_and_memorize(*args: Any, **kwargs: Any) -> Any:
-            """Inner function to remember which objects have been created.
-
-            Args:
-                args: The positional arguments.
-                kwargs: The keyword arguments.
-
-            Returns:
-                The result of the function call.
-            """
-            ret = func(*args, **kwargs)
-            if not isinstance(ret, MagicMock):
-                TheZenRemembers.mem[is_store].append((name, ret))
-            return ret
-
-        return run_and_memorize
-
-    def destroy(self) -> None:
-        """Deletes all remembered objects."""
-        from zenml.client_lazy_loader import _original_args_specs
-
-        def get_delete_name(create_name: str) -> str:
-            if name.startswith("get_or_create_"):
-                return create_name.replace("get_or_create_", "delete_")
-            return create_name.replace("create_", "delete_")
-
-        def parse_annotations(
-            spec: inspect.FullArgSpec, response_model: Any
-        ) -> Dict[str, Any]:
-            annotations = spec.annotations
-            kwargs = {}
-            for arg_name, arg_type in annotations.items():
-                if arg_name == "return":
-                    continue
-                if arg_type == Union[str, UUID] or arg_type == UUID:
-                    kwargs[arg_name] = getattr(response_model, "id", None)
-                    continue
-                if arg_type.__args__ and arg_type.__args__[-1] != type(None):
-                    kwargs[arg_name] = getattr(response_model, arg_name, None)
-            return kwargs
-
-        while self.mem[True]:
-            name, response_model = self.mem[True].pop()
-            delete_name = get_delete_name(name)
-            try:
-                if func := getattr(
-                    self.zen_store.interface, delete_name, None
-                ):
-                    func(
-                        **parse_annotations(
-                            inspect.getfullargspec(func), response_model
-                        )
-                    )
-                else:
-                    print("Could not find ZenStore method: ", delete_name)
-            except KeyError:
-                print(f"__STORE__.{name}: {response_model}")
-                # the resource was deleted in the test session already
-                pass
-
-        while self.mem[False]:
-            name, response_model = self.mem[False].pop()
-            delete_name = get_delete_name(name)
-            try:
-                if func := getattr(self.interface, delete_name, None):
-                    func(
-                        **parse_annotations(
-                            _original_args_specs[name], response_model
-                        )
-                    )
-                else:
-                    print("Could not find Client method: ", delete_name)
-            except KeyError:
-                print(f"__CLIENT__.{name}: {response_model}")
-                # the resource was deleted in the test session already
-                pass
-
-
-@contextmanager
-def self_cleaning_client_session() -> Generator[TheZenRemembers, None, None]:
-    """Context manager to initialize and use a self cleaning ZenML client.
-
-    This context manager creates a ZenML client with memory and cleans up
-    resource created during the session.
-
-    Raises:
-        RuntimeError: If no default client is found.
-
-    Yields:
-        A clean ZenML client.
-    """
-    memory_client = TheZenRemembers()
-
-    try:
-        yield memory_client
-    finally:
-        memory_client.destroy()
 
 
 @contextmanager
