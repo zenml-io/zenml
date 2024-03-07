@@ -269,7 +269,7 @@ def batch_verify_permissions(
         action: The action the user wants to perform.
         admin_status: Whether the user is an admin or not. This is only used
             if explicitly specified in the call and even if passed will be
-            ignored, if RBAC is enabled. If operation do not required admin
+            ignored, if RBAC is enabled. If operation does not require admin
             permission, just ignore this param and only pass it explicitly
             in case operation is allowed only for admins or certain RBAC group.
 
@@ -280,8 +280,8 @@ def batch_verify_permissions(
     if not server_config().rbac_enabled:
         if admin_status is False:
             raise IllegalOperationError(
-                message=f"Insufficient permissions to {action.upper()} "
-                "only admin users can perform this action "
+                message=f"Insufficient permissions to {action.upper()}. "
+                "Only admin users can perform this action "
                 "without RBAC enabled.",
             )
         return
@@ -324,7 +324,7 @@ def verify_permission(
         resource_id: ID of the resource the user wants to perform the action on.
         admin_status: Whether the user is an admin or not. This is only used
             if explicitly specified in the call and even if passed will be
-            ignored, if RBAC is enabled. If operation do not required admin
+            ignored, if RBAC is enabled. If operation does not require admin
             permission, just ignore this param and only pass it explicitly
             in case operation is allowed only for admins or certain RBAC group.
     """

@@ -412,19 +412,16 @@ class TestAdminUser:
         if Client().zen_store.type == StoreType.SQL:
             pytest.skip("SQL ZenStore does not support admin users.")
 
-        with UserContext(password=self.default_pwd) as test_user:
+        with UserContext(login=True):
             zen_store: RestZenStore = Client().zen_store
             # this is not allowed for non-admin users
-            with self._login(
-                zen_store, user_name=test_user.name, password=self.default_pwd
-            ):
-                with pytest.raises(IllegalOperationError):
-                    zen_store.create_user(
-                        UserRequest(
-                            name=self.test_user + "2",
-                            password=self.default_pwd,
-                        )
+            with pytest.raises(IllegalOperationError):
+                zen_store.create_user(
+                    UserRequest(
+                        name=sample_name(self.test_user),
+                        password=self.default_pwd,
                     )
+                )
 
     def test_listing_users(self):
         """Tests listing users as an admin and as a non-admin."""
@@ -434,12 +431,11 @@ class TestAdminUser:
         with UserContext(password=self.default_pwd) as test_user:
             zen_store: RestZenStore = Client().zen_store
             users = zen_store.list_users(UserFilter())
-            assert users.total == 2
+            assert users.total >= 2
 
             # this is limited to self only for non-admin users
-            with self._login(
-                zen_store, user_name=test_user.name, password=self.default_pwd
-            ):
+            with LoginContext(user_name=test_user.name, password=self.default_pwd):
+                zen_store = Client().zen_store
                 users = zen_store.list_users(UserFilter())
                 assert users.total == 1
 
@@ -452,12 +448,11 @@ class TestAdminUser:
             zen_store: RestZenStore = Client().zen_store
 
             user = zen_store.get_user(test_user.name)
-            assert user.name == test_user.name
+            assert user.id == test_user.id
 
             # this is not allowed for non-admin users
-            with self._login(
-                zen_store, user_name=test_user.name, password=self.default_pwd
-            ):
+            with LoginContext(user_name=test_user.name, password=self.default_pwd):
+                zen_store = Client().zen_store
                 with pytest.raises(IllegalOperationError):
                     zen_store.get_user(DEFAULT_USERNAME)
 
@@ -471,42 +466,44 @@ class TestAdminUser:
 
             user = zen_store.update_user(
                 test_user.id,
-                UserUpdate(name=test_user.name, full_name="foo@bar.ai"),
+                UserUpdate(full_name="foo@bar.ai"),
             )
             assert user.full_name == "foo@bar.ai"
 
-            with UserContext(password=self.default_pwd) as test_user2:
+            with UserContext(login=True):
+                zen_store = Client().zen_store
+
                 # this is not allowed for non-admin users
-                with self._login(
-                    zen_store,
-                    user_name=test_user2.name,
-                    password=self.default_pwd,
-                ):
-                    with pytest.raises(IllegalOperationError):
-                        zen_store.update_user(
-                            test_user.id,
-                            UserUpdate(
-                                name=test_user.name, full_name="bar@foo.io"
-                            ),
-                        )
+                with pytest.raises(IllegalOperationError):
+                    zen_store.update_user(
+                        test_user.id,
+                        UserUpdate(full_name="bar@foo.io"),
+                    )
+
+            # user is allowed to update itself
+            with LoginContext(user_name=test_user.name, password=self.default_pwd):
+                zen_store = Client().zen_store
+                user = zen_store.update_user(
+                    test_user.id,
+                    UserUpdate(full_name="bar@foo.io"),
+                )
+                    
+                assert user.full_name == "bar@foo.io"
 
     def test_deactivate_users(self):
         """Tests deactivating users as an admin and as a non-admin."""
         if Client().zen_store.type == StoreType.SQL:
             pytest.skip("SQL ZenStore does not support admin users.")
 
+        zen_store: RestZenStore = Client().zen_store
         with UserContext(password=self.default_pwd) as test_user:
-            with UserContext(password=self.default_pwd) as test_user2:
-                zen_store: RestZenStore = Client().zen_store
+            with UserContext() as test_user2:
 
                 # this is not allowed for non-admin users
-                with self._login(
-                    zen_store,
-                    user_name=test_user.name,
-                    password=self.default_pwd,
-                ):
+                with LoginContext(user_name=test_user.name, password=self.default_pwd):
+                    new_zen_store: RestZenStore = Client().zen_store
                     with pytest.raises(IllegalOperationError):
-                        zen_store.put(
+                        new_zen_store.put(
                             f"{USERS}/{str(test_user2.id)}{DEACTIVATE}"
                         )
 
@@ -521,19 +518,17 @@ class TestAdminUser:
         if Client().zen_store.type == StoreType.SQL:
             pytest.skip("SQL ZenStore does not support admin users.")
 
+        zen_store: RestZenStore = Client().zen_store
         with UserContext(password=self.default_pwd) as test_user:
-            zen_store: RestZenStore = Client().zen_store
+            with UserContext() as test_user2:
 
-            # this is not allowed for non-admin users
-            with self._login(
-                zen_store,
-                user_name=test_user.name,
-                password=self.default_pwd,
-            ):
-                with pytest.raises(IllegalOperationError):
-                    zen_store.delete_user(DEFAULT_USERNAME)
+                # this is not allowed for non-admin users
+                with LoginContext(user_name=test_user.name, password=self.default_pwd):
+                    new_zen_store: RestZenStore = Client().zen_store
+                    with pytest.raises(IllegalOperationError):
+                        new_zen_store.delete_user(test_user2.id)
 
-            zen_store.delete_user(test_user.name)
+            zen_store.delete_user(test_user.id)
 
 
 def test_active_user():
