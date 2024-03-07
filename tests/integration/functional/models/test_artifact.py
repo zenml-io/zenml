@@ -203,7 +203,6 @@ def test_artifact_step_run_linkage(one_step_pipeline):
 
 def test_disabling_artifact_visualization(one_step_pipeline):
     """Test that disabling artifact visualization works."""
-    client = Client()
     # By default, artifact visualization should be enabled
     step_ = visualizable_step()
     pipe: BasePipeline = one_step_pipeline(step_)
@@ -259,7 +258,6 @@ def test_load_artifact_visualization(one_step_pipeline):
 
 def test_disabling_artifact_metadata(one_step_pipeline):
     """Test that disabling artifact metadata works."""
-    client = Client()
 
     # By default, artifact metadata should be enabled
     step_ = visualizable_step()
