@@ -49,6 +49,9 @@ def cleanup_after_test():
                         )
                 except KeyError:
                     pass
+        while pipeline_builds := client.list_builds().items:
+            for pb in pipeline_builds:
+                client.delete_build(str(pb.id))
         while code_repositories := client.list_code_repositories().items:
             for cr in code_repositories:
                 client.delete_code_repository(cr.id)
