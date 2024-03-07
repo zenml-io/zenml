@@ -16,6 +16,7 @@
 import pytest
 
 from zenml.client import Client
+from zenml.enums import StackComponentType
 from zenml.models import TagFilter
 
 
@@ -39,10 +40,21 @@ def cleanup_after_test():
                     client.delete_user(u.id)
         while pipelines := client.list_pipelines().items:
             for p in pipelines:
-                client.delete_pipeline(p.id)
+                try:
+                    while pipeline := client.get_pipeline(
+                        name_id_or_prefix=p.id, version=None
+                    ):
+                        client.zen_store.delete_pipeline(
+                            pipeline_id=pipeline.id
+                        )
+                except KeyError:
+                    pass
         while deployments := client.list_deployments().items:
             for d in deployments:
                 client.delete_deployment(str(d.id))
+        while schedules := client.list_schedules().items:
+            for s in schedules:
+                client.delete_schedule(s.id)
         while models := client.list_models().items:
             for m in models:
                 client.delete_model(m.id)
@@ -52,3 +64,23 @@ def cleanup_after_test():
         while tags := client.list_tags(TagFilter()).items:
             for t in tags:
                 client.delete_tag(t.id)
+        while stacks := client.list_stacks().items:
+            if len(stacks) <= 1:
+                break
+            if client.active_stack.name != "default":
+                client.activate_stack("default")
+            for s in stacks:
+                if s.name != "default":
+                    client.delete_stack(s.id, True)
+        while stack_components := client.list_stack_components().items:
+            if len(stack_components) <= 2:
+                break
+            for sc in stack_components:
+                if not (
+                    (
+                        sc.type == StackComponentType.ORCHESTRATOR
+                        or sc.type == StackComponentType.ARTIFACT_STORE
+                    )
+                    and sc.name == "default"
+                ):
+                    client.delete_stack_component(sc.id, sc.type)
