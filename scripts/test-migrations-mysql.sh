@@ -207,6 +207,9 @@ done
 # Sort the versions based on semantic versioning rules
 IFS=$'\n' MIGRATION_VERSIONS=($(sort -t. -k 1,1n -k 2,2n -k 3,3n <<<"${MIGRATION_VERSIONS[*]}"))
 
+# echo the sorted list of migraton versions
+echo "TESTING MIGRATION_VERSIONS: ${MIGRATION_VERSIONS[@]}"
+
 for i in "${!MIGRATION_VERSIONS[@]}"; do
     set -e  # Exit immediately if a command exits with a non-zero status
     # Create a new virtual environment
