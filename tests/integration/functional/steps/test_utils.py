@@ -15,6 +15,7 @@
 """Tests for utility functions and classes to run ZenML steps."""
 
 from zenml import pipeline, step
+from zenml.client import Client
 from zenml.steps.utils import log_step_metadata
 
 
@@ -35,7 +36,7 @@ def step_metadata_logging_step_inside_run() -> str:
     return "42"
 
 
-def test_log_step_metadata_within_step(clean_client):
+def test_log_step_metadata_within_step():
     """Test logging step metadata for the latest run."""
 
     @pipeline
@@ -54,7 +55,7 @@ def test_log_step_metadata_within_step(clean_client):
     assert run_metadata["metrics"].value == {"accuracy": 0.9}
 
 
-def test_log_step_metadata_using_latest_run(clean_client):
+def test_log_step_metadata_using_latest_run():
     """Test logging step metadata for the latest run."""
 
     @pipeline
@@ -89,7 +90,7 @@ def test_log_step_metadata_using_latest_run(clean_client):
     assert run_metadata_after_log["metrics"].value == {"accuracy": 0.9}
 
 
-def test_log_step_metadata_using_specific_params(clean_client):
+def test_log_step_metadata_using_specific_params():
     """Test logging step metadata for a specific step."""
 
     @pipeline
@@ -106,7 +107,8 @@ def test_log_step_metadata_using_specific_params(clean_client):
     assert not run_metadata_before_log.get("metrics")
 
     step_run_id = (
-        clean_client.get_pipeline("step_metadata_logging_pipeline")
+        Client()
+        .get_pipeline("step_metadata_logging_pipeline")
         .last_run.steps["step_metadata_logging_step"]
         .id
     )

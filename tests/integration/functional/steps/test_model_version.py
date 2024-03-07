@@ -34,7 +34,7 @@ def _assert_that_model_set(name="foo"):
     assert get_step_context().model.version == "1"
 
 
-def test_model_passed_to_step_context_via_step(clean_client: "Client"):
+def test_model_passed_to_step_context_via_step():
     """Test that model version was passed to step context via step."""
 
     @pipeline(name="bar", enable_cache=False)
@@ -46,9 +46,7 @@ def test_model_passed_to_step_context_via_step(clean_client: "Client"):
     _simple_step_pipeline()
 
 
-def test_model_passed_to_step_context_via_pipeline(
-    clean_client: "Client",
-):
+def test_model_passed_to_step_context_via_pipeline():
     """Test that model version was passed to step context via pipeline."""
 
     @pipeline(
@@ -62,9 +60,7 @@ def test_model_passed_to_step_context_via_pipeline(
     _simple_step_pipeline()
 
 
-def test_model_passed_to_step_context_via_step_and_pipeline(
-    clean_client: "Client",
-):
+def test_model_passed_to_step_context_via_step_and_pipeline():
     """Test that model version was passed to step context via both, but step is dominating."""
 
     @pipeline(
@@ -80,9 +76,7 @@ def test_model_passed_to_step_context_via_step_and_pipeline(
     _simple_step_pipeline()
 
 
-def test_model_passed_to_step_context_and_switches(
-    clean_client: "Client",
-):
+def test_model_passed_to_step_context_and_switches():
     """Test that model version was passed to step context via both and switches possible."""
 
     @pipeline(
@@ -115,7 +109,7 @@ def _this_step_does_not_create_a_version():
     return 1
 
 
-def test_create_new_versions_both_pipeline_and_step(clean_client: "Client"):
+def test_create_new_versions_both_pipeline_and_step():
     """Test that model version on step and pipeline levels can create new model versions at the same time."""
     desc = "Should be the best version ever!"
 
@@ -128,30 +122,31 @@ def test_create_new_versions_both_pipeline_and_step(clean_client: "Client"):
         _this_step_creates_a_version()
         _this_step_does_not_create_a_version()
 
+    client = Client()
     _this_pipeline_creates_a_version()
 
-    foo = clean_client.get_model("foo")
+    foo = client.get_model("foo")
     assert foo.name == "foo"
-    foo_version = clean_client.get_model_version("foo", ModelStages.LATEST)
+    foo_version = client.get_model_version("foo", ModelStages.LATEST)
     assert foo_version.number == 1
 
-    bar = clean_client.get_model("bar")
+    bar = client.get_model("bar")
     assert bar.name == "bar"
-    bar_version = clean_client.get_model_version("bar", ModelStages.LATEST)
+    bar_version = client.get_model_version("bar", ModelStages.LATEST)
     assert bar_version.number == 1
     assert bar_version.description == desc
 
     _this_pipeline_creates_a_version()
 
-    foo_version = clean_client.get_model_version("foo", ModelStages.LATEST)
+    foo_version = client.get_model_version("foo", ModelStages.LATEST)
     assert foo_version.number == 2
 
-    bar_version = clean_client.get_model_version("bar", ModelStages.LATEST)
+    bar_version = client.get_model_version("bar", ModelStages.LATEST)
     assert foo_version.number == 2
     assert bar_version.description == desc
 
 
-def test_create_new_version_only_in_step(clean_client: "Client"):
+def test_create_new_version_only_in_step():
     """Test that model version on step level only can create new model version."""
 
     @pipeline(name="bar", enable_cache=False)
@@ -159,20 +154,21 @@ def test_create_new_version_only_in_step(clean_client: "Client"):
         _this_step_creates_a_version()
         _this_step_does_not_create_a_version()
 
+    client = Client()
     _this_pipeline_does_not_create_a_version()
 
-    bar = clean_client.get_model("foo")
+    bar = client.get_model("foo")
     assert bar.name == "foo"
-    bar_version = clean_client.get_model_version("foo", ModelStages.LATEST)
+    bar_version = client.get_model_version("foo", ModelStages.LATEST)
     assert bar_version.number == 1
 
     _this_pipeline_does_not_create_a_version()
 
-    bar_version = clean_client.get_model_version("foo", ModelStages.LATEST)
+    bar_version = client.get_model_version("foo", ModelStages.LATEST)
     assert bar_version.number == 2
 
 
-def test_create_new_version_only_in_pipeline(clean_client: "Client"):
+def test_create_new_version_only_in_pipeline():
     """Test that model version on pipeline level only can create new model version."""
 
     @pipeline(
@@ -183,16 +179,17 @@ def test_create_new_version_only_in_pipeline(clean_client: "Client"):
     def _this_pipeline_creates_a_version():
         _this_step_does_not_create_a_version()
 
+    client = Client()
     _this_pipeline_creates_a_version()
 
-    foo = clean_client.get_model("bar")
+    foo = client.get_model("bar")
     assert foo.name == "bar"
-    foo_version = clean_client.get_model_version("bar", ModelStages.LATEST)
+    foo_version = client.get_model_version("bar", ModelStages.LATEST)
     assert foo_version.number == 1
 
     _this_pipeline_creates_a_version()
 
-    foo_version = clean_client.get_model_version("bar", ModelStages.LATEST)
+    foo_version = client.get_model_version("bar", ModelStages.LATEST)
     assert foo_version.number == 2
 
 
@@ -224,7 +221,7 @@ def _this_step_tries_to_recover(run_number: int):
     ],
     ids=["default_running_name", "custom_running_name"],
 )
-def test_recovery_of_steps(clean_client: "Client", model: Model):
+def test_recovery_of_steps(model: Model):
     """Test that model version can recover states after previous fails."""
 
     @pipeline(
@@ -237,6 +234,7 @@ def test_recovery_of_steps(clean_client: "Client", model: Model):
             run_number, after=["_this_step_produces_output"]
         )
 
+    client = Client()
     with pytest.raises(Exception, match="make pipeline fail"):
         _this_pipeline_will_recover.with_options(model=model)(1)
     if model.version is None:
@@ -246,7 +244,7 @@ def test_recovery_of_steps(clean_client: "Client", model: Model):
     with pytest.raises(Exception, match="make pipeline fail"):
         _this_pipeline_will_recover.with_options(model=model)(3)
 
-    mv = clean_client.get_model_version(
+    mv = client.get_model_version(
         model_name_or_id="foo",
         model_version_name_or_number_or_id=model.version,
     )
@@ -328,7 +326,7 @@ def _new_version_pipeline_warns_on_steps():
     ],
 )
 def test_multiple_definitions_create_new_version_warns(
-    clean_client: "Client", pipeline, expected_warning
+    pipeline, expected_warning
 ):
     """Test that setting conflicting model versions are raise warnings to user."""
     with mock.patch("zenml.new.pipelines.run_utils.logger.warning") as logger:
@@ -359,10 +357,9 @@ def _pipeline_run_link_attached_from_pipeline_context_multiple_steps():
     ),
     ids=["Single step pipeline", "Multiple steps pipeline"],
 )
-def test_pipeline_run_link_attached_from_pipeline_context(
-    clean_client: "Client", pipeline
-):
+def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
     """Tests that current pipeline run information is attached to model version by pipeline context."""
+    client = Client()
     run_name_1 = f"bar_run_{uuid4()}"
     pipeline.with_options(
         run_name=run_name_1,
@@ -376,7 +373,7 @@ def test_pipeline_run_link_attached_from_pipeline_context(
         model=Model(name="foo", version=ModelStages.LATEST),
     )()
 
-    mv = clean_client.get_model_version(
+    mv = client.get_model_version(
         model_name_or_id="foo",
         model_version_name_or_number_or_id=ModelStages.LATEST,
     )
@@ -411,10 +408,9 @@ def _pipeline_run_link_attached_from_step_context_multiple_step(
     ),
     ids=["Single step pipeline", "Multiple steps pipeline"],
 )
-def test_pipeline_run_link_attached_from_step_context(
-    clean_client: "Client", pipeline
-):
+def test_pipeline_run_link_attached_from_step_context(pipeline):
     """Tests that current pipeline run information is attached to model version by step context."""
+    client = Client()
     run_name_1 = f"bar_run_{uuid4()}"
     pipeline.with_options(
         run_name=run_name_1,
@@ -428,7 +424,7 @@ def test_pipeline_run_link_attached_from_step_context(
         run_name=run_name_2,
     )(Model(name="foo", version=ModelStages.LATEST))
 
-    mv = clean_client.get_model_version(
+    mv = client.get_model_version(
         model_name_or_id="foo",
         model_version_name_or_number_or_id=ModelStages.LATEST,
     )
@@ -530,20 +526,22 @@ def _pipeline_run_link_attached_from_mixed_context_multiple_step():
     ],
 )
 def test_pipeline_run_link_attached_from_mixed_context(
-    pipeline, model_names, clean_client: "Client"
+    pipeline,
+    model_names,
 ):
     """Tests that current pipeline run information is attached to model version by artifact context.
 
     Here we use 2 models and Artifacts has different configs to link there.
     """
+    client = Client()
     models = []
     for model_name in model_names:
         models.append(
-            clean_client.create_model(
+            client.create_model(
                 name=model_name,
             )
         )
-        clean_client.create_model_version(
+        client.create_model_version(
             model_name_or_id=model_name,
             name="good_one",
         )
@@ -558,7 +556,7 @@ def test_pipeline_run_link_attached_from_mixed_context(
     )()
 
     for model in models:
-        mv = clean_client.get_model_version(
+        mv = client.get_model_version(
             model_name_or_id=model.id,
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
@@ -606,10 +604,9 @@ def _producer_pipeline():
     _producer_step()
 
 
-def test_that_consumption_also_registers_run_in_model(
-    clean_client: "Client",
-):
+def test_that_consumption_also_registers_run_in_model():
     """Test that consumption scenario also registers run in model version."""
+    client = Client()
     producer_run = f"producer_run_{uuid4()}"
     consumer_run_1 = f"consumer_run_1_{uuid4()}"
     consumer_run_2 = f"consumer_run_2_{uuid4()}"
@@ -623,7 +620,7 @@ def test_that_consumption_also_registers_run_in_model(
         run_name=consumer_run_2
     )()
 
-    mv = clean_client.get_model_version(
+    mv = client.get_model_version(
         model_name_or_id="step",
         model_version_name_or_number_or_id=ModelStages.LATEST,
     )
@@ -636,9 +633,7 @@ def test_that_consumption_also_registers_run_in_model(
     }
 
 
-def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_created(
-    clean_client: "Client",
-):
+def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_created():
     """Test that if one of the steps requests a new version but was cached a new version is still created for other steps."""
 
     @pipeline(model=Model(name="step", version=ModelStages.LATEST))
@@ -648,6 +643,7 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
         # this is an always run step
         _this_step_produces_output.with_options(enable_cache=False)()
 
+    client = Client()
     # this will run all steps, including one requesting new version
     run_1 = f"run_{uuid4()}"
     _inner_pipeline.with_options(run_name=run_1)()
@@ -655,26 +651,20 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
     run_2 = f"run_{uuid4()}"
     _inner_pipeline.with_options(run_name=run_2)()
 
-    model = clean_client.get_model(model_name_or_id="step")
+    model = client.get_model(model_name_or_id="step")
     mvs = model.versions
     assert len(mvs) == 2
     for mv, run_name in zip(mvs, (run_1, run_2)):
         assert (
-            len(
-                clean_client.zen_store.get_model_version(
-                    mv.id
-                ).pipeline_run_ids
-            )
+            len(client.zen_store.get_model_version(mv.id).pipeline_run_ids)
             == 1
         )
-        assert clean_client.zen_store.get_model_version(
-            mv.id
-        ).pipeline_run_ids[run_name]
+        assert client.zen_store.get_model_version(mv.id).pipeline_run_ids[
+            run_name
+        ]
 
 
-def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run(
-    clean_client: "Client",
-):
+def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run():
     """Test that if pipeline run gets deleted - it is removed from model version."""
 
     @pipeline(
@@ -684,26 +674,21 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run(
     def _inner_pipeline():
         _this_step_produces_output.with_options(model=Model(name="step"))()
 
+    client = Client()
     run_1 = f"run_{uuid4()}"
     _inner_pipeline.with_options(run_name=run_1)()
 
-    clean_client.delete_pipeline_run(run_1)
-    model = clean_client.get_model(model_name_or_id="step")
+    client.delete_pipeline_run(run_1)
+    model = client.get_model(model_name_or_id="step")
     mvs = model.versions
     assert len(mvs) == 1
     assert (
-        len(
-            clean_client.zen_store.get_model_version(
-                mvs[0].id
-            ).pipeline_run_ids
-        )
+        len(client.zen_store.get_model_version(mvs[0].id).pipeline_run_ids)
         == 0
     )
 
 
-def test_that_pipeline_run_is_removed_on_deletion_of_pipeline(
-    clean_client: "Client",
-):
+def test_that_pipeline_run_is_removed_on_deletion_of_pipeline():
     """Test that if pipeline gets deleted - runs are removed from model version."""
 
     @pipeline(
@@ -714,30 +699,25 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline(
     def _inner_pipeline():
         _this_step_produces_output.with_options(model=Model(name="step"))()
 
+    client = Client()
     run_1 = f"run_{uuid4()}"
     _inner_pipeline.with_options(run_name=run_1)()
 
-    pipeline_response = clean_client.get_pipeline(
+    pipeline_response = client.get_pipeline(
         "test_that_pipeline_run_is_removed_on_deletion_of_pipeline"
     )
     for run in pipeline_response.runs:
-        clean_client.delete_pipeline_run(run.id)
-    model = clean_client.get_model(model_name_or_id="step")
+        client.delete_pipeline_run(run.id)
+    model = client.get_model(model_name_or_id="step")
     mvs = model.versions
     assert len(mvs) == 1
     assert (
-        len(
-            clean_client.zen_store.get_model_version(
-                mvs[0].id
-            ).pipeline_run_ids
-        )
+        len(client.zen_store.get_model_version(mvs[0].id).pipeline_run_ids)
         == 0
     )
 
 
-def test_that_artifact_is_removed_on_deletion(
-    clean_client: "Client",
-):
+def test_that_artifact_is_removed_on_deletion():
     """Test that if artifact gets deleted - it is removed from model version."""
 
     @pipeline(
@@ -747,26 +727,23 @@ def test_that_artifact_is_removed_on_deletion(
     def _inner_pipeline():
         _this_step_produces_output.with_options(model=Model(name="step"))()
 
+    client = Client()
     run_1 = f"run_{uuid4()}"
     _inner_pipeline.with_options(run_name=run_1)()
 
-    run = clean_client.get_pipeline_run(run_1)
+    run = client.get_pipeline_run(run_1)
     pipeline_id = run.pipeline.id
     artifact_version_id = (
         run.steps["_this_step_produces_output"].outputs["data"].id
     )
-    clean_client.delete_pipeline(pipeline_id)
-    clean_client.delete_pipeline_run(run.id)
-    clean_client.delete_artifact_version(artifact_version_id)
-    model = clean_client.get_model(model_name_or_id="step")
+    client.delete_pipeline(pipeline_id)
+    client.delete_pipeline_run(run.id)
+    client.delete_artifact_version(artifact_version_id)
+    model = client.get_model(model_name_or_id="step")
     mvs = model.versions
     assert len(mvs) == 1
     assert (
-        len(
-            clean_client.zen_store.get_model_version(
-                mvs[0].id
-            ).pipeline_run_ids
-        )
+        len(client.zen_store.get_model_version(mvs[0].id).pipeline_run_ids)
         == 0
     )
 
@@ -785,9 +762,7 @@ def _this_step_produces_output_model() -> (
     return str(get_step_context().model.id)
 
 
-def test_pipeline_context_pass_artifact_from_model_and_link_run(
-    clean_client: "Client",
-):
+def test_pipeline_context_pass_artifact_from_model_and_link_run():
     """Test that ExternalArtifact from pipeline context is matched to proper version and run is linked."""
 
     @pipeline(model=Model(name="pipeline"), enable_cache=False)
@@ -804,11 +779,12 @@ def test_pipeline_context_pass_artifact_from_model_and_link_run(
         artifact = get_pipeline_context().model.get_artifact("artifact")
         _this_step_asserts_context_with_artifact(artifact)
 
+    client = Client()
     _producer.with_options(run_name="run_1")(True)
     _producer.with_options(run_name="run_2")(False)
     _consumer.with_options(run_name="run_3")()
 
-    mv = clean_client.get_model_version(
+    mv = client.get_model_version(
         model_name_or_id="pipeline",
         model_version_name_or_number_or_id=ModelStages.LATEST,
     )
@@ -816,7 +792,7 @@ def test_pipeline_context_pass_artifact_from_model_and_link_run(
     assert len(mv.pipeline_run_ids) == 1
     assert {run_name for run_name in mv.pipeline_run_ids} == {"run_2"}
 
-    mv = clean_client.get_model_version(
+    mv = client.get_model_version(
         model_name_or_id="pipeline",
         model_version_name_or_number_or_id=ModelStages.PRODUCTION,
     )

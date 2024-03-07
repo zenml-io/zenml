@@ -20,7 +20,6 @@ from typing_extensions import Annotated
 
 from zenml import pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
-from zenml.client import Client
 
 ARTIFACT_NAME = "predictions"
 PIPELINE_NAME = "bar"
@@ -67,12 +66,12 @@ def consumer_pipeline(
     )
 
 
-def test_external_artifact_by_value(clean_client: Client):
+def test_external_artifact_by_value():
     """Test passing external artifact by value."""
     consumer_pipeline(value=42, expected_value=42)
 
 
-def test_external_artifact_by_id(clean_client: Client):
+def test_external_artifact_by_id():
     """Test passing external artifact by ID."""
     producer_pipeline(return_value=42)
     artifact_version_id = (
@@ -81,7 +80,7 @@ def test_external_artifact_by_id(clean_client: Client):
     consumer_pipeline(id=artifact_version_id, expected_value=42)
 
 
-def test_external_artifact_by_name_only(clean_client: Client):
+def test_external_artifact_by_name_only():
     """Test passing external artifact by name only."""
     producer_pipeline(return_value=42)
     producer_pipeline(return_value=43)
@@ -93,7 +92,7 @@ def test_external_artifact_by_name_only(clean_client: Client):
     )
 
 
-def test_external_artifact_by_name_and_version(clean_client: Client):
+def test_external_artifact_by_name_and_version():
     """Test passing external artifact by name and version."""
     producer_pipeline(return_value=42)
     producer_pipeline(return_value=43)
