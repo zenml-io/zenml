@@ -75,35 +75,6 @@ def link_step_artifacts_to_model(
                 model=model,
             )
 
-
-def link_service_to_model_from_artifacts(
-    service_ids: Set[UUID],
-) -> None:
-    """Links the created service to the model from the artifacts.
-
-    Args:
-        service_ids: The IDs of the services to link.
-
-    Raises:
-        RuntimeError: If called outside of a step.
-    """
-    try:
-        step_context = get_step_context()
-    except StepContextError:
-        raise RuntimeError(
-            "`link_service_to_model_from_artifacts` can only be called from within a "
-            "step."
-        )
-    try:
-        model = step_context.model
-    except StepContextError:
-        model = None
-        logger.debug("No model context found, unable to auto-link artifacts.")
-
-    for service_id in service_ids:
-        link_service_to_model(service_id=service_id, model=model)
-
-
 def link_service_to_model(
     service_id: UUID,
     model: Optional["Model"] = None,

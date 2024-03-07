@@ -45,7 +45,6 @@ from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.model.utils import (
-    link_service_to_model_from_artifacts,
     link_step_artifacts_to_model,
 )
 from zenml.new.steps.step_context import StepContext, get_step_context
@@ -258,12 +257,6 @@ class StepRunner:
                         )
                         link_step_artifacts_to_model(
                             artifact_version_ids=output_artifact_ids
-                        )
-                        link_service_to_model_from_artifacts(
-                            service_ids=self._get_service_id_from_artifacts(
-                                output_data=output_data,
-                                output_materializers=output_materializers,
-                            )
                         )
                         self._link_pipeline_run_to_model_from_artifacts(
                             pipeline_run=pipeline_run,
@@ -681,33 +674,6 @@ class StepRunner:
                 else:
                     break
         return models
-
-    def _get_service_id_from_artifacts(
-        self,
-        output_data: Dict[str, Any],
-        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
-    ) -> Set[UUID]:
-        """Gets the service IDs from the artifacts.
-
-        Args:
-            output_data: The output data of the step function, mapping output
-                names to return values.
-            output_materializers: The output materializers of the step.
-
-        Returns:
-            Set of service IDs.
-
-        Raises:
-            StepInterfaceError: If the step function return values do not
-                match the output annotations.
-        """
-        service_ids = set()
-        for output_name, return_value in output_materializers.items():
-            for materializer in return_value:
-                if materializer.__qualname__ == "ServiceMaterializer":
-                    service_id = output_data[output_name].uuid
-                    service_ids.add(service_id)
-        return service_ids
 
     def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:
         """Gets the model versions from the step model version.

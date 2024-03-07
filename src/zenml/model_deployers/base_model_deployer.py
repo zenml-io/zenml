@@ -22,7 +22,6 @@ from typing import (
     List,
     Optional,
     Type,
-    cast,
 )
 from uuid import UUID
 
@@ -180,11 +179,9 @@ class BaseModelDeployer(StackComponent, ABC):
             service_response = client.create_service(
                 config=config,
                 service_type=service_type,
-                model_version_id=client.get_model_version(
+                model_version_id=_get_model_version_id_if_exists(
                     config.model_name, config.model_version
-                ).id
-                if config.model_name
-                else None,
+                ),
             )
             service = self.perform_deploy_model(
                 id=service_response.id,
@@ -301,11 +298,9 @@ class BaseModelDeployer(StackComponent, ABC):
             pipeline_name=pipeline_name,
             run_name=run_name,
             pipeline_step_name=pipeline_step_name,
-            model_version_id=client.get_model_version(
+            model_version_id=_get_model_version_id_if_exists(
                 model_name, model_version
-            ).id
-            if model_name
-            else None,
+            ),
             type=type or service_type.type if service_type else None,
             flavor=flavor or service_type.flavor if service_type else None,
             hydrate=True,
@@ -567,3 +562,28 @@ class BaseModelDeployerFlavor(Flavor):
     @abstractmethod
     def implementation_class(self) -> Type[BaseModelDeployer]:
         """The class that implements the model deployer."""
+
+
+def _get_model_version_id_if_exists(
+    model_name: Optional[str],
+    model_version: Optional[str],
+) -> Optional[UUID]:
+    """Get the model version id if it exists.
+
+    Args:
+        model_name: The name of the model.
+        model_version: The version of the model.
+
+    Returns:
+        The model version id if it exists.
+    """
+    client = Client()
+    if model_name:
+        try:
+            model_version_id = client.get_model_version(
+                name=model_name, model_version_name_or_number_or_id=model_version
+            ).id
+            return model_version_id
+        except KeyError:
+            pass
+    return None
