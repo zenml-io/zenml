@@ -1,0 +1,122 @@
+name: Verify defaultdict resolution
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docker/**, '*', '!pyproject.toml']
+jobs:
+  pip-installation:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        # python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.10']
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: gather requirements
+      run: |
+        # figure out the python version
+        python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
+
+        ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure"
+        # if python version is 3.11, exclude all integrations depending on kfp
+        # because they are not yet compatible with python 3.11
+        if [ "$python_version" = "3.11" ]; then
+            ignore_integrations="$ignore_integrations kubeflow tekton gcp"
+        fi
+
+        # turn the ignore integrations into a list of --ignore-integration args
+        ignore_integrations_args=""
+        for integration in $ignore_integrations; do
+            ignore_integrations_args="$ignore_integrations_args --ignore-integration $integration"
+        done
+
+        # install basic ZenML integrations
+        zenml integration export-requirements \
+            --output-file integration-requirements.txt \
+            $ignore_integrations_args
+
+        echo "pyyaml>=6.0.1" >> integration-requirements.txt
+        echo "pyopenssl" >> integration-requirements.txt
+        echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> integration-requirements.txt
+
+    - name: Install dependencies with pip
+      run: |
+        pip install -r integration-requirements.txt
+
+    - name: Log collections version and defaultdict type with pip
+      run: |
+        python -c "import collections; print(f'collections version: {collections.__version__}')"
+        python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
+
+    - name: Install dependencies with uv
+      run: |
+        pip install uv
+        uv venv uvtest
+        source uvtest/bin/activate
+        uv pip install --system -r integration-requirements.txt
+
+    - name: Log collections version and defaultdict type with uv
+      run: |
+        source uvtest/bin/activate
+        python -c "import collections; print(f'collections version: {collections.__version__}')"
+        python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
+  uv-installation:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        # python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.10']
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: gather requirements
+      run: |
+        # figure out the python version
+        python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
+
+        ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure"
+        # if python version is 3.11, exclude all integrations depending on kfp
+        # because they are not yet compatible with python 3.11
+        if [ "$python_version" = "3.11" ]; then
+            ignore_integrations="$ignore_integrations kubeflow tekton gcp"
+        fi
+
+        # turn the ignore integrations into a list of --ignore-integration args
+        ignore_integrations_args=""
+        for integration in $ignore_integrations; do
+            ignore_integrations_args="$ignore_integrations_args --ignore-integration $integration"
+        done
+
+        # export basic ZenML integration requirements
+        zenml integration export-requirements \
+            --output-file integration-requirements.txt \
+            $ignore_integrations_args
+
+        echo "pyyaml>=6.0.1" >> integration-requirements.txt
+        echo "pyopenssl" >> integration-requirements.txt
+        echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> integration-requirements.txt
+
+    - name: Install dependencies with uv
+      run: |
+        pip install uv
+        uv pip install --system -r integration-requirements.txt
+
+    - name: Log collections version and defaultdict type with uv
+      run: |
+        python -c "import collections; print(f'collections version: {collections.__version__}')"
+        python -c "from collections import defaultdict; print(f'defaultdict type: {type(defaultdict)}')"
