@@ -180,7 +180,7 @@ class BaseModelDeployer(StackComponent, ABC):
             service_response = client.create_service(
                 config=config,
                 service_type=service_type,
-                model_version_id=_get_model_version_id_if_exists(
+                model_version_id=get_model_version_id_if_exists(
                     config.model_name, config.model_version
                 ),
             )
@@ -299,7 +299,7 @@ class BaseModelDeployer(StackComponent, ABC):
             pipeline_name=pipeline_name,
             run_name=run_name,
             pipeline_step_name=pipeline_step_name,
-            model_version_id=_get_model_version_id_if_exists(
+            model_version_id=get_model_version_id_if_exists(
                 model_name, model_version
             ),
             type=type or service_type.type if service_type else None,
@@ -565,7 +565,7 @@ class BaseModelDeployerFlavor(Flavor):
         """The class that implements the model deployer."""
 
 
-def _get_model_version_id_if_exists(
+def get_model_version_id_if_exists(
     model_name: Optional[str],
     model_version: Optional[str],
 ) -> Optional[UUID]:
