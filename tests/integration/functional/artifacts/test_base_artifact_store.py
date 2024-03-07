@@ -20,11 +20,10 @@ import pytest
 from zenml.client import Client
 
 
-def test_files_outside_of_artifact_store_are_not_reachable_by_it(
-    clean_client: "Client",
-):
+def test_files_outside_of_artifact_store_are_not_reachable_by_it():
     """Tests that no operations outside of bounds of artifact store could happen."""
-    a_s = clean_client.active_stack.artifact_store
+    client = Client()
+    a_s = client.active_stack.artifact_store
 
     outside_dir = Path(a_s.path) / ".."
     outside_file = str(outside_dir / "tmp.file")
