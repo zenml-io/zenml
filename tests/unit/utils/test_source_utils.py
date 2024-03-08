@@ -14,7 +14,6 @@
 
 import pathlib
 import sys
-from collections import defaultdict
 from contextlib import ExitStack as does_not_raise
 from uuid import uuid4
 
@@ -107,9 +106,9 @@ def test_basic_source_resolving(mocker):
     assert source_utils.resolve(int) == Source(
         module=int.__module__, attribute=int.__name__, type=SourceType.BUILTIN
     )
-    assert source_utils.resolve(defaultdict) == Source(
-        module=defaultdict.__module__,
-        attribute=defaultdict.__name__,
+    assert source_utils.resolve(int) == Source(
+        module=int.__module__,
+        attribute=int.__name__,
         type=SourceType.BUILTIN,
     )
     assert source_utils.resolve(source_utils) == Source(
@@ -208,7 +207,7 @@ def test_module_type_detection(mocker):
     builtin_module = sys.modules[int.__module__]
     assert source_utils.get_source_type(builtin_module) == SourceType.BUILTIN
 
-    standard_lib_module = sys.modules[defaultdict.__module__]
+    standard_lib_module = sys.modules[int.__module__]
     assert (
         source_utils.get_source_type(standard_lib_module) == SourceType.BUILTIN
     )
