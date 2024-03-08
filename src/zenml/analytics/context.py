@@ -20,7 +20,8 @@ The base functionalities are adapted to work with the ZenML analytics server.
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
-
+import datetime
+import locale
 from zenml import __version__
 from zenml.analytics.client import default_client
 from zenml.constants import (
@@ -267,6 +268,16 @@ class AnalyticsContext:
                 "executed_by_service_account": self.executed_by_service_account,
             }
         )
+
+        # Timezone as tzdata
+        tz = datetime.datetime.now(datetime.timezone.utc).astimezone().tzname()
+        if tz is not None:
+            properties.update({"timezone": tz})
+
+        # Language code such as "en_DE"
+        language_code = locale.getdefaultlocale()[0]
+        if language_code is not None:
+            properties.update({"locale": language_code})
 
         if self.external_user_id:
             properties["external_user_id"] = self.external_user_id
