@@ -12,9 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Huggingface integration."""
+from typing import List, Type
 
 from zenml.integrations.constants import HUGGINGFACE
 from zenml.integrations.integration import Integration
+from zenml.stack import Flavor
+
+HUGGINGFACE_MODEL_DEPLOYER_FLAVOR = "huggingface"
+HUGGINGFACE_SERVICE_ARTIFACT = "hf_deployment_service"
 
 
 class HuggingfaceIntegration(Integration):
@@ -31,6 +36,20 @@ class HuggingfaceIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.huggingface import materializers  # noqa
+        from zenml.integrations.huggingface import services
+
+    @classmethod
+    def flavors(cls) -> List[Type[Flavor]]:
+        """Declare the stack component flavors for the Huggingface integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
+        from zenml.integrations.huggingface.flavors import (
+            HuggingFaceModelDeployerFlavor,
+        )
+
+        return [HuggingFaceModelDeployerFlavor]
 
 
 HuggingfaceIntegration.check_installation()
