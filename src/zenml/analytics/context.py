@@ -17,11 +17,12 @@ This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
 
+import datetime
+import locale
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
-import datetime
-import locale
+
 from zenml import __version__
 from zenml.analytics.client import default_client
 from zenml.constants import (
