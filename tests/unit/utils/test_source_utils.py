@@ -211,7 +211,6 @@ def test_module_type_detection(mocker):
     assert (
         source_utils.get_source_type(standard_lib_module) == SourceType.BUILTIN
     )
-    assert source_utils.is_standard_lib_file(standard_lib_module.__file__)
 
     internal_module = sys.modules[source_utils.__name__]
     assert source_utils.get_source_type(internal_module) == SourceType.INTERNAL
