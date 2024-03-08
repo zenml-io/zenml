@@ -295,10 +295,17 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         config_file = self._config_file
         config_values = {}
         if fileio.exists(config_file):
-            config_values = cast(
-                Dict[str, Any],
-                yaml_utils.read_yaml(config_file),
+            config_values = yaml_utils.read_yaml(config_file)
+
+        if config_values is None:
+            # This can happen for example if the config file is empty
+            config_values = {}
+        elif not isinstance(config_values, dict):
+            logger.warning(
+                "The global configuration file is not a valid YAML file. "
+                "Creating a new global configuration file."
             )
+            config_values = {}
 
         return config_values
 
