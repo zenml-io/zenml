@@ -41,15 +41,14 @@ class HuggingFaceBaseConfig(BaseModel):
     instance_type: Optional[str] = None
     region: Optional[str] = None
     vendor: Optional[str] = None
-    token: Optional[str] = None
     account_id: Optional[str] = None
     min_replica: int = 0
     max_replica: int = 1
     revision: Optional[str] = None
     task: Optional[str] = None
     custom_image: Optional[Dict[str, Any]] = None
-    namespace: Optional[str] = None
     endpoint_type: str = "public"
+    namespace: Optional[str] = None
 
 
 class HuggingFaceModelDeployerConfig(

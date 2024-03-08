@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Hugging Face Deployment service."""
 
+import os
 from typing import Any, Generator, Optional, Tuple
 
 from huggingface_hub import (
@@ -90,8 +91,8 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         """
         return get_inference_endpoint(
             name=self.config.endpoint_name,
-            token=self.config.token,
-            namespace=self.config.namespace,
+            token=os.environ.get("HF_TOKEN"),
+            namespace=self.config.namespace or os.environ.get("HF_NAMESPACE"),
         )
 
     @property
@@ -139,8 +140,9 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 task=self.config.task,
                 custom_image=self.config.custom_image,
                 type=self.config.endpoint_type,
-                namespace=self.config.namespace,
-                token=self.config.token,
+                token=os.environ.get("HF_TOKEN"),
+                namespace=self.config.namespace
+                or os.environ.get("HF_NAMESPACE"),
             ).wait(timeout=POLLING_TIMEOUT)
 
             # Check if the endpoint URL is available after provisioning

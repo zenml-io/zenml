@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the Hugging Face Model Deployer."""
 
-from typing import Any, ClassVar, Dict, List, Optional, Type, cast
+import os
+from typing import ClassVar, Dict, Optional, Type, cast
 from uuid import UUID
 
-from huggingface_hub import list_inference_endpoints
-
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.artifacts.utils import log_artifact_metadata, save_artifact
 from zenml.client import Client
 from zenml.integrations.huggingface import HUGGINGFACE_SERVICE_ARTIFACT
@@ -35,7 +36,7 @@ from zenml.model_deployers.base_model_deployer import (
     DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     BaseModelDeployerFlavor,
 )
-from zenml.services import BaseService, ServiceConfig, ServiceRegistry
+from zenml.services import BaseService, ServiceConfig
 
 logger = get_logger(__name__)
 
@@ -60,17 +61,21 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         """
         return cast(HuggingFaceModelDeployerConfig, self._config)
 
-    @property
-    def deployed_endpoints(self) -> Any:
-        """Get list of deployed endpoint from Hugging Face.
+    def prepare_environment_variable(self, set: bool = True) -> None:
+        """Set up Environment variables that are required for the authenticating with Hugging Face.
 
-        Returns:
-            List of deployed endpoints.
+        Args:
+            set: Whether to set the environment variables or not.
+
+        Raises:
+            ValueError: If no service connector is found.
         """
-        return list_inference_endpoints(
-            token=self.config.token,
-            namespace=self.config.namespace,
-        )
+        if set:
+            os.environ["HF_TOKEN"] = self.config.token
+            os.environ["HF_NAMESPACE"] = self.config.namespace
+        else:
+            os.environ.pop("HF_TOKEN", None)
+            os.environ.pop("HF_NAMESPACE", None)
 
     def modify_endpoint_name(
         self, endpoint_name: str, artifact_version: str
@@ -95,11 +100,12 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         return endpoint_name
 
     def _create_new_service(
-        self, timeout: int, config: HuggingFaceServiceConfig
+        self, id: UUID, timeout: int, config: HuggingFaceServiceConfig
     ) -> HuggingFaceDeploymentService:
         """Creates a new Hugging FaceDeploymentService.
 
         Args:
+            id: the UUID of the model to be deployed with Hugging Face model deployer.
             timeout: the timeout in seconds to wait for the Hugging Face inference endpoint
                 to be provisioned and successfully started or updated.
             config: the configuration of the model to be deployed with Hugging Face model deployer.
@@ -109,10 +115,10 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             with the Hugging Face inference endpoint.
         """
         # create a new service for the new model
-        service = HuggingFaceDeploymentService(config)
+        service = HuggingFaceDeploymentService(uuid=id, config=config)
 
         # Use first 8 characters of UUID as artifact version
-        artifact_version = str(service.dict()["uuid"])[:UUID_SLICE_LENGTH]
+        artifact_version = str(id)[:UUID_SLICE_LENGTH]
         # Add same 8 characters as suffix to endpoint name
         service.config.endpoint_name = self.modify_endpoint_name(
             service.config.endpoint_name, artifact_version
@@ -157,12 +163,14 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             existing_service: Existing Hugging Face deployment service
         """
         # stop the older service
+        self.prepare_environment_variable(set=True)
         existing_service.stop(timeout=timeout, force=force)
+        self.prepare_environment_variable(set=False)
 
-    def deploy_model(
+    def perform_deploy_model(
         self,
+        id: UUID,
         config: ServiceConfig,
-        replace: bool = True,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
         """Create a new Hugging Face deployment service or update an existing one.
@@ -170,6 +178,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         This should serve the supplied model and deployment configuration.
 
         Args:
+            id: the UUID of the model to be deployed with Hugging Face.
             config: the configuration of the model to be deployed with Hugging Face.
                 Core
             replace: set this flag to True to find and update an equivalent
@@ -184,263 +193,90 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             The ZenML Hugging Face deployment service object that can be used to
             interact with the remote Hugging Face inference endpoint server.
         """
-        config = cast(HuggingFaceServiceConfig, config)
-        service = None
-
-        # if replace is True, remove all existing services
-        if replace:
-            existing_services = self.find_model_server(
-                pipeline_name=config.pipeline_name,
-                pipeline_step_name=config.pipeline_step_name,
-            )
-
-            for existing_service in existing_services:
-                if service is None:
-                    # keep the most recently created service
-                    service = cast(
-                        HuggingFaceDeploymentService, existing_service
-                    )
-                try:
-                    # delete the older services and don't wait for them to
-                    # be deprovisioned
-                    self._clean_up_existing_service(
-                        existing_service=cast(
-                            HuggingFaceDeploymentService, existing_service
-                        ),
-                        timeout=timeout,
-                        force=True,
-                    )
-                except RuntimeError:
-                    # ignore errors encountered while stopping old services
-                    pass
-
-        if service:
-            # update an equivalent service in place
-            logger.info(
-                f"Updating an existing Hugging Face deployment service: {service}"
-            )
-
-            service_metadata = service.dict()
-            artifact_version = str(service_metadata["uuid"])[
-                :UUID_SLICE_LENGTH
-            ]
-            config.endpoint_name = self.modify_endpoint_name(
-                config.endpoint_name, artifact_version
-            )
-
-            service.stop(timeout=timeout, force=True)
-            service.update(config)
-            service.start(timeout=timeout)
-        else:
+        with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
+            config = cast(HuggingFaceServiceConfig, config)
             # create a new HuggingFaceDeploymentService instance
-            service = self._create_new_service(timeout, config)
+            self.prepare_environment_variable(set=True)
+            service = self._create_new_service(
+                id=id, timeout=timeout, config=config
+            )
+            self.prepare_environment_variable(set=False)
             logger.info(
                 f"Creating a new Hugging Face inference endpoint service: {service}"
             )
+            # Add telemetry with metadata that gets the stack metadata and
+            # differentiates between pure model and custom code deployments
+            stack = Client().active_stack
+            stack_metadata = {
+                component_type.value: component.flavor
+                for component_type, component in stack.components.items()
+            }
+            analytics_handler.metadata = {
+                "store_type": Client().zen_store.type.value,
+                **stack_metadata,
+            }
 
-        return cast(BaseService, service)
+        return service
 
-    def find_model_server(
+    def perform_stop_model(
         self,
-        running: bool = False,
-        service_uuid: Optional[UUID] = None,
-        pipeline_name: Optional[str] = None,
-        run_name: Optional[str] = None,
-        pipeline_step_name: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_uri: Optional[str] = None,
-        model_type: Optional[str] = None,
-    ) -> List[BaseService]:
-        """Find one or more Hugging Face model services that match the given criteria.
-
-        Args:
-            running: if true, only running services will be returned.
-            service_uuid: the UUID of the Hugging Face service that was
-                originally used to create the Hugging Face deployment resource.
-            pipeline_name: name of the pipeline that the deployed model was part
-                of.
-            run_name: Name of the pipeline run which the deployed model was
-                part of.
-            pipeline_step_name: the name of the pipeline model deployment step
-                that deployed the model.
-            model_name: the name of the deployed model.
-            model_uri: URI of the deployed model.
-            model_type: the Hugging Face server implementation used to serve
-                the model
-
-        Raises:
-            TypeError: If service type does not match HuggingFaceDeploymentService
-
-        Returns:
-            One or more Hugging Face service objects representing Hugging Face
-            model servers that match the input search criteria.
-        """
-        # Use a Hugging Face deployment service configuration to compute the labels
-        config = HuggingFaceServiceConfig(
-            pipeline_name=pipeline_name or "",
-            run_name=run_name or "",
-            pipeline_run_id=run_name or "",
-            pipeline_step_name=pipeline_step_name or "",
-            model_name=model_name or "",
-            model_uri=model_uri or "",
-            implementation=model_type or "",
-        )
-
-        services: List[BaseService] = []
-
-        # Find all services that match input criteria
-        for endpoint in self.deployed_endpoints:
-            if endpoint.name.startswith("zenml-"):
-                artifact_version = endpoint.name[-8:]
-                # If service_uuid is supplied, fetch service for that uuid
-                if (
-                    service_uuid is not None
-                    and str(service_uuid)[:8] != artifact_version
-                ):
-                    continue
-
-                # Fetch the saved metadata artifact from zenml server to recreate service
-                client = Client()
-                try:
-                    service_artifact = client.get_artifact_version(
-                        HUGGINGFACE_SERVICE_ARTIFACT, artifact_version
-                    )
-                    hf_deployment_service_dict = service_artifact.run_metadata[
-                        HUGGINGFACE_SERVICE_ARTIFACT
-                    ].value
-
-                    existing_service = (
-                        ServiceRegistry().load_service_from_dict(
-                            hf_deployment_service_dict  # type: ignore
-                        )
-                    )
-
-                    if not isinstance(
-                        existing_service, HuggingFaceDeploymentService
-                    ):
-                        raise TypeError(
-                            f"Expected service type HuggingFaceDeploymentService but got "
-                            f"{type(existing_service)} instead"
-                        )
-
-                    existing_service.update_status()
-                    if self._matches_search_criteria(existing_service, config):
-                        if not running or existing_service.is_running:
-                            services.append(
-                                cast(BaseService, existing_service)
-                            )
-
-                # if endpoint is provisioned externally
-                # we do not have saved artifact for it.
-                except KeyError:
-                    logger.error(
-                        f"No key found for endpoint {endpoint.name} provisioned externally"
-                    )
-
-        return services
-
-    def _matches_search_criteria(
-        self,
-        existing_service: HuggingFaceDeploymentService,
-        config: HuggingFaceServiceConfig,
-    ) -> bool:
-        """Returns true if a service matches the input criteria.
-
-        If any of the values in the input criteria are None, they are ignored.
-        This allows listing services just by common pipeline names or step
-        names, etc.
-
-        Args:
-            existing_service: The materialized Service instance derived from
-                the config of the older (existing) service
-            config: The HuggingFaceServiceConfig object passed to the
-                deploy_model function holding parameters of the new service
-                to be created.
-
-        Returns:
-            True if the service matches the input criteria.
-        """
-        existing_service_config = existing_service.config
-
-        # check if the existing service matches the input criteria
-        if (
-            (
-                not config.pipeline_name
-                or existing_service_config.pipeline_name
-                == config.pipeline_name
-            )
-            and (
-                not config.pipeline_step_name
-                or existing_service_config.pipeline_step_name
-                == config.pipeline_step_name
-            )
-            and (
-                not config.run_name
-                or existing_service_config.run_name == config.run_name
-            )
-        ):
-            return True
-
-        return False
-
-    def stop_model_server(
-        self,
-        uuid: UUID,
+        service: BaseService,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
-    ) -> None:
+    ) -> BaseService:
         """Method to stop a model server.
 
         Args:
-            uuid: UUID of the model server to stop.
+            service: The service to stop.
             timeout: Timeout in seconds to wait for the service to stop.
             force: If True, force the service to stop.
+
+        Returns:
+            The stopped service.
         """
-        # get list of all services
-        existing_services = self.find_model_server(service_uuid=uuid)
+        self.prepare_environment_variable(set=True)
+        service.stop(timeout=timeout, force=force)
+        self.prepare_environment_variable(set=False)
+        return service
 
-        # if the service exists, stop it
-        if existing_services:
-            existing_services[0].stop(timeout=timeout, force=force)
-
-    def start_model_server(
-        self, uuid: UUID, timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT
-    ) -> None:
+    def perform_start_model(
+        self,
+        service: BaseService,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+    ) -> BaseService:
         """Method to start a model server.
 
         Args:
-            uuid: UUID of the model server to start.
+            service: The service to start.
             timeout: Timeout in seconds to wait for the service to start.
+
+        Returns:
+            The started service.
         """
-        # get list of all services
-        existing_services = self.find_model_server(service_uuid=uuid)
+        self.prepare_environment_variable(set=True)
+        service.start(timeout=timeout)
+        self.prepare_environment_variable(set=False)
+        return service
 
-        # if the service exists, start it
-        if existing_services:
-            existing_services[0].start(timeout=timeout)
-
-    def delete_model_server(
+    def perform_delete_model(
         self,
-        uuid: UUID,
+        service: BaseService,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
         """Method to delete all configuration of a model server.
 
         Args:
-            uuid: UUID of the model server to delete.
+            service: The service to delete.
             timeout: Timeout in seconds to wait for the service to stop.
             force: If True, force the service to stop.
         """
-        # get list of all services
-        existing_services = self.find_model_server(service_uuid=uuid)
-
-        # if the service exists, clean it up
-        if existing_services:
-            service = cast(HuggingFaceDeploymentService, existing_services[0])
-            self._clean_up_existing_service(
-                existing_service=service, timeout=timeout, force=force
-            )
+        service = cast(HuggingFaceDeploymentService, service)
+        self.prepare_environment_variable(set=True)
+        self._clean_up_existing_service(
+            existing_service=service, timeout=timeout, force=force
+        )
+        self.prepare_environment_variable(set=False)
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
@@ -455,5 +291,6 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             Model server information.
         """
         return {
-            "PREDICTION_URL": service_instance.prediction_url,
+            "PREDICTION_URL": service_instance.get_the_prediction_url(),
+            "HEALTH_CHECK_URL": service_instance.get_the_healthcheck_url(),
         }
