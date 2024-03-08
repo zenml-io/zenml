@@ -258,7 +258,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             "--overrides",
             json.dumps(spec_overrides),
             "--pod-running-timeout",
-            f"{self.config.pod_running_timeout}s"
+            f"{self.config.pod_running_timeout}s",
         ]
         logger.debug("Running Kaniko build with command: %s", command)
         with subprocess.Popen(
