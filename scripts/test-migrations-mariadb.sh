@@ -132,10 +132,6 @@ sleep $DB_STARTUP_DELAY
 # Test sequential migrations across multiple versions
 echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
 set -e
-python3 -m venv ".venv-sequential-migrations"
-source ".venv-sequential-migrations/bin/activate"
-
-pip3 install -U pip setuptools wheel
 
 # Randomly select versions for sequential migrations
 MIGRATION_VERSIONS=()
@@ -157,14 +153,14 @@ echo "============================="
 for i in "${!MIGRATION_VERSIONS[@]}"; do
     set -e  # Exit immediately if a command exits with a non-zero status
     # Create a new virtual environment
-    python3 -m venv ".venv-${MIGRATION_VERSIONS[$i]}"
+    uv venv ".venv-${MIGRATION_VERSIONS[$i]}"
     source ".venv-${MIGRATION_VERSIONS[$i]}/bin/activate"
 
     # Install the specific version
-    pip3 install -U pip setuptools wheel
+    uv pip install -U pip setuptools wheel
 
     git checkout release/${MIGRATION_VERSIONS[$i]}
-    pip3 install -e ".[templates,server]"
+    uv pip install -e ".[templates,server]"
 
     export ZENML_ANALYTICS_OPT_IN=false
     export ZENML_DEBUG=true

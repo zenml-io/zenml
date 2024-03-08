@@ -204,10 +204,6 @@ fi
 # Test sequential migrations across multiple versions
 echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
 set -e
-python3 -m venv ".venv-sequential-migrations"
-source ".venv-sequential-migrations/bin/activate"
-
-pip3 install -U pip setuptools wheel
 
 # Randomly select versions for sequential migrations
 MIGRATION_VERSIONS=()
@@ -229,16 +225,16 @@ echo "============================="
 for i in "${!MIGRATION_VERSIONS[@]}"; do
     set -e  # Exit immediately if a command exits with a non-zero status
     # Create a new virtual environment
-    python3 -m venv ".venv-$VERSION"
+    uv venv ".venv-$VERSION"
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    pip3 install -U pip setuptools wheel
+    uv pip install -U pip setuptools wheel
 
     git checkout release/${MIGRATION_VERSIONS[$i]}
-    pip3 install -e ".[templates,server]"
+    uv pip install -e ".[templates,server]"
     # Handles unpinned sqlmodel dependency in older versions
-    pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1" importlib_metadata
+    uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" importlib_metadata
 
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
