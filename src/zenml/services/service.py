@@ -16,7 +16,6 @@
 import json
 import time
 from abc import abstractmethod
-from datetime import datetime
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -529,17 +528,3 @@ class BaseDeploymentService(BaseService):
             the healthcheck URL for the endpoint
         """
         return None
-
-
-def generate_service_name(
-    service_type: ServiceType,
-) -> str:
-    """Generate a unique service name.
-
-    Args:
-        service_type: the service type.
-
-    Returns:
-        a unique service name
-    """
-    return f"{service_type.flavor.lower()}-{datetime.now().strftime('%Y%m%d%H%M%S')}"

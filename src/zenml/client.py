@@ -179,7 +179,7 @@ from zenml.models import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.services.service import ServiceConfig, generate_service_name
+from zenml.services.service import ServiceConfig
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 from zenml.utils import io_utils, source_utils
@@ -1492,6 +1492,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The registered service.
         """
+        from zenml.services.utils import generate_service_name
+
         service_request = ServiceRequest(
             name=config.name or generate_service_name(service_type),
             service_type=service_type,
@@ -1642,6 +1644,7 @@ class Client(metaclass=ClientMetaClass):
         labels: Optional[Dict[str, str]] = None,
         prediction_url: Optional[str] = None,
         health_check_url: Optional[str] = None,
+        model_version_id: Optional[UUID] = None,
     ) -> ServiceResponse:
         """Update a service.
 
@@ -1656,6 +1659,7 @@ class Client(metaclass=ClientMetaClass):
             labels: The new labels of the service.
             prediction_url: The new prediction url of the service.
             health_check_url: The new health check url of the service.
+            model_version_id: The new model version id of the service.
 
         Returns:
             The updated service.
@@ -1679,6 +1683,8 @@ class Client(metaclass=ClientMetaClass):
             service_update.prediction_url = prediction_url
         if health_check_url:
             service_update.health_check_url = health_check_url
+        if model_version_id:
+            service_update.model_version_id = model_version_id
         return self.zen_store.update_service(
             service_id=id, update=service_update
         )

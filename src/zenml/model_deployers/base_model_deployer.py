@@ -165,17 +165,19 @@ class BaseModelDeployer(StackComponent, ABC):
         )
         if len(services) > 0:
             logger.info(
-                f"Found existing model server for model {config.model_name}."
+                f"Existing model server found for {config.model_name}, no replacement made."
             )
             service = services[0]
             if replace:
-                logger.info("Replacing existing model server.")
+                logger.info(
+                    f"Replacing existing model server for {config.model_name}."
+                )
                 self.perform_delete_model(service, timeout=timeout, force=True)
                 service.update(config)
                 service.start(timeout=timeout)
         else:
             logger.info(
-                f"No existing model server found for model {config.model_name}."
+                f"No existing model server found for {config.model_name}, deploying new one."
             )
             service_response = client.create_service(
                 config=config,
@@ -198,7 +200,7 @@ class BaseModelDeployer(StackComponent, ABC):
             admin_state=service.admin_state,
             status=service.status.dict(),
             endpoint=service.endpoint.dict() if service.endpoint else None,
-            # labels=service.config.get_service_labels()  #TODO: fix labels in services and config
+            # labels=service.config.get_service_labels()  # TODO: fix labels in services and config
             prediction_url=service.get_the_prediction_url(),
             health_check_url=service.get_the_healthcheck_url(),
         )
@@ -309,6 +311,7 @@ class BaseModelDeployer(StackComponent, ABC):
         services = []
         for service_response in service_responses.items:
             service = BaseDeploymentService.from_model(service_response)
+            # TODO: update state using backend not front using endpoint_chealth_url
             service.update_status()
             if service.status.dict() != service_response.status:
                 client.update_service(
@@ -320,6 +323,12 @@ class BaseModelDeployer(StackComponent, ABC):
                     if service.endpoint
                     else None,
                 )
+            if service.is_running != running:
+                logger.warning(
+                    f"Service {service.uuid} is in an unexpected state. "
+                    f"Expected running={running}, but found running={service.is_running}."
+                )
+                continue
             services.append(service)
         return services
 
@@ -537,6 +546,22 @@ class BaseModelDeployer(StackComponent, ABC):
                 return {METADATA_DEPLOYED_MODEL_URL: Uri(deployed_model_url)}
         return {}
 
+    def load_service(
+        self,
+        service_id: UUID,
+    ) -> BaseService:
+        """Load a service from a URI.
+
+        Args:
+            service_id: The ID of the service to load.
+
+        Returns:
+            The loaded service.
+        """
+        client = Client()
+        service = client.get_service(service_id)
+        return BaseDeploymentService.from_model(service)
+
 
 class BaseModelDeployerFlavor(Flavor):
     """Base class for model deployer flavors."""
@@ -582,7 +607,7 @@ def get_model_version_id_if_exists(
     if model_name:
         try:
             model_version_id = client.get_model_version(
-                name=model_name,
+                model_name_or_id=model_name,
                 model_version_name_or_number_or_id=model_version,
             ).id
             return model_version_id
