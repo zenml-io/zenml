@@ -16,7 +16,7 @@
 import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
-from pydantic import NonNegativeInt, validator
+from pydantic import PositiveInt, validator
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.kaniko import KANIKO_IMAGE_BUILDER_FLAVOR
@@ -70,7 +70,7 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
     kubernetes_context: str
     kubernetes_namespace: str = "zenml-kaniko"
     executor_image: str = DEFAULT_KANIKO_EXECUTOR_IMAGE
-    pod_running_timeout: NonNegativeInt = DEFAULT_KANIKO_POD_RUNNING_TIMEOUT
+    pod_running_timeout: PositiveInt = DEFAULT_KANIKO_POD_RUNNING_TIMEOUT
 
     env: List[Dict[str, Any]] = []
     env_from: List[Dict[str, Any]] = []
