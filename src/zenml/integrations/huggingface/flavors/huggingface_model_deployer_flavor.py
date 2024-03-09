@@ -48,6 +48,7 @@ class HuggingFaceBaseConfig(BaseModel):
     task: Optional[str] = None
     custom_image: Optional[Dict[str, Any]] = None
     endpoint_type: str = "public"
+    secret_name: Optional[str] = None
     namespace: Optional[str] = None
 
 
@@ -61,7 +62,7 @@ class HuggingFaceModelDeployerConfig(
         namespace: Hugging Face namespace used to list endpoints
     """
 
-    token: str = SecretField()
+    token: Optional[str] = SecretField()
 
     # The namespace to list endpoints for. Set to `"*"` to list all endpoints
     # from all namespaces (i.e. personal namespace and all orgs the user belongs to).

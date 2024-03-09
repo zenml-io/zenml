@@ -1134,6 +1134,8 @@ def get_service_state_emoji(state: "ServiceState") -> str:
         return ":heavy_exclamation_mark:"
     if state == ServiceState.PENDING_STARTUP:
         return ":hourglass:"
+    if state == ServiceState.SCALED_TO_ZERO:
+        return ":chart_decreasing:"
     return ":hourglass_not_done:"
 
 

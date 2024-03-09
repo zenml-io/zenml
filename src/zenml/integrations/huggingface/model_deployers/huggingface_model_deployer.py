@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Hugging Face Model Deployer."""
 
-import os
-from typing import ClassVar, Dict, Optional, Type, cast
+from typing import ClassVar, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -37,6 +36,8 @@ from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerFlavor,
 )
 from zenml.services import BaseService, ServiceConfig
+from zenml.stack.stack import Stack
+from zenml.stack.stack_validator import StackValidator
 
 logger = get_logger(__name__)
 
@@ -61,21 +62,35 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         """
         return cast(HuggingFaceModelDeployerConfig, self._config)
 
-    def prepare_environment_variable(self, set: bool = True) -> None:
-        """Set up Environment variables that are required for the authenticating with Hugging Face.
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates the stack.
 
-        Args:
-            set: Whether to set the environment variables or not.
-
-        Raises:
-            ValueError: If no service connector is found.
+        Returns:
+            A validator that checks that the stack contains a remote artifact
+            store.
         """
-        if set:
-            os.environ["HF_TOKEN"] = self.config.token
-            os.environ["HF_NAMESPACE"] = self.config.namespace
-        else:
-            os.environ.pop("HF_TOKEN", None)
-            os.environ.pop("HF_NAMESPACE", None)
+
+        def _validate_if_secret_or_token_is_present(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
+            """Check if secret or token is present in the stack.
+
+            Args:
+                stack: The stack to validate.
+
+            Returns:
+                A tuple with a boolean indicating whether the stack is valid
+                and a message describing the validation result.
+            """
+            return bool(self.config.token or self.config.secret_name), (
+                "The Hugging Face model deployer requires either a secret name"
+                " or a token to be present in the stack."
+            )
+
+        return StackValidator(
+            custom_validation_function=_validate_if_secret_or_token_is_present,
+        )
 
     def modify_endpoint_name(
         self, endpoint_name: str, artifact_version: str
@@ -118,10 +133,10 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         service = HuggingFaceDeploymentService(uuid=id, config=config)
 
         # Use first 8 characters of UUID as artifact version
-        artifact_version = str(id)[:UUID_SLICE_LENGTH]
+        service_id_short = str(id)[:UUID_SLICE_LENGTH]
         # Add same 8 characters as suffix to endpoint name
         service.config.endpoint_name = self.modify_endpoint_name(
-            service.config.endpoint_name, artifact_version
+            service.config.endpoint_name, service_id_short
         )
 
         logger.info(
@@ -132,7 +147,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         save_artifact(
             service,
             HUGGINGFACE_SERVICE_ARTIFACT,
-            version=artifact_version,
+            version=service_id_short,
             is_deployment_artifact=True,
         )
 
@@ -141,10 +156,9 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         service_metadata["uuid"] = str(service_metadata["uuid"])
         log_artifact_metadata(
             artifact_name=HUGGINGFACE_SERVICE_ARTIFACT,
-            artifact_version=artifact_version,
+            artifact_version=service_id_short,
             metadata={HUGGINGFACE_SERVICE_ARTIFACT: service_metadata},
         )
-
         service.start(timeout=timeout)
         return service
 
@@ -163,9 +177,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             existing_service: Existing Hugging Face deployment service
         """
         # stop the older service
-        self.prepare_environment_variable(set=True)
         existing_service.stop(timeout=timeout, force=force)
-        self.prepare_environment_variable(set=False)
 
     def perform_deploy_model(
         self,
@@ -196,11 +208,9 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(HuggingFaceServiceConfig, config)
             # create a new HuggingFaceDeploymentService instance
-            self.prepare_environment_variable(set=True)
             service = self._create_new_service(
                 id=id, timeout=timeout, config=config
             )
-            self.prepare_environment_variable(set=False)
             logger.info(
                 f"Creating a new Hugging Face inference endpoint service: {service}"
             )
@@ -234,9 +244,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         Returns:
             The stopped service.
         """
-        self.prepare_environment_variable(set=True)
         service.stop(timeout=timeout, force=force)
-        self.prepare_environment_variable(set=False)
         return service
 
     def perform_start_model(
@@ -253,9 +261,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         Returns:
             The started service.
         """
-        self.prepare_environment_variable(set=True)
         service.start(timeout=timeout)
-        self.prepare_environment_variable(set=False)
         return service
 
     def perform_delete_model(
@@ -272,11 +278,9 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             force: If True, force the service to stop.
         """
         service = cast(HuggingFaceDeploymentService, service)
-        self.prepare_environment_variable(set=True)
         self._clean_up_existing_service(
             existing_service=service, timeout=timeout, force=force
         )
-        self.prepare_environment_variable(set=False)
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]

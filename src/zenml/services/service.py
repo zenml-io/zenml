@@ -79,7 +79,6 @@ def update_service_status(
                 logger.info(f"{func.__name__} method executed successfully.")
                 if post_status:
                     self.status.update_state(post_status, "")
-
                 return result
             except Exception as e:
                 logger.error(

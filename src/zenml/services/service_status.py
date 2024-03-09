@@ -30,6 +30,7 @@ class ServiceState(StrEnum):
     PENDING_STARTUP = "pending_startup"
     PENDING_SHUTDOWN = "pending_shutdown"
     ERROR = "error"
+    SCALED_TO_ZERO = "scaled_to_zero"
 
 
 class ServiceStatus(BaseTypedModel):

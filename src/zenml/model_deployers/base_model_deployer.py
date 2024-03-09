@@ -186,11 +186,15 @@ class BaseModelDeployer(StackComponent, ABC):
                     config.model_name, config.model_version
                 ),
             )
-            service = self.perform_deploy_model(
-                id=service_response.id,
-                config=config,
-                timeout=timeout,
-            )
+            try:
+                service = self.perform_deploy_model(
+                    id=service_response.id,
+                    config=config,
+                    timeout=timeout,
+                )
+            except Exception as e:
+                client.delete_service(service_response.id)
+                raise e
         # Update the service in store
         client.update_service(
             id=service.uuid,
@@ -323,7 +327,7 @@ class BaseModelDeployer(StackComponent, ABC):
                     if service.endpoint
                     else None,
                 )
-            if service.is_running != running:
+            if running and not service.is_running:
                 logger.warning(
                     f"Service {service.uuid} is in an unexpected state. "
                     f"Expected running={running}, but found running={service.is_running}."
