@@ -1492,10 +1492,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The registered service.
         """
-        from zenml.services.utils import generate_service_name
-
         service_request = ServiceRequest(
-            name=config.name or generate_service_name(service_type),
+            name=config.service_name,
             service_type=service_type,
             config=config.dict(),
             workspace=self.active_workspace.id,
@@ -1571,13 +1569,12 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         running: Optional[bool] = None,
-        endpoint_name_or_model_name: Optional[str] = None,
+        service_name: Optional[str] = None,
         pipeline_name: Optional[str] = None,
-        run_name: Optional[Union[str, UUID]] = None,
+        pipeline_run_id: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_version: Optional[str] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
+        config: Optional[Dict[str, Any]] = None,
     ) -> Page[ServiceResponse]:
         """List all services.
 
@@ -1597,13 +1594,15 @@ class Client(metaclass=ClientMetaClass):
                 by including metadata fields in the response.
             running: Use the running status for filtering
             pipeline_name: Use the pipeline name for filtering
-            endpoint_name_or_model_name: Use the endpoint name or model name
+            service_name: Use the service name or model name
                 for filtering
             run_name: Use the pipeline run id for filtering
             pipeline_step_name: Use the pipeline step name for filtering
             model_name: Use the model name for filtering
             model_version: Use the model version for filtering
             model_version_id: Use the model version id for filtering
+            config: Use the config for filtering
+            pipeline_run_id: Use the pipeline run id for filtering
 
         Returns:
             The Service response page.
@@ -1621,11 +1620,12 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             running=running,
-            name=endpoint_name_or_model_name,
+            name=service_name,
             pipeline_name=pipeline_name,
-            run_name=run_name,
             pipeline_step_name=pipeline_step_name,
             model_version_id=model_version_id,
+            pipeline_run_id=pipeline_run_id,
+            config=config,
         )
         service_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_services(

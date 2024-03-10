@@ -18,7 +18,6 @@ from uuid import UUID
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
-from zenml.artifacts.utils import log_artifact_metadata, save_artifact
 from zenml.client import Client
 from zenml.integrations.huggingface import HUGGINGFACE_SERVICE_ARTIFACT
 from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor import (
@@ -40,9 +39,6 @@ from zenml.stack.stack import Stack
 from zenml.stack.stack_validator import StackValidator
 
 logger = get_logger(__name__)
-
-ZENM_ENDPOINT_PREFIX: str = "zenml-"
-UUID_SLICE_LENGTH: int = 8
 
 
 class HuggingFaceModelDeployer(BaseModelDeployer):
@@ -92,28 +88,6 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             custom_validation_function=_validate_if_secret_or_token_is_present,
         )
 
-    def modify_endpoint_name(
-        self, endpoint_name: str, artifact_version: str
-    ) -> str:
-        """Modify endpoint name by adding suffix and prefix.
-
-        It adds a prefix "zenml-" if not present and a suffix
-        of first 8 characters of uuid.
-
-        Args:
-            endpoint_name : Name of the endpoint
-            artifact_version: Name of the artifact version
-
-        Returns:
-            Modified endpoint name with added prefix and suffix
-        """
-        # Add prefix if it does not start with ZENM_ENDPOINT_PREFIX
-        if not endpoint_name.startswith(ZENM_ENDPOINT_PREFIX):
-            endpoint_name = ZENM_ENDPOINT_PREFIX + endpoint_name
-
-        endpoint_name += artifact_version
-        return endpoint_name
-
     def _create_new_service(
         self, id: UUID, timeout: int, config: HuggingFaceServiceConfig
     ) -> HuggingFaceDeploymentService:
@@ -132,32 +106,9 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         # create a new service for the new model
         service = HuggingFaceDeploymentService(uuid=id, config=config)
 
-        # Use first 8 characters of UUID as artifact version
-        service_id_short = str(id)[:UUID_SLICE_LENGTH]
-        # Add same 8 characters as suffix to endpoint name
-        service.config.endpoint_name = self.modify_endpoint_name(
-            service.config.endpoint_name, service_id_short
-        )
-
         logger.info(
             f"Creating an artifact {HUGGINGFACE_SERVICE_ARTIFACT} with service instance attached as metadata."
             " If there's an active pipeline and/or model this artifact will be associated with it."
-        )
-
-        save_artifact(
-            service,
-            HUGGINGFACE_SERVICE_ARTIFACT,
-            version=service_id_short,
-            is_deployment_artifact=True,
-        )
-
-        # Convert UUID object to be json serializable
-        service_metadata = service.dict()
-        service_metadata["uuid"] = str(service_metadata["uuid"])
-        log_artifact_metadata(
-            artifact_name=HUGGINGFACE_SERVICE_ARTIFACT,
-            artifact_version=service_id_short,
-            metadata={HUGGINGFACE_SERVICE_ARTIFACT: service_metadata},
         )
         service.start(timeout=timeout)
         return service

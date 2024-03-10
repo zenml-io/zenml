@@ -208,8 +208,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
         """Creates a new BentoMLDeploymentService.
 
         Args:
-            id: the UUID of the BentoML model deployer.
-            timeout: the timeout in seconds to wait for the BentoML http server
+            id: the ID of the BentoML deployment service to be created or updated.
+            timeout: the timeout in seconds to wait for the BentoML server
                 to be provisioned and successfully started or updated.
             config: the configuration of the model to be deployed with BentoML.
 
@@ -224,54 +224,6 @@ class BentoMLModelDeployer(BaseModelDeployer):
         service.start(timeout=timeout)
 
         return service
-
-    def _matches_search_criteria(
-        self,
-        existing_service: BentoMLDeploymentService,
-        config: BentoMLDeploymentConfig,
-    ) -> bool:
-        """Returns true if a service matches the input criteria.
-
-        If any of the values in the input criteria are None, they are ignored.
-        This allows listing services just by common pipeline names or step
-        names, etc.
-
-        Args:
-            existing_service: The materialized Service instance derived from
-                the config of the older (existing) service
-            config: The BentoMlDeploymentConfig object passed to the
-                deploy_model function holding parameters of the new service
-                to be created.
-
-        Returns:
-            True if the service matches the input criteria.
-        """
-        existing_service_config = existing_service.config
-
-        # check if the existing service matches the input criteria
-        if (
-            (
-                not config.pipeline_name
-                or existing_service_config.pipeline_name
-                == config.pipeline_name
-            )
-            and (
-                not config.model_name
-                or existing_service_config.model_name == config.model_name
-            )
-            and (
-                not config.pipeline_step_name
-                or existing_service_config.pipeline_step_name
-                == config.pipeline_step_name
-            )
-            and (
-                not config.run_name
-                or existing_service_config.run_name == config.run_name
-            )
-        ):
-            return True
-
-        return False
 
     def perform_stop_model(
         self,

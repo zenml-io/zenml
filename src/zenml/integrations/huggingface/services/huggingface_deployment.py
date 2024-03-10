@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the Hugging Face Deployment service."""
 
-import os
 from typing import Any, Generator, Optional, Tuple
 
 from huggingface_hub import (
@@ -38,16 +37,11 @@ from zenml.services.service import BaseDeploymentService, ServiceConfig
 logger = get_logger(__name__)
 
 POLLING_TIMEOUT = 1200
+UUID_SLICE_LENGTH: int = 8
 
 
 class HuggingFaceServiceConfig(HuggingFaceBaseConfig, ServiceConfig):
-    """Hugging Face service configurations.
-
-    Attributes:
-        model_name: the name of the model.
-    """
-
-    model_name: str = "default"
+    """Hugging Face service configurations."""
 
 
 class HuggingFaceServiceStatus(ServiceStatus):
@@ -117,9 +111,9 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             Huggingface inference endpoint.
         """
         return get_inference_endpoint(
-            name=self.config.endpoint_name,
+            name=self._generate_an_endpoint_name(),
             token=self.get_token(),
-            namespace=self.config.namespace or os.environ.get("HF_NAMESPACE"),
+            namespace=self.config.namespace,
         )
 
     @property
@@ -150,7 +144,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         try:
             # Attempt to create and wait for the inference endpoint
             hf_endpoint = create_inference_endpoint(
-                name=self.config.endpoint_name,
+                name=self._generate_an_endpoint_name(),
                 repository=self.config.repository,
                 framework=self.config.framework,
                 accelerator=self.config.accelerator,
@@ -166,8 +160,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 custom_image=self.config.custom_image,
                 type=self.config.endpoint_type,
                 token=self.get_token(),
-                namespace=self.config.namespace
-                or os.environ.get("HF_NAMESPACE"),
+                namespace=self.config.namespace,
             ).wait(timeout=POLLING_TIMEOUT)
 
         except Exception as e:
@@ -203,7 +196,10 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 return (ServiceState.ACTIVE, "")
 
             elif status == InferenceEndpointStatus.SCALED_TO_ZERO:
-                return (ServiceState.SCALED_TO_ZERO, "Hugging Face Inference Endpoint is scaled to zero, but still running. It will be started on demand.")
+                return (
+                    ServiceState.SCALED_TO_ZERO,
+                    "Hugging Face Inference Endpoint is scaled to zero, but still running. It will be started on demand.",
+                )
 
             elif status == InferenceEndpointStatus.FAILED:
                 return (
@@ -281,3 +277,13 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             "your Endpoints through the UI in the “Logs” tab of your Endpoint"
         )
         return  # type: ignore
+
+    def _generate_an_endpoint_name(self) -> str:
+        """Generate a unique name for the Hugging Face Inference Endpoint.
+
+        Returns:
+            A unique name for the Hugging Face Inference Endpoint.
+        """
+        return (
+            f"{self.config.service_name}-{str(self.uuid)[:UUID_SLICE_LENGTH]}"
+        )

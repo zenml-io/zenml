@@ -93,7 +93,6 @@ class LocalServerProvider(BaseServerProvider):
             The service, service endpoint and endpoint monitor configuration.
         """
         assert isinstance(server_config, LocalServerDeploymentConfig)
-
         return (
             LocalZenServerConfig(
                 root_runtime_path=LocalZenServer.config_path(),

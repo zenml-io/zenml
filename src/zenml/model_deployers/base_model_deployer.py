@@ -16,6 +16,7 @@
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
+    Any,
     ClassVar,
     Dict,
     Generator,
@@ -27,10 +28,8 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.constants import METADATA_DEPLOYED_MODEL_URL
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import Uri
 from zenml.services import BaseService, ServiceConfig
 from zenml.services.service import BaseDeploymentService
 from zenml.services.service_type import ServiceType
@@ -39,8 +38,7 @@ from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 
 if TYPE_CHECKING:
-    from zenml.config.step_run_info import StepRunInfo
-    from zenml.metadata.metadata_types import MetadataType
+    pass
 
 logger = get_logger(__name__)
 
@@ -156,25 +154,21 @@ class BaseModelDeployer(StackComponent, ABC):
         client = Client()
         # Find existing model server
         services = self.find_model_server(
-            pipeline_name=config.pipeline_name,
-            run_name=config.run_name,
-            pipeline_step_name=config.pipeline_step_name,
-            model_name=config.model_name,
-            model_version=config.model_version,
+            config=config.dict(),
             service_type=service_type,
         )
         if len(services) > 0:
             logger.info(
-                f"Existing model server found for {config.model_name}, no replacement made."
+                f"Existing model server found for {config.name or config.model_name} with the exact same configuration. Returning the existing service named {services[0].config.service_name}."
             )
             service = services[0]
-            if replace:
-                logger.info(
-                    f"Replacing existing model server for {config.model_name}."
-                )
-                self.perform_delete_model(service, timeout=timeout, force=True)
-                service.update(config)
-                service.start(timeout=timeout)
+            # if replace:
+            #    logger.info(
+            #        f"Replacing existing model server for {config.model_name}."
+            #    )
+            # self.perform_delete_model(service, timeout=timeout, force=True)
+            # service.update(config)
+            # service.start(timeout=timeout)
         else:
             logger.info(
                 f"No existing model server found for {config.model_name}, deploying new one."
@@ -198,7 +192,7 @@ class BaseModelDeployer(StackComponent, ABC):
         # Update the service in store
         client.update_service(
             id=service.uuid,
-            name=service.config.name,
+            name=service.config.service_name,
             service_source=service.dict().get("type"),
             config=service.config.dict(),
             admin_state=service.admin_state,
@@ -258,17 +252,18 @@ class BaseModelDeployer(StackComponent, ABC):
 
     def find_model_server(
         self,
-        running: bool = False,
+        config: Optional[Dict[str, Any]] = None,
+        running: Optional[bool] = None,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
-        endpoint_name_or_model_name: Optional[str] = None,
+        service_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_version: Optional[str] = None,
         service_type: Optional[ServiceType] = None,
         type: Optional[str] = None,
         flavor: Optional[str] = None,
+        pipeline_run_id: Optional[str] = None,
     ) -> List[BaseService]:
         """Abstract method to find one or more a model servers that match the given criteria.
 
@@ -291,6 +286,12 @@ class BaseModelDeployer(StackComponent, ABC):
             service_type: The type of the service to find.
             type: The type of the service to find.
             flavor: The flavor of the service to find.
+            pipeline_run_id: The UUID of the pipeline run that was originally used
+                to deploy the model.
+            config: Custom Service configuration parameters for the model
+                deployer. Can include the pipeline name, the run id, the step
+                name, the model name, the model uri, the model type etc.
+            service_name: The name of the service to find.
 
         Returns:
             One or more Service objects representing model servers that match
@@ -301,13 +302,14 @@ class BaseModelDeployer(StackComponent, ABC):
             sort_by="desc:created",
             id=service_uuid,
             running=running,
-            endpoint_name_or_model_name=endpoint_name_or_model_name,
+            service_name=service_name,
             pipeline_name=pipeline_name,
-            run_name=run_name,
             pipeline_step_name=pipeline_step_name,
             model_version_id=get_model_version_id_if_exists(
                 model_name, model_version
             ),
+            pipeline_run_id=pipeline_run_id,
+            config=config,
             type=type or service_type.type if service_type else None,
             flavor=flavor or service_type.flavor if service_type else None,
             hydrate=True,
@@ -522,33 +524,6 @@ class BaseModelDeployer(StackComponent, ABC):
         if len(services) == 0:
             raise RuntimeError(f"No model server found with UUID {uuid}")
         return services[0].get_logs(follow=follow, tail=tail)
-
-    def get_step_run_metadata(
-        self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
-        """Get component- and step-specific metadata after a step ran.
-
-        For model deployers, this extracts the prediction URL of the deployed
-        model.
-
-        Args:
-            info: Info about the step that was executed.
-
-        Returns:
-            A dictionary of metadata.
-        """
-        existing_services = self.find_model_server(
-            run_name=info.run_name,
-        )
-        if existing_services:
-            existing_service = existing_services[0]
-            if (
-                isinstance(existing_service, BaseDeploymentService)
-                and existing_service.is_running
-            ):
-                deployed_model_url = existing_service.prediction_url
-                return {METADATA_DEPLOYED_MODEL_URL: Uri(deployed_model_url)}
-        return {}
 
     def load_service(
         self,

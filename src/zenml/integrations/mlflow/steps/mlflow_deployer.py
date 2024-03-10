@@ -118,27 +118,23 @@ def mlflow_model_deployer_step(
             run_id=mlflow_run_id, artifact_path=model_name
         )
 
+    predictor_cfg = MLFlowDeploymentConfig(
+        model_name=model_name or "",
+        model_uri=model_uri,
+        workers=workers,
+        mlserver=mlserver,
+        pipeline_name=pipeline_name,
+        pipeline_step_name=step_name,
+        timeout=timeout,
+    )
+
     # Fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
-        pipeline_name=pipeline_name,
-        run_name=run_name,
-        pipeline_step_name=step_name,
-        model_name=model_name,
+        config=predictor_cfg.dict(),
     )
 
     # Check whether to deploy a new service
     if model_uri and deploy_decision:
-        predictor_cfg = MLFlowDeploymentConfig(
-            model_name=model_name or "",
-            model_uri=model_uri,
-            workers=workers,
-            mlserver=mlserver,
-            pipeline_name=pipeline_name,
-            run_name=run_name,
-            pipeline_run_id=run_name,
-            pipeline_step_name=step_name,
-            timeout=timeout,
-        )
         new_service = cast(
             MLFlowDeploymentService,
             model_deployer.deploy_model(
@@ -298,7 +294,6 @@ def mlflow_model_registry_deployer_step(
         workers=workers,
         mlserver=mlserver,
         pipeline_name=metadata.zenml_pipeline_name or "",
-        run_name=metadata.zenml_run_name or "",
         pipeline_step_name=metadata.zenml_step_name or "",
         timeout=timeout,
     )

@@ -33,6 +33,7 @@ from zenml.models.v2.core.service import (
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
+from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -84,7 +85,6 @@ class ServiceSchema(NamedSchema, table=True):
         sa_column=Column(TEXT, nullable=True)
     )
     pipeline_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    run_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     pipeline_step_name: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -97,6 +97,17 @@ class ServiceSchema(NamedSchema, table=True):
         nullable=True,
     )
     model_version: Optional["ModelVersionSchema"] = Relationship(
+        back_populates="services",
+    )
+    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="pipeline_run",
+        source_column="pipeline_run_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
         back_populates="services",
     )
 
@@ -148,6 +159,9 @@ class ServiceSchema(NamedSchema, table=True):
             resources = ServiceResponseResources(
                 model_version=self.model_version.to_model()
                 if self.model_version
+                else None,
+                pipeline_run=self.pipeline_run.to_model()
+                if self.pipeline_run
                 else None,
             )
         return ServiceResponse(
@@ -203,9 +217,6 @@ class ServiceSchema(NamedSchema, table=True):
         self.state = update.status.get("state") if update.status else None
         self.pipeline_name = (
             update.config.get("pipeline_name") if update.config else None
-        )
-        self.run_name = (
-            update.config.get("run_name") if update.config else None
         )
         self.pipeline_step_name = (
             update.config.get("pipeline_step_name") if update.config else None
@@ -271,10 +282,10 @@ class ServiceSchema(NamedSchema, table=True):
             if service_request.status
             else None,
             model_version_id=service_request.model_version_id,
+            pipeline_run_id=service_request.pipeline_run_id,
             prediction_url=service_request.prediction_url,
             health_check_url=service_request.health_check_url,
             pipeline_name=service_request.config.get("pipeline_name"),
-            run_name=service_request.config.get("run_name"),
             pipeline_step_name=service_request.config.get(
                 "pipeline_step_name"
             ),

@@ -47,6 +47,8 @@ T = TypeVar("T", bound=Callable[..., Any])
 if TYPE_CHECKING:
     from zenml.models.v2.core.service import ServiceResponse
 
+ZENM_ENDPOINT_PREFIX = "zenml-"
+
 
 def update_service_status(
     pre_status: Optional[ServiceState] = None,
@@ -111,11 +113,26 @@ class ServiceConfig(BaseTypedModel):
     description: str = ""
     pipeline_name: str = ""
     pipeline_step_name: str = ""
-    run_name: str = ""
     # TODO: check the duplication of model_name and model_version and registry_model_name and registry_model_version
     model_name: str = ""
     model_version: str = ""
+    service_name: str = ""
     # labels: Optional[Dict[str, str]] = None
+
+    def __init__(self, **data: Any):
+        """Initialize the service configuration.
+
+        Args:
+            **data: keyword arguments.
+        """
+        super().__init__(**data)
+        if self.name or self.model_name:
+            self.service_name = data.get(
+                "service_name",
+                f"{ZENM_ENDPOINT_PREFIX}{self.name or self.model_name}",
+            )
+        else:
+            raise ValueError("Either 'name' or 'model_name' must be set.")
 
     def get_service_labels(self) -> Dict[str, str]:
         """Get the service labels.

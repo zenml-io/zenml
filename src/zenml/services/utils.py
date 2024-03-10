@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for service management."""
 
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -22,7 +21,6 @@ from zenml.exceptions import StepContextError
 from zenml.model.model import Model
 from zenml.models.v2.core.service import ServiceUpdate
 from zenml.new.steps.step_context import get_step_context
-from zenml.services.service_type import ServiceType
 
 
 def link_service_to_model(
@@ -65,17 +63,3 @@ def link_service_to_model(
     client.zen_store.update_service(
         service_id=service_id, update=update_service
     )
-
-
-def generate_service_name(
-    service_type: ServiceType,
-) -> str:
-    """Generate a unique service name.
-
-    Args:
-        service_type: the service type.
-
-    Returns:
-        a unique service name
-    """
-    return f"{service_type.flavor.lower()}-{datetime.now().strftime('%Y%m%d%H%M%S')}"

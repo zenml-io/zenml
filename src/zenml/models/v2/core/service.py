@@ -44,7 +44,7 @@ from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.model_version import ModelVersionResponse
+    pass
 
 # ------------------ Request Model ------------------
 
@@ -103,6 +103,10 @@ class ServiceRequest(WorkspaceScopedRequest):
     model_version_id: Optional[UUID] = Field(
         default=None,
         title="The model version id linked to the service.",
+    )
+    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="By the event source this trigger is attached to.",
     )
 
 
@@ -215,11 +219,6 @@ class ServiceResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ServiceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the service entity."""
-
-    model_version: Optional["ModelVersionResponse"] = Field(
-        default=None,
-        title="The model version linked to the service.",
-    )
 
 
 class ServiceResponse(
@@ -354,15 +353,6 @@ class ServiceResponse(
         """
         return self.get_body().state
 
-    @property
-    def model_version(self) -> Optional["ModelVersionResponse"]:
-        """The `model_version` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().model_version
-
 
 # ------------------ Filter Model ------------------
 
@@ -393,10 +383,14 @@ class ServiceFilter(WorkspaceScopedFilter):
         default=None,
         description="Flavor of the service. Use this to filter services by their flavor.",
     )
-    run_name: Optional[Union[UUID, str]] = Field(
+    config: Optional[Dict[str, Any]] = Field(
         default=None,
-        description="Pipeline run id responsible for deploying the service",
+        description="Config of the service. Use this to filter services by their config.",
     )
+    # run_name: Optional[Union[UUID, str]] = Field(
+    #    default=None,
+    #    description="Pipeline run id responsible for deploying the service",
+    # )
     pipeline_name: Optional[str] = Field(
         default=None,
         description="Pipeline name responsible for deploying the service",
@@ -410,7 +404,11 @@ class ServiceFilter(WorkspaceScopedFilter):
     )
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="By the event source this trigger is attached to.",
+        description="By the model version this service is attached to.",
+    )
+    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="By the pipeline run this service is attached to.",
     )
 
     def set_type(self, type: str) -> None:
@@ -434,10 +432,11 @@ class ServiceFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "flavor",
         "type",
-        "run_name",
+        # "run_name",
         "pipeline_step_name",
         "running",
         "pipeline_name",
+        "config",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
@@ -445,10 +444,11 @@ class ServiceFilter(WorkspaceScopedFilter):
         "user_id",
         "flavor",
         "type",
-        "run_name",
+        # "run_name",
         "pipeline_step_name",
         "running",
         "pipeline_name",
+        "config",
     ]
 
     def generate_filter(
@@ -468,6 +468,10 @@ class ServiceFilter(WorkspaceScopedFilter):
 
         base_filter = super().generate_filter(table)
 
+        if self.config:
+            config_filter = getattr(table, "config") == self.config
+            base_filter = and_(base_filter, config_filter)
+
         if self.type:
             type_filter = getattr(table, "type") == self.type
             base_filter = and_(base_filter, type_filter)
@@ -481,10 +485,6 @@ class ServiceFilter(WorkspaceScopedFilter):
                 getattr(table, "pipeline_name") == self.pipeline_name
             )
             base_filter = and_(base_filter, pipeline_name_filter)
-
-        if self.run_name:
-            run_name_filter = getattr(table, "run_name") == self.run_name
-            base_filter = and_(base_filter, run_name_filter)
 
         if self.pipeline_step_name:
             pipeline_step_name_filter = (
