@@ -35,12 +35,3 @@ def report_usage(resource_type: ResourceType) -> None:
         resource_type: The type of resource to report a usage for
     """
     feature_gate().report_event(resource=resource_type)
-
-
-def report_decrement(resource_type: ResourceType) -> None:
-    """Reports the deletion/deactivation of a feature/resource.
-
-    Args:
-        resource_type: The type of resource to report a decrement in count for.
-    """
-    feature_gate().report_event(resource=resource_type, is_decrement=True)

@@ -110,7 +110,7 @@ def initialize_rbac() -> None:
 
 
 def feature_gate() -> FeatureGateInterface:
-    """Return the initialized RBAC component.
+    """Return the initialized Feature Gate component.
 
     Raises:
         RuntimeError: If the RBAC component is not initialized.
