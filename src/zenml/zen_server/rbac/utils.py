@@ -197,29 +197,14 @@ def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
 def batch_verify_permissions_for_models(
     models: Sequence[AnyResponse],
     action: Action,
-    admin_status: Optional[bool] = None,
 ) -> None:
     """Batch permission verification for models.
 
     Args:
         models: The models the user wants to perform the action on.
         action: The action the user wants to perform.
-        admin_status: Whether the user is an admin or not. This is only used
-            if explicitly specified in the call and even if passed will be
-            ignored, if RBAC is enabled. If operation do not required admin
-            permission, just ignore this param and only pass it explicitly
-            in case operation is allowed only for admins or certain RBAC group.
-
-    Raises:
-        IllegalOperationError: If the user is not allowed to perform the action.
     """
     if not server_config().rbac_enabled:
-        if admin_status is False:
-            raise IllegalOperationError(
-                message=f"Insufficient permissions to {action.upper()} "
-                "only admin users can perform this action "
-                "without RBAC enabled.",
-            )
         return
 
     resources = set()
@@ -238,52 +223,31 @@ def batch_verify_permissions_for_models(
     batch_verify_permissions(resources=resources, action=action)
 
 
-def verify_permission_for_model(
-    model: AnyResponse, action: Action, admin_status: Optional[bool] = None
-) -> None:
+def verify_permission_for_model(model: AnyResponse, action: Action) -> None:
     """Verifies if a user has permission to perform an action on a model.
 
     Args:
         model: The model the user wants to perform the action on.
         action: The action the user wants to perform.
-        admin_status: Whether the user is an admin or not. This is only used
-            if explicitly specified in the call and even if passed will be
-            ignored, if RBAC is enabled. If operation do not required admin
-            permission, just ignore this param and only pass it explicitly
-            in case operation is allowed only for admins or certain RBAC group.
     """
-    batch_verify_permissions_for_models(
-        models=[model], action=action, admin_status=admin_status
-    )
+    batch_verify_permissions_for_models(models=[model], action=action)
 
 
 def batch_verify_permissions(
     resources: Set[Resource],
     action: Action,
-    admin_status: Optional[bool] = None,
 ) -> None:
     """Batch permission verification.
 
     Args:
         resources: The resources the user wants to perform the action on.
         action: The action the user wants to perform.
-        admin_status: Whether the user is an admin or not. This is only used
-            if explicitly specified in the call and even if passed will be
-            ignored, if RBAC is enabled. If operation does not require admin
-            permission, just ignore this param and only pass it explicitly
-            in case operation is allowed only for admins or certain RBAC group.
 
     Raises:
         IllegalOperationError: If the user is not allowed to perform the action.
         RuntimeError: If the permission verification failed unexpectedly.
     """
     if not server_config().rbac_enabled:
-        if admin_status is False:
-            raise IllegalOperationError(
-                message=f"Insufficient permissions to {action.upper()}. "
-                "Only admin users can perform this action "
-                "without RBAC enabled.",
-            )
         return
 
     auth_context = get_auth_context()
@@ -313,7 +277,6 @@ def verify_permission(
     resource_type: str,
     action: Action,
     resource_id: Optional[UUID] = None,
-    admin_status: Optional[bool] = None,
 ) -> None:
     """Verifies if a user has permission to perform an action on a resource.
 
@@ -322,16 +285,9 @@ def verify_permission(
             action on.
         action: The action the user wants to perform.
         resource_id: ID of the resource the user wants to perform the action on.
-        admin_status: Whether the user is an admin or not. This is only used
-            if explicitly specified in the call and even if passed will be
-            ignored, if RBAC is enabled. If operation does not require admin
-            permission, just ignore this param and only pass it explicitly
-            in case operation is allowed only for admins or certain RBAC group.
     """
     resource = Resource(type=resource_type, id=resource_id)
-    batch_verify_permissions(
-        resources={resource}, action=action, admin_status=admin_status
-    )
+    batch_verify_permissions(resources={resource}, action=action)
 
 
 def get_allowed_resource_ids(
