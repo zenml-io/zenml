@@ -12,11 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Cloud RBAC implementation."""
-import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
-
-import requests
-from requests.adapters import HTTPAdapter, Retry
+from typing import TYPE_CHECKING, Dict, List, Set, Tuple
 
 from zenml.zen_server.cloud_utils import ZenMLCloudSession
 from zenml.zen_server.rbac.models import Action, Resource
