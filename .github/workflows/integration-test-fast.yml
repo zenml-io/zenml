@@ -162,13 +162,18 @@ jobs:
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
         run: choco install graphviz
-      - name: Install Docker and Colima on MacOS
-        if: runner.os=='macOS'
+      - name: Install Docker and Colima on macOS
+        if: runner.os == 'macOS'
         run: |
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
           brew update
           brew install docker colima
-          brew reinstall --force qemu
+
+          # Unlink conflicting files if necessary
+          brew unlink python@3.11
+
+          # Install qemu without dependencies to avoid Python conflicts
+          brew install qemu --ignore-dependencies
 
           # We need to mount the /private/tmp/zenml-test/ folder because
           # this folder is also mounted in the Docker containers that are
