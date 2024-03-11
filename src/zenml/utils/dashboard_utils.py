@@ -38,8 +38,13 @@ def get_base_url() -> Optional[str]:
         # if the server config has a base URL use that
         server_config = ServerConfiguration.get_server_config()
         if server_config.base_url:
+            url = server_config.base_url
+            # if the base url has cloud.zenml.io in it, then it is a cloud
+            # deployment and there isn't a workspace in the URL
+            if "cloud.zenml.io" in url:
+                return url
             return (
-                server_config.base_url
+                url
                 + f"{constants.WORKSPACES}/{client.active_workspace.name}"
             )
         url = (
