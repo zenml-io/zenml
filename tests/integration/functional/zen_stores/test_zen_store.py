@@ -569,7 +569,7 @@ class TestAdminUser:
         with pytest.raises(IllegalOperationError):
             # cannot update admin status for default user
             zen_store.put(
-                f"/current-user",
+                "/current-user",
                 body=UserUpdate(name=default_user.name, is_admin=False),
             )
         with UserContext(password=self.default_pwd) as test_user:
@@ -580,7 +580,7 @@ class TestAdminUser:
                 new_zen_store: RestZenStore = Client().zen_store
                 with pytest.raises(IllegalOperationError):
                     new_zen_store.put(
-                        f"/current-user",
+                        "/current-user",
                         body=UserUpdate(
                             name=test_user.name,
                             is_admin=True,
@@ -597,7 +597,7 @@ class TestAdminUser:
             ):
                 new_zen_store: RestZenStore = Client().zen_store
                 new_zen_store.put(
-                    f"/current-user",
+                    "/current-user",
                     body=UserUpdate(
                         name=test_user.name,
                         is_admin=False,
