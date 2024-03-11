@@ -7515,6 +7515,14 @@ class SqlZenStore(BaseZenStore):
             )
 
             if (
+                existing_user.name == self._default_user_name
+                and not user_update.is_admin
+            ):
+                raise IllegalOperationError(
+                    "The default user's admin status cannot be removed."
+                )
+
+            if (
                 user_update.name is not None
                 and user_update.name != existing_user.name
             ):
