@@ -40,6 +40,7 @@ def upgrade() -> None:
             """
             UPDATE user
             SET is_admin = true
+            WHERE NOT is_service_account AND external_user_id IS NULL
             """
         )
     )
