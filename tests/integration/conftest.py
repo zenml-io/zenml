@@ -16,28 +16,61 @@
 import pytest
 
 from zenml.client import Client
-from zenml.enums import StackComponentType
 from zenml.models import TagFilter
 
 
 @pytest.fixture(scope="function", autouse=True)
 def cleanup_after_test():
+    def clean_objects(
+        list_fn,
+        del_fn,
+        del_fields=None,
+        pre_objects=None,
+        extra_args=None,
+        list_args=None,
+    ):
+        if pre_objects is None:
+            pre_objects = set()
+        if del_fields is None:
+            del_fields = []
+        if list_args is None:
+            list_args = {"size": 1000}
+        while objects := list_fn(**list_args).items:
+            something_deleted = False
+            for o in objects:
+                if o.id not in pre_objects:
+                    del_fn(
+                        str(o.id),
+                        *(
+                            [getattr(o, df) for df in del_fields]
+                            + (extra_args if extra_args else [])
+                        ),
+                    )
+                    something_deleted = True
+            if not something_deleted:
+                break
+
+    # keeping track of objects which might be created to make tests runnable
+    client = Client()
+    pre_workspaces = {i.id for i in client.list_workspaces(size=1000).items}
+    pre_users = {i.id for i in client.list_users(size=1000).items}
+    pre_stacks = {i.id for i in client.list_stacks(size=1000).items}
+    pre_stack_components = {
+        i.id for i in client.list_stack_components(size=1000).items
+    }
     try:
         yield
     finally:
         client = Client()
-        while workspaces := client.list_workspaces().items:
-            if len(workspaces) <= 1:
-                break
-            for ws in workspaces:
-                if ws.name != "default":
-                    client.delete_workspace(ws.id)
-        while users := client.list_users().items:
-            if len(users) <= 1:
-                break
-            for u in users:
-                if u.name != "default":
-                    client.delete_user(u.id)
+        clean_objects(
+            client.list_workspaces,
+            client.delete_workspace,
+            pre_objects=pre_workspaces,
+        )
+        clean_objects(
+            client.list_users, client.delete_user, pre_objects=pre_users
+        )
+
         while pipelines := client.list_pipelines().items:
             for p in pipelines:
                 try:
@@ -49,62 +82,30 @@ def cleanup_after_test():
                         )
                 except KeyError:
                     pass
-        while pipeline_builds := client.list_builds().items:
-            for pb in pipeline_builds:
-                client.delete_build(str(pb.id))
-        while code_repositories := client.list_code_repositories().items:
-            for cr in code_repositories:
-                client.delete_code_repository(cr.id)
-        while deployments := client.list_deployments().items:
-            for d in deployments:
-                client.delete_deployment(str(d.id))
-        while schedules := client.list_schedules().items:
-            for s in schedules:
-                client.delete_schedule(s.id)
-        while models := client.list_models().items:
-            for m in models:
-                client.delete_model(m.id)
-        while artifacts := client.list_artifacts().items:
-            for a in artifacts:
-                client.delete_artifact(a.id)
-        while tags := client.list_tags(TagFilter()).items:
-            for t in tags:
-                client.delete_tag(t.id)
-        while stacks := client.list_stacks().items:
-            if len(stacks) <= 1:
-                break
-            if client.active_stack.name != "default":
-                client.activate_stack("default")
-            something_deleted = False
-            for s in stacks:
-                if s.name != "default" and sum(
-                    [
-                        s.name.startswith(prefix)
-                        for prefix in {"axls", "arias", "new"}
-                    ]
-                ):
-                    client.delete_stack(s.id, True)
-                    something_deleted = True
-            if not something_deleted:
-                break
-        while stack_components := client.list_stack_components().items:
-            if len(stack_components) <= 2:
-                break
-            something_deleted = False
-            for sc in stack_components:
-                if not (
-                    (
-                        sc.type == StackComponentType.ORCHESTRATOR
-                        or sc.type == StackComponentType.ARTIFACT_STORE
-                    )
-                    and sc.name == "default"
-                ) and sum(
-                    [
-                        sc.name.startswith(prefix)
-                        for prefix in {"axls", "arias", "new"}
-                    ]
-                ):
-                    client.delete_stack_component(sc.id, sc.type)
-                    something_deleted = True
-            if not something_deleted:
-                break
+        clean_objects(client.list_builds, client.delete_build)
+        clean_objects(
+            client.list_code_repositories, client.delete_code_repository
+        )
+        clean_objects(client.list_deployments, client.delete_deployment)
+        clean_objects(client.list_schedules, client.delete_schedule)
+        clean_objects(client.list_models, client.delete_model)
+        clean_objects(client.list_artifacts, client.delete_artifact)
+        clean_objects(
+            client.list_tags,
+            client.delete_tag,
+            list_args={"tag_filter_model": TagFilter(size=1000)},
+        )
+
+        client.activate_stack("default")
+        clean_objects(
+            client.list_stacks,
+            client.delete_stack,
+            pre_objects=pre_stacks,
+            extra_args=[True],
+        )
+        clean_objects(
+            client.list_stack_components,
+            client.delete_stack_component,
+            del_fields=["type"],
+            pre_objects=pre_stack_components,
+        )
