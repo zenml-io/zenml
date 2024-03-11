@@ -120,12 +120,12 @@ def feature_gate() -> FeatureGateInterface:
     """
     global _feature_gate
     if _feature_gate is None:
-        raise RuntimeError("RBAC component not initialized")
+        raise RuntimeError("Feature gate component not initialized.")
     return _feature_gate
 
 
 def initialize_feature_gate() -> None:
-    """Initialize the RBAC component."""
+    """Initialize the Feature Gate component."""
     global _feature_gate
 
     if (
