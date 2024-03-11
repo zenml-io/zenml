@@ -29,7 +29,7 @@ def handle_list_env_var(var: str, default: Optional[List[str]] = None) -> List[s
     Returns:
         The converted list value.
     """
-    # this needs tpo be here to avoid mutable defaults
+    # this needs to be here to avoid mutable defaults
     if default is None:
         default = []
 
