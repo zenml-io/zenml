@@ -270,8 +270,8 @@ class AnalyticsContext:
             }
         )
 
-        # Timezone as tzdata
         try:
+            # Timezone as tzdata
             tz = (
                 datetime.datetime.now(datetime.timezone.utc)
                 .astimezone()
