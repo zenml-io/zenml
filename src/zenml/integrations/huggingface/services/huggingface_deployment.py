@@ -80,6 +80,9 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
     def get_token(self) -> str:
         """Get the Hugging Face token.
 
+        Raises:
+            ValueError: If token not found.
+
         Returns:
             Hugging Face token.
         """

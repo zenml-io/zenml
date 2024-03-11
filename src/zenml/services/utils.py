@@ -34,6 +34,10 @@ def link_service_to_model(
         service_id: The ID of the service to link to the model.
         model: The model to link the service to.
         model_version_id: The ID of the model version to link the service to.
+
+    Raises:
+        RuntimeError: If no model is provided and the model context cannot be
+            identified.
     """
     client = Client()
 

@@ -147,6 +147,9 @@ class BaseModelDeployer(StackComponent, ABC):
             service_type: The type of the service to deploy. If not provided,
                 the default service type of the model deployer will be used.
 
+        Raises:
+            RuntimeError: if the model deployment fails.
+
         Returns:
             The deployment Service object.
         """
@@ -188,7 +191,9 @@ class BaseModelDeployer(StackComponent, ABC):
                 )
             except Exception as e:
                 client.delete_service(service_response.id)
-                raise e
+                raise RuntimeError(
+                    f"Failed to deploy model server for {config.model_name}: {e}"
+                ) from e
         # Update the service in store
         client.update_service(
             id=service.uuid,
@@ -271,12 +276,8 @@ class BaseModelDeployer(StackComponent, ABC):
             running: If true, only running services will be returned.
             service_uuid: The UUID of the service that was originally used
                 to deploy the model.
-            run_name: The name of the pipeline run that was originally used to deploy
-                the model.
             pipeline_step_name: The name of the pipeline step that was originally used
                 to deploy the model.
-            endpoint_name_or_model_name: The name of the endpoint or the model that
-                was originally used to deploy the model.
             pipeline_name: The name of the pipeline that was originally used to deploy
                 the model from the model registry.
             model_name: The name of the model that was originally used to deploy

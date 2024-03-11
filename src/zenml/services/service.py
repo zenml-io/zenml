@@ -124,6 +124,9 @@ class ServiceConfig(BaseTypedModel):
 
         Args:
             **data: keyword arguments.
+
+        Raises:
+            ValueError: if neither 'name' nor 'model_name' is set.
         """
         super().__init__(**data)
         if self.name or self.model_name:

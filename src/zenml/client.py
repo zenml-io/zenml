@@ -1596,10 +1596,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_name: Use the pipeline name for filtering
             service_name: Use the service name or model name
                 for filtering
-            run_name: Use the pipeline run id for filtering
             pipeline_step_name: Use the pipeline step name for filtering
-            model_name: Use the model name for filtering
-            model_version: Use the model version for filtering
             model_version_id: Use the model version id for filtering
             config: Use the config for filtering
             pipeline_run_id: Use the pipeline run id for filtering
