@@ -100,8 +100,8 @@ class UserRequest(BaseRequest):
         title="The external user ID associated with the account.",
     )
     active: bool = Field(default=False, title="Whether the account is active.")
-    is_admin: bool = Field(
-        default=False,
+    is_admin: Optional[bool] = Field(
+        default=None,
         title="Whether the account is an administrator.",
     )
 

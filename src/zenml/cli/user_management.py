@@ -219,7 +219,7 @@ def create_user(
     "updated_is_admin",
     is_flag=True,
     required=False,
-    default=False,
+    default=None,
     help="Whether the user should be an admin.",
 )
 def update_user(
@@ -244,7 +244,7 @@ def update_user(
         current_user = Client().get_user(
             user_name_or_id, allow_name_prefix_match=False
         )
-        if current_user.is_admin and not updated_is_admin:
+        if current_user.is_admin and updated_is_admin is False:
             confirmation = cli_utils.confirmation(
                 f"Currently user `{current_user.name}` is an admin, are you sure you to make they regular user?"
             )

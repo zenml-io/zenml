@@ -250,6 +250,10 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Returns:
             The updated user.
+
+        Raises:
+            IllegalOperationError: if the user tries change admin status,
+                while not an admin
         """
         user = zen_store().get_user(user_name_or_id)
         if user.id != auth_context.user.id:
@@ -336,6 +340,10 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Returns:
             The generated activation token.
+
+        Raises:
+            IllegalOperationError: if the user is trying to deactivate
+                themselves.
         """
         user = zen_store().get_user(user_name_or_id)
         if user.id == auth_context.user.id:

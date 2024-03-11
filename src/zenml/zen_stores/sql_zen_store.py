@@ -7371,6 +7371,8 @@ class SqlZenStore(BaseZenStore):
                 f"Unable to create user with name '{user.name}': "
                 f"Found an existing user account with this name."
             )
+            if user.is_admin is None:
+                user.is_admin = False
             try:
                 self._get_account_schema(
                     user.name,
@@ -7516,7 +7518,7 @@ class SqlZenStore(BaseZenStore):
 
             if (
                 existing_user.name == self._default_user_name
-                and not user_update.is_admin
+                and user_update.is_admin is False
             ):
                 raise IllegalOperationError(
                     "The default user's admin status cannot be removed."
