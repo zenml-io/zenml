@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlmodel import Relationship
@@ -49,7 +49,7 @@ class StackComponentSchema(NamedSchema, table=True):
 
     __tablename__ = "stack_component"
 
-    type: StackComponentType
+    type: str
     flavor: str
     configuration: bytes
     labels: Optional[bytes]
@@ -127,6 +127,8 @@ class StackComponentSchema(NamedSchema, table=True):
                 self.labels = base64.b64encode(
                     json.dumps(component_update.labels).encode("utf-8")
                 )
+            elif field == "type":
+                self.type = component_update.type.value
             else:
                 setattr(self, field, value)
 
@@ -135,26 +137,30 @@ class StackComponentSchema(NamedSchema, table=True):
 
     def to_model(
         self,
-        hydrate: bool = False,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> "ComponentResponse":
         """Creates a `ComponentModel` from an instance of a `StackComponentSchema`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             A `ComponentModel`
         """
         body = ComponentResponseBody(
-            type=self.type,
+            type=StackComponentType(self.type),
             flavor=self.flavor,
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ComponentResponseMetadata(
                 workspace=self.workspace.to_model(),
                 configuration=json.loads(

@@ -113,6 +113,16 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     "provided, the requirements will be printed to stdout instead.",
 )
 @click.option(
+    "--overwrite",
+    "-ov",
+    "overwrite",
+    type=bool,
+    required=False,
+    is_flag=True,
+    help="Overwrite the output file if it already exists. This option is "
+    "only valid if the output file is provided.",
+)
+@click.option(
     "--installed-only",
     "installed_only",
     is_flag=True,
@@ -125,6 +135,7 @@ def export_requirements(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
     output_file: Optional[str] = None,
+    overwrite: bool = False,
     installed_only: bool = False,
 ) -> None:
     """Exports integration requirements so they can be installed using pip.
@@ -134,6 +145,8 @@ def export_requirements(
             for.
         ignore_integration: List of integrations to ignore explicitly.
         output_file: Optional path to the requirements output file.
+        overwrite: Overwrite the output file if it already exists. This option
+            is only valid if the output file is provided.
         installed_only: Only export requirements for integrations installed in
             your current environment. This can not be specified when also
             providing explicit integrations.
@@ -180,8 +193,17 @@ def export_requirements(
             error(f"Unable to find integration '{integration_name}'.")
 
     if output_file:
-        with open(output_file, "x") as f:
-            f.write("\n".join(requirements))
+        try:
+            with open(output_file, "x") as f:
+                f.write("\n".join(requirements))
+        except FileExistsError:
+            if overwrite or confirmation(
+                "A file already exists at the specified path. "
+                "Would you like to overwrite it?"
+            ):
+                with open(output_file, "w") as f:
+                    f.write("\n".join(requirements))
+        declare(f"Requirements exported to {output_file}.")
     else:
         click.echo(" ".join(requirements), nl=False)
 

@@ -14,7 +14,7 @@
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String
@@ -122,14 +122,17 @@ class PipelineSchema(NamedSchema, table=True):
 
     def to_model(
         self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
         last_x_runs: int = 3,
-        hydrate: bool = False,
+        **kwargs: Any,
     ) -> "PipelineResponse":
         """Convert a `PipelineSchema` to a `PipelineResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
             last_x_runs: How many runs to use for the execution status
 
         Returns:
@@ -143,7 +146,7 @@ class PipelineSchema(NamedSchema, table=True):
             version=self.version,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = PipelineResponseMetadata(
                 workspace=self.workspace.to_model(),
                 version_hash=self.version_hash,

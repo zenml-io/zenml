@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
+
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 from uuid import uuid4
@@ -110,6 +111,15 @@ class LocalOrchestratorConfig(BaseOrchestratorConfig):
 
         Returns:
             True if this config is for a local component, False otherwise.
+        """
+        return True
+
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
         """
         return True
 

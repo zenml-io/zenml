@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Unmaterialized artifact class."""
 
-
 from zenml.models import (
     ArtifactVersionResponse,
     RunMetadataResponse,

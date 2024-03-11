@@ -16,13 +16,17 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
+
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from zenml import __version__
 from zenml.analytics.client import default_client
-from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
+from zenml.constants import (
+    ENV_ZENML_SERVER,
+    handle_bool_env_var,
+)
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
@@ -55,6 +59,8 @@ class AnalyticsContext:
         self.executed_by_service_account: Optional[bool] = None
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
+        self.external_server_id: Optional[UUID] = None
+        self.server_metadata: Optional[Dict[str, str]] = None
 
         self.database_type: Optional["ServerDatabaseType"] = None
         self.deployment_type: Optional["ServerDeploymentType"] = None
@@ -78,6 +84,7 @@ class AnalyticsContext:
             # Fetch the `user_id`
             if self.in_server:
                 from zenml.zen_server.auth import get_auth_context
+                from zenml.zen_server.utils import server_config
 
                 # If the code is running on the server, use the auth context.
                 auth_context = get_auth_context()
@@ -87,6 +94,8 @@ class AnalyticsContext:
                         auth_context.user.is_service_account
                     )
                     self.external_user_id = auth_context.user.external_user_id
+
+                self.external_server_id = server_config().external_server_id
             else:
                 # If the code is running on the client, use the default user.
                 active_user = gc.zen_store.get_user()
@@ -110,6 +119,7 @@ class AnalyticsContext:
             self.server_id = store_info.id
             self.deployment_type = store_info.deployment_type
             self.database_type = store_info.database_type
+            self.server_metadata = store_info.metadata
         except Exception as e:
             self.analytics_opt_in = False
             logger.debug(f"Analytics initialization failed: {e}")
@@ -260,6 +270,12 @@ class AnalyticsContext:
 
         if self.external_user_id:
             properties["external_user_id"] = self.external_user_id
+
+        if self.external_server_id:
+            properties["external_server_id"] = self.external_server_id
+
+        if self.server_metadata:
+            properties.update(self.server_metadata)
 
         for k, v in properties.items():
             if isinstance(v, UUID):

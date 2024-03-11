@@ -240,7 +240,7 @@ def clean_default_client_session(
     orig_cwd = os.getcwd()
     original_config = GlobalConfiguration.get_instance()
     original_client = Client.get_instance()
-    orig_config_path = os.getenv("ZENML_CONFIG_PATH")
+    orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
 
     GlobalConfiguration._reset_instance()
     Client._reset_instance()

@@ -10,9 +10,9 @@ TESTS_EXAMPLES=${1:-"tests examples"}
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
-ruff $SRC_NO_TESTS
+ruff check $SRC_NO_TESTS
 # TODO: Fix docstrings in tests and examples and remove the `--extend-ignore D` flag
-ruff $TESTS_EXAMPLES --extend-ignore D
+ruff check $TESTS_EXAMPLES --extend-ignore D
 
 # Flag check for skipping yamlfix
 if [ "$OS" = "windows-latest" ]; then
@@ -34,7 +34,7 @@ if [ "$SKIP_YAMLFIX" = false ]; then
 fi
 
 # autoflake replacement: checks for unused imports and variables
-ruff $SRC --select F401,F841 --exclude "__init__.py" --isolated
+ruff check $SRC --select F401,F841 --exclude "__init__.py" --isolated
 
 ruff format $SRC  --check
 

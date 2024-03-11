@@ -19,6 +19,7 @@ services:
 - Explicit GCP service account key
 
 """
+
 import datetime
 import json
 import os

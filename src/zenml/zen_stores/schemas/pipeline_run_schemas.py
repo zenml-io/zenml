@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
@@ -39,6 +39,7 @@ from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
@@ -67,7 +68,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True, default=None)
-    status: ExecutionStatus = Field(nullable=False)
+    status: str = Field(nullable=False)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -166,11 +167,20 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    trigger_execution_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=TriggerExecutionSchema.__tablename__,
+        source_column="trigger_execution_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
 
     stack: Optional["StackSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
+    trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
 
     @classmethod
     def from_request(
@@ -193,17 +203,25 @@ class PipelineRunSchema(NamedSchema, table=True):
             orchestrator_run_id=request.orchestrator_run_id,
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
-            status=request.status,
+            status=request.status.value,
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
+            trigger_execution_id=request.trigger_execution_id,
         )
 
-    def to_model(self, hydrate: bool = False) -> "PipelineRunResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `PipelineRunResponse`.
@@ -259,17 +277,21 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         body = PipelineRunResponseBody(
             user=self.user.to_model() if self.user else None,
-            status=self.status,
+            status=ExecutionStatus(self.status),
             stack=stack,
             pipeline=pipeline,
             build=build,
             schedule=schedule,
             code_reference=code_reference,
+            trigger_execution=self.trigger_execution.to_model()
+            if self.trigger_execution
+            else None,
             created=self.created,
             updated=self.updated,
+            deployment_id=self.deployment_id,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             steps = {step.name: step.to_model() for step in self.step_runs}
 
             metadata = PipelineRunResponseMetadata(
@@ -300,7 +322,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             The updated `PipelineRunSchema`.
         """
         if run_update.status:
-            self.status = run_update.status
+            self.status = run_update.status.value
             self.end_time = run_update.end_time
 
         self.updated = datetime.utcnow()
@@ -345,7 +367,7 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
-        self.status = request.status
+        self.status = request.status.value
 
         self.updated = datetime.utcnow()
 

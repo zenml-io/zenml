@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Flavors."""
+
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -45,7 +46,7 @@ class FlavorSchema(NamedSchema, table=True):
 
     __tablename__ = "flavor"
 
-    type: StackComponentType
+    type: str
     source: str
     config_schema: str = Field(sa_column=Column(TEXT, nullable=False))
     integration: Optional[str] = Field(default="")
@@ -97,32 +98,41 @@ class FlavorSchema(NamedSchema, table=True):
         ).items():
             if field == "config_schema":
                 setattr(self, field, json.dumps(value))
+            elif field == "type":
+                setattr(self, field, value.value)
             else:
                 setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, hydrate: bool = False) -> "FlavorResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "FlavorResponse":
         """Converts a flavor schema to a flavor model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The flavor model.
         """
         body = FlavorResponseBody(
             user=self.user.to_model() if self.user else None,
-            type=self.type,
+            type=StackComponentType(self.type),
             integration=self.integration,
             logo_url=self.logo_url,
             created=self.created,
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = FlavorResponseMetadata(
                 workspace=self.workspace.to_model()
                 if self.workspace

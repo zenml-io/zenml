@@ -16,6 +16,7 @@ from tempfile import TemporaryDirectory
 from typing import Optional, Type
 
 from tests.unit.test_general import _test_materializer
+from zenml.client import Client
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.built_in_materializer import (
     BuiltInContainerMaterializer,
@@ -190,7 +191,9 @@ class CustomTypeMaterializer(BaseMaterializer):
         return data_type()
 
 
-def test_container_materializer_for_custom_types(mocker):
+def test_container_materializer_for_custom_types(
+    mocker, clean_client: "Client"
+):
     """Test container materializer for custom types.
 
     This ensures that:
@@ -202,7 +205,9 @@ def test_container_materializer_for_custom_types(mocker):
     from zenml.materializers.materializer_registry import materializer_registry
 
     example = [CustomType(), CustomSubType()]
-    with TemporaryDirectory() as artifact_uri:
+    with TemporaryDirectory(
+        dir=clean_client.active_stack.artifact_store.path
+    ) as artifact_uri:
         materializer = BuiltInContainerMaterializer(uri=artifact_uri)
 
         # Container materializer should find materializer for both elements in

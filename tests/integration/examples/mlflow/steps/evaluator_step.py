@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import mlflow
 import numpy as np
-import tensorflow as tf
+from sklearn.svm import SVC
 
 from zenml import step
 from zenml.client import Client
@@ -33,12 +33,9 @@ if not experiment_tracker or not isinstance(
 
 
 @step(experiment_tracker=experiment_tracker.name)
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: tf.keras.Model,
-) -> float:
+def evaluator(X_test: np.ndarray, y_test: np.ndarray, model: SVC) -> float:
     """Calculate the accuracy on the test set."""
-    _, test_acc = model.evaluate(X_test, y_test, verbose="2")
+    test_acc = model.score(X_test, y_test)
+    print("Here you go:", test_acc)
     mlflow.log_metric("val_accuracy", test_acc)
     return test_acc

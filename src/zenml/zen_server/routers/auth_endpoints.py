@@ -406,8 +406,14 @@ def device_authorization(
     # Fetch the IP address of the client
     ip_address: str = ""
     city, region, country = "", "", ""
-    if request.client and request.client.host:
+    forwarded = request.headers.get("X-Forwarded-For")
+
+    if forwarded:
+        ip_address = forwarded.split(",")[0].strip()
+    elif request.client and request.client.host:
         ip_address = request.client.host
+
+    if ip_address:
         city, region, country = get_ip_location(ip_address)
 
     # Check if a device is already registered for the same client ID.
@@ -512,11 +518,12 @@ def api_token(
         resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
     )
 
-    if not token.device_id:
-        # If not authenticated with a device, the current API token is returned
-        # as is, without any modifications. Issuing workload tokens is only
-        # supported for device authenticated users, because device tokens can
-        # be revoked at any time.
+    if not token.device_id and not token.api_key_id:
+        # If not authenticated with a device or a service account, the current
+        # API token is returned as is, without any modifications. Issuing
+        # workload tokens is only supported for device authenticated users and
+        # service accounts, because device tokens can be revoked at any time and
+        # service accounts can be disabled.
         return auth_context.encoded_access_token
 
     # If authenticated with a device, a new API token is generated for the

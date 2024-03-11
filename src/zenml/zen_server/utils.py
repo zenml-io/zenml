@@ -29,11 +29,15 @@ from zenml.constants import (
 from zenml.enums import ServerProviderType
 from zenml.exceptions import OAuthError
 from zenml.logger import get_logger
+from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.deploy.deployment import ServerDeployment
 from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
+from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
+    WorkloadManagerInterface,
+)
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -41,6 +45,8 @@ logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
+_workload_manager: Optional[WorkloadManagerInterface] = None
+_plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -58,6 +64,19 @@ def zen_store() -> "SqlZenStore":
     return _zen_store
 
 
+def plugin_flavor_registry() -> PluginFlavorRegistry:
+    """Get the plugin flavor registry.
+
+    Returns:
+        The plugin flavor registry.
+    """
+    global _plugin_flavor_registry
+    if _plugin_flavor_registry is None:
+        _plugin_flavor_registry = PluginFlavorRegistry()
+        _plugin_flavor_registry.initialize_plugins()
+    return _plugin_flavor_registry
+
+
 def rbac() -> RBACInterface:
     """Return the initialized RBAC component.
 
@@ -73,6 +92,21 @@ def rbac() -> RBACInterface:
     return _rbac
 
 
+def workload_manager() -> WorkloadManagerInterface:
+    """Return the initialized workload manager component.
+
+    Raises:
+        RuntimeError: If the workload manager component is not initialized.
+
+    Returns:
+        The workload manager component.
+    """
+    global _workload_manager
+    if _workload_manager is None:
+        raise RuntimeError("Workload manager component not initialized")
+    return _workload_manager
+
+
 def initialize_rbac() -> None:
     """Initialize the RBAC component."""
     global _rbac
@@ -84,6 +118,33 @@ def initialize_rbac() -> None:
             rbac_source, expected_class=RBACInterface
         )
         _rbac = implementation_class()
+
+
+def initialize_workload_manager() -> None:
+    """Initialize the workload manager component.
+
+    This does not fail if the source can't be loaded but only logs a warning.
+    """
+    global _workload_manager
+
+    if source := server_config().workload_manager_implementation_source:
+        from zenml.utils import source_utils
+
+        try:
+            workload_manager_class: Type[WorkloadManagerInterface] = (
+                source_utils.load_and_validate_class(
+                    source=source, expected_class=WorkloadManagerInterface
+                )
+            )
+        except (ModuleNotFoundError, KeyError):
+            logger.warning("Unable to load workload manager source.")
+        else:
+            _workload_manager = workload_manager_class()
+
+
+def initialize_plugins() -> None:
+    """Initialize the event plugins registry."""
+    plugin_flavor_registry().initialize_plugins()
 
 
 def initialize_zen_store() -> None:
@@ -183,9 +244,9 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
     """
     # Check for connected servers first
     gc = GlobalConfiguration()
-    if not gc.uses_default_store() and gc.store is not None:
+    if not gc.uses_default_store():
         logger.debug("Getting URL of connected server.")
-        parsed_url = urlparse(gc.store.url)
+        parsed_url = urlparse(gc.store_configuration.url)
         return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
     # Else, check for deployed servers
     server = get_active_deployment(local=False)

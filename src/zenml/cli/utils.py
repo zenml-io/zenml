@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
+
 import contextlib
 import datetime
 import json
@@ -63,7 +64,7 @@ from zenml.model_registries.base_model_registry import (
 )
 from zenml.models import (
     BaseFilter,
-    BaseResponse,
+    BaseIdentifiedResponse,
     BoolFilter,
     NumericFilter,
     Page,
@@ -103,7 +104,7 @@ logger = get_logger(__name__)
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
-T = TypeVar("T", bound=BaseResponse)  # type: ignore[type-arg]
+T = TypeVar("T", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 
 
 def title(text: str) -> None:
@@ -285,7 +286,7 @@ def print_pydantic_models(
         """
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
-            if isinstance(model, BaseResponse):
+            if isinstance(model, BaseIdentifiedResponse):
                 include_columns = ["id"]
 
                 if "name" in model.__fields__:
@@ -322,7 +323,7 @@ def print_pydantic_models(
             # In case the response model contains nested `BaseResponse`s
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
-            if isinstance(value, BaseResponse):
+            if isinstance(value, BaseIdentifiedResponse):
                 if "name" in value.__fields__:
                     items[k] = str(getattr(value, "name"))
                 else:
@@ -332,7 +333,7 @@ def print_pydantic_models(
             #  the list and extract either name or id
             elif isinstance(value, list):
                 for v in value:
-                    if isinstance(v, BaseResponse):
+                    if isinstance(v, BaseIdentifiedResponse):
                         if "name" in v.__fields__:
                             items.setdefault(k, []).append(
                                 str(getattr(v, "name"))
@@ -418,7 +419,7 @@ def print_pydantic_model(
         exclude_columns = set()
 
     if not columns:
-        if isinstance(model, BaseResponse):
+        if isinstance(model, BaseIdentifiedResponse):
             include_columns = ["id"]
 
             if "name" in model.__fields__:
@@ -450,7 +451,7 @@ def print_pydantic_model(
 
     for k in include_columns:
         value = getattr(model, k)
-        if isinstance(value, BaseResponse):
+        if isinstance(value, BaseIdentifiedResponse):
             if "name" in value.__fields__:
                 items[k] = str(getattr(value, "name"))
             else:
@@ -460,7 +461,7 @@ def print_pydantic_model(
         #  the list and extract either name or id
         elif isinstance(value, list):
             for v in value:
-                if isinstance(v, BaseResponse):
+                if isinstance(v, BaseIdentifiedResponse):
                     if "name" in v.__fields__:
                         items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:

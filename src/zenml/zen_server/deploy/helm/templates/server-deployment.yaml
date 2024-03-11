@@ -32,12 +32,18 @@ spec:
       serviceAccountName: {{ include "zenml.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: zenml-config
+          emptyDir: {}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          volumeMounts:
+            - name: zenml-config
+              mountPath: /zenml/.zenconfig
           env:
             {{- if .Values.zenml.debug }}
             - name: ZENML_LOGGING_VERBOSITY
@@ -84,6 +90,10 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+            {{- end }}
+            {{- if .Values.zenml.baseURL }}
+            - name: ZENML_SERVER_BASE_URL
+              value: {{ .Values.zenml.baseURL | quote }}
             {{- end }}
           envFrom:
           - secretRef:

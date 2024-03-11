@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of step run tables."""
+
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String
@@ -26,8 +27,6 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
-    StepRunInputArtifactType,
-    StepRunOutputArtifactType,
 )
 from zenml.models import (
     StepRunRequest,
@@ -59,7 +58,7 @@ class StepRunSchema(NamedSchema, table=True):
     # Fields
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
-    status: ExecutionStatus = Field(nullable=False)
+    status: str = Field(nullable=False)
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
@@ -164,7 +163,7 @@ class StepRunSchema(NamedSchema, table=True):
             user_id=request.user,
             start_time=request.start_time,
             end_time=request.end_time,
-            status=request.status,
+            status=request.status.value,
             original_step_run_id=request.original_step_run_id,
             pipeline_run_id=request.pipeline_run_id,
             deployment_id=request.deployment,
@@ -174,12 +173,19 @@ class StepRunSchema(NamedSchema, table=True):
             source_code=request.source_code,
         )
 
-    def to_model(self, hydrate: bool = False) -> StepRunResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created StepRunResponse.
@@ -217,14 +223,14 @@ class StepRunSchema(NamedSchema, table=True):
 
         body = StepRunResponseBody(
             user=self.user.to_model() if self.user else None,
-            status=self.status,
+            status=ExecutionStatus(self.status),
             inputs=input_artifacts,
             outputs=output_artifacts,
             created=self.created,
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = StepRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 config=full_step_config.config,
@@ -262,7 +268,7 @@ class StepRunSchema(NamedSchema, table=True):
             exclude_unset=True, exclude_none=True
         ).items():
             if key == "status":
-                self.status = value
+                self.status = value.value
             if key == "end_time":
                 self.end_time = value
 
@@ -304,7 +310,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str = Field(nullable=False, primary_key=True)
-    type: StepRunInputArtifactType
+    type: str
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(
@@ -340,7 +346,7 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str
-    type: StepRunOutputArtifactType
+    type: str
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(

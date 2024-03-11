@@ -14,7 +14,7 @@
 """SQLModel implementation of artifact table."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic import ValidationError
@@ -99,12 +99,20 @@ class ArtifactSchema(NamedSchema, table=True):
             has_custom_name=artifact_request.has_custom_name,
         )
 
-    def to_model(self, hydrate: bool = False) -> ArtifactResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> ArtifactResponse:
         """Convert an `ArtifactSchema` to an `ArtifactResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+
 
         Returns:
             The created `ArtifactResponse`.
@@ -125,7 +133,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
         # Create the metadata of the model
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ArtifactResponseMetadata(
                 has_custom_name=self.has_custom_name,
             )
@@ -163,7 +171,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     # Fields
     version: str
     version_number: Optional[int]
-    type: ArtifactType
+    type: str
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -238,11 +246,11 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(
-        back_populates="artifact_version",
-        sa_relationship_kwargs={"cascade": "delete"},
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(
+            back_populates="artifact_version",
+            sa_relationship_kwargs={"cascade": "delete"},
+        )
     )
 
     @classmethod
@@ -269,18 +277,26 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             artifact_store_id=artifact_version_request.artifact_store_id,
             workspace_id=artifact_version_request.workspace,
             user_id=artifact_version_request.user,
-            type=artifact_version_request.type,
+            type=artifact_version_request.type.value,
             uri=artifact_version_request.uri,
             materializer=artifact_version_request.materializer.json(),
             data_type=artifact_version_request.data_type.json(),
         )
 
-    def to_model(self, hydrate: bool = False) -> ArtifactVersionResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> ArtifactVersionResponse:
         """Convert an `ArtifactVersionSchema` to an `ArtifactVersionResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+
 
         Returns:
             The created `ArtifactVersionResponse`.
@@ -312,7 +328,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             version=self.version_number or self.version,
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
-            type=self.type,
+            type=ArtifactType(self.type),
             materializer=materializer,
             data_type=data_type,
             created=self.created,
@@ -323,7 +339,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
 
         # Create the metadata of the model
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ArtifactVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
                 artifact_store_id=self.artifact_store_id,

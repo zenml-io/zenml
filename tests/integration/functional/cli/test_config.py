@@ -26,7 +26,7 @@ NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
 
 def read_global_config():
     """Read the global config file."""
-    return yaml_utils.read_yaml(GlobalConfiguration()._config_file())
+    return yaml_utils.read_yaml(GlobalConfiguration()._config_file)
 
 
 def test_analytics_opt_in_amends_global_config():
