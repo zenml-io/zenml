@@ -75,12 +75,22 @@ def cleanup_after_test():
                 break
             if client.active_stack.name != "default":
                 client.activate_stack("default")
+            something_deleted = False
             for s in stacks:
-                if s.name != "default":
+                if s.name != "default" and sum(
+                    [
+                        s.name.startswith(prefix)
+                        for prefix in {"axls", "arias", "new"}
+                    ]
+                ):
                     client.delete_stack(s.id, True)
+                    something_deleted = True
+            if not something_deleted:
+                break
         while stack_components := client.list_stack_components().items:
             if len(stack_components) <= 2:
                 break
+            something_deleted = False
             for sc in stack_components:
                 if not (
                     (
@@ -88,5 +98,13 @@ def cleanup_after_test():
                         or sc.type == StackComponentType.ARTIFACT_STORE
                     )
                     and sc.name == "default"
+                ) and sum(
+                    [
+                        sc.name.startswith(prefix)
+                        for prefix in {"axls", "arias", "new"}
+                    ]
                 ):
                     client.delete_stack_component(sc.id, sc.type)
+                    something_deleted = True
+            if not something_deleted:
+                break
