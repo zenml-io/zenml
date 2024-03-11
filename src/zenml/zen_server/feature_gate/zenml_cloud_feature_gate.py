@@ -12,9 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML Cloud implementation of the feature gate."""
-import os
 from typing import Any, Dict
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -31,9 +29,8 @@ logger = get_logger(__name__)
 
 server_config = ServerConfiguration.get_server_config()
 
-ORGANIZATION_ID = os.getenv(
-    "ZENML_SERVER_PARENT_ORG"
-)  # server_config.metadata.organization_id
+ORGANIZATION_ID = server_config.metadata.get("organization_id", "unknown")
+
 USAGE_EVENT_ENDPOINT = "/usage-event"
 ENTITLEMENT_ENDPOINT = f"/organizations/{ORGANIZATION_ID}/entitlement"
 
@@ -69,19 +66,19 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
         Args:
             resource: The resource the user wants to create
 
-        Returns:
-            True if yes, False if no.
-
         Raises:
             UpgradeRequiredError in case a subscription limit is reached
         """
-        response = self._get(endpoint=ENTITLEMENT_ENDPOINT + "/" + resource, params=None)
+        response = self._get(
+            endpoint=ENTITLEMENT_ENDPOINT + "/" + resource, params=None
+        )
         if response.status_code == 200:
             pass
         elif response.status_code == 402:
             raise UpgradeRequiredError(
                 "Your organization reached its limit of {resource}. Please "
-                "upgrade your subscription or reach out to our us.")
+                "upgrade your subscription or reach out to our us."
+            )
         else:
             logger.warning(
                 "Unexpected response status code from entitlement "
@@ -100,9 +97,10 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
             is_decrement: In case this event reports an actual decrement of usage
         """
         data = RawUsageEvent(
-            organization_id=str(ORGANIZATION_ID),
+            organization_id=ORGANIZATION_ID,
             feature=resource,
             total=1 if not is_decrement else -1,
+            metadata={"tenant_id": str(server_config.external_server_id)},
         ).dict()
         response = self._post(endpoint=USAGE_EVENT_ENDPOINT, data=data)
         if response.status_code != 200:

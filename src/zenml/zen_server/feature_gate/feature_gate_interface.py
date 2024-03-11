@@ -27,8 +27,8 @@ class FeatureGateInterface(ABC):
         Args:
             resource: The resource the user wants to create
 
-        Returns:
-            True if yes, False if no.
+        Raises:
+            UpgradeRequiredError in case a subscription limit is reached
         """
 
     @abstractmethod

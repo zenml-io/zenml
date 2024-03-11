@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """ZenML constants."""
 import json
+import logging
 import os
 from typing import List, Optional
 
 from zenml.enums import AuthScheme
 
 
-def handle_list_env_var(var: str, default: Optional[List[str]] = None) -> List[str]:
+def handle_list_env_var(
+    var: str, default: Optional[List[str]] = None
+) -> List[str]:
     """Converts normal env var to list.
 
     Args:
@@ -38,6 +41,11 @@ def handle_list_env_var(var: str, default: Optional[List[str]] = None) -> List[s
         try:
             return json.loads(value)
         except (TypeError, json.JSONDecodeError):
+            # Use raw logging to avoid cyclic dependency
+            logging.warning(
+                f"Environment Variable {var} could not be loaded,"
+                f"returning default: {default}."
+            )
             return default
     else:
         return default

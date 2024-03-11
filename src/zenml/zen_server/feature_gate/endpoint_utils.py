@@ -43,6 +43,4 @@ def report_decrement(resource_type: ResourceType) -> None:
     Args:
         resource_type: The type of resource to report a decrement in count for.
     """
-    feature_gate().report_event(
-        resource=resource_type, is_decrement=True
-    )
+    feature_gate().report_event(resource=resource_type, is_decrement=True)
