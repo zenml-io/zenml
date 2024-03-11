@@ -514,6 +514,96 @@ class TestAdminUser:
 
             zen_store.delete_user(test_user.id)
 
+    def test_update_self_via_normal_endpoint(self):
+        """Tests updating self in admin and non-admin setting."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        zen_store: RestZenStore = Client().zen_store
+        default_user = zen_store.get_user(DEFAULT_USERNAME)
+        with pytest.raises(IllegalOperationError):
+            # cannot update admin status for default user
+            zen_store.update_user(
+                default_user.id,
+                UserUpdate(name=default_user.name, is_admin=False),
+            )
+        with UserContext(password=self.default_pwd) as test_user:
+            # this is not allowed for non-admin users
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                new_zen_store: RestZenStore = Client().zen_store
+                with pytest.raises(IllegalOperationError):
+                    new_zen_store.update_user(
+                        test_user.id,
+                        UserUpdate(
+                            name=test_user.name,
+                            is_admin=True,
+                        ),
+                    )
+
+        with UserContext(password=self.default_pwd) as test_user:
+            zen_store.update_user(
+                test_user.id,
+                UserUpdate(name=test_user.name, is_admin=True),
+            )
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                new_zen_store: RestZenStore = Client().zen_store
+                new_zen_store.update_user(
+                    test_user.id,
+                    UserUpdate(
+                        name=test_user.name,
+                        is_admin=False,
+                    ),
+                )
+
+    def test_update_self_via_current_user_endpoint(self):
+        """Tests updating self in admin and non-admin setting."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        zen_store: RestZenStore = Client().zen_store
+        default_user = zen_store.get_user(DEFAULT_USERNAME)
+        with pytest.raises(IllegalOperationError):
+            # cannot update admin status for default user
+            zen_store.put(
+                f"/current-user",
+                body=UserUpdate(name=default_user.name, is_admin=False),
+            )
+        with UserContext(password=self.default_pwd) as test_user:
+            # this is not allowed for non-admin users
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                new_zen_store: RestZenStore = Client().zen_store
+                with pytest.raises(IllegalOperationError):
+                    new_zen_store.put(
+                        f"/current-user",
+                        body=UserUpdate(
+                            name=test_user.name,
+                            is_admin=True,
+                        ),
+                    )
+
+        with UserContext(password=self.default_pwd) as test_user:
+            zen_store.update_user(
+                test_user.id,
+                UserUpdate(name=test_user.name, is_admin=True),
+            )
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                new_zen_store: RestZenStore = Client().zen_store
+                new_zen_store.put(
+                    f"/current-user",
+                    body=UserUpdate(
+                        name=test_user.name,
+                        is_admin=False,
+                    ),
+                )
+
 
 def test_active_user():
     """Tests the active user can be queried with .get_user()."""
