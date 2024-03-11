@@ -183,6 +183,7 @@ from zenml.services.service import ServiceConfig
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 from zenml.utils import io_utils, source_utils
+from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 from zenml.utils.uuid_utils import is_valid_uuid
@@ -1622,7 +1623,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_step_name=pipeline_step_name,
             model_version_id=model_version_id,
             pipeline_run_id=pipeline_run_id,
-            config=config,
+            config=dict_to_bytes(config) if config else None,
         )
         service_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_services(
@@ -1634,7 +1635,6 @@ class Client(metaclass=ClientMetaClass):
         id: UUID,
         name: Optional[str] = None,
         service_source: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
         admin_state: Optional[ServiceState] = None,
         status: Optional[Dict[str, Any]] = None,
         endpoint: Optional[Dict[str, Any]] = None,
@@ -1651,7 +1651,6 @@ class Client(metaclass=ClientMetaClass):
             admin_state: The new admin state of the service.
             status: The new status of the service.
             endpoint: The new endpoint of the service.
-            config: The new config of the service.
             service_source: The new service source of the service.
             labels: The new labels of the service.
             prediction_url: The new prediction url of the service.
@@ -1672,8 +1671,6 @@ class Client(metaclass=ClientMetaClass):
             service_update.status = status
         if endpoint:
             service_update.endpoint = endpoint
-        if config:
-            service_update.config = config
         if labels:
             service_update.labels = labels
         if prediction_url:

@@ -165,13 +165,6 @@ class BaseModelDeployer(StackComponent, ABC):
                 f"Existing model server found for {config.name or config.model_name} with the exact same configuration. Returning the existing service named {services[0].config.service_name}."
             )
             service = services[0]
-            # if replace:
-            #    logger.info(
-            #        f"Replacing existing model server for {config.model_name}."
-            #    )
-            # self.perform_delete_model(service, timeout=timeout, force=True)
-            # service.update(config)
-            # service.start(timeout=timeout)
         else:
             logger.info(
                 f"No existing model server found for {config.model_name}, deploying new one."
@@ -199,7 +192,6 @@ class BaseModelDeployer(StackComponent, ABC):
             id=service.uuid,
             name=service.config.service_name,
             service_source=service.dict().get("type"),
-            config=service.config.dict(),
             admin_state=service.admin_state,
             status=service.status.dict(),
             endpoint=service.endpoint.dict() if service.endpoint else None,
@@ -317,12 +309,13 @@ class BaseModelDeployer(StackComponent, ABC):
         )
         services = []
         for service_response in service_responses.items:
+            if not service_response.service_source:
+                client.delete_service(service_response.id)
+                continue
             service = BaseDeploymentService.from_model(service_response)
-            # TODO: update state using backend not front using endpoint_chealth_url
             service.update_status()
             if service.status.dict() != service_response.status:
                 client.update_service(
-                    config=service.config.dict(),
                     id=service.uuid,
                     admin_state=service.admin_state,
                     status=service.status.dict(),
@@ -387,7 +380,6 @@ class BaseModelDeployer(StackComponent, ABC):
             service = self.find_model_server(service_uuid=uuid)[0]
             updated_service = self.perform_stop_model(service, timeout, force)
             client.update_service(
-                config=updated_service.config.dict(),
                 id=updated_service.uuid,
                 admin_state=updated_service.admin_state,
                 status=updated_service.status.dict(),
@@ -438,7 +430,6 @@ class BaseModelDeployer(StackComponent, ABC):
             service = self.find_model_server(service_uuid=uuid)[0]
             updated_service = self.perform_start_model(service, timeout)
             client.update_service(
-                config=updated_service.config.dict(),
                 id=updated_service.uuid,
                 admin_state=updated_service.admin_state,
                 status=updated_service.status.dict(),

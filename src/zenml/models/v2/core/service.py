@@ -131,11 +131,6 @@ class ServiceUpdate(BaseModel):
         description="The fully qualified class name of the service implementation.",
     )
 
-    config: Optional[Dict[str, Any]] = Field(
-        title="The service config.",
-        description="A dictionary containing configuration parameters for the service.",
-    )
-
     status: Optional[Dict[str, Any]] = Field(
         title="The status of the service.",
     )
@@ -383,14 +378,10 @@ class ServiceFilter(WorkspaceScopedFilter):
         default=None,
         description="Flavor of the service. Use this to filter services by their flavor.",
     )
-    config: Optional[Dict[str, Any]] = Field(
+    config: Optional[bytes] = Field(
         default=None,
         description="Config of the service. Use this to filter services by their config.",
     )
-    # run_name: Optional[Union[UUID, str]] = Field(
-    #    default=None,
-    #    description="Pipeline run id responsible for deploying the service",
-    # )
     pipeline_name: Optional[str] = Field(
         default=None,
         description="Pipeline name responsible for deploying the service",
@@ -432,7 +423,6 @@ class ServiceFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "flavor",
         "type",
-        # "run_name",
         "pipeline_step_name",
         "running",
         "pipeline_name",
@@ -444,11 +434,9 @@ class ServiceFilter(WorkspaceScopedFilter):
         "user_id",
         "flavor",
         "type",
-        # "run_name",
         "pipeline_step_name",
         "running",
         "pipeline_name",
-        "config",
     ]
 
     def generate_filter(
@@ -467,10 +455,6 @@ class ServiceFilter(WorkspaceScopedFilter):
         from sqlalchemy import and_
 
         base_filter = super().generate_filter(table)
-
-        if self.config:
-            config_filter = getattr(table, "config") == self.config
-            base_filter = and_(base_filter, config_filter)
 
         if self.type:
             type_filter = getattr(table, "type") == self.type

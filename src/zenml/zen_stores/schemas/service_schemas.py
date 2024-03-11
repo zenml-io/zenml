@@ -19,7 +19,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
-from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
@@ -31,6 +30,7 @@ from zenml.models.v2.core.service import (
     ServiceResponseResources,
     ServiceUpdate,
 )
+from zenml.utils.dict_utils import dict_to_bytes
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -187,40 +187,22 @@ class ServiceSchema(NamedSchema, table=True):
         for field, value in update.dict(
             exclude_unset=True, exclude_none=True
         ).items():
-            if field == "config":
-                self.config = base64.b64encode(
-                    json.dumps(update.config, default=pydantic_encoder).encode(
-                        "utf-8"
-                    )
-                )
-            elif field == "labels":
-                self.labels = base64.b64encode(
-                    json.dumps(update.labels, default=pydantic_encoder).encode(
-                        "utf-8"
-                    )
+            if field == "labels":
+                self.labels = (
+                    dict_to_bytes(update.labels) if update.labels else None
                 )
             elif field == "status":
-                self.status = base64.b64encode(
-                    json.dumps(update.status, default=pydantic_encoder).encode(
-                        "utf-8"
-                    )
+                self.status = (
+                    dict_to_bytes(update.status) if update.status else None
                 )
+                self.state = update.status.get("state") if update.status else None
             elif field == "endpoint":
-                self.endpoint = base64.b64encode(
-                    json.dumps(
-                        update.endpoint, default=pydantic_encoder
-                    ).encode("utf-8")
+                self.endpoint = (
+                    dict_to_bytes(update.endpoint) if update.endpoint else None
                 )
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()
-        self.state = update.status.get("state") if update.status else None
-        self.pipeline_name = (
-            update.config.get("pipeline_name") if update.config else None
-        )
-        self.pipeline_step_name = (
-            update.config.get("pipeline_step_name") if update.config else None
-        )
         return self
 
     @classmethod
@@ -244,38 +226,14 @@ class ServiceSchema(NamedSchema, table=True):
             type=service_request.service_type.type,
             flavor=service_request.service_type.flavor,
             admin_state=service_request.admin_state,
-            config=base64.b64encode(
-                json.dumps(
-                    service_request.config,
-                    sort_keys=False,
-                    default=pydantic_encoder,
-                ).encode("utf-8")
-            ),
-            labels=base64.b64encode(
-                json.dumps(
-                    service_request.labels,
-                    sort_keys=False,
-                    default=pydantic_encoder,
-                ).encode("utf-8")
-            )
+            config=dict_to_bytes(service_request.config),
+            labels=dict_to_bytes(service_request.labels)
             if service_request.labels
             else None,
-            status=base64.b64encode(
-                json.dumps(
-                    service_request.status,
-                    sort_keys=False,
-                    default=pydantic_encoder,
-                ).encode("utf-8")
-            )
+            status=dict_to_bytes(service_request.status)
             if service_request.status
             else None,
-            endpoint=base64.b64encode(
-                json.dumps(
-                    service_request.endpoint,
-                    sort_keys=False,
-                    default=pydantic_encoder,
-                ).encode("utf-8")
-            )
+            endpoint=dict_to_bytes(service_request.endpoint)
             if service_request.endpoint
             else None,
             state=service_request.status.get("state")
