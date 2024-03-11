@@ -125,6 +125,7 @@
     * [MLflow](stacks-and-components/component-guide/model-deployers/mlflow.md)
     * [Seldon](stacks-and-components/component-guide/model-deployers/seldon.md)
     * [BentoML](stacks-and-components/component-guide/model-deployers/bentoml.md)
+    * [Hugging Face](stacks-and-components/component-guide/model-deployers/huggingface.md)
     * [Develop a Custom Model Deployer](stacks-and-components/component-guide/model-deployers/custom.md)
   * [Step Operators](stacks-and-components/component-guide/step-operators/step-operators.md)
     * [Amazon SageMaker](stacks-and-components/component-guide/step-operators/sagemaker.md)

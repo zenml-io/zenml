@@ -130,6 +130,14 @@ tests:
       - integrations: [huggingface, tensorflow]
       - capabilities:
           synchronized: true
+  - module: tests.integration.examples.test_huggingface_deployment
+    requirements:
+      - integrations: [huggingface]
+        stacks:
+          - type: model_deployer
+            flavor: huggingface
+      - capabilities:
+          synchronized: true
   - module: tests.integration.examples.test_lightgbm
     requirements:
       - integrations: [lightgbm]
