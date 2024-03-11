@@ -195,7 +195,9 @@ class ServiceSchema(NamedSchema, table=True):
                 self.status = (
                     dict_to_bytes(update.status) if update.status else None
                 )
-                self.state = update.status.get("state") if update.status else None
+                self.state = (
+                    update.status.get("state") if update.status else None
+                )
             elif field == "endpoint":
                 self.endpoint = (
                     dict_to_bytes(update.endpoint) if update.endpoint else None
