@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,14 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""KServe integration flavors."""
+"""Hugging Face integration flavors."""
 
-from zenml.integrations.kserve.flavors.kserve_model_deployer_flavor import (
-    KServeModelDeployerConfig,
-    KServeModelDeployerFlavor,
+from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor import (  # noqa
+    HuggingFaceModelDeployerConfig,
+    HuggingFaceModelDeployerFlavor,
+    HuggingFaceBaseConfig,
 )
 
 __all__ = [
-    "KServeModelDeployerFlavor",
-    "KServeModelDeployerConfig",
+    "HuggingFaceModelDeployerConfig",
+    "HuggingFaceModelDeployerFlavor",
+    "HuggingFaceBaseConfig",
 ]

@@ -36,10 +36,11 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    get_origin,
 )
 from uuid import UUID
 
-from pydantic import SecretStr, root_validator, validator
+from pydantic import Field, SecretStr, root_validator, validator
 from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -47,7 +48,7 @@ from sqlalchemy.exc import (
     IntegrityError,
     NoResultFound,
 )
-from sqlalchemy.orm import noload
+from sqlalchemy.orm import Mapped, noload
 from sqlmodel import (
     Session,
     SQLModel,
@@ -384,9 +385,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     # database backup directory
-    backup_directory: str = os.path.join(
-        GlobalConfiguration().config_directory,
-        SQL_STORE_BACKUP_DIRECTORY_NAME,
+    backup_directory: str = Field(
+        default_factory=lambda: os.path.join(
+            GlobalConfiguration().config_directory,
+            SQL_STORE_BACKUP_DIRECTORY_NAME,
+        )
     )
     backup_database: Optional[str] = None
 
@@ -858,10 +861,10 @@ class SqlZenStore(BaseZenStore):
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
         else:
-            total = session.scalar(
-                select([func.count("*")]).select_from(
-                    query.options(noload("*")).subquery()
-                )
+            total = (
+                session.query(func.count())
+                .select_from(query.options(noload("*")).subquery())
+                .scalar()
             )
 
         # Sorting
@@ -1360,9 +1363,7 @@ class SqlZenStore(BaseZenStore):
             # identity table with needed info.
             logger.info("Creating database tables")
             with self.engine.begin() as conn:
-                conn.run_callable(
-                    SQLModel.metadata.create_all  # type: ignore[arg-type]
-                )
+                SQLModel.metadata.create_all(conn)
             with Session(self.engine) as session:
                 session.add(
                     IdentitySchema(
@@ -1409,7 +1410,6 @@ class SqlZenStore(BaseZenStore):
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
         model.id = self.get_deployment_id()
-
         return model
 
     def get_deployment_id(self) -> UUID:
@@ -2566,7 +2566,9 @@ class SqlZenStore(BaseZenStore):
                 if existing_component.name != component_update.name:
                     self._fail_if_component_with_name_type_exists(
                         name=component_update.name,
-                        component_type=existing_component.type,
+                        component_type=StackComponentType(
+                            existing_component.type
+                        ),
                         workspace_id=existing_component.workspace_id,
                         session=session,
                     )
@@ -5146,28 +5148,29 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
+            # Check if a service account with the given name already
+            # exists
+            err_msg = (
+                f"Unable to create service account with name "
+                f"'{service_account.name}': Found existing service "
+                "account with this name."
+            )
+            try:
+                self._get_account_schema(
+                    service_account.name, session=session, service_account=True
+                )
+                raise EntityExistsError(err_msg)
+            except KeyError:
+                pass
+
             # Create the service account
             new_account = UserSchema.from_service_account_request(
                 service_account
             )
             session.add(new_account)
+            # on commit an IntegrityError may arise we let it bubble up
+            session.commit()
 
-            # Check if a service account with the given name already
-            # exists
-            service_accounts = session.execute(
-                select(UserSchema).where(
-                    UserSchema.name == service_account.name,
-                    UserSchema.is_service_account.is_(True),  # type: ignore[attr-defined]
-                )
-            ).fetchall()
-            if len(service_accounts) == 1:
-                session.commit()
-            else:
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing service "
-                    "account with this name."
-                )
             return new_account.to_service_account_model(include_metadata=True)
 
     def get_service_account(
@@ -6862,7 +6865,9 @@ class SqlZenStore(BaseZenStore):
         assert pipeline_run.deployment
         num_steps = len(pipeline_run.deployment.to_model().step_configurations)
         new_status = get_pipeline_run_status(
-            step_statuses=[step_run.status for step_run in step_runs],
+            step_statuses=[
+                ExecutionStatus(step_run.status) for step_run in step_runs
+            ],
             num_steps=num_steps,
         )
 
@@ -7272,6 +7277,8 @@ class SqlZenStore(BaseZenStore):
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
             annotation = UserSchema.__annotations__[resource_attr]
+            if get_origin(annotation) == Mapped:
+                annotation = annotation.__args__[0]
 
             # The annotation must be of the form
             # `typing.List[ForwardRef('<schema-class>')]`
@@ -7329,11 +7336,13 @@ class SqlZenStore(BaseZenStore):
         resource_attrs = self._get_resource_references()
         for schema, resource_attr in resource_attrs:
             # Check if the user owns any resources of this type
-            count = session.scalar(
-                select([func.count("*")])
+            count = (
+                session.query(func.count())
                 .select_from(schema)
                 .where(getattr(schema, resource_attr) == account.id)
+                .scalar()
             )
+
             if count > 0:
                 logger.debug(
                     f"User {account.name} owns {count} resources of type "
@@ -7357,24 +7366,27 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
+            # Check if a user account with the given name already exists
+            err_msg = (
+                f"Unable to create user with name '{user.name}': "
+                f"Found an existing user account with this name."
+            )
+            try:
+                self._get_account_schema(
+                    user.name,
+                    session=session,
+                    # Filter out service accounts
+                    service_account=False,
+                )
+                raise EntityExistsError(err_msg)
+            except KeyError:
+                pass
+
             # Create the user
             new_user = UserSchema.from_user_request(user)
             session.add(new_user)
-
-            # Check if a user account with the given name already exists
-            users = session.execute(
-                select(UserSchema).where(
-                    UserSchema.name == user.name,
-                    UserSchema.is_service_account.is_(False),  # type: ignore[attr-defined]
-                )
-            ).fetchall()
-            if len(users) == 1:
-                session.commit()
-            else:
-                raise EntityExistsError(
-                    f"Unable to create user with name '{user.name}': "
-                    f"Found an existing user account with this name."
-                )
+            # on commit an IntegrityError may arise we let it bubble up
+            session.commit()
             return new_user.to_model(include_metadata=True)
 
     def get_user(

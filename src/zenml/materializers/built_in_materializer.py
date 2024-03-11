@@ -26,8 +26,8 @@ from typing import (
     Union,
 )
 
+from zenml.client import Client
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
@@ -135,7 +135,8 @@ class BytesMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        with fileio.open(self.data_path, "rb") as file_:
+        artifact_store = Client().active_stack.artifact_store
+        with artifact_store.open(self.data_path, "rb") as file_:
             return file_.read()
 
     def save(self, data: Any) -> None:
@@ -144,7 +145,8 @@ class BytesMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        with fileio.open(self.data_path, "wb") as file_:
+        artifact_store = Client().active_stack.artifact_store
+        with artifact_store.open(self.data_path, "wb") as file_:
             file_.write(data)
 
 
@@ -282,17 +284,18 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             RuntimeError: If the data was not found.
         """
+        artifact_store = Client().active_stack.artifact_store
         # If the data was not serialized, there must be metadata present.
-        if not fileio.exists(self.data_path) and not fileio.exists(
-            self.metadata_path
-        ):
+        if not artifact_store.exists(
+            self.data_path
+        ) and not artifact_store.exists(self.metadata_path):
             raise RuntimeError(
                 f"Materialization of type {data_type} failed. Expected either"
                 f"{self.data_path} or {self.metadata_path} to exist."
             )
 
         # If the data was serialized as JSON, deserialize it.
-        if fileio.exists(self.data_path):
+        if artifact_store.exists(self.data_path):
             outputs = yaml_utils.read_json(self.data_path)
 
         # Otherwise, use the metadata to reconstruct the data as a list.
@@ -355,6 +358,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             Exception: If any exception occurs, it is raised after cleanup.
         """
+        artifact_store = Client().active_stack.artifact_store
         # tuple and set: handle as list.
         if isinstance(data, tuple) or isinstance(data, set):
             data = list(data)
@@ -375,7 +379,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         try:
             for i, element in enumerate(data):
                 element_path = os.path.join(self.uri, str(i))
-                fileio.mkdir(element_path)
+                artifact_store.mkdir(element_path)
                 type_ = type(element)
                 materializer_class = materializer_registry[type_]
                 materializer = materializer_class(uri=element_path)
@@ -398,11 +402,11 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # If an error occurs, delete all created files.
         except Exception as e:
             # Delete metadata
-            if fileio.exists(self.metadata_path):
-                fileio.remove(self.metadata_path)
+            if artifact_store.exists(self.metadata_path):
+                artifact_store.remove(self.metadata_path)
             # Delete all elements that were already saved.
             for entry in metadata:
-                fileio.rmtree(entry["path"])
+                artifact_store.rmtree(entry["path"])
             raise e
 
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:

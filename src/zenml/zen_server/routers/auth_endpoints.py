@@ -412,8 +412,14 @@ def device_authorization(
     # Fetch the IP address of the client
     ip_address: str = ""
     city, region, country = "", "", ""
-    if request.client and request.client.host:
+    forwarded = request.headers.get("X-Forwarded-For")
+
+    if forwarded:
+        ip_address = forwarded.split(",")[0].strip()
+    elif request.client and request.client.host:
         ip_address = request.client.host
+
+    if ip_address:
         city, region, country = get_ip_location(ip_address)
 
     # Check if a device is already registered for the same client ID.

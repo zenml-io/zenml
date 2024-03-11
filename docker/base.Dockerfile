@@ -35,4 +35,4 @@ RUN mkdir -p /zenml/.zenconfig/local_stores/default_zen_store && chown -R $USER_
 ENV PATH="$PATH:/home/$USERNAME/.local/bin"
 
 ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
-CMD ["--proxy-headers", "--port", "8080", "--host",  "0.0.0.0"]
+CMD ["--port", "8080", "--host",  "0.0.0.0"]

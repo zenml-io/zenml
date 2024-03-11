@@ -77,7 +77,7 @@ ANALYTICS_CLIENT_ID: xxxxxxx-xxxxxxx-xxxxxxx
 ANALYTICS_USER_ID: xxxxxxx-xxxxxxx-xxxxxxx
 ANALYTICS_SERVER_ID: xxxxxxx-xxxxxxx-xxxxxxx
 INTEGRATIONS: ['airflow', 'aws', 'azure', 'dash', 'evidently', 'facets', 'feast', 'gcp', 'github',
-'graphviz', 'huggingface', 'kaniko', 'kserve', 'kubeflow', 'kubernetes', 'lightgbm', 'mlflow',
+'graphviz', 'huggingface', 'kaniko', 'kubeflow', 'kubernetes', 'lightgbm', 'mlflow',
 'neptune', 'neural_prophet', 'pillow', 'plotly', 'pytorch', 'pytorch_lightning', 's3', 'scipy',
 'sklearn', 'slack', 'spark', 'tensorboard', 'tensorflow', 'vault', 'wandb', 'whylogs', 'xgboost']
 ```
