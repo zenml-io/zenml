@@ -13,58 +13,58 @@
 #  permissions and limitations under the License.
 """Implementation of the llama-index document materializer."""
 
-# import sys
-# from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+import sys
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
-# from zenml.enums import ArtifactType
-# from zenml.integrations.langchain.materializers.document_materializer import (
-#     LangchainDocumentMaterializer,
-# )
+from zenml.enums import ArtifactType
+from zenml.integrations.langchain.materializers.document_materializer import (
+    LangchainDocumentMaterializer,
+)
 
-# if TYPE_CHECKING:
-#     from zenml.metadata.metadata_types import MetadataType
-
-
-# if TYPE_CHECKING and sys.version_info < (3, 8):
-#     Document = Any
-#     LCDocument = Any
-# else:
-#     from langchain.docstore.document import Document as LCDocument
-#     from llama_index.readers.schema.base import Document
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 
-# class LlamaIndexDocumentMaterializer(LangchainDocumentMaterializer):
-#     """Handle serialization and deserialization of llama-index documents."""
+if TYPE_CHECKING and sys.version_info < (3, 8):
+    Document = Any
+    LCDocument = Any
+else:
+    from langchain.docstore.document import Document as LCDocument
+    from llama_index.readers.schema.base import Document
 
-#     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
-#     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Document,)
 
-#     def load(self, data_type: Type[Any]) -> Any:
-#         """Reads a llama-index document from JSON.
+class LlamaIndexDocumentMaterializer(LangchainDocumentMaterializer):
+    """Handle serialization and deserialization of llama-index documents."""
 
-#         Args:
-#             data_type: The type of the data to read.
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Document,)
 
-#         Returns:
-#             The data read.
-#         """
-#         return Document.from_langchain_format(super().load(LCDocument))
+    def load(self, data_type: Type[Any]) -> Any:
+        """Reads a llama-index document from JSON.
 
-#     def save(self, data: Any) -> None:
-#         """Serialize a llama-index document as a Langchain document.
+        Args:
+            data_type: The type of the data to read.
 
-#         Args:
-#             data: The data to store.
-#         """
-#         super().save(data.to_langchain_format())
+        Returns:
+            The data read.
+        """
+        return Document.from_langchain_format(super().load(LCDocument))
 
-#     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
-#         """Extract metadata from the given Llama Index document.
+    def save(self, data: Any) -> None:
+        """Serialize a llama-index document as a Langchain document.
 
-#         Args:
-#             data: The BaseModel object to extract metadata from.
+        Args:
+            data: The data to store.
+        """
+        super().save(data.to_langchain_format())
 
-#         Returns:
-#             The extracted metadata as a dictionary.
-#         """
-#         return super().extract_metadata(data.to_langchain_format())
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given Llama Index document.
+
+        Args:
+            data: The BaseModel object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        return super().extract_metadata(data.to_langchain_format())
