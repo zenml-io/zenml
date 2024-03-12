@@ -18,6 +18,7 @@ import tempfile
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 from docker.client import DockerClient
+from docker.errors import DockerException
 
 from zenml.image_builders import (
     BaseImageBuilder,
@@ -106,7 +107,12 @@ class LocalImageBuilder(BaseImageBuilder):
             # authenticated to access additional registries
             docker_client = container_registry.docker_client
         else:
-            docker_client = DockerClient.from_env()
+            try:
+                docker_client = DockerClient.from_env()
+            except DockerException as e:
+                raise RuntimeError(
+                    "Could not create a Docker client from the environment. Is your Docker daemon running?"
+                ) from e
 
         with tempfile.TemporaryFile(mode="w+b") as f:
             build_context.write_archive(f)

@@ -118,8 +118,15 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             )
 
         from docker.client import DockerClient
+        from docker.errors import DockerException
 
-        docker_client = DockerClient.from_env()
+        try:
+            docker_client = DockerClient.from_env()
+        except DockerException as e:
+            raise RuntimeError(
+                "Could not create a Docker client from the environment. Is your Docker daemon running?"
+            ) from e
+
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
         # Add the local stores path as a volume mount

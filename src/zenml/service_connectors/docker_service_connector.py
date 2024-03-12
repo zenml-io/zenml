@@ -258,7 +258,14 @@ class DockerServiceConnector(ServiceConnector):
             An authenticated python-docker client object.
         """
         assert self.resource_id is not None
-        docker_client = DockerClient.from_env()
+
+        try:
+            docker_client = DockerClient.from_env()
+        except DockerException as e:
+            raise RuntimeError(
+                "Could not create a Docker client from the environment. Is your Docker daemon running?"
+            ) from e
+
         self._authorize_client(docker_client, self.resource_id)
 
         return docker_client
