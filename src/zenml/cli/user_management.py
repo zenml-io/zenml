@@ -265,17 +265,19 @@ def update_user(
             if not confirmation:
                 cli_utils.declare("User update canceled.")
                 return
+
+        updated_is_admin = None
+        if make_admin is True:
+            updated_is_admin = True
+        elif make_user is True:
+            updated_is_admin = False
         Client().update_user(
             name_id_or_prefix=user_name_or_id,
             updated_name=updated_name,
             updated_full_name=updated_full_name,
             updated_email=updated_email,
             updated_password=updated_password,
-            updated_is_admin=True
-            if make_admin is True
-            else False
-            if make_user is True
-            else None,
+            updated_is_admin=updated_is_admin,
         )
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
