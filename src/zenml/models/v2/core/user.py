@@ -378,7 +378,7 @@ class UserResponse(
         """The `is_admin` property.
 
         Returns:
-            the value of the property.
+            Whether the user is an admin.
         """
         return self.get_body().is_admin
 

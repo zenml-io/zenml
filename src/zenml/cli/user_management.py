@@ -252,7 +252,7 @@ def update_user(
     """
     if make_admin is not None and make_user is not None:
         cli_utils.error(
-            "Cannot set both --admin and --user flags as mutually exclusive."
+            "Cannot set both --admin and --user flags as these are mutually exclusive."
         )
     try:
         current_user = Client().get_user(
@@ -260,7 +260,7 @@ def update_user(
         )
         if current_user.is_admin and make_user:
             confirmation = cli_utils.confirmation(
-                f"Currently user `{current_user.name}` is an admin, are you sure you to make they regular user?"
+                f"Currently user `{current_user.name}` is an admin. Are you sure you want to make them a regular user?"
             )
             if not confirmation:
                 cli_utils.declare("User update canceled.")
