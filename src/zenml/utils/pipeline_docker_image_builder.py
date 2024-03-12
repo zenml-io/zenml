@@ -640,7 +640,8 @@ class PipelineDockerImageBuilder:
                 docker_settings.python_package_installer
                 == PythonPackageInstaller.UV
             ):
-                install_command = "uv pip install"
+                lines.append("RUN pip install uv")
+                install_command = "uv pip install --system"
             else:
                 raise ValueError("Unsupported python package installer.")
 
