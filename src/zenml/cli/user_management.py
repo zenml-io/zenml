@@ -252,7 +252,7 @@ def update_user(
     """
     if make_admin is not None and make_user is not None:
         cli_utils.error(
-            "Cannot set both --admin and --user flags as self-exclusive."
+            "Cannot set both --admin and --user flags as mutually exclusive."
         )
     try:
         current_user = Client().get_user(
