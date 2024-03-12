@@ -27,7 +27,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
 )
 from zenml.enums import ServerProviderType
-from zenml.exceptions import OAuthError
+from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.deploy.deployment import ServerDeployment
@@ -396,3 +396,34 @@ def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
     except Exception:
         logger.exception(f"Could not get IP location for {ip_address}.")
         return "", "", ""
+
+
+def verify_admin_status_if_no_rbac(
+    admin_status: Optional[bool],
+    action: Optional[str] = None,
+) -> None:
+    """Validate the admin status for sensitive requests.
+
+    Only add this check in endpoints meant for admin use only.
+
+    Args:
+        admin_status: Whether the user is an admin or not. This is only used
+            if explicitly specified in the call and even if passed will be
+            ignored, if RBAC is enabled.
+        action: The action that is being performed, used for output only.
+
+    Raises:
+        IllegalOperationError: If the admin status is not valid.
+    """
+    if not server_config().rbac_enabled:
+        if not action:
+            action = "this action"
+        else:
+            action = f"`{action.strip('`')}`"
+
+        if admin_status is False:
+            raise IllegalOperationError(
+                message=f"Only admin users can perform {action} "
+                "without RBAC enabled.",
+            )
+    return
