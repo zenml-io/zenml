@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,19 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of Kserve Secret Schemas.
-
-These are secret schemas that can be used to authenticate Kserve to the
-Artifact Store used to store served ML models.
-"""
-from zenml.integrations.kserve.secret_schemas.secret_schemas import (
-    KServeAzureSecretSchema,
-    KServeGSSecretSchema,
-    KServeS3SecretSchema,
-)
-
-__all__ = [
-    "KServeAzureSecretSchema",
-    "KServeGSSecretSchema",
-    "KServeS3SecretSchema",
-]

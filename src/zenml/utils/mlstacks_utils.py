@@ -193,7 +193,6 @@ def _add_extra_config_to_components(
             "mlflow-password",
         ],
         ("model_deployer", "seldon", "k3d"): ["seldon-secret-name"],
-        ("model_deployer", "kserve", "k3d"): ["kserve-secret-name"],
     }
 
     def _add_config(
