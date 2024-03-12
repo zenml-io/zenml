@@ -167,8 +167,10 @@ jobs:
         run: |
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
           brew update
-          brew config
-          brew doctor
+
+          # Workaround GitHub Actions Python issues
+          # see https://github.com/Homebrew/homebrew-core/issues/165793#issuecomment-1989441193
+          brew unlink python && brew link --overwrite python
           brew install docker colima
           brew reinstall --force qemu
 
