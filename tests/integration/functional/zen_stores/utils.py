@@ -191,6 +191,7 @@ class UserContext:
         login: bool = False,
         existing_user: bool = False,
         delete: bool = True,
+        is_admin: bool = True,
     ):
         if existing_user:
             self.user_name = user_name
@@ -207,11 +208,15 @@ class UserContext:
             self.password = password or random_str(32)
         self.existing_user = existing_user
         self.delete = delete
+        self.is_admin = is_admin
 
     def __enter__(self):
         if not self.existing_user:
             new_user = UserRequest(
-                name=self.user_name, password=self.password, active=True
+                name=self.user_name,
+                password=self.password,
+                active=True,
+                is_admin=self.is_admin,
             )
             self.created_user = self.store.create_user(new_user)
         else:
@@ -1011,7 +1016,7 @@ workspace_crud_test_config = CrudTestConfig(
     entity_name="workspace",
 )
 user_crud_test_config = CrudTestConfig(
-    create_model=UserRequest(name=sample_name("sample_user")),
+    create_model=UserRequest(name=sample_name("sample_user"), is_admin=True),
     update_model=UserUpdate(name=sample_name("updated_sample_user")),
     filter_model=UserFilter,
     entity_name="user",
