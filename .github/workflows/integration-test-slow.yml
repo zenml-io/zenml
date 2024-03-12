@@ -171,7 +171,7 @@ jobs:
           sudo rm -rf /Library/Frameworks/Python.framework/
           brew install --force python3 && brew unlink python3 && brew unlink python3 && brew link --overwrite python3
       - name: Unbreak Python in GHA for 3.11
-        if : runner.os=='macOS' && inputs.python-version == '3.11'
+        if: runner.os=='macOS' && inputs.python-version == '3.11'
         run: |
           rm /usr/local/bin/2to3
           rm /usr/local/bin/idle3
