@@ -161,7 +161,7 @@ jobs:
         if: runner.os=='Windows'
         run: choco install graphviz
       - name: Unbreak python in github actions
-        if: runner.os=='macOS'
+        if: runner.os=='macOS' && inputs.python-version != '3.11'
         # github actions overwrites brew's python. Force it to reassert itself, by
         # running in a separate step.
         # Workaround GitHub Actions Python issues
