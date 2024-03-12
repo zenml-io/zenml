@@ -25,6 +25,7 @@ class ExternalUserModel(BaseModel):
     id: UUID
     email: str
     name: Optional[str] = None
+    is_admin: bool = False
 
     class Config:
         """Pydantic configuration."""
