@@ -228,8 +228,8 @@ class BaseModelDeployer(StackComponent, ABC):
             status=service.status.dict(),
             endpoint=service.endpoint.dict() if service.endpoint else None,
             # labels=service.config.get_service_labels()  # TODO: fix labels in services and config
-            prediction_url=service.get_the_prediction_url(),
-            health_check_url=service.get_the_healthcheck_url(),
+            prediction_url=service.get_prediction_url(),
+            health_check_url=service.get_healthcheck_url(),
         )
         return service
 

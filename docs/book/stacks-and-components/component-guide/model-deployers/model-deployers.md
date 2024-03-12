@@ -23,9 +23,9 @@ stored as files or in a database for end users or business applications.
 ### When to use it?
 
 The model deployers are optional components in the ZenML stack. They are used to deploy machine learning models to a
-target environment either a development (local) or a production (Kubernetes or cloud) environment. The model deployers are mainly used to deploy models for real-time inference use cases. With the model deployers and other stack components, you can build pipelines that are continuously trained and deployed to production.
+target environment, either a development (local) or a production (Kubernetes or cloud) environment. The model deployers are mainly used to deploy models for real-time inference use cases. With the model deployers and other stack components, you can build pipelines that are continuously trained and deployed to production.
 
-### How they experiment trackers slot into the stack
+### How they model deployers slot into the stack
 
 Here is an architecture diagram that shows how model deployers fit into the overall story of a remote stack.
 

@@ -63,11 +63,13 @@ In the following examples, we will show how to deploy a model using the MLflow M
 
 ```python
 from zenml import pipeline, step, get_step_context
+from zenml.client import Client
 
 @step
 def deploy_model() -> Optional[MLFlowDeploymentService]:
     # Deploy a model using the MLflow Model Deployer
-    mlflow_model_deployer = MLFlowModelDeployer.get_active_model_deployer()
+    zenml_client = Client()
+    model_deployer = zenml_client.active_stack.model_deployer
     mlflow_deployment_config = MLFlowDeploymentConfig(
         name: str = "mlflow-model-deployment-example",
         description: str = "An example of deploying a model using the MLflow Model Deployer",
@@ -79,8 +81,8 @@ def deploy_model() -> Optional[MLFlowDeploymentService]:
         mlserver: bool = False
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
     )
-    service = mlflow_model_deployer.deploy_model(mlflow_deployment_config)
-    logger.info(f"The deployed service info: {mlflow_model_deployer.get_model_server_info(service)}")
+    service = model_deployer.deploy_model(mlflow_deployment_config)
+    logger.info(f"The deployed service info: {model_deployer.get_model_server_info(service)}")
     return service
 ```
 
@@ -88,13 +90,16 @@ def deploy_model() -> Optional[MLFlowDeploymentService]:
 
 ```python
 from zenml import pipeline, step, get_step_context
+from zenml.client import Client
 from mlflow.tracking import MlflowClient, artifact_utils
+
 
 @step
 def deploy_model() -> Optional[MLFlowDeploymentService]:
     # Deploy a model using the MLflow Model Deployer
-    mlflow_model_deployer = MLFlowModelDeployer.get_active_model_deployer()
-    experiment_tracker = Client().active_stack.experiment_tracker
+    zenml_client = Client()
+    model_deployer = zenml_client.active_stack.model_deployer
+    experiment_tracker = zenml_client.active_stack.experiment_tracker
     # Let's get the run id of the current pipeline
     mlflow_run_id = experiment_tracker.get_run_id(
         experiment_name=get_step_context().pipeline_name,
@@ -114,11 +119,11 @@ def deploy_model() -> Optional[MLFlowDeploymentService]:
         pipeline_step_name: str = get_step_context().step_name,
         model_uri: str = model_uri,
         model_name: str = model_name,
-        workers: int = 1
-        mlserver: bool = False
-        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
+        workers: int = 1,
+        mlserver: bool = False,
+        timeout: int = 300,
     )
-    service = mlflow_model_deployer.deploy_model(mlflow_deployment_config)
+    service = model_deployer.deploy_model(mlflow_deployment_config)
     return service
 ```
 
@@ -133,11 +138,8 @@ Within the `MLFlowDeploymentService` you can configure:
 * `model_name`: The name of the model that is deployed in case of model registry the name must be a valid registered model name.
 * `model_version`: The version of the model that is deployed in case of model registry the version must be a valid registered model version.
 * `silent_daemon`: set to True to suppress the output of the daemon
-(i.e. redirect stdout and stderr to /dev/null). If False, the daemon output will be redirected to a logfile.
-* `blocking`: set to True to run the service the context of the current
-process and block until the service is stopped instead of running
-the service as a daemon process. Useful for operating systems
-that do not support daemon processes.
+(i.e., redirect stdout and stderr to /dev/null). If False, the daemon output will be redirected to a log file.
+* `blocking`: set to True to run the service in the context of the current process and block until the service is stopped instead of running the service as a daemon process. Useful for operating systems that do not support daemon processes.
 * `model_uri`: The URI of the model to be deployed. This can be a local file path, a run ID, or a model name and version.
 * `workers`: The number of workers to be used by the MLflow prediction server.
 * `mlserver`: If True, the MLflow prediction server will be started as a MLServer instance.
@@ -167,7 +169,7 @@ def prediction_service_loader(
     pipeline_name: str,
     pipeline_step_name: str,
     model_name: str = "model",
-) -> 
+) -> None:
     """Get the prediction service started by the deployment pipeline.
 
     Args:
@@ -208,17 +210,23 @@ def prediction_service_loader(
             },
         }
     )
-    requests.post(
-        url=service.get_the_prediction_url(),
+    response = requests.post(
+        url=service.get_prediction_url(),
         data=payload,
         headers={"Content-Type": "application/json"},
     )
-    requests.json()
+
+    response.json()
 ```
 
 2. within the same pipeline, use the service from previous step to run inference this time using pre-built predict method
     
 ```python
+from typing_extensions import Annotated
+import numpy as np
+from zenml import step
+from zenml.integrations.mlflow.services import MLFlowDeploymentService
+
 # Use the service for inference
 @step
 def predictor(

@@ -122,8 +122,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
             )
 
         return {
-            "HEALTH_CHECK_URL": service_instance.get_the_healthcheck_url(),
-            "PREDICTION_URL": service_instance.get_the_prediction_url(),
+            "HEALTH_CHECK_URL": service_instance.get_healthcheck_url(),
+            "PREDICTION_URL": service_instance.get_prediction_url(),
             "BENTO_TAG": service_instance.config.bento,
             "MODEL_NAME": service_instance.config.model_name,
             "MODEL_URI": service_instance.config.model_uri,

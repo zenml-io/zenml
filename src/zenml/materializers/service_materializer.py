@@ -83,6 +83,6 @@ class ServiceMaterializer(BaseMaterializer):
         """
         from zenml.metadata.metadata_types import Uri
 
-        if prediction_url := service.get_the_prediction_url() or None:
+        if prediction_url := service.get_prediction_url() or None:
             return {"uri": Uri(prediction_url)}
         return {}

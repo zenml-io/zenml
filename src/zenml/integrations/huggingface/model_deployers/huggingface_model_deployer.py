@@ -242,6 +242,6 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             Model server information.
         """
         return {
-            "PREDICTION_URL": service_instance.get_the_prediction_url(),
-            "HEALTH_CHECK_URL": service_instance.get_the_healthcheck_url(),
+            "PREDICTION_URL": service_instance.get_prediction_url(),
+            "HEALTH_CHECK_URL": service_instance.get_healthcheck_url(),
         }

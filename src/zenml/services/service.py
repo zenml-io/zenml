@@ -189,13 +189,13 @@ class BaseService(BaseTypedModel):
 
     @classmethod
     def from_model(cls, model: "ServiceResponse") -> "BaseService":
-        """Loads a code repository from a model.
+        """Loads a service from a model.
 
         Args:
-            model: The CodeRepositoryResponseModel to load from.
+            model: The ServiceResponse to load from.
 
         Returns:
-            The loaded code repository object.
+            The loaded service object.
 
         Raises:
             ValueError: if the service source is not found in the model.
@@ -470,7 +470,7 @@ class BaseService(BaseTypedModel):
                         f"'{self.status.last_error}'"
                     )
 
-    def get_the_prediction_url(self) -> Optional[str]:
+    def get_prediction_url(self) -> Optional[str]:
         """Gets the prediction URL for the endpoint.
 
         Returns:
@@ -485,7 +485,7 @@ class BaseService(BaseTypedModel):
             )
         return prediction_url
 
-    def get_the_healthcheck_url(self) -> Optional[str]:
+    def get_healthcheck_url(self) -> Optional[str]:
         """Gets the healthcheck URL for the endpoint.
 
         Returns:

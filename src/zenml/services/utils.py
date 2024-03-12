@@ -52,7 +52,7 @@ def link_service_to_model(
 
         if model is None or is_issue:
             raise RuntimeError(
-                "`link_artifact_to_model` called without `model` parameter "
+                "`link_service_to_model` called without `model` parameter "
                 "and configured model context cannot be identified. Consider "
                 "passing the `model` explicitly or configuring it in "
                 "@step or @pipeline decorator."
