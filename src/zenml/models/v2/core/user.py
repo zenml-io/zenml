@@ -52,7 +52,7 @@ class UserBase(BaseModel):
 
     # Fields
     full_name: str = Field(
-        default="",
+        default=None,
         title="The full name for the account owner. Only relevant for user "
         "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -87,7 +87,7 @@ class UserBase(BaseModel):
         default=None,
         title="The external user ID associated with the account.",
     )
-    active: bool = Field(default=False, title="Whether the account is active.")
+    active: bool = Field(default=None, title="Whether the account is active.")
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -164,6 +164,24 @@ class UserRequest(UserBase, BaseRequest):
     is_admin: bool = Field(
         title="Whether the account is an administrator.",
     )
+
+    @root_validator
+    def validate_optional_fields(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Validate that the UserRequest model for default values.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
+        if values.get("full_name", None) is None:
+            values["full_name"] = ""
+        if values.get("active", None) is None:
+            values["active"] = False
+        return values
 
     class Config:
         """Pydantic configuration class."""

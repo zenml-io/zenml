@@ -274,7 +274,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             )
 
         user_update.activation_token = user.activation_token
-        if auth_context.user.is_admin or user.id == auth_context.user.id:
+        if not auth_context.user.is_admin or user.id == auth_context.user.id:
             user_update.active = user.active
         updated_user = zen_store().update_user(
             user_id=user.id,
