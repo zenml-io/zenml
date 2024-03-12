@@ -1,6 +1,8 @@
 ---
 name: ci-slow
 on:
+  workflow_dispatch:
+  workflow_call:
   push:
     branches: [main]
     paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
@@ -48,7 +50,10 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install current package as editable
-        run: pip install -U darglint
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
+          uv pip install --system darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
@@ -80,10 +85,11 @@ jobs:
           python-version: '3.8'
       - name: Install current package as editable
         run: |
-          pip install -U pip
-          pip install -e .
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
+          uv pip install --system -e .
       - name: Install mlstacks package
-        run: pip install mlstacks
+        run: uv pip install --system mlstacks
       - name: Check for broken dependencies
         run: pip check
       - name: Markdown link check
@@ -98,13 +104,13 @@ jobs:
         continue-on-error: true
       - name: Security check
         run: |
-          pip install bandit
+          uv pip install --system bandit
           bash scripts/check-security.sh
       - name: Check for alembic branch divergence
         env:
           ZENML_DEBUG: 0
         run: |
-          pip install alembic
+          uv pip install --system alembic
           bash scripts/check-alembic-branches.sh
   custom-ubuntu-unit-test:
     if: github.event.pull_request.draft == false
@@ -187,7 +193,7 @@ jobs:
           - docker-server-docker-orchestrator-mysql
           - docker-server-docker-orchestrator-mariadb
         exclude:
-          # docker is time-consuming to run, so we only run it on 3.8
+   # docker is time-consuming to run, so we only run it on 3.8
           - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.9'
           - test_environment: docker-server-docker-orchestrator-mysql
