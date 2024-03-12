@@ -113,7 +113,6 @@ class ServiceConfig(BaseTypedModel):
     description: str = ""
     pipeline_name: str = ""
     pipeline_step_name: str = ""
-    # TODO: check the duplication of model_name and model_version and registry_model_name and registry_model_version
     model_name: str = ""
     model_version: str = ""
     service_name: str = ""

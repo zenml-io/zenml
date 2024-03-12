@@ -131,9 +131,22 @@ class BaseModelDeployer(StackComponent, ABC):
         config: ServiceConfig,
         service_type: ServiceType,
         replace: bool = False,
+        continuous_deployment_mode: bool = False,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
         """Deploy a model.
+
+        the deploy_model method is the main entry point for deploying models
+        using the model deployer. It is used to deploy a model to a model server
+        instance that is running on a remote serving platform or service. The
+        method is responsible for detecting if there is an existing model server
+        instance running serving one or more previous versions of the same model
+        and deploying the model to the serving platform or updating the existing
+        model server instance to include the new model version. The method
+        returns a Service object that is a representation of the external model
+        server instance. The Service object must implement basic operational
+        state tracking and lifecycle management operations for the model server
+        (e.g. start, stop, etc.).
 
         Args:
             config: Custom Service configuration parameters for the model
@@ -142,6 +155,11 @@ class BaseModelDeployer(StackComponent, ABC):
             replace: If True, it will replace any existing model server instances
                 that serve the same model. If False, it does not replace any
                 existing model server instance.
+            continuous_deployment_mode: If True, it will replace any existing
+                model server instances that serve the same model, regardless of
+                the configuration. If False, it will only replace existing model
+                server instances that serve the same model if the configuration
+                is exactly the same.
             timeout: The maximum time in seconds to wait for the model server
                 to start serving the model.
             service_type: The type of the service to deploy. If not provided,
@@ -155,38 +173,52 @@ class BaseModelDeployer(StackComponent, ABC):
         """
         # Instantiate the client
         client = Client()
-        # Find existing model server
-        services = self.find_model_server(
-            config=config.dict(),
-            service_type=service_type,
-        )
-        if len(services) > 0:
-            logger.info(
-                f"Existing model server found for {config.name or config.model_name} with the exact same configuration. Returning the existing service named {services[0].config.service_name}."
-            )
-            service = services[0]
-        else:
-            logger.info(
-                f"No existing model server found for {config.model_name}, deploying new one."
-            )
-            service_response = client.create_service(
-                config=config,
+        if not continuous_deployment_mode:
+            # Find existing model server
+            services = self.find_model_server(
+                config=config.dict(),
                 service_type=service_type,
-                model_version_id=get_model_version_id_if_exists(
-                    config.model_name, config.model_version
-                ),
             )
-            try:
-                service = self.perform_deploy_model(
-                    id=service_response.id,
-                    config=config,
-                    timeout=timeout,
+            if len(services) > 0:
+                logger.info(
+                    f"Existing model server found for {config.name or config.model_name} with the exact same configuration. Returning the existing service named {services[0].config.service_name}."
                 )
-            except Exception as e:
-                client.delete_service(service_response.id)
-                raise RuntimeError(
-                    f"Failed to deploy model server for {config.model_name}: {e}"
-                ) from e
+                return services[0]
+        else:
+            # Find existing model server
+            services = self.find_model_server(
+                pipeline_name=config.pipeline_name,
+                pipeline_step_name=config.pipeline_step_name,
+                model_name=config.model_name,
+                service_type=service_type,
+            )
+            if len(services) > 0:
+                logger.info(
+                    f"Existing model server found for {config.pipeline_name} and {config.pipeline_step_name}, since continuous deployment mode is enabled, replacing the existing service named {services[0].config.service_name}."
+                )
+                service = services[0]
+                self.delete_model_server(service.uuid)
+        logger.info(
+            f"Deploying model server for {config.model_name} with the following configuration: {config.dict()}"
+        )
+        service_response = client.create_service(
+            config=config,
+            service_type=service_type,
+            model_version_id=get_model_version_id_if_exists(
+                config.model_name, config.model_version
+            ),
+        )
+        try:
+            service = self.perform_deploy_model(
+                id=service_response.id,
+                config=config,
+                timeout=timeout,
+            )
+        except Exception as e:
+            client.delete_service(service_response.id)
+            raise RuntimeError(
+                f"Failed to deploy model server for {config.model_name}: {e}"
+            ) from e
         # Update the service in store
         client.update_service(
             id=service.uuid,

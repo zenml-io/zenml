@@ -14,6 +14,7 @@
 """Implementation of a materializer to read and write ZenML service instances."""
 
 import os
+import uuid
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from zenml.client import Client
@@ -52,7 +53,7 @@ class ServiceMaterializer(BaseMaterializer):
             service_id = f.read().strip()
 
         client = Client()
-        service = client.get_service(name_id_or_prefix=service_id)
+        service = client.get_service(name_id_or_prefix=uuid.UUID(service_id))
         return BaseDeploymentService.from_model(service)
 
     def save(self, service: BaseService) -> None:
@@ -67,7 +68,7 @@ class ServiceMaterializer(BaseMaterializer):
         artifact_store = Client().active_stack.artifact_store
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with artifact_store.open(filepath, "w") as f:
-            f.write(service.uuid)
+            f.write(str(service.uuid))
 
     def extract_metadata(
         self, service: BaseService

@@ -42,11 +42,11 @@ class BaseModelDeployer(StackComponent, ABC):
     """Base class for all ZenML model deployers."""
 
     @abstractmethod
-    def deploy_model(
-            self,
-            config: ServiceConfig,
-            replace: bool = False,
-            timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+    def perform_deploy_model(
+        self,
+        id: UUID,
+        config: ServiceConfig,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
         """Abstract method to deploy a model."""
 
@@ -59,43 +59,28 @@ class BaseModelDeployer(StackComponent, ABC):
         properties for the user."""
 
     @abstractmethod
-    def find_model_server(
-            self,
-            running: bool = False,
-            service_uuid: Optional[UUID] = None,
-            pipeline_name: Optional[str] = None,
-            run_name: Optional[str] = None,
-            pipeline_step_name: Optional[str] = None,
-            model_name: Optional[str] = None,
-            model_uri: Optional[str] = None,
-            model_type: Optional[str] = None,
-    ) -> List[BaseService]:
-        """Abstract method to find one or more model servers that match the
-        given criteria."""
-
-    @abstractmethod
-    def stop_model_server(
-            self,
-            uuid: UUID,
-            timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
-            force: bool = False,
-    ) -> None:
+    def perform_stop_model(
+        self,
+        service: BaseService,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+        force: bool = False,
+    ) -> BaseService:
         """Abstract method to stop a model server."""
 
     @abstractmethod
-    def start_model_server(
-            self,
-            uuid: UUID,
-            timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
-    ) -> None:
+    def perform_start_model(
+        self,
+        service: BaseService,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+    ) -> BaseService:
         """Abstract method to start a model server."""
 
     @abstractmethod
-    def delete_model_server(
-            self,
-            uuid: UUID,
-            timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
-            force: bool = False,
+    def perform_delete_model(
+        self,
+        service: BaseService,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+        force: bool = False,
     ) -> None:
         """Abstract method to delete a model server."""
 
@@ -143,6 +128,7 @@ If you want to create your own custom flavor for a model deployer, you can follo
 1. Create a class that inherits from the `BaseModelDeployer` class and implements the abstract methods.
 2. If you need to provide any configuration, create a class that inherits from the `BaseModelDeployerConfig` class and add your configuration parameters.
 3. Bring both the implementation and the configuration together by inheriting from the `BaseModelDeployerFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
+4. Create a service class that inherits from the `BaseService` class and implements the abstract methods. This class will be used to represent the deployed model server in ZenML.
 
 Once you are done with the implementation, you can register it through the CLI. Please ensure you **point to the flavor class via dot notation**:
 
