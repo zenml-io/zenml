@@ -265,7 +265,8 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                 action=Action.UPDATE,
             )
         if (
-            user.is_admin != user_update.is_admin
+            user_update.is_admin is not None
+            and user.is_admin != user_update.is_admin
             and not auth_context.user.is_admin
         ):
             raise IllegalOperationError(
@@ -273,7 +274,8 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             )
 
         user_update.activation_token = user.activation_token
-        user_update.active = user.active
+        if auth_context.user.is_admin or user.id == auth_context.user.id:
+            user_update.active = user.active
         updated_user = zen_store().update_user(
             user_id=user.id,
             user_update=user_update,
@@ -454,8 +456,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                     email=user_response.email,
                     source="zenml server",
                 )
-            user_update.activation_token = user.activation_token
-            user_update.active = user.active
             updated_user = zen_store().update_user(
                 user_id=user.id, user_update=user_update
             )
@@ -516,11 +516,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         current_user = zen_store().get_user(auth_context.user.id)
         user.activation_token = current_user.activation_token
         user.active = current_user.active
-
-        if user.is_admin:
-            verify_admin_status_if_no_rbac(
-                auth_context.user.is_admin, "update self admin status"
-            )
+        user.is_admin = current_user.is_admin
 
         updated_user = zen_store().update_user(
             user_id=auth_context.user.id, user_update=user

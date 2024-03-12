@@ -176,8 +176,7 @@ def create_user(
 
 @user.command(
     "update",
-    help="Update user information through the cli. All attributes "
-    "except for password can be updated through the cli.",
+    help="Update user information through the cli.",
 )
 @click.argument("user_name_or_id", type=str, required=True)
 @click.option(
@@ -214,13 +213,22 @@ def create_user(
     help="New user password.",
 )
 @click.option(
-    "--is_admin",
+    "--admin",
     "-a",
-    "updated_is_admin",
+    "make_admin",
     is_flag=True,
     required=False,
     default=None,
     help="Whether the user should be an admin.",
+)
+@click.option(
+    "--user",
+    "-u",
+    "make_user",
+    is_flag=True,
+    required=False,
+    default=None,
+    help="Whether the user should be a regular user.",
 )
 def update_user(
     user_name_or_id: str,
@@ -228,9 +236,10 @@ def update_user(
     updated_full_name: Optional[str] = None,
     updated_email: Optional[str] = None,
     updated_password: Optional[str] = None,
-    updated_is_admin: Optional[bool] = None,
+    make_admin: Optional[bool] = None,
+    make_user: Optional[bool] = None,
 ) -> None:
-    """Create a new user.
+    """Update an existing user.
 
     Args:
         user_name_or_id: The name of the user to create.
@@ -238,13 +247,18 @@ def update_user(
         updated_full_name: The name of the user to create.
         updated_email: The name of the user to create.
         updated_password: The name of the user to create.
-        updated_is_admin: Whether the user should be an admin.
+        make_admin: Whether the user should be an admin.
+        make_user: Whether the user should be a regular user.
     """
+    if make_admin is not None and make_user is not None:
+        cli_utils.error(
+            "Cannot set both --admin and --user flags as self-exclusive."
+        )
     try:
         current_user = Client().get_user(
             user_name_or_id, allow_name_prefix_match=False
         )
-        if current_user.is_admin and updated_is_admin is False:
+        if current_user.is_admin and make_user:
             confirmation = cli_utils.confirmation(
                 f"Currently user `{current_user.name}` is an admin, are you sure you to make they regular user?"
             )
@@ -257,7 +271,11 @@ def update_user(
             updated_full_name=updated_full_name,
             updated_email=updated_email,
             updated_password=updated_password,
-            updated_is_admin=updated_is_admin,
+            updated_is_admin=True
+            if make_admin is True
+            else False
+            if make_user is True
+            else None,
         )
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))

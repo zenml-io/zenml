@@ -7371,8 +7371,6 @@ class SqlZenStore(BaseZenStore):
                 f"Unable to create user with name '{user.name}': "
                 f"Found an existing user account with this name."
             )
-            if user.is_admin is None:
-                user.is_admin = False
             try:
                 self._get_account_schema(
                     user.name,
