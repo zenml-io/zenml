@@ -372,6 +372,7 @@ def sample_user_model() -> UserResponse:
             created=datetime.now(),
             updated=datetime.now(),
             is_service_account=False,
+            is_admin=True,
         ),
         metadata=UserResponseMetadata(),
     )

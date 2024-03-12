@@ -691,6 +691,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         password: Optional[str] = None,
+        is_admin: bool = False,
     ) -> UserResponse:
         """Create a new user.
 
@@ -698,11 +699,14 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the user.
             password: The password of the user. If not provided, the user will
                 be created with empty password.
+            is_admin: Whether the user should be an admin.
 
         Returns:
             The model of the created user.
         """
-        user = UserRequest(name=name, password=password or None)
+        user = UserRequest(
+            name=name, password=password or None, is_admin=is_admin
+        )
         user.active = (
             password != "" if self.zen_store.type != StoreType.REST else True
         )
@@ -801,6 +805,8 @@ class Client(metaclass=ClientMetaClass):
         updated_email: Optional[str] = None,
         updated_email_opt_in: Optional[bool] = None,
         updated_hub_token: Optional[str] = None,
+        updated_password: Optional[str] = None,
+        updated_is_admin: Optional[bool] = None,
     ) -> UserResponse:
         """Update a user.
 
@@ -811,6 +817,8 @@ class Client(metaclass=ClientMetaClass):
             updated_email: The new email of the user.
             updated_email_opt_in: The new email opt-in status of the user.
             updated_hub_token: Update the hub token
+            updated_password: The new password of the user.
+            updated_is_admin: Whether the user should be an admin.
 
         Returns:
             The updated user.
@@ -830,6 +838,10 @@ class Client(metaclass=ClientMetaClass):
             user_update.email_opted_in = updated_email_opt_in
         if updated_hub_token is not None:
             user_update.hub_token = updated_hub_token
+        if updated_password is not None:
+            user_update.password = updated_password
+        if updated_is_admin is not None:
+            user_update.is_admin = updated_is_admin
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update
