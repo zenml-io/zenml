@@ -207,7 +207,7 @@ answer questions based on the documents in the index store. We can use the
 `langchain` library to create a chatbot that uses the index store to retrieve
 relevant documents and then generate a response based on those documents.
 
-Here's an example of how yuo might do this using the `ConversationalChatAgent`.
+Here's an example of how you might do this using the `ConversationalChatAgent`.
 The advantage of using a framework to handle this part is that it abstracts away
 the complexity of managing the retriever and generator models, allowing you to
 focus on building the chatbot and integrating it into your application.
@@ -360,3 +360,6 @@ further improve the quality of the responses and make the chatbot more
 responsive to the specific needs of our users. We'll also explore how to
 integrate finetuning into ZenML pipelines and discuss best practices for data
 preparation, hyperparameter tuning, and monitoring.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
