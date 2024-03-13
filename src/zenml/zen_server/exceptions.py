@@ -78,7 +78,7 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     (IllegalOperationError, 403),
     # 401 Unauthorized
     (AuthorizationException, 401),
-    # 402 Unauthorized
+    # 402 Payment required
     (UpgradeRequiredError, 402),
     # 404 Not Found
     (DoesNotExistException, 404),
