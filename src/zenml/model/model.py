@@ -30,7 +30,7 @@ from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.utils import dashboard_utils
+from zenml.utils.dashboard_utils import get_model_version_url
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -725,7 +725,7 @@ class Model(BaseModel):
             self.was_created_in_this_run = True
             
             logger.info(f"New model version `{self.version}` was created.")
-        model_version_url = dashboard_utils.get_model_version_url(
+        model_version_url = get_model_version_url(
             model_version.id
         )
         if model_version_url:
