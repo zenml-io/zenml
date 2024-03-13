@@ -22,6 +22,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Dict,
+    List,
     Optional,
     Tuple,
     Type,
@@ -336,74 +338,99 @@ def handle_exceptions(func: F) -> F:
 
 
 class RequestLimiter:
+    """Simple in-memory rate limiter."""
+
     def __init__(
         self,
         day_limit: Optional[int] = None,
         minute_limit: Optional[int] = None,
     ):
+        """Initializes the limiter.
+
+        Args:
+            day_limit: The number of requests allowed per day.
+            minute_limit: The number of requests allowed per minute.
+
+        Raises:
+            ValueError: If both day_limit and minute_limit are None.
+        """
         self.limiting_enabled = server_config().rate_limit_enabled
-        if self.limiting_enabled:
-            if day_limit is None and minute_limit is None:
-                raise ValueError("Pass either day or minuter limits, or both.")
-            self.day_limit = day_limit
-            self.minute_limit = minute_limit
-            self.limiter = defaultdict(list)
+        if not self.limiting_enabled:
+            return
+        if day_limit is None and minute_limit is None:
+            raise ValueError("Pass either day or minuter limits, or both.")
+        self.day_limit = day_limit
+        self.minute_limit = minute_limit
+        self.limiter: Dict[str, List[float]] = defaultdict(list)
 
     def hit_limiter(self, request: Request) -> None:
-        if self.limiting_enabled:
-            from fastapi import HTTPException
+        """Increase the number of hits in the limiter.
 
-            requestor = self._get_ipaddr(request)
-            now = time.time()
-            minute_ago = now - 60
-            day_ago = now - 60 * 60 * 24
-            self.limiter[requestor].append(now)
+        Args:
+            request: Request object.
 
-            # remove failures older than a day
-            older_index = None
-            for i, l in enumerate(self.limiter[requestor]):
-                if l < day_ago:
-                    older_index = i
-                else:
-                    break
-            if older_index is not None:
-                self.limiter[requestor] = self.limiter[requestor][
-                    older_index + 1 :
-                ]
+        Raises:
+            HTTPException: If the request limit is exceeded.
+        """
+        if not self.limiting_enabled:
+            return
+        from fastapi import HTTPException
 
-            if (
-                self.day_limit
-                and len(self.limiter[requestor]) > self.day_limit
-            ):
-                raise HTTPException(
-                    status_code=429, detail="Daily request limit exceeded."
-                )
-            minute_requests = len(
-                [l for l in self.limiter[requestor][::-1] if l >= minute_ago]
+        requester = self._get_ipaddr(request)
+        now = time.time()
+        minute_ago = now - 60
+        day_ago = now - 60 * 60 * 24
+        self.limiter[requester].append(now)
+
+        # remove failures older than a day
+        older_index = None
+        for i, limiter_hit in enumerate(self.limiter[requester]):
+            if limiter_hit < day_ago:
+                older_index = i
+            else:
+                break
+        if older_index is not None:
+            self.limiter[requester] = self.limiter[requester][
+                older_index + 1 :
+            ]
+
+        if self.day_limit and len(self.limiter[requester]) > self.day_limit:
+            raise HTTPException(
+                status_code=429, detail="Daily request limit exceeded."
             )
-            if self.minute_limit and minute_requests > self.minute_limit:
-                raise HTTPException(
-                    status_code=429, detail="Minute request limit exceeded."
-                )
+        minute_requests = len(
+            [
+                limiter_hit
+                for limiter_hit in self.limiter[requester][::-1]
+                if limiter_hit >= minute_ago
+            ]
+        )
+        if self.minute_limit and minute_requests > self.minute_limit:
+            raise HTTPException(
+                status_code=429, detail="Minute request limit exceeded."
+            )
 
     def reset_limiter(self, request: Request) -> None:
+        """Resets the limiter on successful request.
+
+        Args:
+            request: Request object.
+        """
         if self.limiting_enabled:
-            requestor = self._get_ipaddr(request)
-            if requestor in self.limiter:
-                del self.limiter[requestor]
+            requester = self._get_ipaddr(request)
+            if requester in self.limiter:
+                del self.limiter[requester]
 
     def _get_ipaddr(self, request: Request) -> str:
-        """
-        Returns the ip address for the current request (or 127.0.0.1 if none found)
-        based on the X-Forwarded-For headers.
-        Note that a more robust method for determining IP address of the client is
-        provided by uvicorn's ProxyHeadersMiddleware.
+        """Returns the IP address for the current request.
+
+        Based on the X-Forwarded-For headers or client information.
 
         Args:
             request: The request object.
 
         Returns:
-            The ip address for the current request.
+            The ip address for the current request (or 127.0.0.1 if none found).
         """
         if "X_FORWARDED_FOR" in request.headers:
             return request.headers["X_FORWARDED_FOR"]
@@ -426,9 +453,6 @@ def rate_limit_requests(
 
     Returns:
         Decorated function.
-
-    Raises:
-        ValueError: If both day_limit and minute_limit are None.
     """
     limiter = RequestLimiter(day_limit=day_limit, minute_limit=minute_limit)
 
