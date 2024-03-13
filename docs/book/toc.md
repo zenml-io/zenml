@@ -63,7 +63,10 @@
     * [Handling dependencies](user-guide/advanced-guide/best-practices/handling-dependencies.md)
     * [Debug and solve issues](user-guide/advanced-guide/best-practices/debug-and-solve-issues.md)
 * [🦜 LLMOps guide](user-guide/llmops-guide/llmops-guide.md)
-  * [ADD SOME PAGES HERE](user-guide/llmops-guide/SOME_PAGE_HERE.md)
+  * [RAG with ZenML](user-guide/llmops-guide/rag-with-zenml.md)
+  * [Finetuning with ZenML](user-guide/llmops-guide/finetuning-with-zenml.md)
+  * [Deploying and Serving Finetuned Models](user-guide/llmops-guide/deploying-serving-finetuned-models.md)
+  * [Lifecycle Considerations with Finetuned Models](user-guide/llmops-guide/lifecycle-considerations-finetuned-models.md)
 
 ## Deploying ZenML
 
