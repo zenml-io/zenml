@@ -464,13 +464,13 @@ def rate_limit_requests(
             auth_form_data: "OAuthLoginRequestForm",
         ) -> Any:
             try:
+                limiter.hit_limiter(request)
                 ret = func(
                     request=request,
                     response=response,
                     auth_form_data=auth_form_data,
                 )
             except Exception as e:
-                limiter.hit_limiter(request)
                 raise e
             else:
                 limiter.reset_limiter(request)
