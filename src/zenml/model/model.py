@@ -30,7 +30,6 @@ from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.utils.dashboard_utils import get_model_version_url
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -620,6 +619,7 @@ class Model(BaseModel):
         """
         from zenml.client import Client
         from zenml.models import ModelVersionRequest
+        from zenml.utils.dashboard_utils import get_model_version_url
 
         model = self._get_or_create_model()
 
