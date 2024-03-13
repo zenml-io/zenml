@@ -233,7 +233,10 @@ def verify_permission_for_model(model: AnyResponse, action: Action) -> None:
     batch_verify_permissions_for_models(models=[model], action=action)
 
 
-def batch_verify_permissions(resources: Set[Resource], action: Action) -> None:
+def batch_verify_permissions(
+    resources: Set[Resource],
+    action: Action,
+) -> None:
     """Batch permission verification.
 
     Args:
