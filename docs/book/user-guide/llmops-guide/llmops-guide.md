@@ -6,6 +6,7 @@ description: Leverage the power of LLMs in your MLOps workflows with ZenML.
 
 Welcome to the ZenML LLMOps Guide, where we dive into the exciting world of Large Language Models (LLMs) and how to integrate them seamlessly into your MLOps pipelines using ZenML. This guide is designed for ML practitioners and MLOps engineers looking to harness the potential of LLMs while maintaining the robustness and scalability of their workflows.
 
+# TODO: Add image (see blue notebook p 44)
 <figure><img src="path/to/image.png" alt=""><figcaption><p>ZenML simplifies the development and deployment of LLM-powered MLOps pipelines.</p></figcaption></figure>
 
 In this guide, we'll explore various aspects of working with LLMs in ZenML, including:
@@ -30,4 +31,4 @@ To follow along with the examples and tutorials in this guide, ensure you have a
 
 By the end of this guide, you'll have a solid understanding of how to leverage LLMs in your MLOps workflows using ZenML, enabling you to build powerful, scalable, and maintainable LLM-powered applications. Let's embark on this exciting journey together!
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=your-pxid" alt="ZenML Scarf"><figcaption></figcaption></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
