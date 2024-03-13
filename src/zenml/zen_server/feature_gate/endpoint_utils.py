@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """All endpoint utils for the feature gate implementations."""
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.utils import feature_gate
+from zenml.zen_server.utils import feature_gate, server_config
 
 
 def check_entitlement(resource_type: ResourceType) -> bool:
@@ -25,6 +25,8 @@ def check_entitlement(resource_type: ResourceType) -> bool:
     Returns:
         True if the tenant is entitled, False else.
     """
+    if not server_config().feature_gate_enabled:
+        return True
     return feature_gate().check_entitlement(resource=resource_type)
 
 
@@ -34,4 +36,6 @@ def report_usage(resource_type: ResourceType) -> None:
     Args:
         resource_type: The type of resource to report a usage for
     """
+    if not server_config().feature_gate_enabled:
+        return
     feature_gate().report_event(resource=resource_type)

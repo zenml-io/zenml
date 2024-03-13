@@ -15,19 +15,24 @@
 import json
 import logging
 import os
-from typing import List, Optional
+from typing import Any, List, Optional, Type, TypeVar
 
 from zenml.enums import AuthScheme
 
+T = TypeVar("T")
 
-def handle_list_env_var(
-    var: str, default: Optional[List[str]] = None
-) -> List[str]:
-    """Converts normal env var to list.
+
+def handle_json_env_var(
+    var: str,
+    default: Optional[List[str]] = None,
+    expected_type: Type[T] = None,
+) -> Any:
+    """Converts a json env var into a Python object.
 
     Args:
-        var: The environment variable to convert.
+        var:  The environment variable to convert.
         default: The default value to return if the env var is not set.
+        expected_type: The type of the expected Python object.
 
     Returns:
         The converted list value.
@@ -39,12 +44,19 @@ def handle_list_env_var(
     value = os.getenv(var)
     if value:
         try:
-            return json.loads(value)
+            loaded_value = json.loads(value)
+            # check if loaded value is of correct type
+            if expected_type is None or isinstance(
+                loaded_value, expected_type
+            ):
+                return loaded_value
+            else:
+                raise TypeError  # if not correct type, raise TypeError
         except (TypeError, json.JSONDecodeError):
             # Use raw logging to avoid cyclic dependency
             logging.warning(
-                f"Environment Variable {var} could not be loaded,"
-                f"returning default: {default}."
+                f"Environment Variable {var} could not be loaded, into type "
+                f"{expected_type}, defaulting to: {default}."
             )
             return default
     else:
@@ -217,7 +229,7 @@ DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
 # ENV_ZENML_REPORTABLE_RESOURCES='["Foo", "bar"]'
-REPORTABLE_RESOURCES = handle_list_env_var(
+REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
     ENV_ZENML_REPORTABLE_RESOURCES, default=["pipeline_run", "model"]
 )
 
