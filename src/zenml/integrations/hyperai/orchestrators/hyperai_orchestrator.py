@@ -217,8 +217,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Depending on whether it is a scheduled or a realtime pipeline, add
             # potential .env file to service definition for deployment ID override.
             if deployment.schedule:
-                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment
-                del environment[ENV_ZENML_HYPERAI_RUN_ID]
+                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment but only if it is set
+                if ENV_ZENML_HYPERAI_RUN_ID in environment:
+                    del environment[ENV_ZENML_HYPERAI_RUN_ID]
                 compose_definition["services"][container_name]["env_file"] = [
                     ".env"
                 ]
