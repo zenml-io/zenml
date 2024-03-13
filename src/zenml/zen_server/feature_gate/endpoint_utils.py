@@ -16,17 +16,17 @@ from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import feature_gate, server_config
 
 
-def check_entitlement(resource_type: ResourceType) -> bool:
+def check_entitlement(resource_type: ResourceType) -> None:
     """Queries the feature gate to see if the operation falls within the tenants entitlements.
+
+    Raises an exception if the user is not entitled to create an instance of the
+    resource. Otherwise, simply returns.
 
     Args:
         resource_type: The type of resource to check for.
-
-    Returns:
-        True if the tenant is entitled, False else.
     """
     if not server_config().feature_gate_enabled:
-        return True
+        return
     return feature_gate().check_entitlement(resource=resource_type)
 
 

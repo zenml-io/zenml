@@ -60,7 +60,7 @@ class RawUsageEvent(BaseModel):
 class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
     """Feature Gate interface definition."""
 
-    def check_entitlement(self, resource: ResourceType):
+    def check_entitlement(self, resource: ResourceType) -> None:
         """Checks if a user is entitled to create a resource.
 
         Args:

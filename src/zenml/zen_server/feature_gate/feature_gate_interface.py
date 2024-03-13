@@ -21,7 +21,7 @@ class FeatureGateInterface(ABC):
     """RBAC interface definition."""
 
     @abstractmethod
-    def check_entitlement(self, resource: ResourceType) -> bool:
+    def check_entitlement(self, resource: ResourceType) -> None:
         """Checks if a user is entitled to create a resource.
 
         Args:

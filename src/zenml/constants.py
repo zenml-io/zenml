@@ -24,8 +24,8 @@ T = TypeVar("T")
 
 def handle_json_env_var(
     var: str,
+    expected_type: Type[T],
     default: Optional[List[str]] = None,
-    expected_type: Type[T] = None,
 ) -> Any:
     """Converts a json env var into a Python object.
 
@@ -230,7 +230,9 @@ DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 # entitlement in the case of a cloud deployment. Expected Format is this:
 # ENV_ZENML_REPORTABLE_RESOURCES='["Foo", "bar"]'
 REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
-    ENV_ZENML_REPORTABLE_RESOURCES, default=["pipeline_run", "model"]
+    ENV_ZENML_REPORTABLE_RESOURCES,
+    expected_type=List[str],
+    default=["pipeline_run", "model"]
 )
 
 # API Endpoint paths:
