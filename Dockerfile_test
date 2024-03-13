@@ -1,0 +1,49 @@
+# Use Python 3.9 as the base image
+FROM python:3.9-slim
+
+# Set environment variables to make Python outputs work correctly in Docker
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100
+
+# Install Git, as it's often necessary for installing dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+
+# Copy the current directory contents into the container at /app
+WORKDIR /app
+COPY . /app
+
+# Upgrade pip and install the project with the specified extras
+RUN pip install -U pip && pip install -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
+
+
+# Install the exported requirements
+# RUN sort integration-requirements.txt > integration-requirements-sorted.txt
+# RUN pip install -r integration-requirements-sorted.txt
+# RUN pip install --no-cache-dir -r integration-requirements.txt
+
+RUN zenml integration export-requirements \
+    --output-file integration-requirements.txt \
+    whylogs scipy pytorch azure airflow aws deepchecks discord facets github gitlab great_expectations huggingface hyperai kaniko kubernetes lightgbm mlflow neptune neural_prophet openai pillow polars pytorch_lightning s3 slack spark tensorboard tensorflow wandb xgboost
+
+# RUN pip install uv
+# RUN uv venv
+
+# ENV PATH="/venv/bin:$PATH"
+
+RUN sort integration-requirements.txt > integration-requirements-sorted.txt
+
+RUN pip compile -r integration-requirements-sorted.txt
+
+# Set the default command for the container to keep it running.
+CMD ["tail", "-f", "/dev/null"]
+
+
+
+
+
+
+
+

@@ -62,6 +62,8 @@
     * [Project templates](user-guide/advanced-guide/best-practices/using-project-templates.md)
     * [Handling dependencies](user-guide/advanced-guide/best-practices/handling-dependencies.md)
     * [Debug and solve issues](user-guide/advanced-guide/best-practices/debug-and-solve-issues.md)
+* [🦜 LLMOps guide](user-guide/llmops-guide/llmops-guide.md)
+  * [ADD SOME PAGES HERE](user-guide/llmops-guide/SOME_PAGE_HERE.md)
 
 ## Deploying ZenML
 
