@@ -15,6 +15,8 @@
 
 import inspect
 import os
+import time
+from collections import defaultdict
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -30,8 +32,6 @@ from urllib.parse import urlparse
 
 from fastapi import Response
 from pydantic import BaseModel, ValidationError
-from slowapi import Limiter
-from slowapi.util import get_ipaddr
 from starlette.requests import Request
 
 from zenml.config.global_config import GlobalConfiguration
@@ -335,15 +335,92 @@ def handle_exceptions(func: F) -> F:
     return cast(F, decorated)
 
 
+class RequestLimiter:
+    def __init__(
+        self,
+        day_limit: Optional[int] = None,
+        minute_limit: Optional[int] = None,
+    ):
+        self.limiting_enabled = server_config().rate_limit_enabled
+        if self.limiting_enabled:
+            if day_limit is None and minute_limit is None:
+                raise ValueError("Pass either day or minuter limits, or both.")
+            self.day_limit = day_limit
+            self.minute_limit = minute_limit
+            self.limiter = defaultdict(list)
+
+    def hit_limiter(self, request: Request) -> None:
+        if self.limiting_enabled:
+            from fastapi import HTTPException
+
+            requestor = self._get_ipaddr(request)
+            now = time.time()
+            minute_ago = now - 60
+            day_ago = now - 60 * 60 * 24
+            self.limiter[requestor].append(now)
+
+            # remove failures older than a day
+            older_index = None
+            for i, l in enumerate(self.limiter[requestor]):
+                if l < day_ago:
+                    older_index = i
+                else:
+                    break
+            if older_index is not None:
+                self.limiter[requestor] = self.limiter[requestor][
+                    older_index + 1 :
+                ]
+
+            if (
+                self.day_limit
+                and len(self.limiter[requestor]) > self.day_limit
+            ):
+                raise HTTPException(
+                    status_code=429, detail="Daily request limit exceeded."
+                )
+            minute_requests = len(
+                [l for l in self.limiter[requestor][::-1] if l >= minute_ago]
+            )
+            if self.minute_limit and minute_requests > self.minute_limit:
+                raise HTTPException(
+                    status_code=429, detail="Minute request limit exceeded."
+                )
+
+    def reset_limiter(self, request: Request) -> None:
+        if self.limiting_enabled:
+            requestor = self._get_ipaddr(request)
+            if requestor in self.limiter:
+                del self.limiter[requestor]
+
+    def _get_ipaddr(self, request: Request) -> str:
+        """
+        Returns the ip address for the current request (or 127.0.0.1 if none found)
+        based on the X-Forwarded-For headers.
+        Note that a more robust method for determining IP address of the client is
+        provided by uvicorn's ProxyHeadersMiddleware.
+
+        Args:
+            request: The request object.
+
+        Returns:
+            The ip address for the current request.
+        """
+        if "X_FORWARDED_FOR" in request.headers:
+            return request.headers["X_FORWARDED_FOR"]
+        else:
+            if not request.client or not request.client.host:
+                return "127.0.0.1"
+
+            return request.client.host
+
+
 def rate_limit_requests(
-    api_route: str,
     day_limit: Optional[int] = None,
     minute_limit: Optional[int] = None,
 ) -> Callable[..., Any]:
     """Decorator to handle exceptions in the API.
 
     Args:
-        api_route: API route.
         day_limit: Number of requests allowed per day.
         minute_limit: Number of requests allowed per minute.
 
@@ -353,19 +430,9 @@ def rate_limit_requests(
     Raises:
         ValueError: If both day_limit and minute_limit are None.
     """
-    limiter = Limiter(
-        key_func=get_ipaddr, enabled=server_config().rate_limit_enabled
-    )
-    if day_limit is None and minute_limit is None:
-        raise ValueError("Pass either day or minuter limits, or both.")
-    limit_str = ""
-    if day_limit:
-        limit_str += f"{day_limit}/day;"
-    if minute_limit:
-        limit_str += f"{minute_limit}/minute"
+    limiter = RequestLimiter(day_limit=day_limit, minute_limit=minute_limit)
 
     def decorator(func: F) -> F:
-        @limiter.limit(limit_str)
         @wraps(func)
         def decorated(
             request: Request,
@@ -379,19 +446,10 @@ def rate_limit_requests(
                     auth_form_data=auth_form_data,
                 )
             except Exception as e:
+                limiter.hit_limiter(request)
                 raise e
             else:
-                if server_config().rate_limit_enabled:
-                    identifier = limiter._key_func(request)
-                    if "memory" not in (limiter._storage.STORAGE_SCHEME or []):
-                        raise NotImplementedError(
-                            "Limiter not running in memory is not yet supported."
-                        )
-                    for k in limiter._storage.storage.keys():  # type: ignore[union-attr]
-                        if api_route in k:
-                            _, identifier_ = k.split("//")[0].split("/")
-                            if identifier_ == identifier:
-                                limiter._storage.storage[k] -= 1  # type: ignore[union-attr]
+                limiter.reset_limiter(request)
             return ret
 
         return cast(F, decorated)

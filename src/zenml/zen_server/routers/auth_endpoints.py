@@ -257,7 +257,6 @@ def generate_access_token(
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
 )
 @rate_limit_requests(
-    router.prefix + LOGIN,
     day_limit=server_config().login_rate_limit_day,
     minute_limit=server_config().login_rate_limit_minute,
 )
