@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an action Plugin could look like."""
+
 from typing import Any, ClassVar, Dict, Optional, Type
 from uuid import UUID
 
@@ -205,11 +206,11 @@ class PipelineRunActionFlavor(BaseActionFlavor):
 
     FLAVOR: ClassVar[str] = "builtin"
     SUBTYPE: ClassVar[PluginSubType] = PluginSubType.PIPELINE_RUN
-    PLUGIN_CLASS: ClassVar[
-        Type[PipelineRunActionHandler]
-    ] = PipelineRunActionHandler
+    PLUGIN_CLASS: ClassVar[Type[PipelineRunActionHandler]] = (
+        PipelineRunActionHandler
+    )
 
     # EventPlugin specific
-    ACTION_CONFIG_CLASS: ClassVar[
-        Type[PipelineRunActionConfiguration]
-    ] = PipelineRunActionConfiguration
+    ACTION_CONFIG_CLASS: ClassVar[Type[PipelineRunActionConfiguration]] = (
+        PipelineRunActionConfiguration
+    )

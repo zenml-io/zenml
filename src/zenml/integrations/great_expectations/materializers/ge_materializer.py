@@ -56,9 +56,9 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         ExpectationSuite,
         CheckpointResult,
     )
-    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
-        ArtifactType
-    ] = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = (
+        ArtifactType.DATA_ANALYSIS
+    )
 
     @staticmethod
     def preprocess_checkpoint_result_dict(
@@ -124,9 +124,9 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = obj.to_json_dict()
         artifact_type = type(obj)
-        artifact_dict[
-            "data_type"
-        ] = f"{artifact_type.__module__}.{artifact_type.__name__}"
+        artifact_dict["data_type"] = (
+            f"{artifact_type.__module__}.{artifact_type.__name__}"
+        )
         yaml_utils.write_json(filepath, artifact_dict)
 
     def save_visualizations(

@@ -20,7 +20,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-          - ubuntu-dind-runners
+          - arc-runner-set
         required: false
         default: ubuntu-latest
       python-version:

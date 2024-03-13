@@ -39,9 +39,9 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         CheckResult,
         SuiteResult,
     )
-    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
-        ArtifactType
-    ] = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = (
+        ArtifactType.DATA_ANALYSIS
+    )
 
     def load(self, data_type: Type[Any]) -> Union[CheckResult, SuiteResult]:
         """Reads a Deepchecks check or suite result from a serialized JSON file.

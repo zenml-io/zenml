@@ -26,15 +26,11 @@ def test_user_request_model_fails_with_long_password():
     """Test that the user request model fails with long passwords."""
     long_password = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
-        UserRequest(
-            password=long_password,
-        )
+        UserRequest(password=long_password, is_admin=False)
 
 
 def test_user_request_model_fails_with_long_activation_token():
     """Test that the user request model fails with long activation tokens."""
     long_token = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
-        UserRequest(
-            activation_token=long_token,
-        )
+        UserRequest(activation_token=long_token, is_admin=False)

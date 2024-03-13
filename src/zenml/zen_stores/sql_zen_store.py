@@ -22,7 +22,7 @@ import re
 import sys
 from datetime import datetime
 from functools import lru_cache
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -36,10 +36,11 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    get_origin,
 )
 from uuid import UUID
 
-from pydantic import SecretStr, root_validator, validator
+from pydantic import Field, SecretStr, root_validator, validator
 from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -47,7 +48,7 @@ from sqlalchemy.exc import (
     IntegrityError,
     NoResultFound,
 )
-from sqlalchemy.orm import noload
+from sqlalchemy.orm import Mapped, noload
 from sqlmodel import (
     Session,
     SQLModel,
@@ -384,9 +385,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     # database backup directory
-    backup_directory: str = os.path.join(
-        GlobalConfiguration().config_directory,
-        SQL_STORE_BACKUP_DIRECTORY_NAME,
+    backup_directory: str = Field(
+        default_factory=lambda: os.path.join(
+            GlobalConfiguration().config_directory,
+            SQL_STORE_BACKUP_DIRECTORY_NAME,
+        )
     )
     backup_database: Optional[str] = None
 
@@ -626,53 +629,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 with open(file_path, "r") as f:
                     setattr(self, key, f.read())
 
-    @classmethod
-    def copy_configuration(
-        cls,
-        config: "StoreConfiguration",
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> "StoreConfiguration":
-        """Copy the store config using a different configuration path.
-
-        This method is used to create a copy of the store configuration that can
-        be loaded using a different configuration path or in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.).
-
-        Args:
-            config: The store configuration to copy.
-            config_path: new path where the configuration copy will be loaded
-                from.
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-
-        Returns:
-            A new store configuration object that reflects the new configuration
-            path.
-        """
-        assert isinstance(config, SqlZenStoreConfiguration)
-        config = config.copy()
-
-        if config.driver == SQLDatabaseDriver.MYSQL:
-            # Load the certificate values back into the configuration
-            config.expand_certificates()
-
-        elif config.driver == SQLDatabaseDriver.SQLITE:
-            if load_config_path:
-                config.url = cls.get_local_url(str(load_config_path))
-            else:
-                config.url = cls.get_local_url(config_path)
-
-        return config
-
     def get_sqlalchemy_config(
         self,
         database: Optional[str] = None,
@@ -735,9 +691,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     )
                 sqlalchemy_ssl_args[key.lstrip("ssl_")] = ssl_setting
             if len(sqlalchemy_ssl_args) > 0:
-                sqlalchemy_ssl_args[
-                    "check_hostname"
-                ] = self.ssl_verify_server_cert
+                sqlalchemy_ssl_args["check_hostname"] = (
+                    self.ssl_verify_server_cert
+                )
                 sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
@@ -905,10 +861,10 @@ class SqlZenStore(BaseZenStore):
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
         else:
-            total = session.scalar(
-                select([func.count("*")]).select_from(
-                    query.options(noload("*")).subquery()
-                )
+            total = (
+                session.query(func.count())
+                .select_from(query.options(noload("*")).subquery())
+                .scalar()
             )
 
         # Sorting
@@ -1407,9 +1363,7 @@ class SqlZenStore(BaseZenStore):
             # identity table with needed info.
             logger.info("Creating database tables")
             with self.engine.begin() as conn:
-                conn.run_callable(
-                    SQLModel.metadata.create_all  # type: ignore[arg-type]
-                )
+                SQLModel.metadata.create_all(conn)
             with Session(self.engine) as session:
                 session.add(
                     IdentitySchema(
@@ -1456,7 +1410,6 @@ class SqlZenStore(BaseZenStore):
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
         model.id = self.get_deployment_id()
-
         return model
 
     def get_deployment_id(self) -> UUID:
@@ -2553,14 +2506,14 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackComponentSchema)
-            paged_components: Page[
-                ComponentResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=StackComponentSchema,
-                filter_model=component_filter_model,
-                hydrate=hydrate,
+            paged_components: Page[ComponentResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=StackComponentSchema,
+                    filter_model=component_filter_model,
+                    hydrate=hydrate,
+                )
             )
             return paged_components
 
@@ -2613,7 +2566,9 @@ class SqlZenStore(BaseZenStore):
                 if existing_component.name != component_update.name:
                     self._fail_if_component_with_name_type_exists(
                         name=component_update.name,
-                        component_type=existing_component.type,
+                        component_type=StackComponentType(
+                            existing_component.type
+                        ),
                         workspace_id=existing_component.workspace_id,
                         session=session,
                     )
@@ -5195,15 +5150,16 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if a service account with the given name already
             # exists
+            err_msg = (
+                f"Unable to create service account with name "
+                f"'{service_account.name}': Found existing service "
+                "account with this name."
+            )
             try:
                 self._get_account_schema(
                     service_account.name, session=session, service_account=True
                 )
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing service "
-                    "account with this name."
-                )
+                raise EntityExistsError(err_msg)
             except KeyError:
                 pass
 
@@ -5212,6 +5168,7 @@ class SqlZenStore(BaseZenStore):
                 service_account
             )
             session.add(new_account)
+            # on commit an IntegrityError may arise we let it bubble up
             session.commit()
 
             return new_account.to_service_account_model(include_metadata=True)
@@ -5261,17 +5218,17 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(UserSchema)
-            paged_service_accounts: Page[
-                ServiceAccountResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=UserSchema,
-                filter_model=filter_model,
-                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
-                    include_metadata=hydrate
-                ),
-                hydrate=hydrate,
+            paged_service_accounts: Page[ServiceAccountResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=UserSchema,
+                    filter_model=filter_model,
+                    custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
+                        include_metadata=hydrate
+                    ),
+                    hydrate=hydrate,
+                )
             )
             return paged_service_accounts
 
@@ -5520,15 +5477,15 @@ class SqlZenStore(BaseZenStore):
 
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
-            paged_connectors: Page[
-                ServiceConnectorResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=ServiceConnectorSchema,
-                filter_model=filter_model,
-                custom_fetch=fetch_connectors,
-                hydrate=hydrate,
+            paged_connectors: Page[ServiceConnectorResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=ServiceConnectorSchema,
+                    filter_model=filter_model,
+                    custom_fetch=fetch_connectors,
+                    hydrate=hydrate,
+                )
             )
 
             self._populate_connector_type(*paged_connectors.items)
@@ -6908,7 +6865,9 @@ class SqlZenStore(BaseZenStore):
         assert pipeline_run.deployment
         num_steps = len(pipeline_run.deployment.to_model().step_configurations)
         new_status = get_pipeline_run_status(
-            step_statuses=[step_run.status for step_run in step_runs],
+            step_statuses=[
+                ExecutionStatus(step_run.status) for step_run in step_runs
+            ],
             num_steps=num_steps,
         )
 
@@ -6932,6 +6891,13 @@ class SqlZenStore(BaseZenStore):
                 else:
                     start_time_str = None
                     duration_seconds = None
+
+                stack = pipeline_run.deployment.stack
+                assert stack
+                stack_metadata = {
+                    str(component.type): component.flavor
+                    for component in stack.components
+                }
                 with track_handler(
                     AnalyticsEvent.RUN_PIPELINE_ENDED
                 ) as analytics_handler:
@@ -6944,6 +6910,7 @@ class SqlZenStore(BaseZenStore):
                             "%Y-%m-%dT%H:%M:%S.%fZ"
                         ),
                         "duration_seconds": duration_seconds,
+                        **stack_metadata,
                     }
             pipeline_run.update(run_update)
             session.add(pipeline_run)
@@ -7310,6 +7277,8 @@ class SqlZenStore(BaseZenStore):
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
             annotation = UserSchema.__annotations__[resource_attr]
+            if get_origin(annotation) == Mapped:
+                annotation = annotation.__args__[0]
 
             # The annotation must be of the form
             # `typing.List[ForwardRef('<schema-class>')]`
@@ -7367,11 +7336,13 @@ class SqlZenStore(BaseZenStore):
         resource_attrs = self._get_resource_references()
         for schema, resource_attr in resource_attrs:
             # Check if the user owns any resources of this type
-            count = session.scalar(
-                select([func.count("*")])
+            count = (
+                session.query(func.count())
                 .select_from(schema)
                 .where(getattr(schema, resource_attr) == account.id)
+                .scalar()
             )
+
             if count > 0:
                 logger.debug(
                     f"User {account.name} owns {count} resources of type "
@@ -7396,6 +7367,10 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if a user account with the given name already exists
+            err_msg = (
+                f"Unable to create user with name '{user.name}': "
+                f"Found an existing user account with this name."
+            )
             try:
                 self._get_account_schema(
                     user.name,
@@ -7403,16 +7378,14 @@ class SqlZenStore(BaseZenStore):
                     # Filter out service accounts
                     service_account=False,
                 )
-                raise EntityExistsError(
-                    f"Unable to create user with name '{user.name}': "
-                    f"Found an existing user account with this name."
-                )
+                raise EntityExistsError(err_msg)
             except KeyError:
                 pass
 
             # Create the user
             new_user = UserSchema.from_user_request(user)
             session.add(new_user)
+            # on commit an IntegrityError may arise we let it bubble up
             session.commit()
             return new_user.to_model(include_metadata=True)
 
@@ -7542,6 +7515,14 @@ class SqlZenStore(BaseZenStore):
             )
 
             if (
+                existing_user.name == self._default_user_name
+                and user_update.is_admin is False
+            ):
+                raise IllegalOperationError(
+                    "The default user's admin status cannot be removed."
+                )
+
+            if (
                 user_update.name is not None
                 and user_update.name != existing_user.name
             ):
@@ -7631,6 +7612,7 @@ class SqlZenStore(BaseZenStore):
                     name=default_user_name,
                     active=True,
                     password=password,
+                    is_admin=True,
                 )
             )
 

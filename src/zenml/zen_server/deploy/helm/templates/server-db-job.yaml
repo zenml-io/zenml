@@ -32,9 +32,10 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-
-      {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
       volumes:
+        - name: zenml-config
+          emptyDir: {}
+      {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
         # define a volume that will hold a backup of the database
         - name: db-backup
         # if a storage PVC is configured, then use it
@@ -55,8 +56,10 @@ spec:
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
           args: ["migrate-database"]
           command: ['zenml']
-          {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
           volumeMounts:
+            - name: zenml-config
+              mountPath: /zenml/.zenconfig
+          {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
             - name: db-backup
               mountPath: /backups
           {{- end }}

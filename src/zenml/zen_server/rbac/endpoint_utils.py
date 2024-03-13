@@ -1,4 +1,5 @@
 """High-level helper functions to write endpoints with RBAC."""
+
 from typing import Any, Callable, TypeVar, Union
 from uuid import UUID
 
@@ -58,7 +59,10 @@ def verify_permissions_and_create_entity(
                 "different user."
             )
 
-    verify_permission(resource_type=resource_type, action=Action.CREATE)
+    verify_permission(
+        resource_type=resource_type,
+        action=Action.CREATE,
+    )
     return create_method(request_model)
 
 

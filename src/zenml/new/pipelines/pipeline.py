@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Definition of a ZenML pipeline."""
+
 import copy
 import hashlib
 import inspect

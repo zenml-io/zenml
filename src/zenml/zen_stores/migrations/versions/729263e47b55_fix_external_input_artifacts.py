@@ -5,6 +5,7 @@ Revises: 0.45.2
 Create Date: 2023-10-18 08:07:33.374613
 
 """
+
 import json
 
 from alembic import op

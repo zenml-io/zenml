@@ -17,7 +17,7 @@ import os
 from typing import TYPE_CHECKING, Dict, Sequence
 from uuid import uuid4
 
-from zenml.io import fileio
+from zenml.client import Client
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -72,6 +72,7 @@ def prepare_output_artifact_uris(
     Returns:
         A dictionary mapping output names to artifact URIs.
     """
+    artifact_store = stack.artifact_store
     output_artifact_uris: Dict[str, str] = {}
     for output_name in step.config.outputs.keys():
         artifact_uri = generate_artifact_uri(
@@ -79,9 +80,9 @@ def prepare_output_artifact_uris(
             step_run=step_run,
             output_name=output_name,
         )
-        if fileio.exists(artifact_uri):
+        if artifact_store.exists(artifact_uri):
             raise RuntimeError("Artifact already exists")
-        fileio.makedirs(artifact_uri)
+        artifact_store.makedirs(artifact_uri)
         output_artifact_uris[output_name] = artifact_uri
     return output_artifact_uris
 
@@ -92,6 +93,7 @@ def remove_artifact_dirs(artifact_uris: Sequence[str]) -> None:
     Args:
         artifact_uris: URIs of the artifacts to remove the directories for.
     """
+    artifact_store = Client().active_stack.artifact_store
     for artifact_uri in artifact_uris:
-        if fileio.isdir(artifact_uri):
-            fileio.rmtree(artifact_uri)
+        if artifact_store.isdir(artifact_uri):
+            artifact_store.rmtree(artifact_uri)

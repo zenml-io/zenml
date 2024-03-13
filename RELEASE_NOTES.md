@@ -1,4 +1,88 @@
 <!-- markdown-link-check-disable -->
+# 0.55.5
+
+This patch contains a number of bug fixes and security improvements.
+
+We improved the isolation of artifact stores so that various artifacts 
+cannot be stored or accessed outside of the configured artifact store scope.
+Such unsafe operations are no longer allowed. This may have an
+impact on existing codebases if you have used unsafe file operations in the past.
+To illustrate such a side effect, let's consider a remote S3 
+artifact store is configured for the path `s3://some_bucket/some_sub_folder`. 
+and in the code you use 
+`artifact_store.open("s3://some_bucket/some_other_folder/dummy.txt","w")` 
+-> this operation is considered unsafe as it accesses the data outside the scope 
+of the artifact store. If you really need this to achieve your goals, 
+consider switching to `s3fs` or similar libraries for such cases.
+
+Also with this release, the server global configuration is no longer stored on the 
+server file system to prevent exposure of sensitive information.
+
+User entities are now uniquely constrained to prevent the creation of duplicate 
+users under certain race conditions.
+
+## What's Changed
+* Change runnerset name to ubuntu-runners by @safoinme in https://github.com/zenml-io/zenml/pull/2489
+* Allow latest `ruff` versions by @strickvl in https://github.com/zenml-io/zenml/pull/2487
+* Uniquely constrained users table by @avishniakov in https://github.com/zenml-io/zenml/pull/2483
+* Add option to add base URL for zenml server (with support for cloud) by @wjayesh in https://github.com/zenml-io/zenml/pull/2464
+* Improve Artifact Store isolation by @avishniakov in https://github.com/zenml-io/zenml/pull/2490
+* Don't write the global config to file on server by @stefannica in https://github.com/zenml-io/zenml/pull/2491
+* Add versions for DB migration testing by @strickvl in https://github.com/zenml-io/zenml/pull/2486
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.55.4...0.55.5
+
+# 0.55.4
+
+This release brings a host of enhancements and fixes across the board, including
+significant improvements to our services logging and status, the integration of
+model saving to the registry via CLI methods, and more robust handling of
+parallel pipelines and database entities. We've also made strides in optimizing
+MLflow interactions, enhancing our documentation, and ensuring our CI processes
+are more robust.
+
+Additionally, we've tackled several bug fixes and performance improvements,
+making our platform even more reliable and user-friendly.
+
+We'd like to give a special thanks to @christianversloot and @francoisserra for
+their contributions.
+
+## What's Changed
+* Bump mlflow to 2.10.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2444
+* Improve services logging and status by @safoinme in https://github.com/zenml-io/zenml/pull/2436
+* Add `save models to registry` setting of a model to CLI methods by @avishniakov in https://github.com/zenml-io/zenml/pull/2447
+* Parallel pipelines can create entities in DB by @avishniakov in https://github.com/zenml-io/zenml/pull/2446
+* Fix MlFlow TF autlogging excessive warnings by @avishniakov in https://github.com/zenml-io/zenml/pull/2449
+* Fix and improve integration deps checker by @stefannica in https://github.com/zenml-io/zenml/pull/2455
+* Add migration test version + use self-hosted runners for release by @strickvl in https://github.com/zenml-io/zenml/pull/2450
+* Enable running pipeline via REST by @schustmi in https://github.com/zenml-io/zenml/pull/2389
+* Faster mlflow `list_model_versions` by @avishniakov in https://github.com/zenml-io/zenml/pull/2460
+* Avoid exposure of tracking uri to metadata by @avishniakov in https://github.com/zenml-io/zenml/pull/2458
+* Some important docs updates by @htahir1 in https://github.com/zenml-io/zenml/pull/2463
+* Fix CI by @strickvl in https://github.com/zenml-io/zenml/pull/2467
+* Fix local Airflow install + docs instructions by @strickvl in https://github.com/zenml-io/zenml/pull/2459
+* Update `.coderabbit.yaml` by @strickvl in https://github.com/zenml-io/zenml/pull/2470
+* Prevent templates update from formatting the whole codebase by @avishniakov in https://github.com/zenml-io/zenml/pull/2469
+* Telemetry guarding for CI & editable installs by @strickvl in https://github.com/zenml-io/zenml/pull/2468
+* Add Vertex Step Operator network parameter by @francoisserra in https://github.com/zenml-io/zenml/pull/2398
+* Allow integration export to overwrite a pre-existing file by @strickvl in https://github.com/zenml-io/zenml/pull/2466
+* Fix `log_model_metadata` with explicit name and version by @avishniakov in https://github.com/zenml-io/zenml/pull/2465
+* Triggers, actions, event sources - base abstractions and github and pipeline run implementations by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2312
+* Mount zenml config path as empty dir by @stefannica in https://github.com/zenml-io/zenml/pull/2472
+* Fix broken docs links by @strickvl in https://github.com/zenml-io/zenml/pull/2473
+* Use `uv pip compile` for environment setup in CI by @strickvl in https://github.com/zenml-io/zenml/pull/2474
+* MLflow fix for tests on Mac Python 3.9 and 3.10 by @strickvl in https://github.com/zenml-io/zenml/pull/2462
+* Improve custom data types docs by @avishniakov in https://github.com/zenml-io/zenml/pull/2476
+* Reflect env variables on global configuration by @safoinme in https://github.com/zenml-io/zenml/pull/2371
+* Fix zenml deploy secret stores by @safoinme in https://github.com/zenml-io/zenml/pull/2454
+* Don't fail when workload manager source fails to load by @schustmi in https://github.com/zenml-io/zenml/pull/2478
+* Add analytics events for cloud onboarding by @schustmi in https://github.com/zenml-io/zenml/pull/2456
+* Race condition on creating new users allows duplicate usernames by @avishniakov in https://github.com/zenml-io/zenml/pull/2479
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.55.3...0.55.4
+
 # 0.55.3
 
 This patch comes with a variety of bug fixes and documentation updates.
@@ -50,7 +134,7 @@ Some of the most important changes include:
 - The new [HyperAI](https://hyperai.ai) integration featuring a new orchestrator and service connector
 - Bumping the mlflow version to 2.10.0
 
-We'd like to give a special thanks to @christianversloot and @francoisserra for their contributions. 
+We'd like to give a special thanks to @christianversloot and @francoisserra for their contributions.
 
 ## What's Changed
 * `0.55.1` in migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2368

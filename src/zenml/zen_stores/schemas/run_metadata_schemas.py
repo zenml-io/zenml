@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of pipeline run metadata tables."""
 
-
 import json
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
@@ -110,7 +109,7 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))
-    type: MetadataTypeEnum
+    type: str
 
     def to_model(
         self,
@@ -135,7 +134,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             value=json.loads(self.value),
-            type=self.type,
+            type=MetadataTypeEnum(self.type),
         )
         metadata = None
         if include_metadata:

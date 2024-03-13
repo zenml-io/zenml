@@ -27,7 +27,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
 )
 from zenml.enums import ServerProviderType
-from zenml.exceptions import OAuthError
+from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.deploy.deployment import ServerDeployment
@@ -121,18 +121,25 @@ def initialize_rbac() -> None:
 
 
 def initialize_workload_manager() -> None:
-    """Initialize the workload manager component."""
+    """Initialize the workload manager component.
+
+    This does not fail if the source can't be loaded but only logs a warning.
+    """
     global _workload_manager
 
     if source := server_config().workload_manager_implementation_source:
         from zenml.utils import source_utils
 
-        workload_manager_class: Type[
-            WorkloadManagerInterface
-        ] = source_utils.load_and_validate_class(
-            source=source, expected_class=WorkloadManagerInterface
-        )
-        _workload_manager = workload_manager_class()
+        try:
+            workload_manager_class: Type[WorkloadManagerInterface] = (
+                source_utils.load_and_validate_class(
+                    source=source, expected_class=WorkloadManagerInterface
+                )
+            )
+        except (ModuleNotFoundError, KeyError):
+            logger.warning("Unable to load workload manager source.")
+        else:
+            _workload_manager = workload_manager_class()
 
 
 def initialize_plugins() -> None:
@@ -237,9 +244,9 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
     """
     # Check for connected servers first
     gc = GlobalConfiguration()
-    if not gc.uses_default_store() and gc.store is not None:
+    if not gc.uses_default_store():
         logger.debug("Getting URL of connected server.")
-        parsed_url = urlparse(gc.store.url)
+        parsed_url = urlparse(gc.store_configuration.url)
         return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
     # Else, check for deployed servers
     server = get_active_deployment(local=False)
@@ -389,3 +396,34 @@ def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
     except Exception:
         logger.exception(f"Could not get IP location for {ip_address}.")
         return "", "", ""
+
+
+def verify_admin_status_if_no_rbac(
+    admin_status: Optional[bool],
+    action: Optional[str] = None,
+) -> None:
+    """Validate the admin status for sensitive requests.
+
+    Only add this check in endpoints meant for admin use only.
+
+    Args:
+        admin_status: Whether the user is an admin or not. This is only used
+            if explicitly specified in the call and even if passed will be
+            ignored, if RBAC is enabled.
+        action: The action that is being performed, used for output only.
+
+    Raises:
+        IllegalOperationError: If the admin status is not valid.
+    """
+    if not server_config().rbac_enabled:
+        if not action:
+            action = "this action"
+        else:
+            action = f"`{action.strip('`')}`"
+
+        if admin_status is False:
+            raise IllegalOperationError(
+                message=f"Only admin users can perform {action} "
+                "without RBAC enabled.",
+            )
+    return

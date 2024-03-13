@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -65,6 +65,7 @@ class UserSchema(NamedSchema, table=True):
     """SQL Model for users."""
 
     __tablename__ = "user"
+    __table_args__ = (UniqueConstraint("name", "is_service_account"),)
 
     is_service_account: bool = Field(default=False)
     full_name: str
@@ -76,6 +77,7 @@ class UserSchema(NamedSchema, table=True):
     hub_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
     external_user_id: Optional[UUID] = Field(nullable=True)
+    is_admin: bool = Field(default=False)
 
     stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
@@ -131,9 +133,9 @@ class UserSchema(NamedSchema, table=True):
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="user",
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(back_populates="user")
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(back_populates="user")
+    )
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
     ] = Relationship(back_populates="user")
@@ -166,6 +168,7 @@ class UserSchema(NamedSchema, table=True):
             email_opted_in=model.email_opted_in,
             email=model.email,
             is_service_account=False,
+            is_admin=model.is_admin,
         )
 
     @classmethod
@@ -188,6 +191,7 @@ class UserSchema(NamedSchema, table=True):
             is_service_account=True,
             email_opted_in=False,
             full_name="",
+            is_admin=False,
         )
 
     def update_user(self, user_update: UserUpdate) -> "UserSchema":
@@ -270,6 +274,7 @@ class UserSchema(NamedSchema, table=True):
                 is_service_account=self.is_service_account,
                 created=self.created,
                 updated=self.updated,
+                is_admin=self.is_admin,
             ),
             metadata=metadata,
         )
