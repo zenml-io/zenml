@@ -224,9 +224,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     ".env"
                 ]
 
-            compose_definition["services"][container_name]["environment"] = (
-                environment
-            )
+            compose_definition["services"][container_name][
+                "environment"
+            ] = environment
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps
@@ -242,11 +242,13 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     )
                     compose_definition["services"][container_name][
                         "depends_on"
-                    ].update({
-                        upstream_container_name: {
-                            "condition": "service_completed_successfully"
+                    ].update(
+                        {
+                            upstream_container_name: {
+                                "condition": "service_completed_successfully"
+                            }
                         }
-                    })
+                    )
 
         # Convert into yaml
         logger.info("Finalizing Docker Compose definition.")
