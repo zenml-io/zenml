@@ -36,6 +36,23 @@ logger = get_logger(__name__)
 class SkypilotRunPodOrchestratorSettings(SkypilotBaseOrchestratorSettings):
     """Skypilot orchestrator settings."""
 
+    _UNSUPPORTED_FEATURES = {
+        "use_spot" : "Spot instances not supported for RunPod orchestrator.",
+        "spot_recovery" : "Spot recovery not supported for RunPod orchestrator.",
+        "image_id" : "Custom image IDs not supported for RunPod orchestrator.",
+        # Add other unsupported features as needed
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for attr in self._UNSUPPORTED_FEATURES.keys():
+            if hasattr(self, attr):
+                delattr(self, attr)
+
+    def __setattr__(self, name, value):
+        if name in self._UNSUPPORTED_FEATURES:
+            raise AttributeError(f"{name} is not supported on RunPod.")
+        super().__setattr__(name, value)
 
 class SkypilotRunPodOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     SkypilotBaseOrchestratorConfig, SkypilotRunPodOrchestratorSettings
@@ -54,23 +71,6 @@ class SkypilotRunPodOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return SKYPILOT_RUNPOD_ORCHESTRATOR_FLAVOR
-
-    @property
-    def service_connector_requirements(
-        self,
-    ) -> Optional[ServiceConnectorRequirements]:
-        """Service connector resource requirements for service connectors.
-
-        Specifies resource requirements that are used to filter the available
-        service connector types that are compatible with this flavor.
-
-        Returns:
-            Requirements for compatible service connectors, if a service
-            connector is required for this flavor.
-        """
-        return ServiceConnectorRequirements(
-            resource_type="aws-generic",
-        )
 
     @property
     def docs_url(self) -> Optional[str]:

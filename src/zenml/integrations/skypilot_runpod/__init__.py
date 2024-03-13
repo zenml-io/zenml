@@ -24,7 +24,7 @@ from zenml.integrations.constants import (
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-SKYPILOT_AWS_ORCHESTRATOR_FLAVOR = "vm_aws"
+SKYPILOT_RUNPOD_ORCHESTRATOR_FLAVOR = "vm_runpod"
 
 
 class SkypilotRunPodIntegration(Integration):
