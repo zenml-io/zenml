@@ -91,7 +91,7 @@ jobs:
       - name: Install mlstacks package
         run: uv pip install --system mlstacks
       - name: Check for broken dependencies
-        run: pip check
+        run: uv pip check
       - name: Markdown link check
         uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
         with:
