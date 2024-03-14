@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -37,9 +37,6 @@ from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-
-if TYPE_CHECKING:
-    pass
 
 
 class ServiceSchema(NamedSchema, table=True):

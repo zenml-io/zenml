@@ -1829,7 +1829,9 @@ class SqlZenStore(BaseZenStore):
             session.add(service_schema)
             session.commit()
 
-            return service_schema.to_model(include_metadata=True)
+            return service_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_service(
         self, service_id: UUID, hydrate: bool = True

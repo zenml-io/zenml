@@ -444,7 +444,7 @@ class ServiceFilter(WorkspaceScopedFilter):
     ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the filter for the query.
 
-        Stack components can be scoped by type to narrow the search.
+        Services can be scoped by type to narrow the search.
 
         Args:
             table: The Table that is being queried from.

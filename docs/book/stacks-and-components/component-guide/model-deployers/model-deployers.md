@@ -25,7 +25,7 @@ stored as files or in a database for end users or business applications.
 The model deployers are optional components in the ZenML stack. They are used to deploy machine learning models to a
 target environment, either a development (local) or a production (Kubernetes or cloud) environment. The model deployers are mainly used to deploy models for real-time inference use cases. With the model deployers and other stack components, you can build pipelines that are continuously trained and deployed to production.
 
-### How they model deployers slot into the stack
+### How model deployers slot into the stack
 
 Here is an architecture diagram that shows how model deployers fit into the overall story of a remote stack.
 
@@ -65,7 +65,7 @@ zenml model-deployer register seldon --flavor=seldon \
 
 #### The role that a model deployer plays in a ZenML Stack
 
-* Seamless Model Deployment: Facilitates the deployment of machine learning models to various serving environments, such as local servers, Kubernetes      clusters, or cloud platforms, ensuring that models can be deployed and managed efficiently in accordance with the specific requirements of the serving infrastructure by holds all the stack-related configuration attributes required to interact with the remote model serving tool, service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration parameters). The following are examples of configuring the MLflow and Seldon Core Model Deployers and registering them as a Stack component:
+* Seamless Model Deployment: Facilitates the deployment of machine learning models to various serving environments, such as local servers, Kubernetes clusters, or cloud platforms, ensuring that models can be deployed and managed efficiently in accordance with the specific requirements of the serving infrastructure by holds all the stack-related configuration attributes required to interact with the remote model serving tool, service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration parameters). The following are examples of configuring the MLflow and Seldon Core Model Deployers and registering them as a Stack component:
 
    ```bash
    zenml integration install mlflow
@@ -92,7 +92,7 @@ services are stored in the DB and can be used as a reference to know what and wh
 `delete_model_server` - Deletes a model server from the serving environment and from the DB.
 
 {% hint style="info" %}
-ZenML uses the Service object to represent a model server that has been deployed to a serving environment. The Service object is saved in the DB and can be used as a reference to know what and where the model is deployed. The Service object consist of 2 main attributes, the `config` and the `status`. The `config` attribute holds all the deployment configuration attributes required to create a new deployment, while the `status` attribute holds the operational status of the deployment, such as the last error message, the prediction URL, and the deployment status.
+ZenML uses the Service object to represent a model server that has been deployed to a serving environment. The Service object is saved in the DB and can be used as a reference to know what and where the model is deployed. The Service object consists of 2 main attributes, the `config` and the `status`. The `config` attribute holds all the deployment configuration attributes required to create a new deployment, while the `status` attribute holds the operational status of the deployment, such as the last error message, the prediction URL, and the deployment status.
 {% endhint %}
 
    ```python

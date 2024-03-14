@@ -15,7 +15,6 @@
 
 from abc import ABC, abstractmethod
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -36,9 +35,6 @@ from zenml.services.service_type import ServiceType
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
