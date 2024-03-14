@@ -322,7 +322,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
     @field_validator("verify_ssl")
     @classmethod
     def validate_verify_ssl(
-            cls, verify_ssl: Union[bool, str]
+        cls, verify_ssl: Union[bool, str]
     ) -> Union[bool, str]:
         """Validates that the verify_ssl either points to a file or is a bool.
 
@@ -381,7 +381,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         # of the certificate file.
         validate_assignment=False,
         # Forbid extra attributes set in the class.
-        extra="forbid"
+        extra="forbid",
     )
 
 
