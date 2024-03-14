@@ -13,28 +13,52 @@
 #  permissions and limitations under the License.
 """Custom types that can be used as metadata of ZenML artifacts."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple, Union
+from typing import Any, Dict, List, Set, Tuple, Union
+
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
 
 from zenml.utils.enum_utils import StrEnum
 
-if TYPE_CHECKING:
-    pass
-
-
+# TODO: Revisit this idea and investigate how to use custom types in Pydantic v2
 class Uri(str):
     """Special string class to indicate a URI."""
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(str))
 
 
 class Path(str):
     """Special string class to indicate a path."""
 
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(str))
+
 
 class DType(str):
     """Special string class to indicate a data type."""
 
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(str))
+
 
 class StorageSize(int):
     """Special int class to indicate the storage size in number of bytes."""
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(str))
 
 
 # Union of all types that can be used as metadata. Used for type annotations.
