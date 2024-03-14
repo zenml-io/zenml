@@ -16,7 +16,6 @@
 import re
 from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
 
-from docker.errors import DockerException
 from pydantic import validator
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
@@ -143,12 +142,9 @@ class BaseContainerRegistry(AuthenticationMixin):
                 )
             self._docker_client = client
         else:
-            try:
-                self._docker_client = DockerClient.from_env()
-            except DockerException as e:
-                raise RuntimeError(
-                    "Could not create a Docker client from the environment. Is your Docker daemon running?"
-                ) from e
+            self._docker_client = (
+                docker_utils._try_get_docker_client_from_env()
+            )
 
             credentials = self.credentials
             if credentials:

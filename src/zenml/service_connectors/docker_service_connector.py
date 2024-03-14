@@ -37,6 +37,7 @@ from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
     ServiceConnector,
 )
+from zenml.utils import docker_utils
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
@@ -259,12 +260,7 @@ class DockerServiceConnector(ServiceConnector):
         """
         assert self.resource_id is not None
 
-        try:
-            docker_client = DockerClient.from_env()
-        except DockerException as e:
-            raise RuntimeError(
-                "Could not create a Docker client from the environment. Is your Docker daemon running?"
-            ) from e
+        docker_client = docker_utils._try_get_docker_client_from_env()
 
         self._authorize_client(docker_client, self.resource_id)
 

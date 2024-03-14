@@ -23,7 +23,6 @@ from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import docker.errors as docker_errors
 from docker.client import DockerClient
-from docker.errors import DockerException
 from docker.models.containers import Container
 from pydantic import Field
 
@@ -34,6 +33,7 @@ from zenml.services.container.container_service_endpoint import (
 )
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
+from zenml.utils import docker_utils
 from zenml.utils.io_utils import (
     create_dir_recursive_if_not_exists,
     get_global_config_directory,
@@ -178,12 +178,9 @@ class ContainerService(BaseService):
             The docker client.
         """
         if self._docker_client is None:
-            try:
-                self._docker_client = DockerClient.from_env()
-            except DockerException as e:
-                raise RuntimeError(
-                    "Could not create a Docker client from the environment. Is your Docker daemon running?"
-                ) from e
+            self._docker_client = (
+                docker_utils._try_get_docker_client_from_env()
+            )
         return self._docker_client
 
     @property
@@ -311,9 +308,9 @@ class ContainerService(BaseService):
                 command_env[k] = v
         # the global configuration is mounted into the container at a
         # different location
-        command_env[
-            ENV_ZENML_CONFIG_PATH
-        ] = SERVICE_CONTAINER_GLOBAL_CONFIG_PATH
+        command_env[ENV_ZENML_CONFIG_PATH] = (
+            SERVICE_CONTAINER_GLOBAL_CONFIG_PATH
+        )
 
         return command, command_env
 
