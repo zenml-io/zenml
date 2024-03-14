@@ -27,7 +27,7 @@ from typing import (
 )
 
 import pymysql
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from pydantic.json import pydantic_encoder
 from sqlalchemy import MetaData, func, text
 from sqlalchemy.engine import URL, Engine
@@ -646,8 +646,4 @@ class MigrationUtils(BaseModel):
             "backup database."
         )
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # all attributes with leading underscore are private
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
