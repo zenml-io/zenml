@@ -116,6 +116,7 @@ class ServiceConfig(BaseTypedModel):
     model_name: str = ""
     model_version: str = ""
     service_name: str = ""
+
     def __init__(self, **data: Any):
         """Initialize the service configuration.
 
