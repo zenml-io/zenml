@@ -27,7 +27,7 @@ from uuid import UUID
 from azure.core.credentials import TokenCredential
 from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
 from azure.keyvault.secrets import SecretClient
-from pydantic import root_validator
+from pydantic import ConfigDict, model_validator
 
 from zenml.enums import (
     SecretsStoreType,
@@ -65,7 +65,8 @@ class AzureSecretsStoreConfiguration(
     type: SecretsStoreType = SecretsStoreType.AZURE
     key_vault_name: str
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
@@ -99,11 +100,7 @@ class AzureSecretsStoreConfiguration(
 
         return values
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Forbid extra attributes set in the class.
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class AzureSecretsStore(ServiceConnectorSecretsStore):

@@ -25,7 +25,7 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import root_validator
+from pydantic import ConfigDict, model_validator
 
 from zenml.enums import (
     SecretsStoreType,
@@ -74,7 +74,8 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
 
         raise ValueError("AWS `region` must be specified in the auth_config.")
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
@@ -116,11 +117,7 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
 
         return values
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extra attributes set in the class.
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class AWSSecretsStore(ServiceConnectorSecretsStore):
