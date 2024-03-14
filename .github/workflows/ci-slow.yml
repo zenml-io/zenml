@@ -112,15 +112,8 @@ jobs:
         run: |
           uv pip install --system alembic
           bash scripts/check-alembic-branches.sh
-      - name: Check .gitignore
-        run: |
-          if [ -f ".gitignore" ]; then
-            if grep -q -E "(^|\/)dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard($|\/)" ".gitignore"; then
-              echo "Error: The '/dashboard' or 'src/zenml/zen_server/dashboard' directory is ignored by Git."
-              echo "Please remove the corresponding entries from the .gitignore file."
-              exit 1
-            fi
-          fi
+      - name: Install latest dashboard (test gitignore)
+        run: bash scripts/install-dashboard.sh
   custom-ubuntu-unit-test:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
