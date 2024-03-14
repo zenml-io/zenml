@@ -31,7 +31,7 @@ class SkypilotLambdaIntegration(Integration):
     """Definition of Skypilot Lambda Integration for ZenML."""
 
     NAME = SKYPILOT_RUNPOD
-    REQUIREMENTS = ["skypilot[runpod]<=0.4.1", "runpod>=1.5.1"]
+    REQUIREMENTS = ["skypilot[lambda]<=0.5.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

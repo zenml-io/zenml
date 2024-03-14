@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -79,9 +79,9 @@ class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
         Raises:
             ValueError: If no service connector is found.
         """
-        if not self.config.token:
+        if not self.config.api_key:
             raise ValueError("No token found in the orchestrator config.")
         if set:
-            os.environ[ENV_RUNPOD_API_KEY] = self.config.token
+            os.environ[ENV_RUNPOD_API_KEY] = self.config.api_key
         else:
             os.environ.pop(ENV_RUNPOD_API_KEY, None)

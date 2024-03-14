@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-from pydantic import SecretField
-
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
@@ -26,6 +24,7 @@ from zenml.integrations.skypilot_lambda import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.skypilot_lambda.orchestrators import (

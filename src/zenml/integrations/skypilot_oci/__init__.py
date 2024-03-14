@@ -31,7 +31,7 @@ class SkypilotOCIIntegration(Integration):
     """Definition of Skypilot OCI Integration for ZenML."""
 
     NAME = SKYPILOT_RUNPOD
-    REQUIREMENTS = ["skypilot[runpod]<=0.4.1", "runpod>=1.5.1"]
+    REQUIREMENTS = ["skypilot[oci]<=0.5.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
