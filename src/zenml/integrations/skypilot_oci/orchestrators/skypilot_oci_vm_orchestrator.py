@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the a Skypilot based RunPod VM orchestrator."""
+"""Implementation of the a Skypilot based OCI VM orchestrator."""
 
 import os
 from typing import TYPE_CHECKING, Optional, Type, cast
@@ -21,9 +21,9 @@ import sky
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (
     SkypilotBaseOrchestrator,
 )
-from zenml.integrations.skypilot_runpod.flavors.skypilot_orchestrator_runpod_vm_flavor import (
-    SkypilotRunPodOrchestratorConfig,
-    SkypilotRunPodOrchestratorSettings,
+from zenml.integrations.skypilot_oci.flavors.skypilot_orchestrator_oci_vm_flavor import (
+    SkypilotOCIOrchestratorConfig,
+    SkypilotOCIOrchestratorSettings,
 )
 from zenml.logger import get_logger
 
@@ -35,8 +35,8 @@ logger = get_logger(__name__)
 ENV_RUNPOD_API_KEY = "RUNPOD_API_KEY"
 
 
-class SkypilotRunPodOrchestrator(SkypilotBaseOrchestrator):
-    """Orchestrator responsible for running pipelines remotely in a VM on RunPod.
+class SkypilotOCIOrchestrator(SkypilotBaseOrchestrator):
+    """Orchestrator responsible for running pipelines remotely in a VM on OCI.
 
     This orchestrator does not support running on a schedule.
     """
@@ -50,16 +50,16 @@ class SkypilotRunPodOrchestrator(SkypilotBaseOrchestrator):
         Returns:
             A `sky.clouds.Cloud` instance.
         """
-        return sky.clouds.RunPod()
+        return sky.clouds.OCI()
 
     @property
-    def config(self) -> SkypilotRunPodOrchestratorConfig:
-        """Returns the `SkypilotRunPodOrchestratorConfig` config.
+    def config(self) -> SkypilotOCIOrchestratorConfig:
+        """Returns the `SkypilotOCIOrchestratorConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(SkypilotRunPodOrchestratorConfig, self._config)
+        return cast(SkypilotOCIOrchestratorConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -68,7 +68,7 @@ class SkypilotRunPodOrchestrator(SkypilotBaseOrchestrator):
         Returns:
             The settings class.
         """
-        return SkypilotRunPodOrchestratorSettings
+        return SkypilotOCIOrchestratorSettings
 
     def prepare_environment_variable(self, set: bool = True) -> None:
         """Set up Environment variables that are required for the orchestrator.

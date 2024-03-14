@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Skypilot orchestrator RunPod flavor."""
+"""Skypilot orchestrator Lambda flavor."""
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
@@ -21,28 +21,28 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
 )
-from zenml.integrations.skypilot_runpod import (
+from zenml.integrations.skypilot_lambda import (
     SKYPILOT_RUNPOD_ORCHESTRATOR_FLAVOR,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
-    from zenml.integrations.skypilot_runpod.orchestrators import (
-        SkypilotRunPodOrchestrator,
+    from zenml.integrations.skypilot_lambda.orchestrators import (
+        SkypilotLambdaOrchestrator,
     )
 
 
 logger = get_logger(__name__)
 
 
-class SkypilotRunPodOrchestratorSettings(SkypilotBaseOrchestratorSettings):
+class SkypilotLambdaOrchestratorSettings(SkypilotBaseOrchestratorSettings):
     """Skypilot orchestrator settings."""
 
     _UNSUPPORTED_FEATURES = {
-        "use_spot": "Spot instances not supported for RunPod orchestrator.",
-        "spot_recovery": "Spot recovery not supported for RunPod orchestrator.",
-        "image_id": "Custom image IDs not supported for RunPod orchestrator.",
+        "use_spot": "Spot instances not supported for Lambda orchestrator.",
+        "spot_recovery": "Spot recovery not supported for Lambda orchestrator.",
+        "image_id": "Custom image IDs not supported for Lambda orchestrator.",
         # Add other unsupported features as needed
     }
 
@@ -70,16 +70,16 @@ class SkypilotRunPodOrchestratorSettings(SkypilotBaseOrchestratorSettings):
         super().__setattr__(name, value)
 
 
-class SkypilotRunPodOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    SkypilotBaseOrchestratorConfig, SkypilotRunPodOrchestratorSettings
+class SkypilotLambdaOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    SkypilotBaseOrchestratorConfig, SkypilotLambdaOrchestratorSettings
 ):
     """Skypilot orchestrator config."""
 
-    token: Optional[str] = SecretField()
+    api_key: Optional[str] = SecretField()
 
 
-class SkypilotRunPodOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Skypilot RunPod orchestrator."""
+class SkypilotLambdaOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the Skypilot Lambda orchestrator."""
 
     @property
     def name(self) -> str:
@@ -124,17 +124,17 @@ class SkypilotRunPodOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The config class.
         """
-        return SkypilotRunPodOrchestratorConfig
+        return SkypilotLambdaOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["SkypilotRunPodOrchestrator"]:
+    def implementation_class(self) -> Type["SkypilotLambdaOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:
             Implementation class for this flavor.
         """
-        from zenml.integrations.skypilot_runpod.orchestrators import (
-            SkypilotRunPodOrchestrator,
+        from zenml.integrations.skypilot_lambda.orchestrators import (
+            SkypilotLambdaOrchestrator,
         )
 
-        return SkypilotRunPodOrchestrator
+        return SkypilotLambdaOrchestrator

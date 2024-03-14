@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Skypilot orchestrator RunPod flavor."""
+"""Skypilot orchestrator OCI flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import SecretField
 
@@ -21,65 +21,33 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
 )
-from zenml.integrations.skypilot_runpod import (
-    SKYPILOT_RUNPOD_ORCHESTRATOR_FLAVOR,
-)
+from zenml.integrations.skypilot_oci import SKYPILOT_RUNPOD_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
-    from zenml.integrations.skypilot_runpod.orchestrators import (
-        SkypilotRunPodOrchestrator,
+    from zenml.integrations.skypilot_oci.orchestrators import (
+        SkypilotOCIOrchestrator,
     )
 
 
 logger = get_logger(__name__)
 
 
-class SkypilotRunPodOrchestratorSettings(SkypilotBaseOrchestratorSettings):
+class SkypilotOCIOrchestratorSettings(SkypilotBaseOrchestratorSettings):
     """Skypilot orchestrator settings."""
 
-    _UNSUPPORTED_FEATURES = {
-        "use_spot": "Spot instances not supported for RunPod orchestrator.",
-        "spot_recovery": "Spot recovery not supported for RunPod orchestrator.",
-        "image_id": "Custom image IDs not supported for RunPod orchestrator.",
-        # Add other unsupported features as needed
-    }
 
-    def __init__(self, *args: List[Any], **kwargs: Dict[str, Any]) -> None:
-        """Initialize the SkypilotLambdaOrchestratorSettings.
-
-        Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-        """
-        super().__init__(*args, **kwargs)
-        for attr in self._UNSUPPORTED_FEATURES.keys():
-            if hasattr(self, attr):
-                delattr(self, attr)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Set attribute.
-
-        Args:
-            name: Name of the attribute.
-            value: Value of the attribute.
-        """
-        if name in self._UNSUPPORTED_FEATURES:
-            raise AttributeError(f"{name} is not supported on Lambda.")
-        super().__setattr__(name, value)
-
-
-class SkypilotRunPodOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    SkypilotBaseOrchestratorConfig, SkypilotRunPodOrchestratorSettings
+class SkypilotOCIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    SkypilotBaseOrchestratorConfig, SkypilotOCIOrchestratorSettings
 ):
     """Skypilot orchestrator config."""
 
     token: Optional[str] = SecretField()
 
 
-class SkypilotRunPodOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Skypilot RunPod orchestrator."""
+class SkypilotOCIOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the Skypilot OCI orchestrator."""
 
     @property
     def name(self) -> str:
@@ -124,17 +92,17 @@ class SkypilotRunPodOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The config class.
         """
-        return SkypilotRunPodOrchestratorConfig
+        return SkypilotOCIOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["SkypilotRunPodOrchestrator"]:
+    def implementation_class(self) -> Type["SkypilotOCIOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:
             Implementation class for this flavor.
         """
-        from zenml.integrations.skypilot_runpod.orchestrators import (
-            SkypilotRunPodOrchestrator,
+        from zenml.integrations.skypilot_oci.orchestrators import (
+            SkypilotOCIOrchestrator,
         )
 
-        return SkypilotRunPodOrchestrator
+        return SkypilotOCIOrchestrator
