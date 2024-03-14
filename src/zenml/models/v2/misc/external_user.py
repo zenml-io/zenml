@@ -16,7 +16,7 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ExternalUserModel(BaseModel):
@@ -25,9 +25,4 @@ class ExternalUserModel(BaseModel):
     id: UUID
     email: str
     name: Optional[str] = None
-
-    class Config:
-        """Pydantic configuration."""
-
-        # ignore arbitrary fields
-        extra = "ignore"
+    model_config = ConfigDict(extra="ignore")
