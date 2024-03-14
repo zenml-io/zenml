@@ -17,7 +17,9 @@ import json
 from typing import Any, Dict, Tuple, Type, cast
 
 from pydantic import BaseModel, Field
-from pydantic.main import ModelMetaclass
+
+# TODO: Investigate if we can solve this import a different way.
+from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Literal
 
 from zenml.utils import source_utils

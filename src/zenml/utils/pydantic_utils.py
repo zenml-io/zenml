@@ -19,7 +19,9 @@ from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 import yaml
 from pydantic import BaseModel
-from pydantic.decorator import ValidatedFunction
+
+# TODO: Investigate if we can solve this import a different way.
+from pydantic.deprecated.decorator import ValidatedFunction
 from pydantic.json import pydantic_encoder
 from pydantic.utils import sequence_like
 
