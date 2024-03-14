@@ -162,7 +162,7 @@ jobs:
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
         run: choco install graphviz
-      - name: Unbreak python in github actions
+      - name: Unbreak Python in GH Actions
         if: runner.os=='macOS'
         # github actions overwrites brew's python. Force it to reassert itself, by
         # running in a separate step.
