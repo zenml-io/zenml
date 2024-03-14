@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import serialization_utils
@@ -53,7 +53,8 @@ class KubernetesPodSettings(BaseSettings):
     volume_mounts: List[Dict[str, Any]] = []
     host_ipc: bool = False
 
-    @validator("volumes", pre=True)
+    @field_validator("volumes", mode="before")
+    @classmethod
     def _convert_volumes(
         cls, value: List[Union[Dict[str, Any], "V1Volume"]]
     ) -> List[Dict[str, Any]]:
@@ -78,7 +79,8 @@ class KubernetesPodSettings(BaseSettings):
 
         return result
 
-    @validator("volume_mounts", pre=True)
+    @field_validator("volume_mounts", mode="before")
+    @classmethod
     def _convert_volume_mounts(
         cls, value: List[Union[Dict[str, Any], "V1VolumeMount"]]
     ) -> List[Dict[str, Any]]:
@@ -103,7 +105,8 @@ class KubernetesPodSettings(BaseSettings):
 
         return result
 
-    @validator("affinity", pre=True)
+    @field_validator("affinity", mode="before")
+    @classmethod
     def _convert_affinity(
         cls, value: Union[Dict[str, Any], "V1Affinity"]
     ) -> Dict[str, Any]:
@@ -122,7 +125,8 @@ class KubernetesPodSettings(BaseSettings):
         else:
             return value
 
-    @validator("tolerations", pre=True)
+    @field_validator("tolerations", mode="before")
+    @classmethod
     def _convert_tolerations(
         cls, value: List[Union[Dict[str, Any], "V1Toleration"]]
     ) -> List[Dict[str, Any]]:
@@ -147,7 +151,8 @@ class KubernetesPodSettings(BaseSettings):
 
         return result
 
-    @validator("resources", pre=True)
+    @field_validator("resources", mode="before")
+    @classmethod
     def _convert_resources(
         cls, value: Union[Dict[str, Any], "V1ResourceRequirements"]
     ) -> Dict[str, Any]:
