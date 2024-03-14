@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, SecretStr, root_validator
+from pydantic import Field, SecretStr, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
@@ -684,10 +684,11 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
     labels: Optional[Dict[str, Optional[str]]] = Field(
         default=None,
         title="The labels to filter by, as a dictionary",
+        exclude=True,
     )
 
-    @root_validator
-    def validate_labels(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def validate_labels(self) -> "ServiceConnectorFilter":
         """Parse the labels string into a label dictionary and vice-versa.
 
         Args:
@@ -696,31 +697,21 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
         Returns:
             The validated values.
         """
-        labels_str = values.get("labels_str")
-        labels = values.get("labels")
-        if labels_str is not None:
+        if self.labels_str is not None:
             try:
-                values["labels"] = json.loads(labels_str)
+                self.labels = json.loads(self.labels_str)
             except json.JSONDecodeError:
                 # Interpret as comma-separated values instead
-                values["labels"] = {
+                self.labels = {
                     label.split("=", 1)[0]: label.split("=", 1)[1]
                     if "=" in label
                     else None
-                    for label in labels_str.split(",")
+                    for label in self.labels_str.split(",")
                 }
-        elif labels is not None:
-            values["labels_str"] = json.dumps(values["labels"])
+        elif self.labels is not None:
+            self.labels_str = json.dumps(self.labels)
 
-        return values
-
-    class Config:
-        """Pydantic config class."""
-
-        # Exclude the labels field from the serialized response
-        # (it is only used internally). The labels_str field is a string
-        # representation of the labels that can be used in the API.
-        exclude = ["labels"]
+        return self
 
 
 # ------------------ Helper Functions ------------------
