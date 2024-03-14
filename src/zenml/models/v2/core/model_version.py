@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, PrivateAttr, validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
@@ -111,7 +111,8 @@ class ModelVersionUpdate(BaseModel):
         default=None,
     )
 
-    @validator("stage")
+    @field_validator("stage")
+    @classmethod
     def _validate_stage(cls, stage: str) -> str:
         stage = getattr(stage, "value", stage)
         if stage is not None and stage not in [

@@ -16,9 +16,7 @@
 from secrets import token_hex
 from typing import (
     TYPE_CHECKING,
-    Any,
     ClassVar,
-    Dict,
     List,
     Optional,
     Type,
@@ -26,7 +24,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field, root_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
@@ -101,15 +99,12 @@ class UserRequest(BaseRequest):
     )
     active: bool = Field(default=False, title="Whether the account is active.")
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them
-        validate_assignment = True
-
+        validate_assignment=True,
         # Forbid extra attributes to prevent unexpected behavior
-        extra = "forbid"
-        underscore_attrs_are_private = True
+        extra="forbid",
+    )
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -172,8 +167,8 @@ class UserRequest(BaseRequest):
 class UserUpdate(UserRequest):
     """Update model for users."""
 
-    @root_validator
-    def user_email_updates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def user_email_updates(self) -> "UserUpdate":
         """Validate that the UserUpdateModel conforms to the email-opt-in-flow.
 
         Args:
@@ -188,18 +183,18 @@ class UserUpdate(UserRequest):
         """
         # When someone sets the email, or updates the email and hasn't
         #  before explicitly opted out, they are opted in
-        if values["email"] is not None:
-            if values["email_opted_in"] is None:
-                values["email_opted_in"] = True
+        if self.email is not None:
+            if self.email_opted_in is None:
+                self.email_opted_in = True
 
         # It should not be possible to do opt in without an email
-        if values["email_opted_in"] is True:
-            if values["email"] is None:
+        if self.email_opted_in is True:
+            if self.email is None:
                 raise ValueError(
                     "Please provide an email, when you are opting-in with "
                     "your email."
                 )
-        return values
+        return self
 
 
 # ------------------ Response Model ------------------
