@@ -30,7 +30,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from zenml.console import console
 from zenml.logger import get_logger
@@ -227,7 +227,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
 
     SERVICE_TYPE: ClassVar[ServiceType]
 
-    uuid: UUID = Field(default_factory=uuid4, allow_mutation=False)
+    uuid: UUID = Field(default_factory=uuid4, frozen=True)
     admin_state: ServiceState = ServiceState.INACTIVE
     config: ServiceConfig
     status: ServiceStatus
@@ -508,14 +508,10 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
         return self.__repr__()
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        validate_assignment=True,
+    )
 
 
 class BaseDeploymentService(BaseService):
