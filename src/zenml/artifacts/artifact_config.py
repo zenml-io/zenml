@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
@@ -72,23 +72,18 @@ class ArtifactConfig(BaseModel):
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
 
-    @root_validator
-    def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        model_name = values.get("model_name", None)
-        if model_name and values.get("model_version", None) is None:
+    @model_validator(mode="after")
+    def artifact_config_validator(self) -> "ArtifactConfig":
+        if self.model_name is not None and self.model_version is None:
             raise ValueError(
-                f"Creation of new model version from `{cls}` is not allowed. "
+                "Creation of new model version from is not allowed. "
                 "Please either keep `model_name` and `model_version` both "
                 "`None` to get the model version from the step context or "
-                "specify both at the same time. You can use `ModelStages.LATEST` "
-                "as `model_version` when latest model version is desired."
+                "specify both at the same time. You can use "
+                "`ModelStages.LATEST` as `model_version` when latest model "
+                "version is desired."
             )
-        return values
-
-    class Config:
-        """Config class for ArtifactConfig."""
-
-        smart_union = True
+        return self
 
     @property
     def _model(self) -> Optional["Model"]:
