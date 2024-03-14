@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.container_registries.base_container_registry import (
@@ -37,7 +37,8 @@ if TYPE_CHECKING:
 class AWSContainerRegistryConfig(BaseContainerRegistryConfig):
     """Configuration for AWS Container Registry."""
 
-    @validator("uri")
+    @field_validator("uri")
+    @classmethod
     def validate_aws_uri(cls, uri: str) -> str:
         """Validates that the URI is in the correct format.
 
