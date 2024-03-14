@@ -34,6 +34,7 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
     - name: Unbreak Python in GH Actions
+      shell: bash
       if: runner.os=='macOS'
       # github actions overwrites brew's python. Force it to reassert itself, by
       # running in a separate step.
