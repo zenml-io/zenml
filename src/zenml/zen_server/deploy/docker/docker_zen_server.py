@@ -16,6 +16,8 @@
 import os
 from typing import Dict, List, Optional, Tuple, cast
 
+from pydantic import ConfigDict
+
 import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
@@ -65,11 +67,7 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
     port: int = 8238
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
     store: Optional[StoreConfiguration] = None
-
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class DockerZenServerConfig(ContainerServiceConfig):
