@@ -21,8 +21,15 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from packaging import version
-from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
-from pydantic.main import ModelMetaclass
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SecretStr,
+    ValidationError,
+    field_validator,
+)
+from pydantic._internal._model_construction import ModelMetaclass
 
 from zenml import __version__
 from zenml.analytics import group
@@ -109,17 +116,16 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         store: Store configuration.
         active_stack_id: The ID of the active stack.
         active_workspace_name: The name of the active workspace.
-        jwt_secret_key: The secret key used to sign and verify JWT tokens.
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
-    version: Optional[str]
-    store: Optional[StoreConfiguration]
-    active_stack_id: Optional[uuid.UUID]
-    active_workspace_name: Optional[str]
+    version: Optional[str] = None
+    store: Optional[StoreConfiguration] = None
+    active_stack_id: Optional[uuid.UUID] = None
+    active_workspace_name: Optional[str] = None
 
     _zen_store: Optional["BaseZenStore"] = None
     _active_workspace: Optional["WorkspaceResponse"] = None
@@ -170,7 +176,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if config:
             config._write_config()
 
-    @validator("version")
+    @field_validator("version")
+    @classmethod
     def _validate_version(cls, v: Optional[str]) -> Optional[str]:
         """Validate the version attribute.
 
@@ -787,21 +794,16 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self.active_stack_id
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        validate_assignment=True,
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
-
+        extra="allow",
         # This is needed to allow correct handling of SecretStr values during
         # serialization.
-        json_encoders = {
+        json_encoders={
             SecretStr: lambda v: v.get_secret_value() if v else None
-        }
+        },
+    )
