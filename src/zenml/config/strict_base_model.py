@@ -13,14 +13,10 @@
 #  permissions and limitations under the License.
 """Strict immutable pydantic model."""
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, ConfigDict
 
 
 class StrictBaseModel(BaseModel):
     """Immutable pydantic model which prevents extra attributes."""
 
-    class Config:
-        """Pydantic config class."""
-
-        allow_mutation = False
-        extra = Extra.forbid
+    model_config = ConfigDict(frozen=True, extra="forbid")
