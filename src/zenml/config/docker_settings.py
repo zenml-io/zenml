@@ -251,5 +251,5 @@ class DockerSettings(BaseSettings):
         # public attributes are immutable
         frozen=True,
         # prevent extra attributes during model initialization
-        extra="forbid"
+        extra="forbid",
     )

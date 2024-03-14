@@ -51,5 +51,5 @@ class BaseSettings(SecretReferenceMixin):
         frozen=True,
         # allow extra attributes so this class can be used to parse dicts
         # of arbitrary subclasses
-        extra="allow"
+        extra="allow",
     )
