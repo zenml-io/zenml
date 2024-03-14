@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class BaseSecretSchema(BaseModel):
@@ -41,10 +41,9 @@ class BaseSecretSchema(BaseModel):
         """
         return self.dict(exclude_none=True)
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # report extra attributes as validation failures
-        extra = "forbid"
+        extra="forbid"
+    )
