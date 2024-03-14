@@ -58,7 +58,7 @@ class BaseSecretsStoreBackend(BaseModel):
     """Base class for accessing and listing ZenML secrets."""
 
     server_id: UUID
-    client: Any
+    client: Any = None
 
     def _get_secret_metadata(
         self,
