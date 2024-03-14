@@ -17,8 +17,7 @@ from datetime import datetime
 from typing import Any, Dict, Generic, Optional, TypeVar
 from uuid import UUID
 
-from pydantic import Extra, Field, SecretStr
-from pydantic.generics import GenericModel
+from pydantic import ConfigDict, Field, SecretStr
 
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 from zenml.enums import ResponseUpdateStrategy
@@ -39,22 +38,18 @@ class BaseZenModel(YAMLSerializationMixin, AnalyticsTrackedModelMixin):
     SecretStr values.
     """
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # This is needed to allow the REST client and server to unpack SecretStr
-        # values correctly.
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             SecretStr: lambda v: v.get_secret_value()
             if v is not None
             else None
-        }
-
+        },
         # Allow extras on all models to support forwards and backwards
         # compatibility (e.g. new fields in newer versions of ZenML servers
         # are allowed to be present in older versions of ZenML clients and
         # vice versa).
-        extra = "allow"
+        extra="allow",
+    )
 
 
 # -------------------- Request Model --------------------
@@ -87,10 +82,7 @@ class BaseResponseResources(BaseZenModel):
     Used as a base class for all resource models associated with responses.
     """
 
-    class Config:
-        """Allows additional resources to be added."""
-
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 AnyBody = TypeVar("AnyBody", bound=BaseResponseBody)
@@ -98,9 +90,7 @@ AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
 AnyResources = TypeVar("AnyResources", bound=BaseResponseResources)
 
 
-class BaseResponse(
-    GenericModel, Generic[AnyBody, AnyMetadata, AnyResources], BaseZenModel
-):
+class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
     """Base domain model for all responses."""
 
     # Body and metadata pair
