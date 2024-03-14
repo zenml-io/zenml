@@ -53,7 +53,9 @@ class ScheduleRequest(WorkspaceScopedRequest):
     pipeline_id: Optional[UUID]
 
     @model_validator(mode="after")
-    def _ensure_cron_or_periodic_schedule_configured(self) -> "ScheduleRequest":
+    def _ensure_cron_or_periodic_schedule_configured(
+        self,
+    ) -> "ScheduleRequest":
         """Ensures that the cron expression or start time + interval are set.
 
         Args:
