@@ -357,186 +357,56 @@ from zenml.models.v2.misc.server_models import (
 # ----------------------------- Forward References -----------------------------
 
 # V2
-APIKeyResponseBody.update_forward_refs(
-    ServiceAccountResponse=ServiceAccountResponse,
-)
-ArtifactVersionRequest.update_forward_refs(
-    ArtifactVisualizationRequest=ArtifactVisualizationRequest,
-)
-ArtifactVersionResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-ArtifactVersionResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    ArtifactVisualizationResponse=ArtifactVisualizationResponse,
-    RunMetadataResponse=RunMetadataResponse,
-)
-CodeReferenceResponseBody.update_forward_refs(
-    CodeRepositoryResponse=CodeRepositoryResponse,
-)
-CodeRepositoryResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-CodeRepositoryResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-ComponentResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-ComponentResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    ServiceConnectorResponse=ServiceConnectorResponse,
-)
-EventSourceResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-EventSourceResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-EventSourceResponseResources.update_forward_refs(
-    TriggerResponse=TriggerResponse,
-)
-FlavorResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-FlavorResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-    TagResponse=TagResponse,
-)
-ModelResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-    ModelResponse=ModelResponse,
-    RunMetadataResponse=RunMetadataResponse,
-)
-ModelVersionResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    RunMetadataResponse=RunMetadataResponse,
-)
-ModelVersionArtifactResponseBody.update_forward_refs(
-    ArtifactVersionResponse=ArtifactVersionResponse,
-)
-ModelVersionPipelineRunResponseBody.update_forward_refs(
-    PipelineRunResponse=PipelineRunResponse
-)
-OAuthDeviceResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-PipelineResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-PipelineResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-PipelineBuildBase.update_forward_refs(
-    BuildItem=BuildItem,
-)
-PipelineBuildResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-PipelineBuildResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    PipelineResponse=PipelineResponse,
-    StackResponse=StackResponse,
-    BuildItem=BuildItem,
-)
-PipelineDeploymentRequest.update_forward_refs(
-    CodeReferenceRequest=CodeReferenceRequest,
-)
-PipelineDeploymentResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-PipelineDeploymentResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    PipelineResponse=PipelineResponse,
-    StackResponse=StackResponse,
-    PipelineBuildResponse=PipelineBuildResponse,
-    ScheduleResponse=ScheduleResponse,
-    CodeReferenceResponse=CodeReferenceResponse,
-)
-PipelineDeploymentResponseResources.update_forward_refs(
-    TriggerResponse=TriggerResponse,
-)
-PipelineRunResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-    PipelineResponse=PipelineResponse,
-    StackResponse=StackResponse,
-    PipelineBuildResponse=PipelineBuildResponse,
-    ScheduleResponse=ScheduleResponse,
-    CodeReferenceResponse=CodeReferenceResponse,
-    TriggerExecutionResponse=TriggerExecutionResponse,
-)
-PipelineRunResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    RunMetadataResponse=RunMetadataResponse,
-    StepRunResponse=StepRunResponse,
-)
-RunMetadataResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-RunMetadataResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-ScheduleResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-ScheduleResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-SecretResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-SecretResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-ServiceConnectorResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-ServiceConnectorResponseMetadata.update_forward_refs(
-    ServiceConnectorTypeModel=ServiceConnectorTypeModel,
-    WorkspaceResponse=WorkspaceResponse,
-    ComponentResponse=ComponentResponse,
-)
-StackResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-StackResponseMetadata.update_forward_refs(
-    ComponentResponse=ComponentResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-StepRunRequest.update_forward_refs(
-    LogsRequest=LogsRequest,
-)
-StepRunResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-    ArtifactVersionResponse=ArtifactVersionResponse,
-)
-StepRunResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    LogsResponse=LogsResponse,
-    RunMetadataResponse=RunMetadataResponse,
-)
-TriggerExecutionResponseResources.update_forward_refs(
-    TriggerResponse=TriggerResponse
-)
-TriggerResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-TriggerResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-TriggerResponseResources.update_forward_refs(
-    EventSourceResponse=EventSourceResponse,
-)
-TriggerResponseResources.update_forward_refs(
-    EventSourceResponse=EventSourceResponse,
-    TriggerExecutionResponse=TriggerExecutionResponse,
-)
+APIKeyResponseBody.model_rebuild()
+ArtifactVersionRequest.model_rebuild()
+ArtifactVersionResponseBody.model_rebuild()
+ArtifactVersionResponseMetadata.model_rebuild()
+CodeReferenceResponseBody.model_rebuild()
+CodeRepositoryResponseBody.model_rebuild()
+CodeRepositoryResponseMetadata.model_rebuild()
+ComponentResponseBody.model_rebuild()
+ComponentResponseMetadata.model_rebuild()
+EventSourceResponseBody.model_rebuild()
+EventSourceResponseMetadata.model_rebuild()
+EventSourceResponseResources.model_rebuild()
+FlavorResponseBody.model_rebuild()
+FlavorResponseMetadata.model_rebuild()
+ModelResponseBody.model_rebuild()
+ModelResponseMetadata.model_rebuild()
+ModelVersionResponseBody.model_rebuild()
+ModelVersionResponseMetadata.model_rebuild()
+ModelVersionArtifactResponseBody.model_rebuild()
+ModelVersionPipelineRunResponseBody.model_rebuild()
+OAuthDeviceResponseBody.model_rebuild()
+PipelineResponseBody.model_rebuild()
+PipelineResponseMetadata.model_rebuild()
+PipelineBuildBase.model_rebuild()
+PipelineBuildResponseBody.model_rebuild()
+PipelineBuildResponseMetadata.model_rebuild()
+PipelineDeploymentRequest.model_rebuild()
+PipelineDeploymentResponseBody.model_rebuild()
+PipelineDeploymentResponseMetadata.model_rebuild()
+PipelineDeploymentResponseResources.model_rebuild()
+PipelineRunResponseBody.model_rebuild()
+PipelineRunResponseMetadata.model_rebuild()
+RunMetadataResponseBody.model_rebuild()
+RunMetadataResponseMetadata.model_rebuild()
+ScheduleResponseBody.model_rebuild()
+ScheduleResponseMetadata.model_rebuild()
+SecretResponseBody.model_rebuild()
+SecretResponseMetadata.model_rebuild()
+ServiceConnectorResponseBody.model_rebuild()
+ServiceConnectorResponseMetadata.model_rebuild()
+StackResponseBody.model_rebuild()
+StackResponseMetadata.model_rebuild()
+StepRunRequest.model_rebuild()
+StepRunResponseBody.model_rebuild()
+StepRunResponseMetadata.model_rebuild()
+TriggerExecutionResponseResources.model_rebuild()
+TriggerResponseBody.model_rebuild()
+TriggerResponseMetadata.model_rebuild()
+TriggerResponseResources.model_rebuild()
+TriggerResponseResources.model_rebuild()
 
 __all__ = [
     # V2 Base
