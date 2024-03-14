@@ -33,7 +33,7 @@ class BasePluginConfig(BaseModel, ABC):
         # public attributes are mutable
         frozen=False,
         # ignore extra attributes during model initialization
-        extra="ignore"
+        extra="ignore",
     )
 
 
