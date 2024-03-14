@@ -14,10 +14,10 @@
 """Models representing schedules."""
 
 import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
@@ -52,10 +52,8 @@ class ScheduleRequest(WorkspaceScopedRequest):
     orchestrator_id: Optional[UUID]
     pipeline_id: Optional[UUID]
 
-    @root_validator
-    def _ensure_cron_or_periodic_schedule_configured(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _ensure_cron_or_periodic_schedule_configured(self) -> "ScheduleRequest":
         """Ensures that the cron expression or start time + interval are set.
 
         Args:
@@ -68,10 +66,8 @@ class ScheduleRequest(WorkspaceScopedRequest):
             ValueError: If no cron expression or start time + interval were
                 provided.
         """
-        cron_expression = values.get("cron_expression")
-        periodic_schedule = values.get("start_time") and values.get(
-            "interval_second"
-        )
+        cron_expression = self.cron_expression
+        periodic_schedule = self.start_time and self.interval_second
 
         if cron_expression and periodic_schedule:
             logger.warning(
@@ -81,9 +77,9 @@ class ScheduleRequest(WorkspaceScopedRequest):
                 "but will usually ignore the interval and use the cron "
                 "expression."
             )
-            return values
+            return self
         elif cron_expression or periodic_schedule:
-            return values
+            return self
         else:
             raise ValueError(
                 "Either a cron expression or start time and interval seconds "

@@ -55,11 +55,6 @@ class RunMetadataRequest(WorkspaceScopedRequest):
         title="The types of the metadata to be created.",
     )
 
-    class Config:
-        """Pydantic configuration."""
-
-        smart_union = True
-
 
 # ------------------ Update Model ------------------
 
@@ -83,11 +78,6 @@ class RunMetadataResponseBody(WorkspaceScopedResponseBody):
         title="The type of the metadata.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    class Config:
-        """Pydantic configuration."""
-
-        smart_union = True
 
 
 class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
