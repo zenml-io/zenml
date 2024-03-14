@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
@@ -69,7 +69,8 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     local: bool = False
     skip_local_validations: bool = False
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _validate_deprecated_attrs(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
