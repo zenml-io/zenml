@@ -40,7 +40,7 @@ class ServerDeploymentConfig(BaseModel):
         validate_assignment=True,
         # Allow extra attributes to be set in the base class. The concrete
         # classes are responsible for validating the attributes.
-        extra="allow"
+        extra="allow",
     )
 
 
