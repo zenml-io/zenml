@@ -30,7 +30,7 @@ if TYPE_CHECKING and sys.version_info < (3, 8):
     LCDocument = Any
 else:
     from langchain.docstore.document import Document as LCDocument
-    from llama_index.readers.schema.base import Document
+    from llama_index.core import Document
 
 
 class LlamaIndexDocumentMaterializer(LangchainDocumentMaterializer):
