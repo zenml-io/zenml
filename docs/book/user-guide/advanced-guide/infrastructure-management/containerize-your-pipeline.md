@@ -253,7 +253,7 @@ def my_training_step(...):
 ```
 
 {% hint style="info" %}
-You can combine these methods but do make sure that your list of requirements does not overlap with the ones specified explicitly in the docker settings.
+You can combine these methods but do make sure that your list of requirements does not overlap with the ones specified explicitly in the Docker settings.
 {% endhint %}
 
 Depending on the options specified in your Docker settings, ZenML installs the requirements in the following order (each step optional):
@@ -262,7 +262,7 @@ Depending on the options specified in your Docker settings, ZenML installs the r
 * The packages specified via the `requirements` attribute (step level overwrites pipeline level)
 * The packages specified via the `required_integrations` and potentially stack requirements
 
-* **Experimental**: If you want to use [`uv`](https://github.com/astral-sh/uv) for faster resolving and installation of your python packages, you can use by it as follows:
+* **Experimental**: If you want to use [`uv`](https://github.com/astral-sh/uv) for faster resolving and installation of your Python packages, you can use by it as follows:
 
 ```python
 docker_settings = DockerSettings(python_package_installer="uv")
