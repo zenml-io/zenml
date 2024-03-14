@@ -96,12 +96,14 @@ class BaseZenStore(
         """
         if data["config"].type == StoreType.SQL:
             from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+
             data["config"] = SqlZenStoreConfiguration(**data["config"].dict())
 
         elif data["config"].type == StoreType.REST:
             from zenml.zen_stores.rest_zen_store import (
                 RestZenStoreConfiguration,
             )
+
             data["config"] = RestZenStoreConfiguration(**data["config"].dict())
         else:
             raise ValueError(

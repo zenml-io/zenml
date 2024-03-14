@@ -69,7 +69,7 @@ class SqlSecretsStoreConfiguration(SecretsStoreConfiguration):
         # of the certificate files.
         validate_assignment=False,
         # Forbid extra attributes set in the class.
-        extra="forbid"
+        extra="forbid",
     )
 
 
