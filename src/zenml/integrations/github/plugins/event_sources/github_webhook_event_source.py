@@ -17,7 +17,7 @@ import urllib
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.enums import SecretScope
 from zenml.event_sources.base_event import (
@@ -114,11 +114,7 @@ class GithubEvent(BaseEvent):
     head_commit: Optional[Commit]
     tags: Optional[List[Tag]]
     pull_requests: Optional[List[PullRequest]]
-
-    class Config:
-        """Pydantic configuration class."""
-
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
     @property
     def branch(self) -> Optional[str]:
