@@ -42,7 +42,7 @@ We can then register the image builder and use it in our active stack:
 zenml image-builder register <NAME> \
     --flavor=kaniko \
     --kubernetes_context=<KUBERNETES_CONTEXT>
-    # --pod_running_timeout=<POD_RUNNING_TIMEOUT_IN_SECONDS>
+    [ --pod_running_timeout=<POD_RUNNING_TIMEOUT_IN_SECONDS> ]
 
 # Register and activate a stack with the new image builder
 zenml stack register <STACK_NAME> -i <NAME> ... --set
