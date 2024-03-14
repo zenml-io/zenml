@@ -32,7 +32,7 @@ from uuid import UUID
 
 import requests
 import urllib3
-from pydantic import BaseModel, root_validator, validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from requests.adapters import HTTPAdapter, Retry
 
 import zenml
@@ -268,8 +268,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
-    @root_validator
-    def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def validate_credentials(self) -> "RestZenStoreConfiguration":
         """Validates the credentials provided in the values dictionary.
 
         Args:
@@ -283,18 +283,15 @@ class RestZenStoreConfiguration(StoreConfiguration):
         """
         # Check if the values dictionary contains either an API token, an API
         # key or a username as non-empty strings.
-        if (
-            values.get("api_token")
-            or values.get("username")
-            or values.get("api_key")
-        ):
-            return values
+        if self.api_token or self.username or self.api_key:
+            return self
         raise ValueError(
             "Neither api_token nor username nor api_key is set in the "
             "store config."
         )
 
-    @validator("url")
+    @field_validator("url")
+    @classmethod
     def validate_url(cls, url: str) -> str:
         """Validates that the URL is a well-formed REST store URL.
 
@@ -322,9 +319,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         return url
 
-    @validator("verify_ssl")
+    @field_validator("verify_ssl")
+    @classmethod
     def validate_verify_ssl(
-        cls, verify_ssl: Union[bool, str]
+            cls, verify_ssl: Union[bool, str]
     ) -> Union[bool, str]:
         """Validates that the verify_ssl either points to a file or is a bool.
 
@@ -377,15 +375,14 @@ class RestZenStoreConfiguration(StoreConfiguration):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Don't validate attributes when assigning them. This is necessary
         # because the `verify_ssl` attribute can be expanded to the contents
         # of the certificate file.
-        validate_assignment = False
+        validate_assignment=False,
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra="forbid"
+    )
 
 
 class RestZenStore(BaseZenStore):
