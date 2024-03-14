@@ -29,9 +29,8 @@ def server_owned_request_model(_cls: Type[T]) -> Type[T]:
     Returns:
         The decorated class.
     """
-    if user_field := _cls.__fields__.get("user", None):
-        user_field.required = False
-        user_field.allow_none = True
+    if user_field := _cls.model_fields.get("user", None):
         user_field.default = None
+        user_field.default_factory = None
 
     return _cls

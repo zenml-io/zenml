@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Type, TypeVar
 
-from pydantic.config import Extra
+from pydantic.config import ConfigDict
 
 if TYPE_CHECKING:
     from zenml.models.v2.base.base import BaseRequest
@@ -35,10 +35,10 @@ def update_model(_cls: Type["T"]) -> Type["T"]:
     Returns:
         The decorated class.
     """
-    for _, value in _cls.__fields__.items():
-        value.required = False
-        value.allow_none = True
+    for _, value in _cls.model_fields.items():
+        value.default = None
+        value.default_factory = None
 
-    _cls.__config__.extra = Extra.ignore
+    _cls.model_config = ConfigDict(extra="ignore")
 
     return _cls
