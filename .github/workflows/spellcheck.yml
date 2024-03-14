@@ -3,12 +3,12 @@ name: Spellcheck
 on:
   workflow_dispatch:
   workflow_call:
-  push:
-    branches: [main]
-    paths-ignore: [docker/**, '*', '!pyproject.toml']
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docker/**, '*', '!pyproject.toml']
+  # push:
+  #   branches: [main]
+  #   paths-ignore: [docker/**, '*', '!pyproject.toml']
+  # pull_request:
+  #   types: [opened, synchronize, ready_for_review]
+  #   paths-ignore: [docker/**, '*', '!pyproject.toml']
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
