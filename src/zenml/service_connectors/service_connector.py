@@ -1401,10 +1401,3 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         )
 
         return connector_client
-
-    class Config:
-        """Connector configuration."""
-
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
