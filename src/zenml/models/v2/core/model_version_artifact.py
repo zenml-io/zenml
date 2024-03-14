@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and artifacts."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, validator
+from pydantic import Field, model_validator
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.enums import GenericFilterOps
@@ -48,17 +48,14 @@ class ModelVersionArtifactRequest(WorkspaceScopedRequest):
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
 
-    @validator("is_deployment_artifact")
-    def _validate_is_endpoint_artifact(
-        cls, is_deployment_artifact: bool, values: Dict[str, Any]
-    ) -> bool:
-        is_model_artifact = values.get("is_model_artifact", False)
-        if is_model_artifact and is_deployment_artifact:
+    @model_validator(mode="after")
+    def _validate_is_endpoint_artifact(self) -> "ModelVersionArtifactRequest":
+        if self.is_model_artifact and self.is_deployment_artifact:
             raise ValueError(
                 "Artifact cannot be a model artifact and deployment artifact "
                 "at the same time."
             )
-        return is_deployment_artifact
+        return self
 
 
 # ------------------ Update Model ------------------
