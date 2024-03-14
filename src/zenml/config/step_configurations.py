@@ -24,7 +24,7 @@ from typing import (
     Union,
 )
 
-from pydantic import root_validator, validator
+from pydantic import field_validator, model_validator
 
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
@@ -53,7 +53,8 @@ class PartialArtifactConfiguration(StrictBaseModel):
     # for all steps/outputs
     default_materializer_source: Optional[Source] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _remove_deprecated_attributes(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -71,7 +72,8 @@ class PartialArtifactConfiguration(StrictBaseModel):
                 values.pop(deprecated_attribute)
         return values
 
-    @validator("materializer_source", pre=True)
+    @field_validator("materializer_source", mode="before")
+    @classmethod
     def _convert_source(
         cls,
         value: Union[None, Source, Dict[str, Any], str, Tuple[Source, ...]],
@@ -99,7 +101,8 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 
     materializer_source: Tuple[Source, ...]
 
-    @validator("materializer_source", pre=True)
+    @field_validator("materializer_source", mode="before")
+    @classmethod
     def _convert_source(
         cls, value: Union[Source, Dict[str, Any], str, Tuple[Source, ...]]
     ) -> Tuple[Source, ...]:
@@ -162,7 +165,8 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     # `name`` attribute on this class.
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes()
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _remove_deprecated_attributes(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
