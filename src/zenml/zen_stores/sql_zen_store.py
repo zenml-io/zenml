@@ -870,9 +870,14 @@ class SqlZenStore(BaseZenStore):
         # Sorting
         column, operand = filter_model.sorting_params
         if operand == SorterOps.DESCENDING:
-            query = query.order_by(desc(getattr(table, column)))
+            sort_clause = desc(getattr(table, column))
         else:
-            query = query.order_by(asc(getattr(table, column)))
+            sort_clause = asc(getattr(table, column))
+
+        # We always add the `id` column as a tiebreaker to ensure a stable,
+        # repeatable order of items, otherwise subsequent pages might contain
+        # the same items.
+        query = query.order_by(sort_clause, asc(table.id))
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
@@ -7515,6 +7520,14 @@ class SqlZenStore(BaseZenStore):
             )
 
             if (
+                existing_user.name == self._default_user_name
+                and user_update.is_admin is False
+            ):
+                raise IllegalOperationError(
+                    "The default user's admin status cannot be removed."
+                )
+
+            if (
                 user_update.name is not None
                 and user_update.name != existing_user.name
             ):
@@ -7604,6 +7617,7 @@ class SqlZenStore(BaseZenStore):
                     name=default_user_name,
                     active=True,
                     password=password,
+                    is_admin=True,
                 )
             )
 
