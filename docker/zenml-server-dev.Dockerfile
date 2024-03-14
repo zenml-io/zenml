@@ -31,6 +31,8 @@ COPY README.md pyproject.toml ./
 # copying our source files which would invalidate caching
 COPY src/zenml/__init__.py ./src/zenml/
 
+# Upgrade pip to the latest version
+RUN pip install --upgrade pip
 RUN pip install -e .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]
 
 COPY src src
