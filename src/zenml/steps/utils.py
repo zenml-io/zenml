@@ -21,9 +21,10 @@ import textwrap
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 from uuid import UUID
 
-import pydantic.typing as pydantic_typing
 from pydantic import BaseModel
 from typing_extensions import Annotated
+from typing_extensions import get_args as typing_get_args
+from typing_extensions import get_origin as typing_get_origin
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
@@ -42,8 +43,8 @@ SINGLE_RETURN_OUT_NAME = "output"
 class OutputSignature(BaseModel):
     """The signature of an output artifact."""
 
-    resolved_annotation: Any
-    artifact_config: Optional[ArtifactConfig]
+    resolved_annotation: Any = None
+    artifact_config: Optional[ArtifactConfig] = None
     has_custom_name: bool = False
 
 
@@ -59,10 +60,7 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
     Returns:
         The args of the annotation.
     """
-    return tuple(
-        pydantic_typing.get_origin(v) or v
-        for v in pydantic_typing.get_args(obj)
-    )
+    return tuple(typing_get_origin(v) or v for v in typing_get_args(obj))
 
 
 def parse_return_type_annotations(
@@ -123,11 +121,11 @@ def parse_return_type_annotations(
             for output_name, output_type in return_annotation.items()
         }
 
-    elif pydantic_typing.get_origin(return_annotation) is tuple:
+    elif typing_get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
         if requires_multiple_artifacts:
             output_signature: Dict[str, Any] = {}
-            args = pydantic_typing.get_args(return_annotation)
+            args = typing_get_args(return_annotation)
             if args[-1] is Ellipsis:
                 raise RuntimeError(
                     "Variable length output annotations are not allowed."
@@ -179,12 +177,12 @@ def resolve_type_annotation(obj: Any) -> Any:
     Returns:
         The non-generic class for generic aliases of the typing module.
     """
-    origin = pydantic_typing.get_origin(obj) or obj
+    origin = typing_get_origin(obj) or obj
 
     if origin is Annotated:
-        annotation, *_ = pydantic_typing.get_args(obj)
+        annotation, *_ = typing_get_args(obj)
         return resolve_type_annotation(annotation)
-    elif pydantic_typing.is_union(origin):
+    elif origin is Union:
         return obj
 
     return origin
@@ -212,10 +210,10 @@ def get_artifact_config_from_annotation_metadata(
     Returns:
         The artifact config.
     """
-    if (pydantic_typing.get_origin(annotation) or annotation) is not Annotated:
+    if (typing_get_origin(annotation) or annotation) is not Annotated:
         return None
 
-    annotation, *metadata = pydantic_typing.get_args(annotation)
+    annotation, *metadata = get_args(annotation)
 
     error_message = (
         "Artifact annotation should only contain two elements: the artifact "
