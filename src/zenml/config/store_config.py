@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import StoreType
@@ -61,7 +61,8 @@ class StoreConfiguration(BaseModel):
         """
         return True
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def validate_secrets_store(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the secrets store configuration.
 
@@ -84,15 +85,11 @@ class StoreConfiguration(BaseModel):
 
         return values
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        validate_assignment=True,
         # Allow extra attributes to be set in the base class. The concrete
         # classes are responsible for validating the attributes.
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        extra="allow",
+    )

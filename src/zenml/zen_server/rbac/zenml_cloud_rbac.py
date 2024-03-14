@@ -17,7 +17,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 import requests
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.zen_server.rbac.models import Action, Resource
@@ -89,7 +89,8 @@ class ZenMLCloudRBACConfiguration(BaseModel):
     oauth2_audience: str
     auth0_domain: str
 
-    @validator("api_url")
+    @field_validator("api_url")
+    @classmethod
     def _strip_trailing_slashes_url(cls, url: str) -> str:
         """Strip any trailing slashes on the API URL.
 
@@ -117,12 +118,11 @@ class ZenMLCloudRBACConfiguration(BaseModel):
 
         return ZenMLCloudRBACConfiguration(**env_config)
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
+        extra="allow"
+    )
 
 
 class ZenMLCloudRBAC(RBACInterface):

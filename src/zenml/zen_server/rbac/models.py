@@ -16,7 +16,7 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -88,7 +88,4 @@ class Resource(BaseModel):
 
         return representation
 
-    class Config:
-        """Pydantic configuration class."""
-
-        frozen = True
+    model_config = ConfigDict(frozen=True)
