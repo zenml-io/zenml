@@ -40,7 +40,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field, SecretStr, root_validator, validator
+from pydantic import (
+    ConfigDict,
+    Field,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -393,7 +399,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     )
     backup_database: Optional[str] = None
 
-    @validator("secrets_store")
+    @field_validator("secrets_store")
+    @classmethod
     def validate_secrets_store(
         cls, secrets_store: Optional[SecretsStoreConfiguration]
     ) -> SecretsStoreConfiguration:
@@ -410,8 +417,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return secrets_store
 
-    @root_validator(pre=True)
-    def _remove_grpc_attributes(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def _remove_grpc_attributes(
+        self, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Removes old GRPC attributes.
 
         Args:
@@ -437,10 +447,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return values
 
-    @root_validator
-    def _validate_backup_strategy(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _validate_backup_strategy(self) -> "SqlZenStoreConfiguration":
         """Validate the backup strategy.
 
         Args:
@@ -453,19 +461,20 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the backup database name is not set when the backup
                 database is requested.
         """
-        backup_strategy = values.get("backup_strategy")
-        if backup_strategy == DatabaseBackupStrategy.DATABASE and (
-            not values.get("backup_database")
+
+        if (
+            self.backup_strategy == DatabaseBackupStrategy.DATABASE
+            and not self.backup_database
         ):
             raise ValueError(
                 "The `backup_database` attribute must also be set if the "
                 "backup strategy is set to use a backup database."
             )
 
-        return values
+        return self
 
-    @root_validator
-    def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _validate_url(self) -> "SqlZenStoreConfiguration":
         """Validate the SQL URL.
 
         The validator also moves the MySQL username, password and database
@@ -482,14 +491,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-        url = values.get("url")
-        if url is None:
-            return values
+
+        if self.url is None:
+            return self
 
         # When running inside a container, if the URL uses localhost, the
         # target service will not be available. We try to replace localhost
         # with one of the special Docker or K3D internal hostnames.
-        url = replace_localhost_with_internal_hostname(url)
+        url = replace_localhost_with_internal_hostname(self.url)
 
         try:
             sql_url = make_url(url)
@@ -508,7 +517,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 url,
                 ", ".join(SQLDatabaseDriver.values()),
             )
-        values["driver"] = SQLDatabaseDriver(sql_url.drivername)
+        self.driver = SQLDatabaseDriver(sql_url.drivername)
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             if (
                 sql_url.username
@@ -521,33 +530,33 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     "format `sqlite:///path/to/database.db`.",
                     url,
                 )
-            if values.get("username") or values.get("password"):
+            if self.username or self.password:
                 raise ValueError(
                     "Invalid SQLite configuration: The username and password "
                     "must not be set",
                     url,
                 )
-            values["database"] = sql_url.database
+            self.database = sql_url.database
         elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
             if sql_url.username:
-                values["username"] = sql_url.username
+                self.username = sql_url.username
                 sql_url = sql_url._replace(username=None)
             if sql_url.password:
-                values["password"] = sql_url.password
+                self.password = sql_url.password
                 sql_url = sql_url._replace(password=None)
             if sql_url.database:
-                values["database"] = sql_url.database
+                self.database = sql_url.database
                 sql_url = sql_url._replace(database=None)
             if sql_url.query:
                 for k, v in sql_url.query.items():
                     if k == "ssl_ca":
-                        values["ssl_ca"] = v
+                        self.ssl_ca = v
                     elif k == "ssl_cert":
-                        values["ssl_cert"] = v
+                        self.ssl_cert = v
                     elif k == "ssl_key":
-                        values["ssl_key"] = v
+                        self.ssl_key = v
                     elif k == "ssl_verify_server_cert":
-                        values["ssl_verify_server_cert"] = v
+                        self.ssl_verify_server_cert = v
                     else:
                         raise ValueError(
                             "Invalid MySQL URL query parameter `%s`: The "
@@ -557,12 +566,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         )
                 sql_url = sql_url._replace(query={})
 
-            database = values.get("database")
-            if (
-                not values.get("username")
-                or not values.get("password")
-                or not database
-            ):
+            database = self.database
+            if not self.username or not self.password or not database:
                 raise ValueError(
                     "Invalid MySQL configuration: The username, password and "
                     "database must be set in the URL or as configuration "
@@ -584,17 +589,17 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "certificates",
             )
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                content = values.get(key)
+                content = getattr(self, key)
                 if content and not os.path.isfile(content):
                     fileio.makedirs(str(secret_folder))
                     file_path = Path(secret_folder, f"{key}.pem")
                     with open(file_path, "w") as f:
                         f.write(content)
                     file_path.chmod(0o600)
-                    values[key] = str(file_path)
+                    setattr(self, key, str(file_path))
 
-        values["url"] = str(sql_url)
-        return values
+        self.url = str(sql_url)
+        return self
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -702,15 +707,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return sql_url, sqlalchemy_connect_args, engine_args
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Don't validate attributes when assigning them. This is necessary
         # because the certificate attributes can be expanded to the contents
         # of the certificate files.
-        validate_assignment = False
+        validate_assignment=False,
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra="forbid",
+    )
 
 
 class SqlZenStore(BaseZenStore):
