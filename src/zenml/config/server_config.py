@@ -19,7 +19,7 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr, root_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
@@ -159,7 +159,8 @@ class ServerConfiguration(BaseModel):
 
     _deployment_id: Optional[UUID] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _validate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the server configuration.
 
@@ -324,18 +325,13 @@ class ServerConfiguration(BaseModel):
 
         return ServerConfiguration(**env_server_config)
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
-
+        extra="allow",
         # This is needed to allow correct handling of SecretStr values during
         # serialization.
-        json_encoders = {
+        json_encoders={
             SecretStr: lambda v: v.get_secret_value() if v else None
-        }
+        },
+    )
