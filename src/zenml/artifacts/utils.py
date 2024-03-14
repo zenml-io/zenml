@@ -461,10 +461,6 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
         The artifact loaded into memory.
     """
     artifact_store_loaded = False
-    client = Client()
-    artifact = client.get_artifact_version(
-        name_id_or_prefix=artifact.id, hydrate=True
-    )
     if artifact.artifact_store_id:
         try:
             artifact_store_model = Client().get_stack_component(

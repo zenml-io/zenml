@@ -28,7 +28,6 @@ if TYPE_CHECKING:
 SERVICE_CONFIG_FILENAME = "service.json"
 
 
-# TODO: refactor service materializer to not store into artifact store but get it from db
 class ServiceMaterializer(BaseMaterializer):
     """Materializer to read/write service instances."""
 

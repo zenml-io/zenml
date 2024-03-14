@@ -1292,7 +1292,6 @@ def print_served_model_configuration(
         "FLAVOR": model_service.SERVICE_TYPE.flavor,
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        # "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 
