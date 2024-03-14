@@ -723,15 +723,11 @@ class Model(BaseModel):
                     retries_made += 1
             self.version = model_version.name
             self.was_created_in_this_run = True
-            
+
             logger.info(f"New model version `{self.version}` was created.")
-        model_version_url = get_model_version_url(
-            model_version.id
-        )
+        model_version_url = get_model_version_url(model_version.id)
         if model_version_url:
-            logger.info(
-                f"Model version dashboard URL: {model_version_url}"
-            )
+            logger.info(f"Model version dashboard URL: {model_version_url}")
         else:
             logger.info(
                 "You can now view your Models in the ZenML dashboard using ZenML Cloud."

@@ -44,8 +44,7 @@ def get_base_url() -> Optional[str]:
             if "cloud.zenml.io" in url:
                 return url
             return (
-                url
-                + f"{constants.WORKSPACES}/{client.active_workspace.name}"
+                url + f"{constants.WORKSPACES}/{client.active_workspace.name}"
             )
         url = (
             client.zen_store.url
