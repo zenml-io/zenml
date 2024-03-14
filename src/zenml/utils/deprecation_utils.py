@@ -16,7 +16,7 @@
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Set, Tuple, Type, Union
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 
 from zenml.logger import get_logger
 
@@ -55,14 +55,15 @@ def deprecate_pydantic_attributes(
     Args:
         *attributes: List of attributes to deprecate. This is either the name
             of the attribute to deprecate, or a tuple containing the name of
-            the deprecated attribute and it's replacement.
+            the deprecated attribute, and it's replacement.
 
     Returns:
         Pydantic validator class method to be used on BaseModel subclasses
         to deprecate or migrate attributes.
     """
 
-    @root_validator(pre=True, allow_reuse=True)
+    @model_validator(mode="before")
+    @classmethod
     def _deprecation_validator(
         cls: Type[BaseModel], values: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -110,14 +111,14 @@ def deprecate_pydantic_attributes(
                 deprecated_attribute, replacement_attribute = attribute
 
                 assert (
-                    replacement_attribute in cls.__fields__
+                    replacement_attribute in cls.model_fields
                 ), f"Unable to find attribute {replacement_attribute}."
 
             assert (
-                deprecated_attribute in cls.__fields__
+                deprecated_attribute in cls.model_fields
             ), f"Unable to find attribute {deprecated_attribute}."
 
-            if cls.__fields__[deprecated_attribute].required:
+            if cls.model_fields[deprecated_attribute].is_required():
                 raise TypeError(
                     f"Unable to deprecate attribute '{deprecated_attribute}' "
                     f"of class {cls.__name__}. In order to deprecate an "
