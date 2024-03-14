@@ -14,6 +14,7 @@
 """Utility class to help with interacting with the dashboard."""
 
 from typing import Optional
+from uuid import UUID
 
 from zenml import constants
 from zenml.client import Client
@@ -106,7 +107,7 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     return None
 
 
-def get_model_version_url(model_version_id: str) -> Optional[str]:
+def get_model_version_url(model_version_id: UUID) -> Optional[str]:
     """Function to get the dashboard URL of a given model version.
 
     Args:
@@ -123,7 +124,9 @@ def get_model_version_url(model_version_id: str) -> Optional[str]:
         if base_url:
             # TODO MODEL_VERSIONS resolves to /model_versions but on the
             # cloud, the URL is /model-versions. This should be fixed?
-            return f"{base_url}{constants.MODEL_VERSIONS}/{model_version_id}"
+            return (
+                f"{base_url}{constants.MODEL_VERSIONS}/{str(model_version_id)}"
+            )
     return None
 
 
