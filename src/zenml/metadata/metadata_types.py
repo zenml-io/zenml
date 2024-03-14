@@ -20,6 +20,7 @@ from pydantic_core import CoreSchema, core_schema
 
 from zenml.utils.enum_utils import StrEnum
 
+
 # TODO: Revisit this idea and investigate how to use custom types in Pydantic v2
 class Uri(str):
     """Special string class to indicate a URI."""

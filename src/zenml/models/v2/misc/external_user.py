@@ -25,4 +25,6 @@ class ExternalUserModel(BaseModel):
     id: UUID
     email: str
     name: Optional[str] = None
+    is_admin: bool = False
+
     model_config = ConfigDict(extra="ignore")

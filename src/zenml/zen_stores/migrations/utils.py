@@ -236,9 +236,17 @@ class MigrationUtils(BaseModel):
                 # correct order, since some tables have inner foreign key
                 # constraints.
                 if "created" in table.columns:
-                    order_by = table.columns["created"]
+                    order_by = [table.columns["created"]]
                 else:
-                    order_by = None
+                    order_by = []
+                if "id" in table.columns:
+                    # If the table has an `id` column, we also use it to sort
+                    # the rows in the table, even if we already use "created"
+                    # to sort the rows. We need a unique field to sort the rows,
+                    # to break the tie between rows with the same "created"
+                    # date, otherwise the same entry might end up multiple times
+                    # in subsequent pages.
+                    order_by.append(table.columns["id"])
 
                 # Fetch the number of rows in the table
                 row_count = conn.scalar(
@@ -250,7 +258,7 @@ class MigrationUtils(BaseModel):
                 for i in range(0, row_count, batch_size):
                     rows = conn.execute(
                         table.select()
-                        .order_by(order_by)
+                        .order_by(*order_by)
                         .limit(batch_size)
                         .offset(i)
                     ).fetchall()

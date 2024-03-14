@@ -30,7 +30,10 @@ from typing import (
 
 import zenml
 from zenml.config import DockerSettings
-from zenml.config.docker_settings import PythonEnvironmentExportMethod
+from zenml.config.docker_settings import (
+    PythonEnvironmentExportMethod,
+    PythonPackageInstaller,
+)
 from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -603,6 +606,10 @@ class PipelineDockerImageBuilder:
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
 
+        Raises:
+            ValueError: If an unsupported python package installer was
+                configured.
+
         Returns:
             The generated Dockerfile.
         """
@@ -623,8 +630,23 @@ class PipelineDockerImageBuilder:
             lines.append(f"COPY {file} .")
 
             option_string = " ".join(options)
+
+            if (
+                docker_settings.python_package_installer
+                == PythonPackageInstaller.PIP
+            ):
+                install_command = "pip install --default-timeout=60"
+            elif (
+                docker_settings.python_package_installer
+                == PythonPackageInstaller.UV
+            ):
+                lines.append("RUN pip install uv")
+                install_command = "uv pip install --system"
+            else:
+                raise ValueError("Unsupported python package installer.")
+
             lines.append(
-                f"RUN pip install --default-timeout=60 --no-cache-dir "
+                f"RUN {install_command} --no-cache-dir "
                 f"{option_string} -r {file}"
             )
 
