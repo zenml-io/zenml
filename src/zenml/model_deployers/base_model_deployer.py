@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML model deployers."""
 
+
+import contextlib
 from abc import ABC, abstractmethod
 from typing import (
     Any,
@@ -604,12 +606,9 @@ def get_model_version_id_if_exists(
     """
     client = Client()
     if model_name:
-        try:
-            model_version_id = client.get_model_version(
+        with contextlib.suppress(KeyError):
+            return client.get_model_version(
                 model_name_or_id=model_name,
                 model_version_name_or_number_or_id=model_version,
             ).id
-            return model_version_id
-        except KeyError:
-            pass
     return None

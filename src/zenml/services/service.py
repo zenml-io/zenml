@@ -436,12 +436,11 @@ class BaseService(BaseTypedModel):
         with console.status(f"Starting service '{self}'.\n"):
             self.admin_state = ServiceState.ACTIVE
             self.provision()
-            if timeout > 0:
-                if not self.poll_service_status(timeout):
-                    logger.error(
-                        f"Failed to start service {self}\n"
-                        + self.get_service_status_message()
-                    )
+            if timeout > 0 and not self.poll_service_status(timeout):
+                logger.error(
+                    f"Failed to start service {self}\n"
+                    + self.get_service_status_message()
+                )
 
     @update_service_status(
         pre_status=ServiceState.PENDING_SHUTDOWN,
@@ -490,14 +489,12 @@ class BaseService(BaseTypedModel):
         Returns:
             the healthcheck URL for the endpoint
         """
-        healthcheck_url = None
-        if (self.endpoint and self.endpoint.monitor) and isinstance(
-            self.endpoint.monitor, HTTPEndpointHealthMonitor
-        ):
-            healthcheck_url = self.endpoint.monitor.get_healthcheck_uri(
-                self.endpoint
-            )
-        return healthcheck_url
+        return (
+            self.endpoint.monitor.get_healthcheck_uri(self.endpoint)
+            if (self.endpoint and self.endpoint.monitor)
+            and isinstance(self.endpoint.monitor, HTTPEndpointHealthMonitor)
+            else None
+        )
 
     def __repr__(self) -> str:
         """String representation of the service.
