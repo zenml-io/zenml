@@ -869,9 +869,14 @@ class SqlZenStore(BaseZenStore):
         # Sorting
         column, operand = filter_model.sorting_params
         if operand == SorterOps.DESCENDING:
-            query = query.order_by(desc(getattr(table, column)))
+            sort_clause = desc(getattr(table, column))
         else:
-            query = query.order_by(asc(getattr(table, column)))
+            sort_clause = asc(getattr(table, column))
+
+        # We always add the `id` column as a tiebreaker to ensure a stable,
+        # repeatable order of items, otherwise subsequent pages might contain
+        # the same items.
+        query = query.order_by(sort_clause, asc(table.id))
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
