@@ -151,7 +151,7 @@ jobs:
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
-          pip install uv
+          pip install "uv==0.1.19"
           uv pip install --system "pyyaml==5.3.1" docker-compose
       - name: Install Linux System Dependencies
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
