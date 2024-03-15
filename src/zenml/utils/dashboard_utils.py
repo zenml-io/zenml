@@ -18,7 +18,6 @@ from uuid import UUID
 
 from zenml import constants
 from zenml.client import Client
-from zenml.config.server_config import ServerConfiguration
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
