@@ -52,7 +52,7 @@ class LlamaIndexIndexMaterializer(BaseMaterializer):
 
         with tempfile.TemporaryDirectory() as tempdir:
             fileio.copy_directory(self.uri, tempdir)
-            storage_context = StorageContext.from_defaults(persist_dir=...)
+            storage_context = StorageContext.from_defaults(persist_dir=tempdir)
 
         return load_index_from_storage(storage_context=storage_context)
 
@@ -62,8 +62,6 @@ class LlamaIndexIndexMaterializer(BaseMaterializer):
         Args:
             index: The index to save.
         """
-        assert isinstance(index, BaseIndex)
-
         with tempfile.TemporaryDirectory() as tempdir:
             index.storage_context.persist(persist_dir=tempdir)
             fileio.copy_directory(tempdir, self.uri)

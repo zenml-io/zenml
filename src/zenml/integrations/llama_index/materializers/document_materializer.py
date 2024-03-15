@@ -27,17 +27,22 @@ if TYPE_CHECKING:
 
 if TYPE_CHECKING and sys.version_info < (3, 8):
     Document = Any
+    LegacyDocument = Any
     LCDocument = Any
 else:
     from langchain.docstore.document import Document as LCDocument
     from llama_index.core import Document
+    from llama_index.legacy.schema import Document as LegacyDocument
 
 
 class LlamaIndexDocumentMaterializer(LangchainDocumentMaterializer):
     """Handle serialization and deserialization of llama-index documents."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Document,)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        Document,
+        LegacyDocument,
+    )
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads a llama-index document from JSON.
