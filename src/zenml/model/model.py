@@ -505,7 +505,17 @@ class Model(BaseModel):
 
     def _validate_config_in_runtime(self) -> None:
         """Validate that config doesn't conflict with runtime environment."""
-        self._get_or_create_model_version()
+        from zenml.utils.dashboard_utils import get_model_version_url
+
+        model_version = self._get_or_create_model_version()
+
+        model_version_url = get_model_version_url(model_version.id)
+        if model_version_url:
+            logger.info(f"Model version dashboard URL: {model_version_url}")
+        else:
+            logger.info(
+                "You can now view your Models in the ZenML dashboard using ZenML Cloud."
+            )
 
     def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.
@@ -619,7 +629,6 @@ class Model(BaseModel):
         """
         from zenml.client import Client
         from zenml.models import ModelVersionRequest
-        from zenml.utils.dashboard_utils import get_model_version_url
 
         model = self._get_or_create_model()
 
@@ -725,13 +734,7 @@ class Model(BaseModel):
             self.was_created_in_this_run = True
 
             logger.info(f"New model version `{self.version}` was created.")
-        model_version_url = get_model_version_url(model_version.id)
-        if model_version_url:
-            logger.info(f"Model version dashboard URL: {model_version_url}")
-        else:
-            logger.info(
-                "You can now view your Models in the ZenML dashboard using ZenML Cloud."
-            )
+
         self._id = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number
