@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML model deployers."""
 
-
 import contextlib
 from abc import ABC, abstractmethod
 from typing import (
