@@ -27,6 +27,8 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
+    StepRunInputArtifactType,
+    StepRunOutputArtifactType,
 )
 from zenml.models import (
     StepRunRequest,
@@ -58,7 +60,7 @@ class StepRunSchema(NamedSchema, table=True):
     # Fields
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
-    status: str = Field(nullable=False)
+    status: ExecutionStatus = Field(nullable=False)
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
@@ -163,7 +165,7 @@ class StepRunSchema(NamedSchema, table=True):
             user_id=request.user,
             start_time=request.start_time,
             end_time=request.end_time,
-            status=request.status.value,
+            status=request.status,
             original_step_run_id=request.original_step_run_id,
             pipeline_run_id=request.pipeline_run_id,
             deployment_id=request.deployment,
@@ -223,7 +225,7 @@ class StepRunSchema(NamedSchema, table=True):
 
         body = StepRunResponseBody(
             user=self.user.to_model() if self.user else None,
-            status=ExecutionStatus(self.status),
+            status=self.status,
             inputs=input_artifacts,
             outputs=output_artifacts,
             created=self.created,
@@ -268,7 +270,7 @@ class StepRunSchema(NamedSchema, table=True):
             exclude_unset=True, exclude_none=True
         ).items():
             if key == "status":
-                self.status = value.value
+                self.status = value
             if key == "end_time":
                 self.end_time = value
 
@@ -310,7 +312,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str = Field(nullable=False, primary_key=True)
-    type: str
+    type: StepRunInputArtifactType
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(
@@ -346,7 +348,7 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str
-    type: str
+    type: StepRunOutputArtifactType
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(
