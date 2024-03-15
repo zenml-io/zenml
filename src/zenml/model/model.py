@@ -504,7 +504,11 @@ class Model(BaseModel):
         return values
 
     def _validate_config_in_runtime(self) -> bool:
-        """Validate that config doesn't conflict with runtime environment."""
+        """Validate that config doesn't conflict with runtime environment.
+
+        Returns:
+            True, if the server is part of ZenML Cloud, False otherwise.
+        """
         from zenml.utils.dashboard_utils import get_model_version_url
 
         model_version = self._get_or_create_model_version()
