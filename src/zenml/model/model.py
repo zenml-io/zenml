@@ -503,7 +503,7 @@ class Model(BaseModel):
         values["suppress_class_validation_warnings"] = True
         return values
 
-    def _validate_config_in_runtime(self) -> None:
+    def _validate_config_in_runtime(self) -> bool:
         """Validate that config doesn't conflict with runtime environment."""
         from zenml.utils.dashboard_utils import get_model_version_url
 
@@ -511,11 +511,13 @@ class Model(BaseModel):
 
         model_version_url = get_model_version_url(model_version.id)
         if model_version_url:
-            logger.info(f"Model version dashboard URL: {model_version_url}")
-        else:
             logger.info(
-                "You can now view your Models in the ZenML dashboard using ZenML Cloud."
+                f"Dashboard URL for Model Version with name {model_version.name} "
+                f": {model_version_url}"
             )
+            return True
+        else:
+            return False
 
     def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.

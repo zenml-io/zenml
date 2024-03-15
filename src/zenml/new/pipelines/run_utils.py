@@ -232,6 +232,7 @@ def _validate_new_version_requests(
         new_versions_requested: A dict of new model version request objects.
 
     """
+    is_cloud_model = True
     for key, data in new_versions_requested.items():
         model_name, model_version = key
         if len(data.requesters) > 1:
@@ -241,4 +242,11 @@ def _validate_new_version_requests(
                 "that `Model` requesting new version is configured only in one "
                 "place of the pipeline."
             )
-        data.model._validate_config_in_runtime()
+        is_cloud_model = (
+            is_cloud_model and data.model._validate_config_in_runtime()
+        )
+    if not is_cloud_model:
+        logger.info(
+            "Models can be viewed in the dashboard using ZenML Cloud. Sign up "
+            "for a free trial at https://www.zenml.io/cloud/"
+        )
