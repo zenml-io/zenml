@@ -37,9 +37,9 @@ def get_base_url() -> Optional[str]:
 
     if client.zen_store.type == StoreType.REST:
         # if the server config has a base URL use that
-        server_config = ServerConfiguration.get_server_config()
-        if server_config.base_url:
-            url = server_config.base_url
+        server_model = client.zen_store.get_store_info()
+        if server_model.base_url:
+            url = server_model.base_url
             # if the base url has cloud.zenml.io in it, then it is a cloud
             # deployment and there isn't a workspace in the URL
             if "cloud.zenml.io" in url:
@@ -116,10 +116,11 @@ def get_model_version_url(model_version_id: UUID) -> Optional[str]:
     Returns:
         the URL to the model version if the dashboard is available, else None.
     """
-    server_config = ServerConfiguration.get_server_config()
+    client = Client()
+    server_model = client.zen_store.get_store_info()
     # if organization_id exists as key in server_config.metadata
     # only then output a URL.
-    if server_config.metadata.get("organization_id"):
+    if server_model.metadata.get("organization_id"):
         base_url = get_base_url()
         if base_url:
             # TODO MODEL_VERSIONS resolves to /model_versions but on the
