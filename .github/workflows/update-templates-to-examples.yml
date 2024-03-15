@@ -282,11 +282,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh LLM Finetuning template
         run: |
-          rm -rf examples/llm-finetuning
-          mkdir -p examples/llm-finetuning
-          printf 'info@zenml.io' | zenml init --path examples/llm-finetuning --template llm_finetuning --template-with-defaults
+          rm -rf examples/llm_finetuning
+          mkdir -p examples/llm_finetuning
+          printf 'info@zenml.io' | zenml init --path examples/llm_finetuning --template llm_finetuning --template-with-defaults
           pip install yamlfix
-          bash scripts/format.sh examples/llm-finetuning
+          bash scripts/format.sh examples/llm_finetuning
       - name: Check for changes
         id: check_changes
         run: |
@@ -316,5 +316,5 @@ jobs:
               issue_number: ${{ github.event.pull_request.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'LLM Finetuning template updates in `examples/llm-finetuning` have been pushed.'
+              body: 'LLM Finetuning template updates in `examples/llm_finetuning` have been pushed.'
             })
