@@ -10,6 +10,9 @@ ENV PYTHONFAULTHANDLER=1 \
 
 ARG ZENML_VERSION
 
+# Upgrade pip to the latest version
+RUN pip install --upgrade pip
+
 # install the given zenml version (default to latest)
 RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}
 
@@ -35,4 +38,4 @@ RUN mkdir -p /zenml/.zenconfig/local_stores/default_zen_store && chown -R $USER_
 ENV PATH="$PATH:/home/$USERNAME/.local/bin"
 
 ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
-CMD ["--proxy-headers", "--port", "8080", "--host",  "0.0.0.0"]
+CMD ["--port", "8080", "--host",  "0.0.0.0"]
