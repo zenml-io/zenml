@@ -71,7 +71,7 @@ def openai_alerter_failure_hook_helper(
                 }
             ],
         )
-        suggestion = response["choices"][0]["message"]["content"]
+        suggestion = response.choices[0].message.content
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
