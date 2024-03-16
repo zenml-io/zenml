@@ -170,7 +170,14 @@ class StepLogsStorageContext:
         Args:
             logs_uri: the URI of the logs file.
         """
-        self.storage = StepLogsStorage(logs_uri=logs_uri)
+        self.storage = StepLogsStorage(
+            logs_uri=logs_uri, max_messages=sys.maxsize
+        )
+        try:
+            with fileio.open(logs_uri, "r") as file:
+                self.storage.buffer = file.read().split("\n")
+        except FileNotFoundError:
+            pass
 
     def __enter__(self) -> "StepLogsStorageContext":
         """Enter condition of the context manager.
