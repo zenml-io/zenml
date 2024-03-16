@@ -6,7 +6,7 @@ import requests
 from pydantic import BaseModel, validator
 from requests.adapters import HTTPAdapter, Retry
 
-from zenml.exceptions import UpgradeRequiredError
+from zenml.exceptions import SubscriptionUpgradeRequiredError
 
 ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
 
@@ -93,7 +93,7 @@ class ZenMLCloudSession:
             response.raise_for_status()
         except requests.HTTPError:
             if response.status_code == 402:
-                raise UpgradeRequiredError(
+                raise SubscriptionUpgradeRequiredError(
                     "Subscription limit reached. Please "
                     "upgrade your subscription or "
                     "reach out to the ZenML team."

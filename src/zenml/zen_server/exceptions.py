@@ -27,7 +27,7 @@ from zenml.exceptions import (
     SecretExistsError,
     StackComponentExistsError,
     StackExistsError,
-    UpgradeRequiredError,
+    SubscriptionUpgradeRequiredError,
     ValidationError,
     ZenKeyError,
 )
@@ -79,7 +79,7 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 401 Unauthorized
     (AuthorizationException, 401),
     # 402 Payment required
-    (UpgradeRequiredError, 402),
+    (SubscriptionUpgradeRequiredError, 402),
     # 404 Not Found
     (DoesNotExistException, 404),
     (ZenKeyError, 404),

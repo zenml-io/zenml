@@ -17,7 +17,7 @@ from typing import Any, Dict
 from pydantic import BaseModel, Field
 
 from zenml.config.server_config import ServerConfiguration
-from zenml.exceptions import UpgradeRequiredError
+from zenml.exceptions import SubscriptionUpgradeRequiredError
 from zenml.logger import get_logger
 from zenml.zen_server.cloud_utils import ZenMLCloudSession
 from zenml.zen_server.feature_gate.feature_gate_interface import (
@@ -75,7 +75,7 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
         if response.status_code == 200:
             pass
         elif response.status_code == 402:
-            raise UpgradeRequiredError(
+            raise SubscriptionUpgradeRequiredError(
                 "Your organization reached its limit of {resource}. Please "
                 "upgrade your subscription or reach out to our us."
             )

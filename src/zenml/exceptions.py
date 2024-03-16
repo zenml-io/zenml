@@ -253,7 +253,7 @@ class InputResolutionError(ZenMLBaseException):
     """Raised when step input resolving failed."""
 
 
-class UpgradeRequiredError(ZenMLBaseException):
+class SubscriptionUpgradeRequiredError(ZenMLBaseException):
     """Raised when user tries to perform an action outside their current subscription tier."""
 
 class HydrationError(ZenMLBaseException):
