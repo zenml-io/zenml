@@ -36,7 +36,6 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    get_origin,
 )
 from uuid import UUID
 
@@ -50,7 +49,7 @@ from sqlalchemy.exc import (
     IntegrityError,
     NoResultFound,
 )
-from sqlalchemy.orm import Mapped, noload
+from sqlalchemy.orm import noload
 from sqlmodel import (
     Session,
     SQLModel,
@@ -868,10 +867,10 @@ class SqlZenStore(BaseZenStore):
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
         else:
-            total = (
-                session.query(func.count())
-                .select_from(query.options(noload("*")).subquery())
-                .scalar()
+            total = session.scalar(
+                select([func.count("*")]).select_from(
+                    query.options(noload("*")).subquery()
+                )
             )
 
         # Sorting
@@ -1375,7 +1374,9 @@ class SqlZenStore(BaseZenStore):
             # identity table with needed info.
             logger.info("Creating database tables")
             with self.engine.begin() as conn:
-                SQLModel.metadata.create_all(conn)
+                conn.run_callable(
+                    SQLModel.metadata.create_all  # type: ignore[arg-type]
+                )
             with Session(self.engine) as session:
                 session.add(
                     IdentitySchema(
@@ -2754,9 +2755,7 @@ class SqlZenStore(BaseZenStore):
                 if existing_component.name != component_update.name:
                     self._fail_if_component_with_name_type_exists(
                         name=component_update.name,
-                        component_type=StackComponentType(
-                            existing_component.type
-                        ),
+                        component_type=existing_component.type,
                         workspace_id=existing_component.workspace_id,
                         session=session,
                     )
@@ -7053,9 +7052,7 @@ class SqlZenStore(BaseZenStore):
         assert pipeline_run.deployment
         num_steps = len(pipeline_run.deployment.to_model().step_configurations)
         new_status = get_pipeline_run_status(
-            step_statuses=[
-                ExecutionStatus(step_run.status) for step_run in step_runs
-            ],
+            step_statuses=[step_run.status for step_run in step_runs],
             num_steps=num_steps,
         )
 
@@ -7465,8 +7462,6 @@ class SqlZenStore(BaseZenStore):
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
             annotation = UserSchema.__annotations__[resource_attr]
-            if get_origin(annotation) == Mapped:
-                annotation = annotation.__args__[0]
 
             # The annotation must be of the form
             # `typing.List[ForwardRef('<schema-class>')]`
@@ -7524,13 +7519,11 @@ class SqlZenStore(BaseZenStore):
         resource_attrs = self._get_resource_references()
         for schema, resource_attr in resource_attrs:
             # Check if the user owns any resources of this type
-            count = (
-                session.query(func.count())
+            count = session.scalar(
+                select([func.count("*")])
                 .select_from(schema)
                 .where(getattr(schema, resource_attr) == account.id)
-                .scalar()
             )
-
             if count > 0:
                 logger.debug(
                     f"User {account.name} owns {count} resources of type "

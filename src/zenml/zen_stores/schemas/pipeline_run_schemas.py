@@ -69,7 +69,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True, default=None)
-    status: str = Field(nullable=False)
+    status: ExecutionStatus = Field(nullable=False)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -208,7 +208,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             orchestrator_run_id=request.orchestrator_run_id,
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
-            status=request.status.value,
+            status=request.status,
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
@@ -282,7 +282,7 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         body = PipelineRunResponseBody(
             user=self.user.to_model() if self.user else None,
-            status=ExecutionStatus(self.status),
+            status=self.status,
             stack=stack,
             pipeline=pipeline,
             build=build,
@@ -327,7 +327,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             The updated `PipelineRunSchema`.
         """
         if run_update.status:
-            self.status = run_update.status.value
+            self.status = run_update.status
             self.end_time = run_update.end_time
 
         self.updated = datetime.utcnow()
@@ -372,7 +372,7 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
-        self.status = request.status.value
+        self.status = request.status
 
         self.updated = datetime.utcnow()
 
