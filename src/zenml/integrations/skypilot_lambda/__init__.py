@@ -19,18 +19,18 @@ orchestrator for a remote orchestration of ZenML pipelines on VMs.
 from typing import List, Type
 
 from zenml.integrations.constants import (
-    SKYPILOT_RUNPOD,
+    SKYPILOT_LAMBDA,
 )
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-SKYPILOT_RUNPOD_ORCHESTRATOR_FLAVOR = "vm_lambda"
+SKYPILOT_LAMBDA_ORCHESTRATOR_FLAVOR = "vm_lambda"
 
 
 class SkypilotLambdaIntegration(Integration):
     """Definition of Skypilot Lambda Integration for ZenML."""
 
-    NAME = SKYPILOT_RUNPOD
+    NAME = SKYPILOT_LAMBDA
     REQUIREMENTS = ["skypilot[lambda]<=0.5.0"]
 
     @classmethod

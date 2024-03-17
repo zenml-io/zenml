@@ -20,7 +20,7 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
     SkypilotBaseOrchestratorSettings,
 )
 from zenml.integrations.skypilot_lambda import (
-    SKYPILOT_RUNPOD_ORCHESTRATOR_FLAVOR,
+    SKYPILOT_LAMBDA_ORCHESTRATOR_FLAVOR,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -87,7 +87,7 @@ class SkypilotLambdaOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Name of the orchestrator flavor.
         """
-        return SKYPILOT_RUNPOD_ORCHESTRATOR_FLAVOR
+        return SKYPILOT_LAMBDA_ORCHESTRATOR_FLAVOR
 
     @property
     def docs_url(self) -> Optional[str]:

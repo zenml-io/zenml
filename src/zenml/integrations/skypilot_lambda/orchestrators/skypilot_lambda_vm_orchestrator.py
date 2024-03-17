@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-ENV_RUNPOD_API_KEY = "RUNPOD_API_KEY"
+ENV_LAMBDA_API_KEY = "LAMBDA_API_KEY"
 
 
 class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
@@ -82,6 +82,6 @@ class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
         if not self.config.api_key:
             raise ValueError("No token found in the orchestrator config.")
         if set:
-            os.environ[ENV_RUNPOD_API_KEY] = self.config.api_key
+            os.environ[ENV_LAMBDA_API_KEY] = self.config.api_key
         else:
-            os.environ.pop(ENV_RUNPOD_API_KEY, None)
+            os.environ.pop(ENV_LAMBDA_API_KEY, None)
