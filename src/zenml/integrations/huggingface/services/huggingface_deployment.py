@@ -182,7 +182,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             )
         else:
             logger.error(
-                f"Failed to start Hugging Face inference endpoint service: No URL available, please check the Hugging Face console for more details."
+                "Failed to start Hugging Face inference endpoint service: No URL available, please check the Hugging Face console for more details."
             )
 
     def check_status(self) -> Tuple[ServiceState, str]:
