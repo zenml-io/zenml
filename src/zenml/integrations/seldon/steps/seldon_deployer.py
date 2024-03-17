@@ -78,7 +78,6 @@ def seldon_model_deployer_step(
     # update the step configuration with the real pipeline runtime information
     service_config = service_config.copy()
     service_config.pipeline_name = pipeline_name
-    # service_config.run_name = run_name
     service_config.pipeline_step_name = step_name
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
