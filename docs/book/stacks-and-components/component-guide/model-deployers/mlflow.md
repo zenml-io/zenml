@@ -219,7 +219,7 @@ def prediction_service_loader(
     response.json()
 ```
 
-2. within the same pipeline, use the service from previous step to run inference this time using pre-built predict method
+2. Within the same pipeline, use the service from previous step to run inference this time using pre-built predict method
     
 ```python
 from typing_extensions import Annotated
