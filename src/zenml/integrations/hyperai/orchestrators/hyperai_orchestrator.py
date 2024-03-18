@@ -17,7 +17,7 @@ import os
 import re
 import tempfile
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast, IO
 
 import paramiko
 import yaml
@@ -132,7 +132,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
     def _scp_to_hyperai_instance(
         self,
         paramiko_client: paramiko.SSHClient,
-        f: tempfile.NamedTemporaryFile,
+        f: IO[str],
         directory_name: str,
         description: str,
     ) -> None:
