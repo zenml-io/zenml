@@ -35,7 +35,7 @@ def test_handle_json_env_var(monkeypatch):
     monkeypatch.setenv("TEST_VAR", '["hello", "world"]')
 
     # When we ask for that variable and expect it to be a List
-    result = handle_json_env_var("TEST_VAR", expected_type=List[str])
+    result = handle_json_env_var("TEST_VAR", expected_type=list)
 
     # Then we should get the list ["hello", "world"]
     assert result == ["hello", "world"]
@@ -44,7 +44,7 @@ def test_handle_json_env_var(monkeypatch):
     monkeypatch.setenv("TEST_VAR", "hello world")
 
     # When we ask for that variable and expect it to be a List
-    result = handle_json_env_var("TEST_VAR", expected_type=List[str])
+    result = handle_json_env_var("TEST_VAR", expected_type=list)
 
     # Then we should get an empty list (the default)
     assert result == []
@@ -53,7 +53,7 @@ def test_handle_json_env_var(monkeypatch):
     monkeypatch.setenv("TEST_VAR", '{"hello": "world"}')
 
     # When we ask for that variable and expect it to be a List
-    result = handle_json_env_var("TEST_VAR", expected_type=List[str])
+    result = handle_json_env_var("TEST_VAR", expected_type=list)
 
     # Then we should get an empty list (the default)
     assert result == []

@@ -240,7 +240,7 @@ DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY = 1000
 # ENV_ZENML_REPORTABLE_RESOURCES='["Foo", "bar"]'
 REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
     ENV_ZENML_SERVER_REPORTABLE_RESOURCES,
-    expected_type=List[str],
+    expected_type=list,
     default=["pipeline_run", "model"],
 )
 
