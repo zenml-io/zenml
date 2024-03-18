@@ -62,7 +62,7 @@ def openai_alerter_failure_hook_helper(
         sys.stdout = original_stdout
         rich_traceback = output_captured.getvalue()
 
-        response = openai.chat.completions.create(  # type: ignore
+        response = openai.chat.completions.create(
             model=model_name,
             messages=[
                 {

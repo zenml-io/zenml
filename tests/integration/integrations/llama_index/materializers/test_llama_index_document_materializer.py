@@ -19,7 +19,8 @@ from tests.unit.test_general import _test_materializer
 def test_llama_index_document_materializer(clean_client):
     """Tests whether the steps work for the Llama Index Document materializer."""
     from langchain.docstore.document import Document as LCDocument
-    from llama_index.readers.schema.base import Document
+    from llama_index.core import Document
+    from llama_index.core.schema import ObjectType
 
     from zenml.integrations.llama_index.materializers.document_materializer import (
         LlamaIndexDocumentMaterializer,
@@ -28,12 +29,12 @@ def test_llama_index_document_materializer(clean_client):
     page_content = (
         "Axl, Aria and Blupus were very cold during the winter months."
     )
-    langchain_document = _test_materializer(
+    document = _test_materializer(
         step_output=Document(text=page_content),
         materializer_class=LlamaIndexDocumentMaterializer,
         expected_metadata_size=2,
     )
 
-    assert langchain_document.get_type() == "Document"
-    assert langchain_document.text == page_content
-    assert isinstance(langchain_document.to_langchain_format(), LCDocument)
+    assert document.get_type() == ObjectType.DOCUMENT
+    assert document.text == page_content
+    assert isinstance(document.to_langchain_format(), LCDocument)

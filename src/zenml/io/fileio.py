@@ -94,7 +94,7 @@ def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
             f.write(contents)
 
 
-def copy_directory(src: str, dst: str) -> None:
+def copy_directory(src: "PathType", dst: "PathType") -> None:
     """Recursively copy a directory.
 
     Args:
@@ -102,12 +102,19 @@ def copy_directory(src: str, dst: str) -> None:
         dst: Where to copy the directory to.
     """
     for src_dir, _, files in walk(src):
-        dst_dir = os.path.join(dst, os.path.relpath(src_dir, src))
+        dst_dir = os.path.join(
+            convert_to_str(dst),
+            os.path.relpath(convert_to_str(src_dir), convert_to_str(src)),
+        )
         makedirs(dst_dir)
 
         for file in files:
-            src_file = os.path.join(src_dir, file)
-            dst_file = os.path.join(dst_dir, file)
+            src_file = os.path.join(
+                convert_to_str(src_dir), convert_to_str(file)
+            )
+            dst_file = os.path.join(
+                convert_to_str(dst_dir), convert_to_str(file)
+            )
             copy(src_file, dst_file)
 
 
