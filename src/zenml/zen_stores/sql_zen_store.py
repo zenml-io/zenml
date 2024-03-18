@@ -39,7 +39,6 @@ from typing import (
 )
 from uuid import UUID
 
-import requests
 from pydantic import Field, SecretStr, root_validator, validator
 from pydantic.json import pydantic_encoder
 from sqlalchemy import asc, desc, func
@@ -1859,13 +1858,6 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get service with ID {service_id}: No "
                     "service with this ID found."
                 )
-                # Perform health check if health_check_url is set
-            if service.health_check_url:
-                response = requests.get(service.health_check_url, timeout=5)
-                service.state = (
-                    "active" if response.status_code == 200 else "inactive"
-                )
-
             return service.to_model(
                 include_metadata=hydrate, include_resources=hydrate
             )
