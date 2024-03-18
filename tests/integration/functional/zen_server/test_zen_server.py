@@ -17,8 +17,13 @@ import platform
 import pytest
 import requests
 
+from zenml.client import Client
+from zenml.constants import DEFAULT_USERNAME
+from zenml.enums import StoreType
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.deploy import ServerDeployer, ServerDeploymentConfig
+from zenml.zen_server.utils import server_config
+from zenml.zen_stores.rest_zen_store import RestZenStore
 
 SERVER_START_STOP_TIMEOUT = 60
 
@@ -73,3 +78,17 @@ def test_server_up_down(clean_client, mocker):
                 print(line)
             raise
     assert deployer.list_servers() == []
+
+
+def test_rate_limit_is_not_impacted_by_successful_requests():
+    zen_store = Client().zen_store
+    if zen_store.type == StoreType.SQL:
+        pytest.skip("SQL ZenStore does not support rate limiting.")
+
+    assert Client().active_user.name == DEFAULT_USERNAME
+    zen_store: RestZenStore = zen_store
+
+    repeat = server_config().login_rate_limit_minute * 2
+    for _ in range(repeat):
+        zen_store.clear_session()
+        zen_store.session
