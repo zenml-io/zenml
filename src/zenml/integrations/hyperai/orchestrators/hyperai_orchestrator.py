@@ -17,7 +17,7 @@ import os
 import re
 import tempfile
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast, IO
+from typing import IO, TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import paramiko
 import yaml
