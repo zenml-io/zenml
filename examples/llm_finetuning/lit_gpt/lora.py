@@ -373,7 +373,9 @@ class LoRAQKVLinear(LoRALinear):
         )  # (4096, 256)
         return result.view(
             (*x.shape[:-1], self.linear.out_features)
-        ).transpose(0, 1)  # (64, 64, 384)
+        ).transpose(
+            0, 1
+        )  # (64, 64, 384)
 
     def conv1d(
         self, input: torch.Tensor, weight: torch.Tensor

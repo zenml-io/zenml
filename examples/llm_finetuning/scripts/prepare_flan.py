@@ -1,7 +1,6 @@
 # Copyright Lightning AI. Licensed under the Apache License 2.0, see LICENSE file.
 
 """Implementation derived from https://github.com/tloen/alpaca-lora"""
-
 import json
 import sys
 from pathlib import Path
@@ -16,6 +15,7 @@ sys.path.append(str(wd))
 
 from lit_gpt.tokenizer import Tokenizer
 from lit_gpt.utils import CLI
+
 from scripts.prepare_alpaca import download_if_missing
 
 
