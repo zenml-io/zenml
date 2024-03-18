@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """All endpoint utils for the feature gate implementations."""
+
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import feature_gate, server_config
 

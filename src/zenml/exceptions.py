@@ -256,6 +256,7 @@ class InputResolutionError(ZenMLBaseException):
 class SubscriptionUpgradeRequiredError(ZenMLBaseException):
     """Raised when user tries to perform an action outside their current subscription tier."""
 
+
 class HydrationError(ZenMLBaseException):
     """Raised when the model hydration failed."""
 

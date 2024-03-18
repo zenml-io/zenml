@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Definition of the feature gate interface."""
+
 from abc import ABC, abstractmethod
 
 from zenml.zen_server.rbac.models import ResourceType

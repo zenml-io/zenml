@@ -1,4 +1,5 @@
 """Utils concerning anything concerning the cloud control plane backend."""
+
 import os
 from typing import Any, Dict, Optional
 
@@ -100,8 +101,7 @@ class ZenMLCloudSession:
                 )
             else:
                 raise RuntimeError(
-                    f"Failed with the following error. "
-                    f"{response.json()}"
+                    f"Failed with the following error. " f"{response.json()}"
                 )
 
         return response

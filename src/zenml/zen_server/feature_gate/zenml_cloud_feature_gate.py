@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML Cloud implementation of the feature gate."""
+
 from typing import Any, Dict
 
 from pydantic import BaseModel, Field

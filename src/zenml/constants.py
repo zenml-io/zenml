@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML constants."""
+
 import json
 import logging
 import os
@@ -145,7 +146,9 @@ ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES = (
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
 ENV_ZENML_SERVER_DEPLOYMENT_TYPE = f"{ENV_ZENML_SERVER_PREFIX}DEPLOYMENT_TYPE"
 ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
-ENV_ZENML_SERVER_REPORTABLE_RESOURCES = f"{ENV_ZENML_SERVER_PREFIX}REPORTABLE_RESOURCES"
+ENV_ZENML_SERVER_REPORTABLE_RESOURCES = (
+    f"{ENV_ZENML_SERVER_PREFIX}REPORTABLE_RESOURCES"
+)
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -231,7 +234,7 @@ DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
     ENV_ZENML_SERVER_REPORTABLE_RESOURCES,
     expected_type=List[str],
-    default=["pipeline_run", "model"]
+    default=["pipeline_run", "model"],
 )
 
 # API Endpoint paths:

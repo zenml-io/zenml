@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Functionality to support ZenML GlobalConfiguration."""
+
 import json
 import os
 from secrets import token_hex
