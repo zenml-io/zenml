@@ -1,8 +1,8 @@
 # Changes here will be overwritten by Copier
-_commit: 2024.03.14
-_src_path: .
+_commit: 2024.03.18
+_src_path: gh:zenml-io/template-llm-finetuning
 cuda_version: cuda11.8
-email: info@zenml.io
+email: ''
 from_safetensors: false
 full_name: ZenML GmbH
 huggingface_adapter_model_repository: ''

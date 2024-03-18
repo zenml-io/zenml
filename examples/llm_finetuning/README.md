@@ -1,6 +1,9 @@
 # ☮️ Fine-tuning open source LLMs using MLOps pipelines
 
-The goal of this project is to use [ZenML](https://github.com/zenml-io/zenml) to write reusable MLOps pipelines to fine-tune various opens source LLMs.
+Welcome to your newly generated "ZenML LLM Finetuning project" project! This is
+a great way to get hands-on with ZenML using production-like template. 
+The project contains a collection of ZenML steps, pipelines and other artifacts
+and useful resources that can serve as a solid starting point for finetuning open-source LLMs using ZenML.
 
 Using these pipelines, we can run the data-preparation and model finetuning with a single command while using YAML files for [configuration](https://docs.zenml.io/user-guide/production-guide/configure-pipeline) and letting ZenML take care of tracking our metadata and [containerizing our pipelines](https://docs.zenml.io/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline).
 
@@ -18,11 +21,15 @@ This project heavily relies on the [Lit-GPT project](https://github.com/Lightnin
 
 ## 🏃 How to run
 
-In this repository we provide a few predefined configuration files for finetuning the [Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1) model on the [Alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca) dataset. You can change both the base model and dataset by modifying the configuration files.
+In this project we provide a few predefined configuration files for finetuning models on the [Alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca) dataset. Before we're able to run any pipeline, we need to set up our environment as follows:
 
-If you want to push any of your finetuned adapters or merged models to huggingface, you will need to register a secret with your huggingface access token as follows:
-```shell
-zenml secret create huggingface_credentials --token=<HUGGINGFACE_TOKEN>
+```bash
+# Set up a Python virtual environment, if you haven't already
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install requirements
+pip install -r requirements.txt
 ```
 
 ### Combined feature engineering and finetuning pipeline
@@ -67,7 +74,7 @@ To finetune an LLM on remote infrastructure, you can either use a remote orchest
 - Register the [orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators) (or [step operator](https://docs.zenml.io/stacks-and-components/component-guide/step-operators)) and make sure to configure it in a way so that the finetuning step has access to a GPU with at least 24GB of VRAM. Check out our docs for more [details](https://docs.zenml.io/stacks-and-components/component-guide).
     - To access GPUs with this amount of VRAM, you might need to increase your GPU quota ([AWS](https://docs.aws.amazon.com/servicequotas/latest/userguide/request-quota-increase.html), [GCP](https://console.cloud.google.com/iam-admin/quotas), [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-quotas?view=azureml-api-2#request-quota-and-limit-increases)).
     - The GPU instance that your finetuning will be running on will have CUDA drivers of a specific version installed. If that CUDA version is not compatible with the one provided by the default Docker image of the finetuning pipeline, you will need to modify it in the configuration file. See [here](https://hub.docker.com/r/pytorch/pytorch/tags) for a list of available PyTorch images.
-    - If you're running out of memory, you can experiment with quantized LoRA (QLoRA) by setting a different value for the `quantize` parameter in the configuration, or reduce the `global_batch_size`.
+    - If you're running out of memory, you can experiment with quantized LoRA (QLoRA) by setting a different value for the `quantize` parameter in the configuration, or reduce the `global_batch_size`/`micro_batch_size`.
 - Register a remote [artifact store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores) and [container registry](https://docs.zenml.io/stacks-and-components/component-guide/container-registries).
 - Register a stack with all these components
     ```shell
@@ -87,4 +94,35 @@ With all that in place, you can now run the feature engineering pipeline to conv
 ```shell
 python run.py --feature-pipeline --config feature-custom.yaml
 python run.py --finetuning-pipeline --config finetune-from-dataset.yaml
+```
+
+## 📜 Project Structure
+
+The project loosely follows [the recommended ZenML project structure](https://docs.zenml.io/user-guide/starter-guide/follow-best-practices):
+
+```
+.
+├── configs                         # pipeline configuration files
+│   ├── eval.yaml                   # configuration for the evaluation pipeline
+│   ├── feature-alpaca.yaml         # configuration for the feature engineering pipeline
+│   ├── feature-custom.yaml         # configuration for the feature engineering pipeline
+│   ├── finetune-alpaca.yaml        # configuration for the finetuning pipeline
+│   ├── finetune-from-dataset.yaml  # configuration for the finetuning pipeline
+│   └── merge.yaml                  # configuration for the merging pipeline
+├── pipelines                       # `zenml.pipeline` implementations
+│   ├── evaluate.py                 # Evaluation pipeline
+│   ├── feature_engineering.py      # Feature engineering pipeline
+│   ├── finetuning.py               # Finetuning pipeline
+│   └── merge.py                    # Merging pipeline
+├── steps                           # logically grouped `zenml.steps` implementations
+│   ├── evaluate.py                 # evaluate model performance
+│   ├── feature_engineering.py      # preprocess data
+│   ├── finetune.py                 # finetune a model
+│   ├── merge.py                    # merge model and adapter
+│   ├── params.py                   # shared parameters for steps
+│   └── utils.py                    # utility functions
+├── .dockerignore
+├── README.md                       # this file
+├── requirements.txt                # extra Python dependencies 
+└── run.py                          # CLI tool to run pipelines on ZenML Stack
 ```
