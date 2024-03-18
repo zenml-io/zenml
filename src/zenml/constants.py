@@ -227,6 +227,8 @@ DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING = 5  # seconds
 DEFAULT_HTTP_TIMEOUT = 30
 ZENML_API_KEY_PREFIX = "ZENKEY_"
 DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
+DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE = 5
+DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY = 1000
 
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:

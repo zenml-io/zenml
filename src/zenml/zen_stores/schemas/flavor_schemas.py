@@ -46,7 +46,7 @@ class FlavorSchema(NamedSchema, table=True):
 
     __tablename__ = "flavor"
 
-    type: str
+    type: StackComponentType
     source: str
     config_schema: str = Field(sa_column=Column(TEXT, nullable=False))
     integration: Optional[str] = Field(default="")
@@ -98,8 +98,6 @@ class FlavorSchema(NamedSchema, table=True):
         ).items():
             if field == "config_schema":
                 setattr(self, field, json.dumps(value))
-            elif field == "type":
-                setattr(self, field, value.value)
             else:
                 setattr(self, field, value)
 
@@ -125,7 +123,7 @@ class FlavorSchema(NamedSchema, table=True):
         """
         body = FlavorResponseBody(
             user=self.user.to_model() if self.user else None,
-            type=StackComponentType(self.type),
+            type=self.type,
             integration=self.integration,
             logo_url=self.logo_url,
             created=self.created,

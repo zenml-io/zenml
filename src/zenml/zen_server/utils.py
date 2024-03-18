@@ -15,11 +15,25 @@
 
 import inspect
 import os
+import time
+from collections import defaultdict
 from functools import wraps
-from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ValidationError
+from starlette.requests import Request
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
@@ -43,6 +57,10 @@ from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+if TYPE_CHECKING:
+    pass
+
 
 logger = get_logger(__name__)
 
@@ -351,6 +369,154 @@ def handle_exceptions(func: F) -> F:
             raise http_exception
 
     return cast(F, decorated)
+
+
+class RequestLimiter:
+    """Simple in-memory rate limiter."""
+
+    def __init__(
+        self,
+        day_limit: Optional[int] = None,
+        minute_limit: Optional[int] = None,
+    ):
+        """Initializes the limiter.
+
+        Args:
+            day_limit: The number of requests allowed per day.
+            minute_limit: The number of requests allowed per minute.
+
+        Raises:
+            ValueError: If both day_limit and minute_limit are None.
+        """
+        self.limiting_enabled = server_config().rate_limit_enabled
+        if not self.limiting_enabled:
+            return
+        if day_limit is None and minute_limit is None:
+            raise ValueError("Pass either day or minuter limits, or both.")
+        self.day_limit = day_limit
+        self.minute_limit = minute_limit
+        self.limiter: Dict[str, List[float]] = defaultdict(list)
+
+    def hit_limiter(self, request: Request) -> None:
+        """Increase the number of hits in the limiter.
+
+        Args:
+            request: Request object.
+
+        Raises:
+            HTTPException: If the request limit is exceeded.
+        """
+        if not self.limiting_enabled:
+            return
+        from fastapi import HTTPException
+
+        requester = self._get_ipaddr(request)
+        now = time.time()
+        minute_ago = now - 60
+        day_ago = now - 60 * 60 * 24
+        self.limiter[requester].append(now)
+
+        from bisect import bisect_left
+
+        # remove failures older than a day
+        older_index = bisect_left(self.limiter[requester], day_ago)
+        self.limiter[requester] = self.limiter[requester][older_index:]
+
+        if self.day_limit and len(self.limiter[requester]) > self.day_limit:
+            raise HTTPException(
+                status_code=429, detail="Daily request limit exceeded."
+            )
+        minute_requests = len(
+            [
+                limiter_hit
+                for limiter_hit in self.limiter[requester][::-1]
+                if limiter_hit >= minute_ago
+            ]
+        )
+        if self.minute_limit and minute_requests > self.minute_limit:
+            raise HTTPException(
+                status_code=429, detail="Minute request limit exceeded."
+            )
+
+    def reset_limiter(self, request: Request) -> None:
+        """Resets the limiter on successful request.
+
+        Args:
+            request: Request object.
+        """
+        if self.limiting_enabled:
+            requester = self._get_ipaddr(request)
+            if requester in self.limiter:
+                del self.limiter[requester]
+
+    def _get_ipaddr(self, request: Request) -> str:
+        """Returns the IP address for the current request.
+
+        Based on the X-Forwarded-For headers or client information.
+
+        Args:
+            request: The request object.
+
+        Returns:
+            The ip address for the current request (or 127.0.0.1 if none found).
+        """
+        if "X_FORWARDED_FOR" in request.headers:
+            return request.headers["X_FORWARDED_FOR"]
+        else:
+            if not request.client or not request.client.host:
+                return "127.0.0.1"
+
+            return request.client.host
+
+
+def rate_limit_requests(
+    day_limit: Optional[int] = None,
+    minute_limit: Optional[int] = None,
+) -> Callable[..., Any]:
+    """Decorator to handle exceptions in the API.
+
+    Args:
+        day_limit: Number of requests allowed per day.
+        minute_limit: Number of requests allowed per minute.
+
+    Returns:
+        Decorated function.
+    """
+    limiter = RequestLimiter(day_limit=day_limit, minute_limit=minute_limit)
+
+    def decorator(func: F) -> F:
+        request_arg, request_kwarg = None, None
+        parameters = inspect.signature(func).parameters
+        for arg_num, arg_name in enumerate(parameters):
+            if parameters[arg_name].annotation == Request:
+                request_arg = arg_num
+                request_kwarg = arg_name
+                break
+        if request_arg is None or request_kwarg is None:
+            raise ValueError(
+                "Rate limiting APIs must have argument of `Request` type."
+            )
+
+        @wraps(func)
+        def decorated(
+            *args: Any,
+            **kwargs: Any,
+        ) -> Any:
+            if request_kwarg in kwargs:
+                request = kwargs[request_kwarg]
+            else:
+                request = args[request_arg]
+            limiter.hit_limiter(request)
+
+            ret = func(*args, **kwargs)
+
+            # if request was successful - reset limiter
+            limiter.reset_limiter(request)
+            return ret
+
+        return cast(F, decorated)
+
+    return decorator
 
 
 # Code from https://github.com/tiangolo/fastapi/issues/1474#issuecomment-1160633178
