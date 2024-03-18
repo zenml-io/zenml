@@ -192,7 +192,7 @@ def my_pipeline(...):
     ...
 ```
 
-*   Specify a list of pip requirements in code:
+*   Specify a list of requirements in code:
 
     ```python
     docker_settings = DockerSettings(requirements=["torch==1.12.0", "torchvision"])
@@ -201,7 +201,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-*   Specify a pip requirements file:
+*   Specify a requirements file:
 
     ```python
     docker_settings = DockerSettings(requirements="/path/to/requirements.txt")
@@ -253,7 +253,7 @@ def my_training_step(...):
 ```
 
 {% hint style="info" %}
-You can combine these methods but do make sure that your list of pip requirements does not overlap with the ones specified explicitly in the docker settings.
+You can combine these methods but do make sure that your list of requirements does not overlap with the ones specified explicitly in the Docker settings.
 {% endhint %}
 
 Depending on the options specified in your Docker settings, ZenML installs the requirements in the following order (each step optional):
@@ -261,6 +261,20 @@ Depending on the options specified in your Docker settings, ZenML installs the r
 * The packages installed in your local Python environment
 * The packages specified via the `requirements` attribute (step level overwrites pipeline level)
 * The packages specified via the `required_integrations` and potentially stack requirements
+
+* **Experimental**: If you want to use [`uv`](https://github.com/astral-sh/uv) for faster resolving and installation of your Python packages, you can use by it as follows:
+
+```python
+docker_settings = DockerSettings(python_package_installer="uv")
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
+{% hint style="info" %}
+`uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation.
+If this happens, try switching the installer back to `pip` and see if that solves the issue.
+{% endhint %}
 
 ### Using a custom parent image
 
