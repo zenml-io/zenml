@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator Lambda flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorConfig,
@@ -44,18 +44,6 @@ class SkypilotLambdaOrchestratorSettings(SkypilotBaseOrchestratorSettings):
         "image_id": "Custom image IDs not supported for Lambda orchestrator.",
         # Add other unsupported features as needed
     }
-
-    def __init__(self, *args: List[Any], **kwargs: Dict[str, Any]) -> None:
-        """Initialize the SkypilotLambdaOrchestratorSettings.
-
-        Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-        """
-        super().__init__(*args, **kwargs)
-        for attr in self._UNSUPPORTED_FEATURES.keys():
-            if hasattr(self, attr):
-                delattr(self, attr)
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Set attribute.

@@ -41,7 +41,7 @@ class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
     This orchestrator does not support running on a schedule.
     """
 
-    DEFAULT_INSTANCE_TYPE: str = "NVIDIA A100 80GB PCIe"
+    DEFAULT_INSTANCE_TYPE: str = "gpu_1x_a10"
 
     @property
     def cloud(self) -> sky.clouds.Cloud:
@@ -79,9 +79,18 @@ class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
         Raises:
             ValueError: If no service connector is found.
         """
-        if not self.config.api_key:
-            raise ValueError("No token found in the orchestrator config.")
-        if set:
-            os.environ[ENV_LAMBDA_API_KEY] = self.config.api_key
-        else:
-            os.environ.pop(ENV_LAMBDA_API_KEY, None)
+        pass
+
+    def setup_credentials(self) -> None:
+        """Set up credentials for the orchestrator."""
+        # Define the directory and file paths
+        directory = os.path.expanduser("~/.lambda_cloud")
+        file_path = os.path.join(directory, "lambda_keys")
+
+        # Check if the directory exists, and create it if it doesn't
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # Write the API key to the file, creating or overwriting it
+        with open(file_path, "w") as file:
+            file.write(f"api_key = {self.config.api_key}")
