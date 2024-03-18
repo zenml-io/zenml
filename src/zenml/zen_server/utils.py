@@ -32,7 +32,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from fastapi import Response
 from pydantic import BaseModel, ValidationError
 from starlette.requests import Request
 
@@ -57,7 +56,7 @@ from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 if TYPE_CHECKING:
-    from zenml.zen_server.routers.auth_endpoints import OAuthLoginRequestForm
+    pass
 
 
 logger = get_logger(__name__)
@@ -457,23 +456,33 @@ def rate_limit_requests(
     limiter = RequestLimiter(day_limit=day_limit, minute_limit=minute_limit)
 
     def decorator(func: F) -> F:
+        request_arg, request_kwarg = None, None
+        annotations = inspect.get_annotations(func)
+        for arg_num, arg_name in enumerate(annotations):
+            if arg_name != "return" and annotations[arg_name] == Request:
+                request_arg = arg_num
+                request_kwarg = arg_name
+                break
+        if request_arg is None or request_kwarg is None:
+            raise ValueError(
+                "Rate limiting APIs must have argument of `Request` type."
+            )
+
         @wraps(func)
         def decorated(
-            request: Request,
-            response: Response,
-            auth_form_data: "OAuthLoginRequestForm",
+            *args: Any,
+            **kwargs: Any,
         ) -> Any:
-            try:
-                limiter.hit_limiter(request)
-                ret = func(
-                    request=request,
-                    response=response,
-                    auth_form_data=auth_form_data,
-                )
-            except Exception as e:
-                raise e
+            if request_kwarg in kwargs:
+                request = kwargs[request_kwarg]
             else:
-                limiter.reset_limiter(request)
+                request = args[request_arg]
+            limiter.hit_limiter(request)
+
+            ret = func(*args, **kwargs)
+
+            # if request was successful - reset limiter
+            limiter.reset_limiter(request)
             return ret
 
         return cast(F, decorated)
