@@ -30,9 +30,9 @@ class BitbucketWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
     """Enables users to configure Bitbucket event sources."""
 
     FLAVOR: ClassVar[str] = BITBUCKET_EVENT_FLAVOR
-    PLUGIN_CLASS: ClassVar[
-        Type[BitbucketWebhookEventSourceHandler]
-    ] = BitbucketWebhookEventSourceHandler
+    PLUGIN_CLASS: ClassVar[Type[BitbucketWebhookEventSourceHandler]] = (
+        BitbucketWebhookEventSourceHandler
+    )
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[
