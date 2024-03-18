@@ -217,8 +217,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Depending on whether it is a scheduled or a realtime pipeline, add
             # potential .env file to service definition for deployment ID override.
             if deployment.schedule:
-                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment
-                del environment[ENV_ZENML_HYPERAI_RUN_ID]
+                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment but only if it is set
+                if ENV_ZENML_HYPERAI_RUN_ID in environment:
+                    del environment[ENV_ZENML_HYPERAI_RUN_ID]
                 compose_definition["services"][container_name]["env_file"] = [
                     ".env"
                 ]
@@ -229,17 +230,25 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps
-            for upstream_step_name in upstream_steps:
-                upstream_container_name = (
-                    f"{deployment_id}-{upstream_step_name}"
-                )
+
+            if len(upstream_steps) > 0:
                 compose_definition["services"][container_name][
                     "depends_on"
-                ] = {
-                    upstream_container_name: {
-                        "condition": "service_completed_successfully"
-                    }
-                }
+                ] = {}
+
+                for upstream_step_name in upstream_steps:
+                    upstream_container_name = (
+                        f"{deployment_id}-{upstream_step_name}"
+                    )
+                    compose_definition["services"][container_name][
+                        "depends_on"
+                    ].update(
+                        {
+                            upstream_container_name: {
+                                "condition": "service_completed_successfully"
+                            }
+                        }
+                    )
 
         # Convert into yaml
         logger.info("Finalizing Docker Compose definition.")

@@ -44,6 +44,7 @@ integrations:
 | [MLflow](mlflow.md)                | `mlflow`  | `mlflow`      | Deploys ML Model locally                                                     |
 | [BentoML](bentoml.md)              | `bentoml` | `bentoml`     | Build and Deploy ML models locally or for production grade (Cloud, K8s)      |
 | [Seldon Core](seldon.md)           | `seldon`  | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
+| [Hugging Face](huggingface.md) | `huggingface` | `huggingface` | Deploys ML model on Hugging Face Inference Endpoints |
 | [Custom Implementation](custom.md) | _custom_  |               | Extend the Artifact Store abstraction and provide your own implementation    |
 
 {% hint style="info" %}
@@ -85,6 +86,7 @@ zenml model-deployer register seldon --flavor=seldon \
    ...
    zenml stack register seldon_stack -m default -a aws -o default -d seldon
    ```
+
 2. Implements the continuous deployment logic necessary to deploy models in a way that updates an existing model server
    that is already serving a previous version of the same model instead of creating a new model server for every new
    model version. Every model server that the Model Deployer provisions externally to deploy a model is represented
