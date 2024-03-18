@@ -381,17 +381,10 @@ class RequestLimiter:
         day_ago = now - 60 * 60 * 24
         self.limiter[requester].append(now)
 
+        from bisect import bisect_left
         # remove failures older than a day
-        older_index = None
-        for i, limiter_hit in enumerate(self.limiter[requester]):
-            if limiter_hit < day_ago:
-                older_index = i
-            else:
-                break
-        if older_index is not None:
-            self.limiter[requester] = self.limiter[requester][
-                older_index + 1 :
-            ]
+        older_index = bisect_left(self.limiter[requester], day_ago)
+        self.limiter[requester] = self.limiter[requester][older_index:]
 
         if self.day_limit and len(self.limiter[requester]) > self.day_limit:
             raise HTTPException(
