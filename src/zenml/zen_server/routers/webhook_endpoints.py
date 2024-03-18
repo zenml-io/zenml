@@ -69,6 +69,9 @@ def webhook(
         background_tasks: Background task handler
         raw_body: The raw request body
 
+    Returns:
+        Static dict stating that event is received.
+
     Raises:
         AuthorizationException: If the Event Source does not exist.
         KeyError: If no appropriate Plugin found in the plugin registry
