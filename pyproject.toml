@@ -305,6 +305,12 @@ exclude = [
     "venv",
     '__init__.py',
     'src/zenml/cli/version.py',
+    # LitGPT files from the LLM Finetuning example
+    'examples/llm_finetuning/evaluate',
+    'examples/llm_finetuning/finetune',
+    'examples/llm_finetuning/generate',
+    'examples/llm_finetuning/lit_gpt',
+    'examples/llm_finetuning/scripts',
 ]
 
 src = ["src", "test"]

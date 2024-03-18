@@ -3329,6 +3329,7 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.created
                     == max_date_subquery.c.max_created,
                 )
+                .order_by(desc(PipelineRunSchema.updated))
             )
 
             return self.filter_and_paginate(

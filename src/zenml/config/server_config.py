@@ -26,6 +26,8 @@ from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
+    DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     ENV_ZENML_SERVER_PREFIX,
@@ -119,6 +121,8 @@ class ServerConfiguration(BaseModel):
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
             server.
+        login_rate_limit_minute: The number of login attempts allowed per minute.
+        login_rate_limit_day: The number of login attempts allowed per day.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -156,6 +160,10 @@ class ServerConfiguration(BaseModel):
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
     )
+
+    rate_limit_enabled: bool = False
+    login_rate_limit_minute: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE
+    login_rate_limit_day: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY
 
     _deployment_id: Optional[UUID] = None
 
