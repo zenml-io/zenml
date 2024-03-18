@@ -73,22 +73,18 @@ def base_service():
 
 
 # Update the test_from_model to handle the case when service_source is missing
-def test_from_model(sample_service_response):
-    service = BaseService.from_model(sample_service_response)
+def test_from_model(service_response):
+    service = BaseService.from_model(service_response)
     assert isinstance(service, TestService)
-    assert service.uuid == sample_service_response.id
-    assert service.admin_state == sample_service_response.admin_state
-    assert service.config == sample_service_response.config
-    assert service.status == sample_service_response.status
+    assert service.uuid == service_response.id
+    assert service.admin_state == service_response.admin_state
+    assert service.config == service_response.config
+    assert service.status == service_response.status
+    assert service.SERVICE_TYPE["type"] == service_response.service_type.type
     assert (
-        service.SERVICE_TYPE["type"]
-        == sample_service_response.service_type.type
+        service.SERVICE_TYPE["flavor"] == service_response.service_type.flavor
     )
-    assert (
-        service.SERVICE_TYPE["flavor"]
-        == sample_service_response.service_type.flavor
-    )
-    assert service.endpoint == sample_service_response.endpoint
+    assert service.endpoint == service_response.endpoint
 
 
 def test_update_status(base_service, monkeypatch):

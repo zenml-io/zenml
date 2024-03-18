@@ -59,7 +59,7 @@ updated_time = datetime(2023, 3, 14, 11, 45)
 
 
 @pytest.fixture
-def sample_service_response(
+def service_response(
     sample_workspace_model,
 ):
     body = ServiceResponseBody(
@@ -87,19 +87,19 @@ def sample_service_response(
     )
 
 
-def test_service_response_properties(sample_service_response):
-    assert sample_service_response.service_type == service_type
-    assert sample_service_response.labels == labels
-    assert sample_service_response.service_source == service_source
-    assert sample_service_response.config == config
-    assert sample_service_response.status == status
-    assert sample_service_response.endpoint == endpoint
-    assert sample_service_response.created == created_time
-    assert sample_service_response.updated == updated_time
-    assert sample_service_response.admin_state == admin_state
-    assert sample_service_response.prediction_url == prediction_url
-    assert sample_service_response.health_check_url == health_check_url
-    assert sample_service_response.state == admin_state
+def test_service_response_properties(service_response):
+    assert service_response.service_type == service_type
+    assert service_response.labels == labels
+    assert service_response.service_source == service_source
+    assert service_response.config == config
+    assert service_response.status == status
+    assert service_response.endpoint == endpoint
+    assert service_response.created == created_time
+    assert service_response.updated == updated_time
+    assert service_response.admin_state == admin_state
+    assert service_response.prediction_url == prediction_url
+    assert service_response.health_check_url == health_check_url
+    assert service_response.state == admin_state
 
 
 def test_service_request_name_too_long():
