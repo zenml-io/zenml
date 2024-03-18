@@ -57,14 +57,16 @@ class BitbucketEventType(StrEnum):
 
 
 class User(BaseModel):
-    """Bitbucket User"""
+    """Bitbucket User."""
+
     name: Optional[str]
     email: Optional[str]
     username: Optional[str]
 
 
 class Commit(BaseModel):
-    """Bitbucket Commit"""
+    """Bitbucket Commit."""
+
     hash: str
     message: str
     links: dict
@@ -72,7 +74,8 @@ class Commit(BaseModel):
 
 
 class Repository(BaseModel):
-    """Bitbucket Repository"""
+    """Bitbucket Repository."""
+
     uuid: str
     name: str
     full_name: str
@@ -80,19 +83,22 @@ class Repository(BaseModel):
 
 
 class PushChange(BaseModel):
-    """Bitbucket Push Change"""
+    """Bitbucket Push Change."""
+
     new: Optional[dict]
     old: Optional[dict]
     commits: List[Commit]
 
 
 class Push(BaseModel):
-    """Bitbucket Push"""
+    """Bitbucket Push."""
+
     changes: List[PushChange]
 
 
 class BitbucketEvent(BaseModel):
-    """Bitbucket Event"""
+    """Bitbucket Event."""
+
     actor: User
     repository: Repository
     push: Push

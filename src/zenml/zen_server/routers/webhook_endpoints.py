@@ -15,7 +15,7 @@
 from typing import Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import PluginSubType, PluginType
