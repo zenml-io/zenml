@@ -34,6 +34,7 @@ To use the Kaniko image builder, we need:
   transfer the build context by storing it in the artifact store, you need to register it with
   the `store_context_in_artifact_store` attribute set to `True`. In this case, you also need
   a [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
+* Optionally, you can change the timeout (in seconds) until the Kaniko pod is running in the orchestrator using the `pod_running_timeout` attribute.
 
 We can then register the image builder and use it in our active stack:
 
@@ -41,6 +42,7 @@ We can then register the image builder and use it in our active stack:
 zenml image-builder register <NAME> \
     --flavor=kaniko \
     --kubernetes_context=<KUBERNETES_CONTEXT>
+    [ --pod_running_timeout=<POD_RUNNING_TIMEOUT_IN_SECONDS> ]
 
 # Register and activate a stack with the new image builder
 zenml stack register <STACK_NAME> -i <NAME> ... --set
