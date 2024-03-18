@@ -382,6 +382,7 @@ class RequestLimiter:
         self.limiter[requester].append(now)
 
         from bisect import bisect_left
+
         # remove failures older than a day
         older_index = bisect_left(self.limiter[requester], day_ago)
         self.limiter[requester] = self.limiter[requester][older_index:]
