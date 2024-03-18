@@ -134,6 +134,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         paramiko_client: paramiko.SSHClient,
         f: IO[str],
         directory_name: str,
+        file_name: str,
         description: str,
     ) -> None:
         """Copies a file to a HyperAI instance using SCP.
@@ -143,6 +144,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             f: The file to transfer.
             directory_name: The directory on the HyperAI instance to transfer
                 the file to.
+            file_name: The name of the file being transferred.
             description: A description of the file being transferred.
 
         Raises:
@@ -150,7 +152,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         """
         try:
             scp_client = paramiko_client.open_sftp()
-            scp_client.put(f.name, f"{directory_name}/run_pipeline.sh")
+            scp_client.put(f.name, f"{directory_name}/{file_name}")
             scp_client.close()
         except FileNotFoundError:
             raise RuntimeError(
@@ -413,6 +415,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 paramiko_client,
                 f,
                 directory_name,
+                file_name="docker-compose.yml",
                 description="Docker Compose file",
             )
 
@@ -432,6 +435,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 paramiko_client,
                 f,
                 directory_name,
+                file_name="run_pipeline.sh",
                 description="startup script",
             )
 
