@@ -16,3 +16,7 @@
 from zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_materializer import (  # noqa
     PyTorchLightningMaterializer,
 )
+
+from zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_st_materializer import (  #noqa
+    PyTorchLightningSTMaterializer
+)
