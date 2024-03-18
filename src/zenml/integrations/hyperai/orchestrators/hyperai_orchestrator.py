@@ -129,6 +129,34 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         """
         return quote(command)
 
+    def _scp_to_hyperai_instance(
+        self,
+        paramiko_client: paramiko.SSHClient,
+        f: tempfile.NamedTemporaryFile,
+        directory_name: str,
+        description: str,
+    ) -> None:
+        """Copies a file to a HyperAI instance using SCP.
+
+        Args:
+            paramiko_client: The SSH client to use for the SCP transfer.
+            f: The file to transfer.
+            directory_name: The directory on the HyperAI instance to transfer
+                the file to.
+            description: A description of the file being transferred.
+
+        Raises:
+            RuntimeError: If the file cannot be written to the HyperAI instance.
+        """
+        try:
+            scp_client = paramiko_client.open_sftp()
+            scp_client.put(f.name, f"{directory_name}/run_pipeline.sh")
+            scp_client.close()
+        except FileNotFoundError:
+            raise RuntimeError(
+                f"Failed to write {description} to HyperAI instance. Does the user have permissions to write?"
+            )
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -381,14 +409,12 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f_.write(compose_definition_yaml)
 
             # Scp Docker Compose file to HyperAI instance
-            try:
-                scp_client = paramiko_client.open_sftp()
-                scp_client.put(f.name, f"{directory_name}/docker-compose.yaml")
-                scp_client.close()
-            except FileNotFoundError:
-                raise RuntimeError(
-                    "Failed to write Docker Compose file to HyperAI instance. Does the user have permissions to write?"
-                )
+            self._scp_to_hyperai_instance(
+                paramiko_client,
+                f,
+                directory_name,
+                description="Docker Compose file",
+            )
 
         # Create temporary file and write script to it
         with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
@@ -402,14 +428,12 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f_.write(command_line)
 
             # Scp script to HyperAI instance
-            try:
-                scp_client = paramiko_client.open_sftp()
-                scp_client.put(f.name, f"{directory_name}/run_pipeline.sh")
-                scp_client.close()
-            except FileNotFoundError:
-                raise RuntimeError(
-                    "Failed to write script to HyperAI instance. Does the user have permissions to write?"
-                )
+            self._scp_to_hyperai_instance(
+                paramiko_client,
+                f,
+                directory_name,
+                description="startup script",
+            )
 
         # Run or schedule Docker Compose file depending on settings
         if not deployment.schedule:
