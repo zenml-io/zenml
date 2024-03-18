@@ -243,8 +243,10 @@ def _validate_new_version_requests(
                 "that `Model` requesting new version is configured only in one "
                 "place of the pipeline."
             )
-        model_version = data.model._validate_config_in_runtime()
-        is_cloud_model &= cloud_utils.is_cloud_model_version(model_version)
+        model_version_response = data.model._validate_config_in_runtime()
+        is_cloud_model &= cloud_utils.is_cloud_model_version(
+            model_version_response
+        )
     if not is_cloud_model:
         logger.info(
             "Models can be viewed in the dashboard using ZenML Cloud. Sign up "

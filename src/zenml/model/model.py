@@ -504,7 +504,11 @@ class Model(BaseModel):
         return values
 
     def _validate_config_in_runtime(self) -> "ModelVersionResponse":
-        """Validate that config doesn't conflict with runtime environment."""
+        """Validate that config doesn't conflict with runtime environment.
+
+        Returns:
+            The model version based on configuration.
+        """
         return self._get_or_create_model_version()
 
     def _get_or_create_model(self) -> "ModelResponse":
