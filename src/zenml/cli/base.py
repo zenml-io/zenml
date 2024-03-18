@@ -83,6 +83,10 @@ ZENML_PROJECT_TEMPLATES = dict(
         github_url="zenml-io/template-nlp",
         github_tag="2024.01.12",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
+    llm_finetuning=ZenMLProjectTemplateLocation(
+        github_url="zenml-io/template-llm-finetuning",
+        github_tag="2024.03.18",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+    ),
 )
 
 
@@ -98,9 +102,9 @@ ZENML_PROJECT_TEMPLATES = dict(
     type=str,
     required=False,
     help="Name or URL of the ZenML project template to use to initialize the "
-    "repository, Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a "
-    "copier URL like gh:owner/repo_name. If not specified, no template is "
-    "used.",
+    "repository, Can be a string like `e2e_batch`, `nlp`, `llm_finetuning`, "
+    "`starter` etc. or a copier URL like gh:owner/repo_name. If not specified, "
+    "no template is used.",
 )
 @click.option(
     "--template-tag",
