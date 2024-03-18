@@ -37,6 +37,7 @@ from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
     ServiceConnector,
 )
+from zenml.utils import docker_utils
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
@@ -258,7 +259,9 @@ class DockerServiceConnector(ServiceConnector):
             An authenticated python-docker client object.
         """
         assert self.resource_id is not None
-        docker_client = DockerClient.from_env()
+
+        docker_client = docker_utils._try_get_docker_client_from_env()
+
         self._authorize_client(docker_client, self.resource_id)
 
         return docker_client
