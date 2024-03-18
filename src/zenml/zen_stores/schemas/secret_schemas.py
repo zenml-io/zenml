@@ -55,7 +55,7 @@ class SecretSchema(NamedSchema, table=True):
 
     __tablename__ = "secret"
 
-    scope: str
+    scope: SecretScope
 
     values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
 
@@ -177,7 +177,7 @@ class SecretSchema(NamedSchema, table=True):
         assert secret.user is not None, "User must be set for secret creation."
         return cls(
             name=secret.name,
-            scope=secret.scope.value,
+            scope=secret.scope,
             workspace_id=secret.workspace,
             user_id=secret.user,
             # Don't store secret values implicitly in the secret. The
@@ -204,10 +204,7 @@ class SecretSchema(NamedSchema, table=True):
         for field, value in secret_update.dict(
             exclude_unset=True, exclude={"workspace", "user", "values"}
         ).items():
-            if field == "scope":
-                setattr(self, field, value.value)
-            else:
-                setattr(self, field, value)
+            setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
@@ -242,7 +239,7 @@ class SecretSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
-            scope=SecretScope(self.scope),
+            scope=self.scope,
         )
         return SecretResponse(
             id=self.id,
