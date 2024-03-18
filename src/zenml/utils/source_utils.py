@@ -154,9 +154,7 @@ def resolve(
     if source_type == SourceType.USER:
         from zenml.utils import code_repository_utils
 
-        local_repo_context = (
-            code_repository_utils.find_active_code_repository()
-        )
+        local_repo_context = code_repository_utils.find_active_code_repository()
 
         if local_repo_context and not local_repo_context.has_local_changes:
             module_name = _resolve_module(module)
@@ -189,9 +187,7 @@ def resolve(
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
 
-    return Source(
-        module=module_name, attribute=attribute_name, type=source_type
-    )
+    return Source(module=module_name, attribute=attribute_name, type=source_type)
 
 
 def get_source_root() -> str:
@@ -231,7 +227,9 @@ def get_source_root() -> str:
         raise RuntimeError(
             "Unable to determine source root because the main module does not "
             "have an associated file. This could be because you're running in "
-            "an interactive Python environment."
+            "an interactive Python environment. If you are trying to run from "
+            "within a Jupyter notebook, please run `zenml init` from the root "
+            "where your notebook is located and restart your notebook server.   "
         )
 
     path = Path(main_module.__file__).resolve().parent
@@ -339,9 +337,7 @@ def get_source_type(module: ModuleType) -> SourceType:
     if is_internal_module(module_name=module.__name__):
         return SourceType.INTERNAL
 
-    if is_distribution_package_file(
-        file_path=file_path, module_name=module.__name__
-    ):
+    if is_distribution_package_file(file_path=file_path, module_name=module.__name__):
         return SourceType.DISTRIBUTION_PACKAGE
 
     if is_standard_lib_file(file_path=file_path):
@@ -478,9 +474,7 @@ def _resolve_module(module: ModuleType) -> str:
     return module_source
 
 
-def _load_module(
-    module_name: str, import_root: Optional[str] = None
-) -> ModuleType:
+def _load_module(module_name: str, import_root: Optional[str] = None) -> ModuleType:
     """Load a module.
 
     Args:
