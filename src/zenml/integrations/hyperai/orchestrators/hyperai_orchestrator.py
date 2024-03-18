@@ -390,6 +390,27 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     "Failed to write Docker Compose file to HyperAI instance. Does the user have permissions to write?"
                 )
 
+        # Create temporary file and write script to it
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
+            # Define bash line and command line
+            bash_line = "#!/bin/bash\n"
+            command_line = f'cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}="{deployment_id}_$(date +\%s)" > .env && docker compose up -d'
+
+            # Write script to temporary file
+            with f.file as f_:
+                f_.write(bash_line)
+                f_.write(command_line)
+
+            # Scp script to HyperAI instance
+            try:
+                scp_client = paramiko_client.open_sftp()
+                scp_client.put(f.name, f"{directory_name}/run_pipeline.sh")
+                scp_client.close()
+            except FileNotFoundError:
+                raise RuntimeError(
+                    "Failed to write script to HyperAI instance. Does the user have permissions to write?"
+                )
+
         # Run or schedule Docker Compose file depending on settings
         if not deployment.schedule:
             logger.info(
@@ -421,7 +442,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
-                f"(crontab -l ; echo '{cron_expression} cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}=\"{deployment_id}_$(date +\%s)\" > .env && docker compose up -d') | crontab -"
+                f"(crontab -l ; echo '{cron_expression} bash {directory_name}/run_pipeline.sh') | crontab -"
             )
 
             logger.info("Pipeline scheduled successfully.")
