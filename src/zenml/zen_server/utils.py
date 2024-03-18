@@ -451,9 +451,9 @@ def rate_limit_requests(
 
     def decorator(func: F) -> F:
         request_arg, request_kwarg = None, None
-        annotations = inspect.get_annotations(func)
-        for arg_num, arg_name in enumerate(annotations):
-            if arg_name != "return" and annotations[arg_name] == Request:
+        parameters = inspect.signature(func).parameters
+        for arg_num, arg_name in enumerate(parameters):
+            if parameters[arg_name].annotation == Request:
                 request_arg = arg_num
                 request_kwarg = arg_name
                 break
