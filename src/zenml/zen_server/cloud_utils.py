@@ -78,6 +78,8 @@ class ZenMLCloudSession:
 
         Raises:
             RuntimeError: If the request failed.
+            SubscriptionUpgradeRequiredError: In case the current subscription
+                tier is insufficient for the attempted operation.
 
         Returns:
             The response.

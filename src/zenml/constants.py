@@ -37,6 +37,11 @@ def handle_json_env_var(
 
     Returns:
         The converted list value.
+
+    Raises:
+        TypeError: In case the value of the environment variable is not of a
+                   valid type.
+
     """
     # this needs to be here to avoid mutable defaults
     if default is None:
