@@ -28,6 +28,7 @@ from zenml.models import (
 from zenml.new.pipelines.model_utils import NewModelRequest
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Stack
+from zenml.utils import cloud_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
@@ -242,7 +243,8 @@ def _validate_new_version_requests(
                 "that `Model` requesting new version is configured only in one "
                 "place of the pipeline."
             )
-        is_cloud_model &= data.model._validate_config_in_runtime()
+        model_version = data.model._validate_config_in_runtime()
+        is_cloud_model &= cloud_utils.is_cloud_model_version(model_version)
     if not is_cloud_model:
         logger.info(
             "Models can be viewed in the dashboard using ZenML Cloud. Sign up "
