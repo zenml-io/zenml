@@ -144,7 +144,8 @@ class ZenMLCloudSession:
             response.raise_for_status()
         except requests.HTTPError as e:
             raise RuntimeError(
-                f"Failed while trying to contact RBAC service: {e}"
+                f"Failed while trying to contact the central zenml cloud "
+                f"service: {e}"
             )
 
         return response

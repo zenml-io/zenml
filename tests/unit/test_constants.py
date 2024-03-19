@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List
 
 from zenml.constants import handle_int_env_var, handle_json_env_var
 

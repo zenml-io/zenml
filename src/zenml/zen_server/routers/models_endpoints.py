@@ -34,7 +34,7 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.feature_gate.endpoint_utils import report_usage
+from zenml.zen_server.feature_gate.endpoint_utils import report_decrement
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -166,7 +166,9 @@ def delete_model(
         get_method=zen_store().get_model,
         delete_method=zen_store().delete_model,
     )
-    report_usage(ResourceType.MODEL)
+    report_decrement(
+        ResourceType.MODEL,
+    )
 
 
 #################
