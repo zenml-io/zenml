@@ -260,10 +260,8 @@ check them into git history.
 A simple version of such a YAML file could be:
 
 ```yaml
-steps:
-  svc_trainer:
-    parameters:
-      gamma: 0.01
+parameters:
+    gamma: 0.01
 ```
 
 Please note that this would take precedence over any parameters passed in the code.
