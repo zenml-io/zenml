@@ -42,8 +42,8 @@ def prediction_service_loader(
     existing_services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
         pipeline_step_name=pipeline_step_name,
-        running=running,
     )
+    breakpoint()
 
     if not existing_services:
         raise RuntimeError(
