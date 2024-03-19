@@ -40,8 +40,6 @@ def prediction_service_loader(
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
-        pipeline_name=pipeline_name,
-        pipeline_step_name=pipeline_step_name,
     )
 
     if not existing_services:
