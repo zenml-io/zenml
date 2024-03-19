@@ -43,7 +43,6 @@ def prediction_service_loader(
         pipeline_name=pipeline_name,
         pipeline_step_name=pipeline_step_name,
     )
-    breakpoint()
 
     if not existing_services:
         raise RuntimeError(
