@@ -69,7 +69,7 @@ class Commit(BaseModel):
 
     hash: str
     message: str
-    links: dict
+    links: Dict[str, Any]
     author: User
 
 
@@ -79,14 +79,14 @@ class Repository(BaseModel):
     uuid: str
     name: str
     full_name: str
-    links: dict
+    links: Dict[str, Any]
 
 
 class PushChange(BaseModel):
     """Bitbucket Push Change."""
 
-    new: Optional[dict]
-    old: Optional[dict]
+    new: Optional[Dict[str, Any]]
+    old: Optional[Dict[str, Any]]
     commits: List[Commit]
 
 
@@ -96,7 +96,7 @@ class Push(BaseModel):
     changes: List[PushChange]
 
 
-class BitbucketEvent(BaseModel):
+class BitbucketEvent(BaseEvent):
     """Bitbucket Event."""
 
     actor: User
@@ -116,7 +116,9 @@ class BitbucketEvent(BaseModel):
             The branch name.
         """
         if self.push.changes[0].new:
-            return self.push.changes[0].new.get("name", None)
+            branch = self.push.changes[0].new.get("name", None)
+            if self.push.changes[0].new.get("name", None):
+                return str(branch)
         return None
 
     @property
