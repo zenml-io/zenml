@@ -68,7 +68,7 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
             resource: The resource the user wants to create
 
         Raises:
-            SubscriptionUpgradeRequiredError in case a subscription limit is reached
+            SubscriptionUpgradeRequiredError: in case a subscription limit is reached
         """
         response = self._get(
             endpoint=ENTITLEMENT_ENDPOINT + "/" + resource, params=None
