@@ -30,6 +30,9 @@ class HuggingfaceIntegration(Integration):
         "transformers<=4.31",
         "datasets",
         "huggingface_hub>0.19.0",
+        # temporary fix for CI issue similar to https://github.com/huggingface/datasets/issues/6737
+        # TODO try relaxing it back going forward
+        "fsspec<=2024.2.0",
     ]
 
     @classmethod

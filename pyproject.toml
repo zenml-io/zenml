@@ -63,9 +63,6 @@ rich = { extras = ["jupyter"], version = ">=12.0.0" }
 sqlalchemy_utils = "0.38.3"
 sqlmodel = "0.0.8"
 importlib_metadata = { version = "<=7.0.0", python = "<3.10" }
-# temporary fix for CI issue similar to https://github.com/huggingface/datasets/issues/6737
-# TODO try relaxing it back going forward
-fsspec = { version = "<=2024.2.0" }
 
 # Optional dependencies for the ZenServer
 fastapi = { version = ">=0.75,<0.100", optional = true }
