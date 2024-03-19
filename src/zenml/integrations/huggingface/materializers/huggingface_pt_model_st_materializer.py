@@ -30,6 +30,7 @@ from zenml.metadata.metadata_types import DType, MetadataType
 from zenml.utils import io_utils
 
 DEFAULT_PT_MODEL_DIR = "hf_pt_model"
+DEFAULT_FILENAME = "model.safetensors"
 
 
 class HFPTModelSTMaterializer(BaseMaterializer):
@@ -57,7 +58,8 @@ class HFPTModelSTMaterializer(BaseMaterializer):
         model_cls = getattr(
             importlib.import_module("transformers"), architecture
         )
-        loaded_model = load_model(model_cls, temp_dir.name)
+        filepath = os.path.join(temp_dir.name, DEFAULT_FILENAME)
+        loaded_model = load_model(model_cls, filepath)
         return loaded_model
 
     def save(self, model: PreTrainedModel) -> None:
@@ -67,7 +69,8 @@ class HFPTModelSTMaterializer(BaseMaterializer):
             model: The Torch Model to write.
         """
         temp_dir = TemporaryDirectory()
-        save_model(model, temp_dir.name)
+        filepath = os.path.join(temp_dir.name, DEFAULT_FILENAME)
+        save_model(model, filepath)
         io_utils.copy_dir(
             temp_dir.name,
             os.path.join(self.uri, DEFAULT_PT_MODEL_DIR),

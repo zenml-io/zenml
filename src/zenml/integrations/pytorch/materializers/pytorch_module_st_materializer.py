@@ -16,7 +16,7 @@
 import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
-from safetensors.torch import save_model
+from safetensors.torch import save_file
 from torch.nn import Module
 
 from zenml.enums import ArtifactType
@@ -57,7 +57,7 @@ class PyTorchModuleSTMaterializer(BasePyTorchSTMaterializer):
         # This is the default behavior for loading model in production phase (inference)
         if isinstance(model, Module):
             filename = os.path.join(self.uri, CHECKPOINT_FILENAME)
-            save_model(model, filename)
+            save_file(model.state_dict(), filename)
 
     def extract_metadata(self, model: Module) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Model` object.

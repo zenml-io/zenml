@@ -20,7 +20,7 @@ from zenml.integrations.huggingface.materializers.huggingface_pt_model_st_materi
 )
 
 
-def test_huggingface_pretrained_model_materializer(clean_client):
+def test_huggingface_pretrained_model_st_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Pretrained Model materializer using Safetensors."""
     model = _test_materializer(
         step_output=RobertaModel(RobertaConfig()),
