@@ -92,12 +92,12 @@ jobs:
           uv venv
       - name: Check mlstacks compatibility
         run: |
-          source venv/bin/activate
+          source .venv/bin/activate
           uv pip install -e .
           uv pip install mlstacks
       - name: Check for broken dependencies
         run: |
-          source venv/bin/activate
+          source .venv/bin/activate
           uv pip check
       - name: Markdown link check
         uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
@@ -111,14 +111,14 @@ jobs:
         continue-on-error: true
       - name: Security check
         run: |
-          source venv/bin/activate
+          source .venv/bin/activate
           uv pip install bandit
           bash scripts/check-security.sh
       - name: Check for alembic branch divergence
         env:
           ZENML_DEBUG: 0
         run: |
-          source venv/bin/activate
+          source .venv/bin/activate
           uv pip install alembic
           bash scripts/check-alembic-branches.sh
       - name: Install latest dashboard (test gitignore)
