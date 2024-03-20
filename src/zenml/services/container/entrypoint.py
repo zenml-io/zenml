@@ -19,6 +19,7 @@ that are implemented as locally running docker containers.
 
 import os
 import sys
+from typing import cast
 
 import click
 
@@ -50,7 +51,7 @@ def launch_service(service_config_file: str) -> None:
     # with messages before daemonization is complete
     from zenml.integrations.registry import integration_registry
     from zenml.logger import get_logger
-    from zenml.services import ContainerService, ServiceRegistry
+    from zenml.services import ContainerService
 
     logger = get_logger(__name__)
 
@@ -63,7 +64,7 @@ def launch_service(service_config_file: str) -> None:
     logger.debug(
         "Running containerized service with configuration:\n %s", config
     )
-    service = ServiceRegistry().load_service_from_json(config)
+    service = cast("ContainerService", ContainerService.from_json(config))
     if not isinstance(service, ContainerService):
         raise TypeError(
             f"Expected service type ContainerService but got "

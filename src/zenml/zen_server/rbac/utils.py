@@ -233,7 +233,10 @@ def verify_permission_for_model(model: AnyResponse, action: Action) -> None:
     batch_verify_permissions_for_models(models=[model], action=action)
 
 
-def batch_verify_permissions(resources: Set[Resource], action: Action) -> None:
+def batch_verify_permissions(
+    resources: Set[Resource],
+    action: Action,
+) -> None:
     """Batch permission verification.
 
     Args:
@@ -397,6 +400,7 @@ def get_resource_type_for_model(
         SecretResponse,
         ServiceAccountResponse,
         ServiceConnectorResponse,
+        ServiceResponse,
         StackResponse,
         TagResponse,
         UserResponse,
@@ -426,6 +430,7 @@ def get_resource_type_for_model(
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
         TagResponse: ResourceType.TAG,
         ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
+        ServiceResponse: ResourceType.SERVICE,
     }
 
     return mapping.get(type(model))
@@ -533,6 +538,7 @@ def get_schema_for_resource_type(
         RunMetadataSchema,
         SecretSchema,
         ServiceConnectorSchema,
+        ServiceSchema,
         StackComponentSchema,
         StackSchema,
         TagSchema,
@@ -552,6 +558,7 @@ def get_schema_for_resource_type(
         ResourceType.ARTIFACT: ArtifactSchema,
         ResourceType.ARTIFACT_VERSION: ArtifactVersionSchema,
         ResourceType.SECRET: SecretSchema,
+        ResourceType.SERVICE: ServiceSchema,
         ResourceType.TAG: TagSchema,
         ResourceType.SERVICE_ACCOUNT: UserSchema,
         ResourceType.WORKSPACE: WorkspaceSchema,

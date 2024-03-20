@@ -588,6 +588,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 email_opted_in=True,
                 active=True,
                 email=external_user.email,
+                is_admin=external_user.is_admin,
             ),
         )
     except KeyError:
@@ -603,6 +604,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 email_opted_in=True,
                 active=True,
                 email=external_user.email,
+                is_admin=external_user.is_admin,
             )
         )
 

@@ -18,6 +18,7 @@ that are implemented as locally running daemon processes.
 """
 
 import os
+from typing import cast
 
 import click
 
@@ -68,7 +69,7 @@ def run(
         # with messages before daemonization is complete
         from zenml.integrations.registry import integration_registry
         from zenml.logger import get_logger
-        from zenml.services import LocalDaemonService, ServiceRegistry
+        from zenml.services import LocalDaemonService
 
         logger = get_logger(__name__)
 
@@ -81,7 +82,9 @@ def run(
         integration_registry.activate_integrations()
 
         logger.debug("Running service daemon with configuration:\n %s", config)
-        service = ServiceRegistry().load_service_from_json(config)
+        service = cast(
+            "LocalDaemonService", LocalDaemonService.from_json(config)
+        )
         if not isinstance(service, LocalDaemonService):
             raise TypeError(
                 f"Expected service type LocalDaemonService but got "

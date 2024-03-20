@@ -23,11 +23,9 @@ stored as files or in a database for end users or business applications.
 ### When to use it?
 
 The model deployers are optional components in the ZenML stack. They are used to deploy machine learning models to a
-target environment either a development (local) or a production (Kubernetes), the model deployers are mainly used to
-deploy models for real-time inference use cases. With the model deployers and other stack components, you can build
-pipelines that are continuously trained and deployed to production.
+target environment, either a development (local) or a production (Kubernetes or cloud) environment. The model deployers are mainly used to deploy models for real-time inference use cases. With the model deployers and other stack components, you can build pipelines that are continuously trained and deployed to production.
 
-### How they experiment trackers slot into the stack
+### How model deployers slot into the stack
 
 Here is an architecture diagram that shows how model deployers fit into the overall story of a remote stack.
 
@@ -44,6 +42,7 @@ integrations:
 | [MLflow](mlflow.md)                | `mlflow`  | `mlflow`      | Deploys ML Model locally                                                     |
 | [BentoML](bentoml.md)              | `bentoml` | `bentoml`     | Build and Deploy ML models locally or for production grade (Cloud, K8s)      |
 | [Seldon Core](seldon.md)           | `seldon`  | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
+| [Hugging Face](huggingface.md) | `huggingface` | `huggingface` | Deploys ML model on Hugging Face Inference Endpoints |
 | [Custom Implementation](custom.md) | _custom_  |               | Extend the Artifact Store abstraction and provide your own implementation    |
 
 {% hint style="info" %}
@@ -66,10 +65,7 @@ zenml model-deployer register seldon --flavor=seldon \
 
 #### The role that a model deployer plays in a ZenML Stack
 
-1. Holds all the stack-related configuration attributes required to interact with the remote model serving tool,
-   service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration
-   parameters). The following are examples of configuring the MLflow and Seldon Core Model Deployers and registering
-   them as a Stack component:
+* Seamless Model Deployment: Facilitates the deployment of machine learning models to various serving environments, such as local servers, Kubernetes clusters, or cloud platforms, ensuring that models can be deployed and managed efficiently in accordance with the specific requirements of the serving infrastructure by holds all the stack-related configuration attributes required to interact with the remote model serving tool, service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration parameters). The following are examples of configuring the MLflow and Seldon Core Model Deployers and registering them as a Stack component:
 
    ```bash
    zenml integration install mlflow
@@ -85,46 +81,53 @@ zenml model-deployer register seldon --flavor=seldon \
    ...
    zenml stack register seldon_stack -m default -a aws -o default -d seldon
    ```
-2. Implements the continuous deployment logic necessary to deploy models in a way that updates an existing model server
-   that is already serving a previous version of the same model instead of creating a new model server for every new
-   model version. Every model server that the Model Deployer provisions externally to deploy a model is represented
-   internally as a `Service` object that may be accessed for visibility and control over a single model deployment. This
-   functionality can be consumed directly from ZenML pipeline steps, but it can also be used outside the pipeline to
-   deploy ad-hoc models. See the [seldon_model_deployer_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
-3. Acts as a registry for all Services that represent remote model servers. External model deployment servers can be
-   listed and filtered using a variety of criteria, such as the name of the model or the names of the pipeline and step
-   that was used to deploy the model. The Service objects returned by the Model Deployer can be used to interact with
-   the remote model server, e.g. to get the operational status of a model server, the prediction URI that it exposes, or
-   to stop or delete a model server:
+
+* Lifecycle Management: Provides mechanisms for comprehensive lifecycle management of model servers, including the ability to start, stop, and delete model servers, as well as to update existing servers with new model versions, thereby optimizing resource utilization and facilitating continuous delivery of model updates. Some core methods that can be used to interact with the remote model server include:
+
+`deploy_model` - Deploys a model to the serving environment and returns a Service object that represents the deployed model server.
+`find_model_server` - Finds and returns a list of Service objects that represent model servers that have been deployed to the serving environment, the 
+services are stored in the DB and can be used as a reference to know what and where the model is deployed.
+`stop_model_server` - Stops a model server that is currently running in the serving environment.
+`start_model_server` - Starts a model server that has been stopped in the serving environment.
+`delete_model_server` - Deletes a model server from the serving environment and from the DB.
+
+{% hint style="info" %}
+ZenML uses the Service object to represent a model server that has been deployed to a serving environment. The Service object is saved in the DB and can be used as a reference to know what and where the model is deployed. The Service object consists of 2 main attributes, the `config` and the `status`. The `config` attribute holds all the deployment configuration attributes required to create a new deployment, while the `status` attribute holds the operational status of the deployment, such as the last error message, the prediction URL, and the deployment status.
+{% endhint %}
 
    ```python
-   from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+   from zenml.integrations.huggingface.model_deployers import HuggingFaceModelDeployer
 
-   model_deployer = SeldonModelDeployer.get_active_model_deployer()
+   model_deployer = HuggingFaceModelDeployer.get_active_model_deployer()
    services = model_deployer.find_model_server(
-       pipeline_name="continuous-deployment-pipeline",
-       pipeline_step_name="seldon_model_deployer_step",
-       model_name="my-model",
+       pipeline_name="LLM_pipeline",
+       pipeline_step_name="huggingface_model_deployer_step",
+       model_name="LLAMA-7B",
    )
    if services:
        if services[0].is_running:
            print(
-               f"Seldon deployment service started and reachable at:\n"
-               f"    {services[0].prediction_url}\n"
-           )
-       elif services[0].is_failed:
-           print(
-               f"Seldon deployment service is in a failure state. "
-               f"The last error message was: {services[0].status.last_error}"
-           )
-       else:
-           print(f"Seldon deployment service is not running")
-
-           # start the service
-           services[0].start(timeout=100)
-
-       # delete the service
-       model_deployer.delete_service(services[0].uuid, timeout=100, force=False)
+               f"Model server {services[0].config['model_name']} is running at {services[0].status['prediction_url']}"
+              )
+        else:
+            print(f"Model server {services[0].config['model_name']} is not running")
+            model_deployer.start_model_server(services[0])
+    else:
+        print("No model server found")
+        service = model_deployer.deploy_model(
+            pipeline_name="LLM_pipeline",
+            pipeline_step_name="huggingface_model_deployer_step",
+            model_name="LLAMA-7B",
+            model_uri="s3://zenprojects/huggingface_model_deployer_step/output/884/huggingface",
+            revision="main",
+            task="text-classification",
+            region="us-east-1",
+            vendor="aws",
+            token="huggingface_token",
+            namespace="zenml-workloads",
+            endpoint_type="public",
+        )
+        print(f"Model server {service.config['model_name']} is deployed at {service.status['prediction_url']}")
    ```
 
 #### &#x20;How to Interact with a model deployer after deployment?
@@ -183,20 +186,6 @@ from zenml.client import Client
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
 deployer_step = pipeline_run.steps["<NAME_OF_MODEL_DEPLOYER_STEP>"]
 deployed_model_url = deployer_step.run_metadata["deployed_model_url"].value
-```
-
-Services can be passed through steps like any other object, and used to interact with the external systems that they
-represent:
-
-```python
-from zenml import step
-
-
-@step
-def my_step(my_service: MyService) -> ...:
-    if not my_service.is_running:
-        my_service.start()  # starts service
-    my_service.stop()  # stops service
 ```
 
 The ZenML integrations that provide Model Deployer stack components also include standard pipeline steps that can

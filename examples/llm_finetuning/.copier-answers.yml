@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier
+_commit: 2024.03.18
+_src_path: gh:zenml-io/template-llm-finetuning
+cuda_version: cuda11.8
+email: ''
+from_safetensors: false
+full_name: ZenML GmbH
+huggingface_adapter_model_repository: ''
+huggingface_merged_model_repository: ''
+model_repository: mistralai/Mistral-7B-Instruct-v0.1
+open_source_license: apache
+product_name: llm_lora
+project_name: ZenML LLM Finetuning project
+version: 0.1.0
+zenml_server_url: ''

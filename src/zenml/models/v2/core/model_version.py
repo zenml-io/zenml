@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field, PrivateAttr, validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
 from zenml.models.v2.base.filter import AnyQuery
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -29,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
+from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -175,6 +177,10 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ModelVersionResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the model version entity."""
+
+    services: Page[ServiceResponse] = Field(
+        description="Services linked to the model version",
+    )
 
 
 class ModelVersionResponse(

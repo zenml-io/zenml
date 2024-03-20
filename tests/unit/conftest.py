@@ -69,10 +69,17 @@ from zenml.models import (
     WorkspaceResponseBody,
     WorkspaceResponseMetadata,
 )
+from zenml.models.v2.core.service import (
+    ServiceResponse,
+    ServiceResponseBody,
+    ServiceResponseMetadata,
+)
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
+from zenml.services.service_status import ServiceState
+from zenml.services.service_type import ServiceType
 from zenml.stack.stack import Stack
 from zenml.stack.stack_component import (
     StackComponentConfig,
@@ -372,6 +379,7 @@ def sample_user_model() -> UserResponse:
             created=datetime.now(),
             updated=datetime.now(),
             is_service_account=False,
+            is_admin=True,
         ),
         metadata=UserResponseMetadata(),
     )
@@ -691,4 +699,65 @@ def sample_hub_plugin_response_model() -> HubPluginResponseModel:
         created=datetime.now(),
         updated=datetime.now(),
         requirements=["ploogin==0.0.1", "zenml>=0.1.0"],
+    )
+
+
+# Test data
+service_id = "12345678-1234-5678-1234-567812345678"
+service_name = "test_service"
+service_type = ServiceType(
+    type="model-serving", flavor="test_flavor", name="test_name"
+)
+service_source = "tests.unit.services.test_service.TestService"
+admin_state = ServiceState.ACTIVE
+config = {
+    "type": "zenml.services.service.ServiceConfig",
+    "name": "test_service",
+    "description": "",
+    "pipeline_name": "",
+    "pipeline_step_name": "",
+    "model_name": "",
+    "model_version": "",
+    "service_name": "zenml-test_service",
+}
+labels = {"label1": "value1", "label2": "value2"}
+status = {
+    "type": "zenml.services.service_status.ServiceStatus",
+    "state": ServiceState.ACTIVE,
+    "last_state": ServiceState.INACTIVE,
+    "last_error": "",
+}
+endpoint = None
+prediction_url = "http://example.com/predict"
+health_check_url = "http://example.com/health"
+created_time = datetime(2024, 3, 14, 10, 30)
+updated_time = datetime(2024, 3, 14, 11, 45)
+
+
+@pytest.fixture
+def service_response(
+    sample_workspace_model,
+):
+    body = ServiceResponseBody(
+        service_type=service_type,
+        labels=labels,
+        created=created_time,
+        updated=updated_time,
+        state=admin_state,
+    )
+    metadata = ServiceResponseMetadata(
+        service_source=service_source,
+        admin_state=admin_state,
+        config=config,
+        status=status,
+        endpoint=endpoint,
+        prediction_url=prediction_url,
+        health_check_url=health_check_url,
+        workspace=sample_workspace_model,
+    )
+    return ServiceResponse(
+        id=service_id,
+        name=service_name,
+        body=body,
+        metadata=metadata,
     )

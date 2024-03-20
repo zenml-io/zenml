@@ -59,6 +59,7 @@ from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
     server_config,
+    verify_admin_status_if_no_rbac,
     zen_store,
 )
 
@@ -112,6 +113,9 @@ def list_users(
     if allowed_ids is not None:
         # Make sure users can see themselves
         allowed_ids.add(auth_context.user.id)
+    else:
+        if not auth_context.user.is_admin and not server_config().rbac_enabled:
+            allowed_ids = {auth_context.user.id}
 
     user_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id, id=allowed_ids
@@ -139,7 +143,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def create_user(
         user: UserRequest,
-        _: AuthContext = Security(authorize),
+        auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Creates a user.
 
@@ -147,6 +151,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Args:
             user: User to create.
+            auth_context: Authentication context.
 
         Returns:
             The created user.
@@ -162,6 +167,10 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             token = user.generate_activation_token()
         else:
             user.active = True
+
+        verify_admin_status_if_no_rbac(
+            auth_context.user.is_admin, "create user"
+        )
 
         new_user = verify_permissions_and_create_entity(
             request_model=user,
@@ -202,7 +211,13 @@ def get_user(
         user_name_or_id=user_name_or_id, hydrate=hydrate
     )
     if user.id != auth_context.user.id:
-        verify_permission_for_model(user, action=Action.READ)
+        verify_admin_status_if_no_rbac(
+            auth_context.user.is_admin, "get other user"
+        )
+        verify_permission_for_model(
+            user,
+            action=Action.READ,
+        )
 
     return dehydrate_response_model(user)
 
@@ -235,11 +250,32 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Returns:
             The updated user.
+
+        Raises:
+            IllegalOperationError: if the user tries change admin status,
+                while not an admin
         """
         user = zen_store().get_user(user_name_or_id)
         if user.id != auth_context.user.id:
-            verify_permission_for_model(user, action=Action.UPDATE)
+            verify_admin_status_if_no_rbac(
+                auth_context.user.is_admin, "update other user"
+            )
+            verify_permission_for_model(
+                user,
+                action=Action.UPDATE,
+            )
+        if (
+            user_update.is_admin is not None
+            and user.is_admin != user_update.is_admin
+            and not auth_context.user.is_admin
+        ):
+            raise IllegalOperationError(
+                "Only admins can change the admin status of other users."
+            )
 
+        user_update.activation_token = user.activation_token
+        if not auth_context.user.is_admin or user.id == auth_context.user.id:
+            user_update.active = user.active
         updated_user = zen_store().update_user(
             user_id=user.id,
             user_update=user_update,
@@ -279,6 +315,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         )
         user_update.active = True
         user_update.activation_token = None
+        user_update.is_admin = user.is_admin
         return zen_store().update_user(
             user_id=user.id, user_update=user_update
         )
@@ -305,10 +342,21 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Returns:
             The generated activation token.
+
+        Raises:
+            IllegalOperationError: if the user is trying to deactivate
+                themselves.
         """
         user = zen_store().get_user(user_name_or_id)
-        if user.id != auth_context.user.id:
-            verify_permission_for_model(user, action=Action.UPDATE)
+        if user.id == auth_context.user.id:
+            raise IllegalOperationError("Cannot deactivate yourself.")
+        verify_admin_status_if_no_rbac(
+            auth_context.user.is_admin, "deactivate user"
+        )
+        verify_permission_for_model(
+            user,
+            action=Action.UPDATE,
+        )
 
         user_update = UserUpdate(
             name=user.name,
@@ -354,7 +402,13 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                 "administrator."
             )
         else:
-            verify_permission_for_model(user, action=Action.DELETE)
+            verify_admin_status_if_no_rbac(
+                auth_context.user.is_admin, "delete user"
+            )
+            verify_permission_for_model(
+                user,
+                action=Action.DELETE,
+            )
 
         zen_store().delete_user(user_name_or_id=user_name_or_id)
 
@@ -402,7 +456,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                     email=user_response.email,
                     source="zenml server",
                 )
-
             updated_user = zen_store().update_user(
                 user_id=user.id, user_update=user_update
             )
@@ -460,6 +513,11 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         Returns:
             The updated user.
         """
+        current_user = zen_store().get_user(auth_context.user.id)
+        user.activation_token = current_user.activation_token
+        user.active = current_user.active
+        user.is_admin = current_user.is_admin
+
         updated_user = zen_store().update_user(
             user_id=auth_context.user.id, user_update=user
         )
