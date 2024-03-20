@@ -16,6 +16,8 @@
 from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
+from pydantic import SerializeAsAny
+
 from zenml.config.base_settings import BaseSettings
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
@@ -38,7 +40,7 @@ class PipelineRunConfiguration(
     schedule: Optional[Schedule] = None
     build: Union[PipelineBuildBase, UUID, None] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
-    settings: Dict[str, BaseSettings] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None

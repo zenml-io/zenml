@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import field_validator
+from pydantic import SerializeAsAny, field_validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
@@ -37,7 +37,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
-    settings: Dict[str, BaseSettings] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
