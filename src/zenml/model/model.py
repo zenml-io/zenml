@@ -545,12 +545,10 @@ class Model(BaseModel):
                 )
                 logger.info(f"New model `{self.name}` was created implicitly.")
             except EntityExistsError:
-                # this is backup logic, if model was created somehow in between get and create calls
-                pass
-            finally:
                 model = zenml_client.zen_store.get_model(
                     model_name_or_id=self.name
                 )
+
         self._model_id = model.id
         return model
 
