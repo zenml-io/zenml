@@ -207,9 +207,7 @@ def my_step(
 
 Neptune comes with a web-based UI that you can use to find further details about 
 your tracked experiments. Each pipeline run will be logged as a separate 
-experiment run in Neptune, which you can inspect in the Neptune UI:
-
-![Neptune UI](https://docs.neptune.ai/img/app/integrations/zenml.png)
+experiment run in Neptune, which you can inspect in the Neptune UI.
 
 You can find the URL of the Neptune run linked to a specific ZenML run printed on the console whenever a Neptune run is initialized.
 
