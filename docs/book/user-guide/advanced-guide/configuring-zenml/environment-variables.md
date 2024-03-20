@@ -95,9 +95,7 @@ orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment varia
 in your orchestrator's environment as follows:
 
 ```python
-docker_settings = DockerSettings(
-    environment={"ZENML_LOGGING_COLORS_DISABLED": "false"}
-    )
+docker_settings = DockerSettings(environment={"ZENML_LOGGING_COLORS_DISABLED": "false"})
 
 # Either add it to the decorator
 @pipeline(settings={"docker": docker_settings})
