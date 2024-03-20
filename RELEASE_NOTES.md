@@ -57,7 +57,6 @@ def predictor(
     # starting the service
     model_deployer = BentoMLModelDeployer.get_active_model_deployer()
     model_deployer.start_model_server(service_id=service.service_id, timeout=10)
-
 ```
 
 ### Enabling continuous deployment
@@ -93,6 +92,7 @@ def deploy_model() -> Optional[MLFlowDeploymentService]:
     service = model_deployer.deploy_model(mlflow_deployment_config, continuous_deployment_mode=True)
     logger.info(f"The deployed service info: {model_deployer.get_model_server_info(service)}")
     return service
+```
 
 
 ## Major Features and Enhancements:
