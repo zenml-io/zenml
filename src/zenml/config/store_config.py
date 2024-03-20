@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, SerializeAsAny, model_validator
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import StoreType
@@ -43,8 +43,10 @@ class StoreConfiguration(BaseModel):
 
     type: StoreType
     url: str
-    secrets_store: Optional[SecretsStoreConfiguration] = None
-    backup_secrets_store: Optional[SecretsStoreConfiguration] = None
+    secrets_store: Optional[SerializeAsAny[SecretsStoreConfiguration]] = None
+    backup_secrets_store: Optional[
+        SerializeAsAny[SecretsStoreConfiguration]
+    ] = None
 
     @classmethod
     def supports_url_scheme(cls, url: str) -> bool:

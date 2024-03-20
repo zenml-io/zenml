@@ -24,7 +24,7 @@ from typing import (
     Union,
 )
 
-from pydantic import field_validator, model_validator
+from pydantic import SerializeAsAny, field_validator, model_validator
 
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
@@ -135,7 +135,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None
     parameters: Dict[str, Any] = {}
-    settings: Dict[str, BaseSettings] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
