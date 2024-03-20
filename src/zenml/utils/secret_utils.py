@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 from pydantic import Field
 
 if TYPE_CHECKING:
-    from pydantic.fields import ModelField
+    from pydantic.fields import FieldInfo
 
 _secret_reference_expression = re.compile(r"\{\{\s*\S+?\.\S+\s*\}\}")
 
@@ -88,7 +88,7 @@ def SecretField(*args: Any, **kwargs: Any) -> Any:
         Pydantic field info.
     """
     kwargs[PYDANTIC_SENSITIVE_FIELD_MARKER] = True
-    return Field(*args, **kwargs)  # type: ignore[pydantic-field]
+    return Field(*args, **kwargs)
 
 
 def ClearTextField(*args: Any, **kwargs: Any) -> Any:
@@ -104,10 +104,13 @@ def ClearTextField(*args: Any, **kwargs: Any) -> Any:
         Pydantic field info.
     """
     kwargs[PYDANTIC_CLEAR_TEXT_FIELD_MARKER] = True
-    return Field(*args, **kwargs)  # type: ignore[pydantic-field]
+    return Field(*args, **kwargs)
 
 
-def is_secret_field(field: "ModelField") -> bool:
+# TODO: test
+
+
+def is_secret_field(field: "FieldInfo") -> bool:
     """Returns whether a pydantic field contains sensitive information or not.
 
     Args:
@@ -116,10 +119,12 @@ def is_secret_field(field: "ModelField") -> bool:
     Returns:
         `True` if the field contains sensitive information, `False` otherwise.
     """
-    return field.field_info.extra.get(PYDANTIC_SENSITIVE_FIELD_MARKER, False)  # type: ignore[no-any-return]
+    if json_schema_extra := field.json_schema_extra:
+        return json_schema_extra.get(PYDANTIC_SENSITIVE_FIELD_MARKER, False)
+    return False
 
 
-def is_clear_text_field(field: "ModelField") -> bool:
+def is_clear_text_field(field: "FieldInfo") -> bool:
     """Returns whether a pydantic field prevents secret references or not.
 
     Args:
@@ -128,4 +133,6 @@ def is_clear_text_field(field: "ModelField") -> bool:
     Returns:
         `True` if the field prevents secret references, `False` otherwise.
     """
-    return field.field_info.extra.get(PYDANTIC_CLEAR_TEXT_FIELD_MARKER, False)  # type: ignore[no-any-return]
+    if json_schema_extra := field.json_schema_extra:
+        return json_schema_extra.get(PYDANTIC_CLEAR_TEXT_FIELD_MARKER, False)
+    return False
