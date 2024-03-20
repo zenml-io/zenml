@@ -142,7 +142,9 @@ class BaseContainerRegistry(AuthenticationMixin):
                 )
             self._docker_client = client
         else:
-            self._docker_client = DockerClient.from_env()
+            self._docker_client = (
+                docker_utils._try_get_docker_client_from_env()
+            )
 
             credentials = self.credentials
             if credentials:
