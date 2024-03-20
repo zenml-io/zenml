@@ -618,9 +618,9 @@ class PipelineDockerImageBuilder:
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
         # Set color logging to whatever is locally configured
-        lines.append(f"ENV {ENV_ZENML_LOGGING_COLORS_DISABLED}={str(
-            handle_bool_env_var(ENV_ZENML_LOGGING_COLORS_DISABLED, False)
-        )}")
+        lines.append(
+            f"ENV {ENV_ZENML_LOGGING_COLORS_DISABLED}={str(handle_bool_env_var(ENV_ZENML_LOGGING_COLORS_DISABLED, False))}"
+        )
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
