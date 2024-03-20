@@ -35,7 +35,7 @@ def test_sequence_classification(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="huggingface",
-        example_args=["--nlp_task", "sequence-classification"],
+        example_args=["--task", "sequence-classification"],
         pipelines={"seq_classifier_train_eval_pipeline": (1, 5)},
     ):
         pass

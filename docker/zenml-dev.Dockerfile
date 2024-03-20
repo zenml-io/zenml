@@ -8,8 +8,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     ZENML_DEBUG=1 \
     ZENML_LOGGING_VERBOSITY=INFO \
-    ZENML_CONTAINER=1
-
+    ZENML_CONTAINER=1 
 
 WORKDIR /zenml
 
@@ -20,6 +19,9 @@ COPY src/zenml/__init__.py ./src/zenml/
 
 ENV ZENML_DEBUG=true \
     ZENML_ANALYTICS_OPT_IN=false
+
+# Upgrade pip to the latest version
+RUN pip install --upgrade pip
 
 RUN pip install -e .
 COPY src src

@@ -1,0 +1,9 @@
+*
+!/pipelines/**
+!/steps/**
+!/materializers/**
+!/evaluate/**
+!/finetune/**
+!/generate/**
+!/lit_gpt/**
+!/scripts/**

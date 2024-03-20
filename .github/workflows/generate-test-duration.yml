@@ -14,6 +14,7 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
           # on MAC OS, we need to set this environment variable
           # to fix problems with the fork() calls (see this thread
           # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
@@ -53,5 +54,5 @@ jobs:
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list
-          pip list
-          pip check || true
+          uv pip list
+          uv pip check || true

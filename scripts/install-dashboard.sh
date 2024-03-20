@@ -25,6 +25,17 @@ verifySupported() {
   fi
 }
 
+# checkGitIgnore checks if the dashboard directories are ignored by Git
+checkGitIgnore() {
+  if [ -f ".gitignore" ]; then
+    if grep -q -E "(^|\/)dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard($|\/)" ".gitignore"; then
+      echo "Error: The '/dashboard' or 'src/zenml/zen_server/dashboard' directory is ignored by Git."
+      echo "Please remove the corresponding entries from the .gitignore file to proceed with the installation."
+      exit 1
+    fi
+  fi
+}
+
 # checkTagProvided checks whether TAG has provided as an environment variable
 # so we can skip checkLatestVersion
 checkTagProvided() {
@@ -143,6 +154,7 @@ done
 set +u
 
 verifySupported
+checkGitIgnore
 checkTagProvided || checkLatestVersion
 if [[ ! -z "$TAG" ]]; then
   downloadFile

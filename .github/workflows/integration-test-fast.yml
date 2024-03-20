@@ -87,6 +87,7 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
@@ -150,8 +151,8 @@ jobs:
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
-          pip install pyyaml==5.3.1
-          pip install docker-compose
+          pip install uv
+          uv pip install --system "pyyaml==5.3.1" docker-compose
       - name: Install Linux System Dependencies
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
         run: sudo apt install graphviz
@@ -161,6 +162,16 @@ jobs:
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
         run: choco install graphviz
+      - name: Unbreak python in github actions
+        if: runner.os=='macOS'
+        # github actions overwrites brew's python. Force it to reassert itself, by
+        # running in a separate step.
+        # Workaround GitHub Actions Python issues
+        # see https://github.com/Homebrew/homebrew-core/issues/165793#issuecomment-1989441193
+        run: |
+          find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
+          sudo rm -rf /Library/Frameworks/Python.framework/
+          brew install --force python3 && brew unlink python3 && brew unlink python3 && brew link --overwrite python3
       - name: Install Docker and Colima on MacOS
         if: runner.os=='macOS'
         run: |
@@ -227,5 +238,5 @@ jobs:
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list
-          pip list
-          pip check || true
+          uv pip list
+          uv pip check || true

@@ -154,10 +154,12 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         Raises:
             AuthorizationException: If the signature validation fails.
         """
-        signature_header = headers.get("x-hub-signature-256")
+        signature_header = headers.get("x-hub-signature-256") or headers.get(
+            "x-hub-signature"
+        )
         if not signature_header:
             raise AuthorizationException(
-                "x-hub-signature-256 header is missing!"
+                "x-hub-signature-256 or x-hub-signature header is missing!"
             )
 
         if not self.is_valid_signature(

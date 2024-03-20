@@ -17,8 +17,12 @@ from .sequence_classifier_pipeline.sequence_classifier_pipeline import (
 from .token_classifier_pipeline.token_classifier_pipeline import (
     token_classifier_train_eval_pipeline,
 )
+from .deployment_pipelines.deployment_pipeline import huggingface_deployment_pipeline
+from .deployment_pipelines.inference_pipeline import inference_pipeline
 
 __all__ = [
     "seq_classifier_train_eval_pipeline",
     "token_classifier_train_eval_pipeline",
+    "huggingface_deployment_pipeline",
+    "inference_pipeline",
 ]

@@ -16,7 +16,7 @@
 import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
-from pydantic import validator
+from pydantic import PositiveInt, validator
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.kaniko import KANIKO_IMAGE_BUILDER_FLAVOR
@@ -29,6 +29,7 @@ KANIKO_EXECUTOR_IMAGE_TAG = "v1.9.1"
 DEFAULT_KANIKO_EXECUTOR_IMAGE = (
     f"gcr.io/kaniko-project/executor:{KANIKO_EXECUTOR_IMAGE_TAG}"
 )
+DEFAULT_KANIKO_POD_RUNNING_TIMEOUT = 300
 
 
 class KanikoImageBuilderConfig(BaseImageBuilderConfig):
@@ -47,6 +48,8 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
             Kaniko pod. This namespace will not be created and must already
             exist.
         executor_image: The image of the Kaniko executor to use.
+        pod_running_timeout: The timeout to wait until the pod is running
+            in seconds. Defaults to `300`.
         env: `env` section of the Kubernetes container spec.
         env_from: `envFrom` section of the Kubernetes container spec.
         volume_mounts: `volumeMounts` section of the Kubernetes container spec.
@@ -67,6 +70,7 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
     kubernetes_context: str
     kubernetes_namespace: str = "zenml-kaniko"
     executor_image: str = DEFAULT_KANIKO_EXECUTOR_IMAGE
+    pod_running_timeout: PositiveInt = DEFAULT_KANIKO_POD_RUNNING_TIMEOUT
 
     env: List[Dict[str, Any]] = []
     env_from: List[Dict[str, Any]] = []
