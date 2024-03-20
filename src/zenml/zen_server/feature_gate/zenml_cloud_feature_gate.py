@@ -14,6 +14,7 @@
 """ZenML Cloud implementation of the feature gate."""
 
 from typing import Any, Dict
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -89,19 +90,26 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
             pass
 
     def report_event(
-        self, resource: ResourceType, is_decrement: bool = False
+        self,
+        resource: ResourceType,
+        resource_id: UUID,
+        is_decrement: bool = False,
     ) -> None:
         """Reports the usage of a feature to the aggregator backend.
 
         Args:
             resource: The resource the user created
+            resource_id: ID of the resource that was created/deleted.
             is_decrement: In case this event reports an actual decrement of usage
         """
         data = RawUsageEvent(
             organization_id=ORGANIZATION_ID,
             feature=resource,
             total=1 if not is_decrement else -1,
-            metadata={"tenant_id": str(server_config.external_server_id)},
+            metadata={
+                "tenant_id": str(server_config.external_server_id),
+                "resource_id": str(resource_id),
+            },
         ).dict()
         response = self._post(endpoint=USAGE_EVENT_ENDPOINT, data=data)
         if response.status_code != 200:

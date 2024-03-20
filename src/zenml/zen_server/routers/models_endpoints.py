@@ -161,14 +161,12 @@ def delete_model(
     Args:
         model_name_or_id: The name or ID of the model to delete.
     """
-    verify_permissions_and_delete_entity(
+    model_id = verify_permissions_and_delete_entity(
         id=model_name_or_id,
         get_method=zen_store().get_model,
         delete_method=zen_store().delete_model,
     )
-    report_decrement(
-        ResourceType.MODEL,
-    )
+    report_decrement(ResourceType.MODEL, resource_id=model_id)
 
 
 #################

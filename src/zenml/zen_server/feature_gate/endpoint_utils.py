@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """All endpoint utils for the feature gate implementations."""
 
+from uuid import UUID
+
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import feature_gate, server_config
 
@@ -31,21 +33,27 @@ def check_entitlement(resource_type: ResourceType) -> None:
     return feature_gate().check_entitlement(resource=resource_type)
 
 
-def report_usage(resource_type: ResourceType) -> None:
+def report_usage(resource_type: ResourceType, resource_id: UUID) -> None:
     """Reports the creation/usage of a feature/resource.
 
     Args:
         resource_type: The type of resource to report a usage for
+        resource_id: ID of the resource that was created.
     """
     if not server_config().feature_gate_enabled:
         return
-    feature_gate().report_event(resource=resource_type)
+    feature_gate().report_event(
+        resource=resource_type, resource_id=resource_id
+    )
 
 
-def report_decrement(resource_type: ResourceType) -> None:
+def report_decrement(resource_type: ResourceType, resource_id: UUID) -> None:
     """Reports the deletion/deactivation of a feature/resource.
 
     Args:
         resource_type: The type of resource to report a decrement in count for.
+        resource_id: ID of the resource that was deleted.
     """
-    feature_gate().report_event(resource=resource_type, is_decrement=True)
+    feature_gate().report_event(
+        resource=resource_type, resource_id=resource_id, is_decrement=True
+    )

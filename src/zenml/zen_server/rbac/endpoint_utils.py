@@ -85,7 +85,7 @@ def verify_permissions_and_create_entity(
     created = create_method(request_model)
 
     if is_gated_feature:
-        report_usage(resource_type)
+        report_usage(resource_type, resource_id=created.id)
 
     return created
 
@@ -165,17 +165,22 @@ def verify_permissions_and_delete_entity(
     id: UUIDOrStr,
     get_method: Callable[[UUIDOrStr], AnyResponse],
     delete_method: Callable[[UUIDOrStr], None],
-) -> None:
+) -> UUID:
     """Verify permissions and delete an entity.
 
     Args:
         id: The ID of the entity to delete.
         get_method: The method to fetch the entity.
         delete_method: The method to delete the entity.
+
+    Returns:
+        The ID of the deleted entity.
     """
     model = get_method(id)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id)
+
+    return model.id
 
 
 def verify_permissions_and_prune_entities(
