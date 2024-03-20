@@ -106,6 +106,10 @@ resulting in a more streamlined and efficient workflow.
 visibility into the state of your ZenML services.
 * Improved Artifact Store Isolation: ZenML now prevents unsafe operations that access
 data outside the scope of the artifact store, ensuring better isolation and security.
+* Adding admin user notion for the user accounts and added protection to certain operations
+performed via the REST interface to ADMIN-allowed only.
+* Rate limiting for login API to prevent abuse and protect the server from potential
+security threats.
 
 
 ## 🥳 Community Contributions 🥳
