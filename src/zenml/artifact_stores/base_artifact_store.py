@@ -211,16 +211,18 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
-        values["path"] = values["path"].strip("'\"`")
-        if not any(
-            values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
-        ):
-            raise ArtifactStoreInterfaceError(
-                f"The path: '{values['path']}' you defined for your "
-                f"artifact store is not supported by the implementation of "
-                f"{cls.schema()['title']}, because it does not start with "
-                f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
-            )
+
+        if "path" in values:
+            values["path"] = values["path"].strip("'\"`")
+            if not any(
+                values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
+            ):
+                raise ArtifactStoreInterfaceError(
+                    f"The path: '{values['path']}' you defined for your "
+                    f"artifact store is not supported by the implementation of "
+                    f"{cls.schema()['title']}, because it does not start with "
+                    f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
+                )
 
         return values
 
