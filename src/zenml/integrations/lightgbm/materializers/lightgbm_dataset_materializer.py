@@ -47,15 +47,15 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+            temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-        matrix = lgb.Dataset(temp_file, free_raw_data=False)
+            # Copy from artifact store to temporary file
+            fileio.copy(filepath, temp_file)
+            matrix = lgb.Dataset(temp_file, free_raw_data=False)
 
-        # No clean up this time because matrix is lazy loaded
-        return matrix
+            # No clean up this time because matrix is lazy loaded
+            return matrix
 
     def save(self, matrix: lgb.Dataset) -> None:
         """Creates a binary serialization for a lightgbm.Dataset object.
@@ -66,13 +66,12 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
-        matrix.save_binary(temp_file)
+        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+            temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+            matrix.save_binary(temp_file)
 
-        # Copy it into artifact store
-        fileio.copy(temp_file, filepath)
-        fileio.rmtree(temp_dir)
+            # Copy it into artifact store
+            fileio.copy(temp_file, filepath)
 
     def extract_metadata(
         self, matrix: lgb.Dataset

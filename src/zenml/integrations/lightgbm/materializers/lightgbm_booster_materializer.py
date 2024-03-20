@@ -44,16 +44,14 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+            temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-        booster = lgb.Booster(model_file=temp_file)
+            # Copy from artifact store to temporary file
+            fileio.copy(filepath, temp_file)
+            booster = lgb.Booster(model_file=temp_file)
 
-        # Cleanup and return
-        fileio.rmtree(temp_dir)
-        return booster
+            return booster
 
     def save(self, booster: lgb.Booster) -> None:
         """Creates a JSON serialization for a lightgbm Booster model.

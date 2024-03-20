@@ -250,6 +250,22 @@ The `load()` and `save()` methods define the serialization and deserialization o
 
 You will need to override these methods according to how you plan to serialize your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`, then you might want to use `torch.save()` and `torch.load()` here.
 
+It is a very common practice to use temporary files and directories as an intermediate step in a materializer's `load()` or `save()` method. Materializers using this pattern must take care to clean up after themselves even in the case of unexpected exceptions. The established pattern for this is to use the [`tempfile`](https://docs.python.org/3/library/tempfile.html) module's context handlers. These are a simple and efficient way to create and clean up temporary files and directories. `tempfile` is part of Python's standard cross-platform library. For example:
+
+```python
+    def save(self, model: TFPreTrainedModel) -> None:
+        """Writes a Model to the specified dir.
+
+        Args:
+            model: The TF Model to write.
+        """
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Do something with the model in the temporary directory
+            # Save it to the artifact store
+        # When your code reaches this point, whether through normal flow or through
+        # an unhandled exception, your entire temporary directory is cleaned up.
+```
+
 #### (Optional) How to Visualize the Artifact
 
 Optionally, you can override the `save_visualizations()` method to automatically save visualizations for all artifacts saved by your materializer. These visualizations are then shown next to your artifacts in the dashboard:

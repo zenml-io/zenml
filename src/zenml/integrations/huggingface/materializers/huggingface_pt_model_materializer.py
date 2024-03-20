@@ -46,17 +46,17 @@ class HFPTModelMaterializer(BaseMaterializer):
         Returns:
             The model read from the specified dir.
         """
-        temp_dir = TemporaryDirectory()
-        io_utils.copy_dir(
-            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR), temp_dir.name
-        )
+        with TemporaryDirectory() as temp_dir:
+            io_utils.copy_dir(
+                os.path.join(self.uri, DEFAULT_PT_MODEL_DIR), temp_dir
+            )
 
-        config = AutoConfig.from_pretrained(temp_dir.name)
-        architecture = config.architectures[0]
-        model_cls = getattr(
-            importlib.import_module("transformers"), architecture
-        )
-        return model_cls.from_pretrained(temp_dir.name)
+            config = AutoConfig.from_pretrained(temp_dir)
+            architecture = config.architectures[0]
+            model_cls = getattr(
+                importlib.import_module("transformers"), architecture
+            )
+            return model_cls.from_pretrained(temp_dir)
 
     def save(self, model: PreTrainedModel) -> None:
         """Writes a Model to the specified dir.
@@ -64,12 +64,12 @@ class HFPTModelMaterializer(BaseMaterializer):
         Args:
             model: The Torch Model to write.
         """
-        temp_dir = TemporaryDirectory()
-        model.save_pretrained(temp_dir.name)
-        io_utils.copy_dir(
-            temp_dir.name,
-            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR),
-        )
+        with TemporaryDirectory() as temp_dir:
+            model.save_pretrained(temp_dir)
+            io_utils.copy_dir(
+                temp_dir,
+                os.path.join(self.uri, DEFAULT_PT_MODEL_DIR),
+            )
 
     def extract_metadata(
         self, model: PreTrainedModel
