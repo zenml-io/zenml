@@ -483,7 +483,7 @@ class Stack:
         """
         component_dict = {
             component_type.value: json.dumps(
-                component.config.model_dump(), sort_keys=True
+                component.config.model_dump(mode="json"), sort_keys=True
             )
             for component_type, component in self.components.items()
         }

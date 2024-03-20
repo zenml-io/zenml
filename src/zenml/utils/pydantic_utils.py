@@ -190,13 +190,15 @@ class YAMLSerializationMixin(BaseModel):
 
         Args:
             sort_keys: Whether to sort the keys in the YAML representation.
-            **kwargs: Kwargs to pass to the pydantic json(...) method.
+            **kwargs: Kwargs to pass to the pydantic model_dump(...) method.
 
         Returns:
             YAML string representation.
         """
         dict_ = json.loads(
-            json.dumps(self.model_dump(**kwargs), sort_keys=sort_keys)
+            json.dumps(
+                self.model_dump(mode="json", **kwargs), sort_keys=sort_keys
+            )
         )
         return yaml.dump(dict_, sort_keys=sort_keys)
 

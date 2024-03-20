@@ -119,7 +119,7 @@ class PipelineSchema(NamedSchema, table=True):
             user_id=pipeline_request.user,
             docstring=pipeline_request.docstring,
             spec=json.dumps(
-                pipeline_request.spec.model_dump(), sort_keys=True
+                pipeline_request.spec.model_dump(mode="json"), sort_keys=True
             ),
         )
 
