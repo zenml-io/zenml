@@ -58,6 +58,7 @@ from zenml.utils import (
     settings_utils,
     source_code_utils,
     source_utils,
+    typing_utils,
 )
 
 if TYPE_CHECKING:
@@ -579,7 +580,7 @@ class BaseStep(metaclass=BaseStepMeta):
         from zenml.new.pipelines.pipeline import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
-            # The step is being called outside of the context of a pipeline,
+            # The step is being called outside the context of a pipeline,
             # we simply call the entrypoint
             return self.call_entrypoint(*args, **kwargs)
 
@@ -641,7 +642,7 @@ class BaseStep(metaclass=BaseStepMeta):
         try:
             validated_args = pydantic_utils.validate_function_args(
                 self.entrypoint,
-                {"arbitrary_types_allowed": True, "smart_union": True},
+                {"arbitrary_types_allowed": True},
                 *args,
                 **kwargs,
             )
@@ -1104,12 +1105,6 @@ To avoid this consider setting step parameters only in one place (config or code
                 output_name, PartialArtifactConfiguration()
             )
 
-            from pydantic.typing import (
-                get_origin,
-                is_none_type,
-                is_union,
-            )
-
             from zenml.steps.utils import get_args
 
             if not output.materializer_source:
@@ -1122,13 +1117,15 @@ To avoid this consider setting step parameters only in one place (config or code
                     )
                     continue
 
-                if is_union(
-                    get_origin(output_annotation.resolved_annotation)
+                if typing_utils.is_union(
+                    typing_utils.get_origin(
+                        output_annotation.resolved_annotation
+                    )
                     or output_annotation.resolved_annotation
                 ):
                     output_types = tuple(
                         type(None)
-                        if is_none_type(output_type)
+                        if typing_utils.is_none_type(output_type)
                         else output_type
                         for output_type in get_args(
                             output_annotation.resolved_annotation
@@ -1171,7 +1168,9 @@ To avoid this consider setting step parameters only in one place (config or code
             }
         )
 
-        return StepConfiguration.parse_obj(self._configuration)
+        return StepConfiguration.model_validate_json(
+            self._configuration.model_dump_json()
+        )
 
     def _finalize_parameters(self) -> Dict[str, Any]:
         """Finalizes the config parameters for running this step.
