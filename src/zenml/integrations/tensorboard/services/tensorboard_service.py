@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the TensorBoard service."""
 
-from typing import Any, Dict, Union
 import uuid
+from typing import Any, Dict, Union
 
 from tensorboard import default, program  # type: ignore [import-untyped]
 from tensorboard.uploader import (  # type: ignore [import-untyped]
