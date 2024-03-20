@@ -570,7 +570,7 @@ class BaseFilter(BaseModel):
 
         # Handle unsupported datatypes
         logger.warning(
-            f"The Datatype {cls.__fields__[column].type_} might not be "
+            f"The Datatype {cls.model_fields[column].annotation} might not be "
             "supported for filtering. Defaulting to a string filter."
         )
         return StrFilter(
@@ -599,7 +599,7 @@ class BaseFilter(BaseModel):
 
     @classmethod
     def is_uuid_field(cls, k: str) -> bool:
-        """Checks if it's a uuid field.
+        """Checks if it's a UUID field.
 
         Args:
             k: The key to check.
