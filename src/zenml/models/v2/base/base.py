@@ -243,9 +243,9 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
         """
         if self.metadata is None:
             # If the metadata is not there, check the class first.
-            metadata_type = self.__fields__["metadata"].type_
+            metadata_type = self.model_fields["metadata"].annotation
 
-            if len(metadata_type.__fields__):
+            if len(metadata_type.model_fields):
                 # If the metadata class defines any fields, fetch the metadata
                 # through the hydrated version.
                 hydrated_version = self.get_hydrated_version()
@@ -271,9 +271,9 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
         """
         if self.resources is None:
             # If the resources are not there, check the class first.
-            resources_type = self.__fields__["resources"].type_
+            resources_type = self.model_fields["resources"].annotation
 
-            if len(resources_type.__fields__):
+            if len(resources_type.model_fields):
                 # If the resources class defines any fields, fetch the resources
                 # through the hydrated version.
                 hydrated_version = self.get_hydrated_version()
@@ -323,10 +323,12 @@ class BaseIdentifiedResponse(
         "creation and updated fields."
     )
     metadata: Optional["AnyMetadata"] = Field(
-        title="The metadata related to this resource."
+        title="The metadata related to this resource.",
+        default=None,
     )
     resources: Optional["AnyResources"] = Field(
-        title="The resources related to this resource."
+        title="The resources related to this resource.",
+        default=None,
     )
     permission_denied: bool = False
 
