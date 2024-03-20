@@ -16,6 +16,7 @@
 import os
 import sys
 from typing import TYPE_CHECKING, Any, Optional
+import uuid
 
 import psutil
 from rich import print

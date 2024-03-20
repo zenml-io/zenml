@@ -14,6 +14,7 @@
 """Implementation of the TensorBoard service."""
 
 from typing import Any, Dict, Union
+import uuid
 
 from tensorboard import default, program  # type: ignore [import-untyped]
 from tensorboard.uploader import (  # type: ignore [import-untyped]
@@ -103,7 +104,7 @@ class TensorboardService(LocalDaemonService):
                 ),
             )
             attrs["endpoint"] = endpoint
-        super().__init__(config=config, **attrs)
+        super().__init__(config=config, uuid=uuid.uuid4(), **attrs)
 
     def run(self) -> None:
         """Initialize and run the TensorBoard server."""
