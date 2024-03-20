@@ -8,13 +8,88 @@ architecture.
 
 ## Breaking Change:
 
-A significant change in this release is the migration of `Service`(ZenML technical term for deployment)
+A significant change in this release is the migration of `Service` (ZenML's technical term for deployment)
 registration and deployment from local or remote environments to the ZenML server.
-This change which will be reflected in an upcoming tab in the dashboard which will
-allow users to explore and see the deployed models in the dashboard with latest
-status and metadata. This architectural shift also simplifies the model deployer
-abstraction and streamlines the model deployment process for users by moving from
-limited built-in steps to a more documented and flexible approach.
+This change will be reflected in an upcoming tab in the dashboard, allowing users
+to explore and see the deployed models with their latest status and metadata.
+
+This architectural shift simplifies the model deployer abstraction and streamlines
+the model deployment process for users by moving from limited built-in steps to
+a more documented and flexible approach.
+
+Important Note: If you have already deployed models, you might want to redeploy them to have them stored in the ZenML server and tracked by ZenML, ensuring they appear in the dashboard.
+
+Additionally, the find_model_server method now retrieves models (services) from the
+ZenML server instead of local or remote deployment environments. As a result, any
+usage of find_model_server will only return newly deployed models stored in the server.
+It is also no longer recommended to call service functions such as service.start().
+Instead, use model_deployer.start_model_server(service_id), which will allow ZenML
+to update the changed status of the service in the server.
+
+### Starting a service
+**Old syntax:**
+```python
+from zenml import pipeline, 
+from zenml.integrations.bentoml.services.bentoml_deployment import BentoMLDeploymentService
+
+@step
+def predictor(
+    service: BentoMLDeploymentService,
+) -> None:
+    # starting the service
+    service.start(timeout=10)
+```
+
+**New syntax:**
+```python
+from zenml import pipeline
+from zenml.integrations.bentoml.model_deployers import BentoMLModelDeployer
+from zenml.integrations.bentoml.services.bentoml_deployment import BentoMLDeploymentService
+
+@step
+def predictor(
+    service: BentoMLDeploymentService,
+) -> None:
+    # starting the service
+    model_deployer = BentoMLModelDeployer.get_active_model_deployer()
+    model_deployer.start_model_server(service_id=service.service_id, timeout=10)
+
+```
+
+### Enabling continuous deployment
+
+Instead of replace parameter that was used in `deploy_model` method to replace the
+existing service if it matches the exact same pipeline name and step name without
+taking into accounts other parameters or configurations, we now have a new parameter
+`continuous_deployment_mode` that allows you to enable continuous deployment for
+the service. This will ensure that the service is updated with the latest version
+if it's on the same pipeline and step, and the service is not already running otherwise
+any new deployment with different configurations will create a new service.
+
+```python
+from zenml import pipeline, step, get_step_context
+from zenml.client import Client
+
+@step
+def deploy_model() -> Optional[MLFlowDeploymentService]:
+    # Deploy a model using the MLflow Model Deployer
+    zenml_client = Client()
+    model_deployer = zenml_client.active_stack.model_deployer
+    mlflow_deployment_config = MLFlowDeploymentConfig(
+        name: str = "mlflow-model-deployment-example",
+        description: str = "An example of deploying a model using the MLflow Model Deployer",
+        pipeline_name: str = get_step_context().pipeline_name,
+        pipeline_step_name: str = get_step_context().step_name,
+        model_uri: str = "runs:/<run_id>/model" or "models:/<model_name>/<model_version>",
+        model_name: str = "model",
+        workers: int = 1
+        mlserver: bool = False
+        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
+    )
+    service = model_deployer.deploy_model(mlflow_deployment_config, continuous_deployment_mode=True)
+    logger.info(f"The deployed service info: {model_deployer.get_model_server_info(service)}")
+    return service
+```
 
 
 ## Major Features and Enhancements:
