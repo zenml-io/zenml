@@ -44,6 +44,7 @@ from pydantic import (
     ConfigDict,
     Field,
     SecretStr,
+    SerializeAsAny,
     field_validator,
     model_validator,
 )
@@ -374,8 +375,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
-    secrets_store: Optional[SecretsStoreConfiguration] = None
-    backup_secrets_store: Optional[SecretsStoreConfiguration] = None
+    secrets_store: Optional[SerializeAsAny[SecretsStoreConfiguration]] = None
+    backup_secrets_store: Optional[
+        SerializeAsAny[SecretsStoreConfiguration]
+    ] = None
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
