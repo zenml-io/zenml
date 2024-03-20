@@ -25,8 +25,10 @@ from zenml.config.global_config import (
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
+    handle_bool_env_var,
 )
 from zenml.enums import StoreType
 
@@ -122,6 +124,10 @@ def get_config_environment_vars(
     )
     environment_vars[ENV_ZENML_ACTIVE_WORKSPACE_ID] = str(
         Client().active_workspace.id
+    )
+    # Set color logging to whatever is locally configured
+    environment_vars[ENV_ZENML_LOGGING_COLORS_DISABLED] = str(
+        handle_bool_env_var(ENV_ZENML_LOGGING_COLORS_DISABLED, False)
     )
 
     return environment_vars
