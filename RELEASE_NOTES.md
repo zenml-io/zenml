@@ -18,14 +18,16 @@ status and metadata. This architectural shift also simplifies the model deployer
 abstraction and streamlines the model deployment process for users by moving from
 limited built-in steps to a more documented and flexible approach.
 
-Important Note: If you have already deployed models, you might want to redeploy them to
-have them stored in the ZenML server and tracked by ZenML, ensuring they appear in the dashboard.
+Important note: If you have models that you previously deployed with ZenML, you might
+want to redeploy them to have them stored in the ZenML server and tracked by ZenML,
+ensuring they appear in the dashboard.
 
-Additionally, the find_model_server method now retrieves models (services) from the
+Additionally, the `find_model_server` method now retrieves models (services) from the
 ZenML server instead of local or remote deployment environments. As a result, any
-usage of find_model_server will only return newly deployed models stored in the server.
-It is also no longer recommended to call service functions such as service.start().
-Instead, use model_deployer.start_model_server(service_id), which will allow ZenML
+usage of `find_model_server` will only return newly deployed models stored in the server.
+
+It is also no longer recommended to call service functions like `service.start()`.
+Instead, use `model_deployer.start_model_server(service_id)`, which will allow ZenML
 to update the changed status of the service in the server.
 
 ### Starting a service
