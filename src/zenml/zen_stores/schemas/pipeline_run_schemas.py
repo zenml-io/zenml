@@ -49,6 +49,7 @@ if TYPE_CHECKING:
         ModelVersionPipelineRunSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
@@ -181,6 +182,10 @@ class PipelineRunSchema(NamedSchema, table=True):
     schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
     trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
+
+    services: List["ServiceSchema"] = Relationship(
+        back_populates="pipeline_run",
+    )
 
     @classmethod
     def from_request(

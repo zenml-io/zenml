@@ -184,13 +184,10 @@ class TerraformZenServer(TerraformService):
             The terraform ZenML server service or None, if the terraform server
             deployment is not found.
         """
-        from zenml.services import ServiceRegistry
-
         try:
             with open(TERRAFORM_ZENML_SERVER_CONFIG_FILENAME, "r") as f:
                 return cast(
-                    TerraformZenServer,
-                    ServiceRegistry().load_service_from_json(f.read()),
+                    TerraformZenServer, TerraformZenServer.from_json(f.read())
                 )
         except FileNotFoundError:
             return None
