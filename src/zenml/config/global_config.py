@@ -26,6 +26,7 @@ from pydantic import (
     ConfigDict,
     Field,
     SecretStr,
+    SerializeAsAny,
     ValidationError,
     field_validator,
 )
@@ -123,7 +124,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
     version: Optional[str] = None
-    store: Optional[StoreConfiguration] = None
+    store: Optional[SerializeAsAny[StoreConfiguration]] = None
     active_stack_id: Optional[uuid.UUID] = None
     active_workspace_name: Optional[str] = None
 
