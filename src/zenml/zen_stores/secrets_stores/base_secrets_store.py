@@ -372,5 +372,4 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
     model_config = ConfigDict(
         validate_assignment=True,
         extra="ignore",
-        underscore_attrs_are_private=True,
     )
