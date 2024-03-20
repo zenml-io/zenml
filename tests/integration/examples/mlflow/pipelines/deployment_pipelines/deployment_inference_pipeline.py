@@ -36,6 +36,5 @@ def mlflow_deployment_inference_pipeline(
     model_deployment_service = prediction_service_loader(
         pipeline_name=pipeline_name,
         pipeline_step_name=pipeline_step_name,
-        running=False,
     )
     predictor(model_deployment_service, inference_data)

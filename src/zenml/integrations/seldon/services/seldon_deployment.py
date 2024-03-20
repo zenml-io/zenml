@@ -86,8 +86,6 @@ class SeldonDeploymentConfig(ServiceConfig):
         labels = {}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
-        if self.run_name:
-            labels["zenml.run_name"] = self.run_name
         if self.pipeline_step_name:
             labels["zenml.pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
@@ -174,6 +172,7 @@ class SeldonDeploymentService(BaseDeploymentService):
         type="model-serving",
         flavor="seldon",
         description="Seldon Core prediction service",
+        logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/seldon.png",
     )
 
     config: SeldonDeploymentConfig

@@ -1132,6 +1132,10 @@ def get_service_state_emoji(state: "ServiceState") -> str:
         return ":pause_button:"
     if state == ServiceState.ERROR:
         return ":heavy_exclamation_mark:"
+    if state == ServiceState.PENDING_STARTUP:
+        return ":hourglass:"
+    if state == ServiceState.SCALED_TO_ZERO:
+        return ":chart_decreasing:"
     return ":hourglass_not_done:"
 
 
@@ -1146,15 +1150,18 @@ def pretty_print_model_deployer(
     """
     model_service_dicts = []
     for model_service in model_services:
-        served_model_info = model_deployer.get_model_server_info(model_service)
         dict_uuid = str(model_service.uuid)
         dict_pl_name = model_service.config.pipeline_name
         dict_pl_stp_name = model_service.config.pipeline_step_name
-        dict_model_name = served_model_info.get("MODEL_NAME", "")
+        dict_model_name = model_service.config.model_name
+        type = model_service.SERVICE_TYPE.type
+        flavor = model_service.SERVICE_TYPE.flavor
         model_service_dicts.append(
             {
                 "STATUS": get_service_state_emoji(model_service.status.state),
                 "UUID": dict_uuid,
+                "TYPE": type,
+                "FLAVOR": flavor,
                 "PIPELINE_NAME": dict_pl_name,
                 "PIPELINE_STEP_NAME": dict_pl_stp_name,
                 "MODEL_NAME": dict_model_name,
@@ -1281,9 +1288,10 @@ def print_served_model_configuration(
         **served_model_info,
         "UUID": str(model_service.uuid),
         "STATUS": get_service_state_emoji(model_service.status.state),
+        "TYPE": model_service.SERVICE_TYPE.type,
+        "FLAVOR": model_service.SERVICE_TYPE.flavor,
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 

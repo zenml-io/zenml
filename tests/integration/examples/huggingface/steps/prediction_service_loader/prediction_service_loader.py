@@ -43,19 +43,16 @@ def prediction_service_loader(
     # get the Huggingface model deployer stack component
     model_deployer = HuggingFaceModelDeployer.get_active_model_deployer()
 
-    # fetch existing services with same pipeline name, step name and model name
-    services = model_deployer.find_model_server(
+    if services := model_deployer.find_model_server(
         pipeline_name=pipeline_name,
         pipeline_step_name=pipeline_step_name,
         model_name=model_name,
         running=running,
-    )
-
-    if not services:
+    ):
+        return cast(HuggingFaceDeploymentService, services[0])
+    else:
         raise RuntimeError(
             f"No Huggingface inference endpoint deployed by step "
             f"'{pipeline_step_name}' in pipeline '{pipeline_name}' with name "
             f"'{model_name}' is currently running."
         )
-
-    return cast(HuggingFaceDeploymentService, services[0])

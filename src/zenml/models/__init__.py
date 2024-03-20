@@ -89,6 +89,15 @@ from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
 )
+from zenml.models.v2.core.service import (
+    ServiceResponse,
+    ServiceResponseBody,
+    ServiceResponseMetadata,
+    ServiceUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponseResources,
+)
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
     CodeReferenceResponse,
@@ -157,6 +166,7 @@ from zenml.models.v2.core.model_version import (
     ModelVersionResponseMetadata,
     ModelVersionFilter,
     ModelVersionUpdate,
+    ModelVersionResponseResources,
 )
 from zenml.models.v2.core.model_version_artifact import (
     ModelVersionArtifactFilter,
@@ -402,6 +412,15 @@ FlavorResponseBody.update_forward_refs(
 FlavorResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
+ServiceResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ServiceResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ServiceResponseResources.update_forward_refs(
+    ModelVersionResponse=ModelVersionResponse,
+)
 ModelResponseBody.update_forward_refs(
     UserResponse=UserResponse,
     TagResponse=TagResponse,
@@ -417,6 +436,9 @@ ModelVersionResponseBody.update_forward_refs(
 ModelVersionResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     RunMetadataResponse=RunMetadataResponse,
+)
+ModelVersionResponseResources.update_forward_refs(
+    ServiceResponse=ServiceResponse,
 )
 ModelVersionArtifactResponseBody.update_forward_refs(
     ArtifactVersionResponse=ArtifactVersionResponse,
@@ -639,6 +661,7 @@ __all__ = [
     "ModelVersionResponse",
     "ModelVersionResponseBody",
     "ModelVersionResponseMetadata",
+    "ModelVersionResponseResources",
     "ModelVersionUpdate",
     "ModelVersionArtifactFilter",
     "ModelVersionArtifactRequest",
@@ -765,6 +788,13 @@ __all__ = [
     "WorkspaceResponse",
     "WorkspaceResponseBody",
     "WorkspaceResponseMetadata",
+    "ServiceResponse",
+    "ServiceResponseBody",
+    "ServiceResponseMetadata",
+    "ServiceUpdate",
+    "ServiceFilter",
+    "ServiceRequest",
+    "ServiceResponseResources",
     # V2 Misc
     "AuthenticationMethodModel",
     "ServiceConnectorResourcesModel",
