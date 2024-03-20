@@ -3,21 +3,23 @@
 
 ZenML 0.56.0 introduces a wide array of new features, enhancements, and bug fixes,
 with a strong emphasis on elevating the user experience and streamlining machine
-learning workflows. This release also comes with a breaking change to the services
+learning workflows. Most notably, you can now deploy models using Hugging Face inference endpoints thanks for an open-source community contribution of this model deployer stack component!
+
+This release also comes with a breaking change to the services
 architecture.
 
-## Breaking Change:
+## Breaking Change
 
-A significant change in this release is the migration of `Service` (ZenML's technical term for deployment)
+A significant change in this release is the migration of the `Service` (ZenML's technical term for deployment)
 registration and deployment from local or remote environments to the ZenML server.
-This change will be reflected in an upcoming tab in the dashboard, allowing users
-to explore and see the deployed models with their latest status and metadata.
+This change which will be reflected in an upcoming tab in the dashboard which will
+allow users to explore and see the deployed models in the dashboard with their latest
+status and metadata. This architectural shift also simplifies the model deployer
+abstraction and streamlines the model deployment process for users by moving from
+limited built-in steps to a more documented and flexible approach.
 
-This architectural shift simplifies the model deployer abstraction and streamlines
-the model deployment process for users by moving from limited built-in steps to
-a more documented and flexible approach.
-
-Important Note: If you have already deployed models, you might want to redeploy them to have them stored in the ZenML server and tracked by ZenML, ensuring they appear in the dashboard.
+Important Note: If you have already deployed models, you might want to redeploy them to
+have them stored in the ZenML server and tracked by ZenML, ensuring they appear in the dashboard.
 
 Additionally, the find_model_server method now retrieves models (services) from the
 ZenML server instead of local or remote deployment environments. As a result, any
@@ -95,13 +97,13 @@ def deploy_model() -> Optional[MLFlowDeploymentService]:
 ## Major Features and Enhancements:
 
 * A new `Huggingface Model Deployer` has been introduced, allowing you to seamlessly
-deploy your Huggingface models using ZenML.
+deploy your Huggingface models using ZenML. (Thank you so much @dudeperf3ct for the contribution!)
 * Faster Integration and Dependency Management ZenML now leverages the `uv` library,
 significantly improving the speed of integration installations and dependency management,
 resulting in a more streamlined and efficient workflow.
 * Enhanced Logging and Status Tracking Logging have been improved, providing better
 visibility into the state of your ZenML services.
-* Improved Artifact Store Isolation ZenML now prevents unsafe operations that access
+* Improved Artifact Store Isolation: ZenML now prevents unsafe operations that access
 data outside the scope of the artifact store, ensuring better isolation and security.
 
 
