@@ -29,7 +29,7 @@ jobs:
       - name: Install mlstacks package
         run: uv pip install --system mlstacks
       - name: Check for broken dependencies
-        run: pip check
+        run: uv pip check
   mysql-db-migration-testing:
     runs-on: arc-runner-set
     env:
