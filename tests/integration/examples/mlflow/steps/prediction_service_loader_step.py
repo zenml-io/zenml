@@ -39,8 +39,7 @@ def prediction_service_loader(
     model_deployer = MLFlowModelDeployer.get_active_model_deployer()
 
     # fetch existing services with same pipeline name, step name and model name
-    existing_services = model_deployer.find_model_server(
-    )
+    existing_services = model_deployer.find_model_server()
 
     if not existing_services:
         raise RuntimeError(
