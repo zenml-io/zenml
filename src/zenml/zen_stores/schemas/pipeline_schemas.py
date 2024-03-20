@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
@@ -117,7 +118,9 @@ class PipelineSchema(NamedSchema, table=True):
             workspace_id=pipeline_request.workspace,
             user_id=pipeline_request.user,
             docstring=pipeline_request.docstring,
-            spec=pipeline_request.spec.json(sort_keys=True),
+            spec=json.dumps(
+                pipeline_request.spec.model_dump(), sort_keys=True
+            ),
         )
 
     def to_model(
