@@ -215,7 +215,7 @@ You can find the URL of the Neptune run linked to a specific ZenML run printed o
 
 ### Further reading
 
-Check [Neptune's docs](https://docs.neptune.ai/integrations/zenml/) on further information on how to use this integration and Neptune in general.
+Check [Neptune's docs](https://docs.neptune.ai/integrations/zenml/) for further information on how to use this integration and Neptune in general.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
