@@ -110,6 +110,8 @@ data outside the scope of the artifact store, ensuring better isolation and secu
 performed via the REST interface to ADMIN-allowed only.
 * Rate limiting for login API to prevent abuse and protect the server from potential
 security threats.
+* The LLM template is now supported in ZenML, allowing you to use the LLM template
+for your pipelines.
 
 
 ## 🥳 Community Contributions 🥳
