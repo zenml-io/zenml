@@ -243,7 +243,14 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
         """
         if self.metadata is None:
             # If the metadata is not there, check the class first.
-            metadata_type = self.model_fields["metadata"].annotation
+            metadata_annotation = self.model_fields["metadata"].annotation
+
+            # metadata is defined as:
+            #   metadata: Optional[....ResponseMetadata] = Field(default=None)
+            # We need to find the actual class inside the Optional annotation.
+            from zenml.utils.typing_utils import get_args
+            metadata_type = get_args(metadata_annotation)[0]
+            assert issubclass(metadata_type, BaseResponseMetadata)
 
             if len(metadata_type.model_fields):
                 # If the metadata class defines any fields, fetch the metadata
@@ -271,7 +278,14 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
         """
         if self.resources is None:
             # If the resources are not there, check the class first.
-            resources_type = self.model_fields["resources"].annotation
+            resources_annotation = self.model_fields["resources"].annotation
+
+            # metadata is defined as:
+            #   metadata: Optional[....ResponseMetadata] = Field(default=None)
+            # We need to find the actual class inside the Optional annotation.
+            from zenml.utils.typing_utils import get_args
+            resources_type = get_args(resources_annotation)[0]
+            assert issubclass(resources_type, BaseResponseResources)
 
             if len(resources_type.model_fields):
                 # If the resources class defines any fields, fetch the resources
@@ -282,7 +296,7 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
             else:
                 # Otherwise, use the resources class to create an empty
                 # resources object.
-                self.metadata = resources_type()
+                self.resources = resources_type()
 
         if self.resources is None:
             raise RuntimeError(
@@ -317,19 +331,7 @@ class BaseIdentifiedResponse(
     """Base domain model for resources with DB representation."""
 
     id: UUID = Field(title="The unique resource id.")
-    body: Optional["AnyDatedBody"] = Field(
-        title="The body of the resource, "
-        "containing at the minimum "
-        "creation and updated fields."
-    )
-    metadata: Optional["AnyMetadata"] = Field(
-        title="The metadata related to this resource.",
-        default=None,
-    )
-    resources: Optional["AnyResources"] = Field(
-        title="The resources related to this resource.",
-        default=None,
-    )
+
     permission_denied: bool = False
 
     # Helper functions
