@@ -62,7 +62,7 @@ def _create_deployment(
 
     Args:
         deployment: Base of the deployment to create.
-        pipeline_id: Pipeline ID to use for the deloyment.
+        pipeline_id: Pipeline ID to use for the deployment.
         code_repository: Code repository to use for the deployment.
 
     Returns:
