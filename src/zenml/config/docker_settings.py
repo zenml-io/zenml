@@ -217,6 +217,9 @@ class DockerSettings(BaseSettings):
         Returns:
             The migrated settings values.
         """
+        if isinstance(values, cls) or issubclass(cls, values.__class__):
+            values = values.model_dump()
+
         copy_files = values.get("copy_files", None)
 
         if copy_files is None:
@@ -234,6 +237,7 @@ class DockerSettings(BaseSettings):
             values["source_files"] = SourceFileMode.IGNORE
 
         return values
+
 
     @model_validator(mode="after")
     def _validate_skip_build(self) -> "DockerSettings":
