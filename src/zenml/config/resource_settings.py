@@ -71,7 +71,7 @@ class ResourceSettings(BaseSettings):
 
     cpu_count: Optional[PositiveFloat] = None
     gpu_count: Optional[NonNegativeInt] = None
-    memory: Optional[str] = Field(pattern=MEMORY_REGEX)
+    memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
 
     @property
     def empty(self) -> bool:
