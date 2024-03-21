@@ -202,7 +202,7 @@ class StepConfiguration(PartialStepConfiguration):
         model_or_dict: SettingsOrDict = self.settings.get(
             RESOURCE_SETTINGS_KEY, {}
         )
-        return ResourceSettings.parse_obj(model_or_dict)
+        return ResourceSettings.model_validate(model_or_dict)
 
     @property
     def docker_settings(self) -> "DockerSettings":
@@ -216,7 +216,7 @@ class StepConfiguration(PartialStepConfiguration):
         model_or_dict: SettingsOrDict = self.settings.get(
             DOCKER_SETTINGS_KEY, {}
         )
-        return DockerSettings.parse_obj(model_or_dict)
+        return DockerSettings.model_validate(model_or_dict)
 
 
 class InputSpec(StrictBaseModel):
