@@ -2,12 +2,13 @@
 description: Links to common use cases, workflows and tasks using ZenML.
 ---
 
+# 📚 How do I...?
+
 {% hint style="warning" %}
 This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
 {% endhint %}
 
-
-# 📚 How do I...?
+## 📚 How do I...?
 
 **Last Updated**: December 13, 2023
 
@@ -60,7 +61,5 @@ Upgrading your ZenML client package is as simple as running `pip install --upgra
 * use a \<YOUR\_COMPONENT\_GOES\_HERE> stack component?
 
 For information on how to use a specific stack component, please refer to [the component guide](../stacks-and-components/component-guide/component-guide.md) which contains all our tips and advice on how to use each integration and component with ZenML.
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -66,7 +66,7 @@
 ## Deploying ZenML
 
 * [🤔 Why deploy ZenML?](deploying-zenml/why-deploy-zenml.md)
-* [☁ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
+* [☁️ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
   * [User Management](deploying-zenml/zenml-cloud/user-management.md)
   * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
 * [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/zenml-self-hosted.md)
@@ -157,7 +157,7 @@
   * [AWS Service Connector](stacks-and-components/auth-management/aws-service-connector.md)
   * [GCP Service Connector](stacks-and-components/auth-management/gcp-service-connector.md)
   * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
-* [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
+* [⚒️ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
   * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
   * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
@@ -169,7 +169,7 @@
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
 * [🔏 End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
-* [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)
+* [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e\_nlp)
 * [🧩 More Projects...](https://github.com/zenml-io/zenml-projects)
 
 ## Reference
@@ -177,7 +177,7 @@
 * [🐍 Python Client](reference/python-client.md)
 * [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [📚 How do I...?](reference/how-do-i.md)
-* [♻ Migration guide](reference/migration-guide/migration-guide.md)
+* [♻️ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
   * [Migration guide 0.23.0 → 0.30.0](reference/migration-guide/migration-zero-thirty.md)
   * [Migration guide 0.39.1 → 0.41.0](reference/migration-guide/migration-zero-forty.md)

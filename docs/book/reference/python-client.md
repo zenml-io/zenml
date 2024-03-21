@@ -2,12 +2,13 @@
 description: Interacting with your ZenML instance through the ZenML Client.
 ---
 
+# 🐍 Python Client
+
 {% hint style="warning" %}
 This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
 {% endhint %}
 
-
-# Use the Python Client
+## Use the Python Client
 
 Pipelines, runs, stacks, and many other ZenML resources are stored and versioned in a database within your ZenML instance behind the scenes. The ZenML Python `Client` allows you to fetch, update, or even create any of these resources programmatically in Python.
 
@@ -15,7 +16,7 @@ Pipelines, runs, stacks, and many other ZenML resources are stored and versioned
 In all other programming languages and environments, you can interact with ZenML resources through the REST API endpoints of your ZenML server instead. Checkout the `/docs/` page of your server for an overview of all available endpoints.
 {% endhint %}
 
-### Usage Example
+#### Usage Example
 
 The following example shows how to use the ZenML Client to fetch the last 10 pipeline runs that you ran yourself on the stack that you have currently set:
 
@@ -35,13 +36,13 @@ for pipeline_run in my_runs_on_current_stack:
     print(pipeline_run.name)
 ```
 
-### List of Resources
+#### List of Resources
 
 These are the main ZenML resources that you can interact with via the ZenML Client:
 
-#### Pipelines, Runs, Artifacts
+**Pipelines, Runs, Artifacts**
 
-* **Pipelines**: The pipeline (versions)  that were implicitly tracked when running ZenML pipelines.
+* **Pipelines**: The pipeline (versions) that were implicitly tracked when running ZenML pipelines.
 * **Pipeline Runs**: Information about all pipeline runs that were executed on your ZenML instance.
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
@@ -53,7 +54,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 Checkout the [documentation on fetching runs](../../starter-guide/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
-#### Stacks, Infrastructure, Authentication
+**Stacks, Infrastructure, Authentication**
 
 * **Stack**: The stacks registered in your ZenML instance.
 * **Stack Components**: The stack components registered in your ZenML instance, e.g., all orchestrators, artifact stores, model deployers, ...
@@ -65,9 +66,9 @@ Checkout the [documentation on fetching runs](../../starter-guide/fetching-pipel
 * **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../secret-management/secret-management.md).
 * **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../../../stacks-and-components/auth-management/auth-management.md).
 
-### Client Methods
+#### Client Methods
 
-#### Reading and Writing Resources
+**Reading and Writing Resources**
 
 **List Methods**
 
@@ -102,7 +103,7 @@ client.get_pipeline_run("first_pipeline-2023_06_20-16")  # Name prefix
 
 Methods for creating / updating / deleting resources are only available for some of the resources and the required arguments are different for each resource. Checkout the [Client SDK Documentation](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/) to find out whether a specific resource supports write operations through the Client and which arguments are required.
 
-#### Active User and Active Stack
+**Active User and Active Stack**
 
 For some use cases you might need to know information about the user that you are authenticated as or the stack that you have currently set as active. You can fetch this information via the `client.active_user` and `client.active_stack_model` properties respectively, e.g.:
 
@@ -113,7 +114,7 @@ my_runs_on_current_stack = client.list_pipeline_runs(
 )
 ```
 
-### Resource Models
+#### Resource Models
 
 The methods of the ZenML Client all return **Response Models**, which are [Pydantic Models](https://docs.pydantic.dev/latest/usage/models/) that allow ZenML to validate that the returned data always has the correct attributes and types. E.g., the `client.list_pipeline_runs` method always returns type `Page[PipelineRunResponseModel]`.
 

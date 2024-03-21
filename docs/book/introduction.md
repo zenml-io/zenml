@@ -2,27 +2,23 @@
 description: Welcome to ZenML!
 ---
 
+# ⭐ Introduction
+
 {% hint style="warning" %}
 This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
 {% endhint %}
 
-
-# ⭐ Introduction
+## ⭐ Introduction
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
 
-<div align="center" data-full-width="true">
+<div data-full-width="true">
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
-
- 
-
-<figure><img src=".gitbook/assets/intro-zenml-overview.png" alt="ZenML overview"><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/intro-zenml-overview.png" alt=""><figcaption></figcaption></figure>
 
 </div>
 
 {% tabs %}
-
 {% tab title="For MLOps Platform Engineers" %}
 ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
 
@@ -70,7 +66,7 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 
 Ready to deploy and manage your MLOps infrastructure with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <mark style="color:purple;"><strong>Switch to production</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td><a href="user-guide/production-guide/cloud-orchestration.md">cloud-orchestration.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td><a href="stacks-and-components/component-guide/component-guide.md">component-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗️</span> <mark style="color:purple;"><strong>Switch to production</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td><a href="user-guide/production-guide/cloud-orchestration.md">cloud-orchestration.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td><a href="stacks-and-components/component-guide/component-guide.md">component-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
 {% endtab %}
 
 {% tab title="For Data Scientists" %}
@@ -153,7 +149,6 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
 
 Ready to manage your ML lifecycles end-to-end with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td><a href="user-guide/starter-guide/starter-guide.md">starter-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <mark style="color:purple;"><strong>Advanced Guide</strong></mark></td><td>Discover advanced ZenML features like config management and containerization.</td><td><a href="user-guide/advanced-guide/advanced-guide.md">advanced-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <mark style="color:purple;"><strong>Examples</strong></mark></td><td>Explore ZenML through practical use-case examples.</td><td><a href="learning/projects.md">projects.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td><a href="user-guide/starter-guide/starter-guide.md">starter-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <mark style="color:purple;"><strong>Advanced Guide</strong></mark></td><td>Discover advanced ZenML features like config management and containerization.</td><td><a href="user-guide/advanced-guide/advanced-guide.md">advanced-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑‍🏫</span> <mark style="color:purple;"><strong>Examples</strong></mark></td><td>Explore ZenML through practical use-case examples.</td><td><a href="learning/projects.md">projects.md</a></td></tr></tbody></table>
 {% endtab %}
-
 {% endtabs %}

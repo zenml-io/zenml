@@ -2,18 +2,19 @@
 description: Deploying your stack components directly from the ZenML CLI
 ---
 
+# ⚒️ Stack deployment
+
 {% hint style="warning" %}
 This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
 {% endhint %}
 
-
-# ⚒ Stack deployment
+## ⚒ Stack deployment
 
 The first step in running your pipelines on remote infrastructure is to deploy all the components that you would need, like an MLflow tracking server, a Seldon Core model deployer, and more to your cloud.
 
 This can bring plenty of benefits like scalability, reliability, and collaboration. ZenML eases the path to production by providing a seamless way for all tools to interact with others through the use of abstractions. However, one of the most painful parts of this process, from what we see on our Slack and in general, is the deployment of these stack components.
 
-## Deploying MLOps tools is tricky 😭😵‍💫
+### Deploying MLOps tools is tricky 😭😵‍💫
 
 It is not trivial to set up all the different tools that you might need for your pipeline.
 
@@ -28,82 +29,44 @@ All of these points make taking your pipelines to production a more difficult ta
 
 Thus, to make even this process easier for our users, we have created the `deploy` CLI which allows you to quickly get started with a full-fledged MLOps stack using only a few commands. You can choose to deploy individual stack components through the stack-component CLI or deploy a stack with multiple components together (a tad more manual steps).
 
-## What is `mlstacks`?
+### What is `mlstacks`?
 
-[MLStacks](https://mlstacks.zenml.io) is a
-[Python package](https://pypi.org/project/mlstacks/) that allows you to quickly
-spin up MLOps infrastructure using Terraform. It is designed to be used with
-[ZenML](https://zenml.io), but can be used with any MLOps tool or platform.
+[MLStacks](https://mlstacks.zenml.io) is a [Python package](https://pypi.org/project/mlstacks/) that allows you to quickly spin up MLOps infrastructure using Terraform. It is designed to be used with [ZenML](https://zenml.io), but can be used with any MLOps tool or platform.
 
-The ZenML CLI has special subcommands that allow you to deploy individual stack
-components as well as whole stacks using MLStacks. These stacks will be useful for you if:
+The ZenML CLI has special subcommands that allow you to deploy individual stack components as well as whole stacks using MLStacks. These stacks will be useful for you if:
 
-- You are at the start of your MLOps journey, and would like to explore
-  different tools.
-- You are looking for guidelines for production-grade deployments.
+* You are at the start of your MLOps journey, and would like to explore different tools.
+* You are looking for guidelines for production-grade deployments.
 
-## Installing the mlstacks extra
+### Installing the mlstacks extra
 
-To install `mlstacks`, either run `pip install mlstacks` or `pip install
-"zenml[mlstacks]"` to install it along with ZenML.
+To install `mlstacks`, either run `pip install mlstacks` or `pip install "zenml[mlstacks]"` to install it along with ZenML.
 
-MLStacks uses Terraform on the backend to manage infrastructure. You will need
-to have Terraform installed. Please visit [the Terraform
-docs](https://learn.hashicorp.com/tutorials/terraform/install-cli#install-terraform)
-for installation instructions.
+MLStacks uses Terraform on the backend to manage infrastructure. You will need to have Terraform installed. Please visit [the Terraform docs](https://learn.hashicorp.com/tutorials/terraform/install-cli#install-terraform) for installation instructions.
 
-MLStacks also uses Helm to deploy Kubernetes resources. You will need to have
-Helm installed. Please visit [the Helm
-docs](https://helm.sh/docs/intro/install/#from-script) for installation
-instructions.
+MLStacks also uses Helm to deploy Kubernetes resources. You will need to have Helm installed. Please visit [the Helm docs](https://helm.sh/docs/intro/install/#from-script) for installation instructions.
 
-## Deploying a stack component
+### Deploying a stack component
 
-The ZenML CLI allows you to deploy individual stack components using the
-`deploy` subcommand which is implemented for all supported stack components. You
-can find the list of supported stack components
-[here](./deploy-a-stack-component).
+The ZenML CLI allows you to deploy individual stack components using the `deploy` subcommand which is implemented for all supported stack components. You can find the list of supported stack components [here](deploy-a-stack-component/).
 
-## Deploying a stack
+### Deploying a stack
 
-For deploying a full stack, use the `zenml stack deploy` command. See the [stack
-deployment](deploy-a-stack-using-mlstacks.md) page for more details of which
-cloud providers and stack components are supported.
+For deploying a full stack, use the `zenml stack deploy` command. See the [stack deployment](deploy-a-stack-using-mlstacks.md) page for more details of which cloud providers and stack components are supported.
 
-## How does `mlstacks` work?
+### How does `mlstacks` work?
 
-MLStacks is built around the concept of a stack specification. A stack
-specification is a YAML file that describes the stack and includes references to
-component specification files. A component specification is a YAML file that
-describes a component. (Currently all deployments of components (in various
-combinations) must be defined within the context of a stack.)
+MLStacks is built around the concept of a stack specification. A stack specification is a YAML file that describes the stack and includes references to component specification files. A component specification is a YAML file that describes a component. (Currently all deployments of components (in various combinations) must be defined within the context of a stack.)
 
-ZenML handles the creation of stack specifications for you when you run one of
-the `deploy` subcommands using the CLI. A valid specification is generated and
-used by `mlstacks` to deploy your stack using Terraform. The Terraform
-definitions and state are stored in your global configuration directory along
-with any state files generated while deploying your stack.
+ZenML handles the creation of stack specifications for you when you run one of the `deploy` subcommands using the CLI. A valid specification is generated and used by `mlstacks` to deploy your stack using Terraform. The Terraform definitions and state are stored in your global configuration directory along with any state files generated while deploying your stack.
 
-Your configuration directory could be in a number of different places depending
-on your operating system, but read more about it in the
-[Click docs](https://click.palletsprojects.com/en/8.1.x/api/#click.get_app_dir)
-to see which location applies to your situation.
+Your configuration directory could be in a number of different places depending on your operating system, but read more about it in the [Click docs](https://click.palletsprojects.com/en/8.1.x/api/#click.get\_app\_dir) to see which location applies to your situation.
 
-## Migration / breaking changes
+### Migration / breaking changes
 
-The new `mlstacks` package is a breaking change for the syntax you might have
-been used to in previous versions of ZenML. Previous versions of ZenML will
-still work with the old syntax and you will continue to be able to pull recipes
-from the old ZenML `mlops-stacks` repository, but we encourage you to try out
-the new `mlstacks`-driven way of deploying components and stacks.
+The new `mlstacks` package is a breaking change for the syntax you might have been used to in previous versions of ZenML. Previous versions of ZenML will still work with the old syntax and you will continue to be able to pull recipes from the old ZenML `mlops-stacks` repository, but we encourage you to try out the new `mlstacks`-driven way of deploying components and stacks.
 
-Notably and most importantly, instead of using the `zenml stack recipe ...` command to use and
-interact with the stack recipes, you will now use the `zenml stack deploy ...`
-command. Some of the flags have also been updated to reflect and support the
-generation of the new stack specifications. Please refer to the documentation
-around [deploying individual stack components](./deploy-a-stack-component.md)
-and [deploying a stack](./deploy-a-stack-using-mlstacks.md) for more details on
-the specific changes.
+Notably and most importantly, instead of using the `zenml stack recipe ...` command to use and interact with the stack recipes, you will now use the `zenml stack deploy ...` command. Some of the flags have also been updated to reflect and support the generation of the new stack specifications. Please refer to the documentation around [deploying individual stack components](deploy-a-stack-component.md) and [deploying a stack](deploy-a-stack-using-mlstacks.md) for more details on the specific changes.
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy stack components individually</strong></mark></td><td>Individually deploying different stack components.</td><td><a href="deploy-a-stack-component.md">deploy-a-stack-component.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy a stack with multiple components using mlstacks</strong></mark></td><td>Deploying an entire stack with ZenML's `mlstacks` package.</td><td><a href="deploy-a-stack-using-stack-recipes.md">deploy-a-stack-using-stack-recipes.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td><td>Creating your custom stack component solutions.</td><td><a href="contribute-flavors-or-components.md">contribute-flavors-or-components.md</a></td></tr></tbody></table>
 

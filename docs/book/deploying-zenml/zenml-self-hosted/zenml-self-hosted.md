@@ -2,12 +2,13 @@
 description: A guide on how to deploy ZenML in a self-hosted environment.
 ---
 
+# 🔧 ZenML Self-Hosted
+
 {% hint style="warning" %}
 This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
 {% endhint %}
 
-
-# 🔧 ZenML Self-Hosted
+## 🔧 ZenML Self-Hosted
 
 A ZenML deployment typically looks like this:
 
