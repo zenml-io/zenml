@@ -1,8 +1,8 @@
 <!-- markdown-link-check-disable -->
 # 0.56.1
 
-This is a patch release aiming to solve dependency problem which was brought in with rate 
-limiting functionality, with 0.56.1 you no longer need `starlette` to run client code or 
+This is a patch release aiming to solve a dependency problem which was brought in with the new rate 
+limiting functionality. With 0.56.1 you no longer need `starlette` to run client code or to 
 run ZenML CLI commands.
 
 ## 🥳 Community Contributions 🥳
