@@ -101,8 +101,6 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
         timeout: timeout in seconds for starting and stopping the service
     """
 
-    # TODO: ServiceConfig should have additional fields such as "pipeline_run_uuid"
-    #  and "pipeline_uuid" to allow for better tracking of the service.
     model_uri: str
     model_name: str
     registry_model_name: Optional[str] = None
@@ -128,6 +126,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
         type="model-serving",
         flavor="mlflow",
         description="MLflow prediction service",
+        logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/mlflow.png",
     )
 
     config: MLFlowDeploymentConfig

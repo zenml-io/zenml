@@ -104,6 +104,10 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponse,
+    ServiceUpdate,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -357,6 +361,87 @@ class ZenStoreInterface(ABC):
         Raises:
             KeyError: if an API key with the given name or ID is not configured
                 for the given service account.
+        """
+
+    # -------------------- Services --------------------
+
+    @abstractmethod
+    def create_service(
+        self,
+        service: ServiceRequest,
+    ) -> ServiceResponse:
+        """Create a new service.
+
+        Args:
+            service: The service to create.
+
+        Returns:
+            The newly created service.
+
+        Raises:
+            EntityExistsError: If a service with the same name already exists.
+        """
+
+    @abstractmethod
+    def get_service(
+        self, service_id: UUID, hydrate: bool = True
+    ) -> ServiceResponse:
+        """Get a service by ID.
+
+        Args:
+            service_id: The ID of the service to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The service.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+
+    @abstractmethod
+    def list_services(
+        self, filter_model: ServiceFilter, hydrate: bool = False
+    ) -> Page[ServiceResponse]:
+        """List all services matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all services matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_service(
+        self, service_id: UUID, update: ServiceUpdate
+    ) -> ServiceResponse:
+        """Update an existing service.
+
+        Args:
+            service_id: The ID of the service to update.
+            update: The update to be applied to the service.
+
+        Returns:
+            The updated service.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_service(self, service_id: UUID) -> None:
+        """Delete a service.
+
+        Args:
+            service_id: The ID of the service to delete.
+
+        Raises:
+            KeyError: if the service doesn't exist.
         """
 
     # -------------------- Artifacts --------------------

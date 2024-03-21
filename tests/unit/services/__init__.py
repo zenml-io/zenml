@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,9 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""BentoML constants."""
-
-DEFAULT_BENTO_FILENAME = "zenml_exported.bento"
-BENTOML_DEFAULT_PORT = 3000
-BENTOML_HEALTHCHECK_URL_PATH = "readyz"
-BENTOML_PREDICTION_URL_PATH = ""

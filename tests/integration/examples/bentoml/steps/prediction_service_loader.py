@@ -29,7 +29,7 @@ def bentoml_prediction_service_loader(
     """Get the BentoML prediction service started by the deployment pipeline.
 
     Args:
-        pipeline_name: name of the pipeline that deployed the model.
+        pipeline_name: name of the pipeline_name that deployed the model.
         step_name: the name of the step that deployed the model.
         model_name: the name of the model that was deployed.
     """
