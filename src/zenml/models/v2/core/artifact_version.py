@@ -396,7 +396,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
     # `name` and `only_unused` refer to properties related to other entities
-    #  rather than a field in the db, hence they needs to be handled
+    #  rather than a field in the db, hence they need to be handled
     #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
