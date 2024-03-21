@@ -23,7 +23,7 @@ from pydantic import BaseModel
 # TODO: Investigate if we can solve this import a different way.
 from pydantic.deprecated.decorator import ValidatedFunction
 from pydantic.json import pydantic_encoder
-from pydantic.utils import sequence_like
+from pydantic.v1.utils import sequence_like
 
 from zenml.utils import dict_utils, yaml_utils
 
