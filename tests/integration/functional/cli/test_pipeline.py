@@ -35,7 +35,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 
-def test_pipeline_list(clean_client_with_run):
+def test_pipeline_list(client_with_run):
     """Test that zenml pipeline list does not fail."""
     runner = CliRunner()
     list_command = cli.commands["pipeline"].commands["list"]
@@ -43,12 +43,12 @@ def test_pipeline_list(clean_client_with_run):
     assert result.exit_code == 0
 
 
-def test_pipeline_delete(clean_client_with_run: Client):
+def test_pipeline_delete(client_with_run: Client):
     """Test that zenml pipeline delete works as expected."""
     """Test that zenml pipeline delete works as expected."""
-    existing_pipelines = clean_client_with_run.list_pipelines()
-    existing_deployments = clean_client_with_run.list_deployments()
-    existing_runs = clean_client_with_run.list_pipeline_runs()
+    existing_pipelines = client_with_run.list_pipelines()
+    existing_deployments = client_with_run.list_deployments()
+    existing_runs = client_with_run.list_pipeline_runs()
     assert len(existing_pipelines) == 1
     pipeline_name = existing_pipelines[0].name
     runner = CliRunner()
@@ -58,20 +58,20 @@ def test_pipeline_delete(clean_client_with_run: Client):
 
     # Ensure the specific pipeline no longer exists
     with pytest.raises(KeyError):
-        clean_client_with_run.get_pipeline(name_id_or_prefix=pipeline_name)
+        client_with_run.get_pipeline(name_id_or_prefix=pipeline_name)
 
     # Ensure there are no other pipelines after deletion
-    updated_pipelines = clean_client_with_run.list_pipelines()
+    updated_pipelines = client_with_run.list_pipelines()
     assert len(updated_pipelines) == 0
 
     # Ensure pipeline deletion does not cascade pipeline runs or deployments
-    updated_deployments = clean_client_with_run.list_deployments()
+    updated_deployments = client_with_run.list_deployments()
     assert len(updated_deployments) == len(existing_deployments)
-    updated_runs = clean_client_with_run.list_pipeline_runs()
+    updated_runs = client_with_run.list_pipeline_runs()
     assert len(updated_runs) == len(existing_runs)
 
 
-def test_pipeline_run_list(clean_client_with_run):
+def test_pipeline_run_list(client_with_run):
     """Test that zenml pipeline runs list does not fail."""
     runner = CliRunner()
     list_command = cli.commands["pipeline"].commands["runs"].commands["list"]
@@ -79,9 +79,9 @@ def test_pipeline_run_list(clean_client_with_run):
     assert result.exit_code == 0
 
 
-def test_pipeline_run_delete(clean_client_with_run):
+def test_pipeline_run_delete(client_with_run):
     """Test that zenml pipeline runs delete works as expected."""
-    existing_runs = clean_client_with_run.list_runs()
+    existing_runs = client_with_run.list_runs()
     assert len(existing_runs) == 1
     run_name = existing_runs[0].name
     runner = CliRunner()
@@ -91,12 +91,12 @@ def test_pipeline_run_delete(clean_client_with_run):
     result = runner.invoke(delete_command, [run_name, "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_client_with_run.get_pipeline_run(run_name)
-    existing_runs = clean_client_with_run.list_runs()
+        client_with_run.get_pipeline_run(run_name)
+    existing_runs = client_with_run.list_runs()
     assert len(existing_runs) == 0
 
 
-def test_pipeline_schedule_list(clean_client_with_scheduled_run):
+def test_pipeline_schedule_list(client_with_scheduled_run):
     """Test that `zenml pipeline schedules list` does not fail."""
     runner = CliRunner()
     list_command = (
@@ -106,9 +106,9 @@ def test_pipeline_schedule_list(clean_client_with_scheduled_run):
     assert result.exit_code == 0
 
 
-def test_pipeline_schedule_delete(clean_client_with_scheduled_run):
+def test_pipeline_schedule_delete(client_with_scheduled_run):
     """Test that `zenml pipeline schedules delete` works as expected."""
-    existing_schedules = clean_client_with_scheduled_run.list_schedules()
+    existing_schedules = client_with_scheduled_run.list_schedules()
     assert len(existing_schedules) == 1
     schedule_name = existing_schedules[0].name
     runner = CliRunner()
@@ -118,8 +118,8 @@ def test_pipeline_schedule_delete(clean_client_with_scheduled_run):
     result = runner.invoke(delete_command, [schedule_name, "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_client_with_scheduled_run.get_schedule(schedule_name)
-    existing_schedules = clean_client_with_scheduled_run.list_schedules()
+        client_with_scheduled_run.get_schedule(schedule_name)
+    existing_schedules = client_with_scheduled_run.list_schedules()
     assert len(existing_schedules) == 0
 
 
@@ -137,7 +137,7 @@ step_instance = s()
 pipeline_instance = p(step_instance)
 
 
-def test_pipeline_registration_without_repo(clean_client):
+def test_pipeline_registration_without_repo():
     """Tests that the register command outside a repo works."""
     runner = CliRunner()
     register_command = cli.commands["pipeline"].commands["register"]
@@ -148,7 +148,7 @@ def test_pipeline_registration_without_repo(clean_client):
     assert result.exit_code == 0
 
 
-def test_pipeline_registration_with_repo(clean_client: "Client"):
+def test_pipeline_registration_with_repo():
     """Tests the register command inside a repo."""
     runner = CliRunner()
     register_command = cli.commands["pipeline"].commands["register"]
@@ -174,10 +174,10 @@ def test_pipeline_registration_with_repo(clean_client: "Client"):
         register_command, [f"{pipeline_instance.__module__}.pipeline_instance"]
     )
     assert result.exit_code == 0
-    assert clean_client.list_pipelines(name="p").total == 1
+    assert Client().list_pipelines(name="p").total == 1
 
 
-def test_pipeline_build_without_repo(clean_client):
+def test_pipeline_build_without_repo():
     """Tests that the build command outside a repo works."""
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
@@ -188,7 +188,7 @@ def test_pipeline_build_without_repo(clean_client):
     assert result.exit_code == 0
 
 
-def test_pipeline_build_with_nonexistent_name_fails(clean_client: "Client"):
+def test_pipeline_build_with_nonexistent_name_fails():
     """Tests that the build command fails if no pipeline with the given name
     exists."""
     runner = CliRunner()
@@ -203,9 +203,7 @@ def test_pipeline_build_with_nonexistent_name_fails(clean_client: "Client"):
     )
 
 
-def test_pipeline_build_writes_output_file(
-    clean_client: "Client", mocker, tmp_path
-):
+def test_pipeline_build_writes_output_file(mocker, tmp_path):
     """Tests that the build command writes the build to the given output
     path if given."""
     build_config = BuildConfiguration(key="key", settings=DockerSettings())
@@ -235,8 +233,8 @@ def test_pipeline_build_writes_output_file(
     assert build_output.images["key"].image == "image_name"
 
 
-def test_pipeline_build_doesnt_write_output_file_if_no_build_needed(
-    clean_client: "Client", mocker, tmp_path
+def test_pipeline_build_does_not_write_output_file_if_no_build_needed(
+    mocker, tmp_path
 ):
     """Tests that the build command doesn't write to the given output path
     if no build was needed for the pipeline."""
@@ -255,9 +253,7 @@ def test_pipeline_build_doesnt_write_output_file_if_no_build_needed(
     assert not output_path.exists()
 
 
-def test_pipeline_build_with_config_file(
-    clean_client: "Client", mocker, tmp_path
-):
+def test_pipeline_build_with_config_file(mocker, tmp_path):
     """Tests that the build command works with a config file."""
     mock_get_docker_builds = mocker.patch.object(
         Stack, "get_docker_builds", return_value=[]
@@ -288,7 +284,7 @@ def test_pipeline_build_with_config_file(
     )
 
 
-def test_pipeline_build_with_different_stack(clean_client: "Client", mocker):
+def test_pipeline_build_with_different_stack(mocker):
     """Tests that the build command works with a different stack."""
     build_config = BuildConfiguration(key="key", settings=DockerSettings())
     mocker.patch.object(
@@ -321,7 +317,7 @@ def test_pipeline_build_with_different_stack(clean_client: "Client", mocker):
     assert builds[0].stack.id == new_stack.id
 
 
-def test_pipeline_run_without_repo(clean_client):
+def test_pipeline_run_without_repo():
     """Tests that the run command outside a repo works."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
@@ -332,7 +328,7 @@ def test_pipeline_run_without_repo(clean_client):
     assert result.exit_code == 0
 
 
-def test_pipeline_run_with_nonexistent_name_fails(clean_client: "Client"):
+def test_pipeline_run_with_nonexistent_name_fails():
     """Tests that the run command fails if no pipeline with the given name
     exists."""
     runner = CliRunner()
@@ -347,7 +343,7 @@ def test_pipeline_run_with_nonexistent_name_fails(clean_client: "Client"):
     )
 
 
-def test_pipeline_run_with_config_file(clean_client: "Client", tmp_path):
+def test_pipeline_run_with_config_file(tmp_path):
     """Tests that the run command works with a run config file."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
@@ -368,7 +364,7 @@ def test_pipeline_run_with_config_file(clean_client: "Client", tmp_path):
     assert runs[0].name == "custom_run_name"
 
 
-def test_pipeline_run_with_different_stack(clean_client: "Client"):
+def test_pipeline_run_with_different_stack():
     """Tests that the run command works with a different stack."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
@@ -391,7 +387,7 @@ def test_pipeline_run_with_different_stack(clean_client: "Client"):
     assert runs[0].stack.id == new_stack.id
 
 
-def test_pipeline_run_with_invalid_build_id_fails(clean_client: "Client"):
+def test_pipeline_run_with_invalid_build_id_fails():
     """Tests that the run command with an invalid build id fails."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
@@ -410,7 +406,7 @@ def test_pipeline_run_with_invalid_build_id_fails(clean_client: "Client"):
     assert result.exit_code == 1
 
 
-def test_pipeline_run_with_custom_build_id(clean_client: "Client"):
+def test_pipeline_run_with_custom_build_id():
     """Tests that the run command works with a custom build id."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
@@ -436,7 +432,7 @@ def test_pipeline_run_with_custom_build_id(clean_client: "Client"):
     assert runs[0].build.id == build.id
 
 
-def test_pipeline_run_with_custom_build_file(clean_client: "Client", tmp_path):
+def test_pipeline_run_with_custom_build_file(tmp_path):
     """Tests that the run command works with a custom build file."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
@@ -462,34 +458,36 @@ def test_pipeline_run_with_custom_build_file(clean_client: "Client", tmp_path):
     assert runs[0].build.is_local == build.is_local
 
 
-def test_pipeline_build_list(clean_client: "Client"):
+def test_pipeline_build_list():
     """Test that `zenml pipeline builds list` does not fail."""
     runner = CliRunner()
     list_command = cli.commands["pipeline"].commands["builds"].commands["list"]
     assert runner.invoke(list_command).exit_code == 0
 
+    client = Client()
     request = PipelineBuildRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        user=client.active_user.id,
+        workspace=client.active_workspace.id,
         images={},
         is_local=False,
         contains_code=True,
     )
-    clean_client.zen_store.create_build(request)
+    client.zen_store.create_build(request)
 
     assert runner.invoke(list_command).exit_code == 0
 
 
-def test_pipeline_build_delete(clean_client: "Client"):
+def test_pipeline_build_delete():
     """Test that `zenml pipeline builds delete` works as expected."""
+    client = Client()
     request = PipelineBuildRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        user=client.active_user.id,
+        workspace=client.active_workspace.id,
         images={},
         is_local=False,
         contains_code=True,
     )
-    build_id = clean_client.zen_store.create_build(request).id
+    build_id = client.zen_store.create_build(request).id
 
     runner = CliRunner()
     delete_command = (
@@ -499,7 +497,7 @@ def test_pipeline_build_delete(clean_client: "Client"):
     assert result.exit_code == 0
 
     with pytest.raises(KeyError):
-        clean_client.get_build(str(build_id))
+        Client().get_build(str(build_id))
 
     # this now fails because the build doesn't exist anymore
     assert runner.invoke(delete_command, [str(build_id), "-y"]).exit_code == 1

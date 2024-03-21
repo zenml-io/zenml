@@ -25,7 +25,12 @@ import shutil
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple
+from typing import (
+    Generator,
+    List,
+    Optional,
+    Tuple,
+)
 
 import pytest
 
