@@ -51,7 +51,6 @@ from zenml.services.service_monitor import (
     TCPEndpointHealthMonitor,
     TCPEndpointHealthMonitorConfig,
 )
-from zenml.services.service_registry import ServiceRegistry
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
 
@@ -84,5 +83,4 @@ __all__ = [
     "LocalDaemonServiceEndpointConfig",
     "LocalDaemonServiceEndpointStatus",
     "LocalDaemonServiceEndpoint",
-    "ServiceRegistry",
 ]
