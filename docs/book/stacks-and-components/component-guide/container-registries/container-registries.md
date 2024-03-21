@@ -2,6 +2,11 @@
 description: Setting up a storage for Docker images.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Container Registries
 
 The container registry is an essential part of most remote MLOps stacks. It is used to store container images that are

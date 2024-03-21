@@ -2,6 +2,11 @@
 description: Your one-stop MLOps control plane.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # ☁ ZenML Cloud
 
 One of the most straightforward paths to start with a deployed ZenML server is to use [ZenML Cloud](https://zenml.io/cloud). ZenML Cloud eliminates the need for you to dedicate time and resources to deploy and manage a ZenML server, allowing you to focus primarily on your MLOps workflows.
