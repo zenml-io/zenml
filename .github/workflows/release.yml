@@ -34,6 +34,7 @@ jobs:
           source $HOME/.cargo/env
       - name: Create virtual environment
         run: |
+          source $HOME/.cargo/env
           uv venv
       - name: Check mlstacks compatibility
         run: |
