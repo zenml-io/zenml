@@ -1,7 +1,5 @@
 ---
-# This is a basic workflow to help you get started with Actions
 name: Release Package & Docker Image
-# Controls when the action will run. Triggers the workflow on push of a tag
 on:
   push:
     tags: ['*']
@@ -27,15 +25,19 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           source $HOME/.cargo/env
       - name: Create virtual environment
-        run: uv venv
+        run: |
+          source $HOME/.cargo/env
+          uv venv
       - name: Check mlstacks compatibility
         run: |
           source .venv/bin/activate
+          source $HOME/.cargo/env
           uv pip install -e .
           uv pip install mlstacks
       - name: Check for broken dependencies
         run: |
           source .venv/bin/activate
+          source $HOME/.cargo/env
           uv pip check
   mysql-db-migration-testing:
     runs-on: arc-runner-set
