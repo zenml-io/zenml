@@ -17,6 +17,7 @@ import os
 import uuid
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
+from zenml.client import Client
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.services.service import BaseDeploymentService, BaseService
@@ -49,8 +50,7 @@ class ServiceMaterializer(BaseMaterializer):
         with self.artifact_store.open(filepath, "r") as f:
             service_id = f.read().strip()
 
-        client = Client()
-        service = client.get_service(name_id_or_prefix=uuid.UUID(service_id))
+        service = Client().get_service(name_id_or_prefix=uuid.UUID(service_id))
         return BaseDeploymentService.from_model(service)
 
     def save(self, service: BaseService) -> None:
