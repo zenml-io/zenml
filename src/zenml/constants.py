@@ -243,6 +243,7 @@ REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
     expected_type=list,
     default=["pipeline_run", "model"],
 )
+REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline"]
 
 # API Endpoint paths:
 ACTIVATE = "/activate"

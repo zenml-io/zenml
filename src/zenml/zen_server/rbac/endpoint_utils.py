@@ -18,7 +18,10 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from zenml.constants import REPORTABLE_RESOURCES
+from zenml.constants import (
+    REPORTABLE_RESOURCES,
+    REQUIRES_CUSTOM_RESOURCE_REPORTING,
+)
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseFilter,
@@ -78,13 +81,16 @@ def verify_permissions_and_create_entity(
             )
     verify_permission(resource_type=resource_type, action=Action.CREATE)
 
-    is_gated_feature = True if resource_type in REPORTABLE_RESOURCES else False
-    if is_gated_feature:
+    needs_usage_increment = (
+        resource_type in REPORTABLE_RESOURCES
+        and resource_type not in REQUIRES_CUSTOM_RESOURCE_REPORTING
+    )
+    if needs_usage_increment:
         check_entitlement(resource_type)
 
     created = create_method(request_model)
 
-    if is_gated_feature:
+    if needs_usage_increment:
         report_usage(resource_type, resource_id=created.id)
 
     return created
@@ -165,7 +171,7 @@ def verify_permissions_and_delete_entity(
     id: UUIDOrStr,
     get_method: Callable[[UUIDOrStr], AnyResponse],
     delete_method: Callable[[UUIDOrStr], None],
-) -> UUID:
+) -> AnyResponse:
     """Verify permissions and delete an entity.
 
     Args:
@@ -174,13 +180,13 @@ def verify_permissions_and_delete_entity(
         delete_method: The method to delete the entity.
 
     Returns:
-        The ID of the deleted entity.
+        The deleted entity.
     """
     model = get_method(id)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id)
 
-    return model.id
+    return model
 
 
 def verify_permissions_and_prune_entities(
