@@ -96,14 +96,10 @@ class ZenMLCloudSession:
             response.raise_for_status()
         except requests.HTTPError:
             if response.status_code == 402:
-                raise SubscriptionUpgradeRequiredError(
-                    "Subscription limit reached. Please "
-                    "upgrade your subscription or "
-                    "reach out to the ZenML team."
-                )
+                raise SubscriptionUpgradeRequiredError(response.json())
             else:
                 raise RuntimeError(
-                    f"Failed with the following error. " f"{response.json()}"
+                    f"Failed with the following error {response.json()}"
                 )
 
         return response
