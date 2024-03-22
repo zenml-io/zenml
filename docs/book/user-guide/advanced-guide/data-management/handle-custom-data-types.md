@@ -17,7 +17,7 @@ ZenML already includes built-in materializers for many common data types. These 
 {% hint style="warning" %}
 ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-materializers/#zenml.materializers.cloudpickle\_materializer.CloudpickleMaterializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](handle-custom-data-types.md#custom-materializers) to save your objects in a more robust and efficient format.
 
-Moreover, usage of the `CloudpickleMaterializer` could allow to upload of any kind of an object. This could be exploited to upload a malicious file, which could execute arbitrary code on the vulnerable system.
+Moreover, using the `CloudpickleMaterializer` could allow users to upload of any kind of object. This could be exploited to upload a malicious file, which could execute arbitrary code on the vulnerable system.
 {% endhint %}
 
 ## Integration Materializers
