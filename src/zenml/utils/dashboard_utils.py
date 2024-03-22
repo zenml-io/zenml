@@ -97,8 +97,13 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     Returns:
         the URL to the pipeline run if the dashboard is available, else None.
     """
+    client = Client()
     base_url = get_base_url()
     if base_url:
+        server_model = client.zen_store.get_store_info()
+        # if the server is a zenml cloud tenant, use a different URL
+        if server_model.metadata.get("organization_id"):
+            return f"{base_url}{constants.RUNS}/{run.id}"
         if run.pipeline:
             return f"{base_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
         else:
@@ -124,9 +129,7 @@ def get_model_version_url(model_version_id: UUID) -> Optional[str]:
         if base_url:
             # TODO MODEL_VERSIONS resolves to /model_versions but on the
             # cloud, the URL is /model-versions. This should be fixed?
-            return (
-                f"{base_url}{constants.MODEL_VERSIONS}/{str(model_version_id)}"
-            )
+            return f"{base_url}/model-versions/{str(model_version_id)}"
     return None
 
 

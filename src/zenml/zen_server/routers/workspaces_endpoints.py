@@ -34,6 +34,7 @@ from zenml.constants import (
     SECRETS,
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTORS,
+    SERVICES,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -80,6 +81,8 @@ from zenml.models import (
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
+    ServiceRequest,
+    ServiceResponse,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -1431,3 +1434,44 @@ def create_model_version_pipeline_run_link(
         model_version_pipeline_run_link
     )
     return mv
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + SERVICES,
+    response_model=ServiceResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_service(
+    workspace_name_or_id: Union[str, UUID],
+    service: ServiceRequest,
+    _: AuthContext = Security(authorize),
+) -> ServiceResponse:
+    """Create a new service.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        service: The service to create.
+
+    Returns:
+        The created service.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if service.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating models outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+
+    return verify_permissions_and_create_entity(
+        request_model=service,
+        resource_type=ResourceType.SERVICE,
+        create_method=zen_store().create_service,
+    )
