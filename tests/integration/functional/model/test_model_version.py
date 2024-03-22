@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import multiprocessing
 from typing import Optional
 from unittest import mock
 from unittest.mock import patch
@@ -69,6 +70,9 @@ def step_metadata_logging_functional():
     """Functional logging using implicit Model from context."""
     log_model_metadata({"foo": "bar"})
     assert get_step_context().model.run_metadata["foo"].value == "bar"
+    log_model_metadata(
+        {"foo": "bar"}, model_name=MODEL_NAME, model_version="other"
+    )
 
 
 @step
@@ -113,6 +117,12 @@ def consume_from_model(
         return mv.load_artifact("custom_output")
     else:
         return "Hello, World!"
+
+
+def parallel_model_version_creation(model_name: str) -> int:
+    with patch("zenml.model.model.logger.debug") as logger_mock:
+        Model(name=model_name)._get_or_create_model_version()
+        return logger_mock.call_count
 
 
 class TestModel:
@@ -309,29 +319,6 @@ class TestModel:
         assert len(model_version.tags) == 2
         assert {t.name for t in model_version.tags} == {"foo", "bar"}
 
-    def test_model_config_differs_from_db_warns(self, clean_client: "Client"):
-        """Test that model context warns if model config differs from db."""
-        mv = Model(
-            name=MODEL_NAME,
-            tags=["foo", "bar"],
-        )
-        mv._get_or_create_model()
-
-        mv = Model(
-            name=MODEL_NAME,
-            tags=["bar", "new"],
-            license="NEW",
-            save_models_to_registry=False,
-        )
-        with mock.patch("zenml.model.model.logger.warning") as logger:
-            mv._get_or_create_model()
-            logger.assert_called_once()
-
-            warning = logger.call_args[0][0]
-            assert "license" in warning
-            assert "tags added" in warning
-            assert "tags removed" in warning
-
     def test_model_version_config_differs_from_db_warns(
         self, clean_client: "Client"
     ):
@@ -353,10 +340,9 @@ class TestModel:
         )
         with mock.patch("zenml.model.model.logger.warning") as logger:
             mv._get_or_create_model_version()
-            logger.assert_called()
-            assert logger.call_count == 2  # for model and model version
+            logger.assert_called_once()
 
-            warning = logger.call_args_list[1][0][0]
+            warning = logger.call_args[0][0]
             assert "tags added" in warning
             assert "tags removed" in warning
             assert "description" in warning
@@ -408,17 +394,25 @@ class TestModel:
         """Test that model version can be used to track metadata from function in steps."""
 
         @pipeline(
-            model=Model(
-                name=MODEL_NAME,
-            ),
+            model=Model(name=MODEL_NAME, version="context"),
             enable_cache=False,
         )
         def my_pipeline():
             step_metadata_logging_functional()
 
+        mv_other = Model(
+            name=MODEL_NAME,
+            version="other",
+        )
+        mv_other._get_or_create_model_version()
+
         my_pipeline()
 
-        mv = Model(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="context")
+        assert len(mv.run_metadata) == 1
+        assert mv.run_metadata["foo"].value == "bar"
+
+        mv = Model(name=MODEL_NAME, version="other")
         assert len(mv.run_metadata) == 1
         assert mv.run_metadata["foo"].value == "bar"
 
@@ -640,3 +634,30 @@ class TestModel:
             logger.assert_called_once_with(
                 "Unable to link saved artifact to step run."
             )
+
+    def test_model_versions_parallel_creation_version_unspecific(
+        self, clean_client: "Client"
+    ):
+        """Test that model version creation can be parallelized."""
+        process_count = 50
+        args = [
+            MODEL_NAME,
+        ] * process_count
+        with multiprocessing.Pool(5) as pool:
+            results = pool.map(
+                parallel_model_version_creation,
+                iterable=args,
+            )
+
+        assert sum(results), (
+            "Test was not parallel. "
+            "Consider increasing the number of processes or pools."
+        )
+        assert clean_client.get_model(MODEL_NAME).name == MODEL_NAME
+        mvs = clean_client.list_model_versions(
+            model_name_or_id=MODEL_NAME, size=min(1000, process_count * 10)
+        )
+        assert len(mvs) == process_count
+        assert {mv.number for mv in mvs} == {
+            i for i in range(1, process_count + 1)
+        }

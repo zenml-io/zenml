@@ -14,15 +14,17 @@
 """Models representing artifacts."""
 
 from typing import TYPE_CHECKING, Dict, List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 from zenml.models.v2.base.scoped import WorkspaceScopedTaggableFilter
 from zenml.models.v2.core.tag import TagResponse
@@ -44,6 +46,11 @@ class ArtifactRequest(BaseRequest):
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
     )
+    tags: Optional[List[str]] = Field(
+        title="Artifact tags.",
+        description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
+        default=None,
+    )
 
 
 # ------------------ Update Model ------------------
@@ -55,17 +62,20 @@ class ArtifactUpdate(BaseModel):
     name: Optional[str] = None
     add_tags: Optional[List[str]] = None
     remove_tags: Optional[List[str]] = None
+    has_custom_name: Optional[bool] = None
 
 
 # ------------------ Response Model ------------------
 
 
-class ArtifactResponseBody(BaseResponseBody):
+class ArtifactResponseBody(BaseDatedResponseBody):
     """Response body for artifacts."""
 
     tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
+    latest_version_name: Optional[str]
+    latest_version_id: Optional[UUID]
 
 
 class ArtifactResponseMetadata(BaseResponseMetadata):
@@ -77,8 +87,16 @@ class ArtifactResponseMetadata(BaseResponseMetadata):
     )
 
 
+class ArtifactResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the Artifact Entity."""
+
+
 class ArtifactResponse(
-    BaseResponse[ArtifactResponseBody, ArtifactResponseMetadata]
+    BaseIdentifiedResponse[
+        ArtifactResponseBody,
+        ArtifactResponseMetadata,
+        ArtifactResponseResources,
+    ]
 ):
     """Artifact response model."""
 
@@ -106,6 +124,24 @@ class ArtifactResponse(
             the value of the property.
         """
         return self.get_body().tags
+
+    @property
+    def latest_version_name(self) -> Optional[str]:
+        """The `latest_version_name` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_version_name
+
+    @property
+    def latest_version_id(self) -> Optional[UUID]:
+        """The `latest_version_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_version_id
 
     @property
     def has_custom_name(self) -> bool:

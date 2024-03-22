@@ -36,7 +36,7 @@ from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     REPOSITORY_DIRECTORY_NAME,
 )
-from zenml.enums import AnalyticsEventSource, StoreType
+from zenml.enums import AnalyticsEventSource, DatabaseBackupStrategy, StoreType
 from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.integrations.registry import integration_registry
@@ -73,15 +73,19 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2024.01.18",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.01.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.01.12",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.01.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
         github_tag="2024.01.12",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+    ),
+    llm_finetuning=ZenMLProjectTemplateLocation(
+        github_url="zenml-io/template-llm-finetuning",
+        github_tag="2024.03.18",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -98,9 +102,9 @@ ZENML_PROJECT_TEMPLATES = dict(
     type=str,
     required=False,
     help="Name or URL of the ZenML project template to use to initialize the "
-    "repository, Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a "
-    "copier URL like gh:owner/repo_name. If not specified, no template is "
-    "used.",
+    "repository, Can be a string like `e2e_batch`, `nlp`, `llm_finetuning`, "
+    "`starter` etc. or a copier URL like gh:owner/repo_name. If not specified, "
+    "no template is used.",
 )
 @click.option(
     "--template-tag",
@@ -378,6 +382,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
                     )
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
+            GlobalConfiguration._reset_instance()
             fresh_gc = GlobalConfiguration(
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
@@ -576,7 +581,7 @@ def info(
     client = Client()
     store_info = client.zen_store.get_store_info()
 
-    store_cfg = gc.store
+    store_cfg = gc.store_configuration
 
     user_info = {
         "zenml_local_version": zenml_version,
@@ -585,7 +590,7 @@ def info(
         "zenml_server_deployment_type": str(store_info.deployment_type),
         "zenml_config_dir": gc.config_directory,
         "zenml_local_store_dir": gc.local_stores_path,
-        "zenml_server_url": "" if store_cfg is None else store_cfg.url,
+        "zenml_server_url": store_cfg.url,
         "zenml_active_repository_root": str(client.root),
         "python_version": environment.python_version(),
         "environment": get_environment(),
@@ -646,10 +651,7 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     """
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    store_config = (
-        GlobalConfiguration().store
-        or GlobalConfiguration().get_default_store()
-    )
+    store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
         BaseZenStore.create_store(
             store_config, skip_default_registrations=skip_default_registrations
@@ -658,4 +660,130 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     else:
         cli_utils.warning(
             "Unable to migrate database while connected to a ZenML server."
+        )
+
+
+@cli.command("backup-database", help="Create a database backup.", hidden=True)
+@click.option(
+    "--strategy",
+    "-s",
+    help="Custom backup strategy to use. Defaults to whatever is configured "
+    "in the store config.",
+    type=click.Choice(choices=DatabaseBackupStrategy.values()),
+    required=False,
+    default=None,
+)
+@click.option(
+    "--location",
+    default=None,
+    help="Custom location to store the backup. Defaults to whatever is "
+    "configured in the store config. Depending on the strategy, this can be "
+    "a local path or a database name.",
+    type=str,
+)
+@click.option(
+    "--overwrite",
+    "-o",
+    is_flag=True,
+    default=False,
+    help="Overwrite the existing backup.",
+    type=bool,
+)
+def backup_database(
+    strategy: Optional[str] = None,
+    location: Optional[str] = None,
+    overwrite: bool = False,
+) -> None:
+    """Backup the ZenML database.
+
+    Args:
+        strategy: Custom backup strategy to use. Defaults to whatever is
+            configured in the store config.
+        location: Custom location to store the backup. Defaults to whatever is
+            configured in the store config. Depending on the strategy, this can
+            be a local path or a database name.
+        overwrite: Whether to overwrite the existing backup.
+    """
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+    store_config = GlobalConfiguration().store_configuration
+    if store_config.type == StoreType.SQL:
+        store = BaseZenStore.create_store(
+            store_config, skip_default_registrations=True, skip_migrations=True
+        )
+        assert isinstance(store, SqlZenStore)
+        msg, location = store.backup_database(
+            strategy=DatabaseBackupStrategy(strategy) if strategy else None,
+            location=location,
+            overwrite=overwrite,
+        )
+        cli_utils.declare(f"Database was backed up to {msg}.")
+    else:
+        cli_utils.warning(
+            "Cannot backup database while connected to a ZenML server."
+        )
+
+
+@cli.command(
+    "restore-database", help="Restore the database from a backup.", hidden=True
+)
+@click.option(
+    "--strategy",
+    "-s",
+    help="Custom backup strategy to use. Defaults to whatever is configured "
+    "in the store config.",
+    type=click.Choice(choices=DatabaseBackupStrategy.values()),
+    required=False,
+    default=None,
+)
+@click.option(
+    "--location",
+    default=None,
+    help="Custom location where the backup is stored. Defaults to whatever is "
+    "configured in the store config. Depending on the strategy, this can be "
+    "a local path or a database name.",
+    type=str,
+)
+@click.option(
+    "--cleanup",
+    "-c",
+    is_flag=True,
+    default=False,
+    help="Cleanup the backup after restoring.",
+    type=bool,
+)
+def restore_database(
+    strategy: Optional[str] = None,
+    location: Optional[str] = None,
+    cleanup: bool = False,
+) -> None:
+    """Restore the ZenML database.
+
+    Args:
+        strategy: Custom backup strategy to use. Defaults to whatever is
+            configured in the store config.
+        location: Custom location where the backup is stored. Defaults to
+            whatever is configured in the store config. Depending on the
+            strategy, this can be a local path or a database name.
+        cleanup: Whether to cleanup the backup after restoring.
+    """
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+    store_config = GlobalConfiguration().store_configuration
+    if store_config.type == StoreType.SQL:
+        store = BaseZenStore.create_store(
+            store_config, skip_default_registrations=True, skip_migrations=True
+        )
+        assert isinstance(store, SqlZenStore)
+        store.restore_database(
+            strategy=DatabaseBackupStrategy(strategy) if strategy else None,
+            location=location,
+            cleanup=cleanup,
+        )
+        cli_utils.declare("Database restore finished.")
+    else:
+        cli_utils.warning(
+            "Cannot restore database while connected to a ZenML server."
         )

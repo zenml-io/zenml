@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing model versions."""
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
@@ -22,13 +21,16 @@ from pydantic import BaseModel, Field, PrivateAttr, validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
 from zenml.models.v2.base.filter import AnyQuery
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
+from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -157,12 +159,6 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
     tags: List[TagResponse] = Field(
         title="Tags associated with the model version", default=[]
     )
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
 
 
 class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -179,9 +175,19 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ModelVersionResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the model version entity."""
+
+    services: Page[ServiceResponse] = Field(
+        description="Services linked to the model version",
+    )
+
+
 class ModelVersionResponse(
     WorkspaceScopedResponse[
-        ModelVersionResponseBody, ModelVersionResponseMetadata
+        ModelVersionResponseBody,
+        ModelVersionResponseMetadata,
+        ModelVersionResponseResources,
     ]
 ):
     """Response model for model versions."""
@@ -254,24 +260,6 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_body().pipeline_run_ids
-
-    @property
-    def created(self) -> datetime:
-        """The `created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def tags(self) -> List[TagResponse]:

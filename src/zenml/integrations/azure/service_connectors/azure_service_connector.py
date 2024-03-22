@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Azure Service Connector."""
+
 import datetime
 import re
 import subprocess
@@ -1086,8 +1087,6 @@ class AzureServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AzureAuthenticationMethods.IMPLICIT:
-            cls._check_implicit_auth_method_allowed()
-
             auth_config = AzureBaseConfig(
                 resource_group=resource_group,
                 storage_account=storage_account,

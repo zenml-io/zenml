@@ -35,7 +35,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-          - ubuntu-dind-runners
+          - arc-runner-set
         required: false
         default: ubuntu-latest
       python-version:
@@ -63,6 +63,8 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
@@ -73,29 +75,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Get PR details (for non-pull_request events)
-        if: ${{ github.event_name != 'pull_request' }}
-        uses: actions/github-script@v3
-        id: get-pr
-        with:
-          script: |
-            const request = {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            }
-            core.info(`Getting PR  #${request.pull_number} from ${request.owner}/${request.repo}`)
-            try {
-              const result = await github.pulls.get(request)
-              return result.data
-            } catch (err) {
-              core.setFailed(`Request failed with error ${err}`)
-            }
       - name: Checkout code
         uses: actions/checkout@v4.1.1
         with:
-          repository: ${{ github.event_name == 'pull_request' && github.repository || fromJSON(steps.get-pr.outputs.result).head.repo.full_name }}
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || fromJSON(steps.get-pr.outputs.result).head.sha }}
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
@@ -105,6 +89,7 @@ jobs:
           install_integrations: ${{ inputs.install_integrations }}
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
+          discord_webhook: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
@@ -116,10 +101,13 @@ jobs:
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
+        env:
+          ZENML_ANALYTICS_OPT_IN: false
+          ZENML_DEBUG: true
 
       # - name: Upload coverage
       #  # only do it for python 3.8, we don't need to do it for every version
-      #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
+      #   if: ${{ inputs.os == 'arc-runner-set' && inputs.python-version == '3.8' }}
       #   uses: codecov/codecov-action@v2
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
@@ -127,5 +115,5 @@ jobs:
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list
-          pip list
-          pip check || true
+          uv pip list
+          uv pip check || true

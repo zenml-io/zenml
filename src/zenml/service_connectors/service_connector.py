@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base ZenML Service Connector class."""
+
 import logging
 from abc import abstractmethod
 from datetime import datetime, timedelta, timezone
@@ -181,6 +182,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
     expires_skew_tolerance: Optional[int] = None
     expiration_seconds: Optional[int] = None
     config: AuthenticationConfig
+    allow_implicit_auth_methods: bool = False
 
     _TYPE: ClassVar[Optional[ServiceConnectorTypeModel]] = None
 
@@ -535,14 +537,17 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
         return resource_id
 
-    @classmethod
-    def _check_implicit_auth_method_allowed(cls) -> None:
+    def _check_implicit_auth_method_allowed(self) -> None:
         """Check if implicit authentication methods are allowed.
 
         Raises:
             AuthorizationException: If implicit authentication methods are
                 not enabled.
         """
+        # If the connector instance is especially configured to allow implicit
+        # authentication methods, skip the check.
+        if self.allow_implicit_auth_methods:
+            return
         if not handle_bool_env_var(ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS):
             raise AuthorizationException(
                 "Implicit authentication methods for service connectors are "

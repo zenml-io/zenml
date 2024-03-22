@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -230,12 +230,19 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, hydrate: bool = False) -> "ServiceConnectorResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "ServiceConnectorResponse":
         """Creates a `ServiceConnector` from a `ServiceConnectorSchema`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             A `ServiceConnectorModel`
@@ -254,7 +261,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             expires_skew_tolerance=self.expires_skew_tolerance,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ServiceConnectorResponseMetadata(
                 workspace=self.workspace.to_model(),
                 configuration=json.loads(

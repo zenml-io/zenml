@@ -15,6 +15,7 @@
 
 import shutil
 from typing import ClassVar, List, Optional, Tuple, Type, cast
+from uuid import uuid4
 
 from zenml import __version__
 from zenml.enums import ServerProviderType
@@ -47,9 +48,9 @@ class LocalServerProvider(BaseServerProvider):
     """Local ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.LOCAL
-    CONFIG_TYPE: ClassVar[
-        Type[ServerDeploymentConfig]
-    ] = LocalServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
+        LocalServerDeploymentConfig
+    )
 
     @staticmethod
     def check_local_server_dependencies() -> None:
@@ -93,7 +94,6 @@ class LocalServerProvider(BaseServerProvider):
             The service, service endpoint and endpoint monitor configuration.
         """
         assert isinstance(server_config, LocalServerDeploymentConfig)
-
         return (
             LocalZenServerConfig(
                 root_runtime_path=LocalZenServer.config_path(),
@@ -157,7 +157,9 @@ class LocalServerProvider(BaseServerProvider):
                 config=monitor_cfg,
             ),
         )
-        service = LocalZenServer(config=service_config, endpoint=endpoint)
+        service = LocalZenServer(
+            uuid=uuid4(), config=service_config, endpoint=endpoint
+        )
         service.start(timeout=timeout)
         return service
 

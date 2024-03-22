@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for the ZenML Hub."""
 
-
 from typing import Optional, Tuple
 
 from zenml._hub.constants import ZENML_HUB_ADMIN_USERNAME

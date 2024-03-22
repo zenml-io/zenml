@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base ZenML Flavor implementation."""
+
 import json
 from abc import abstractmethod
 from typing import Any, Dict, Optional, Type, cast

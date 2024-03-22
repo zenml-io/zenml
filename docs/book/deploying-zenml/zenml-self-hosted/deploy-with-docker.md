@@ -27,7 +27,7 @@ The following environment variables can be passed to the container:
 * **ZENML\_DEFAULT\_PROJECT\_NAME**: The name of the default project created by the server on the first deployment, during database initialization. Defaults to `default`.
 * **ZENML\_DEFAULT\_USER\_NAME**: The name of the default admin user account created by the server on the first deployment, during database initialization. Defaults to `default`.
 * **ZENML\_DEFAULT\_USER\_PASSWORD**: The password to use for the default admin user account. Defaults to an empty password value, if not set.
-*   **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
+* **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
 
     ```
     sqlite:////path/to/zenml.db
@@ -43,6 +43,10 @@ The following environment variables can be passed to the container:
 * **ZENML\_STORE\_SSL\_KEY**: This can be set to a client SSL private key required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_CERT` to be set.
 * **ZENML\_STORE\_SSL\_VERIFY\_SERVER\_CERT**: This boolean variable controls whether the SSL certificate in use by the MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections. Defaults to `False`.
 * **ZENML\_LOGGING\_VERBOSITY**: Use this variable to control the verbosity of logs inside the container. It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`, `INFO` (default), `DEBUG` or `CRITICAL`.
+* **ZENML\_STORE\_BACKUP\_STRATEGY**: This variable controls the database backup strategy used by the ZenML server. See the [Database backup and recovery](#database-backup-and-recovery) section for more details about this feature and other related environment variables. Defaults to `in-memory`.
+* **ZENML\_SERVER\_RATE\_LIMIT\_ENABLED**: This variable controls the rate limiting for ZenML API (currently only for the `LOGIN` endpoint). It is disabled by default, so set it to `1` only if you need to enable rate limiting. To determine unique users a `X_FORWARDED_FOR` header or `request.client.host` is used, so before enabling this make sure that your network configuration is associating proper information with your clients in order to avoid disruptions for legitimate requests.
+* **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_MINUTE**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in a one minute interval. Set it to a desired integer value; defaults to `5`.
+* **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_DAY**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in an interval of day interval. Set it to a desired integer value; defaults to `1000`.
 
 If none of the `ZENML_STORE_*` variables are set, the container will default to creating and using an SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db` inside the container. The `/zenml/.zenconfig/local_stores` base path where the default SQLite database is located can optionally be overridden by setting the `ZENML_LOCAL_STORES_PATH` environment variable to point to a different path (e.g. a persistent volume or directory that is mounted from the host).
 
@@ -423,6 +427,47 @@ Tearing down the installation is as simple as running:
 
 ```shell
 docker-compose -p zenml down
+```
+
+
+## Database backup and recovery
+
+An automated database backup and recovery feature is enabled by default for all Docker deployments. The ZenML server will automatically back up the database in-memory before every database schema migration and restore it if the migration fails.
+
+{% hint style="info" %}
+The database backup automatically created by the ZenML server is only temporary and only used as an immediate recovery in case of database migration failures. It is not meant to be used as a long-term backup solution. If you need to back up your database for long-term storage, you should use a dedicated backup solution.
+{% endhint %}
+
+Several database backup strategies are supported, depending on where and how the backup is stored. The strategy can be configured by means of the `ZENML_STORE_BACKUP_STRATEGY` environment variable:
+
+* `disabled` - no backup is performed
+* `in-memory` - the database schema and data are stored in memory. This is the fastest backup strategy, but the backup is not persisted across container restarts, so no manual intervention is possible in case the automatic DB recovery fails after a failed DB migration. Adequate memory resources should be allocated to the ZenML server container when using this backup strategy with larger databases. This is the default backup strategy.
+* `database` - the database is copied to a backup database in the same database server. This requires the `ZENML_STORE_BACKUP_DATABASE` environment variable to be set to the name of the backup database. This backup strategy is only supported for MySQL compatible databases and the user specified in the database URL must have permissions to manage (create, drop, and modify) the backup database in addition to the main database.
+* `dump-file` - the database schema and data are dumped to a filesystem location inside the ZenML server container. This location can be customized by means of the `ZENML_STORE_BACKUP_DIRECTORY` environment variable. When this strategy is configured, users should mount a host directory in the container and point the `ZENML_STORE_BACKUP_DIRECTORY` variable to where it's mounted inside the container. If a host directory is not mounted, the dump file will be stored in the container's filesystem and will be lost when the container is removed.
+
+The following additional rules are applied concerning the creation and lifetime of the backup:
+
+* a backup is not attempted if the database doesn't need to undergo a migration (e.g. when the ZenML server is upgraded to a new version that doesn't require a database schema change or if the ZenML version doesn't change at all).
+* a backup file or database is created before every database migration attempt (i.e. when the container starts). If a backup already exists (i.e. persisted in a mounted host directory or backup database), it is overwritten.
+* the persistent backup file or database is cleaned up after the migration is completed successfully or if the database doesn't need to undergo a migration. This includes backups created by previous failed migration attempts.
+* the persistent backup file or database is NOT cleaned up after a failed migration. This allows the user to manually inspect and/or apply the backup if the automatic recovery fails.
+
+The following example shows how to deploy the ZenML server to use a mounted host directory to persist the database backup file during a database migration:
+
+```shell
+mkdir mysql-data
+
+docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password \
+    --mount type=bind,source=$PWD/mysql-data,target=/var/lib/mysql \
+    mysql:8.0
+
+docker run -it -d -p 8080:8080 --name zenml \
+    --add-host host.docker.internal:host-gateway \
+    --mount type=bind,source=$PWD/mysql-data,target=/db-dump \
+    --env ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml \
+    --env ZENML_STORE_BACKUP_STRATEGY=dump-file \
+    --env ZENML_STORE_BACKUP_DIRECTORY=/db-dump \
+    zenmldocker/zenml-server
 ```
 
 ## Troubleshooting

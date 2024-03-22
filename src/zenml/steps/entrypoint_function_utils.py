@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Util functions for step and pipeline entrypoint functions."""
+
 import inspect
 from typing import (
     TYPE_CHECKING,
@@ -157,6 +158,7 @@ class EntrypointFunctionDefinition(NamedTuple):
         from zenml.artifacts.unmaterialized_artifact import (
             UnmaterializedArtifact,
         )
+        from zenml.client_lazy_loader import ClientLazyLoader
         from zenml.models import (
             ArtifactVersionResponse,
             RunMetadataResponse,
@@ -176,6 +178,7 @@ class EntrypointFunctionDefinition(NamedTuple):
                 ExternalArtifact,
                 ArtifactVersionResponse,
                 RunMetadataResponse,
+                ClientLazyLoader,
             ),
         ):
             # If we were to do any type validation for artifacts here, we

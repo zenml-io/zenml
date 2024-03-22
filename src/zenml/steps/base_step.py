@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
+
 import copy
 import hashlib
 import inspect
@@ -35,6 +36,7 @@ from typing import (
 
 from pydantic import BaseModel, Extra, ValidationError
 
+from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.source import Source
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
@@ -444,6 +446,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Dict[str, "StepArtifact"],
         Dict[str, "ExternalArtifact"],
         Dict[str, "ModelVersionDataLazyLoader"],
+        Dict[str, "ClientLazyLoader"],
         Dict[str, Any],
         Dict[str, Any],
     ]:
@@ -478,6 +481,7 @@ class BaseStep(metaclass=BaseStepMeta):
         artifacts = {}
         external_artifacts = {}
         model_artifacts_or_metadata = {}
+        client_lazy_loaders = {}
         parameters = {}
         default_parameters = {}
 
@@ -517,6 +521,8 @@ class BaseStep(metaclass=BaseStepMeta):
                     artifact_version=value._lazy_load_artifact_version,
                     metadata_name=value._lazy_load_metadata_name,
                 )
+            elif isinstance(value, ClientLazyLoader):
+                client_lazy_loaders[key] = value
             else:
                 parameters[key] = value
 
@@ -534,6 +540,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 and key not in external_artifacts
                 and key not in model_artifacts_or_metadata
                 and key not in self.configuration.parameters
+                and key not in client_lazy_loaders
             ):
                 default_parameters[key] = value
 
@@ -541,6 +548,7 @@ class BaseStep(metaclass=BaseStepMeta):
             artifacts,
             external_artifacts,
             model_artifacts_or_metadata,
+            client_lazy_loaders,
             parameters,
             default_parameters,
         )
@@ -579,6 +587,7 @@ class BaseStep(metaclass=BaseStepMeta):
             input_artifacts,
             external_artifacts,
             model_artifacts_or_metadata,
+            client_lazy_loaders,
             parameters,
             default_parameters,
         ) = self._parse_call_args(*args, **kwargs)
@@ -596,6 +605,7 @@ class BaseStep(metaclass=BaseStepMeta):
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
             model_artifacts_or_metadata=model_artifacts_or_metadata,
+            client_lazy_loaders=client_lazy_loaders,
             parameters=parameters,
             default_parameters=default_parameters,
             upstream_steps=upstream_steps,
@@ -1025,6 +1035,7 @@ To avoid this consider setting step parameters only in one place (config or code
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
+        client_lazy_loaders: Dict[str, "ClientLazyLoader"],
     ) -> None:
         """Validates the step inputs.
 
@@ -1035,6 +1046,7 @@ To avoid this consider setting step parameters only in one place (config or code
             input_artifacts: The input artifacts.
             external_artifacts: The external input artifacts.
             model_artifacts_or_metadata: The model artifacts or metadata.
+            client_lazy_loaders: The client lazy loaders.
 
         Raises:
             StepInterfaceError: If an entrypoint input is missing.
@@ -1045,6 +1057,7 @@ To avoid this consider setting step parameters only in one place (config or code
                 or key in self.configuration.parameters
                 or key in external_artifacts
                 or key in model_artifacts_or_metadata
+                or key in client_lazy_loaders
             ):
                 continue
             raise StepInterfaceError(f"Missing entrypoint input {key}.")
@@ -1054,6 +1067,7 @@ To avoid this consider setting step parameters only in one place (config or code
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
+        client_lazy_loaders: Dict[str, "ClientLazyLoader"],
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 
@@ -1067,6 +1081,7 @@ To avoid this consider setting step parameters only in one place (config or code
             external_artifacts: The external artifacts of this step.
             model_artifacts_or_metadata: The model artifacts or metadata of
                 this step.
+            client_lazy_loaders: The client lazy loaders of this step.
 
         Returns:
             The finalized step configuration.
@@ -1077,9 +1092,9 @@ To avoid this consider setting step parameters only in one place (config or code
             StepConfigurationUpdate,
         )
 
-        outputs: Dict[
-            str, Dict[str, Union[Source, Tuple[Source, ...]]]
-        ] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Union[Source, Tuple[Source, ...]]]] = (
+            defaultdict(dict)
+        )
 
         for (
             output_name,
@@ -1100,10 +1115,10 @@ To avoid this consider setting step parameters only in one place (config or code
             if not output.materializer_source:
                 if output_annotation.resolved_annotation is Any:
                     outputs[output_name]["materializer_source"] = ()
-                    outputs[output_name][
-                        "default_materializer_source"
-                    ] = source_utils.resolve(
-                        materializer_registry.get_default_materializer()
+                    outputs[output_name]["default_materializer_source"] = (
+                        source_utils.resolve(
+                            materializer_registry.get_default_materializer()
+                        )
                     )
                     continue
 
@@ -1140,6 +1155,7 @@ To avoid this consider setting step parameters only in one place (config or code
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
             model_artifacts_or_metadata=model_artifacts_or_metadata,
+            client_lazy_loaders=client_lazy_loaders,
         )
 
         values = dict_utils.remove_none_values({"outputs": outputs or None})
@@ -1151,6 +1167,7 @@ To avoid this consider setting step parameters only in one place (config or code
                 "caching_parameters": self.caching_parameters,
                 "external_input_artifacts": external_artifacts,
                 "model_artifacts_or_metadata": model_artifacts_or_metadata,
+                "client_lazy_loaders": client_lazy_loaders,
             }
         )
 
@@ -1181,9 +1198,9 @@ To avoid this consider setting step parameters only in one place (config or code
 
         if self.entrypoint_definition.legacy_params:
             legacy_params = self._finalize_legacy_parameters()
-            params[
-                self.entrypoint_definition.legacy_params.name
-            ] = legacy_params
+            params[self.entrypoint_definition.legacy_params.name] = (
+                legacy_params
+            )
 
         return params
 

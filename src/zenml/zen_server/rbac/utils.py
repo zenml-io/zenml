@@ -29,7 +29,12 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.exceptions import IllegalOperationError
-from zenml.models import BaseResponse, Page, UserResponse, UserScopedResponse
+from zenml.models import (
+    BaseIdentifiedResponse,
+    Page,
+    UserResponse,
+    UserScopedResponse,
+)
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.utils import rbac, server_config
@@ -37,7 +42,7 @@ from zenml.zen_server.utils import rbac, server_config
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
 
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 AnyModel = TypeVar("AnyModel", bound=BaseModel)
 
 
@@ -124,7 +129,7 @@ def _dehydrate_value(
     Returns:
         The recursively dehydrated value.
     """
-    if isinstance(value, BaseResponse):
+    if isinstance(value, BaseIdentifiedResponse):
         permission_model = get_surrogate_permission_model_for_model(
             value, action=Action.READ
         )
@@ -228,7 +233,10 @@ def verify_permission_for_model(model: AnyResponse, action: Action) -> None:
     batch_verify_permissions_for_models(models=[model], action=action)
 
 
-def batch_verify_permissions(resources: Set[Resource], action: Action) -> None:
+def batch_verify_permissions(
+    resources: Set[Resource],
+    action: Action,
+) -> None:
     """Batch permission verification.
 
     Args:
@@ -337,7 +345,7 @@ def get_resource_for_model(model: AnyResponse) -> Optional[Resource]:
 
 def get_surrogate_permission_model_for_model(
     model: AnyResponse, action: str
-) -> BaseResponse[Any, Any]:
+) -> BaseIdentifiedResponse[Any, Any, Any]:
     """Get a surrogate permission model for a model.
 
     In some cases a different model instead of the original model is used to
@@ -392,6 +400,7 @@ def get_resource_type_for_model(
         SecretResponse,
         ServiceAccountResponse,
         ServiceConnectorResponse,
+        ServiceResponse,
         StackResponse,
         TagResponse,
         UserResponse,
@@ -421,6 +430,7 @@ def get_resource_type_for_model(
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
         TagResponse: ResourceType.TAG,
         ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
+        ServiceResponse: ResourceType.SERVICE,
     }
 
     return mapping.get(type(model))
@@ -479,7 +489,7 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
     Returns:
         All resources of the value which need permission verification.
     """
-    if isinstance(value, BaseResponse):
+    if isinstance(value, BaseIdentifiedResponse):
         resources = set()
         if not is_owned_by_authenticated_user(value):
             value = get_surrogate_permission_model_for_model(
@@ -528,6 +538,7 @@ def get_schema_for_resource_type(
         RunMetadataSchema,
         SecretSchema,
         ServiceConnectorSchema,
+        ServiceSchema,
         StackComponentSchema,
         StackSchema,
         TagSchema,
@@ -547,6 +558,7 @@ def get_schema_for_resource_type(
         ResourceType.ARTIFACT: ArtifactSchema,
         ResourceType.ARTIFACT_VERSION: ArtifactVersionSchema,
         ResourceType.SECRET: SecretSchema,
+        ResourceType.SERVICE: ServiceSchema,
         ResourceType.TAG: TagSchema,
         ResourceType.SERVICE_ACCOUNT: UserSchema,
         ResourceType.WORKSPACE: WorkspaceSchema,

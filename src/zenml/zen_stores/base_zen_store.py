@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
+
 import os
 from abc import ABC
 from typing import (
@@ -374,6 +375,8 @@ class BaseZenStore(
         server_config = ServerConfiguration.get_server_config()
         deployment_type = server_config.deployment_type
         auth_scheme = server_config.auth_scheme
+        base_url = server_config.base_url
+        metadata = server_config.metadata
         secrets_store_type = SecretsStoreType.NONE
         if isinstance(self, SqlZenStore):
             secrets_store_type = self.secrets_store.type
@@ -385,6 +388,8 @@ class BaseZenStore(
             debug=IS_DEBUG_ENV,
             secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
+            base_url=base_url,
+            metadata=metadata,
         )
 
     def is_local_store(self) -> bool:

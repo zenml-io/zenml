@@ -588,6 +588,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 email_opted_in=True,
                 active=True,
                 email=external_user.email,
+                is_admin=external_user.is_admin,
             ),
         )
     except KeyError:
@@ -603,15 +604,19 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 email_opted_in=True,
                 active=True,
                 email=external_user.email,
+                is_admin=external_user.is_admin,
             )
         )
 
         with AnalyticsContext() as context:
             context.user_id = user.id
             context.identify(
-                traits={"email": user.email, "source": "external_auth"}
+                traits={
+                    "email": external_user.email,
+                    "source": "external_auth",
+                }
             )
-            context.alias(user_id=user.id, previous_id=external_user.id)
+            context.alias(user_id=external_user.id, previous_id=user.id)
 
     return AuthContext(user=user)
 

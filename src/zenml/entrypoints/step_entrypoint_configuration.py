@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for entrypoint configurations that run a single step."""
+
 from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.client import Client

@@ -38,7 +38,7 @@ from zenml.orchestrators import (
     ContainerizedOrchestrator,
 )
 from zenml.stack import Stack, StackValidator
-from zenml.utils import string_utils
+from zenml.utils import docker_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -112,14 +112,13 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         """
         if deployment.schedule:
             logger.warning(
-                "Local Docker Orchestrator currently does not support the"
+                "Local Docker Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
 
-        from docker.client import DockerClient
+        docker_client = docker_utils._try_get_docker_client_from_env()
 
-        docker_client = DockerClient.from_env()
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
         # Add the local stores path as a volume mount
@@ -254,6 +253,15 @@ class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/
 
         Returns:
             True if this config is for a local component, False otherwise.
+        """
+        return True
+
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
         """
         return True
 

@@ -2,14 +2,14 @@ language: "en"
 early_access: false
 reviews:
   high_level_summary: true
-  poem: false
+  poem: true
   review_status: true
   collapse_walkthrough: true
   path_filters:
   - "!**/.xml"
   - "!**/.json"
   path_instructions:
-  - path: "**/*.js"
+  - path: "src/zenml/**/*.py"
     instructions: "Review the Python code for conformity with Python best practices."
   - path: "docs/**/*.md"
     instructions: "Review the documentation for readability and clarity."

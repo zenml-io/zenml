@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utilities for loading/resolving objects."""
+
 import contextlib
 import importlib
 import inspect
@@ -131,7 +132,7 @@ def resolve(
         attribute_name = obj.__name__  # type: ignore[union-attr]
 
     if (
-        not skip_validation
+        not (skip_validation or getattr(obj, "_DOCS_BUILDING_MODE", False))
         and attribute_name
         and getattr(module, attribute_name, None) is not obj
     ):
@@ -230,7 +231,9 @@ def get_source_root() -> str:
         raise RuntimeError(
             "Unable to determine source root because the main module does not "
             "have an associated file. This could be because you're running in "
-            "an interactive Python environment."
+            "an interactive Python environment. If you are trying to run from "
+            "within a Jupyter notebook, please run `zenml init` from the root "
+            "where your notebook is located and restart your notebook server.   "
         )
 
     path = Path(main_module.__file__).resolve().parent

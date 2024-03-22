@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.55.0"
+version = "0.56.1"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -82,7 +82,7 @@ jinja2-time = { version = "^0.2.0", optional = true }
 python-terraform = { version = "^0.10.1", optional = true }
 
 # Optional dependencies for the AWS secrets store
-boto3 = { version = ">=1.16.0,<=1.24.59", optional = true }
+boto3 = { version = ">=1.16.0", optional = true }
 
 # Optional dependencies for the GCP secrets store
 google-cloud-secret-manager = { version = ">=2.12.5", optional = true }
@@ -112,10 +112,10 @@ azure-storage-blob = { version = ">=12.0.0", optional = true }
 azure-mgmt-resource = { version = ">=21.0.0", optional = true }
 
 # Optional dependencies for the S3 artifact store
-s3fs = { version = "2022.11.0", optional = true }
+s3fs = { version = ">=2022.11.0", optional = true }
 
 # Optional dependencies for the GCS artifact store
-gcsfs = { version = "2022.11.0", optional = true }
+gcsfs = { version = ">=2022.11.0", optional = true }
 
 # Optional dependencies for the Azure artifact store
 adlfs = { version = ">=2021.10.0", optional = true }
@@ -129,7 +129,7 @@ tox = { version = "^3.24.3", optional = true }
 hypothesis = { version = "^6.43.1", optional = true }
 typing-extensions = { version = ">=3.7.4", optional = true }
 darglint = { version = "^1.8.1", optional = true }
-ruff = { version = "0.1.7", optional = true }
+ruff = { version = ">=0.1.7", optional = true }
 yamlfix = { version = "^1.16.0", optional = true }
 
 # pytest
@@ -152,6 +152,7 @@ types-certifi = { version = "^2021.10.8.0", optional = true }
 types-croniter = { version = "^1.0.2", optional = true }
 types-futures = { version = "^3.3.1", optional = true }
 types-Markdown = { version = "^3.3.6", optional = true }
+types-paramiko = { version = ">=3.4.0", optional = true }
 types-Pillow = { version = "^9.2.1", optional = true }
 types-protobuf = { version = "^3.18.0", optional = true }
 types-PyMySQL = { version = "^1.0.4", optional = true }
@@ -232,6 +233,7 @@ dev = [
     "types-croniter",
     "types-futures",
     "types-Markdown",
+    "types-paramiko",
     "types-Pillow",
     "types-protobuf",
     "types-PyMySQL",
@@ -302,9 +304,36 @@ exclude = [
     "venv",
     '__init__.py',
     'src/zenml/cli/version.py',
+    # LitGPT files from the LLM Finetuning example
+    'examples/llm_finetuning/evaluate',
+    'examples/llm_finetuning/finetune',
+    'examples/llm_finetuning/generate',
+    'examples/llm_finetuning/lit_gpt',
+    'examples/llm_finetuning/scripts',
 ]
+
+src = ["src", "test"]
+# use Python 3.8 as the minimum version for autofixing
+target-version = "py38"
+
+
+[tool.ruff.format]
+exclude = [
+    "*.git",
+    "*.hg",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "_build",
+    "buck-out",
+    "build]",
+]
+
+[tool.ruff.lint]
+# Disable autofix for unused imports (`F401`).
+unfixable = ["F401"]
 per-file-ignores = {}
-select = ["D", "E", "F", "I", "I001", "Q"]
+ignore-init-module-imports = true
 ignore = [
     "E501",
     "F401",
@@ -321,37 +350,19 @@ ignore = [
     "S106",
     "S107",
 ]
-src = ["src", "test"]
-# use Python 3.8 as the minimum version for autofixing
-target-version = "py38"
-ignore-init-module-imports = true
-# Disable autofix for unused imports (`F401`).
-unfixable = ["F401"]
+select = ["D", "E", "F", "I", "I001", "Q"]
 
-[tool.ruff.format]
-exclude = [
-    "*.git",
-    "*.hg",
-    ".mypy_cache",
-    ".tox",
-    ".venv",
-    "_build",
-    "buck-out",
-    "build]",
-]
-
-
-[tool.ruff.flake8-import-conventions.aliases]
+[tool.ruff.lint.flake8-import-conventions.aliases]
 altair = "alt"
 "matplotlib.pyplot" = "plt"
 numpy = "np"
 pandas = "pd"
 seaborn = "sns"
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 18
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.
 convention = "google"
 
@@ -412,7 +423,6 @@ module = [
     "flask.*",
     "kfp.*",
     "kubernetes.*",
-    "kserve.*",
     "urllib3.*",
     "kfp_server_api.*",
     "sagemaker.*",
@@ -446,5 +456,6 @@ module = [
     "mlstacks.*",
     "matplotlib.*",
     "IPython.*",
+    "huggingface_hub.*"
 ]
 ignore_missing_imports = true

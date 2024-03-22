@@ -43,6 +43,7 @@
     * [Visualize artifacts](user-guide/advanced-guide/data-management/visualize-artifacts.md)
     * [Organize data with tags](user-guide/advanced-guide/data-management/tagging.md)
     * [Model management](user-guide/advanced-guide/data-management/model-management.md)
+    * [Late materialization in pipelines](user-guide/advanced-guide/data-management/late-materialization.md)
   * [Managing infrastructure](user-guide/advanced-guide/infrastructure-management/infrastructure-management.md)
     * [Understanding environments](user-guide/advanced-guide/infrastructure-management/understanding-environments.md)
     * [Containerize your pipeline](user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md)
@@ -93,6 +94,7 @@
     * [Tekton Orchestrator](stacks-and-components/component-guide/orchestrators/tekton.md)
     * [Airflow Orchestrator](stacks-and-components/component-guide/orchestrators/airflow.md)
     * [Skypilot VM Orchestrator](stacks-and-components/component-guide/orchestrators/skypilot-vm.md)
+    * [HyperAI Orchestrator](stacks-and-components/component-guide/orchestrators/hyperai.md)
     * [Develop a custom orchestrator](stacks-and-components/component-guide/orchestrators/custom.md)
   * [Artifact Stores](stacks-and-components/component-guide/artifact-stores/artifact-stores.md)
     * [Local Artifact Store](stacks-and-components/component-guide/artifact-stores/local.md)
@@ -123,6 +125,7 @@
     * [MLflow](stacks-and-components/component-guide/model-deployers/mlflow.md)
     * [Seldon](stacks-and-components/component-guide/model-deployers/seldon.md)
     * [BentoML](stacks-and-components/component-guide/model-deployers/bentoml.md)
+    * [Hugging Face](stacks-and-components/component-guide/model-deployers/huggingface.md)
     * [Develop a Custom Model Deployer](stacks-and-components/component-guide/model-deployers/custom.md)
   * [Step Operators](stacks-and-components/component-guide/step-operators/step-operators.md)
     * [Amazon SageMaker](stacks-and-components/component-guide/step-operators/sagemaker.md)
@@ -168,6 +171,7 @@
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
 * [🔏 End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
 * [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)
+* [📖 LLM Finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)
 * [🧩 More Projects...](https://github.com/zenml-io/zenml-projects)
 
 ## Reference

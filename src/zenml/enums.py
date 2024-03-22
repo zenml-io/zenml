@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML enums."""
+
 import logging
 from enum import Enum
 
@@ -51,6 +52,13 @@ class VisualizationType(StrEnum):
     HTML = "html"
     IMAGE = "image"
     MARKDOWN = "markdown"
+
+
+class ZenMLServiceType(StrEnum):
+    """All possible types a service can have."""
+
+    ZEN_SERVER = "zen_server"
+    MODEL_SERVING = "model-serving"
 
 
 class ExecutionStatus(StrEnum):
@@ -346,3 +354,32 @@ class MetadataResourceTypes(StrEnum):
     STEP_RUN = "step_run"
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
+
+
+class DatabaseBackupStrategy(StrEnum):
+    """All available database backup strategies."""
+
+    # Backup disabled
+    DISABLED = "disabled"
+    # In-memory backup
+    IN_MEMORY = "in-memory"
+    # Dump the database to a file
+    DUMP_FILE = "dump-file"
+    # Create a backup of the database in the remote database service
+    DATABASE = "database"
+
+
+class PluginType(StrEnum):
+    """All possible types of Plugins."""
+
+    EVENT_SOURCE = "event_source"
+    ACTION = "action"
+
+
+class PluginSubType(StrEnum):
+    """All possible types of Plugins."""
+
+    # Event Source Subtypes
+    WEBHOOK = "webhook"
+    # Action Subtypes
+    PIPELINE_RUN = "pipeline_run"

@@ -20,14 +20,11 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.global_config import (
-    CONFIG_ENV_VAR_PREFIX,
     GlobalConfiguration,
 )
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
-    ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX,
-    ENV_ZENML_SECRETS_STORE_PREFIX,
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
@@ -94,62 +91,29 @@ def get_config_environment_vars(
     from zenml.zen_stores.rest_zen_store import RestZenStore
 
     global_config = GlobalConfiguration()
-    environment_vars = {}
+    environment_vars = global_config.get_config_environment_vars()
 
-    for key in global_config.__fields__.keys():
-        if key == "store":
-            continue
-
-        value = getattr(global_config, key)
-        if value is not None:
-            environment_vars[CONFIG_ENV_VAR_PREFIX + key.upper()] = str(value)
-
-    if global_config.store:
-        store_dict = global_config.store.dict(exclude_none=True)
-        secrets_store_dict = store_dict.pop("secrets_store", None) or {}
-        backup_secrets_store_dict = (
-            store_dict.pop("backup_secrets_store", None) or {}
+    if deployment and global_config.store_configuration.type == StoreType.REST:
+        # When connected to a ZenML server, if a pipeline deployment is
+        # supplied, we need to fetch an API token that will be valid for the
+        # duration of the pipeline run.
+        assert isinstance(global_config.zen_store, RestZenStore)
+        pipeline_id: Optional[UUID] = None
+        if deployment.pipeline:
+            pipeline_id = deployment.pipeline.id
+        schedule_id: Optional[UUID] = None
+        expires_minutes: Optional[int] = PIPELINE_API_TOKEN_EXPIRES_MINUTES
+        if deployment.schedule:
+            schedule_id = deployment.schedule.id
+            # If a schedule is given, this is a long running pipeline that
+            # should not have an API token that expires.
+            expires_minutes = None
+        api_token = global_config.zen_store.get_api_token(
+            pipeline_id=pipeline_id,
+            schedule_id=schedule_id,
+            expires_minutes=expires_minutes,
         )
-
-        for key, value in store_dict.items():
-            if key in ["username", "password"]:
-                # Don't include the username and password as we use the token to
-                # authenticate with the server
-                continue
-
-            environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
-
-        for key, value in secrets_store_dict.items():
-            environment_vars[
-                ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()
-            ] = str(value)
-
-        for key, value in backup_secrets_store_dict.items():
-            environment_vars[
-                ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX + key.upper()
-            ] = str(value)
-
-        if deployment and global_config.store.type == StoreType.REST:
-            # When connected to a ZenML server, if a pipeline deployment is
-            # supplied, we need to fetch an API token that will be valid for the
-            # duration of the pipeline run.
-            assert isinstance(global_config.zen_store, RestZenStore)
-            pipeline_id: Optional[UUID] = None
-            if deployment.pipeline:
-                pipeline_id = deployment.pipeline.id
-            schedule_id: Optional[UUID] = None
-            expires_minutes: Optional[int] = PIPELINE_API_TOKEN_EXPIRES_MINUTES
-            if deployment.schedule:
-                schedule_id = deployment.schedule.id
-                # If a schedule is given, this is a long running pipeline that
-                # should not have an API token that expires.
-                expires_minutes = None
-            api_token = global_config.zen_store.get_api_token(
-                pipeline_id=pipeline_id,
-                schedule_id=schedule_id,
-                expires_minutes=expires_minutes,
-            )
-            environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = api_token
+        environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = api_token
 
     # Make sure to use the correct active stack/workspace which might come
     # from a .zen repository and not the global config

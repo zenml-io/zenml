@@ -124,26 +124,6 @@ class DockerZenServer(ContainerService):
             self.config_path(), SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
         )
 
-    def _copy_global_configuration(self) -> None:
-        """Copy the global configuration to the docker ZenML server location.
-
-        The docker ZenML server global configuration is a copy of the docker
-        global configuration. If a store configuration is explicitly set in
-        the server configuration, it will be used. Otherwise, the store
-        configuration is set to point to the local store.
-        """
-        gc = GlobalConfiguration()
-
-        # this creates a copy of the global configuration and saves it to the
-        # server configuration path. The store is set to where the default local
-        # store is mounted in the docker container unless a custom store
-        # configuration is explicitly supplied with the server configuration.
-        gc.copy_configuration(
-            config_path=self._global_config_path,
-            store_config=self.config.server.store,
-            empty_store=self.config.server.store is None,
-        )
-
     @classmethod
     def get_service(cls) -> Optional["DockerZenServer"]:
         """Load and return the docker ZenML server service, if present.
@@ -152,14 +132,11 @@ class DockerZenServer(ContainerService):
             The docker ZenML server service or None, if the docker server
             deployment is not found.
         """
-        from zenml.services import ServiceRegistry
-
         config_filename = os.path.join(cls.config_path(), "service.json")
         try:
             with open(config_filename, "r") as f:
                 return cast(
-                    DockerZenServer,
-                    ServiceRegistry().load_service_from_json(f.read()),
+                    "DockerZenServer", DockerZenServer.from_json(f.read())
                 )
         except FileNotFoundError:
             return None
@@ -185,9 +162,10 @@ class DockerZenServer(ContainerService):
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.DOCKER
         env[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
 
-        # Set the local stores path to point to where the client's local stores
-        # path is mounted in the container. This ensures that the server's store
-        # configuration is initialized with the same path as the client.
+        # Set the local stores path to the same path used by the client (mounted
+        # in the container by the super class). This ensures that the server's
+        # default store configuration is initialized to point at the same local
+        # SQLite database as the client.
         env[ENV_ZENML_LOCAL_STORES_PATH] = os.path.join(
             SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
             LOCAL_STORES_DIRECTORY_NAME,
@@ -198,7 +176,6 @@ class DockerZenServer(ContainerService):
 
     def provision(self) -> None:
         """Provision the service."""
-        self._copy_global_configuration()
         super().provision()
 
     def run(self) -> None:
@@ -211,7 +188,7 @@ class DockerZenServer(ContainerService):
         import uvicorn
 
         gc = GlobalConfiguration()
-        if gc.store and gc.store.type == StoreType.REST:
+        if gc.store_configuration.type == StoreType.REST:
             raise ValueError(
                 "The ZenML server cannot be started with REST store type."
             )

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for all ZenML settings."""
+
 from enum import IntFlag, auto
 from typing import Any, ClassVar, Dict, Union
 

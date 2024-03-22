@@ -14,7 +14,7 @@
 """SQLModel implementation of artifact table."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic import ValidationError
@@ -99,26 +99,41 @@ class ArtifactSchema(NamedSchema, table=True):
             has_custom_name=artifact_request.has_custom_name,
         )
 
-    def to_model(self, hydrate: bool = False) -> ArtifactResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> ArtifactResponse:
         """Convert an `ArtifactSchema` to an `ArtifactResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+
 
         Returns:
             The created `ArtifactResponse`.
         """
+        latest_id, latest_name = None, None
+        if self.versions:
+            latest_version = max(self.versions, key=lambda x: x.created)
+            latest_id, latest_name = latest_version.id, latest_version.version
+
         # Create the body of the model
         body = ArtifactResponseBody(
             created=self.created,
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
+            latest_version_name=latest_name,
+            latest_version_id=latest_id,
         )
 
         # Create the metadata of the model
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ArtifactResponseMetadata(
                 has_custom_name=self.has_custom_name,
             )
@@ -143,6 +158,8 @@ class ArtifactSchema(NamedSchema, table=True):
         if artifact_update.name:
             self.name = artifact_update.name
             self.has_custom_name = True
+        if artifact_update.has_custom_name is not None:
+            self.has_custom_name = artifact_update.has_custom_name
         return self
 
 
@@ -229,11 +246,11 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(
-        back_populates="artifact_version",
-        sa_relationship_kwargs={"cascade": "delete"},
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(
+            back_populates="artifact_version",
+            sa_relationship_kwargs={"cascade": "delete"},
+        )
     )
 
     @classmethod
@@ -266,12 +283,20 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             data_type=artifact_version_request.data_type.json(),
         )
 
-    def to_model(self, hydrate: bool = False) -> ArtifactVersionResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> ArtifactVersionResponse:
         """Convert an `ArtifactVersionSchema` to an `ArtifactVersionResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+
 
         Returns:
             The created `ArtifactVersionResponse`.
@@ -288,6 +313,15 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             # This is an old source which was an importable source path
             data_type = Source.from_import_path(self.data_type)
 
+        producer_step_run_id, producer_pipeline_run_id = None, None
+        if self.output_of_step_runs:
+            step_run = self.output_of_step_runs[0].step_run
+            if step_run.status == ExecutionStatus.COMPLETED:
+                producer_step_run_id = step_run.id
+                producer_pipeline_run_id = step_run.pipeline_run_id
+            else:
+                producer_step_run_id = step_run.original_step_run_id
+
         # Create the body of the model
         body = ArtifactVersionResponseBody(
             artifact=self.artifact.to_model(),
@@ -300,19 +334,12 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
+            producer_pipeline_run_id=producer_pipeline_run_id,
         )
 
         # Create the metadata of the model
         metadata = None
-        if hydrate:
-            producer_step_run_id = None
-            if self.output_of_step_runs:
-                step_run = self.output_of_step_runs[0].step_run
-                if step_run.status == ExecutionStatus.COMPLETED:
-                    producer_step_run_id = step_run.id
-                else:
-                    producer_step_run_id = step_run.original_step_run_id
-
+        if include_metadata:
             metadata = ArtifactVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
                 artifact_store_id=self.artifact_store_id,

@@ -174,16 +174,16 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             )
         if deployment.schedule:
             logger.warning(
-                "Skypilot Orchestrator currently does not support the"
+                "Skypilot Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
 
         # Set up some variables for configuration
         orchestrator_run_id = str(uuid4())
-        environment[
-            ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID
-        ] = orchestrator_run_id
+        environment[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
+            orchestrator_run_id
+        )
 
         settings = cast(
             SkypilotBaseOrchestratorSettings,

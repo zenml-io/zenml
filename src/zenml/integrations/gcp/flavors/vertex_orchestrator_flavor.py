@@ -133,7 +133,11 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     gpu_limit: Optional[int] = None
 
     _resource_deprecation = deprecation_utils.deprecate_pydantic_attributes(
-        "cpu_limit", "memory_limit", "gpu_limit"
+        "cpu_limit",
+        "memory_limit",
+        "gpu_limit",
+        "function_service_account",
+        "scheduler_service_account",
     )
 
     @property
@@ -148,6 +152,15 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             True if this config is for a remote component, False otherwise.
         """
         return True
+
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return self.synchronous
 
 
 class VertexOrchestratorFlavor(BaseOrchestratorFlavor):

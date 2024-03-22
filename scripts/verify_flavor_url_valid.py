@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Verify the current flavor implementations contains valid fields."""
+
 import os.path
 import tempfile
 from typing import Type

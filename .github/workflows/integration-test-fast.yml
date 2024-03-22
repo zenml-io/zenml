@@ -11,11 +11,6 @@ on:
         description: Python version
         type: string
         required: true
-      is-slow-ci:
-        description: Whether we're using the slow CI
-        type: boolean
-        required: false
-        default: false
       test_environment:
         description: The test environment
         type: string
@@ -39,7 +34,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-          - ubuntu-dind-runners
+          - arc-runner-set
         required: false
         default: ubuntu-latest
       python-version:
@@ -48,11 +43,6 @@ on:
         options: ['3.8', '3.9', '3.10', '3.11']
         required: false
         default: '3.8'
-      is-slow-ci:
-        description: Whether we're using the slow CI
-        type: boolean
-        required: false
-        default: false
       test_environment:
         description: The test environment
         type: choice
@@ -97,6 +87,7 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
@@ -123,12 +114,12 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker/
-        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - name: Reload Docker
         run: sudo systemctl restart docker
-        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - uses: actions/checkout@v4.1.1
@@ -156,13 +147,14 @@ jobs:
           os: ${{ inputs.os }}
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
+          discord_webhook: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
-          pip install pyyaml==5.3.1
-          pip install docker-compose
+          pip install uv
+          uv pip install --system "pyyaml==5.3.1" docker-compose
       - name: Install Linux System Dependencies
-        if: inputs.os=='ubuntu-latest'
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
         run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
@@ -170,6 +162,16 @@ jobs:
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
         run: choco install graphviz
+      - name: Unbreak python in github actions
+        if: runner.os=='macOS'
+        # github actions overwrites brew's python. Force it to reassert itself, by
+        # running in a separate step.
+        # Workaround GitHub Actions Python issues
+        # see https://github.com/Homebrew/homebrew-core/issues/165793#issuecomment-1989441193
+        run: |
+          find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
+          sudo rm -rf /Library/Frameworks/Python.framework/
+          brew install --force python3 && brew unlink python3 && brew unlink python3 && brew link --overwrite python3
       - name: Install Docker and Colima on MacOS
         if: runner.os=='macOS'
         run: |
@@ -189,7 +191,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: inputs.os=='ubuntu-latest'
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
@@ -226,8 +228,7 @@ jobs:
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Sharded Integration Tests (Ubuntu) - Fast CI
         # Ubuntu integration tests run as 6 shards
-        if: runner.os != 'macOS' && runner.os != 'Windows' && inputs.is-slow-ci ==
-          'false'
+        if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
       - name: Setup tmate session after tests
@@ -237,5 +238,5 @@ jobs:
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list
-          pip list
-          pip check || true
+          uv pip list
+          uv pip check || true

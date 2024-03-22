@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base orchestrator class."""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
@@ -54,6 +55,15 @@ class BaseOrchestratorConfig(StackComponentConfig):
                 )
 
         return values
+
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return False
 
 
 class BaseOrchestrator(StackComponent, ABC):

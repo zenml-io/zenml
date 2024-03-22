@@ -36,6 +36,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
@@ -137,6 +138,9 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
+    producer_pipeline_run_id: Optional[UUID] = Field(
+        title="The ID of the pipeline run that generated this artifact version."
+    )
 
     _convert_source = convert_source_validator("materializer", "data_type")
 
@@ -160,9 +164,15 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ArtifactVersionResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the artifact version entity."""
+
+
 class ArtifactVersionResponse(
     WorkspaceScopedResponse[
-        ArtifactVersionResponseBody, ArtifactVersionResponseMetadata
+        ArtifactVersionResponseBody,
+        ArtifactVersionResponseMetadata,
+        ArtifactVersionResponseResources,
     ]
 ):
     """Response model for artifact versions."""
@@ -222,6 +232,15 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().tags
+
+    @property
+    def producer_pipeline_run_id(self) -> Optional[UUID]:
+        """The `producer_pipeline_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().producer_pipeline_run_id
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:
@@ -320,6 +339,32 @@ class ArtifactVersionResponse(
         from zenml.artifacts.utils import load_artifact_from_response
 
         return load_artifact_from_response(self)
+
+    def download_files(self, path: str, overwrite: bool = False) -> None:
+        """Downloads data for an artifact with no materializing.
+
+        Any artifacts will be saved as a zip file to the given path.
+
+        Args:
+            path: The path to save the binary data to.
+            overwrite: Whether to overwrite the file if it already exists.
+
+        Raises:
+            ValueError: If the path does not end with '.zip'.
+        """
+        if not path.endswith(".zip"):
+            raise ValueError(
+                "The path should end with '.zip' to save the binary data."
+            )
+        from zenml.artifacts.utils import (
+            download_artifact_files_from_response,
+        )
+
+        download_artifact_files_from_response(
+            self,
+            path=path,
+            overwrite=overwrite,
+        )
 
     def read(self) -> Any:
         """(Deprecated) Materializes (loads) the data stored in this artifact.

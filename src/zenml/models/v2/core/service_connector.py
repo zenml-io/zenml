@@ -28,6 +28,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.misc.service_connector_type import (
@@ -328,9 +329,15 @@ class ServiceConnectorResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ServiceConnectorResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the service connector entity."""
+
+
 class ServiceConnectorResponse(
     WorkspaceScopedResponse[
-        ServiceConnectorResponseBody, ServiceConnectorResponseMetadata
+        ServiceConnectorResponseBody,
+        ServiceConnectorResponseMetadata,
+        ServiceConnectorResponseResources,
     ]
 ):
     """Response model for service connectors."""
@@ -829,6 +836,7 @@ def _validate_and_configure_resources(
             "required", []
         )
         secret = attr_schema.get("format", "") == "password"
+        attr_type = attr_schema.get("type", "string")
         value = configuration.get(attr_name, secrets.get(attr_name))
         if required:
             if value is None:
@@ -846,6 +854,11 @@ def _validate_and_configure_resources(
             else:
                 update_connector_metadata.secrets[attr_name] = SecretStr(value)
         else:
+            if attr_type == "array" and isinstance(value, str):
+                try:
+                    value = json.loads(value)
+                except json.decoder.JSONDecodeError:
+                    value = value.split(",")
             update_connector_metadata.configuration[attr_name] = value
 
     # Warn about attributes that are not part of the configuration schema

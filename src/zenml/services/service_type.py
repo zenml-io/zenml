@@ -24,12 +24,14 @@ class ServiceType(BaseModel):
         flavor: service flavor
         name: name of the service type
         description: description of the service type
+        logo_url: logo of the service type
     """
 
     type: str
     flavor: str
     name: str = ""
     description: str = ""
+    logo_url: str = ""
 
     class Config:
         """Pydantic configuration class."""

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
+
 import contextlib
 import datetime
 import json
@@ -63,7 +64,7 @@ from zenml.model_registries.base_model_registry import (
 )
 from zenml.models import (
     BaseFilter,
-    BaseResponse,
+    BaseIdentifiedResponse,
     BoolFilter,
     NumericFilter,
     Page,
@@ -103,7 +104,7 @@ logger = get_logger(__name__)
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
-T = TypeVar("T", bound=BaseResponse)  # type: ignore[type-arg]
+T = TypeVar("T", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 
 
 def title(text: str) -> None:
@@ -285,7 +286,7 @@ def print_pydantic_models(
         """
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
-            if isinstance(model, BaseResponse):
+            if isinstance(model, BaseIdentifiedResponse):
                 include_columns = ["id"]
 
                 if "name" in model.__fields__:
@@ -322,7 +323,7 @@ def print_pydantic_models(
             # In case the response model contains nested `BaseResponse`s
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
-            if isinstance(value, BaseResponse):
+            if isinstance(value, BaseIdentifiedResponse):
                 if "name" in value.__fields__:
                     items[k] = str(getattr(value, "name"))
                 else:
@@ -332,7 +333,7 @@ def print_pydantic_models(
             #  the list and extract either name or id
             elif isinstance(value, list):
                 for v in value:
-                    if isinstance(v, BaseResponse):
+                    if isinstance(v, BaseIdentifiedResponse):
                         if "name" in v.__fields__:
                             items.setdefault(k, []).append(
                                 str(getattr(v, "name"))
@@ -418,7 +419,7 @@ def print_pydantic_model(
         exclude_columns = set()
 
     if not columns:
-        if isinstance(model, BaseResponse):
+        if isinstance(model, BaseIdentifiedResponse):
             include_columns = ["id"]
 
             if "name" in model.__fields__:
@@ -450,7 +451,7 @@ def print_pydantic_model(
 
     for k in include_columns:
         value = getattr(model, k)
-        if isinstance(value, BaseResponse):
+        if isinstance(value, BaseIdentifiedResponse):
             if "name" in value.__fields__:
                 items[k] = str(getattr(value, "name"))
             else:
@@ -460,7 +461,7 @@ def print_pydantic_model(
         #  the list and extract either name or id
         elif isinstance(value, list):
             for v in value:
-                if isinstance(v, BaseResponse):
+                if isinstance(v, BaseIdentifiedResponse):
                     if "name" in v.__fields__:
                         items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:
@@ -915,12 +916,14 @@ def prompt_configuration(
     config_dict = {}
     for attr_name, attr_schema in config_schema.get("properties", {}).items():
         title = attr_schema.get("title", attr_name)
-        attr_type = attr_schema.get("type", "string")
+        attr_type_name = attr_type = attr_schema.get("type", "string")
+        if attr_type == "array":
+            attr_type_name = "list (CSV or JSON)"
         title = f"[{attr_name}] {title}"
         required = attr_name in config_schema.get("required", [])
         hidden = attr_schema.get("format", "") == "password"
         subtitles: List[str] = []
-        subtitles.append(attr_type)
+        subtitles.append(attr_type_name)
         if hidden:
             subtitles.append("secret")
         if required:
@@ -938,6 +941,8 @@ def prompt_configuration(
                 if hidden and not show_secrets:
                     title += " is currently set to: [HIDDEN]"
                 else:
+                    if attr_type == "array":
+                        existing_value = json.dumps(existing_value)
                     title += f" is currently set to: '{existing_value}'"
             else:
                 title += " is not currently set"
@@ -1127,6 +1132,10 @@ def get_service_state_emoji(state: "ServiceState") -> str:
         return ":pause_button:"
     if state == ServiceState.ERROR:
         return ":heavy_exclamation_mark:"
+    if state == ServiceState.PENDING_STARTUP:
+        return ":hourglass:"
+    if state == ServiceState.SCALED_TO_ZERO:
+        return ":chart_decreasing:"
     return ":hourglass_not_done:"
 
 
@@ -1141,15 +1150,18 @@ def pretty_print_model_deployer(
     """
     model_service_dicts = []
     for model_service in model_services:
-        served_model_info = model_deployer.get_model_server_info(model_service)
         dict_uuid = str(model_service.uuid)
         dict_pl_name = model_service.config.pipeline_name
         dict_pl_stp_name = model_service.config.pipeline_step_name
-        dict_model_name = served_model_info.get("MODEL_NAME", "")
+        dict_model_name = model_service.config.model_name
+        type = model_service.SERVICE_TYPE.type
+        flavor = model_service.SERVICE_TYPE.flavor
         model_service_dicts.append(
             {
                 "STATUS": get_service_state_emoji(model_service.status.state),
                 "UUID": dict_uuid,
+                "TYPE": type,
+                "FLAVOR": flavor,
                 "PIPELINE_NAME": dict_pl_name,
                 "PIPELINE_STEP_NAME": dict_pl_stp_name,
                 "MODEL_NAME": dict_model_name,
@@ -1276,9 +1288,10 @@ def print_served_model_configuration(
         **served_model_info,
         "UUID": str(model_service.uuid),
         "STATUS": get_service_state_emoji(model_service.status.state),
+        "TYPE": model_service.SERVICE_TYPE.type,
+        "FLAVOR": model_service.SERVICE_TYPE.flavor,
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 

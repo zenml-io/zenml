@@ -49,9 +49,9 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
     """
 
     NAME: ClassVar[str] = "whylogs"
-    FLAVOR: ClassVar[
-        Type[BaseDataValidatorFlavor]
-    ] = WhylogsDataValidatorFlavor
+    FLAVOR: ClassVar[Type[BaseDataValidatorFlavor]] = (
+        WhylogsDataValidatorFlavor
+    )
 
     @property
     def config(self) -> WhylogsDataValidatorConfig:

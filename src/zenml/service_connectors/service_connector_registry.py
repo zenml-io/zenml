@@ -245,5 +245,12 @@ class ServiceConnectorRegistry:
         except ImportError as e:
             logger.warning(f"Could not import Docker service connector: {e}.")
 
+        try:
+            from zenml.integrations.hyperai.service_connectors.hyperai_service_connector import (  # noqa
+                HyperAIServiceConnector,
+            )
+        except ImportError as e:
+            logger.warning(f"Could not import HyperAI service connector: {e}.")
+
 
 service_connector_registry = ServiceConnectorRegistry()

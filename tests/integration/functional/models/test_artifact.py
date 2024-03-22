@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Integration tests for artifact models."""
 
-
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import pytest
@@ -182,7 +181,7 @@ def test_artifact_tagging(clean_client: "Client", one_step_pipeline):
     pipe: BasePipeline = one_step_pipeline(tagged_artifact_step)
     pipe.run()
     artifact = pipe.model.last_run.steps["step_"].output
-    assert [t.name for t in artifact.tags] == ["cat", "grumpy"]
+    assert {t.name for t in artifact.tags} == {"cat", "grumpy"}
 
 
 def test_artifact_step_run_linkage(clean_client: "Client", one_step_pipeline):

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Test zenml tag CLI commands."""
 
-
 import pytest
 from click.testing import CliRunner
 
