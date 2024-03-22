@@ -537,7 +537,7 @@ def create_pipeline(
         report_usage(
             resource_type=ResourceType.PIPELINE, resource_id=pipeline.id
         )
-    
+
     return pipeline
 
 

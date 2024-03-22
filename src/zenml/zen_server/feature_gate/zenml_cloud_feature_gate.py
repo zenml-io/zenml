@@ -76,14 +76,9 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
                 endpoint=ENTITLEMENT_ENDPOINT + "/" + resource, params=None
             )
         except SubscriptionUpgradeRequiredError:
-            if server_config.base_url:
-                billing_url = f" at {server_config.base_url.rstrip('/')}/organizations/{ORGANIZATION_ID}/settings/billing"
-            else:
-                billing_url = ""
-
             raise SubscriptionUpgradeRequiredError(
                 f"Your subscription reached its `{resource}` limit. Please "
-                f"upgrade it{billing_url} or reach out to us."
+                f"upgrade your subscription or reach out to us."
             )
 
         if response.status_code != 200:
