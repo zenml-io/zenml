@@ -1,4 +1,22 @@
 <!-- markdown-link-check-disable -->
+# 0.56.1
+
+This is a patch release aiming to solve a dependency problem which was brought in with the new rate 
+limiting functionality. With 0.56.1 you no longer need `starlette` to run client code or to 
+run ZenML CLI commands.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to thank @christianversloot for his contribution to this release.
+
+## What's Changed
+* Fix pipelines and model links for the cloud dashboard by @wjayesh in https://github.com/zenml-io/zenml/pull/2554
+* Make starlette non-must for client by @avishniakov in https://github.com/zenml-io/zenml/pull/2553
+* Bump MLFlow to version 2.11.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2552
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.0...0.56.1
+
 # 0.56.0
 
 ZenML 0.56.0 introduces a wide array of new features, enhancements, and bug fixes,
