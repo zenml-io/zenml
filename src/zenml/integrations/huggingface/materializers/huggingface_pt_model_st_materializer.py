@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the Huggingface PyTorch model materializer using Safetensors."""
 
-import importlib
 import os
 from tempfile import TemporaryDirectory
 from typing import Any, ClassVar, Dict, Tuple, Type
 
 from safetensors.torch import load_model, save_model
 from transformers import (  # type: ignore [import-untyped]
-    AutoConfig,
     PreTrainedModel,
 )
 
@@ -39,10 +37,13 @@ class HFPTModelSTMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (PreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def load(self, data_type: Type[PreTrainedModel]) -> PreTrainedModel:
+    def load(
+        self, model: PreTrainedModel, data_type: Type[PreTrainedModel]
+    ) -> PreTrainedModel:
         """Reads HFModel.
 
         Args:
+            model: The model to load onto.
             data_type: The type of the model to read.
 
         Returns:
@@ -53,14 +54,9 @@ class HFPTModelSTMaterializer(BaseMaterializer):
             os.path.join(self.uri, DEFAULT_PT_MODEL_DIR), temp_dir.name
         )
 
-        config = AutoConfig.from_pretrained(temp_dir.name)
-        architecture = config.architectures[0]
-        model_cls = getattr(
-            importlib.import_module("transformers"), architecture
-        )
         filepath = os.path.join(temp_dir.name, DEFAULT_FILENAME)
-        loaded_model = load_model(model_cls, filepath)
-        return loaded_model
+        load_model(model, filepath)
+        return model
 
     def save(self, model: PreTrainedModel) -> None:
         """Writes a Model to the specified dir.

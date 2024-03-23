@@ -20,12 +20,13 @@ from zenml.integrations.pytorch.materializers.pytorch_module_st_materializer imp
 )
 
 
-def test_pytorch_module_materializer(clean_client):
+def test_pytorch_module_st_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer using Safetensors."""
     module = _test_materializer(
         step_output=Linear(20, 20),
         materializer_class=PyTorchModuleSTMaterializer,
         expected_metadata_size=3,
+        pass_step_output=True,
     )
 
     assert module.in_features == 20

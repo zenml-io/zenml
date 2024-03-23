@@ -17,7 +17,6 @@ import os
 from typing import Any, ClassVar, Optional, Type
 
 from safetensors.torch import load_file, load_model, save_file, save_model
-from torch.nn import Module
 
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -37,36 +36,40 @@ class BasePyTorchSTMaterializer(BaseMaterializer):
             obj: The model to load onto.
             data_type: The type of the object to load.
 
+        Raises:
+            ValueError: If the data_type is not a nn.Module or Dict[str, torch.Tensor]
+
         Returns:
             The loaded PyTorch object.
         """
         filename = os.path.join(self.uri, self.FILENAME)
         try:
-            if isinstance(obj, Module):
-                return load_model(obj, filename)
+            if isinstance(obj, dict):
+                return load_file(filename)
 
-            return load_file(obj, filename)
-        except:
-            raise ValueError(
-                "data_type should be of type: nn.Module or Dict[str, torch.Tensor]"
-            )
+            load_model(obj, filename)
+            return obj
+        except Exception as e:
+            raise ValueError(f"Invalid data_type received: {e}")
 
     def save(self, obj: Any) -> None:
         """Uses `safetensors` to save a PyTorch object.
 
         Args:
             obj: The PyTorch object to save.
+
+        Raises:
+            ValueError: If the data_type is not a nn.Module or Dict[str, torch.Tensor]
+
         """
         filename = os.path.join(self.uri, self.FILENAME)
         try:
-            if isinstance(obj, Module):
-                save_model(obj, filename)
-            else:
+            if isinstance(obj, dict):
                 save_file(obj, filename)
-        except:
-            raise ValueError(
-                "data_type should be of type: nn.Module or Dict[str, torch.Tensor]"
-            )
+            else:
+                save_model(obj, filename)
+        except Exception as e:
+            raise ValueError(f"Invalid data_type received: {e}")
 
 
 # Alias for the BasePyTorchMaterializer class, allowing users that have already used

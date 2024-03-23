@@ -26,6 +26,7 @@ def test_huggingface_pretrained_model_st_materializer(clean_client):
         step_output=RobertaModel(RobertaConfig()),
         materializer_class=HFPTModelSTMaterializer,
         expected_metadata_size=5,
+        pass_step_output=True,
     )
 
     assert model.config.model_type == "roberta"

@@ -36,6 +36,7 @@ def _test_materializer(
     validation_function: Optional[Callable[[str], Any]] = None,
     expected_metadata_size: Optional[int] = None,
     return_metadata: bool = False,
+    pass_step_output: bool = False,
     assert_data_exists: bool = True,
     assert_data_type: bool = True,
     assert_visualization_exists: bool = False,
@@ -59,8 +60,10 @@ def _test_materializer(
             file exists or a certain number of files were written.
         expected_metadata_size: If provided, we assert that the metadata dict
             returned by `materializer.extract_full_metadata()` has this size.
-        return_metadata: If True, we return the metadata dict returned by
+        return_metadata: If `True`, we return the metadata dict returned by
             `materializer.extract_full_metadata()`.
+        pass_step_output: If `True`, we also pass step_output to safetensors
+            materializers.
         assert_data_exists: If `True`, we also assert that `materializer.save()`
             wrote something to disk.
         assert_data_type: If `True`, we also assert that `materializer.load()`
@@ -109,7 +112,10 @@ def _test_materializer(
             assert isinstance(value, MetadataTypeTuple)
 
         # Assert that materializer loads the data with the correct type
-        loaded_data = materializer.load(step_output_type)
+        if pass_step_output:
+            loaded_data = materializer.load(step_output, step_output_type)
+        else:
+            loaded_data = materializer.load(step_output_type)
         if assert_data_type:
             assert isinstance(loaded_data, step_output_type)  # correct type
 
