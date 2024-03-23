@@ -13,11 +13,9 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
-import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
-from packaging.requirements import Requirement as PackagingRequirement
 from pkg_resources import Requirement
 
 from zenml.integrations.registry import integration_registry
@@ -93,16 +91,7 @@ class Integration(metaclass=IntegrationMeta):
 
                 for ri in deps:
                     try:
-                        req = PackagingRequirement(str(ri))
-                        package_name_with_version = re.split(
-                            r"[;]", str(req.name)
-                        )[0]
-                        logger.debug(
-                            f"Checking package {package_name_with_version}"
-                        )
-                        pkg_resources.get_distribution(
-                            package_name_with_version
-                        )
+                        pkg_resources.get_distribution(str(ri))
                     except pkg_resources.DistributionNotFound as e:
                         logger.debug(
                             f"Unable to find required dependency "

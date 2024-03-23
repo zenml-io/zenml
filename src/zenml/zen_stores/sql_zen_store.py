@@ -7808,7 +7808,7 @@ class SqlZenStore(BaseZenStore):
             Count of the entity as integer.
         """
         with Session(self.engine) as session:
-            query = select(func.count(schema.id))
+            query = select([func.count(schema.id)])
 
             if filter_model:
                 query = filter_model.apply_filter(query=query, table=schema)
