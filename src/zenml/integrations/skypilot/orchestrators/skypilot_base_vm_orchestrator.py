@@ -290,7 +290,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 setup=setup,
                 envs=task_envs,
             )
-            logger.debug(f"Running run: sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}")
+            logger.debug(
+                f"Running run: sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+            )
             logger.debug(f"Running run: {setup}")
             task = task.set_resources(
                 sky.Resources(

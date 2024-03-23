@@ -240,6 +240,31 @@ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector azure-skypilot-vm
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 {% endtab %}
+
+{% tab title="Lambda Labs" %}
+
+Lambda Labs is a cloud provider that offers GPU instances for machine learning workloads. Unlike the major cloud providers, with Lambda Labs we don't need to configure a service connector to authenticate with the cloud provider. Instead, we can directly use API keys to authenticate with the Lambda Labs API.
+
+  ```shell
+    zenml integration install skypilot_lambda
+  ```
+
+Once the integration is installed, we can register the orchestrator with the following command:
+
+```shell
+# For more secure and recommended way, we will register the API key as a secret
+zenml secret create lambda_api_key --scope user --api_key=<VALUE_1>
+# Register the orchestrator
+zenml orchestrator register <ORCHESTRATOR_NAME> --flavor vm_lambda --api_key={{lambda_api_key.api_key}}
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+```
+{% endtab %}
+
+{% hint style="info" %}
+The lambda labs orchrestrator does not support some of the features like `spot_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended to not use these features with the lambda labs orchestrator and also not to use [step-specific settings](#configuring-step-specific-resources).
+{% endtab %}
+
 {% endtabs %}
 
 #### Additional Configuration
@@ -370,6 +395,33 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
 @pipeline(
     settings={
         "orchestrator.vm_azure": skypilot_settings
+    }
+)
+```
+
+{% endtab %}
+
+{% tab title="Lambda" %}
+
+**Code Example:**
+
+```python
+from zenml.integrations.skypilot_lambda.flavors.skypilot_orchestrator_lambda_vm_flavor import SkypilotLambdaOrchestratorSettings
+
+
+skypilot_settings = SkypilotLambdaOrchestratorSettings(
+    instance_type="gpu_1x_h100_pcie",
+    cluster_name="my_cluster",
+    retry_until_up=True,
+    idle_minutes_to_autostop=60,
+    down=True,
+    stream_logs=True
+)
+
+
+@pipeline(
+    settings={
+        "orchestrator.vm_lambda": skypilot_settings
     }
 )
 ```
