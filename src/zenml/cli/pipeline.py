@@ -34,6 +34,7 @@ from zenml.models import (
     ScheduleFilter,
 )
 from zenml.new.pipelines.pipeline import Pipeline
+from zenml.stack.utils import temporary_active_stack
 from zenml.utils import source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 
@@ -184,7 +185,7 @@ def build_pipeline(
         name_id_or_prefix=pipeline_name_or_id, version=version
     )
 
-    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = Pipeline.from_model(pipeline_model)
         build = pipeline_instance.build(config_path=config_path)
 
@@ -286,7 +287,7 @@ def run_pipeline(
                 "or file path."
             )
 
-    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = Pipeline.from_model(pipeline_model)
         pipeline_instance = pipeline_instance.with_options(
             config_path=config_path,

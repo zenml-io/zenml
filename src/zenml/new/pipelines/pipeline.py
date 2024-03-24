@@ -76,6 +76,7 @@ from zenml.new.pipelines.run_utils import (
     prepare_model_versions,
 )
 from zenml.stack import Stack
+from zenml.stack.utils import temporary_active_stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
     StepArtifact,
@@ -537,8 +538,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The build output.
         """
-        from zenml.cli.utils import temporary_active_stack
-
         with track_handler(
             event=AnalyticsEvent.BUILD_PIPELINE
         ), temporary_active_stack():
@@ -609,8 +608,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             Model of the pipeline run if running without a schedule, `None` if
             running with a schedule.
         """
-        from zenml.cli.utils import temporary_active_stack
-        
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
             # pipelines. This is done to prevent execution of module-level

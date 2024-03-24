@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """Util functions for handling stacks, components, and flavors."""
 
-from typing import Any, Dict, Optional
+import contextlib
+from typing import Any, Dict, Generator, Optional, Union
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import FlavorFilter, FlavorResponse
 from zenml.stack.flavor import Flavor
+from zenml.stack.stack import Stack
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -139,3 +142,28 @@ def get_flavor_by_name_and_type_from_zen_store(
             f"'{component_type}' exists."
         )
     return flavors[0]
+
+
+@contextlib.contextmanager
+def temporary_active_stack(
+    stack_name_or_id: Union[UUID, str, None] = None,
+) -> Generator[Stack, Any, Any]:
+    """Contextmanager to temporarily activate a stack.
+
+    Args:
+        stack_name_or_id: The name or ID of the stack to activate. If not given,
+            this contextmanager will not do anything.
+
+    Yields:
+        The active stack.
+    """
+    try:
+        if stack_name_or_id:
+            old_stack_id = Client().active_stack_model.id
+            Client().activate_stack(stack_name_or_id)
+        else:
+            old_stack_id = None
+        yield Client().active_stack
+    finally:
+        if old_stack_id:
+            Client().activate_stack(old_stack_id)

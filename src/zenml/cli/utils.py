@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 
-import contextlib
 import datetime
 import json
 import os
@@ -26,7 +25,6 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Iterator,
     List,
     NoReturn,
     Optional,
@@ -78,8 +76,6 @@ from zenml.utils import secret_utils
 from zenml.zen_server.deploy import ServerDeployment
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from rich.text import Text
 
     from zenml.enums import ExecutionStatus
@@ -2479,33 +2475,6 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
         return wrapper(func)
 
     return inner_decorator
-
-
-@contextlib.contextmanager
-def temporary_active_stack(
-    stack_name_or_id: Union["UUID", str, None] = None,
-) -> Iterator["Stack"]:
-    """Contextmanager to temporarily activate a stack.
-
-    Args:
-        stack_name_or_id: The name or ID of the stack to activate. If not given,
-            this contextmanager will not do anything.
-
-    Yields:
-        The active stack.
-    """
-    from zenml.client import Client
-
-    try:
-        if stack_name_or_id:
-            old_stack_id = Client().active_stack_model.id
-            Client().activate_stack(stack_name_or_id)
-        else:
-            old_stack_id = None
-        yield Client().active_stack
-    finally:
-        if old_stack_id:
-            Client().activate_stack(old_stack_id)
 
 
 def get_package_information(
