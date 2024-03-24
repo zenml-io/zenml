@@ -50,6 +50,14 @@ Read more about how to configure step-specific resources [here](#configuring-ste
 The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](/docs/book/user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
 {% endhint %}
 
+{% hint style="info" %}
+All ZenML pipelines runs are executed using docker containers within the VMs provisioned by the orchestrator.
+For that reason, you may need to configure you pipeline settings with `docker_run_args=["--gpus=all"]`
+to enable GPU support in the docker container. 
+{% endhint %}
+
+{% hint style="info" %}
+
 
 ## How to deploy it
 
@@ -288,6 +296,7 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `idle_minutes_to_autostop`: Automatically stop the cluster after this many minutes of idleness, i.e., no running or pending jobs in the cluster's job queue. Idleness gets reset whenever setting-up/running/pending jobs are found in the job queue. Setting this flag is equivalent to running `sky.launch(..., detach_run=True, ...)` and then `sky.autostop(idle_minutes=<minutes>)`. If not set, the cluster will not be autostopped.
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
 * `stream_logs`: If True, show the logs in the terminal as they are generated while the cluster is running.
+* `docker_run_args`: Additional arguments to pass to the `docker run` command. For example, `['--gpus=all']` to use all GPUs available on the VM.
 
 The following code snippets show how to configure the orchestrator settings for each cloud provider:
 
@@ -316,6 +325,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     idle_minutes_to_autostop=60,
     down=True,
     stream_logs=True
+    docker_run_args=["--gpus=all"]
 )
 
 
@@ -415,7 +425,8 @@ skypilot_settings = SkypilotLambdaOrchestratorSettings(
     retry_until_up=True,
     idle_minutes_to_autostop=60,
     down=True,
-    stream_logs=True
+    stream_logs=True,
+    docker_run_args=["--gpus=all"]
 )
 
 
