@@ -1,4 +1,194 @@
 <!-- markdown-link-check-disable -->
+# 0.56.1
+
+This is a patch release aiming to solve a dependency problem which was brought in with the new rate 
+limiting functionality. With 0.56.1 you no longer need `starlette` to run client code or to 
+run ZenML CLI commands.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to thank @christianversloot for his contribution to this release.
+
+## What's Changed
+* Fix pipelines and model links for the cloud dashboard by @wjayesh in https://github.com/zenml-io/zenml/pull/2554
+* Make starlette non-must for client by @avishniakov in https://github.com/zenml-io/zenml/pull/2553
+* Bump MLFlow to version 2.11.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2552
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.0...0.56.1
+
+# 0.56.0
+
+ZenML 0.56.0 introduces a wide array of new features, enhancements, and bug fixes,
+with a strong emphasis on elevating the user experience and streamlining machine
+learning workflows. Most notably, you can now deploy models using Hugging Face inference endpoints thanks for an open-source community contribution of this model deployer stack component!
+
+This release also comes with a breaking change to the services
+architecture.
+
+## Breaking Change
+
+A significant change in this release is the migration of the `Service` (ZenML's technical term for deployment)
+registration and deployment from local or remote environments to the ZenML server.
+This change will be reflected in an upcoming tab in the dashboard which will
+allow users to explore and see the deployed models in the dashboard with their live
+status and metadata. This architectural shift also simplifies the model deployer
+abstraction and streamlines the model deployment process for users by moving from
+limited built-in steps to a more documented and flexible approach.
+
+Important note: If you have models that you previously deployed with ZenML, you might
+want to redeploy them to have them stored in the ZenML server and tracked by ZenML,
+ensuring they appear in the dashboard.
+
+Additionally, the `find_model_server` method now retrieves models (services) from the
+ZenML server instead of local or remote deployment environments. As a result, any
+usage of `find_model_server` will only return newly deployed models stored in the server.
+
+It is also no longer recommended to call service functions like `service.start()`.
+Instead, use `model_deployer.start_model_server(service_id)`, which will allow ZenML
+to update the changed status of the service in the server.
+
+### Starting a service
+**Old syntax:**
+```python
+from zenml import pipeline, 
+from zenml.integrations.bentoml.services.bentoml_deployment import BentoMLDeploymentService
+
+@step
+def predictor(
+    service: BentoMLDeploymentService,
+) -> None:
+    # starting the service
+    service.start(timeout=10)
+```
+
+**New syntax:**
+```python
+from zenml import pipeline
+from zenml.integrations.bentoml.model_deployers import BentoMLModelDeployer
+from zenml.integrations.bentoml.services.bentoml_deployment import BentoMLDeploymentService
+
+@step
+def predictor(
+    service: BentoMLDeploymentService,
+) -> None:
+    # starting the service
+    model_deployer = BentoMLModelDeployer.get_active_model_deployer()
+    model_deployer.start_model_server(service_id=service.service_id, timeout=10)
+```
+
+### Enabling continuous deployment
+
+Instead of replacing the parameter that was used in the `deploy_model` method to replace the
+existing service (if it matches the exact same pipeline name and step name without
+taking into accounts other parameters or configurations), we now have a new parameter,
+`continuous_deployment_mode`, that allows you to enable continuous deployment for
+the service. This will ensure that the service is updated with the latest version
+if it's on the same pipeline and step and the service is not already running. Otherwise,
+any new deployment with different configurations will create a new service.
+
+```python
+from zenml import pipeline, step, get_step_context
+from zenml.client import Client
+
+@step
+def deploy_model() -> Optional[MLFlowDeploymentService]:
+    # Deploy a model using the MLflow Model Deployer
+    zenml_client = Client()
+    model_deployer = zenml_client.active_stack.model_deployer
+    mlflow_deployment_config = MLFlowDeploymentConfig(
+        name: str = "mlflow-model-deployment-example",
+        description: str = "An example of deploying a model using the MLflow Model Deployer",
+        pipeline_name: str = get_step_context().pipeline_name,
+        pipeline_step_name: str = get_step_context().step_name,
+        model_uri: str = "runs:/<run_id>/model" or "models:/<model_name>/<model_version>",
+        model_name: str = "model",
+        workers: int = 1
+        mlserver: bool = False
+        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
+    )
+    service = model_deployer.deploy_model(mlflow_deployment_config, continuous_deployment_mode=True)
+    logger.info(f"The deployed service info: {model_deployer.get_model_server_info(service)}")
+    return service
+```
+
+
+## Major Features and Enhancements:
+
+* A new `Huggingface Model Deployer` has been introduced, allowing you to seamlessly
+deploy your Huggingface models using ZenML. (Thank you so much @dudeperf3ct for the contribution!)
+* Faster Integration and Dependency Management ZenML now leverages the `uv` library,
+significantly improving the speed of integration installations and dependency management,
+resulting in a more streamlined and efficient workflow.
+* Enhanced Logging and Status Tracking Logging have been improved, providing better
+visibility into the state of your ZenML services.
+* Improved Artifact Store Isolation: ZenML now prevents unsafe operations that access
+data outside the scope of the artifact store, ensuring better isolation and security.
+* Adding admin user notion for the user accounts and added protection to certain operations
+performed via the REST interface to ADMIN-allowed only.
+* Rate limiting for login API to prevent abuse and protect the server from potential
+security threats.
+* The LLM template is now supported in ZenML, allowing you to use the LLM template
+for your pipelines.
+
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @dudeperf3ct he contributed to this release
+by introducing the Huggingface Model Deployer. We'd also like to thank @moesio-f
+for their contribution to this release by adding a new attribute to the `Kaniko` image builder.
+Additionally, we'd like to thank @christianversloot for his contributions to this release.
+
+
+## All changes:
+
+* Upgrading SQLModel to the latest version by @bcdurak in https://github.com/zenml-io/zenml/pull/2452
+* Remove KServe integration by @safoinme in https://github.com/zenml-io/zenml/pull/2495
+* Upgrade migration testing with 0.55.5 by @avishniakov in https://github.com/zenml-io/zenml/pull/2501
+* Relax azure, gcfs and s3 dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/2498
+* Use HTTP forwarded headers to detect the real origin of client devices by @stefannica in https://github.com/zenml-io/zenml/pull/2499
+* Update README.md for quickstart colab link by @strickvl in https://github.com/zenml-io/zenml/pull/2505
+* Add sequential migration tests for MariaDB and MySQL by @strickvl in https://github.com/zenml-io/zenml/pull/2502
+* Huggingface Model Deployer by @dudeperf3ct in https://github.com/zenml-io/zenml/pull/2376
+* Use `uv` to speed up pip installs & the CI in general by @strickvl in https://github.com/zenml-io/zenml/pull/2442
+* Handle corrupted or empty global configuration file by @stefannica in https://github.com/zenml-io/zenml/pull/2508
+* Add admin users notion by @avishniakov in https://github.com/zenml-io/zenml/pull/2494
+* Remove dashboard from gitignore by @safoinme in https://github.com/zenml-io/zenml/pull/2517
+* Colima / Homebrew fix by @strickvl in https://github.com/zenml-io/zenml/pull/2512
+* [HELM] Remove extra environment variable assignment by @wjayesh in https://github.com/zenml-io/zenml/pull/2518
+* Allow installing packages using UV by @schustmi in https://github.com/zenml-io/zenml/pull/2510
+* Additional fields for track events by @bcdurak in https://github.com/zenml-io/zenml/pull/2507
+* Check if environment key is set before deleting in HyperAI orchestrator by @christianversloot in https://github.com/zenml-io/zenml/pull/2511
+* Fix the pagination in the database backup by @stefannica in https://github.com/zenml-io/zenml/pull/2522
+* Bump mlflow to version 2.11.1 by @christianversloot in https://github.com/zenml-io/zenml/pull/2524
+* Add docs for uv installation by @schustmi in https://github.com/zenml-io/zenml/pull/2527
+* Fix bug in HyperAI orchestrator depends_on parallelism by @christianversloot in https://github.com/zenml-io/zenml/pull/2523
+* Upgrade pip in docker images by @schustmi in https://github.com/zenml-io/zenml/pull/2528
+* Fix node selector and other fields for DB job in helm chart by @stefannica in https://github.com/zenml-io/zenml/pull/2531
+* Revert "Upgrading SQLModel to the latest version" by @bcdurak in https://github.com/zenml-io/zenml/pull/2515
+* Add `pod_running_timeout` attribute to `Kaniko` image builder  by @moesio-f in https://github.com/zenml-io/zenml/pull/2509
+* Add test to install dashboard script by @strickvl in https://github.com/zenml-io/zenml/pull/2521
+* Sort pipeline namespaces by last run by @schustmi in https://github.com/zenml-io/zenml/pull/2514
+* Add support for LLM template by @schustmi in https://github.com/zenml-io/zenml/pull/2519
+* Rate limiting for login API by @avishniakov in https://github.com/zenml-io/zenml/pull/2484
+* Try/catch for Docker client by @christianversloot in https://github.com/zenml-io/zenml/pull/2513
+* Fix config file in starter guide by @schustmi in https://github.com/zenml-io/zenml/pull/2534
+* Log URL for pipelines and model versions when running a pipeline by @wjayesh in https://github.com/zenml-io/zenml/pull/2506
+* Add security exclude by @schustmi in https://github.com/zenml-io/zenml/pull/2541
+* Update error message around notebook use by @strickvl in https://github.com/zenml-io/zenml/pull/2536
+* Cap `fsspec` for Huggingface integration by @avishniakov in https://github.com/zenml-io/zenml/pull/2542
+* Fix integration materializers' URLs in docs by @strickvl in https://github.com/zenml-io/zenml/pull/2538
+* Bug fix HyperAI orchestrator: Offload scheduled pipeline execution to bash script by @christianversloot in https://github.com/zenml-io/zenml/pull/2535
+* Update `pip check` command to use `uv` by @strickvl in https://github.com/zenml-io/zenml/pull/2520
+* Implemented bitbucket webhook event source by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2481
+* Add ZenMLServiceType and update service registration by @safoinme in https://github.com/zenml-io/zenml/pull/2471
+
+## New Contributors
+* @dudeperf3ct made their first contribution in https://github.com/zenml-io/zenml/pull/2376
+* @moesio-f made their first contribution in https://github.com/zenml-io/zenml/pull/2509
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.55.5...0.56.0
+
 # 0.55.5
 
 This patch contains a number of bug fixes and security improvements.

@@ -65,12 +65,12 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.jwt import JWTToken
+from zenml.zen_server.rate_limit import rate_limit_requests
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     get_ip_location,
     handle_exceptions,
-    rate_limit_requests,
     server_config,
     zen_store,
 )
