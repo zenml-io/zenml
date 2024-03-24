@@ -106,7 +106,7 @@ class Integration(metaclass=IntegrationMeta):
                             f"necessary for integration '{cls.NAME}'."
                         )
                         return False
-                    except IndexError as e:
+                    except IndexError:
                         logger.debug(
                             f"Unable to find required dependency "
                             f"'{ri}' for requirement '{deps}' "
