@@ -51,6 +51,9 @@ class SkypilotLambdaOrchestratorSettings(SkypilotBaseOrchestratorSettings):
         Args:
             name: Name of the attribute.
             value: Value of the attribute.
+        
+        Raises:
+            AttributeError: If the attribute is not supported.
         """
         if name in self._UNSUPPORTED_FEATURES:
             raise AttributeError(f"{name} is not supported on Lambda.")
