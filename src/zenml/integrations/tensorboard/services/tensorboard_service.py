@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the TensorBoard service."""
 
+import uuid
 from typing import Any, Dict, Union
 
 from tensorboard import default, program  # type: ignore [import-untyped]
@@ -103,7 +104,7 @@ class TensorboardService(LocalDaemonService):
                 ),
             )
             attrs["endpoint"] = endpoint
-        super().__init__(config=config, **attrs)
+        super().__init__(config=config, uuid=uuid.uuid4(), **attrs)
 
     def run(self) -> None:
         """Initialize and run the TensorBoard server."""

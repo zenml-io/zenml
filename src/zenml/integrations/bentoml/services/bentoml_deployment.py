@@ -94,8 +94,8 @@ class SSLBentoMLParametersConfig(BaseModel):
     ssl_certfile: Optional[str] = None
     ssl_keyfile: Optional[str] = None
     ssl_keyfile_password: Optional[str] = None
-    ssl_version: Optional[str] = None
-    ssl_cert_reqs: Optional[str] = None
+    ssl_version: Optional[int] = None
+    ssl_cert_reqs: Optional[int] = None
     ssl_ca_certs: Optional[str] = None
     ssl_ciphers: Optional[str] = None
 
@@ -121,9 +121,9 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     bento: str
     bento_uri: Optional[str] = None
     apis: List[str] = []
-    workers: Optional[int] = 1
-    port: Optional[int] = None
-    backlog: Optional[int] = 2048
+    workers: int = 1
+    port: int
+    backlog: int = 2048
     production: bool = False
     working_dir: str
     host: Optional[str] = None
@@ -147,6 +147,7 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
         type="model-serving",
         flavor="bentoml",
         description="BentoML prediction service",
+        logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/bentoml.png",
     )
 
     config: BentoMLDeploymentConfig
@@ -203,9 +204,9 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
             serve_http_production(
                 self.config.bento,
                 working_dir=self.config.working_dir,
-                port=self.endpoint.status.port,
+                port=self.config.port,
                 api_workers=self.config.workers,
-                host=self.endpoint.status.hostname,
+                host=self.config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
                 backlog=self.config.backlog,
                 ssl_certfile=ssl_params.ssl_certfile,
                 ssl_keyfile=ssl_params.ssl_keyfile,

@@ -20,8 +20,8 @@ ZenML is an open-source MLOps framework designed to help you create robust, main
 To install the ZenML chart directly from Amazon ECR, use the following command:
 
 ```bash
-# example command for version 0.55.5
-helm install my-zenml oci://public.ecr.aws/zenml/zenml --version 0.55.5
+# example command for version 0.56.1
+helm install my-zenml oci://public.ecr.aws/zenml/zenml --version 0.56.1
 ```
 
 Note: Ensure you have OCI support enabled in your Helm client and that you are authenticated with Amazon ECR.
