@@ -83,7 +83,7 @@ class Integration(metaclass=IntegrationMeta):
                         try:
                             requirements = dist.requires(extras=[extra])  # type: ignore[arg-type]
                         except pkg_resources.UnknownExtra as e:
-                            logger.debug("Unknown extra: " + str(e))
+                            logger.debug(f"Unknown extra: {str(e)}")
                             return False
                         deps.extend(requirements)
                 else:
@@ -103,6 +103,13 @@ class Integration(metaclass=IntegrationMeta):
                         logger.debug(
                             f"Package version '{e.dist}' does not match "
                             f"version '{e.req}' required by '{r}' "
+                            f"necessary for integration '{cls.NAME}'."
+                        )
+                        return False
+                    except IndexError as e:
+                        logger.debug(
+                            f"Unable to find required dependency "
+                            f"'{ri}' for requirement '{deps}' "
                             f"necessary for integration '{cls.NAME}'."
                         )
                         return False
