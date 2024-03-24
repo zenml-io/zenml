@@ -25,6 +25,7 @@ from zenml.integrations.skypilot_lambda.flavors.skypilot_orchestrator_lambda_vm_
     SkypilotLambdaOrchestratorConfig,
     SkypilotLambdaOrchestratorSettings,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -89,5 +90,5 @@ class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
             os.makedirs(directory)
 
         # Write the API key to the file, creating or overwriting it
-        with open(file_path, "w") as file:
+        with fileio.open(file_path, "w") as file:
             file.write(f"api_key = {self.config.api_key}")
