@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
+import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
@@ -91,7 +92,11 @@ class Integration(metaclass=IntegrationMeta):
 
                 for ri in deps:
                     try:
-                        pkg_resources.get_distribution(str(ri))
+                        # Remove the "extra == ..." part from the requirement string
+                        cleaned_req = re.sub(
+                            r"; extra == \"\w+\"", "", str(ri)
+                        )
+                        pkg_resources.get_distribution(cleaned_req)
                     except pkg_resources.DistributionNotFound as e:
                         logger.debug(
                             f"Unable to find required dependency "
@@ -103,13 +108,6 @@ class Integration(metaclass=IntegrationMeta):
                         logger.debug(
                             f"Package version '{e.dist}' does not match "
                             f"version '{e.req}' required by '{r}' "
-                            f"necessary for integration '{cls.NAME}'."
-                        )
-                        return False
-                    except IndexError:
-                        logger.debug(
-                            f"Unable to find required dependency "
-                            f"'{ri}' for requirement '{deps}' "
                             f"necessary for integration '{cls.NAME}'."
                         )
                         return False
