@@ -29,12 +29,12 @@ class BasePyTorchSTMaterializer(BaseMaterializer):
     FILENAME: ClassVar[str] = DEFAULT_FILENAME
     SKIP_REGISTRATION: ClassVar[bool] = True
 
-    def load(self, obj: Any, data_type: Optional[Type[Any]] = None) -> Any:
+    def load(self, data_type: Optional[Type[Any]], obj: Any) -> Any:
         """Uses `safetensors` to load a PyTorch object.
 
         Args:
-            obj: The model to load onto.
             data_type: The type of the object to load.
+            obj: The model to load onto.
 
         Raises:
             ValueError: If the data_type is not a nn.Module or Dict[str, torch.Tensor]

@@ -113,7 +113,7 @@ def _test_materializer(
 
         # Assert that materializer loads the data with the correct type
         if pass_step_output:
-            loaded_data = materializer.load(step_output, step_output_type)
+            loaded_data = materializer.load(step_output_type, step_output)
         else:
             loaded_data = materializer.load(step_output_type)
         if assert_data_type:

@@ -38,13 +38,13 @@ class HFPTModelSTMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(
-        self, model: PreTrainedModel, data_type: Type[PreTrainedModel]
+        self, data_type: Type[PreTrainedModel], model: PreTrainedModel
     ) -> PreTrainedModel:
         """Reads HFModel.
 
         Args:
-            model: The model to load onto.
             data_type: The type of the model to read.
+            model: The model to load onto.
 
         Returns:
             The model read from the specified dir.
