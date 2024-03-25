@@ -45,7 +45,7 @@ docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariad
 sleep $DB_STARTUP_DELAY
 
 # List of versions to test
-VERSIONS=("0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5")
+VERSIONS=("0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.0" "0.56.1")
 
 # Start completely fresh
 rm -rf ~/.config/zenml

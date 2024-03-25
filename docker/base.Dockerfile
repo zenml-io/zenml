@@ -10,6 +10,9 @@ ENV PYTHONFAULTHANDLER=1 \
 
 ARG ZENML_VERSION
 
+# Upgrade pip to the latest version
+RUN pip install --upgrade pip
+
 # install the given zenml version (default to latest)
 RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}
 

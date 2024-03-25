@@ -123,4 +123,4 @@ runs:
       run: |-
         zenml integration list
         uv pip list
-        pip check || true
+        uv pip check || true

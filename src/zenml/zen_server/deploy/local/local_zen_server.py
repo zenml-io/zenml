@@ -127,14 +127,11 @@ class LocalZenServer(LocalDaemonService):
             The local ZenML server service or None, if the local server
             deployment is not found.
         """
-        from zenml.services import ServiceRegistry
-
         config_filename = os.path.join(cls.config_path(), "service.json")
         try:
             with open(config_filename, "r") as f:
                 return cast(
-                    LocalZenServer,
-                    ServiceRegistry().load_service_from_json(f.read()),
+                    "LocalZenServer", LocalZenServer.from_json(f.read())
                 )
         except FileNotFoundError:
             return None
