@@ -267,10 +267,15 @@ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor vm_lambda --api_key={{l
 # Register and activate a stack with the new orchestrator
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
-{% endtab %}
 
 {% hint style="info" %}
 The lambda labs orchrestrator does not support some of the features like `spot_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended to not use these features with the lambda labs orchestrator and also not to use [step-specific settings](#configuring-step-specific-resources).
+{% endhint %}
+
+{% hint style="warning" %}
+While testing the orchestrator, we have noticed that the Lambda Labs orchestrator does not support the `down` flag. This means that the orchestrator will not automatically tear down the cluster after all jobs finish. We recommend manually tearing down the cluster after all jobs finish to avoid unnecessary costs.
+{% endhint %}
+
 {% endtab %}
 
 {% endtabs %}
