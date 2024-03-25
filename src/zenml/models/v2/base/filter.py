@@ -47,6 +47,7 @@ from zenml.constants import (
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.exceptions import ValidationError
 from zenml.logger import get_logger
+from zenml.utils.typing_utils import get_args
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -591,7 +592,7 @@ class BaseFilter(BaseModel):
         """
         try:
             return (
-                issubclass(datetime, cls.model_fields[k].annotation)
+                issubclass(datetime, get_args(cls.model_fields[k].annotation))
                 or cls.model_fields[k].annotation is datetime
             )
         except TypeError:
@@ -609,7 +610,7 @@ class BaseFilter(BaseModel):
         """
         try:
             return (
-                issubclass(UUID, cls.model_fields[k].annotation)
+                issubclass(UUID, get_args(cls.model_fields[k].annotation))
                 or cls.model_fields[k].annotation is UUID
             )
         except TypeError:
@@ -627,7 +628,7 @@ class BaseFilter(BaseModel):
         """
         try:
             return (
-                issubclass(cls.model_fields[k].annotation, int)
+                issubclass(int, get_args(cls.model_fields[k].annotation))
                 or cls.model_fields[k].annotation is int
             )
         except TypeError:
@@ -645,7 +646,7 @@ class BaseFilter(BaseModel):
         """
         try:
             return (
-                issubclass(cls.model_fields[k].annotation, bool)
+                issubclass(bool, get_args(cls.model_fields[k].annotation))
                 or cls.model_fields[k].annotation is bool
             )
         except TypeError:
@@ -663,7 +664,7 @@ class BaseFilter(BaseModel):
         """
         try:
             return (
-                issubclass(cls.model_fields[k].annotation, str)
+                issubclass(str, get_args(cls.model_fields[k].annotation))
                 or cls.model_fields[k].annotation is str
             )
         except TypeError:
@@ -681,7 +682,7 @@ class BaseFilter(BaseModel):
         """
         try:
             return (
-                issubclass(cls.model_fields[k].annotation, str)
+                issubclass(str, get_args(cls.model_fields[k].annotation))
                 or cls.model_fields[k].annotation is str
             ) and k == "sort_by"
         except TypeError:
