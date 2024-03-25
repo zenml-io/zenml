@@ -126,7 +126,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     # Public Interface
     # ================
 
-    def load(self, data_type: Type[Any], *args, **kwargs) -> Any:
+    def load(self, data_type: Type[Any], *args: Any, **kwargs: Any) -> Any:
         """Write logic here to load the data of an artifact.
 
         Args:
