@@ -51,7 +51,7 @@ class SkypilotLambdaOrchestratorSettings(SkypilotBaseOrchestratorSettings):
         Args:
             name: Name of the attribute.
             value: Value of the attribute.
-        
+
         Raises:
             AttributeError: If the attribute is not supported.
         """
