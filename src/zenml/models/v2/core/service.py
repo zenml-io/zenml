@@ -42,7 +42,6 @@ from zenml.models.v2.base.scoped import (
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
-
 # ------------------ Request Model ------------------
 
 
