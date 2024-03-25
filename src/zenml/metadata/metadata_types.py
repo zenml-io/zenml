@@ -21,7 +21,8 @@ from pydantic_core import CoreSchema, core_schema
 from zenml.utils.enum_utils import StrEnum
 
 
-# TODO: Revisit this idea and investigate how to use custom types in Pydantic v2
+# TODO: Revisit this idea and investigate how to use custom types in Pydantic
+#   v2, refine the docstrings.
 class Uri(str):
     """Special string class to indicate a URI."""
 
@@ -29,6 +30,15 @@ class Uri(str):
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
+        """Additional method for pydantic to recognize it as a valid type.
+
+        Args:
+            source_type: the source type
+            handler: the handler
+
+        Returns:
+            the schema for the custom type.
+        """
         return core_schema.no_info_after_validator_function(cls, handler(str))
 
 
@@ -39,6 +49,15 @@ class Path(str):
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
+        """Additional method for pydantic to recognize it as a valid type.
+
+        Args:
+            source_type: the source type
+            handler: the handler
+
+        Returns:
+            the schema for the custom type.
+        """
         return core_schema.no_info_after_validator_function(cls, handler(str))
 
 
@@ -49,6 +68,15 @@ class DType(str):
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
+        """Additional method for pydantic to recognize it as a valid type.
+
+        Args:
+            source_type: the source type
+            handler: the handler
+
+        Returns:
+            the schema for the custom type.
+        """
         return core_schema.no_info_after_validator_function(cls, handler(str))
 
 
@@ -59,6 +87,15 @@ class StorageSize(int):
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
+        """Additional method for pydantic to recognize it as a valid type.
+
+        Args:
+            source_type: the source type
+            handler: the handler
+
+        Returns:
+            the schema for the custom type.
+        """
         return core_schema.no_info_after_validator_function(cls, handler(str))
 
 
