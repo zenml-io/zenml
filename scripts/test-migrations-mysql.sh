@@ -40,7 +40,7 @@ function run_tests_for_version() {
     rm sklearn-requirements.txt
 
     echo "===== Running starter template pipeline ====="
-    python3 run.py
+    python3 run.py --feature-pipeline --training-pipeline --no-cache
     # Add additional CLI tests here
     zenml version
 
