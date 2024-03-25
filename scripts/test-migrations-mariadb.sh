@@ -13,7 +13,7 @@ function run_tests_for_version() {
     echo "===== Testing version $VERSION ====="
 
     mkdir test_starter
-    zenml init --template starter --path test_starter --template-with-defaults
+    zenml init --template starter --path test_starter --template-with-defaults  <<< $'my@mail.com\n'
     cd test_starter
 
     echo "===== Installing sklearn integration ====="

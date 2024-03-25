@@ -22,7 +22,7 @@ function run_tests_for_version() {
 
     export ZENML_ANALYTICS_OPT_IN=false
     export ZENML_DEBUG=true
-    
+
     echo "===== Testing version $VERSION ====="
 
     # Check if VERSION is in PRE_TEMPLATE_VERSIONS
@@ -30,7 +30,7 @@ function run_tests_for_version() {
         copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
     else
         mkdir test_starter
-        zenml init --template starter --path test_starter --template-with-defaults
+        zenml init --template starter --path test_starter --template-with-defaults <<< $'my@mail.com\n'
     fi
 
     cd test_starter
