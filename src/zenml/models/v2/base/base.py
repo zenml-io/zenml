@@ -249,6 +249,7 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
             #   metadata: Optional[....ResponseMetadata] = Field(default=None)
             # We need to find the actual class inside the Optional annotation.
             from zenml.utils.typing_utils import get_args
+
             metadata_type = get_args(metadata_annotation)[0]
             assert issubclass(metadata_type, BaseResponseMetadata)
 
@@ -284,6 +285,7 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
             #   metadata: Optional[....ResponseMetadata] = Field(default=None)
             # We need to find the actual class inside the Optional annotation.
             from zenml.utils.typing_utils import get_args
+
             resources_type = get_args(resources_annotation)[0]
             assert issubclass(resources_type, BaseResponseResources)
 
