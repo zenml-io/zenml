@@ -24,6 +24,7 @@ from uuid import uuid4
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.client import Client
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
