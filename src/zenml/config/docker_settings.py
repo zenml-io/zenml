@@ -238,7 +238,6 @@ class DockerSettings(BaseSettings):
 
         return values
 
-
     @model_validator(mode="after")
     def _validate_skip_build(self) -> "DockerSettings":
         """Ensures that a parent image is passed when trying to skip the build.
