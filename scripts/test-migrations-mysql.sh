@@ -86,8 +86,7 @@ do
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    # "importlib_metadata<=7.0.0" is a fix for lower versions: https://github.com/zenml-io/zenml/pull/2160
-    uv pip install -U setuptools wheel pip "importlib_metadata<=7.0.0"
+    uv pip install -U setuptools wheel pip
 
     git checkout release/$VERSION
     uv pip install -e ".[templates,server]"
@@ -97,10 +96,10 @@ do
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
-    # Check if the Python version is 3.9 and VERSION is > 0.47.0
+    # Check if the Python version is 3.9 and VERSION is > 0.44.0
     if [[ "$PYTHON_VERSION" == "3.9" ]]; then
         case "$VERSION" in
-            "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
+            "0.44.1"|"0.44.3"|"0.45.2"|"0.45.3"|"0.45.4"|"0.45.5"|"0.45.6"|"0.46.0"|"0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
                 uv pip install importlib_metadata
                 ;;
         esac

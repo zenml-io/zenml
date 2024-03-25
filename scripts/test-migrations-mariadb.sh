@@ -60,8 +60,7 @@ do
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    # "importlib_metadata<=7.0.0" is a fix for lower versions: https://github.com/zenml-io/zenml/pull/2160
-    uv pip install -U setuptools wheel pip "importlib_metadata<=7.0.0"
+    uv pip install -U setuptools wheel pip
 
     git checkout release/$VERSION
     uv pip install -e ".[templates,server]"
