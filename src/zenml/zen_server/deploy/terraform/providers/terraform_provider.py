@@ -15,6 +15,7 @@
 
 import os
 from typing import ClassVar, List, Optional, Tuple, Type, cast
+from uuid import uuid4
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.logger import get_logger
@@ -153,7 +154,7 @@ class TerraformServerProvider(BaseServerProvider):
             monitor_cfg,
         ) = self._get_service_configuration(config)
 
-        service = TerraformZenServer(config=service_config)
+        service = TerraformZenServer(uuid=uuid4(), config=service_config)
 
         service.start(timeout=timeout)
         return service

@@ -16,7 +16,15 @@
 import inspect
 import os
 from functools import wraps
-from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ValidationError

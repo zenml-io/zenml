@@ -56,6 +56,13 @@ class SourceFileMode(Enum):
     IGNORE = "ignore"
 
 
+class PythonPackageInstaller(Enum):
+    """Different installers for python packages."""
+
+    PIP = "pip"
+    UV = "uv"
+
+
 class DockerSettings(BaseSettings):
     """Settings for building Docker images to run ZenML pipelines.
 
@@ -119,6 +126,8 @@ class DockerSettings(BaseSettings):
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
             therefore **not** include any registry.
+        python_package_installer: The package installer to use for python
+            packages.
         replicate_local_python_environment: If not `None`, ZenML will use the
             specified method to generate a requirements file that replicates
             the packages installed in the currently running python environment.
@@ -173,6 +182,9 @@ class DockerSettings(BaseSettings):
     build_options: Dict[str, Any] = {}
     skip_build: bool = False
     target_repository: str = "zenml"
+    python_package_installer: PythonPackageInstaller = (
+        PythonPackageInstaller.PIP
+    )
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]
     ] = None

@@ -54,6 +54,7 @@ if TYPE_CHECKING:
         ScheduleSchema,
         SecretSchema,
         ServiceConnectorSchema,
+        ServiceSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -124,6 +125,7 @@ class UserSchema(NamedSchema, table=True):
     code_repositories: List["CodeRepositorySchema"] = Relationship(
         back_populates="user",
     )
+    services: List["ServiceSchema"] = Relationship(back_populates="user")
     service_connectors: List["ServiceConnectorSchema"] = Relationship(
         back_populates="user",
     )

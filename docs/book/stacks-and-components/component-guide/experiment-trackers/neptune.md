@@ -168,29 +168,6 @@ def tf_trainer(...):
 ```
 {% endhint %}
 
-### Neptune UI
-
-Neptune comes with a web-based UI that you can use to find further details about 
-your tracked experiments. Each pipeline run will be logged as a separate 
-experiment run in Neptune, which you can inspect in the Neptune UI:
-
-![Neptune UI](../../../.gitbook/assets/NeptuneUI.png)
-
-You can find the URL of the Neptune experiment linked to a specific ZenML run 
-via the metadata of the step in which the experiment tracker was used:
-
-```python
-from zenml.client import Client
-
-last_run = client.get_pipeline("<PIPELINE_NAME>").last_run
-trainer_step = last_run.get_step("<STEP_NAME>")
-tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
-print(tracking_url)
-```
-
-Alternatively, you can see an overview of all experiment runs at 
-https://app.neptune.ai/{ACCOUNT_USERNAME}/{PROJECT_NAME}.
-
 #### Additional configuration
 
 You can pass a set of tags to the Neptune run by using the `NeptuneExperimentTrackerSettings` class, like in the example
@@ -225,6 +202,18 @@ def my_step(
     neptune_run = get_neptune_run()
     ...
 ```
+
+### Neptune UI
+
+Neptune comes with a web-based UI that you can use to find further details about 
+your tracked experiments. Each pipeline run will be logged as a separate 
+experiment run in Neptune, which you can inspect in the Neptune UI.
+
+You can find the URL of the Neptune run linked to a specific ZenML run printed on the console whenever a Neptune run is initialized.
+
+### Further reading
+
+Check [Neptune's docs](https://docs.neptune.ai/integrations/zenml/) for further information on how to use this integration and Neptune in general.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
