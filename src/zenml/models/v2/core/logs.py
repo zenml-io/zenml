@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Models representing logs."""
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
@@ -33,14 +33,23 @@ from zenml.models.v2.base.base import (
 class LogsRequest(BaseRequest):
     """Request model for logs."""
 
-    uri: str = Field(
-        title="The uri of the logs file",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
+    uri: str = Field(title="The uri of the logs file")
+
     artifact_store_id: Union[str, UUID] = Field(
         title="The artifact store ID to associate the logs with.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
+
+    @field_validator("uri")
+    @classmethod
+    def text_field_max_length_check(cls, v: Any) -> Any:
+        assert len(str(v)) < TEXT_FIELD_MAX_LENGTH
+        return v
+
+    @field_validator("artifact_store_id")
+    @classmethod
+    def str_field_max_length_check(cls, v: Any) -> Any:
+        assert len(str(v)) < STR_FIELD_MAX_LENGTH
+        return v
 
 
 # ------------------ Update Model ------------------

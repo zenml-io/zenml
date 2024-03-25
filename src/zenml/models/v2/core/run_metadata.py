@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import MetadataResourceTypes
@@ -66,18 +66,21 @@ class RunMetadataRequest(WorkspaceScopedRequest):
 class RunMetadataResponseBody(WorkspaceScopedResponseBody):
     """Response body for run metadata."""
 
-    key: str = Field(
-        title="The key of the metadata.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    value: MetadataType = Field(
-        title="The value of the metadata.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    type: MetadataTypeEnum = Field(
-        title="The type of the metadata.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+    key: str = Field(title="The key of the metadata.")
+    value: MetadataType = Field(title="The value of the metadata.")
+    type: MetadataTypeEnum = Field(title="The type of the metadata.")
+
+    @field_validator("key", "type")
+    @classmethod
+    def str_field_max_length_check(cls, v: Any) -> Any:
+        assert len(str(v)) < STR_FIELD_MAX_LENGTH
+        return v
+
+    @field_validator("value")
+    @classmethod
+    def text_field_max_length_check(cls, v: Any) -> Any:
+        assert len(str(v)) < TEXT_FIELD_MAX_LENGTH
+        return v
 
 
 class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
