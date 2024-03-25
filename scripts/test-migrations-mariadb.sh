@@ -60,7 +60,7 @@ do
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    uv pip install -U setuptools wheel pip
+    uv pip install -U setuptools wheel pip "importlib_metadata<=7.0.0"
 
     git checkout release/$VERSION
     uv pip install -e ".[templates,server]"
