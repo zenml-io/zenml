@@ -98,7 +98,22 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     @field_validator("version")
     @classmethod
     def str_field_max_length_check(cls, v: Any) -> Any:
-        assert len(str(v)) < STR_FIELD_MAX_LENGTH
+        """Checks if the length of the value exceeds the maximum str length.
+
+        Args:
+            v: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(v)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
         return v
 
     _convert_source = convert_source_validator("materializer", "data_type")
@@ -145,7 +160,22 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     @field_validator("version")
     @classmethod
     def str_field_max_length_check(cls, v: Any) -> Any:
-        assert len(str(v)) < STR_FIELD_MAX_LENGTH
+        """Checks if the length of the value exceeds the maximum str length.
+
+        Args:
+            v: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(v)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
         return v
 
     _convert_source = convert_source_validator("materializer", "data_type")

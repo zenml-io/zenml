@@ -73,13 +73,43 @@ class RunMetadataResponseBody(WorkspaceScopedResponseBody):
     @field_validator("key", "type")
     @classmethod
     def str_field_max_length_check(cls, v: Any) -> Any:
-        assert len(str(v)) < STR_FIELD_MAX_LENGTH
+        """Checks if the length of the value exceeds the maximum str length.
+
+        Args:
+            v: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(v)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
         return v
 
     @field_validator("value")
     @classmethod
     def text_field_max_length_check(cls, v: Any) -> Any:
-        assert len(str(v)) < TEXT_FIELD_MAX_LENGTH
+        """Checks if the length of the value exceeds the maximum text length.
+
+        Args:
+            v: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(v)) < TEXT_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {TEXT_FIELD_MAX_LENGTH}"
+        )
         return v
 
 
