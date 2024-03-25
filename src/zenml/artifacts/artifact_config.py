@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
@@ -71,6 +71,14 @@ class ArtifactConfig(BaseModel):
     model_version: Optional[Union[ModelStages, str, int]] = None
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     @model_validator(mode="after")
     def artifact_config_validator(self) -> "ArtifactConfig":

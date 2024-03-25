@@ -161,6 +161,14 @@ class RegistryModelVersion(BaseModel):
     stage: ModelVersionStage = ModelVersionStage.NONE
     metadata: Optional[ModelRegistryModelMetadata] = None
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
 
 class BaseModelRegistryConfig(StackComponentConfig):
     """Base config for model registries."""

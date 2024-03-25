@@ -16,7 +16,7 @@
 from typing import Any, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.enums import GenericFilterOps
@@ -43,6 +43,14 @@ class ModelVersionPipelineRunRequest(WorkspaceScopedRequest):
     model_version: UUID
     pipeline_run: UUID
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
 
 # ------------------ Update Model ------------------
 
@@ -57,6 +65,14 @@ class ModelVersionPipelineRunResponseBody(BaseDatedResponseBody):
     model: UUID
     model_version: UUID
     pipeline_run: PipelineRunResponse
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class ModelVersionPipelineRunResponseResources(BaseResponseResources):
@@ -141,6 +157,14 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the pipeline run",
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
         self,

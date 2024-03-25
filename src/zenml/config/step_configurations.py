@@ -24,7 +24,12 @@ from typing import (
     Union,
 )
 
-from pydantic import SerializeAsAny, field_validator, model_validator
+from pydantic import (
+    ConfigDict,
+    SerializeAsAny,
+    field_validator,
+    model_validator,
+)
 
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
@@ -160,6 +165,14 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
     client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     # Override the deprecation validator as we do not want to deprecate the
     # `name`` attribute on this class.

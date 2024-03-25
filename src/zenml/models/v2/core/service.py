@@ -25,7 +25,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlmodel import SQLModel
 
@@ -108,6 +108,14 @@ class ServiceRequest(WorkspaceScopedRequest):
         description="By the event source this trigger is attached to.",
     )
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
 
 # ------------------ Update Model ------------------
 
@@ -164,6 +172,13 @@ class ServiceUpdate(BaseModel):
         default=None,
         title="The model version id linked to the service.",
     )
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
@@ -412,6 +427,14 @@ class ServiceFilter(WorkspaceScopedFilter):
         default=None,
         description="By the pipeline run this service is attached to.",
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     def set_type(self, type: str) -> None:
         """Set the type of the service.
