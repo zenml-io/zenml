@@ -464,7 +464,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the backup database name is not set when the backup
                 database is requested.
         """
-
         if (
             self.backup_strategy == DatabaseBackupStrategy.DATABASE
             and not self.backup_database
@@ -494,7 +493,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-
         if self.url is None:
             return self
 

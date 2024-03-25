@@ -64,8 +64,8 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         """Method to infer the correct type of the config and convert.
 
         Args:
-            v: The provided configuration object, can potentially be a generic
-                object
+            data: The provided configuration object, can potentially be a
+                generic object
 
         Raises:
             ValueError: If the provided config object's type does not match
