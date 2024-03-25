@@ -1,3 +1,9 @@
+---
+description: Understand the Retrieval-Augmented Generation (RAG) technique and its benefits.
+---
+
+# Understanding Retrieval-Augmented Generation (RAG)
+
 RAG helps us address these problems. We can use this technique to leverage the
 strengths of both retrieval-based and generation-based models. It uses a
 retriever to find relevant documents from a large corpus and then uses a

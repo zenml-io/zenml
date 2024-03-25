@@ -1,3 +1,7 @@
+---
+description: This guide covers data ingestion and index store management for RAG pipelines.
+---
+
 ## Data Ingestion
 
 The first step in setting up a RAG pipeline is to ingest the data that will be

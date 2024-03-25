@@ -1,3 +1,7 @@
+---
+description: Learn how to track RAG-associated artifacts with ZenML.
+---
+
 ## Tracking RAG-Associated Artifacts with ZenML
 
 You can see in the code above how we've manually logged the metadata for the
