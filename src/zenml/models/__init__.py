@@ -89,6 +89,15 @@ from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
 )
+from zenml.models.v2.core.service import (
+    ServiceResponse,
+    ServiceResponseBody,
+    ServiceResponseMetadata,
+    ServiceUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponseResources,
+)
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
     CodeReferenceResponse,
@@ -157,6 +166,7 @@ from zenml.models.v2.core.model_version import (
     ModelVersionResponseMetadata,
     ModelVersionFilter,
     ModelVersionUpdate,
+    ModelVersionResponseResources,
 )
 from zenml.models.v2.core.model_version_artifact import (
     ModelVersionArtifactFilter,
@@ -375,6 +385,7 @@ ModelResponseBody.model_rebuild()
 ModelResponseMetadata.model_rebuild()
 ModelVersionResponseBody.model_rebuild()
 ModelVersionResponseMetadata.model_rebuild()
+ModelVersionResponseResources.model_rebuild()
 ModelVersionArtifactResponseBody.model_rebuild()
 ModelVersionPipelineRunResponseBody.model_rebuild()
 OAuthDeviceResponseBody.model_rebuild()
@@ -395,6 +406,9 @@ ScheduleResponseBody.model_rebuild()
 ScheduleResponseMetadata.model_rebuild()
 SecretResponseBody.model_rebuild()
 SecretResponseMetadata.model_rebuild()
+ServiceResponseBody.model_rebuild()
+ServiceResponseMetadata.model_rebuild()
+ServiceResponseResources.model_rebuild()
 ServiceConnectorResponseBody.model_rebuild()
 ServiceConnectorResponseMetadata.model_rebuild()
 StackResponseBody.model_rebuild()
@@ -407,6 +421,7 @@ TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
 TriggerResponseResources.model_rebuild()
 TriggerResponseResources.model_rebuild()
+
 
 __all__ = [
     # V2 Base
@@ -509,6 +524,7 @@ __all__ = [
     "ModelVersionResponse",
     "ModelVersionResponseBody",
     "ModelVersionResponseMetadata",
+    "ModelVersionResponseResources",
     "ModelVersionUpdate",
     "ModelVersionArtifactFilter",
     "ModelVersionArtifactRequest",
@@ -571,6 +587,13 @@ __all__ = [
     "SecretResponseBody",
     "SecretResponseMetadata",
     "SecretUpdate",
+    "ServiceResponse",
+    "ServiceResponseBody",
+    "ServiceResponseMetadata",
+    "ServiceUpdate",
+    "ServiceFilter",
+    "ServiceRequest",
+    "ServiceResponseResources",
     "ServiceAccountFilter",
     "ServiceAccountResponseBody",
     "ServiceAccountResponseMetadata",

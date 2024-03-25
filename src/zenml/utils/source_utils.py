@@ -231,7 +231,9 @@ def get_source_root() -> str:
         raise RuntimeError(
             "Unable to determine source root because the main module does not "
             "have an associated file. This could be because you're running in "
-            "an interactive Python environment."
+            "an interactive Python environment. If you are trying to run from "
+            "within a Jupyter notebook, please run `zenml init` from the root "
+            "where your notebook is located and restart your notebook server.   "
         )
 
     path = Path(main_module.__file__).resolve().parent

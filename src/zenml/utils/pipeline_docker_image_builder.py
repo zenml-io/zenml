@@ -626,24 +626,23 @@ class PipelineDockerImageBuilder:
                 f"--no-install-recommends {apt_packages}"
             )
 
+        if (
+            docker_settings.python_package_installer
+            == PythonPackageInstaller.PIP
+        ):
+            install_command = "pip install --default-timeout=60"
+        elif (
+            docker_settings.python_package_installer
+            == PythonPackageInstaller.UV
+        ):
+            lines.append("RUN pip install uv")
+            install_command = "uv pip install --system"
+        else:
+            raise ValueError("Unsupported python package installer.")
+
         for file, _, options in requirements_files:
             lines.append(f"COPY {file} .")
-
             option_string = " ".join(options)
-
-            if (
-                docker_settings.python_package_installer
-                == PythonPackageInstaller.PIP
-            ):
-                install_command = "pip install --default-timeout=60"
-            elif (
-                docker_settings.python_package_installer
-                == PythonPackageInstaller.UV
-            ):
-                lines.append("RUN pip install uv")
-                install_command = "uv pip install --system"
-            else:
-                raise ValueError("Unsupported python package installer.")
 
             lines.append(
                 f"RUN {install_command} --no-cache-dir "

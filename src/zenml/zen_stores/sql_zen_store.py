@@ -42,12 +42,12 @@ from uuid import UUID
 
 from pydantic import (
     ConfigDict,
-    Field,
-    SecretStr,
     SerializeAsAny,
     field_validator,
     model_validator,
 )
+from pydantic import Field, SecretStr
+
 from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -216,6 +216,10 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponse,
+    ServiceUpdate,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -306,6 +310,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
@@ -1765,6 +1770,174 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.delete(api_key)
+            session.commit()
+
+    # -------------------- Services --------------------
+
+    @staticmethod
+    def _fail_if_service_with_config_exists(
+        service_request: ServiceRequest, session: Session
+    ) -> None:
+        """Raise an exception if a service with same name/config exists.
+
+        Args:
+            service_request: The service to check for.
+            session: The database session to use for the query.
+
+        Raises:
+            EntityExistsError: If a service with the given name and
+                type already exists.
+        """
+        # Check if service with the same domain key (name, config, workspace)
+        # already exists
+        existing_domain_service = session.exec(
+            select(ServiceSchema).where(
+                ServiceSchema.config
+                == base64.b64encode(
+                    json.dumps(
+                        service_request.config,
+                        sort_keys=False,
+                    ).encode("utf-8")
+                )
+            )
+        ).first()
+
+        if existing_domain_service:
+            raise EntityExistsError(
+                f"Unable to create service '{service_request.name}' with the "
+                "given configuration: A service with the same configuration "
+                "already exists."
+            )
+
+    def create_service(self, service: ServiceRequest) -> ServiceResponse:
+        """Create a new service.
+
+        Args:
+            service: The service to create.
+
+        Returns:
+            The newly created service.
+        """
+        with Session(self.engine) as session:
+            # Check if a service with the given name already exists
+            self._fail_if_service_with_config_exists(
+                service_request=service,
+                session=session,
+            )
+
+            # Create the service.
+            service_schema = ServiceSchema.from_request(service)
+            logger.debug("Creating service: %s", service_schema)
+            session.add(service_schema)
+            session.commit()
+
+            return service_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_service(
+        self, service_id: UUID, hydrate: bool = True
+    ) -> ServiceResponse:
+        """Get a service.
+
+        Args:
+            service_id: The ID of the service to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The service.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+        with Session(self.engine) as session:
+            service = session.exec(
+                select(ServiceSchema).where(ServiceSchema.id == service_id)
+            ).first()
+            if service is None:
+                raise KeyError(
+                    f"Unable to get service with ID {service_id}: No "
+                    "service with this ID found."
+                )
+            return service.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
+
+    def list_services(
+        self, filter_model: ServiceFilter, hydrate: bool = False
+    ) -> Page[ServiceResponse]:
+        """List all services matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all services matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ServiceSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ServiceSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_service(
+        self, service_id: UUID, update: ServiceUpdate
+    ) -> ServiceResponse:
+        """Update a service.
+
+        Args:
+            service_id: The ID of the service to update.
+            update: The update to be applied to the service.
+
+        Returns:
+            The updated service.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+        with Session(self.engine) as session:
+            existing_service = session.exec(
+                select(ServiceSchema).where(ServiceSchema.id == service_id)
+            ).first()
+            if not existing_service:
+                raise KeyError(f"Service with ID {service_id} not found.")
+
+            # Update the schema itself.
+            existing_service.update(update=update)
+            logger.debug("Updated service: %s", existing_service)
+            session.add(existing_service)
+            session.commit()
+            session.refresh(existing_service)
+            return existing_service.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_service(self, service_id: UUID) -> None:
+        """Delete a service.
+
+        Args:
+            service_id: The ID of the service to delete.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+        with Session(self.engine) as session:
+            existing_service = session.exec(
+                select(ServiceSchema).where(ServiceSchema.id == service_id)
+            ).first()
+            if not existing_service:
+                raise KeyError(f"Service with ID {service_id} not found.")
+
+            # Delete the service
+            session.delete(existing_service)
             session.commit()
 
     # -------------------- Artifacts --------------------
@@ -8432,7 +8605,9 @@ class SqlZenStore(BaseZenStore):
                     f"`{model_version_id}`: No model version with this "
                     f"ID found."
                 )
-            return model_version.to_model(include_metadata=hydrate)
+            return model_version.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
 
     def list_model_versions(
         self,
@@ -8581,7 +8756,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_model_version)
 
-            return existing_model_version.to_model(include_metadata=True)
+            return existing_model_version.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     # ------------------------ Model Versions Artifacts ------------------------
 
