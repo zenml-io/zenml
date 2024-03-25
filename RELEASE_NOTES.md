@@ -2,15 +2,12 @@
 # 0.56.2
 
 This release replaces 0.56.0 and 0.56.1, and fixes the major migration bugs that were in
-that yanked release. Please upgrade directly to 0.56.2 and avoid upgrading to
-0.45.0 to avoid unexpected migration issues.
+that yanked release. Please upgrade directly to 0.56.2 and avoid upgrading to  
+0.56.0 to avoid unexpected migration issues.
 
 Note that 0.56.0 and 0.56.1 were removed from PyPI due to an issue with the
 alembic versions + migration which could affect the database state. This release
 fixes that issue.
-
-If you have already upgraded to 0.56.0 or 0.56.1 please [let us know in Slack](https://zenml.io/slack-invite/) and we'll happy to assist in rollback and recovery.
-
 This release introduces introduces a wide array of new features, enhancements, and bug fixes, with a strong emphasis on elevating the user experience and streamlining machine
 learning workflows. Most notably, you can now deploy models using Hugging Face inference endpoints thanks for an open-source community contribution of this model deployer stack component!
 
