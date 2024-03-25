@@ -24,7 +24,7 @@ from zenml.materializers.pydantic_materializer import (
 if TYPE_CHECKING and sys.version_info < (3, 8):
     OpenAIEmbeddings = Any
 else:
-    from langchain.embeddings.openai import OpenAIEmbeddings
+    from langchain_openai import OpenAIEmbeddings
 
 
 class LangchainOpenaiEmbeddingMaterializer(PydanticMaterializer):
