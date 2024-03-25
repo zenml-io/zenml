@@ -18,6 +18,7 @@ function run_tests_for_version() {
     # versions pre-templates and pre-init test flag
     # (zenml init --test allows for a non-interactive init)
     local PRE_TEMPLATE_VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0")
+    local PRE_ARGS_VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0")
 
     echo "===== Testing version $VERSION ====="
 
@@ -40,7 +41,11 @@ function run_tests_for_version() {
     rm sklearn-requirements.txt
 
     echo "===== Running starter template pipeline ====="
-    python3 run.py --feature-pipeline --training-pipeline --no-cache
+    if printf '%s\n' "${PRE_ARGS_VERSIONS[@]}" | grep -q "^$VERSION$"; then
+        python3 run.py --no-cache
+    else
+        python3 run.py --feature-pipeline --training-pipeline --no-cache
+    fi
     # Add additional CLI tests here
     zenml version
 
