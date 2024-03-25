@@ -527,7 +527,7 @@ def create_pipeline(
     if needs_usage_increment:
         check_entitlement(ResourceType.PIPELINE)
 
-    pipeline = verify_permissions_and_create_entity(
+    pipeline_response = verify_permissions_and_create_entity(
         request_model=pipeline,
         resource_type=ResourceType.PIPELINE,
         create_method=zen_store().create_pipeline,
@@ -535,10 +535,11 @@ def create_pipeline(
 
     if needs_usage_increment:
         report_usage(
-            resource_type=ResourceType.PIPELINE, resource_id=pipeline.id
+            resource_type=ResourceType.PIPELINE,
+            resource_id=pipeline_response.id,
         )
 
-    return pipeline
+    return pipeline_response
 
 
 @router.get(
