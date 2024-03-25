@@ -122,6 +122,7 @@
     "kubernetes.client.rest",
     "label_studio_sdk",
     "langchain",
+    "langchain_openai",
     "langchain.docstore",
     "langchain.docstore.document",
     "langchain.embeddings",
