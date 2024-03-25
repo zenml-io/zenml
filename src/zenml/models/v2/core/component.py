@@ -25,11 +25,10 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import LogicalOperators, StackComponentType
-from zenml.models.v2.base.internal import server_owned_request_model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -103,7 +102,8 @@ class ComponentRequest(ComponentBase, WorkspaceScopedRequest):
         title="The service connector linked to this stack component.",
     )
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def name_cant_be_a_secret_reference(cls, name: str) -> str:
         """Validator to ensure that the given name is not a secret reference.
 
@@ -124,11 +124,13 @@ class ComponentRequest(ComponentBase, WorkspaceScopedRequest):
         return name
 
 
-@server_owned_request_model
 class InternalComponentRequest(ComponentRequest):
     """Internal component request model."""
 
-    pass
+    user: Optional[UUID] = Field(
+        title="The id of the user that created this resource.",
+        default=None,
+    )
 
 
 # ------------------ Update Model ------------------

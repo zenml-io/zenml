@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import validator
+from pydantic import SerializeAsAny, field_validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
@@ -37,7 +37,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
-    settings: Dict[str, BaseSettings] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
@@ -54,7 +54,8 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
         """Ensures the pipeline name is allowed.
 

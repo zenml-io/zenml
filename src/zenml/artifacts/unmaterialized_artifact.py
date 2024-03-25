@@ -13,12 +13,7 @@
 #  permissions and limitations under the License.
 """Unmaterialized artifact class."""
 
-from zenml.models import (
-    ArtifactVersionResponse,
-    RunMetadataResponse,
-    UserResponse,
-    WorkspaceResponse,
-)
+from zenml.models import ArtifactVersionResponse
 
 
 class UnmaterializedArtifact(ArtifactVersionResponse):
@@ -41,8 +36,4 @@ class UnmaterializedArtifact(ArtifactVersionResponse):
     """
 
 
-UnmaterializedArtifact.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
-    RunMetadataResponseModel=RunMetadataResponse,
-)
+UnmaterializedArtifact.model_rebuild()

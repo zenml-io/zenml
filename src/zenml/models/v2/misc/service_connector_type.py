@@ -17,7 +17,7 @@ import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
@@ -215,11 +215,6 @@ class AuthenticationMethodModel(BaseModel):
 
         return expiration_seconds
 
-    class Config:
-        """Pydantic config class."""
-
-        underscore_attrs_are_private = True
-
 
 class ServiceConnectorTypeModel(BaseModel):
     """Service connector type specification.
@@ -333,7 +328,8 @@ class ServiceConnectorTypeModel(BaseModel):
         """
         self._connector_class = connector_class
 
-    @validator("resource_types")
+    @field_validator("resource_types")
+    @classmethod
     def validate_resource_types(
         cls, values: List[ResourceTypeModel]
     ) -> List[ResourceTypeModel]:
@@ -360,7 +356,8 @@ class ServiceConnectorTypeModel(BaseModel):
 
         return values
 
-    @validator("auth_methods")
+    @field_validator("auth_methods")
+    @classmethod
     def validate_auth_methods(
         cls, values: List[AuthenticationMethodModel]
     ) -> List[AuthenticationMethodModel]:
@@ -471,11 +468,6 @@ class ServiceConnectorTypeModel(BaseModel):
             )
 
         return auth_method_spec, resource_type_spec
-
-    class Config:
-        """Pydantic config class."""
-
-        underscore_attrs_are_private = True
 
 
 class ServiceConnectorRequirements(BaseModel):

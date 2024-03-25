@@ -15,6 +15,7 @@
 
 import functools
 import itertools
+import json
 import os
 from datetime import datetime
 from typing import (
@@ -481,7 +482,9 @@ class Stack:
             A dictionary containing the stack components.
         """
         component_dict = {
-            component_type.value: component.config.json(sort_keys=True)
+            component_type.value: json.dumps(
+                component.config.model_dump(mode="json"), sort_keys=True
+            )
             for component_type, component in self.components.items()
         }
         component_dict.update({"name": self.name})

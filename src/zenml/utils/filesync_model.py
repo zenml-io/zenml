@@ -115,10 +115,3 @@ class FileSyncModel(BaseModel):
             super(FileSyncModel, self).__setattr__(key, value)
 
         self._config_file_timestamp = file_timestamp
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True

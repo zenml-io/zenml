@@ -27,7 +27,7 @@ from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud.secretmanager import SecretManagerServiceClient
-from pydantic import root_validator
+from pydantic import ConfigDict, model_validator
 
 from zenml.enums import (
     SecretsStoreType,
@@ -78,7 +78,8 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
 
         raise ValueError("GCP `project_id` must be specified in auth_config.")
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
@@ -123,11 +124,7 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
 
         return values
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Forbid extra attributes set in the class.
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class GCPSecretsStore(ServiceConnectorSecretsStore):

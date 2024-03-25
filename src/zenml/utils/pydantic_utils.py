@@ -19,9 +19,11 @@ from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 import yaml
 from pydantic import BaseModel
-from pydantic.decorator import ValidatedFunction
+
+# TODO: Investigate if we can solve this import a different way.
+from pydantic.deprecated.decorator import ValidatedFunction
 from pydantic.json import pydantic_encoder
-from pydantic.utils import sequence_like
+from pydantic.v1.utils import sequence_like
 
 from zenml.utils import dict_utils, yaml_utils
 
@@ -188,12 +190,16 @@ class YAMLSerializationMixin(BaseModel):
 
         Args:
             sort_keys: Whether to sort the keys in the YAML representation.
-            **kwargs: Kwargs to pass to the pydantic json(...) method.
+            **kwargs: Kwargs to pass to the pydantic model_dump(...) method.
 
         Returns:
             YAML string representation.
         """
-        dict_ = json.loads(self.json(**kwargs, sort_keys=sort_keys))
+        dict_ = json.loads(
+            json.dumps(
+                self.model_dump(mode="json", **kwargs), sort_keys=sort_keys
+            )
+        )
         return yaml.dump(dict_, sort_keys=sort_keys)
 
     @classmethod

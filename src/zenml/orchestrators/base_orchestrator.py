@@ -16,7 +16,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -34,7 +34,8 @@ logger = get_logger(__name__)
 class BaseOrchestratorConfig(StackComponentConfig):
     """Base orchestrator config."""
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _deprecations(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate and/or remove deprecated fields.
 
@@ -49,8 +50,8 @@ class BaseOrchestratorConfig(StackComponentConfig):
             if image_name:
                 logger.warning(
                     "The 'custom_docker_base_image_name' field has been "
-                    "deprecated. To use a custom base container image with your "
-                    "orchestrators, please use the DockerSettings in your "
+                    "deprecated. To use a custom base container image with "
+                    "your orchestrators, please use the DockerSettings in your "
                     "pipeline (see https://docs.zenml.io/user-guide/advanced-guide/environment-management/containerize-your-pipeline)."
                 )
 

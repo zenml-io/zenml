@@ -1408,7 +1408,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         try:
             validated_args = pydantic_utils.validate_function_args(
                 self.entrypoint,
-                {"arbitrary_types_allowed": False, "smart_union": True},
+                {"arbitrary_types_allowed": False},
                 *args,
                 **kwargs,
             )

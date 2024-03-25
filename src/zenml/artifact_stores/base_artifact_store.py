@@ -32,7 +32,7 @@ from typing import (
     cast,
 )
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
@@ -172,7 +172,8 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
         """Validator function for the Artifact Stores.
 
@@ -210,16 +211,18 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
-        values["path"] = values["path"].strip("'\"`")
-        if not any(
-            values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
-        ):
-            raise ArtifactStoreInterfaceError(
-                f"The path: '{values['path']}' you defined for your "
-                f"artifact store is not supported by the implementation of "
-                f"{cls.schema()['title']}, because it does not start with "
-                f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
-            )
+
+        if "path" in values:
+            values["path"] = values["path"].strip("'\"`")
+            if not any(
+                values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
+            ):
+                raise ArtifactStoreInterfaceError(
+                    f"The path: '{values['path']}' you defined for your "
+                    f"artifact store is not supported by the implementation of "
+                    f"{cls.schema()['title']}, because it does not start with "
+                    f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
+                )
 
         return values
 

@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
@@ -87,7 +87,8 @@ class AirflowOrchestratorSettings(BaseSettings):
 
     custom_dag_generator: Optional[str] = None
 
-    @validator("operator", always=True)
+    @field_validator("operator", mode="before")
+    @classmethod
     def _convert_operator(
         cls, value: Optional[Union[str, OperatorType]]
     ) -> Optional[str]:
@@ -108,7 +109,7 @@ class AirflowOrchestratorSettings(BaseSettings):
             return value
 
 
-class AirflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class AirflowOrchestratorConfig(
     BaseOrchestratorConfig, AirflowOrchestratorSettings
 ):
     """Configuration for the Airflow orchestrator.

@@ -31,6 +31,8 @@ from typing import (
 )
 from uuid import UUID
 
+from pydantic import ConfigDict
+
 from zenml.console import console
 from zenml.logger import get_logger
 from zenml.services.service_endpoint import BaseServiceEndpoint
@@ -116,6 +118,14 @@ class ServiceConfig(BaseTypedModel):
     model_name: str = ""
     model_version: str = ""
     service_name: str = ""
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     def __init__(self, **data: Any):
         """Initialize the service configuration.
@@ -512,14 +522,10 @@ class BaseService(BaseTypedModel):
         """
         return self.__repr__()
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        validate_assignment=True,
+    )
 
 
 class BaseDeploymentService(BaseService):

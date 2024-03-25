@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 class ErrorModel(BaseModel):
     """Base class for error responses."""
 
-    detail: Any
+    detail: Any = None
 
 
 error_response = dict(model=ErrorModel)

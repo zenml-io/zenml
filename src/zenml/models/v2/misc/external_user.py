@@ -16,7 +16,7 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ExternalUserModel(BaseModel):
@@ -27,8 +27,4 @@ class ExternalUserModel(BaseModel):
     name: Optional[str] = None
     is_admin: bool = False
 
-    class Config:
-        """Pydantic configuration."""
-
-        # ignore arbitrary fields
-        extra = "ignore"
+    model_config = ConfigDict(extra="ignore")

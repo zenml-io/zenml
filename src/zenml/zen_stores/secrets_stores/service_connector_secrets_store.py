@@ -25,7 +25,7 @@ from typing import (
 )
 from uuid import uuid4
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.logger import get_logger
@@ -54,7 +54,8 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
     auth_method: str
     auth_config: Dict[str, Any] = Field(default_factory=dict)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def validate_auth_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Convert the authentication configuration if given in JSON format.
 

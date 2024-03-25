@@ -51,8 +51,8 @@ class TagRequest(BaseRequest):
 class TagUpdate(BaseModel):
     """Update model for tags."""
 
-    name: Optional[str]
-    color: Optional[ColorVariants]
+    name: Optional[str] = None
+    color: Optional[ColorVariants] = None
 
 
 # ------------------ Response Model ------------------

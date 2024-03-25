@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
@@ -52,13 +52,7 @@ class ServiceAccountRequest(BaseRequest):
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     active: bool = Field(title="Whether the service account is active or not.")
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them
-        validate_assignment = True
-        extra = "ignore"
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
 # ------------------ Update Model ------------------

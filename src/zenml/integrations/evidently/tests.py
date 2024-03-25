@@ -33,7 +33,7 @@ from evidently.tests.base_test import (  # type: ignore[import-untyped]
 from evidently.utils.generators import (  # type: ignore[import-untyped]
     BaseGenerator,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.logger import get_logger
 from zenml.utils import source_utils
@@ -343,7 +343,4 @@ class EvidentlyTestConfig(BaseModel):
                 f"`{self.class_path}`: {str(e)}"
             )
 
-    class Config:
-        """Pydantic config class."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")

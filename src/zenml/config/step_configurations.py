@@ -24,7 +24,12 @@ from typing import (
     Union,
 )
 
-from pydantic import root_validator, validator
+from pydantic import (
+    ConfigDict,
+    SerializeAsAny,
+    field_validator,
+    model_validator,
+)
 
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
@@ -53,7 +58,8 @@ class PartialArtifactConfiguration(StrictBaseModel):
     # for all steps/outputs
     default_materializer_source: Optional[Source] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _remove_deprecated_attributes(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -71,7 +77,8 @@ class PartialArtifactConfiguration(StrictBaseModel):
                 values.pop(deprecated_attribute)
         return values
 
-    @validator("materializer_source", pre=True)
+    @field_validator("materializer_source", mode="before")
+    @classmethod
     def _convert_source(
         cls,
         value: Union[None, Source, Dict[str, Any], str, Tuple[Source, ...]],
@@ -99,7 +106,8 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 
     materializer_source: Tuple[Source, ...]
 
-    @validator("materializer_source", pre=True)
+    @field_validator("materializer_source", mode="before")
+    @classmethod
     def _convert_source(
         cls, value: Union[Source, Dict[str, Any], str, Tuple[Source, ...]]
     ) -> Tuple[Source, ...]:
@@ -132,7 +140,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None
     parameters: Dict[str, Any] = {}
-    settings: Dict[str, BaseSettings] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
@@ -158,11 +166,20 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
     # Override the deprecation validator as we do not want to deprecate the
     # `name`` attribute on this class.
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes()
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _remove_deprecated_attributes(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -198,7 +215,7 @@ class StepConfiguration(PartialStepConfiguration):
         model_or_dict: SettingsOrDict = self.settings.get(
             RESOURCE_SETTINGS_KEY, {}
         )
-        return ResourceSettings.parse_obj(model_or_dict)
+        return ResourceSettings.model_validate(model_or_dict)
 
     @property
     def docker_settings(self) -> "DockerSettings":
@@ -212,7 +229,7 @@ class StepConfiguration(PartialStepConfiguration):
         model_or_dict: SettingsOrDict = self.settings.get(
             DOCKER_SETTINGS_KEY, {}
         )
-        return DockerSettings.parse_obj(model_or_dict)
+        return DockerSettings.model_validate(model_or_dict)
 
 
 class InputSpec(StrictBaseModel):

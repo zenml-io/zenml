@@ -26,10 +26,11 @@ from typing import (
     Set,
     Tuple,
     Type,
+    Union,
 )
 from uuid import UUID
 
-from pydantic.typing import get_origin, is_union
+from typing_extensions import get_origin
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.artifacts.utils import save_artifact
@@ -438,7 +439,7 @@ class StepRunner:
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact.parse_obj(artifact)
 
-        if data_type is Any or is_union(get_origin(data_type)):
+        if data_type is Any or get_origin(data_type) is Union:
             # Entrypoint function does not define a specific type for the input,
             # we use the datatype of the stored artifact
             data_type = source_utils.load(artifact.data_type)
@@ -508,9 +509,8 @@ class StepRunner:
                 f"(return values: {return_values})."
             )
 
-        from pydantic.typing import get_origin, is_union
-
         from zenml.steps.utils import get_args
+        from zenml.utils.typing_utils import get_origin, is_union
 
         validated_outputs: Dict[str, Any] = {}
         for return_value, (output_name, output_annotation) in zip(

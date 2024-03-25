@@ -30,8 +30,12 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator, validator
-from pydantic.typing import get_args
+from pydantic import (
+    BaseModel,
+    Field,
+    field_validator,
+    model_validator,
+)
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -43,6 +47,7 @@ from zenml.constants import (
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.exceptions import ValidationError
 from zenml.logger import get_logger
+from zenml.utils.typing_utils import get_args
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -73,9 +78,10 @@ class Filter(BaseModel, ABC):
 
     operation: GenericFilterOps
     column: str
-    value: Any
+    value: Any = None
 
-    @validator("operation", pre=True)
+    @field_validator("operation", mode="before")
+    @classmethod
     def validate_operation(cls, op: str) -> str:
         """Validate that the operation is a valid op for the field type.
 
@@ -299,7 +305,8 @@ class BaseFilter(BaseModel):
         Tuple[UUID, Dict[str, Optional[Set[UUID]]]]
     ] = None
 
-    @validator("sort_by", pre=True)
+    @field_validator("sort_by", mode="before")
+    @classmethod
     def validate_sort_by(cls, v: str) -> str:
         """Validate that the sort_column is a valid column with a valid operand.
 
@@ -347,7 +354,8 @@ class BaseFilter(BaseModel):
                 "You can only sort by valid fields of this resource"
             )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def filter_ops(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Parse incoming filters to ensure all filters are legal.
 
@@ -563,7 +571,7 @@ class BaseFilter(BaseModel):
 
         # Handle unsupported datatypes
         logger.warning(
-            f"The Datatype {cls.__fields__[column].type_} might not be "
+            f"The Datatype {cls.model_fields[column].annotation} might not be "
             "supported for filtering. Defaulting to a string filter."
         )
         return StrFilter(
@@ -582,40 +590,49 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a datetime field, False otherwise.
         """
-        return (
-            issubclass(datetime, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is datetime
-        )
+        try:
+            return (
+                issubclass(datetime, get_args(cls.model_fields[k].annotation))
+                or cls.model_fields[k].annotation is datetime
+            )
+        except TypeError:
+            return False
 
     @classmethod
     def is_uuid_field(cls, k: str) -> bool:
-        """Checks if it's a uuid field.
+        """Checks if it's a UUID field.
 
         Args:
             k: The key to check.
 
         Returns:
-            True if the field is a uuid field, False otherwise.
+            True if the field is a UUID field, False otherwise.
         """
-        return (
-            issubclass(UUID, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is UUID
-        )
+        try:
+            return (
+                issubclass(UUID, get_args(cls.model_fields[k].annotation))
+                or cls.model_fields[k].annotation is UUID
+            )
+        except TypeError:
+            return False
 
     @classmethod
     def is_int_field(cls, k: str) -> bool:
-        """Checks if it's a int field.
+        """Checks if it's an int field.
 
         Args:
             k: The key to check.
 
         Returns:
-            True if the field is a int field, False otherwise.
+            True if the field is an int field, False otherwise.
         """
-        return (
-            issubclass(int, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is int
-        )
+        try:
+            return (
+                issubclass(int, get_args(cls.model_fields[k].annotation))
+                or cls.model_fields[k].annotation is int
+            )
+        except TypeError:
+            return False
 
     @classmethod
     def is_bool_field(cls, k: str) -> bool:
@@ -627,10 +644,13 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a bool field, False otherwise.
         """
-        return (
-            issubclass(bool, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is bool
-        )
+        try:
+            return (
+                issubclass(bool, get_args(cls.model_fields[k].annotation))
+                or cls.model_fields[k].annotation is bool
+            )
+        except TypeError:
+            return False
 
     @classmethod
     def is_str_field(cls, k: str) -> bool:
@@ -642,10 +662,13 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a string field, False otherwise.
         """
-        return (
-            issubclass(str, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is str
-        )
+        try:
+            return (
+                issubclass(str, get_args(cls.model_fields[k].annotation))
+                or cls.model_fields[k].annotation is str
+            )
+        except TypeError:
+            return False
 
     @classmethod
     def is_sort_by_field(cls, k: str) -> bool:
@@ -657,10 +680,13 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a sort by field, False otherwise.
         """
-        return (
-            issubclass(str, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ == str
-        ) and k == "sort_by"
+        try:
+            return (
+                issubclass(str, get_args(cls.model_fields[k].annotation))
+                or cls.model_fields[k].annotation is str
+            ) and k == "sort_by"
+        except TypeError:
+            return False
 
     @staticmethod
     def _define_datetime_filter(
@@ -839,10 +865,3 @@ class BaseFilter(BaseModel):
             query = query.where(filters)
 
         return query
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True

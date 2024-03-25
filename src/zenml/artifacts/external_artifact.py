@@ -14,10 +14,10 @@
 """External artifact definition."""
 
 import os
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Optional, Type, Union
 from uuid import UUID, uuid4
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
@@ -83,8 +83,13 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     store_artifact_metadata: bool = True
     store_artifact_visualizations: bool = True
 
-    @root_validator
-    def _validate_all(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def external_artifact_validator(self) -> "ExternalArtifact":
+        """Model validator for the external artifact.
+
+        Raises:
+            ValueError: if the value, id and name fields are set incorrectly.
+        """
         deprecation_msg = (
             "Parameter `{param}` or `ExternalArtifact` will be deprecated "
             "in upcoming releases. Please use `{substitute}` instead."
@@ -104,7 +109,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
                 "Client().get_model_version(<model_name>,<model_version>).get_artifact(name)",
             ],
         ]:
-            if _ := values.get(param, None):
+            if getattr(self, param, None):
                 logger.warning(
                     deprecation_msg.format(
                         param=param,
@@ -112,7 +117,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
                     )
                 )
         options = [
-            values.get(field, None) is not None
+            getattr(self, field, None) is not None
             for field in ["value", "id", "name"]
         ]
         if sum(options) > 1:
@@ -125,7 +130,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
                 "Either `value`, `id`, or `name` must be provided when "
                 "creating an external artifact."
             )
-        return values
+        return self
 
     def upload_by_value(self) -> UUID:
         """Uploads the artifact by value.

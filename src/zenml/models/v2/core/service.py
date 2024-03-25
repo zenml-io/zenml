@@ -15,7 +15,6 @@
 
 from datetime import datetime
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -26,7 +25,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlmodel import SQLModel
 
@@ -42,9 +41,6 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
-
-if TYPE_CHECKING:
-    pass
 
 # ------------------ Request Model ------------------
 
@@ -63,17 +59,20 @@ class ServiceRequest(WorkspaceScopedRequest):
 
     service_source: Optional[str] = Field(
         title="The class of the service.",
-        description="The fully qualified class name of the service implementation.",
+        description="The fully qualified class name of the service "
+        "implementation.",
     )
 
     admin_state: Optional[ServiceState] = Field(
         title="The admin state of the service.",
-        description="The administrative state of the service, e.g., ACTIVE, INACTIVE.",
+        description="The administrative state of the service, e.g., ACTIVE, "
+        "INACTIVE.",
     )
 
     config: Dict[str, Any] = Field(
         title="The service config.",
-        description="A dictionary containing configuration parameters for the service.",
+        description="A dictionary containing configuration parameters for the "
+        "service.",
     )
 
     labels: Optional[Dict[str, str]] = Field(
@@ -109,6 +108,14 @@ class ServiceRequest(WorkspaceScopedRequest):
         description="By the event source this trigger is attached to.",
     )
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
 
 # ------------------ Update Model ------------------
 
@@ -117,33 +124,42 @@ class ServiceUpdate(BaseModel):
     """Update model for stack components."""
 
     name: Optional[str] = Field(
+        None,
         title="The name of the service.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
     admin_state: Optional[ServiceState] = Field(
+        None,
         title="The admin state of the service.",
-        description="The administrative state of the service, e.g., ACTIVE, INACTIVE.",
+        description="The administrative state of the service, e.g., ACTIVE, "
+        "INACTIVE.",
     )
 
     service_source: Optional[str] = Field(
+        None,
         title="The class of the service.",
-        description="The fully qualified class name of the service implementation.",
+        description="The fully qualified class name of the service "
+        "implementation.",
     )
 
     status: Optional[Dict[str, Any]] = Field(
+        None,
         title="The status of the service.",
     )
 
     endpoint: Optional[Dict[str, Any]] = Field(
+        None,
         title="The service endpoint.",
     )
 
     prediction_url: Optional[str] = Field(
+        None,
         title="The service endpoint URL.",
     )
 
     health_check_url: Optional[str] = Field(
+        None,
         title="The service health check URL.",
     )
 
@@ -156,6 +172,13 @@ class ServiceUpdate(BaseModel):
         default=None,
         title="The model version id linked to the service.",
     )
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
@@ -362,7 +385,8 @@ class ServiceFilter(WorkspaceScopedFilter):
     """
 
     name: Optional[str] = Field(
-        description="Name of the service. Use this to filter services by their name.",
+        description="Name of the service. Use this to filter services by "
+        "their name.",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the service"
@@ -376,11 +400,13 @@ class ServiceFilter(WorkspaceScopedFilter):
     )
     flavor: Optional[str] = Field(
         default=None,
-        description="Flavor of the service. Use this to filter services by their flavor.",
+        description="Flavor of the service. Use this to filter services by "
+        "their flavor.",
     )
     config: Optional[bytes] = Field(
         default=None,
-        description="Config of the service. Use this to filter services by their config.",
+        description="Config of the service. Use this to filter services by "
+        "their config.",
     )
     pipeline_name: Optional[str] = Field(
         default=None,
@@ -401,6 +427,14 @@ class ServiceFilter(WorkspaceScopedFilter):
         default=None,
         description="By the pipeline run this service is attached to.",
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     def set_type(self, type: str) -> None:
         """Set the type of the service.

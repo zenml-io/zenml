@@ -24,7 +24,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -67,10 +67,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     artifact_id: UUID = Field(
         title="ID of the artifact to which this version belongs.",
     )
-    version: Union[str, int] = Field(
-        title="Version of the artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+    version: Union[str, int] = Field(title="Version of the artifact.")
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
@@ -98,6 +95,27 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         default=None, title="Visualizations of the artifact."
     )
 
+    @field_validator("version")
+    @classmethod
+    def str_field_max_length_check(cls, v: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum str length.
+
+        Args:
+            v: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(v)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
+        return v
+
     _convert_source = convert_source_validator("materializer", "data_type")
 
 
@@ -121,10 +139,7 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     artifact: ArtifactResponse = Field(
         title="Artifact to which this version belongs."
     )
-    version: Union[str, int] = Field(
-        title="Version of the artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+    version: Union[str, int] = Field(title="Version of the artifact.")
     uri: str = Field(
         title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
@@ -141,6 +156,27 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     producer_pipeline_run_id: Optional[UUID] = Field(
         title="The ID of the pipeline run that generated this artifact version."
     )
+
+    @field_validator("version")
+    @classmethod
+    def str_field_max_length_check(cls, v: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum str length.
+
+        Args:
+            v: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(v)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
+        return v
 
     _convert_source = convert_source_validator("materializer", "data_type")
 
@@ -396,7 +432,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
     # `name` and `only_unused` refer to properties related to other entities
-    #  rather than a field in the db, hence they needs to be handled
+    #  rather than a field in the db, hence they need to be handled
     #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,

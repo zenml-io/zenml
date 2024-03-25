@@ -16,7 +16,7 @@
 import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Type
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from zenml.enums import PluginSubType, PluginType
 from zenml.integrations.registry import integration_registry
@@ -35,12 +35,8 @@ class RegistryEntry(BaseModel):
     """Registry Entry Class for the Plugin Registry."""
 
     flavor_class: Type[BasePluginFlavor]
-    plugin_instance: Optional[BasePlugin]
-
-    class Config:
-        """Pydantic configuration class."""
-
-        arbitrary_types_allowed = True
+    plugin_instance: Optional[BasePlugin] = None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class PluginFlavorRegistry:

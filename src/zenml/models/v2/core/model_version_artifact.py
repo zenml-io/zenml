@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and artifacts."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, validator
+from pydantic import ConfigDict, Field, model_validator
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.enums import GenericFilterOps
@@ -48,17 +48,22 @@ class ModelVersionArtifactRequest(WorkspaceScopedRequest):
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
 
-    @validator("is_deployment_artifact")
-    def _validate_is_endpoint_artifact(
-        cls, is_deployment_artifact: bool, values: Dict[str, Any]
-    ) -> bool:
-        is_model_artifact = values.get("is_model_artifact", False)
-        if is_model_artifact and is_deployment_artifact:
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
+    @model_validator(mode="after")
+    def _validate_is_endpoint_artifact(self) -> "ModelVersionArtifactRequest":
+        if self.is_model_artifact and self.is_deployment_artifact:
             raise ValueError(
                 "Artifact cannot be a model artifact and deployment artifact "
                 "at the same time."
             )
-        return is_deployment_artifact
+        return self
 
 
 # ------------------ Update Model ------------------
@@ -76,6 +81,14 @@ class ModelVersionArtifactResponseBody(BaseDatedResponseBody):
     artifact_version: "ArtifactVersionResponse"
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class ModelVersionArtifactResponseResources(BaseResponseResources):
@@ -190,6 +203,14 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
     only_model_artifacts: Optional[bool] = False
     only_deployment_artifacts: Optional[bool] = False
     has_custom_name: Optional[bool] = None
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
         self,

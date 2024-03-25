@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, PrivateAttr, validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
@@ -70,12 +70,14 @@ class ModelVersionRequest(WorkspaceScopedRequest):
 
     number: Optional[int] = Field(
         description="The number of the model version",
+        default=None,
     )
     model: UUID = Field(
         description="The ID of the model containing version",
     )
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model version",
+        default=None,
     )
 
 
@@ -113,7 +115,8 @@ class ModelVersionUpdate(BaseModel):
         default=None,
     )
 
-    @validator("stage")
+    @field_validator("stage")
+    @classmethod
     def _validate_stage(cls, stage: str) -> str:
         stage = getattr(stage, "value", stage)
         if stage is not None and stage not in [
@@ -159,6 +162,14 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
     tags: List[TagResponse] = Field(
         title="Tags associated with the model version", default=[]
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to supress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):

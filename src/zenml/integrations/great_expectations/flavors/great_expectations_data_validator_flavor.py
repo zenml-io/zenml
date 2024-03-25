@@ -16,7 +16,7 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.data_validators.base_data_validator import (
     BaseDataValidatorConfig,
@@ -54,7 +54,8 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
     configure_zenml_stores: bool = False
     configure_local_docs: bool = True
 
-    @validator("context_root_dir")
+    @field_validator("context_root_dir")
+    @classmethod
     def _ensure_valid_context_root_dir(
         cls, context_root_dir: Optional[str] = None
     ) -> Optional[str]:
