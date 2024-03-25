@@ -19,29 +19,21 @@ https://github.com/pydantic/pydantic/blob/v1.10.14/pydantic/typing.py
 
 import sys
 import typing
-from typing import (
-    Annotated,
-    Any,
-    Literal,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import Annotated, Any, Optional, Set, Tuple, Type, Union, cast
 from typing import get_args as _typing_get_args
 from typing import get_origin as _typing_get_origin
 
-NoneType = None.__class__
-
-NONE_TYPES: Tuple[Any, Any, Any] = (None, NoneType, Literal[None])
-LITERAL_TYPES: Set[Any] = {Literal}
+from typing_extensions import Literal
 
 # Annotated[...] is implemented by returning an instance of one of these
 # classes, depending on python/typing_extensions version.
 AnnotatedTypeNames = {"AnnotatedMeta", "_AnnotatedAlias"}
 
+# None types
+NONE_TYPES: Tuple[Any, Any, Any] = (None, None.__class__, Literal[None])
+
+# Literal types
+LITERAL_TYPES: Set[Any] = {Literal}
 if hasattr(typing, "Literal"):
     LITERAL_TYPES.add(typing.Literal)
 
@@ -50,6 +42,14 @@ if hasattr(typing, "Literal"):
 if sys.version_info[:2] == (3, 8):
 
     def is_none_type(type_: Any) -> bool:
+        """Checks if the provided type is none type.
+
+        Args:
+            type_: type to check.
+
+        Returns:
+            boolean indicating whether the type is none type.
+        """
         for none_type in NONE_TYPES:
             if type_ is none_type:
                 return True
@@ -62,32 +62,111 @@ if sys.version_info[:2] == (3, 8):
 else:
 
     def is_none_type(type_: Any) -> bool:
+        """Checks if the provided type is a none type.
+
+        Args:
+            type_: type to check.
+
+        Returns:
+            boolean indicating whether the type is a none type.
+        """
         return type_ in NONE_TYPES
 
 # ----- is_union -----
 
 if sys.version_info < (3, 10):
 
-    def is_union(tp: Optional[Type[Any]]) -> bool:
-        return tp is Union
+    def is_union(type_: Optional[Type[Any]]) -> bool:
+        """Checks if the provided type is a union type.
+
+        Args:
+            type_: type to check.
+
+        Returns:
+            boolean indicating whether the type is union type.
+        """
+        return type_ is Union
 
 
 else:
-    import types
 
-    def is_union(tp: Optional[Type[Any]]) -> bool:
-        return tp is Union or tp is types.UnionType  # noqa: E721
+    def is_union(type_: Optional[Type[Any]]) -> bool:
+        """Checks if the provided type is a union type.
+
+        Args:
+            type_: type to check.
+
+        Returns:
+            boolean indicating whether the type is union type.
+        """
+        import types
+
+        return type_ is Union or type_ is types.UnionType  # noqa: E721
+
+
+# ----- literal -----
+
+
+def is_literal_type(type_: Type[Any]) -> bool:
+    """Checks if the provided type is a literal type.
+
+    Args:
+        type_: type to check.
+
+    Returns:
+        boolean indicating whether the type is union type.
+    """
+    return Literal is not None and get_origin(type_) in LITERAL_TYPES
+
+
+def literal_values(type_: Type[Any]) -> Tuple[Any, ...]:
+    """Fetches the literal values defined in a type.
+
+    Args:
+        type_: type to check.
+
+    Returns:
+        tuple of the literal values.
+    """
+    return get_args(type_)
+
+
+def all_literal_values(type_: Type[Any]) -> Tuple[Any, ...]:
+    """Fetches the literal values defined in a type in a recursive manner.
+
+    This method is used to retrieve all Literal values as Literal can be
+    used recursively (see https://www.python.org/dev/peps/pep-0586)
+    e.g. `Literal[Literal[Literal[1, 2, 3], "foo"], 5, None]`
+
+    Args:
+        type_: type to check.
+
+    Returns:
+        tuple of all the literal values defined in the type.
+    """
+    if not is_literal_type(type_):
+        return (type_,)
+
+    values = literal_values(type_)
+    return tuple(x for value in values for x in all_literal_values(value))
 
 
 # ----- get_origin -----
 
 
 def get_origin(tp: Type[Any]) -> Optional[Type[Any]]:
-    """
+    """Fetches the origin of a given type.
+
     We can't directly use `typing.get_origin` since we need a fallback to
     support custom generic classes like `ConstrainedList`
     It should be useless once https://github.com/cython/cython/issues/3537 is
     solved and https://github.com/pydantic/pydantic/pull/1753 is merged.
+
+    Args:
+        tp: type to check
+
+    Returns:
+        the origin type of the provided type.
     """
     if type(tp).__name__ in AnnotatedTypeNames:
         return cast(Type[Any], Annotated)  # mypy complains about _SpecialForm
@@ -98,12 +177,19 @@ def get_origin(tp: Type[Any]) -> Optional[Type[Any]]:
 
 
 def _generic_get_args(tp: Type[Any]) -> Tuple[Any, ...]:
-    """
+    """Generic get args function.
+
     In python 3.9, `typing.Dict`, `typing.List`, ...
     do have an empty `__args__` by default (instead of the generic ~T
     for example). In order to still support `Dict` for example and consider
     it as `Dict[Any, Any]`, we retrieve the `_nparams` value that tells us
     how many parameters it needs.
+
+    Args:
+        tp: type to check.
+
+    Returns:
+        Tuple of all the args.
     """
     if hasattr(tp, "_nparams"):
         return (Any,) * tp._nparams
@@ -129,6 +215,12 @@ def get_args(tp: Type[Any]) -> Tuple[Any, ...]:
         get_args(Union[int, Union[T, int], str][int]) == (int, str)
         get_args(Union[int, Tuple[T, int]][str]) == (int, Tuple[str, int])
         get_args(Callable[[], T][int]) == ([], int)
+
+    Args:
+        tp: the type to check.
+
+    Returns:
+        Tuple of all the args.
     """
     if type(tp).__name__ in AnnotatedTypeNames:
         return tp.__args__ + tp.__metadata__
@@ -138,27 +230,3 @@ def get_args(tp: Type[Any]) -> Tuple[Any, ...]:
         or getattr(tp, "__args__", ())
         or _generic_get_args(tp)
     )
-
-
-# ----- literal -----
-
-
-def is_literal_type(type_: Type[Any]) -> bool:
-    return Literal is not None and get_origin(type_) in LITERAL_TYPES
-
-
-def literal_values(type_: Type[Any]) -> Tuple[Any, ...]:
-    return get_args(type_)
-
-
-def all_literal_values(type_: Type[Any]) -> Tuple[Any, ...]:
-    """
-    This method is used to retrieve all Literal values as Literal can be
-    used recursively (see https://www.python.org/dev/peps/pep-0586)
-    e.g. `Literal[Literal[Literal[1, 2, 3], "foo"], 5, None]`
-    """
-    if not is_literal_type(type_):
-        return (type_,)
-
-    values = literal_values(type_)
-    return tuple(x for value in values for x in all_literal_values(value))
