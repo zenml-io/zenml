@@ -85,6 +85,11 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
     @model_validator(mode="after")
     def external_artifact_validator(self) -> "ExternalArtifact":
+        """Model validator for the external artifact.
+
+        Raises:
+            ValueError: if the value, id and name fields are set incorrectly.
+        """
         deprecation_msg = (
             "Parameter `{param}` or `ExternalArtifact` will be deprecated "
             "in upcoming releases. Please use `{substitute}` instead."

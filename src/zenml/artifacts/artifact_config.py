@@ -74,6 +74,11 @@ class ArtifactConfig(BaseModel):
 
     @model_validator(mode="after")
     def artifact_config_validator(self) -> "ArtifactConfig":
+        """Model validator for the artifact config.
+
+        Raises:
+            ValueError: If both model_name and model_version is set incorrectly.
+        """
         if self.model_name is not None and self.model_version is None:
             raise ValueError(
                 "Creation of new model version from is not allowed. "

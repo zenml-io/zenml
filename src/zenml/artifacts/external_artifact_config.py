@@ -38,6 +38,11 @@ class ExternalArtifactConfiguration(BaseModel):
 
     @model_validator(mode="after")
     def external_artifact_validator(self) -> "ExternalArtifactConfiguration":
+        """Model validator for the external artifact configuration.
+
+        Raises:
+            ValueError: if the version and model fields are set incorrectly.
+        """
         if self.version and self.model:
             raise ValueError(
                 "Cannot provide both `version` and `model` when "
