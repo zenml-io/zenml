@@ -7,14 +7,14 @@ function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
 
+    export ZENML_ANALYTICS_OPT_IN=false
+    export ZENML_DEBUG=true
+
     echo "===== Testing version $VERSION ====="
 
     mkdir test_starter
-    zenml init --template starter --path test_starter --template-with-defaults --test
+    zenml init --template starter --path test_starter --template-with-defaults
     cd test_starter
-
-    export ZENML_ANALYTICS_OPT_IN=false
-    export ZENML_DEBUG=true
 
     echo "===== Installing sklearn integration ====="
     zenml integration export-requirements sklearn --output-file sklearn-requirements.txt
