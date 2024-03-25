@@ -50,6 +50,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
     zen_store,
 )
 
@@ -168,8 +169,9 @@ def delete_model(
         delete_method=zen_store().delete_model,
     )
 
-    if ResourceType.MODEL in REPORTABLE_RESOURCES:
-        report_decrement(ResourceType.MODEL, resource_id=model.id)
+    if server_config().feature_gate_enabled:
+        if ResourceType.MODEL in REPORTABLE_RESOURCES:
+            report_decrement(ResourceType.MODEL, resource_id=model.id)
 
 
 #################
