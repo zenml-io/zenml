@@ -368,6 +368,39 @@ def test_pipeline_run_with_config_file(clean_client: "Client", tmp_path):
     assert runs[0].name == "custom_run_name"
 
 
+def test_pipeline_run_with_different_stack_in_config_file(
+    clean_client: "Client", tmp_path
+):
+    """Tests that the run command works with a run config file with an active stack defined."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+
+    pipeline_id = pipeline_instance.register().id
+
+    components = {
+        key: components[0].id
+        for key, components in Client().active_stack_model.components.items()
+    }
+    new_stack = Client().create_stack(name="new", components=components)
+
+    config_path = tmp_path / "config.yaml"
+    run_config = PipelineRunConfiguration(
+        run_name="custom_run_name", stack=str(new_stack.id)
+    )
+    config_path.write_text(run_config.yaml())
+
+    result = runner.invoke(
+        run_command, [pipeline_instance.name, "--config", str(config_path)]
+    )
+    assert result.exit_code == 0
+
+    runs = Client().list_pipeline_runs(pipeline_id=pipeline_id)
+    assert len(runs) == 1
+    assert runs[0].name == "custom_run_name"
+    assert runs[0].stack.id == new_stack.id
+    assert Client().active_stack.id != new_stack.id
+
+
 def test_pipeline_run_with_different_stack(clean_client: "Client"):
     """Tests that the run command works with a different stack."""
     runner = CliRunner()

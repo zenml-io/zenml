@@ -30,6 +30,7 @@ class PipelineRunConfiguration(
 ):
     """Class for pipeline run configurations."""
 
+    stack: Optional[str] = None
     run_name: Optional[str] = None
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
