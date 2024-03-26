@@ -28,12 +28,14 @@ from zenml.constants import (
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
+    REPORTABLE_RESOURCES,
     RUN_METADATA,
     RUNS,
     SCHEDULES,
     SECRETS,
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTORS,
+    SERVICES,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -80,6 +82,8 @@ from zenml.models import (
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
+    ServiceRequest,
+    ServiceResponse,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -90,6 +94,10 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+    report_usage,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -509,11 +517,29 @@ def create_pipeline(
             f"not supported."
         )
 
-    return verify_permissions_and_create_entity(
+    # We limit pipeline namespaces, not pipeline versions
+    needs_usage_increment = (
+        ResourceType.PIPELINE in REPORTABLE_RESOURCES
+        and zen_store().count_pipelines(PipelineFilter(name=pipeline.name))
+        == 0
+    )
+
+    if needs_usage_increment:
+        check_entitlement(ResourceType.PIPELINE)
+
+    pipeline_response = verify_permissions_and_create_entity(
         request_model=pipeline,
         resource_type=ResourceType.PIPELINE,
         create_method=zen_store().create_pipeline,
     )
+
+    if needs_usage_increment:
+        report_usage(
+            resource_type=ResourceType.PIPELINE,
+            resource_id=pipeline_response.id,
+        )
+
+    return pipeline_response
 
 
 @router.get(
@@ -1431,3 +1457,44 @@ def create_model_version_pipeline_run_link(
         model_version_pipeline_run_link
     )
     return mv
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + SERVICES,
+    response_model=ServiceResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_service(
+    workspace_name_or_id: Union[str, UUID],
+    service: ServiceRequest,
+    _: AuthContext = Security(authorize),
+) -> ServiceResponse:
+    """Create a new service.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        service: The service to create.
+
+    Returns:
+        The created service.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if service.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating models outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+
+    return verify_permissions_and_create_entity(
+        request_model=service,
+        resource_type=ResourceType.SERVICE,
+        create_method=zen_store().create_service,
+    )

@@ -14,6 +14,7 @@
 """Utility class to help with interacting with the dashboard."""
 
 from typing import Optional
+from uuid import UUID
 
 from zenml import constants
 from zenml.client import Client
@@ -34,6 +35,17 @@ def get_base_url() -> Optional[str]:
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
+        # if the server config has a base URL use that
+        server_model = client.zen_store.get_store_info()
+        if server_model.base_url:
+            url = server_model.base_url
+            # if the base url has cloud.zenml.io in it, then it is a cloud
+            # deployment and there isn't a workspace in the URL
+            if "cloud.zenml.io" in url:
+                return url
+            return (
+                url + f"{constants.WORKSPACES}/{client.active_workspace.name}"
+            )
         url = (
             client.zen_store.url
             + f"{constants.WORKSPACES}/{client.active_workspace.name}"
@@ -85,12 +97,39 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     Returns:
         the URL to the pipeline run if the dashboard is available, else None.
     """
+    client = Client()
     base_url = get_base_url()
     if base_url:
+        server_model = client.zen_store.get_store_info()
+        # if the server is a zenml cloud tenant, use a different URL
+        if server_model.metadata.get("organization_id"):
+            return f"{base_url}{constants.RUNS}/{run.id}"
         if run.pipeline:
             return f"{base_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
         else:
             return f"{base_url}/all-runs/{run.id}/dag"
+    return None
+
+
+def get_model_version_url(model_version_id: UUID) -> Optional[str]:
+    """Function to get the dashboard URL of a given model version.
+
+    Args:
+        model_version_id: the id of the model version.
+
+    Returns:
+        the URL to the model version if the dashboard is available, else None.
+    """
+    client = Client()
+    server_model = client.zen_store.get_store_info()
+    # if organization_id exists as key in server_config.metadata
+    # only then output a URL.
+    if server_model.metadata.get("organization_id"):
+        base_url = get_base_url()
+        if base_url:
+            # TODO MODEL_VERSIONS resolves to /model_versions but on the
+            # cloud, the URL is /model-versions. This should be fixed?
+            return f"{base_url}/model-versions/{str(model_version_id)}"
     return None
 
 

@@ -503,9 +503,13 @@ class Model(BaseModel):
         values["suppress_class_validation_warnings"] = True
         return values
 
-    def _validate_config_in_runtime(self) -> None:
-        """Validate that config doesn't conflict with runtime environment."""
-        self._get_or_create_model_version()
+    def _validate_config_in_runtime(self) -> "ModelVersionResponse":
+        """Validate that config doesn't conflict with runtime environment.
+
+        Returns:
+            The model version based on configuration.
+        """
+        return self._get_or_create_model_version()
 
     def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.
@@ -545,12 +549,10 @@ class Model(BaseModel):
                 )
                 logger.info(f"New model `{self.name}` was created implicitly.")
             except EntityExistsError:
-                # this is backup logic, if model was created somehow in between get and create calls
-                pass
-            finally:
                 model = zenml_client.zen_store.get_model(
                     model_name_or_id=self.name
                 )
+
         self._model_id = model.id
         return model
 
@@ -722,7 +724,9 @@ class Model(BaseModel):
                     retries_made += 1
             self.version = model_version.name
             self.was_created_in_this_run = True
+
             logger.info(f"New model version `{self.version}` was created.")
+
         self._id = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number

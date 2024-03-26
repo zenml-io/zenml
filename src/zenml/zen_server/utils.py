@@ -16,7 +16,15 @@
 import inspect
 import os
 from functools import wraps
-from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ValidationError
@@ -35,6 +43,9 @@ from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
+from zenml.zen_server.feature_gate.feature_gate_interface import (
+    FeatureGateInterface,
+)
 from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
     WorkloadManagerInterface,
 )
@@ -45,6 +56,7 @@ logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
+_feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 
@@ -92,6 +104,50 @@ def rbac() -> RBACInterface:
     return _rbac
 
 
+def initialize_rbac() -> None:
+    """Initialize the RBAC component."""
+    global _rbac
+
+    if rbac_source := server_config().rbac_implementation_source:
+        from zenml.utils import source_utils
+
+        implementation_class = source_utils.load_and_validate_class(
+            rbac_source, expected_class=RBACInterface
+        )
+        _rbac = implementation_class()
+
+
+def feature_gate() -> FeatureGateInterface:
+    """Return the initialized Feature Gate component.
+
+    Raises:
+        RuntimeError: If the RBAC component is not initialized.
+
+    Returns:
+        The RBAC component.
+    """
+    global _feature_gate
+    if _feature_gate is None:
+        raise RuntimeError("Feature gate component not initialized.")
+    return _feature_gate
+
+
+def initialize_feature_gate() -> None:
+    """Initialize the Feature Gate component."""
+    global _feature_gate
+
+    if (
+        feature_gate_source
+        := server_config().feature_gate_implementation_source
+    ):
+        from zenml.utils import source_utils
+
+        implementation_class = source_utils.load_and_validate_class(
+            feature_gate_source, expected_class=FeatureGateInterface
+        )
+        _feature_gate = implementation_class()
+
+
 def workload_manager() -> WorkloadManagerInterface:
     """Return the initialized workload manager component.
 
@@ -105,19 +161,6 @@ def workload_manager() -> WorkloadManagerInterface:
     if _workload_manager is None:
         raise RuntimeError("Workload manager component not initialized")
     return _workload_manager
-
-
-def initialize_rbac() -> None:
-    """Initialize the RBAC component."""
-    global _rbac
-
-    if rbac_source := server_config().rbac_implementation_source:
-        from zenml.utils import source_utils
-
-        implementation_class = source_utils.load_and_validate_class(
-            rbac_source, expected_class=RBACInterface
-        )
-        _rbac = implementation_class()
 
 
 def initialize_workload_manager() -> None:

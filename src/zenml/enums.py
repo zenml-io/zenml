@@ -54,6 +54,13 @@ class VisualizationType(StrEnum):
     MARKDOWN = "markdown"
 
 
+class ZenMLServiceType(StrEnum):
+    """All possible types a service can have."""
+
+    ZEN_SERVER = "zen_server"
+    MODEL_SERVING = "model-serving"
+
+
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 

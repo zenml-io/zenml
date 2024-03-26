@@ -748,10 +748,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 run_id=run.id if run else None,
             )
 
-            deploy_pipeline(
-                deployment=deployment_model, stack=stack, placeholder_run=run
-            )
-
             if run:
                 run_url = dashboard_utils.get_run_url(run)
                 if run_url:
@@ -762,6 +758,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         "Dashboard`. In order to try it locally, please run "
                         "`zenml up`."
                     )
+
+            deploy_pipeline(
+                deployment=deployment_model, stack=stack, placeholder_run=run
+            )
 
             return run
 

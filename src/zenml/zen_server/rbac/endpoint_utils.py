@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """High-level helper functions to write endpoints with RBAC."""
 
 from typing import Any, Callable, TypeVar, Union
@@ -5,6 +18,10 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from zenml.constants import (
+    REPORTABLE_RESOURCES,
+    REQUIRES_CUSTOM_RESOURCE_REPORTING,
+)
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseFilter,
@@ -14,6 +31,10 @@ from zenml.models import (
     UserScopedRequest,
 )
 from zenml.zen_server.auth import get_auth_context
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+    report_usage,
+)
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
@@ -58,12 +79,21 @@ def verify_permissions_and_create_entity(
                 f"Not allowed to create resource '{resource_type}' for a "
                 "different user."
             )
+    verify_permission(resource_type=resource_type, action=Action.CREATE)
 
-    verify_permission(
-        resource_type=resource_type,
-        action=Action.CREATE,
+    needs_usage_increment = (
+        resource_type in REPORTABLE_RESOURCES
+        and resource_type not in REQUIRES_CUSTOM_RESOURCE_REPORTING
     )
-    return create_method(request_model)
+    if needs_usage_increment:
+        check_entitlement(resource_type)
+
+    created = create_method(request_model)
+
+    if needs_usage_increment:
+        report_usage(resource_type, resource_id=created.id)
+
+    return created
 
 
 def verify_permissions_and_get_entity(
@@ -141,17 +171,22 @@ def verify_permissions_and_delete_entity(
     id: UUIDOrStr,
     get_method: Callable[[UUIDOrStr], AnyResponse],
     delete_method: Callable[[UUIDOrStr], None],
-) -> None:
+) -> AnyResponse:
     """Verify permissions and delete an entity.
 
     Args:
         id: The ID of the entity to delete.
         get_method: The method to fetch the entity.
         delete_method: The method to delete the entity.
+
+    Returns:
+        The deleted entity.
     """
     model = get_method(id)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id)
+
+    return model
 
 
 def verify_permissions_and_prune_entities(

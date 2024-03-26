@@ -26,6 +26,7 @@ from huggingface_hub import (
 from huggingface_hub.utils import HfHubHTTPError
 from pydantic import Field
 
+from zenml.client import Client
 from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor import (
     HuggingFaceBaseConfig,
 )
@@ -36,16 +37,11 @@ from zenml.services.service import BaseDeploymentService, ServiceConfig
 logger = get_logger(__name__)
 
 POLLING_TIMEOUT = 1200
+UUID_SLICE_LENGTH: int = 8
 
 
 class HuggingFaceServiceConfig(HuggingFaceBaseConfig, ServiceConfig):
-    """Hugging Face service configurations.
-
-    Attributes:
-        model_name: the name of the model.
-    """
-
-    model_name: str = "default"
+    """Hugging Face service configurations."""
 
 
 class HuggingFaceServiceStatus(ServiceStatus):
@@ -81,6 +77,35 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         """
         super().__init__(config=config, **attrs)
 
+    def get_token(self) -> str:
+        """Get the Hugging Face token.
+
+        Raises:
+            ValueError: If token not found.
+
+        Returns:
+            Hugging Face token.
+        """
+        client = Client()
+        token = None
+        if self.config.secret_name:
+            secret = client.get_secret(self.config.secret_name)
+            token = secret.secret_values["token"]
+        else:
+            from zenml.integrations.huggingface.model_deployers.huggingface_model_deployer import (
+                HuggingFaceModelDeployer,
+            )
+
+            model_deployer = client.active_stack.model_deployer
+            if not isinstance(model_deployer, HuggingFaceModelDeployer):
+                raise ValueError(
+                    "HuggingFaceModelDeployer is not active in the stack."
+                )
+            token = model_deployer.config.token or None
+        if not token:
+            raise ValueError("Token not found.")
+        return token
+
     @property
     def hf_endpoint(self) -> InferenceEndpoint:
         """Get the deployed Hugging Face inference endpoint.
@@ -89,22 +114,20 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             Huggingface inference endpoint.
         """
         return get_inference_endpoint(
-            name=self.config.endpoint_name,
-            token=self.config.token,
+            name=self._generate_an_endpoint_name(),
+            token=self.get_token(),
             namespace=self.config.namespace,
         )
 
     @property
-    def prediction_url(self) -> Any:
+    def prediction_url(self) -> Optional[str]:
         """The prediction URI exposed by the prediction service.
 
         Returns:
             The prediction URI exposed by the prediction service, or None if
             the service is not yet ready.
         """
-        if not self.is_running:
-            return None
-        return self.hf_endpoint.url
+        return self.hf_endpoint.url if self.is_running else None
 
     @property
     def inference_client(self) -> InferenceClient:
@@ -123,8 +146,8 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         """
         try:
             # Attempt to create and wait for the inference endpoint
-            _ = create_inference_endpoint(
-                name=self.config.endpoint_name,
+            hf_endpoint = create_inference_endpoint(
+                name=self._generate_an_endpoint_name(),
                 repository=self.config.repository,
                 framework=self.config.framework,
                 accelerator=self.config.accelerator,
@@ -139,19 +162,9 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 task=self.config.task,
                 custom_image=self.config.custom_image,
                 type=self.config.endpoint_type,
+                token=self.get_token(),
                 namespace=self.config.namespace,
-                token=self.config.token,
             ).wait(timeout=POLLING_TIMEOUT)
-
-            # Check if the endpoint URL is available after provisioning
-            if self.hf_endpoint.url is not None:
-                logger.info(
-                    "Hugging Face inference endpoint successfully deployed."
-                )
-            else:
-                logger.error(
-                    "Failed to start Hugging Face inference endpoint service: No URL available."
-                )
 
         except Exception as e:
             self.status.update_state(
@@ -162,6 +175,16 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 f"An unexpected error occurred while provisioning the Hugging Face inference endpoint: {e}"
             )
 
+        # Check if the endpoint URL is available after provisioning
+        if hf_endpoint.url:
+            logger.info(
+                f"Hugging Face inference endpoint successfully deployed and available. Endpoint URL: {hf_endpoint.url}"
+            )
+        else:
+            logger.error(
+                "Failed to start Hugging Face inference endpoint service: No URL available, please check the Hugging Face console for more details."
+            )
+
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the Hugging Face deployment.
 
@@ -170,39 +193,30 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             providing additional information about that state (e.g. a
             description of the error, if one is encountered).
         """
-        # TODO: Support all different InferenceEndpointStatus
         try:
-            _ = self.hf_endpoint.status
+            status = self.hf_endpoint.status
+            if status == InferenceEndpointStatus.RUNNING:
+                return (ServiceState.ACTIVE, "")
+
+            elif status == InferenceEndpointStatus.SCALED_TO_ZERO:
+                return (
+                    ServiceState.SCALED_TO_ZERO,
+                    "Hugging Face Inference Endpoint is scaled to zero, but still running. It will be started on demand.",
+                )
+
+            elif status == InferenceEndpointStatus.FAILED:
+                return (
+                    ServiceState.ERROR,
+                    "Hugging Face Inference Endpoint deployment is inactive or not found",
+                )
+            elif status == InferenceEndpointStatus.PENDING:
+                return (ServiceState.PENDING_STARTUP, "")
+            return (ServiceState.PENDING_STARTUP, "")
         except (InferenceEndpointError, HfHubHTTPError):
-            return (ServiceState.INACTIVE, "")
-
-        if self.hf_endpoint.status == InferenceEndpointStatus.RUNNING:
             return (
-                ServiceState.ACTIVE,
-                "Hugging Face Inference Endpoint deployment is available",
+                ServiceState.INACTIVE,
+                "Hugging Face Inference Endpoint deployment is inactive or not found",
             )
-
-        elif self.hf_endpoint.status == InferenceEndpointStatus.SCALED_TO_ZERO:
-            return (
-                ServiceState.ACTIVE,
-                "Hugging Face Inference Endpoint deployment is scaled to zero",
-            )
-
-        elif self.hf_endpoint.status == InferenceEndpointStatus.FAILED:
-            return (
-                ServiceState.ERROR,
-                "Hugging Face Inference Endpoint deployment failed: ",
-            )
-
-        elif self.hf_endpoint.status == InferenceEndpointStatus.PENDING:
-            return (
-                ServiceState.PENDING_STARTUP,
-                "Hugging Face Inference Endpoint deployment is being created: ",
-            )
-        return (
-            ServiceState.PENDING_STARTUP,
-            "Hugging Face Inference Endpoint deployment is being created: ",
-        )
 
     def deprovision(self, force: bool = False) -> None:
         """Deprovision the remote Hugging Face deployment instance.
@@ -217,7 +231,6 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             logger.error(
                 "Hugging Face Inference Endpoint is deleted or cannot be found."
             )
-            pass
 
     def predict(self, data: "Any", max_new_tokens: int) -> "Any":
         """Make a prediction using the service.
@@ -238,7 +251,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 "Hugging Face endpoint inference service is not running. "
                 "Please start the service before making predictions."
             )
-        if self.hf_endpoint.prediction_url is not None:
+        if self.prediction_url is not None:
             if self.hf_endpoint.task == "text-generation":
                 result = self.inference_client.task_generation(
                     data, max_new_tokens=max_new_tokens
@@ -267,3 +280,13 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             "your Endpoints through the UI in the “Logs” tab of your Endpoint"
         )
         return  # type: ignore
+
+    def _generate_an_endpoint_name(self) -> str:
+        """Generate a unique name for the Hugging Face Inference Endpoint.
+
+        Returns:
+            A unique name for the Hugging Face Inference Endpoint.
+        """
+        return (
+            f"{self.config.service_name}-{str(self.uuid)[:UUID_SLICE_LENGTH]}"
+        )

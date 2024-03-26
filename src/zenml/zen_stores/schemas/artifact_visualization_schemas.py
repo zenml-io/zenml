@@ -37,7 +37,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     __tablename__ = "artifact_visualization"
 
     # Fields
-    type: str
+    type: VisualizationType
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
 
     # Foreign Keys
@@ -71,7 +71,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
             The `ArtifactVisualizationSchema`.
         """
         return cls(
-            type=artifact_visualization_request.type.value,
+            type=artifact_visualization_request.type,
             uri=artifact_visualization_request.uri,
             artifact_version_id=artifact_version_id,
         )
@@ -95,7 +95,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
             The `Visualization`.
         """
         body = ArtifactVisualizationResponseBody(
-            type=VisualizationType(self.type),
+            type=self.type,
             uri=self.uri,
             created=self.created,
             updated=self.updated,

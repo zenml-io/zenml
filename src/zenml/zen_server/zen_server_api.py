@@ -52,6 +52,7 @@ from zenml.zen_server.routers import (
     server_endpoints,
     service_accounts_endpoints,
     service_connectors_endpoints,
+    service_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
@@ -62,6 +63,7 @@ from zenml.zen_server.routers import (
     workspaces_endpoints,
 )
 from zenml.zen_server.utils import (
+    initialize_feature_gate,
     initialize_plugins,
     initialize_rbac,
     initialize_workload_manager,
@@ -158,6 +160,7 @@ def initialize() -> None:
     # race conditions
     initialize_zen_store()
     initialize_rbac()
+    initialize_feature_gate()
     initialize_workload_manager()
     initialize_plugins()
 
@@ -234,6 +237,7 @@ app.include_router(server_endpoints.router)
 app.include_router(service_accounts_endpoints.router)
 app.include_router(service_connectors_endpoints.router)
 app.include_router(service_connectors_endpoints.types_router)
+app.include_router(service_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)

@@ -65,6 +65,7 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.jwt import JWTToken
+from zenml.zen_server.rate_limit import rate_limit_requests
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
@@ -254,6 +255,10 @@ def generate_access_token(
 @router.post(
     LOGIN,
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
+)
+@rate_limit_requests(
+    day_limit=server_config().login_rate_limit_day,
+    minute_limit=server_config().login_rate_limit_minute,
 )
 @handle_exceptions
 def token(

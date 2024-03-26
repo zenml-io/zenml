@@ -26,6 +26,8 @@ from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
+    DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     ENV_ZENML_SERVER_PREFIX,
@@ -85,13 +87,13 @@ class ServerConfiguration(BaseModel):
             construct the OAuth 2.0 device authorization endpoint. If not set,
             a partial URL is returned to the client which is used to construct
             the full URL based on the server's root URL path.
-        device_expiration: The time in minutes that an OAuth 2.0 device is
+        device_expiration_minutes: The time in minutes that an OAuth 2.0 device is
             allowed to be used to authenticate with the ZenML server. If not
             set or if `jwt_token_expire_minutes` is not set, the devices are
             allowed to be used indefinitely. This controls the expiration time
             of the JWT tokens issued to clients after they have authenticated
             with the ZenML server using an OAuth 2.0 device.
-        trusted_device_expiration: The time in minutes that a trusted OAuth 2.0
+        trusted_device_expiration_minutes: The time in minutes that a trusted OAuth 2.0
             device is allowed to be used to authenticate with the ZenML server.
             If not set or if `jwt_token_expire_minutes` is not set, the devices
             are allowed to be used indefinitely. This controls the expiration
@@ -114,11 +116,18 @@ class ServerConfiguration(BaseModel):
             the RBAC interface defined by
             `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
             RBAC will not be enabled for this server.
+        feature_gate_implementation_source: Source pointing to a class
+            implementing the feature gate interface defined by
+            `zenml.zen_server.feature_gate.feature_gate_interface.FeatureGateInterface`.
+            If not specified, feature usage will not be gated/tracked for this
+            server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
             server.
+        login_rate_limit_minute: The number of login attempts allowed per minute.
+        login_rate_limit_day: The number of login attempts allowed per day.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -152,10 +161,15 @@ class ServerConfiguration(BaseModel):
     external_server_id: Optional[UUID] = None
 
     rbac_implementation_source: Optional[str] = None
+    feature_gate_implementation_source: Optional[str] = None
     workload_manager_implementation_source: Optional[str] = None
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
     )
+
+    rate_limit_enabled: bool = False
+    login_rate_limit_minute: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE
+    login_rate_limit_day: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY
 
     _deployment_id: Optional[UUID] = None
 
@@ -235,6 +249,15 @@ class ServerConfiguration(BaseModel):
             Whether RBAC is enabled on the server or not.
         """
         return self.rbac_implementation_source is not None
+
+    @property
+    def feature_gate_enabled(self) -> bool:
+        """Whether feature gating is enabled on the server or not.
+
+        Returns:
+            Whether feature gating is enabled on the server or not.
+        """
+        return self.feature_gate_implementation_source is not None
 
     @property
     def workload_manager_enabled(self) -> bool:

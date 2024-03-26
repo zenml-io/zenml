@@ -109,7 +109,7 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))
-    type: str
+    type: MetadataTypeEnum
 
     def to_model(
         self,
@@ -134,7 +134,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             value=json.loads(self.value),
-            type=MetadataTypeEnum(self.type),
+            type=self.type,
         )
         metadata = None
         if include_metadata:
