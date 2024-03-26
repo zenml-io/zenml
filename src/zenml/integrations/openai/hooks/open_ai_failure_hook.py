@@ -62,7 +62,7 @@ def openai_alerter_failure_hook_helper(
         sys.stdout = original_stdout
         rich_traceback = output_captured.getvalue()
 
-        response = openai.ChatCompletion.create(  # type: ignore
+        response = openai.chat.completions.create(
             model=model_name,
             messages=[
                 {
@@ -71,7 +71,7 @@ def openai_alerter_failure_hook_helper(
                 }
             ],
         )
-        suggestion = response["choices"][0]["message"]["content"]
+        suggestion = response.choices[0].message.content
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"

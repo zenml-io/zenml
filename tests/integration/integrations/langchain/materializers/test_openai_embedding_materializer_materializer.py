@@ -18,7 +18,7 @@ from tests.unit.test_general import _test_materializer
 
 def test_langchain_openai_embedding_materializer(clean_client):
     """Tests the Langchain OpenAI Embeddings materializer."""
-    from langchain.embeddings import OpenAIEmbeddings
+    from langchain.embeddings.openai import OpenAIEmbeddings
 
     from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
         LangchainOpenaiEmbeddingMaterializer,
@@ -33,7 +33,7 @@ def test_langchain_openai_embedding_materializer(clean_client):
             openai_api_key=fake_key,
         ),
         materializer_class=LangchainOpenaiEmbeddingMaterializer,
-        expected_metadata_size=1,
+        expected_metadata_size=2,
     )
 
     assert embeddings.openai_api_key == fake_key

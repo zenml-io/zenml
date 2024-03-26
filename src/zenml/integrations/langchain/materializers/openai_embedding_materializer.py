@@ -17,17 +17,17 @@ import sys
 from typing import TYPE_CHECKING, Any, ClassVar, Tuple, Type
 
 from zenml.enums import ArtifactType
-from zenml.materializers.cloudpickle_materializer import (
-    CloudpickleMaterializer,
+from zenml.materializers.pydantic_materializer import (
+    PydanticMaterializer,
 )
 
 if TYPE_CHECKING and sys.version_info < (3, 8):
     OpenAIEmbeddings = Any
 else:
-    from langchain.embeddings import OpenAIEmbeddings
+    from langchain_openai import OpenAIEmbeddings
 
 
-class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
+class LangchainOpenaiEmbeddingMaterializer(PydanticMaterializer):
     """Handle langchain OpenAI embedding objects."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
