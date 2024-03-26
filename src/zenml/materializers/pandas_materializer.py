@@ -14,11 +14,11 @@
 """Materializer for Pandas."""
 
 import os
-from typing import Any, ClassVar, Dict, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, Union
 
 import pandas as pd
 
-from zenml.client import Client
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -41,13 +41,16 @@ class PandasMaterializer(BaseMaterializer):
     )
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def __init__(self, uri: str):
+    def __init__(
+        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+    ):
         """Define `self.data_path`.
 
         Args:
             uri: The URI where the artifact data is stored.
+            artifact_store: The artifact store where the artifact data is stored.
         """
-        super().__init__(uri)
+        super().__init__(uri, artifact_store)
         try:
             import pyarrow  # type: ignore # noqa
 
@@ -77,10 +80,11 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        artifact_store = Client().active_stack.artifact_store
-        if artifact_store.exists(self.parquet_path):
+        if self.artifact_store.exists(self.parquet_path):
             if self.pyarrow_exists:
-                with artifact_store.open(self.parquet_path, mode="rb") as f:
+                with self.artifact_store.open(
+                    self.parquet_path, mode="rb"
+                ) as f:
                     df = pd.read_parquet(f)
             else:
                 raise ImportError(
@@ -91,7 +95,7 @@ class PandasMaterializer(BaseMaterializer):
                     "'`pip install pyarrow fastparquet`'."
                 )
         else:
-            with artifact_store.open(self.csv_path, mode="rb") as f:
+            with self.artifact_store.open(self.csv_path, mode="rb") as f:
                 df = pd.read_csv(f, index_col=0, parse_dates=True)
 
         # validate the type of the data.
@@ -123,15 +127,14 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe or series to write.
         """
-        artifact_store = Client().active_stack.artifact_store
         if isinstance(df, pd.Series):
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:
-            with artifact_store.open(self.parquet_path, mode="wb") as f:
+            with self.artifact_store.open(self.parquet_path, mode="wb") as f:
                 df.to_parquet(f, compression=COMPRESSION_TYPE)
         else:
-            with artifact_store.open(self.csv_path, mode="wb") as f:
+            with self.artifact_store.open(self.csv_path, mode="wb") as f:
                 df.to_csv(f, index=True)
 
     def save_visualizations(
@@ -145,10 +148,9 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
-        artifact_store = Client().active_stack.artifact_store
         describe_uri = os.path.join(self.uri, "describe.csv")
         describe_uri = describe_uri.replace("\\", "/")
-        with artifact_store.open(describe_uri, mode="wb") as f:
+        with self.artifact_store.open(describe_uri, mode="wb") as f:
             df.describe().to_csv(f)
         return {describe_uri: VisualizationType.CSV}
 

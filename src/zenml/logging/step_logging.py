@@ -64,7 +64,6 @@ def prepare_logs_uri(
     Returns:
         The URI of the logs file.
     """
-    artifact_store = Client().active_stack.artifact_store
     if log_key is None:
         log_key = str(uuid4())
 
