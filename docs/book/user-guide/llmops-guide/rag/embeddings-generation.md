@@ -111,7 +111,7 @@ plt.title("UMAP Visualization")
 plt.show()
 ```
 
-![UMAP visualization of the ZenML documentation chunks as embeddings](/docs/book/.gitbook/.gitbook/assets/umap.png)
+![UMAP visualization of the ZenML documentation chunks as embeddings](/docs/book/.gitbook/assets/umap.png)
 ![t-SNE visualization of the ZenML documentation chunks as embeddings](/docs/book/.gitbook/assets/tsne.png)
 
 At a later stage we could add some semantics to the chunks to represent certain
