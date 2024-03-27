@@ -13,7 +13,9 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
 
 * [RAG with ZenML](rag/rag-with-zenml.md)
   * [Understanding Retrieval-Augmented Generation (RAG)](rag/understanding-rag.md)
-  * [Data ingestion and index store management](rag/data-ingestion-and-index-store-management.md)
+  * [Data ingestion and preprocessing](rag/data-ingestion.md)
+  * [Embeddings generation](rag/embeddings-generation.md)
+  * [Storing embeddings in a vector database](rag/storing-embeddings-in-a-vector-database.md)
   * [Tracking RAG-associated artifacts with ZenML](rag/tracking-rag-associated-artifacts-with-zenml.md)
   * [Basic RAG inference pipeline](rag/basic-rag-inference-pipeline.md)
 * [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
@@ -28,7 +30,19 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Tracking finetuned LLM models with ZenML](finetuning-llms/tracking-finetuned-llm-models.md)
   * [Deploying finetuned models](finetuning-llms/deploying-finetuned-models.md)
 
-To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](../starter-guide/) and [Production Guide](../production-guide/) is recommended.
+To follow along with the examples and tutorials in this guide, ensure you have a
+Python environment set up with ZenML installed. Familiarity with the concepts
+covered in the [Starter Guide](../starter-guide/) and [Production
+Guide](../production-guide/) is recommended.
+
+We'll showcase a specific application over the course of this LLM guide, showing
+how you can work from a simple RAG pipeline to a more complex setup that
+involves
+finetuning embeddings, reranking retrieved documents, and even finetuning the
+LLM itself. We'll do this all for a use case relevant to ZenML: a question
+answering system that can provide answers to common questions about ZenML. This
+will help you understand how to apply the concepts covered in this guide to your
+own projects.
 
 By the end of this guide, you'll have a solid understanding of how to leverage LLMs in your MLOps workflows using ZenML, enabling you to build powerful, scalable, and maintainable LLM-powered applications. Let's embark on this exciting journey together!
 

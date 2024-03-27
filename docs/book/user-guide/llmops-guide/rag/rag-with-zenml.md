@@ -23,5 +23,19 @@ punctuation mark. LLMs process text by breaking it down into tokens and then
 processing each token sequentially. The number of tokens in a piece of text is a
 rough measure of its length and complexity. {% endhint %}
 
+The first part of this guide to RAG pipelines with ZenML is about understanding
+the basic components and how they work together. We'll cover the following
+topics:
+
+- why RAG exists and what problem it solves
+- how to ingest and preprocess data that we'll use in our RAG pipeline
+- how to leverage embeddings to represent our data; this will be the basis for
+  our retrieval mechanism
+- how to store these embeddings in a vector database
+- how to track RAG-associated artifacts with ZenML
+
+At the end, we'll bring it all together and show all the components working
+together to perform basic RAG inference.
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

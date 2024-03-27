@@ -1,0 +1,4 @@
+langchain>=0.1.0
+# llama_index>=0.6.9
+-e .[server,dev]
+langchain-openai

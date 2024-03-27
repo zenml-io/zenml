@@ -1,10 +1,8 @@
 ---
-description: Use your RAG components to generate responses to prompts.
+description: Generate embeddings to improve retrieval performance.
 ---
 
-# Simple RAG Inference
-
-
+# Generating Embeddings for Retrieval
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
