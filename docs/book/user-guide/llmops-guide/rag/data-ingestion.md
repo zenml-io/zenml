@@ -58,7 +58,7 @@ be visible in the dashboard for extra visibility around the data that's being
 ingested. Of course, you can also add more complex logic to this step, such as
 filtering out certain URLs or adding more metadata.
 
-![Partial screenshot from the dashboard showing the metadata from the step](docs/book/.gitbook/assets/llm-data-ingestion-metadata.png)
+![Partial screenshot from the dashboard showing the metadata from the step](/docs/book/.gitbook/assets/llm-data-ingestion-metadata.png)
 
 Once we have our list of URLs, we use [the `unstructured`
 library](https://github.com/Unstructured-IO/unstructured) to load and parse the
