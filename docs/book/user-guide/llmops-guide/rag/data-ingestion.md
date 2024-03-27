@@ -9,29 +9,27 @@ used to train and evaluate the retriever and generator models. This data can
 include a large corpus of documents, as well as any relevant metadata or
 annotations that can be used to train the retriever and generator.
 
-[LangChain](https://github.com/langchain-ai/langchain) and
-[LlamaIndex](https://github.com/run-llama/llama_index) are two popular
-frameworks that offer a variety of tools and functionality for ingesting and
-managing large corpora of documents. These frameworks can help you manage the
-data ingestion process, including downloading, preprocessing, and indexing large
-corpora of documents. ZenML integrates with both LangChain and LlamaIndex as
-part of its support for RAG pipelines.
+In the interests of keeping things simple, we'll implement the bulk of what we
+need ourselves. However, it's worth noting that there are a number of tools and
+frameworks that can help you manage the data ingestion process, including
+downloading, preprocessing, and indexing large corpora of documents. ZenML
+integrates with a number of these tools and frameworks, making it easy to set up
+and manage RAG pipelines.
 
 {% hint style="info" %} You can view all the code referenced in this guide in
-the associated project repository. Please [visit the `llm-agents`
-project](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents) inside
+the associated project repository. Please [visit the `llm-complete-guide`
+project](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) inside
 the ZenML projects repository if you want to dive deeper. {% endhint %}
 
-You can add a ZenML step that scraps a series of URLs and outputs the URLs quite
-easily. Here we assemble a step that scrapes URLs related to the ZenML project.
+You can add a ZenML step that scrapes a series of URLs and outputs the URLs quite
+easily. Here we assemble a step that scrapes URLs related to ZenML from its documentation.
 We leverage some simple helper utilities that we have created for this purpose:
 
 ```python
 from typing import List
 from typing_extensions import Annotated
-from steps.url_scraping_utils import get_all_pages, get_nested_readme_urls
-from zenml import step, log_artifact_metadata
-
+from zenml import log_artifact_metadata, step
+from steps.url_scraping_utils import get_all_pages
 
 @step
 def url_scraper(
@@ -40,44 +38,56 @@ def url_scraper(
     website_url: str = "https://zenml.io",
 ) -> Annotated[List[str], "urls"]:
     """Generates a list of relevant URLs to scrape."""
-
-
-    examples_readme_urls = get_nested_readme_urls(repo_url)
     docs_urls = get_all_pages(docs_url)
-    website_urls = get_all_pages(website_url)
-    all_urls = docs_urls + website_urls + examples_readme_urls
     log_artifact_metadata(
         metadata={
-            "count": len(all_urls),
+            "count": len(docs_urls),
         },
     )
-    return all_urls
+    return docs_urls
 ```
+
+The `get_all_pages` function simply crawls our documentation website and
+retrieves a unique set of URLs. We've limited it to only scrape the
+documentation relating to the most recent releases so that we're not mixing old
+syntax and information with the new. This is a simple way to ensure that we're
+only ingesting the most relevant and up-to-date information into our pipeline.
 
 We also log the count of those URLs as metadata for the step output. This will
 be visible in the dashboard for extra visibility around the data that's being
 ingested. Of course, you can also add more complex logic to this step, such as
 filtering out certain URLs or adding more metadata.
 
-Once we have our list of URLs, we can use some `langchain` utilities to load the
-documents into memory:
+![Partial screenshot from the dashboard showing the metadata from the step](../.gitbook/assets/llm-data-ingestion-metadata.png)
+
+Once we have our list of URLs, we use [the `unstructured`
+library](https://github.com/Unstructured-IO/unstructured) to load and parse the
+pages. This will allow us to use the text without having to worry about the
+details of the HTML structure and/or markup. This specifically helps us keep the
+text
+content as small as possible since we are operating in a constrained environment
+with LLMs.
 
 ```python
 from typing import List
-
-from langchain.docstore.document import Document
-from langchain.document_loaders import UnstructuredURLLoader
+from unstructured.partition.html import partition_html
 from zenml import step
 
-
 @step
-def web_url_loader(urls: List[str]) -> List[Document]:
+def web_url_loader(urls: List[str]) -> List[str]:
     """Loads documents from a list of URLs."""
-    loader = UnstructuredURLLoader(
-        urls=urls,
-    )
-    return loader.load()
+    document_texts = []
+    for url in urls:
+        elements = partition_html(url=url)
+        text = "\n\n".join([str(el) for el in elements])
+        document_texts.append(text)
+    return document_texts
 ```
+
+The previously-mentioned frameworks offer many more options when it comes to
+data ingestion, including the ability to load documents from a variety of
+sources, preprocess the text, and extract relevant features. For our purposes,
+though, we don't need anything too fancy. 
 
 There are fancier ways to load documents with LangChain, including built-in
 scrapers that recursively follow links and load documents. However, for the
