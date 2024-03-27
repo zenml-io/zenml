@@ -87,84 +87,76 @@ def web_url_loader(urls: List[str]) -> List[str]:
 The previously-mentioned frameworks offer many more options when it comes to
 data ingestion, including the ability to load documents from a variety of
 sources, preprocess the text, and extract relevant features. For our purposes,
-though, we don't need anything too fancy. 
-
-There are fancier ways to load documents with LangChain, including built-in
-scrapers that recursively follow links and load documents. However, for the
-purposes of this guide, we'll keep it simple and just load the documents from
-the URLs we've scraped. It's also worth noting that the simple
-`UnstructuredURLLoader` method is quite powerful and gives you a bit more
-control and oversight over the process since recursive scrapers can be prone to
-various unexpected failures.
+though, we don't need anything too fancy. It also makes our pipeline easier to
+debug since we can see exactly what's being loaded and how it's being processed.
+You don't get that same level of visibility with more complex frameworks.
 
 # Preprocessing the data
 
-Once we have loaded the documents, we can preprocess them and update the index
-store. This is a crucial step in the RAG pipeline, as it ensures that the
-retriever has access to the most up-to-date and relevant documents. The
-preprocessing step can include a variety of tasks, such as cleaning and
-normalizing the text, extracting relevant features, and updating the index store
-with the new documents.
+Once we have loaded the documents, we can preprocess them into a form that's
+useful for a RAG pipeline. There are a lot of options here, depending on how
+complex you want to get, but to start with you can think of the 'chunk size' as
+one of the key parameters to think about.
 
-For the purposes of simplicity we show this using an in-memory vector database
-(the FAISS vector database). This is a simple way to index documents and is
-suitable for small to medium-sized corpora. For larger corpora, you would want
-to use a more scalable solution, most likely deployed on a cloud provider.
+Our text is currently in the form of various long strings, with each one
+representing a single web page. These are going to be too long to pass into our
+LLM, especially if we care about the speed at which we get our answers back. So
+the strategy here is to split our text into smaller chunks that can be processed
+more efficiently. There's a sweet spot between having tiny chunks, which will
+make it harder for our search / retrieval step to find relevant information to
+pass into the LLM, and having large chunks, which will make it harder for the
+LLM to process the text.
 
 ```python
-from typing_extensions import Annotated
-from typing import List
+import logging
+from typing import Annotated, List
+from utils.llm_utils import split_documents
+from zenml import ArtifactConfig, log_artifact_metadata, step
 
-from langchain.docstore.document import Document
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.text_splitter import (
-    CharacterTextSplitter,
-)
-from langchain.schema.vectorstore import VectorStore
-from langchain.vectorstores.faiss import FAISS
-from zenml import step, log_artifact_metadata
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-
-@step
-def index_generator(
-    documents: List[Document],
-) -> Annotated[VectorStore, "vector_store"]:
-    """Generates a vector store from a list of documents."""
-    embeddings = OpenAIEmbeddings()
-
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    compiled_texts = text_splitter.split_documents(documents)
-
-    log_artifact_metadata(
-        artifact_name="vector_store",
-        metadata={
-            "embedding_type": "OpenAIEmbeddings",
-            "vector_store_type": "FAISS",
-        },
-    )
-
-    return FAISS.from_documents(compiled_texts, embeddings)
+@step(enable_cache=False)
+def preprocess_documents(
+    documents: List[str],
+) -> Annotated[List[str], ArtifactConfig(name="split_chunks")]:
+    """Preprocesses a list of documents by splitting them into chunks."""
+    try:
+        log_artifact_metadata(
+            artifact_name="split_chunks",
+            metadata={
+                "chunk_size": 500,
+                "chunk_overlap": 50
+            },
+        )
+        return split_documents(
+            documents, chunk_size=500, chunk_overlap=50
+        )
+    except Exception as e:
+        logger.error(f"Error in preprocess_documents: {e}")
+        raise
 ```
 
-Before data is ingested into the vector store, it is split into chunks of 1000
-characters with a 0 character overlap. This is a simple way to ensure that the
-documents are split into manageable chunks that can be processed by the
-retriever and generator models. The vector store is then generated from the
-compiled texts using the OpenAIEmbeddings and FAISS vector store types.
-Adjusting the chunk size and chunk overlap are both parameters that you might
-want to experiment with to see how they affect the performance of your RAG
-pipeline.
+It's really important to know your data to have a good intuition about what kind
+of chunk size might make sense. If your data is structured in such a way where
+you need large paragraphs to capture a particular concept, then you might want a
+larger chunk size. If your data is more conversational or question-and-answer
+based, then you might want a smaller chunk size.
 
-We make sure to log the metadata for the artifact, including the embedding type
-and the vector store type. This will be visible in the dashboard and can be
-useful for debugging and understanding the pipeline. It also allows you to track
-the evolution of the pipeline over time.
+For our purposes, given that we're working with web pages that are written as
+documentation for a software library, we're going to use a chunk size of 500 and
+we'll make sure that the chunks overlap by 50 characters. This means that we'll
+have a lot of overlap between our chunks, which can be useful for ensuring that
+we don't miss any important information when we're splitting up our text.
 
-So now we have a vector store that we can use to retrieve documents. We
-populated the index store with documents that are meaningful to our use case so
-that we can retrieve chunks that are relevant to questions passed into our RAG
-pipeline.
+Again, depending on your data and use case, there is more you might want to do
+with your data. You might want to clean the text, remove code snippets or make
+sure that code snippets were not split across chunks, or even extract metadata
+from the text. This is a good starting point, but you can always add more
+complexity as needed.
 
+Next up, generating embeddings so that we can use them to retrieve relevant
+documents...
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
