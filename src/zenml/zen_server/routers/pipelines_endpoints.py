@@ -18,7 +18,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
+from zenml.constants import (
+    API,
+    PIPELINE_SPEC,
+    PIPELINES,
+    REPORTABLE_RESOURCES,
+    RUNS,
+    VERSION_1,
+)
 from zenml.models import (
     Page,
     PipelineFilter,
@@ -31,6 +38,7 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import report_decrement
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -154,11 +162,19 @@ def delete_pipeline(
     Args:
         pipeline_id: ID of the pipeline to delete.
     """
-    verify_permissions_and_delete_entity(
+    pipeline = verify_permissions_and_delete_entity(
         id=pipeline_id,
         get_method=zen_store().get_pipeline,
         delete_method=zen_store().delete_pipeline,
     )
+
+    should_decrement = (
+        ResourceType.PIPELINE in REPORTABLE_RESOURCES
+        and zen_store().count_pipelines(PipelineFilter(name=pipeline.name))
+        == 0
+    )
+    if should_decrement:
+        report_decrement(ResourceType.PIPELINE, resource_id=pipeline_id)
 
 
 @router.get(
