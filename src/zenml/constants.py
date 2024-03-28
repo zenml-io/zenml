@@ -13,9 +13,60 @@
 #  permissions and limitations under the License.
 """ZenML constants."""
 
+import json
+import logging
 import os
+from typing import Any, List, Optional, Type, TypeVar
 
 from zenml.enums import AuthScheme
+
+T = TypeVar("T")
+
+
+def handle_json_env_var(
+    var: str,
+    expected_type: Type[T],
+    default: Optional[List[str]] = None,
+) -> Any:
+    """Converts a json env var into a Python object.
+
+    Args:
+        var:  The environment variable to convert.
+        default: The default value to return if the env var is not set.
+        expected_type: The type of the expected Python object.
+
+    Returns:
+        The converted list value.
+
+    Raises:
+        TypeError: In case the value of the environment variable is not of a
+                   valid type.
+
+    """
+    # this needs to be here to avoid mutable defaults
+    if default is None:
+        default = []
+
+    value = os.getenv(var)
+    if value:
+        try:
+            loaded_value = json.loads(value)
+            # check if loaded value is of correct type
+            if expected_type is None or isinstance(
+                loaded_value, expected_type
+            ):
+                return loaded_value
+            else:
+                raise TypeError  # if not correct type, raise TypeError
+        except (TypeError, json.JSONDecodeError):
+            # Use raw logging to avoid cyclic dependency
+            logging.warning(
+                f"Environment Variable {var} could not be loaded, into type "
+                f"{expected_type}, defaulting to: {default}."
+            )
+            return default
+    else:
+        return default
 
 
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
@@ -57,6 +108,7 @@ def handle_int_env_var(var: str, default: int = 0) -> int:
 APP_NAME = "zenml"
 
 # Environment variables
+ENV_ZENML_LOGGING_COLORS_DISABLED = "ZENML_LOGGING_COLORS_DISABLED"
 ENV_ZENML_ANALYTICS_OPT_IN = "ZENML_ANALYTICS_OPT_IN"
 ENV_ZENML_CONFIG_PATH = "ZENML_CONFIG_PATH"
 ENV_ZENML_DEBUG = "ZENML_DEBUG"
@@ -100,6 +152,9 @@ ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES = (
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
 ENV_ZENML_SERVER_DEPLOYMENT_TYPE = f"{ENV_ZENML_SERVER_PREFIX}DEPLOYMENT_TYPE"
 ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
+ENV_ZENML_SERVER_REPORTABLE_RESOURCES = (
+    f"{ENV_ZENML_SERVER_PREFIX}REPORTABLE_RESOURCES"
+)
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -180,6 +235,16 @@ ZENML_API_KEY_PREFIX = "ZENKEY_"
 DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE = 5
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY = 1000
+
+# Configurations to decide which resources report their usage and check for
+# entitlement in the case of a cloud deployment. Expected Format is this:
+# ENV_ZENML_REPORTABLE_RESOURCES='["Foo", "bar"]'
+REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
+    ENV_ZENML_SERVER_REPORTABLE_RESOURCES,
+    expected_type=list,
+    default=["pipeline_run", "model"],
+)
+REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline"]
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
