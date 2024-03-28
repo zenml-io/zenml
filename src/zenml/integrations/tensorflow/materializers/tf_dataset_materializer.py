@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 import tensorflow as tf
 
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -59,15 +58,12 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         Args:
             dataset: The dataset to persist.
         """
-        temp_dir = tempfile.TemporaryDirectory()
-        path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
-        try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = os.path.join(temp_dir, DEFAULT_FILENAME)
             tf.data.experimental.save(
                 dataset, path, compression=None, shard_func=None
             )
-            io_utils.copy_dir(temp_dir.name, self.uri)
-        finally:
-            fileio.rmtree(temp_dir.name)
+            io_utils.copy_dir(temp_dir, self.uri)
 
     def extract_metadata(
         self, dataset: tf.data.Dataset

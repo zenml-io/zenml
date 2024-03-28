@@ -63,6 +63,9 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
         Raises:
             ArtifactStoreInterfaceError: If the given path is not a local path.
         """
+        # TODO : This would be unnecessary if we prefixed local files with file://
+        # and this is not going to catch all possibilities anyway so local files should
+        # refactor to file://
         remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
         if any(path.startswith(prefix) for prefix in remote_prefixes):
             raise ArtifactStoreInterfaceError(

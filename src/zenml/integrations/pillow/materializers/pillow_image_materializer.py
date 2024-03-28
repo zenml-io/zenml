@@ -58,15 +58,15 @@ class PillowImageMaterializer(BaseMaterializer):
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
         # create a temporary folder
-        temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
-        temp_file = os.path.join(
-            temp_dir.name,
-            f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
-        )
+        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+            temp_file = os.path.join(
+                temp_dir,
+                f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
+            )
 
-        # copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-        return Image.open(temp_file)
+            # copy from artifact store to temporary file
+            fileio.copy(filepath, temp_file)
+            return Image.open(temp_file)
 
     def save(self, image: Image.Image) -> None:
         """Write to artifact store.
@@ -74,18 +74,17 @@ class PillowImageMaterializer(BaseMaterializer):
         Args:
             image: An Image.Image object.
         """
-        temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
-        file_extension = image.format or DEFAULT_IMAGE_EXTENSION
-        full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
-        temp_image_path = os.path.join(temp_dir.name, full_filename)
+        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+            file_extension = image.format or DEFAULT_IMAGE_EXTENSION
+            full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
+            temp_image_path = os.path.join(temp_dir, full_filename)
 
-        # save the image in a temporary directory
-        image.save(temp_image_path)
+            # save the image in a temporary directory
+            image.save(temp_image_path)
 
-        # copy the saved image to the artifact store
-        artifact_store_path = os.path.join(self.uri, full_filename)
-        io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
-        temp_dir.cleanup()
+            # copy the saved image to the artifact store
+            artifact_store_path = os.path.join(self.uri, full_filename)
+            io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
 
     def save_visualizations(
         self, image: Image.Image

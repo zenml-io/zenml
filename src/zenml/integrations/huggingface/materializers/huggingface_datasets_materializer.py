@@ -22,7 +22,6 @@ from datasets import Dataset, load_from_disk
 from datasets.dataset_dict import DatasetDict
 
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.utils import io_utils
@@ -65,16 +64,13 @@ class HFDatasetMaterializer(BaseMaterializer):
         Args:
             ds: The Dataset to write.
         """
-        temp_dir = TemporaryDirectory()
-        path = os.path.join(temp_dir.name, DEFAULT_DATASET_DIR)
-        try:
+        with TemporaryDirectory() as temp_dir:
+            path = os.path.join(temp_dir, DEFAULT_DATASET_DIR)
             ds.save_to_disk(path)
             io_utils.copy_dir(
                 path,
                 os.path.join(self.uri, DEFAULT_DATASET_DIR),
             )
-        finally:
-            fileio.rmtree(temp_dir.name)
 
     def extract_metadata(
         self, ds: Union[Dataset, DatasetDict]
