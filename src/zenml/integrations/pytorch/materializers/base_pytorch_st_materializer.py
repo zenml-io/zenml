@@ -70,9 +70,3 @@ class BasePyTorchSTMaterializer(BaseMaterializer):
                 save_model(obj, filename)
         except Exception as e:
             raise ValueError(f"Invalid data_type received: {e}")
-
-
-# Alias for the BasePyTorchMaterializer class, allowing users that have already used
-# the old name to continue using it without breaking their code.
-# 'BasePyTorchMaterializer' or 'BasePyTorchMaterliazer' to refer to the same class.
-BasePyTorchSTMaterliazer = BasePyTorchSTMaterializer
