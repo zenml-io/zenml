@@ -24,6 +24,7 @@ from uuid import uuid4
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.client import Client
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
@@ -170,7 +171,14 @@ class StepLogsStorageContext:
         Args:
             logs_uri: the URI of the logs file.
         """
-        self.storage = StepLogsStorage(logs_uri=logs_uri)
+        self.storage = StepLogsStorage(
+            logs_uri=logs_uri, max_messages=sys.maxsize
+        )
+        try:
+            with fileio.open(logs_uri, "r") as file:
+                self.storage.buffer = file.read().split("\n")
+        except FileNotFoundError:
+            pass
 
     def __enter__(self) -> "StepLogsStorageContext":
         """Enter condition of the context manager.
