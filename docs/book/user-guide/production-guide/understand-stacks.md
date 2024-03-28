@@ -255,7 +255,7 @@ Keep this code handy as we'll be using it in the next chapters!
 
 ![GIF of our VS code extension, showing some of the uses of the sidebar](/docs/book/.gitbook/assets/zenml-extension-shortened.gif)
 
-If you are using our VS Code extension, you can easily view and switch your
+If you are using [our VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode), you can easily view and switch your
 stacks by opening the sidebar (click on the ZenML icon). You can then click on
 the stack you want to switch to as well as view the stack components it's made
 up of.
