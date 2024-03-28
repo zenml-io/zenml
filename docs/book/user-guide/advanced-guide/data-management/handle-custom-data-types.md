@@ -49,7 +49,7 @@ from torchvision.models import resnet50
 
 from zenml.steps import step
 from zenml.pipelines import pipeline
-from zenml.integrations.pytorch.materializers.pytorch_module_st_materializer import PyTorchModuleSTMaterializer
+from zenml.integrations.pytorch.materializers import PyTorchModuleSTMaterializer
 
 # initialize materializer, pre-trained and base model
 materializer = PyTorchModuleSTMaterializer(uri="") 
