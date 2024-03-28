@@ -449,6 +449,7 @@ module = [
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
     "sky.*",
+    "safetensors.*",
     "copier.*",
     "datasets.*",
     "pyngrok.*",

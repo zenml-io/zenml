@@ -35,18 +35,18 @@ class SparkModelMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(
-        self, model_type: Type[Any]
+        self, data_type: Type[Any]
     ) -> Union[Transformer, Estimator, Model]:  # type: ignore[type-arg]
         """Reads and returns a Spark ML model.
 
         Args:
-            model_type: The type of the model to read.
+            data_type: The type of the model to read.
 
         Returns:
             A loaded spark model.
         """
         path = os.path.join(self.uri, DEFAULT_FILEPATH)
-        return model_type.load(path)  # type: ignore[no-any-return]
+        return data_type.load(path)  # type: ignore[no-any-return]
 
     def save(
         self,

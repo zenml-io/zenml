@@ -30,7 +30,87 @@ In addition to the built-in materializers, ZenML also provides several integrati
 If you are running pipelines with a Docker-based [orchestrator](../../component-guide/orchestrators/orchestrators.md), you need to specify the corresponding integration as `required_integrations` in the `DockerSettings` of your pipeline in order to have the integration materializer available inside your Docker container. See the [pipeline configuration documentation](../pipelining-features/pipeline-settings.md) for more information.
 {% endhint %}
 
-## Custom materializers
+
+## Safetensor Materializers
+
+
+In addition to the standard integration-specific materializers that employ `Pickle` for serialization, opting for `Safetensors` offers a faster and more secure approach to model serialization. Further details on `Safetensors` can be found [here](https://huggingface.co/docs/safetensors/en/index).
+
+<table data-full-width="true"><thead><tr><th width="199.5">Integration</th><th width="271">Materializer</th><th width="390">Handled Data Types</th><th width="200">Storage Format</th></tr></thead><tbody><tr><td>huggingface</td><td><a href="https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-huggingface/#zenml.integrations.huggingface.materializers.huggingface_pt_model_st_materializer.HFPTModelSTMaterializer">HFPTModelSTMaterializer</a></td><td><code>transformers.PreTrainedModel</code></td><td><code>.safetensors</code></td></tr><tr><td>pytorch</td><td><a href="https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-pytorch/#zenml.integrations.pytorch.materializers.pytorch_module_st_materializer.PyTorchModuleSTMaterializer">PyTorchModuleSTMaterializer</a></td><td><code>torch.Module</code></td><td><code>.safetensors</code></td></tr><tr><td>pytorch_lightning</td><td><a href="https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-pytorch_lightning/#zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_st_materializer.PyTorchLightningSTMaterializer">PyTorchLightningSTMaterializer</a></td><td><code>torch.Module</code></td><td><code>.safetensors</code></td></tr></tbody></table>
+
+### Here's an example showing how to use `PyTorchModuleSTMaterializer`:
+
+
+Let's see how materialization using safetensors works with a basic example. Here we will use `resnet50` from pytorch to test the functionality:
+
+``` python
+import logging
+from torchvision.models import resnet50
+
+from zenml.steps import step
+from zenml.pipelines import pipeline
+from zenml.integrations.pytorch.materializers import PyTorchModuleSTMaterializer
+
+# initialize materializer, pre-trained and base model
+materializer = PyTorchModuleSTMaterializer(uri="") 
+pretrained_model = resnet50()
+base_model = resnet50(weights=None)
+```
+
+Create `pipeline` which includes steps to `save` and `load` model.
+
+
+``` python
+@step(enable_cache=False)
+def my_first_step():
+    """Step that saves the Pytorch model"""
+
+    logging.info("Saving Model")
+    materializer.save(pretrained_model)
+
+
+@step(enable_cache=False)
+def my_second_step():
+    """Step that loads the model and returns it"""
+
+    logging.info("Loading Model")
+    materializer.load(base_model)
+    logging.info(f"Model path: {materializer.FILENAME}")
+
+
+@pipeline
+def first_pipeline():
+    my_first_step()
+    my_second_step()
+
+first_pipeline()
+```
+
+By running pipeline it will yield the following output:
+
+```python
+Initiating a new run for the pipeline: first_pipeline.
+Registered new version: (version 12).
+Executing a new run.
+Using user: default
+Using stack: default
+  artifact_store: default
+  orchestrator: default
+Preventing execution of pipeline 'first_pipeline'. If this is not intended behavior, make sure to unset the environment variable 'ZENML_PREVENT_PIPELINE_EXECUTION'.
+Caching disabled explicitly for step_1.
+Step step_1 has started.
+Saving Model
+Step step_1 has finished in 0.173s.
+Caching disabled explicitly for step_2.
+Step step_2 has started.
+Loading Model
+Model path: entire_model.safetensors
+Step step_2 has finished in 0.837s.
+Pipeline run has finished in 1.754s.
+You can visualize your pipeline runs in the ZenML Dashboard. In order to try it locally, please run zenml up.
+```
+
+## Custom Materializers
 
 ### Configuring a step/pipeline to use a custom materializer
 
