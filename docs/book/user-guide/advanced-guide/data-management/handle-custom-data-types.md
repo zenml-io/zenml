@@ -41,7 +41,7 @@ In addition to the standard integration-specific materializers that employ `Pick
 ### Here's an example showing how to use `PyTorchModuleSTMaterializer`:
 
 
-Let's see how materialization using safetensors works with a basic example. Here we will use `resenet50` from pytorch to test the functionality:
+Let's see how materialization using safetensors works with a basic example. Here we will use `resnet50` from pytorch to test the functionality:
 
 ``` python
 import logging
