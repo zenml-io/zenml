@@ -119,12 +119,13 @@ def e2e_use_case_training(
         target=target,
     )
     ########## Promotion stage ##########
-    latest_metric, current_metric = (
-        compute_performance_metrics_on_current_data(
-            dataset_tst=dataset_tst,
-            target_env=target_env,
-            after=["model_evaluator"],
-        )
+    (
+        latest_metric,
+        current_metric,
+    ) = compute_performance_metrics_on_current_data(
+        dataset_tst=dataset_tst,
+        target_env=target_env,
+        after=["model_evaluator"],
     )
 
     promote_with_metric_compare(
