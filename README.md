@@ -224,6 +224,22 @@ For inspiration, here are some other examples and use cases:
 3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents): Using Langchain to create a simple RAG pipeline.
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace.
 
+# Use ZenML with VS Code
+
+ZenML has a [VS Code
+extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode)
+that allows you to inspect your stacks and pipeline runs directly from your
+editor. The extension also allows you to switch your stacks without needing to
+type any CLI commands.
+
+<details>
+  <summary>🖥️ VS Code Extension in Action!</summary>
+  <div align="center">
+  <img width="60%" src="/docs/book/.gitbook/assets/zenml-extension-shortened.gif" alt="ZenML Extension">
+</div>
+</details>
+<br />
+
 # 🗺 Roadmap
 
 ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a
