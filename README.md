@@ -95,6 +95,7 @@
     🎉 Version 0.56.2 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
+    🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.
     <br />
   </p>
 </div>
