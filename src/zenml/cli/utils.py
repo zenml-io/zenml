@@ -353,9 +353,11 @@ def print_pydantic_models(
             marker = "current"
         if active_models is not None and show_active_column:
             return {
-                marker: ":point_right:"
-                if any(model.id == a.id for a in active_models)
-                else "",
+                marker: (
+                    ":point_right:"
+                    if any(model.id == a.id for a in active_models)
+                    else ""
+                ),
                 **items,
             }
 
@@ -1238,12 +1240,16 @@ def pretty_print_model_version_details(
         "REGISTERED_MODEL_NAME": model_version.registered_model.name,
         "VERSION": model_version.version,
         "VERSION_DESCRIPTION": model_version.description,
-        "CREATED_AT": str(model_version.created_at)
-        if model_version.created_at
-        else "N/A",
-        "UPDATED_AT": str(model_version.last_updated_at)
-        if model_version.last_updated_at
-        else "N/A",
+        "CREATED_AT": (
+            str(model_version.created_at)
+            if model_version.created_at
+            else "N/A"
+        ),
+        "UPDATED_AT": (
+            str(model_version.last_updated_at)
+            if model_version.last_updated_at
+            else "N/A"
+        ),
         "METADATA": model_version.metadata.dict()
         if model_version.metadata
         else {},
@@ -1669,13 +1675,15 @@ def print_service_connectors_table(
             "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
             "RESOURCE NAME": resource_name,
             "OWNER": f"{connector.user.name if connector.user else '-'}",
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else ""
+            ),
             "LABELS": "\n".join(labels),
         }
         configurations.append(connector_config)
@@ -1731,15 +1739,17 @@ def print_service_connector_resource_table(
             resource_row = {}
             if not show_resources_only:
                 resource_row = {
-                    "CONNECTOR ID": str(resource_model.id)
-                    if not printed_connector
-                    else "",
-                    "CONNECTOR NAME": resource_model.name
-                    if not printed_connector
-                    else "",
-                    "CONNECTOR TYPE": resource_model.emojified_connector_type
-                    if not printed_connector
-                    else "",
+                    "CONNECTOR ID": (
+                        str(resource_model.id) if not printed_connector else ""
+                    ),
+                    "CONNECTOR NAME": (
+                        resource_model.name if not printed_connector else ""
+                    ),
+                    "CONNECTOR TYPE": (
+                        resource_model.emojified_connector_type
+                        if not printed_connector
+                        else ""
+                    ),
                 }
             resource_row.update(
                 {
@@ -1815,16 +1825,20 @@ def print_service_connector_configuration(
             "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "N/A",
-            "EXPIRES_SKEW_TOLERANCE": connector.expires_skew_tolerance
-            if connector.expires_skew_tolerance
-            else "N/A",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else "N/A"
+            ),
+            "EXPIRES_SKEW_TOLERANCE": (
+                connector.expires_skew_tolerance
+                if connector.expires_skew_tolerance
+                else "N/A"
+            ),
             "OWNER": user_name,
             "WORKSPACE": connector.workspace.name,
             "CREATED_AT": connector.created,
@@ -1838,16 +1852,20 @@ def print_service_connector_configuration(
             "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
             "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SESSION DURATION": expiration,
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "N/A",
-            "EXPIRES_SKEW_TOLERANCE": connector.expires_skew_tolerance
-            if connector.expires_skew_tolerance
-            else "N/A",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else "N/A"
+            ),
+            "EXPIRES_SKEW_TOLERANCE": (
+                connector.expires_skew_tolerance
+                if connector.expires_skew_tolerance
+                else "N/A"
+            ),
         }
 
     for item in properties.items():
@@ -2649,3 +2667,17 @@ def verify_mlstacks_prerequisites_installation() -> None:
         error(NOT_INSTALLED_MESSAGE)
     except subprocess.CalledProcessError:
         error(TERRAFORM_NOT_INSTALLED_MESSAGE)
+
+
+def is_jupyter_installed() -> bool:
+    """Checks if Jupyter notebook is installed.
+
+    Returns:
+        bool: True if Jupyter notebook is installed, False otherwise.
+    """
+    try:
+        import notebook
+
+        return True
+    except ImportError:
+        return False
