@@ -54,12 +54,16 @@ Create an AWS Service Connector within ZenML the service connector will allow Ze
 
 {% tabs %}
 {% tab title="CLI" %}
+
+```shell
 zenml service-connector register aws_connector \
   --type aws \
   --auth-method secret-key \
   --aws_access_key_id=<YOUR_ACCESS_KEY_ID> \  
   --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> \
   --region=<YOUR_REGION>
+```
+
 Replace <YOUR_ACCESS_KEY_ID>, <YOUR_SECRET_ACCESS_KEY> and <YOUR_REGION> with the respective values.
 {% endtab %}
 {% tab title="Dashboard" %}
