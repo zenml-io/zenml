@@ -184,6 +184,8 @@ However, ZenML doesn't:
 
 ```bash
 pip install "zenml[server]"
+# you'll also need the `notebook` package installed to run Jupyter notebooks:
+# OPTIONALLY: `pip install notebook`
 ```
 
 Take a tour with the guided quickstart by running:
