@@ -238,7 +238,6 @@ type any CLI commands.
   <img width="60%" src="/docs/book/.gitbook/assets/zenml-extension-shortened.gif" alt="ZenML Extension">
 </div>
 </details>
-<br />
 
 # 🗺 Roadmap
 
