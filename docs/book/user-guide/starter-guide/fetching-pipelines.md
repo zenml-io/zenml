@@ -171,6 +171,17 @@ step = run.steps["first_step"]
 If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../advanced-guide/pipelining-features/managing-steps.md#using-a-custom-step-invocation-id) to learn more about the invocation ID.
 {% endhint %}
 
+### Inspect pipeline runs with our VS Code extension
+
+![GIF of our VS code extension, showing some of the uses of the sidebar](/docs/book/.gitbook/assets/zenml-extension-shortened.gif)
+
+If you are using [our VS Code
+extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode),
+you can easily view your pipeline runs by opening the sidebar (click on the
+ZenML icon). You can then click on any particular pipeline run to see its status
+and some other metadata. If you want to delete a run, you can also do so from
+the same sidebar view.
+
 ### Step information
 
 Similar to the run, you can use the `step` object to access a variety of useful information:
