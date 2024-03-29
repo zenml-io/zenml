@@ -43,9 +43,6 @@ class Schedule(BaseModel):
             schedules the latest interval if more than one interval is ready to
             be scheduled. Usually, if your pipeline handles backfill
             internally, you should turn catchup off to avoid duplicate backfill.
-        start_at: Optional `at`-compatible string to indicate the time of day
-            to start the schedule. This is only relevant for cron schedules.
-            For example, "10:00" would start the schedule at 10:00 AM.
     """
 
     name: Optional[str] = None
@@ -54,7 +51,6 @@ class Schedule(BaseModel):
     end_time: Optional[datetime.datetime] = None
     interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
-    start_at: Optional[str] = None
 
     @root_validator
     def _ensure_cron_or_periodic_schedule_configured(
