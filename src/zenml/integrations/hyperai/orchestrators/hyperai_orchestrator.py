@@ -478,8 +478,6 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Get start time for scheduled pipeline
             start_time = deployment.schedule.start_time
 
-            # Convert 
-
             # Log about scheduling
             logger.info("Scheduling ZenML pipeline on HyperAI instance.")
             logger.info(f"Start time: {start_time}")
