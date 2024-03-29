@@ -451,7 +451,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Log errors in case of failure
             for line in stderr.readlines():
                 logger.info(line)
-        else:
+        elif deployment.schedule and deployment.schedule.cron_expression:
             # Get cron expression for scheduled pipeline
             cron_expression = deployment.schedule.cron_expression
             if not cron_expression:
@@ -473,4 +473,22 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"(crontab -l ; echo '{cron_expression} bash {directory_name}/run_pipeline.sh') | crontab -"
             )
 
-            logger.info("Pipeline scheduled successfully.")
+            logger.info(f"Pipeline scheduled successfully in crontab with cron expression: {cron_expression}")
+        elif deployment.schedule and deployment.schedule.start_at:
+            # Get start time for scheduled pipeline
+            start_time = deployment.schedule.start_at
+
+            # Log about scheduling
+            logger.info("Scheduling ZenML pipeline on HyperAI instance.")
+            logger.info(f"Start time: {start_time}")
+
+            # Create cron job for scheduled pipeline on HyperAI instance
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
+                f"at {start_time} -f {directory_name}/run_pipeline.sh"
+            )
+
+            logger.info(f"Pipeline scheduled successfully to run once at: {start_time}")
+        else:
+            raise RuntimeError(
+                "A cron expression or start time is required for scheduled pipelines."
+            )
