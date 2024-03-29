@@ -482,6 +482,15 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             logger.info("Scheduling ZenML pipeline on HyperAI instance.")
             logger.info(f"Start time: {start_time}")
 
+            # Check if `at` is installed on HyperAI instance
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
+                "which at"
+            )
+            if not stdout.readlines():
+                raise RuntimeError(
+                    "The `at` command is not installed on the HyperAI instance. Please install it to use start times for scheduled pipelines."
+                )
+
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
                 f"at {start_time} -f {directory_name}/run_pipeline.sh"
