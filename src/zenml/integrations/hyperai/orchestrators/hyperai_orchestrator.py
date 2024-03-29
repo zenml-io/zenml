@@ -474,9 +474,11 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
 
             logger.info(f"Pipeline scheduled successfully in crontab with cron expression: {cron_expression}")
-        elif deployment.schedule and deployment.schedule.start_at:
+        elif deployment.schedule and deployment.schedule.start_time:
             # Get start time for scheduled pipeline
-            start_time = deployment.schedule.start_at
+            start_time = deployment.schedule.start_time
+
+            # Convert 
 
             # Log about scheduling
             logger.info("Scheduling ZenML pipeline on HyperAI instance.")
@@ -490,10 +492,13 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 raise RuntimeError(
                     "The `at` command is not installed on the HyperAI instance. Please install it to use start times for scheduled pipelines."
                 )
+            
+            # Convert start time into YYYYMMDDHHMM.SS format
+            start_time_str = start_time.strftime("%Y%m%d%H%M.%S")
 
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
-                f"at {start_time} -f {directory_name}/run_pipeline.sh"
+                f"echo 'bash {directory_name}/run_pipeline.sh' | at -t {start_time_str}"
             )
 
             logger.info(f"Pipeline scheduled successfully to run once at: {start_time}")
