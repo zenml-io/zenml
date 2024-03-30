@@ -161,12 +161,18 @@ With a deployed **ZenML Server**, users have the ability to create their own tea
 
 The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_, and share your stacks with them.
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
+When you start working with ZenML, you'll start with a local ZenML setup, and
+when you want to transition you will need to [deploy
+ZenML](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md). Don't worry
+though, there is a one-click way to do it which we'll learn about later.
 
-#### ZenML Hub
+#### VS Code Extension
 
-The **ZenML Hub** is a central platform that enables our users to search, share and discover community-contributed code, such as flavors, materializers, and steps, that can be used across organizations. The goal is to allow our users to extend their ZenML experience by leveraging the community's diverse range of implementations.
-
-The ZenML Hub revolves around the concept of **plugins**, which can be made up of one or multiple ZenML entities, including flavors, materializers, and steps. Aside from the implementation of these entities, every plugin in the hub is also equipped with
+ZenML also provides a [VS Code
+extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode)
+that allows you to interact with your ZenML stacks, runs and server directly
+from your VS Code editor. If you're working on code in your editor, you can
+easily switch and inspect the
+stacks you're using, delete and inspect pipelines as well as even switch stacks.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
