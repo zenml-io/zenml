@@ -43,45 +43,39 @@ In addition to the standard integration-specific materializers that employ `Pick
 
 Let's see how materialization using safetensors works with a basic example. Here we will use `resnet50` from pytorch to test the functionality:
 
-``` python
-import logging
-from torchvision.models import resnet50
-
-from zenml.steps import step
-from zenml.pipelines import pipeline
-from zenml.integrations.pytorch.materializers import PyTorchModuleSTMaterializer
-
-# initialize materializer, pre-trained and base model
-materializer = PyTorchModuleSTMaterializer(uri="") 
-pretrained_model = resnet50()
-base_model = resnet50(weights=None)
-```
 
 Create `pipeline` which includes steps to `save` and `load` model.
 
 
 ``` python
+import logging
+
+from zenml.steps import step
+from zenml.pipelines import pipeline
+from zenml.integrations.pytorch.materializers import PyTorchModuleSTMaterializer
+
+
+@step(enable_cache=False, output_materializers=PyTorchModuleSTMaterializer)
+def my_first_step() -> Module:
+    """Step that saves a Pytorch model"""
+    from torchvision.models import resnet50
+
+    pretrained_model = resnet50()
+
+    return pretrained_model
+
+
 @step(enable_cache=False)
-def my_first_step():
-    """Step that saves the Pytorch model"""
-
-    logging.info("Saving Model")
-    materializer.save(pretrained_model)
-
-
-@step(enable_cache=False)
-def my_second_step():
-    """Step that loads the model and returns it"""
-
-    logging.info("Loading Model")
-    materializer.load(base_model)
-    logging.info(f"Model path: {materializer.FILENAME}")
+def my_second_step(model: Module):
+    """Step that loads the model."""
+    logging.info("Model loaded correctly.")
 
 
 @pipeline
 def first_pipeline():
-    my_first_step()
-    my_second_step()
+    model = my_first_step()
+    my_second_step(model)
+
 
 first_pipeline()
 ```
@@ -90,24 +84,26 @@ By running pipeline it will yield the following output:
 
 ```python
 Initiating a new run for the pipeline: first_pipeline.
-Registered new version: (version 12).
+Migrating the ZenML global configuration from version 0.55.5 to version 0.56.2...
+Backing up the database before migration.
+Database successfully backed up to the '/Users/.../Library/Application Support/zenml/database_backup/zenml-backup.db' backup file. If something goes wrong with the upgrade, ZenML will attempt to restore the database from this backup automatically.
+Successfully cleaned up database dump file /Users/darshit/Library/Application Support/zenml/database_backup/zenml-backup.db.
+Registered new version: (version 13).
 Executing a new run.
 Using user: default
 Using stack: default
   artifact_store: default
   orchestrator: default
-Preventing execution of pipeline 'first_pipeline'. If this is not intended behavior, make sure to unset the environment variable 'ZENML_PREVENT_PIPELINE_EXECUTION'.
-Caching disabled explicitly for step_1.
-Step step_1 has started.
-Saving Model
-Step step_1 has finished in 0.173s.
-Caching disabled explicitly for step_2.
-Step step_2 has started.
-Loading Model
-Model path: entire_model.safetensors
-Step step_2 has finished in 0.837s.
-Pipeline run has finished in 1.754s.
 You can visualize your pipeline runs in the ZenML Dashboard. In order to try it locally, please run zenml up.
+Preventing execution of pipeline 'first_pipeline'. If this is not intended behavior, make sure to unset the environment variable 'ZENML_PREVENT_PIPELINE_EXECUTION'.
+Caching disabled explicitly for my_first_step.
+Step my_first_step has started.
+Step my_first_step has finished in 1.650s.
+Caching disabled explicitly for my_second_step.
+Step my_second_step has started.
+Model loaded correctly.
+Step my_second_step has finished in 0.827s.
+Pipeline run has finished in 2.522s.
 ```
 
 ## Custom Materializers

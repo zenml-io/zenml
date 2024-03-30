@@ -26,7 +26,6 @@ def test_pytorch_module_st_materializer(clean_client):
         step_output=Linear(20, 20),
         materializer_class=PyTorchModuleSTMaterializer,
         expected_metadata_size=3,
-        pass_step_output=True,
     )
 
     assert module.in_features == 20

@@ -14,10 +14,10 @@
 """Implementation of the Huggingface PyTorch model materializer using Safetensors."""
 
 import os
-from tempfile import TemporaryDirectory
 from typing import Any, ClassVar, Dict, Tuple, Type
 
-from safetensors.torch import load_model, save_model
+import torch
+from safetensors.torch import load_file, save_file
 from transformers import (  # type: ignore [import-untyped]
     PreTrainedModel,
 )
@@ -25,10 +25,9 @@ from transformers import (  # type: ignore [import-untyped]
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import DType, MetadataType
-from zenml.utils import io_utils
 
-DEFAULT_PT_MODEL_DIR = "hf_pt_model"
 DEFAULT_FILENAME = "model.safetensors"
+DEFAULT_MODEL_FILENAME = "model_architecture.json"
 
 
 class HFPTModelSTMaterializer(BaseMaterializer):
@@ -37,26 +36,26 @@ class HFPTModelSTMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (PreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def load(
-        self, data_type: Type[PreTrainedModel], model: PreTrainedModel
-    ) -> PreTrainedModel:
+    def load(self, data_type: Type[PreTrainedModel]) -> PreTrainedModel:
         """Reads HFModel.
 
         Args:
             data_type: The type of the model to read.
-            model: The model to load onto.
 
         Returns:
             The model read from the specified dir.
         """
-        temp_dir = TemporaryDirectory()
-        io_utils.copy_dir(
-            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR), temp_dir.name
-        )
+        # Load model architecture
+        model_filename = os.path.join(self.uri, DEFAULT_MODEL_FILENAME)
+        model_arch = torch.load(model_filename)
+        _model = model_arch["model"]
 
-        filepath = os.path.join(temp_dir.name, DEFAULT_FILENAME)
-        load_model(model, filepath)
-        return model
+        # Load model weight
+        obj_filename = os.path.join(self.uri, DEFAULT_FILENAME)
+        weights = load_file(obj_filename)
+        _model.load_state_dict(weights)
+
+        return _model
 
     def save(self, model: PreTrainedModel) -> None:
         """Writes a Model to the specified dir.
@@ -64,13 +63,14 @@ class HFPTModelSTMaterializer(BaseMaterializer):
         Args:
             model: The Torch Model to write.
         """
-        temp_dir = TemporaryDirectory()
-        filepath = os.path.join(temp_dir.name, DEFAULT_FILENAME)
-        save_model(model, filepath)
-        io_utils.copy_dir(
-            temp_dir.name,
-            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR),
-        )
+        # Save model weights
+        obj_filename = os.path.join(self.uri, DEFAULT_FILENAME)
+        save_file(model.state_dict(), obj_filename)
+
+        # Save model architecture
+        model_arch = {"model": model}
+        model_filename = os.path.join(self.uri, DEFAULT_MODEL_FILENAME)
+        torch.save(model_arch, model_filename)
 
     def extract_metadata(
         self, model: PreTrainedModel
