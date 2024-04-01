@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     MODEL_VERSIONS,
     MODELS,
+    REPORTABLE_RESOURCES,
     VERSION_1,
 )
 from zenml.models import (
@@ -34,6 +35,7 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import report_decrement
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -48,6 +50,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
     zen_store,
 )
 
@@ -160,11 +163,15 @@ def delete_model(
     Args:
         model_name_or_id: The name or ID of the model to delete.
     """
-    verify_permissions_and_delete_entity(
+    model = verify_permissions_and_delete_entity(
         id=model_name_or_id,
         get_method=zen_store().get_model,
         delete_method=zen_store().delete_model,
     )
+
+    if server_config().feature_gate_enabled:
+        if ResourceType.MODEL in REPORTABLE_RESOURCES:
+            report_decrement(ResourceType.MODEL, resource_id=model.id)
 
 
 #################
