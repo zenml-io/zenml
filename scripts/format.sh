@@ -8,13 +8,16 @@ SRC=""
 
 # Initialize SKIP_YAMLFIX as false
 SKIP_YAMLFIX=false
+SKIP_PIP_INSTALL=false
 
 # Process arguments
 for arg in "$@"
 do
-    # Check for the --no-yamlfix flag
+    # Check for the --no-yamlfix and --no-pip-install flags
     if [ "$arg" = "--no-yamlfix" ]; then
         SKIP_YAMLFIX=true
+    elif [ "$arg" = "--no-pip-install" ]; then
+        SKIP_PIP_INSTALL=true
     else
         # If it's not the flag, treat it as a source directory
         # Append the argument to SRC, separated by space
@@ -25,6 +28,11 @@ do
         fi
     fi
 done
+
+# Automatically upgrade packages to newest versions
+if [ "$SKIP_PIP_INSTALL" = false ]; then
+    pip install --upgrade ruff yamlfix
+fi
 
 # If no source directories were provided, use the default
 if [ -z "$SRC" ]; then
