@@ -21,24 +21,36 @@ Once ready, navigate to the AWS console:
 1. Choose an AWS region
 In the AWS console, choose the region where you want to deploy your ZenML stack resources. Make note of the region name (e.g. `us-east-1`, `eu-west-2`, etc.) as you will need it in subsequent steps.
 
-1. Create an IAM user
+2. Create an IAM user
 Create a new IAM user that ZenML will use to access AWS resources:
+```shell
+aws iam create-user --user-name your-chosen-user-name
+```
 
-- Go to the IAM dashboard in the AWS console
-- Click on "Users" in the left sidebar
-- Click "Add user"
-- Enter a user name like zenml-user
-- Select "Programmatic access" under "Access type"
-- Click "Next: Permissions"
-- Click "Attach existing policies directly"
-- Search for and select the following policies:
-  - AmazonS3FullAccess
-  - AmazonECS_FullAccess
-  - AmazonECRFullAccess
-- Click "Next: Tags"
-- Optionally add tags and click "Next: Review"
-- Click "Create user"
-- Click "Download .csv" to save the access key ID and secret access key. You will need these in the next step.
+3. Attach policies to the user
+
+Attach the following policies to the user to grant access to the necessary AWS
+services:
+
+- AmazonS3FullAccess
+- AmazonECS_FullAccess
+- AmazonECRFullAccess
+
+```shell
+aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
+aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
+aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECRFullAccess
+```
+
+4. Create an access key for the user
+
+Create an access key for the user and save the access key ID and secret access key:
+
+```shell
+aws iam create-access-key --user-name your-chosen-user-name
+```
+
+This command will output the access key ID and secret access key in JSON format. Make sure to save these credentials securely as you will need them in the next step.
 
 {% hint style="warning" %} Keep the access keys secure and do not share them publicly as they allow full access to your AWS resources! {% endhint %}
 
@@ -50,7 +62,9 @@ zenml integration install aws s3 -y
 
 ## 2) Create a Service Connector within ZenML
 
-Create an AWS Service Connector within ZenML the service connector will allow ZenML and other ZenML components to authenticate themselves with AWS.
+Create an AWS Service Connector within ZenML. The service connector will allow
+ZenML and other ZenML components to authenticate themselves with AWS. Make sure
+to use the access key ID and secret access key you saved in the previous step.
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -69,7 +83,7 @@ Replace <YOUR_ACCESS_KEY_ID>, <YOUR_SECRET_ACCESS_KEY> and <YOUR_REGION> with th
 {% tab title="Dashboard" %}
 <figure><img src="../../.gitbook/assets/aws-service-connector-type.png" alt=""><figcaption><p>Create the service connector easily in the dashboard</p></figcaption></figure>
 
-You can use the "Connectors" section of the ZenML dashboard to create a AWS service connector in a no-code manner.
+You can use the "Connectors" section of the ZenML dashboard to [create a AWS service connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector) in a no-code manner.
 {% endtab %}
 {% endtabs %}
 
@@ -79,7 +93,8 @@ You can use the "Connectors" section of the ZenML dashboard to create a AWS serv
 
 An [artifact store](../production-guide/remote-storage.md) is used for storing and versioning data flowing through your pipelines.
 
-1. Before you run anything within the ZenML CLI, head on over to AWS and create a AWS bucket, in case you don't already have one that you can use. 
+1. Before you run anything within the ZenML CLI, create a AWS bucket. If you
+   already have one, you can skip this step.
 
 ```shell
 aws s3api create-bucket --bucket your-bucket-name --region your-region-name
@@ -115,13 +130,22 @@ zenml orchestrator register sagemaker-orchestrator --flavor=sagemaker --region=<
 
 **Note**: SageMaker orchestrator utilizes the AWS configuration for operation and does not require direct connection via a service connector for authentication, as it relies on your AWS CLI configurations or environment variables.
 
-More details [here](../../stacks-and-components/component-guide/orchestrators/sagemaker.md).
+More details
+[here](../../stacks-and-components/component-guide/orchestrators/sagemaker.md).
+
+{% hint style="info" %}
+The Sagemaker orchestrator requires a Sagemaker domain to run pipelines. If you already have one, you can skip this step.
+{% endhint %}
+
+To create a Sagemaker domain, follow the instructions [here](https://docs.aws.amazon.com/sagemaker/latest/dg/gs-setup-working-env.html).
 
 ### Container Registry (ECR)
 
-An [orchestrator](../production-guide/cloud-orchestration.md) is the compute backend to run your pipelines.
+A [container
+registry](../../stacks-and-components/component-guide/container-registries/container-registries.md)
+is used to store Docker images for your pipelines.
 
-1. Before you run anything within the ZenML CLI, head on over to AWS and create a Sagemaker domain (Skip this if you already have one)
+1. You'll need to create a repository in ECR. If you already have one, you can skip this step.
 
 ```shell
 aws ecr create-repository --repository-name zenml-repository --region <REGION>
@@ -191,7 +215,8 @@ Read more in the [production guide](../production-guide/production-guide.md).
 
 ## Cleanup
 
-Delete any AWS resources you no longer use to avoid additional charges.
+Delete any AWS resources you no longer use to avoid additional charges. You'll
+want to delete the 
 
 ## Conclusion
 
