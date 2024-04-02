@@ -82,11 +82,14 @@ UMAP and t-SNE to see which one works best for our use case since they both have
 somewhat different representations of the data and reduction algorithms, as you'll see.
 
 ```python
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.manifold import TSNE
 import umap
-import matplotlib.pyplot as plt
-# having loaded our embeddings into the `embeddings` variable
+from zenml.client import Client
+
+artifact = Client().get_artifact_version('EMBEDDINGS_ARTIFACT_UUID_GOES_HERE')
+embeddings = artifact.load()
 
 # Dimensionality reduction using t-SNE
 def tsne_visualization(embeddings):
