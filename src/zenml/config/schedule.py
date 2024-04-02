@@ -43,6 +43,8 @@ class Schedule(BaseModel):
             schedules the latest interval if more than one interval is ready to
             be scheduled. Usually, if your pipeline handles backfill
             internally, you should turn catchup off to avoid duplicate backfill.
+        run_once_start_time: datetime object to indicate when to run the
+            pipeline once. This is useful for one-off runs.
     """
 
     name: Optional[str] = None
@@ -51,6 +53,7 @@ class Schedule(BaseModel):
     end_time: Optional[datetime.datetime] = None
     interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
+    run_once_start_time: Optional[datetime.datetime] = None
 
     @root_validator
     def _ensure_cron_or_periodic_schedule_configured(
