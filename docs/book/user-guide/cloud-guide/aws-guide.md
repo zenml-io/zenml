@@ -54,7 +54,7 @@ This command will output the access key ID and secret access key in JSON format.
 
 {% hint style="warning" %} Keep the access keys secure and do not share them publicly as they allow full access to your AWS resources! {% endhint %}
 
-3. If you have not already, install the AWS and S3 ZenML integrations:
+5. If you have not already, install the AWS and S3 ZenML integrations:
 
 ```shell
 zenml integration install aws s3 -y
@@ -117,15 +117,23 @@ An [orchestrator](../production-guide/cloud-orchestration.md) is the compute bac
 1. Before you run anything within the ZenML CLI, head on over to AWS and create a Sagemaker domain (Skip this if you already have one)
 
 ```shell
-aws sagemaker create-domain --region <REGION> --domain-name <DOMAIN_NAME>
+aws sagemaker create-domain --region <YOUR_REGION> --domain-name <DOMAIN_NAME>
 ```
+
+A SageMaker domain is a central management unit for all SageMaker users and resources within a region. It provides a single sign-on (SSO) experience and enables users to create and manage SageMaker resources, such as notebooks, training jobs, and endpoints, within a collaborative environment.
+
+When you create a SageMaker domain, you specify the configuration settings, such as the domain name, user profiles, and security settings. Each user within a domain gets their own isolated workspace, which includes a JupyterLab interface, a set of compute resources, and persistent storage.
+
+The SageMaker orchestrator in ZenML requires a SageMaker domain to run pipelines because it leverages the SageMaker Pipelines service, which is part of the SageMaker ecosystem. SageMaker Pipelines allows you to define, execute, and manage end-to-end machine learning workflows using a declarative approach.
+
+By creating a SageMaker domain, you establish the necessary environment and permissions for the SageMaker orchestrator to interact with SageMaker Pipelines and other SageMaker resources seamlessly. The domain acts as a prerequisite for using the SageMaker orchestrator in ZenML.
 
 Once this is done, you can create the ZenML stack component as follows:
 
 2. Register a Sagemaker Pipelines orchestrator stack component:
 
 ```shell
-zenml orchestrator register sagemaker-orchestrator --flavor=sagemaker --region=<REGION>
+zenml orchestrator register sagemaker-orchestrator --flavor=sagemaker --region=<YOUR_REGION>
 ```
 
 **Note**: SageMaker orchestrator utilizes the AWS configuration for operation and does not require direct connection via a service connector for authentication, as it relies on your AWS CLI configurations or environment variables.
@@ -148,7 +156,7 @@ is used to store Docker images for your pipelines.
 1. You'll need to create a repository in ECR. If you already have one, you can skip this step.
 
 ```shell
-aws ecr create-repository --repository-name zenml-repository --region <REGION>
+aws ecr create-repository --repository-name zenml-repository --region <YOUR_REGION>
 ```
 
 Once this is done, you can create the ZenML stack component as follows:
@@ -156,7 +164,7 @@ Once this is done, you can create the ZenML stack component as follows:
 2. Register a ECR container registry stack component:
 
 ```shell
-zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com --connector aws-connector
+zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com --connector aws-connector
 ```
 
 More details [here](../../stacks-and-components/component-guide/container-registries/aws.md).
@@ -255,7 +263,31 @@ Remember to be cautious when deleting resources and ensure that you no longer re
 
 ## Conclusion
 
-This guide showed you how to configure ZenML to interface with AWS SageMaker Pipelines along with S3 and ECR, offering a robust setup for deploying scalable machine learning workloads on AWS. Make sure you follow AWS security best practices for managing permissions and access to resources.
+## Conclusion
+
+In this guide, we walked through the process of setting up an AWS stack with ZenML to run your machine learning pipelines in a scalable and production-ready environment. The key steps included:
+
+1. Setting up credentials and the local environment by creating an IAM user with the necessary permissions.
+2. Creating a ZenML service connector to authenticate with AWS services.
+3. Configuring stack components, including an S3 artifact store, a SageMaker Pipelines orchestrator, and an ECR container registry.
+4. Registering the stack components and creating a ZenML stack.
+
+By following these steps, you can leverage the power of AWS services, such as S3 for artifact storage, SageMaker Pipelines for orchestration, and ECR for container management, all within the ZenML framework. This setup allows you to build, deploy, and manage machine learning pipelines efficiently and scale your workloads based on your requirements.
+
+The benefits of using an AWS stack with ZenML include:
+
+- Scalability: Leverage the scalability of AWS services to handle large-scale machine learning workloads.
+- Reproducibility: Ensure reproducibility of your pipelines with versioned artifacts and containerized environments.
+- Collaboration: Enable collaboration among team members by using a centralized stack and shared resources.
+- Flexibility: Customize and extend your stack components based on your specific needs and preferences.
+
+Now that you have a functional AWS stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
+
+- Dive deeper into ZenML's [production guide](../production-guide/production-guide.md) to learn best practices for deploying and managing production-ready pipelines.
+- Explore ZenML's [integrations](../../stacks-and-components/component-guide/integration-overview.md) with other popular tools and frameworks in the machine learning ecosystem.
+- Join the [ZenML community](https://zenml.io/slack-invite) to connect with other users, ask questions, and get support.
+
+By leveraging the power of AWS and ZenML, you can streamline your machine learning workflows, improve collaboration, and deploy production-ready pipelines with ease. Happy experimenting and building!
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
