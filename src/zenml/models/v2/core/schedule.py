@@ -313,3 +313,7 @@ class ScheduleFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the schedule",
     )
+    run_once_start_time: Optional[Union[datetime.datetime, str]] = Field(
+        default=None,
+        description="The time at which the schedule should run once",
+    )
