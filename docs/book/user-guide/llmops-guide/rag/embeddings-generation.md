@@ -41,7 +41,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from zenml import ArtifactConfig, log_artifact_metadata, step
 
-@step(enable_cache=False)
+@step
 def generate_embeddings(
     split_documents: List[str],
 ) -> Annotated[np.ndarray, ArtifactConfig(name="embeddings")]:
