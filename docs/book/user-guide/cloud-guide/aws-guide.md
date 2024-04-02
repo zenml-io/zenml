@@ -160,7 +160,7 @@ In case you want to also add any other stack components to this stack, feel free
 
 ## 5) And you're already done!
 
-Just like that, you now have a fully working GCP stack ready to go. Feel free to take it for a spin by running a pipeline on it.
+Just like that, you now have a fully working AWS stack ready to go. Feel free to take it for a spin by running a pipeline on it.
 
 Define a ZenML pipeline:
 
