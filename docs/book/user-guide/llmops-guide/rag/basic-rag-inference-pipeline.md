@@ -4,113 +4,115 @@ description: Use your RAG components to generate responses to prompts.
 
 # Simple RAG Inference
 
-Now that we have our index store, we can use it to create a chatbot that can
-answer questions based on the documents in the index store. We can use the
-`langchain` library to create a chatbot that uses the index store to retrieve
-relevant documents and then generate a response based on those documents.
+Now that we have our index store, we can use it to make queries based on the
+documents in the index store. We use some utility functions to make this happen
+but no external libraries are needed beyond an interface to the index store as
+well as the LLM itself.
 
-Here's an example of how you might do this using the `ConversationalChatAgent`.
-The advantage of using a framework to handle this part is that it abstracts away
-the complexity of managing the retriever and generator models, allowing you to
-focus on building the chatbot and integrating it into your application.
+If you've been following along with the guide, you should have some documents
+ingested already and you can pass a query in as a flag to the Python command
+used to run the pipeline:
 
-```python
-from typing import Dict
-from typing_extensions import Annotated
-
-from agent.agent_executor_materializer import AgentExecutorMaterializer
-from agent.prompt import PREFIX, SUFFIX
-from langchain.agents import ConversationalChatAgent
-from langchain.chat_models import ChatOpenAI
-from langchain.schema.vectorstore import VectorStore
-from langchain.tools.vectorstore.tool import VectorStoreQATool
-from langchain.agents import AgentExecutor
-from pydantic import BaseModel
-from zenml import step, ArtifactConfig, log_artifact_metadata
-
-
-PIPELINE_NAME = "zenml_agent_creation_pipeline"
-# Choose what character to use for your agent's answers
-CHARACTER = "technical assistant"
-
-
-class AgentParameters(BaseModel):
-    """Parameters for the agent."""
-
-    llm: Dict = {
-        "temperature": 0,
-        "max_tokens": 1000,
-        "model_name": "gpt-3.5-turbo",
-    }
-
-    # allow extra fields
-    class Config:
-        extra = "ignore"
-
-
-@step(output_materializers=AgentExecutorMaterializer)
-def agent_creator(
-    vector_store: VectorStore, config: AgentParameters = AgentParameters()
-) -> Annotated[
-    AgentExecutor, ArtifactConfig(name="agent", is_model_artifact=True)
-]:
-    """Create an agent from a vector store.
-
-    Args:
-        vector_store: Vector store to create agent from.
-
-    Returns:
-        An AgentExecutor.
-    """
-    tools = [
-        VectorStoreQATool(
-            name=f"zenml-qa-tool",
-            vectorstore=vector_store,
-            description="Use this tool to answer questions about ZenML. "
-            "How to debug errors in ZenML, how to answer conceptual "
-            "questions about ZenML like available features, existing abstractions, "
-            "and other parts from the documentation.",
-            llm=ChatOpenAI(**config.llm),
-        ),
-    ]
-
-    system_prompt = PREFIX.format(character=CHARACTER)
-
-    my_agent = ConversationalChatAgent.from_llm_and_tools(
-        llm=ChatOpenAI(**config.llm),
-        tools=tools,
-        system_message=system_prompt,
-        human_message=SUFFIX,
-    )
-
-    agent_executor = AgentExecutor.from_agent_and_tools(
-        agent=my_agent,
-        tools=tools,
-        verbose=True,
-    )
-
-    log_artifact_metadata(
-        artifact_name="agent",
-        metadata={
-            "Tools and their descriptions": {
-                tool.name: tool.description for tool in tools
-            },
-            "Personality": {
-                "character": CHARACTER,
-                "temperature": config.llm["temperature"],
-                "model_name": config.llm["model_name"],
-            },
-        },
-    )
-
-    return agent_executor
+```bash
+python run.py --rag-query "how do I use a custom materializer inside my own zenml steps? i.e. how do I set it? inside the @step decorator?" --model=gpt4
 ```
 
-The other benefit of the step returning an agent is that you might choose to
-enhance that agent with more tools or extra capabilities. For example, you could
-add a search tool that allows the agent to search online for answers alongside
-the documents we have in the index store, and you can tweak the personality
-using parameters such as the temperature, model name, and character.
+![](/docs/book/.github/assets/rag-inference.png)
+
+Bringing everything together, the code for the inference pipeline is as follows:
+
+```python
+def process_input_with_retrieval(input: str, model: str = OPENAI_MODEL) -> str:
+    """Process the input with retrieval.
+
+    Args:
+        input (str): The input to process.
+
+    Returns:
+        str: The processed output.
+    """
+    delimiter = "```"
+
+    # Step 1: Get documents related to the user input from database
+    related_docs = get_topn_similar_docs(get_embeddings(input), get_db_conn())
+
+    # Step 2: Get completion from OpenAI API
+    # Set system message to help set appropriate tone and context for model
+    system_message = f"""
+    You are a friendly chatbot. \
+    You can answer questions about ZenML, its features and its use cases. \
+    You respond in a concise, technically credible tone. \
+    You ONLY use the context from the ZenML documentation to provide relevant
+    answers. \
+    You do not make up answers or provide opinions that you don't have information to support. \
+    """
+
+    # Prepare messages to pass to model
+    # We use a delimiter to help the model understand the where the user_input
+    # starts and ends
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": f"{delimiter}{input}{delimiter}"},
+        {
+            "role": "assistant",
+            "content": f"Relevant ZenML documentation: \n"
+            + "\n".join(doc[0] for doc in related_docs),
+        },
+    ]
+    logger.debug("CONTEXT USED\n\n", messages[2]["content"], "\n\n")
+    return get_completion_from_messages(messages, model=model)
+```
+
+For the `get_topn_similar_docs` function, we use the embeddings generated from
+the documents in the index store to find the most similar documents to the
+query:
+
+```python
+def get_topn_similar_docs(query_embedding, conn, n: int = 5):
+    """Fetches the top n most similar documents to the given query embedding from the database.
+
+    Args:
+        query_embedding (list): The query embedding to compare against.
+        conn (psycopg2.extensions.connection): The database connection object.
+        n (int, optional): The number of similar documents to fetch. Defaults to 5.
+
+    Returns:
+        list: A list of tuples containing the content of the top n most similar documents.
+    """
+    embedding_array = np.array(query_embedding)
+    register_vector(conn)
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT content FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
+        (embedding_array,),
+    )
+    return cur.fetchall()
+```
+
+Luckily we are able to get these similar documents using an inbuilt function in
+PostgreSQL, `ORDER BY embedding <=> %s`, which orders the documents by their
+similarity to the query embedding. This is a very efficient way to get the most
+relevant documents to the query and is a great example of how we can leverage
+the power of the database to do the heavy lifting for us.
+
+For the `get_completion_from_messages` function, we use
+[`litellm`](https://github.com/BerriAI/litellm) as a universal interface that
+allows us to use lots of different LLMs. As you can see above, the model is able
+to synthesize the documents it has been given and provide a response to the
+query.
+
+We've now completed a basic RAG inference pipeline that uses the embeddings
+generated by the pipeline to retrieve the most relevant chunks of text based on
+a
+given query. We can inspect the various components of the pipeline to see how
+they work together to provide a response to the query. This gives us a solid
+foundation to move onto more complex RAG pipelines and to look into how we might
+improve this. The next section will cover how to improve retrieval by
+finetuning the embeddings generated by the pipeline. This will boost our
+performance in situations where we have a large volume of documents and also
+when the documents are potentially very different from the training data that
+was used for the embeddings.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
