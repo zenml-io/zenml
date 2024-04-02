@@ -93,6 +93,7 @@ class Schedule(BaseModel):
                 "depends on the concrete orchestrator implementation but will "
                 "usually ignore the `run_once_start_time`."
             )
+            return values
         elif cron_expression or periodic_schedule or run_once_starts_at:
             return values
         else:
