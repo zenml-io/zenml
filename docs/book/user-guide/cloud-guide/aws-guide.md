@@ -215,8 +215,43 @@ Read more in the [production guide](../production-guide/production-guide.md).
 
 ## Cleanup
 
+% hint style="warning" %}
+Make sure you no longer need the resources before
+deleting them. The instructions and commands that follow are DESTRUCTIVE.
+{% endhint %}
+
 Delete any AWS resources you no longer use to avoid additional charges. You'll
-want to delete the 
+want to do the following:
+
+```shell
+# delete the S3 bucket
+aws s3 rm s3://your-bucket-name --recursive
+aws s3api delete-bucket --bucket your-bucket-name
+
+# delete the Sagemaker domain
+aws sagemaker delete-domain --domain-id <DOMAIN_ID>
+
+# delete the ECR repository
+aws ecr delete-repository --repository-name zenml-repository --force
+
+# detach policies from the IAM user
+aws iam detach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
+aws iam detach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
+aws iam detach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECRFullAccess
+
+# delete access keys
+aws iam list-access-keys --user-name your-chosen-user-name
+aws iam delete-access-key --user-name your-chosen-user-name --access-key-id <ACCESS_KEY_ID>
+
+# delete the IAM user
+aws iam delete-user --user-name your-chosen-user-name
+```
+
+Make sure to run these commands in the same AWS region where you created the resources.
+
+By running these cleanup commands, you will delete the S3 bucket, SageMaker domain, ECR repository, and IAM user, along with their associated access keys and policies. This will help you avoid any unnecessary charges for resources you no longer need.
+
+Remember to be cautious when deleting resources and ensure that you no longer require them before running the deletion commands.
 
 ## Conclusion
 
