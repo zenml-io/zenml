@@ -46,13 +46,11 @@ class ServiceMaterializer(BaseMaterializer):
         Returns:
             A ZenML service instance.
         """
-        artifact_store = Client().active_stack.artifact_store
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
-        with artifact_store.open(filepath, "r") as f:
+        with self.artifact_store.open(filepath, "r") as f:
             service_id = f.read().strip()
 
-        client = Client()
-        service = client.get_service(name_id_or_prefix=uuid.UUID(service_id))
+        service = Client().get_service(name_id_or_prefix=uuid.UUID(service_id))
         return BaseDeploymentService.from_model(service)
 
     def save(self, service: BaseService) -> None:
@@ -64,9 +62,8 @@ class ServiceMaterializer(BaseMaterializer):
         Args:
             service: A ZenML service instance.
         """
-        artifact_store = Client().active_stack.artifact_store
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
-        with artifact_store.open(filepath, "w") as f:
+        with self.artifact_store.open(filepath, "w") as f:
             f.write(str(service.uuid))
 
     def extract_metadata(
