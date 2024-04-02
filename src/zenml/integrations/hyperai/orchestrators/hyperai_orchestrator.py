@@ -465,8 +465,8 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 )
 
             # Log about scheduling
-            logger.info("Scheduling ZenML pipeline on HyperAI instance.")
-            logger.info(f"Cron expression: {cron_expression}")
+            logger.info(f"Requested cron expression: {cron_expression}")
+            logger.info("Scheduling ZenML pipeline on HyperAI instance...")
 
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
@@ -476,13 +476,13 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 f"Pipeline scheduled successfully in crontab with cron expression: {cron_expression}"
             )
-        elif deployment.schedule and deployment.schedule.start_time:
+        elif deployment.schedule and deployment.schedule.run_once_start_time:
             # Get start time for scheduled pipeline
-            start_time = deployment.schedule.start_time
+            start_time = deployment.schedule.run_once_start_time
 
             # Log about scheduling
-            logger.info("Scheduling ZenML pipeline on HyperAI instance.")
-            logger.info(f"Start time: {start_time}")
+            logger.info(f"Requested start time: {start_time}")
+            logger.info("Scheduling ZenML pipeline on HyperAI instance...")
 
             # Check if `at` is installed on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
