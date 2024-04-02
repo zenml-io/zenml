@@ -39,6 +39,7 @@ from typing import (
 )
 
 import click
+import pkg_resources
 import yaml
 from pydantic import BaseModel, SecretStr
 from rich import box, table
@@ -2676,8 +2677,7 @@ def is_jupyter_installed() -> bool:
         bool: True if Jupyter notebook is installed, False otherwise.
     """
     try:
-        import notebook
-
+        pkg_resources.get_distribution("notebook")
         return True
-    except ImportError:
+    except pkg_resources.DistributionNotFound:
         return False
