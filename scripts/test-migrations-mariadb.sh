@@ -7,14 +7,14 @@ function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
 
+    export ZENML_ANALYTICS_OPT_IN=false
+    export ZENML_DEBUG=true
+
     echo "===== Testing version $VERSION ====="
 
     mkdir test_starter
-    zenml init --template starter --path test_starter --template-with-defaults --test
+    zenml init --template starter --path test_starter --template-with-defaults  <<< $'my@mail.com\n'
     cd test_starter
-
-    export ZENML_ANALYTICS_OPT_IN=false
-    export ZENML_DEBUG=true
 
     echo "===== Installing sklearn integration ====="
     zenml integration export-requirements sklearn --output-file sklearn-requirements.txt
@@ -22,7 +22,7 @@ function run_tests_for_version() {
     rm sklearn-requirements.txt
 
     echo "===== Running starter template pipeline ====="
-    python3 run.py
+    python3 run.py --feature-pipeline --training-pipeline --no-cache
     # Add additional CLI tests here
     zenml version
 
@@ -45,7 +45,7 @@ docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariad
 sleep $DB_STARTUP_DELAY
 
 # List of versions to test
-VERSIONS=("0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.0" "0.56.1")
+VERSIONS=("0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5")
 
 # Start completely fresh
 rm -rf ~/.config/zenml

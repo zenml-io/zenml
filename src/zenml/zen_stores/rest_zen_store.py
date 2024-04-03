@@ -3905,6 +3905,7 @@ class RestZenStore(BaseZenStore):
             The created resource.
         """
         response_body = self.post(f"{route}", body=resource, params=params)
+
         return response_model.parse_obj(response_body)
 
     def _create_workspace_scoped_resource(

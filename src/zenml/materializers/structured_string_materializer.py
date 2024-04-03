@@ -16,7 +16,6 @@
 import os
 from typing import Dict, Type, Union
 
-from zenml.client import Client
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -47,8 +46,7 @@ class StructuredStringMaterializer(BaseMaterializer):
         Returns:
             The loaded data.
         """
-        artifact_store = Client().active_stack.artifact_store
-        with artifact_store.open(self._get_filepath(data_type), "r") as f:
+        with self.artifact_store.open(self._get_filepath(data_type), "r") as f:
             return data_type(f.read())
 
     def save(self, data: STRUCTURED_STRINGS) -> None:
@@ -57,8 +55,9 @@ class StructuredStringMaterializer(BaseMaterializer):
         Args:
             data: The data to save as an HTML or Markdown file.
         """
-        artifact_store = Client().active_stack.artifact_store
-        with artifact_store.open(self._get_filepath(type(data)), "w") as f:
+        with self.artifact_store.open(
+            self._get_filepath(type(data)), "w"
+        ) as f:
             f.write(data)
 
     def save_visualizations(

@@ -92,9 +92,10 @@
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.56.1 is out. Check out the release notes
+    🎉 Version 0.56.2 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
+    🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.
     <br />
   </p>
 </div>
@@ -222,6 +223,21 @@ For inspiration, here are some other examples and use cases:
 2. [Basic NLP with BERT](examples/e2e_nlp/): Feature engineering, training, and inference focused on NLP.
 3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents): Using Langchain to create a simple RAG pipeline.
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace.
+
+# Use ZenML with VS Code
+
+ZenML has a [VS Code
+extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode)
+that allows you to inspect your stacks and pipeline runs directly from your
+editor. The extension also allows you to switch your stacks without needing to
+type any CLI commands.
+
+<details>
+  <summary>🖥️ VS Code Extension in Action!</summary>
+  <div align="center">
+  <img width="60%" src="/docs/book/.gitbook/assets/zenml-extension-shortened.gif" alt="ZenML Extension">
+</div>
+</details>
 
 # 🗺 Roadmap
 
