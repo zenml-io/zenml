@@ -19,16 +19,23 @@ To follow this guide, you need:
 Once ready, navigate to the AWS console:
 
 1. Choose an AWS region
-In the AWS console, choose the region where you want to deploy your ZenML stack resources. Make note of the region name (e.g., us-east-1, eu-west-2, etc) as you will need it in subsequent steps.
+In the AWS console, choose the region where you want to deploy your ZenML stack
+resources. Make note of the region name (e.g., `us-east-1`, `eu-west-2`, etc) as
+you will need it in subsequent steps.
 
 2. Create an IAM role
-Create a new IAM role that ZenML will use to access AWS resources:
+
+For this, you'll need to find out your AWS account ID. You can find this by running:
 
 ```shell
-aws iam create-role --role-name zenml-role --assume-role-policy-document file://assume-role-policy.json
+aws sts get-caller-identity --query Account --output text
 ```
 
-Create a file named assume-role-policy.json with the following content:
+This will output your AWS account ID. Make a note of this as you will need it in
+the next steps.
+
+Then create a file named `assume-role-policy.json` with the
+following content:
 
 ```json
 {
@@ -37,6 +44,7 @@ Create a file named assume-role-policy.json with the following content:
     {
       "Effect": "Allow",
       "Principal": {
+        "AWS": "arn:aws:iam::<YOUR_ACCOUNT_ID>:root",
         "Service": "sagemaker.amazonaws.com"
       },
       "Action": "sts:AssumeRole"
@@ -44,6 +52,20 @@ Create a file named assume-role-policy.json with the following content:
   ]
 }
 ```
+
+Make sure to replace the placeholder `<YOUR_ACCOUNT_ID>` with your actual AWS
+account ID that we found earlier.
+
+Now create a new IAM role that ZenML will use to access AWS resources. We'll use
+`zenml-role` as a role name in this example, but you can feel free to choose
+something else if you prefer. Run the following command to create the role:
+
+```shell
+aws iam create-role --role-name zenml-role --assume-role-policy-document file://assume-role-policy.json
+```
+
+Be sure to take note of the information that is output to the terminal, as you
+will need it in the next steps, especially the Role ARN.
 
 3. Attach policies to the role
 
@@ -53,13 +75,11 @@ services:
 - `AmazonS3FullAccess`
 - `AmazonEC2ContainerRegistryFullAccess`
 - `AmazonSageMakerFullAccess`
-- `AmazonECS_FullAccess`
 
 ```shell
 aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
 aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
 aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
-aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
 ```
 
 4. If you have not already, install the AWS and S3 ZenML integrations:
@@ -78,12 +98,16 @@ ZenML and other ZenML components to authenticate themselves with AWS using the I
 ```shell
 zenml service-connector register aws_connector \
   --type aws \
-  --auth-method role \
+  --auth-method iam-role \
   --role_arn=<ROLE_ARN> \
-  --region=<YOUR_REGION>
+  --region=<YOUR_REGION> \
+  --aws_access_key_id=<YOUR_ACCESS_KEY_ID> \
+  --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY>
 ```
 
-Replace `<ROLE_ARN>` with the ARN of the IAM role you created in the previous step and `<YOUR_REGION>` with the respective value.
+Replace `<ROLE_ARN>` with the ARN of the IAM role you created in the previous
+step, `<YOUR_REGION>` with the respective value and use your AWS access key ID and
+secret access key that we noted down earlier.
 {% endtab %}
 {% tab title="Dashboard" %}
 <figure><img src="../../.gitbook/assets/aws-service-connector-type.png" alt=""><figcaption><p>Create the service connector easily in the dashboard</p></figcaption></figure>
@@ -136,13 +160,7 @@ Once this is done, you can create the ZenML stack component as follows:
 
 2. Register a SageMaker Pipelines orchestrator stack component:
 
-You'll need the IAM role ARN to register the orchestrator. You can get this by running:
-
-```shell
-aws iam get-role --role-name zenml-role
-```
-
-It will output some details to the terminal. Make a note of the property called "Arn". This is the execution role ARN you need to pass to the orchestrator.
+You'll need the IAM role ARN that we noted down earlier to register the orchestrator. This is the 'execution role' ARN you need to pass to the orchestrator.
 
 ```shell
 zenml orchestrator register sagemaker-orchestrator --flavor=sagemaker --region=<YOUR_REGION> --execution_role=<ROLE_ARN>
