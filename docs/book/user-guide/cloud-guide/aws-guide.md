@@ -78,7 +78,7 @@ zenml service-connector register aws_connector \
   --region=<YOUR_REGION>
 ```
 
-Replace <YOUR_ACCESS_KEY_ID>, <YOUR_SECRET_ACCESS_KEY> and <YOUR_REGION> with the respective values.
+Replace `<YOUR_ACCESS_KEY_ID>`, `<YOUR_SECRET_ACCESS_KEY>` and `<YOUR_REGION>` with the respective values.
 {% endtab %}
 {% tab title="Dashboard" %}
 <figure><img src="../../.gitbook/assets/aws-service-connector-type.png" alt=""><figcaption><p>Create the service connector easily in the dashboard</p></figcaption></figure>
@@ -177,6 +177,7 @@ to it. You can do this by running:
 
 ```shell
 aws ecr get-login-password --region <YOUR_REGION> | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com
+```
 
 ## 4) Create stack
 
