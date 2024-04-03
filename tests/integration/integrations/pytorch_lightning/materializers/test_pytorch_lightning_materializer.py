@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,20 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from tests.unit.test_general import _test_materializer
 from torch.nn import Linear
 
-from tests.unit.test_general import _test_materializer
-from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (
-    PyTorchModuleMaterializer,
+from zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_materializer import (
+    PyTorchLightningMaterializer,
 )
 
 
-def test_pytorch_module_materializer(clean_client):
-    """Tests whether the steps work for the Pytorch Module materializer."""
+def test_pytorch_lightning_materializer(clean_client):
+    """Tests whether the steps work for the PyTorch Lightning materializer."""
     module = _test_materializer(
         step_output=Linear(20, 20),
-        materializer_class=PyTorchModuleMaterializer,
-        expected_metadata_size=3,
+        materializer_class=PyTorchLightningMaterializer,
+        expected_metadata_size=1,
     )
 
     assert module.in_features == 20

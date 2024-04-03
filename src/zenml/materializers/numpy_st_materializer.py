@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,13 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the ZenML NumPy materializer."""
+"""Implementation of the ZenML NumPy materializer using safetensors."""
 
 import os
 from collections import Counter
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import numpy as np
+
+try:
+    from safetensors.numpy import load_file, save_file
+except ImportError:
+    raise ImportError(
+        "You are using `NumpyMaterializer` with safetensors.",
+        "You can install `safetensors` by running `pip install safetensors`.",
+    )
 
 from zenml.client import Client
 from zenml.enums import ArtifactType, VisualizationType
@@ -31,21 +39,21 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-NUMPY_FILENAME = "data.npy"
+NUMPY_FILENAME = "data.safetensors"
 
 DATA_FILENAME = "data.parquet"
 SHAPE_FILENAME = "shape.json"
 DATA_VAR = "data_var"
 
 
-class NumpyMaterializer(BaseMaterializer):
-    """Materializer to read data to and from numpy."""
+class NumpySTMaterializer(BaseMaterializer):
+    """Materializer to read data to and from numpy using safetensors."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (np.ndarray,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> "Any":
-        """Reads a numpy array from a `.npy` file.
+        """Reads a numpy array from a `.safetensors` file.
 
         Args:
             data_type: The type of the data to read.
@@ -61,8 +69,8 @@ class NumpyMaterializer(BaseMaterializer):
         numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
         if artifact_store.exists(numpy_file):
-            with artifact_store.open(numpy_file, "rb") as f:
-                return np.load(f, allow_pickle=True)
+            arr = load_file(numpy_file)
+            return arr["ndarray"]
         elif artifact_store.exists(os.path.join(self.uri, DATA_FILENAME)):
             logger.warning(
                 "A legacy artifact was found. "
@@ -98,16 +106,15 @@ class NumpyMaterializer(BaseMaterializer):
                 )
 
     def save(self, arr: "NDArray[Any]") -> None:
-        """Writes a np.ndarray to the artifact store as a `.npy` file.
+        """Writes a np.ndarray to the artifact store as a `.safetensors` file.
 
         Args:
             arr: The numpy array to write.
         """
-        artifact_store = Client().active_stack.artifact_store
-        with artifact_store.open(
-            os.path.join(self.uri, NUMPY_FILENAME), "wb"
-        ) as f:
-            np.save(f, arr)
+        filename = os.path.join(self.uri, NUMPY_FILENAME)
+        print(arr)
+        obj = {"ndarray": arr}
+        save_file(obj, filename)
 
     def save_visualizations(
         self, arr: "NDArray[Any]"

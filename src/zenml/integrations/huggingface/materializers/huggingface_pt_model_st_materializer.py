@@ -17,10 +17,17 @@ import os
 from typing import Any, ClassVar, Dict, Tuple, Type
 
 import torch
-from safetensors.torch import load_file, save_file
 from transformers import (  # type: ignore [import-untyped]
     PreTrainedModel,
 )
+
+try:
+    from safetensors.torch import load_file, save_file
+except ImportError:
+    raise ImportError(
+        "You are using `HFMaterializer` with safetensors.",
+        "You can install `safetensors` by running `pip install safetensors`.",
+    )
 
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer

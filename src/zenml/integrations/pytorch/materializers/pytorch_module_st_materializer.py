@@ -16,7 +16,14 @@
 import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
-from safetensors.torch import save_file
+try:
+    from safetensors.torch import save_file
+except ImportError:
+    raise ImportError(
+        "You are using `PytorchMaterializer` with safetensors.",
+        "You can install `safetensors` by running `pip install safetensors`.",
+    )
+
 from torch.nn import Module
 
 from zenml.enums import ArtifactType

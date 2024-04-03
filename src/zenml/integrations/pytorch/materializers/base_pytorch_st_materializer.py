@@ -17,7 +17,14 @@ import os
 from typing import Any, ClassVar, Optional, Type
 
 import torch
-from safetensors.torch import load_file, save_file
+
+try:
+    from safetensors.torch import load_file, save_file
+except ImportError:
+    raise ImportError(
+        "You are using `PytorchMaterializer` with safetensors.",
+        "You can install `safetensors` by running `pip install safetensors`.",
+    )
 
 from zenml.materializers.base_materializer import BaseMaterializer
 
