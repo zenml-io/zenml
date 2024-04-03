@@ -33,13 +33,13 @@ Attach the following policies to the user to grant access to the necessary AWS
 services:
 
 - AmazonS3FullAccess
-- AmazonECS_FullAccess
-- AmazonECRFullAccess
+- AmazonEC2ContainerRegistryFullAccess
+- AmazonSageMakerFullAccess
 
 ```shell
 aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
-aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
 aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
+aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
 ```
 
 4. Create an access key for the user
