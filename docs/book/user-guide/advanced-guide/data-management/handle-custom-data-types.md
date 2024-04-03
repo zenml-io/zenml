@@ -50,8 +50,9 @@ Create `pipeline` which includes steps to `save` and `load` model.
 ``` python
 import logging
 
-from zenml.steps import step
-from zenml.pipelines import pipeline
+from torch.nn import Module
+
+from zenml import step, pipeline
 from zenml.integrations.pytorch.materializers import PyTorchModuleSTMaterializer
 
 
