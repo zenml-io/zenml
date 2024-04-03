@@ -29,9 +29,12 @@ except ImportError:
         "You can install `safetensors` by running `pip install safetensors`.",
     )
 
+from tempfile import TemporaryDirectory
+
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import DType, MetadataType
+from zenml.utils import io_utils
 
 DEFAULT_FILENAME = "model.safetensors"
 DEFAULT_MODEL_FILENAME = "model_architecture.json"
@@ -52,13 +55,15 @@ class HFPTModelSTMaterializer(BaseMaterializer):
         Returns:
             The model read from the specified dir.
         """
+        temp_dir = TemporaryDirectory()
+        io_utils.copy_dir(self.uri, temp_dir.name)
         # Load model architecture
-        model_filename = os.path.join(self.uri, DEFAULT_MODEL_FILENAME)
+        model_filename = os.path.join(temp_dir.name, DEFAULT_MODEL_FILENAME)
         model_arch = torch.load(model_filename)
         _model = model_arch["model"]
 
         # Load model weight
-        obj_filename = os.path.join(self.uri, DEFAULT_FILENAME)
+        obj_filename = os.path.join(temp_dir.name, DEFAULT_FILENAME)
         weights = load_file(obj_filename)
         _model.load_state_dict(weights)
 
@@ -70,14 +75,21 @@ class HFPTModelSTMaterializer(BaseMaterializer):
         Args:
             model: The Torch Model to write.
         """
+        temp_dir = TemporaryDirectory()
+
         # Save model weights
-        obj_filename = os.path.join(self.uri, DEFAULT_FILENAME)
+        obj_filename = os.path.join(temp_dir.name, DEFAULT_FILENAME)
         save_file(model.state_dict(), obj_filename)
 
         # Save model architecture
         model_arch = {"model": model}
-        model_filename = os.path.join(self.uri, DEFAULT_MODEL_FILENAME)
+        model_filename = os.path.join(temp_dir.name, DEFAULT_MODEL_FILENAME)
         torch.save(model_arch, model_filename)
+
+        io_utils.copy_dir(
+            temp_dir.name,
+            self.uri,
+        )
 
     def extract_metadata(
         self, model: PreTrainedModel
