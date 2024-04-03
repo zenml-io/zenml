@@ -85,26 +85,21 @@ By running pipeline it will yield the following output:
 
 ```python
 Initiating a new run for the pipeline: first_pipeline.
-Migrating the ZenML global configuration from version 0.55.5 to version 0.56.2...
-Backing up the database before migration.
-Database successfully backed up to the '/Users/.../Library/Application Support/zenml/database_backup/zenml-backup.db' backup file. If something goes wrong with the upgrade, ZenML will attempt to restore the database from this backup automatically.
-Successfully cleaned up database dump file /Users/darshit/Library/Application Support/zenml/database_backup/zenml-backup.db.
-Registered new version: (version 13).
+Reusing registered pipeline version: (version: 3).
 Executing a new run.
 Using user: default
 Using stack: default
-  artifact_store: default
   orchestrator: default
+  artifact_store: default
 You can visualize your pipeline runs in the ZenML Dashboard. In order to try it locally, please run zenml up.
-Preventing execution of pipeline 'first_pipeline'. If this is not intended behavior, make sure to unset the environment variable 'ZENML_PREVENT_PIPELINE_EXECUTION'.
 Caching disabled explicitly for my_first_step.
 Step my_first_step has started.
-Step my_first_step has finished in 1.650s.
+Step my_first_step has finished in 1.159s.
 Caching disabled explicitly for my_second_step.
 Step my_second_step has started.
 Model loaded correctly.
-Step my_second_step has finished in 0.827s.
-Pipeline run has finished in 2.522s.
+Step my_second_step has finished in 0.061s.
+Pipeline run has finished in 1.266s.
 ```
 
 ## Custom Materializers
