@@ -39,7 +39,7 @@ services:
 ```shell
 aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
 aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
-aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECRFullAccess
+aws iam attach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
 ```
 
 4. Create an access key for the user
@@ -73,7 +73,7 @@ to use the access key ID and secret access key you saved in the previous step.
 zenml service-connector register aws_connector \
   --type aws \
   --auth-method secret-key \
-  --aws_access_key_id=<YOUR_ACCESS_KEY_ID> \  
+  --aws_access_key_id=<YOUR_ACCESS_KEY_ID> \
   --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> \
   --region=<YOUR_REGION>
 ```
@@ -94,10 +94,11 @@ You can use the "Connectors" section of the ZenML dashboard to [create a AWS ser
 An [artifact store](../production-guide/remote-storage.md) is used for storing and versioning data flowing through your pipelines.
 
 1. Before you run anything within the ZenML CLI, create a AWS bucket. If you
-   already have one, you can skip this step.
+   already have one, you can skip this step. (Note: the bucket name should be
+   unique, so you might need to try a few times to find a unique name.)
 
 ```shell
-aws s3api create-bucket --bucket your-bucket-name --region your-region-name
+aws s3api create-bucket --bucket your-bucket-name
 ```
 
 Once this is done, you can create the ZenML stack component as follows:
@@ -114,11 +115,9 @@ More details [here](../../stacks-and-components/component-guide/artifact-stores/
 
 An [orchestrator](../production-guide/cloud-orchestration.md) is the compute backend to run your pipelines.
 
-1. Before you run anything within the ZenML CLI, head on over to AWS and create a Sagemaker domain (Skip this if you already have one)
-
-```shell
-aws sagemaker create-domain --region <YOUR_REGION> --domain-name <DOMAIN_NAME>
-```
+1. Before you run anything within the ZenML CLI, head on over to AWS and create
+   a Sagemaker domain (Skip this if you already have one). The instructions for
+   creating a domain can be found [in the AWS core documentation](https://docs.aws.amazon.com/sagemaker/latest/dg/onboard-quick-start.html).
 
 A SageMaker domain is a central management unit for all SageMaker users and resources within a region. It provides a single sign-on (SSO) experience and enables users to create and manage SageMaker resources, such as notebooks, training jobs, and endpoints, within a collaborative environment.
 
@@ -132,20 +131,23 @@ Once this is done, you can create the ZenML stack component as follows:
 
 2. Register a Sagemaker Pipelines orchestrator stack component:
 
+You'll need an execution role to register the orchestrator. You can get this by
+running:
+
 ```shell
-zenml orchestrator register sagemaker-orchestrator --flavor=sagemaker --region=<YOUR_REGION>
+aws iam get-user --user-name your-chosen-user-name
+```
+
+It will output some details to the terminal. Make a note of the property called "Arn". This is the execution role you need to pass to the orchestrator.
+
+```shell
+zenml orchestrator register sagemaker-orchestrator --flavor=sagemaker --region=<YOUR_REGION> --execution_role=<ARN_GOES_HERE>
 ```
 
 **Note**: SageMaker orchestrator utilizes the AWS configuration for operation and does not require direct connection via a service connector for authentication, as it relies on your AWS CLI configurations or environment variables.
 
 More details
 [here](../../stacks-and-components/component-guide/orchestrators/sagemaker.md).
-
-{% hint style="info" %}
-The Sagemaker orchestrator requires a Sagemaker domain to run pipelines. If you already have one, you can skip this step.
-{% endhint %}
-
-To create a Sagemaker domain, follow the instructions [here](https://docs.aws.amazon.com/sagemaker/latest/dg/gs-setup-working-env.html).
 
 ### Container Registry (ECR)
 
@@ -167,7 +169,14 @@ Once this is done, you can create the ZenML stack component as follows:
 zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com --connector aws-connector
 ```
 
-More details [here](../../stacks-and-components/component-guide/container-registries/aws.md).
+More details
+[here](../../stacks-and-components/component-guide/container-registries/aws.md).
+
+Finally, you'll need to authenticate with the container registry to push images
+to it. You can do this by running:
+
+```shell
+aws ecr get-login-password --region <YOUR_REGION> | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com
 
 ## 4) Create stack
 
@@ -245,7 +254,7 @@ aws ecr delete-repository --repository-name zenml-repository --force
 # detach policies from the IAM user
 aws iam detach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
 aws iam detach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
-aws iam detach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonECRFullAccess
+aws iam detach-user-policy --user-name your-chosen-user-name --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
 
 # delete access keys
 aws iam list-access-keys --user-name your-chosen-user-name
@@ -259,9 +268,8 @@ Make sure to run these commands in the same AWS region where you created the res
 
 By running these cleanup commands, you will delete the S3 bucket, SageMaker domain, ECR repository, and IAM user, along with their associated access keys and policies. This will help you avoid any unnecessary charges for resources you no longer need.
 
-Remember to be cautious when deleting resources and ensure that you no longer require them before running the deletion commands.
-
-## Conclusion
+Remember to be cautious when deleting resources and ensure that you no longer
+require them before running the deletion commands.
 
 ## Conclusion
 
