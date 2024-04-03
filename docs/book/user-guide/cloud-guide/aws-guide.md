@@ -278,7 +278,6 @@ aws ecr delete-repository --repository-name zenml-repository --force
 aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
 aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
 aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
-aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
 
 # delete the IAM role
 aws iam delete-role --role-name zenml-role
