@@ -78,7 +78,8 @@ def first_pipeline():
     my_second_step(model)
 
 
-first_pipeline()
+if __name__ == "__main__":
+    first_pipeline()
 ```
 
 By running pipeline it will yield the following output:
