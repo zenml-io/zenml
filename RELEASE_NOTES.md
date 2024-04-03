@@ -1,26 +1,14 @@
 <!-- markdown-link-check-disable -->
-# 0.56.1
+# 0.56.2
 
-This is a patch release aiming to solve a dependency problem which was brought in with the new rate 
-limiting functionality. With 0.56.1 you no longer need `starlette` to run client code or to 
-run ZenML CLI commands.
+This release replaces 0.56.0 and 0.56.1, and fixes the major migration bugs that were in
+that yanked release. Please upgrade directly to 0.56.2 and avoid upgrading to  
+0.56.0 to avoid unexpected migration issues.
 
-## 🥳 Community Contributions 🥳
-
-We'd like to thank @christianversloot for his contribution to this release.
-
-## What's Changed
-* Fix pipelines and model links for the cloud dashboard by @wjayesh in https://github.com/zenml-io/zenml/pull/2554
-* Make starlette non-must for client by @avishniakov in https://github.com/zenml-io/zenml/pull/2553
-* Bump MLFlow to version 2.11.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2552
-
-
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.0...0.56.1
-
-# 0.56.0
-
-ZenML 0.56.0 introduces a wide array of new features, enhancements, and bug fixes,
-with a strong emphasis on elevating the user experience and streamlining machine
+Note that 0.56.0 and 0.56.1 were removed from PyPI due to an issue with the
+alembic versions + migration which could affect the database state. This release
+fixes that issue.
+This release introduces introduces a wide array of new features, enhancements, and bug fixes, with a strong emphasis on elevating the user experience and streamlining machine
 learning workflows. Most notably, you can now deploy models using Hugging Face inference endpoints thanks for an open-source community contribution of this model deployer stack component!
 
 This release also comes with a breaking change to the services
@@ -140,8 +128,7 @@ for their contribution to this release by adding a new attribute to the `Kaniko`
 Additionally, we'd like to thank @christianversloot for his contributions to this release.
 
 
-## All changes:
-
+## What's Changed
 * Upgrading SQLModel to the latest version by @bcdurak in https://github.com/zenml-io/zenml/pull/2452
 * Remove KServe integration by @safoinme in https://github.com/zenml-io/zenml/pull/2495
 * Upgrade migration testing with 0.55.5 by @avishniakov in https://github.com/zenml-io/zenml/pull/2501
@@ -182,12 +169,26 @@ Additionally, we'd like to thank @christianversloot for his contributions to thi
 * Update `pip check` command to use `uv` by @strickvl in https://github.com/zenml-io/zenml/pull/2520
 * Implemented bitbucket webhook event source by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2481
 * Add ZenMLServiceType and update service registration by @safoinme in https://github.com/zenml-io/zenml/pull/2471
+* Prepare release 0.56.0 by @safoinme in https://github.com/zenml-io/zenml/pull/2546
+* Fix formatting and release workflow by @strickvl in https://github.com/zenml-io/zenml/pull/2549
+* Fix release workflow by @strickvl in https://github.com/zenml-io/zenml/pull/2550
+* Fix pipelines and model links for the cloud dashboard by @wjayesh in https://github.com/zenml-io/zenml/pull/2554
+* Make starlette non-must for client by @avishniakov in https://github.com/zenml-io/zenml/pull/2553
+* Bump MLFlow to version 2.11.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2552
+* Prepare release 0.56.1 by @avishniakov in https://github.com/zenml-io/zenml/pull/2555
+* Updated neptune documentation by @SiddhantSadangi in https://github.com/zenml-io/zenml/pull/2548
+* 0.56.0 and 0.56.1 in testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2557
+* Only install uv once by @schustmi in https://github.com/zenml-io/zenml/pull/2558
+* Bump MLFlow to version 2.11.3 by @christianversloot in https://github.com/zenml-io/zenml/pull/2559
+* Update docs with warning about pickle materializer insecurity by @avishniakov in https://github.com/zenml-io/zenml/pull/2561
+* Add service table migration by @safoinme in https://github.com/zenml-io/zenml/pull/2563
 
 ## New Contributors
 * @dudeperf3ct made their first contribution in https://github.com/zenml-io/zenml/pull/2376
 * @moesio-f made their first contribution in https://github.com/zenml-io/zenml/pull/2509
+* @SiddhantSadangi made their first contribution in https://github.com/zenml-io/zenml/pull/2548
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.55.5...0.56.0
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.55.5...0.56.2
 
 # 0.55.5
 

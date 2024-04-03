@@ -28,6 +28,7 @@ from zenml.constants import (
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
+    REPORTABLE_RESOURCES,
     RUN_METADATA,
     RUNS,
     SCHEDULES,
@@ -93,6 +94,10 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+    report_usage,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -512,11 +517,29 @@ def create_pipeline(
             f"not supported."
         )
 
-    return verify_permissions_and_create_entity(
+    # We limit pipeline namespaces, not pipeline versions
+    needs_usage_increment = (
+        ResourceType.PIPELINE in REPORTABLE_RESOURCES
+        and zen_store().count_pipelines(PipelineFilter(name=pipeline.name))
+        == 0
+    )
+
+    if needs_usage_increment:
+        check_entitlement(ResourceType.PIPELINE)
+
+    pipeline_response = verify_permissions_and_create_entity(
         request_model=pipeline,
         resource_type=ResourceType.PIPELINE,
         create_method=zen_store().create_pipeline,
     )
+
+    if needs_usage_increment:
+        report_usage(
+            resource_type=ResourceType.PIPELINE,
+            resource_id=pipeline_response.id,
+        )
+
+    return pipeline_response
 
 
 @router.get(

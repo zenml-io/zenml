@@ -40,7 +40,7 @@ The starter template is the same as the [ZenML quickstart](https://github.com/ze
 
 ```bash
 git clone git@github.com:zenml-io/zenml.git
-cd examples/quickstart
+cd zenml/examples/quickstart
 pip install -r requirements.txt
 zenml init
 ```

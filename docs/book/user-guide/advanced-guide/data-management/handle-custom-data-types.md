@@ -14,8 +14,10 @@ ZenML already includes built-in materializers for many common data types. These 
 
 <table data-full-width="true"><thead><tr><th>Materializer</th><th>Handled Data Types</th><th>Storage Format</th></tr></thead><tbody><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInMaterializer">BuiltInMaterializer</a></td><td><code>bool</code>, <code>float</code>, <code>int</code>, <code>str</code>, <code>None</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BytesMaterializer">BytesInMaterializer</a></td><td><code>bytes</code></td><td><code>.txt</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInContainerMaterializer">BuiltInContainerMaterializer</a></td><td><code>dict</code>, <code>list</code>, <code>set</code>, <code>tuple</code></td><td>Directory</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.numpy_materializer.NumpyMaterializer">NumpyMaterializer</a></td><td><code>np.ndarray</code></td><td><code>.npy</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pandas_materializer.PandasMaterializer">PandasMaterializer</a></td><td><code>pd.DataFrame</code>, <code>pd.Series</code></td><td><code>.csv</code> (or <code>.gzip</code> if <code>parquet</code> is installed)</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pydantic_materializer.PydanticMaterializer">PydanticMaterializer</a></td><td><code>pydantic.BaseModel</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.service_materializer.ServiceMaterializer">ServiceMaterializer</a></td><td><code>zenml.services.service.BaseService</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.structured_string_materializer.StructuredStringMaterializer">StructuredStringMaterializer</a></td><td><code>zenml.types.CSVString</code>, <code>zenml.types.HTMLString</code>, <code>zenml.types.MarkdownString</code></td><td><code>.csv</code> / <code>.html</code> / <code>.md</code> (depending on type)</td></tr></tbody></table>
 
-{% hint style="info" %}
-ZenML also provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-materializers/#zenml.materializers.cloudpickle\_materializer.CloudpickleMaterializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](handle-custom-data-types.md#custom-materializers) to save your objects in a more robust and efficient format.
+{% hint style="warning" %}
+ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-materializers/#zenml.materializers.cloudpickle\_materializer.CloudpickleMaterializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](handle-custom-data-types.md#custom-materializers) to save your objects in a more robust and efficient format.
+
+Moreover, using the `CloudpickleMaterializer` could allow users to upload of any kind of object. This could be exploited to upload a malicious file, which could execute arbitrary code on the vulnerable system.
 {% endhint %}
 
 ## Integration Materializers
@@ -146,9 +148,17 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.BASE
     ASSOCIATED_TYPES = ()
 
-    def __init__(self, uri: str):
-        """Initializes a materializer with the given URI."""
+    def __init__(
+        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+    ):
+        """Initializes a materializer with the given URI.
+
+        Args:
+            uri: The URI where the artifact data will be stored.
+            artifact_store: The artifact store used to store this artifact.
+        """
         self.uri = uri
+        self._artifact_store = artifact_store
 
     def load(self, data_type: Type[Any]) -> Any:
         """Write logic here to load the data of an artifact.
@@ -163,7 +173,8 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         # 
         # Example:
         # data_path = os.path.join(self.uri, "abc.json")
-        # return yaml_utils.read_json(data_path)
+        # with self.artifact_store.open(filepath, "r") as fid:
+        #     return json.load(fid)
         ...
 
     def save(self, data: Any) -> None:
@@ -176,7 +187,8 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         # 
         # Example:
         # data_path = os.path.join(self.uri, "abc.json")
-        # yaml_utils.write_json(data_path, data)
+        # with self.artifact_store.open(filepath, "w") as fid:
+        #     json.dump(data,fid)
         ...
 
     def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
@@ -192,12 +204,12 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         #
         # E.g.:
         # visualization_uri = os.path.join(self.uri, "visualization.html")
-        #
-        # with fileio.open(visualization_uri, "w") as f:
+        # with self.artifact_store.open(visualization_uri, "w") as f:
         #     f.write("<html><body>data</body></html>")
-        #
+
         # visualization_uri_2 = os.path.join(self.uri, "visualization.png")
         # data.save_as_png(visualization_uri_2)
+
         # return {
         #     visualization_uri: ArtifactVisualizationType.HTML,
         #     visualization_uri_2: ArtifactVisualizationType.IMAGE
@@ -371,9 +383,9 @@ example_pipeline()
 
 ## Interaction with custom artifact stores
 
-When creating a custom artifact store, you may encounter a situation where the default materializers do not function properly. Specifically, the `fileio.open` method used in these materializers may not be compatible with your custom store due to not being implemented properly.
+When creating a custom artifact store, you may encounter a situation where the default materializers do not function properly. Specifically, the `self.artifact_store.open` method used in these materializers may not be compatible with your custom store due to not being implemented properly.
 
-In this case, you can create a modified version of the failing materializer by copying it and modifying it to copy the artifact to a local path, then opening it from there. For example, consider the following implementation of a custom [PandasMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/pandas\_materializer.py) that works with a custom artifact store. In this implementation, we copy the artifact to a local path because we want to use the `pandas.read_csv` method to read it. If we were to use the `fileio.open` method instead, we would not need to make this copy.
+In this case, you can create a modified version of the failing materializer by copying it and modifying it to copy the artifact to a local path, then opening it from there. For example, consider the following implementation of a custom [PandasMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/pandas\_materializer.py) that works with a custom artifact store. In this implementation, we copy the artifact to a local path because we want to use the `pandas.read_csv` method to read it. If we were to use the `self.artifact_store.open` method instead, we would not need to make this copy.
 
 {% hint style="warning" %}
 It is worth noting that copying the artifact to a local path may not always be necessary and can potentially be a performance bottleneck.
@@ -385,16 +397,18 @@ It is worth noting that copying the artifact to a local path may not always be n
 
 ```python
 import os
-from typing import Any, Type, Union
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, Union
 
 import pandas as pd
 
-from zenml.enums import ArtifactType
-from zenml.io import fileio
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 
 logger = get_logger(__name__)
+
 PARQUET_FILENAME = "df.parquet.gzip"
 COMPRESSION_TYPE = "gzip"
 
@@ -404,17 +418,24 @@ CSV_FILENAME = "df.csv"
 class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (pd.DataFrame, pd.Series)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        pd.DataFrame,
+        pd.Series,
+    )
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def __init__(self, uri: str):
+    def __init__(
+        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+    ):
         """Define `self.data_path`.
+
         Args:
             uri: The URI where the artifact data is stored.
+            artifact_store: The artifact store where the artifact data is stored.
         """
-        super().__init__(uri)
+        super().__init__(uri, artifact_store)
         try:
-            import pyarrow  # type: ignore
+            import pyarrow  # type: ignore # noqa
 
             self.pyarrow_exists = True
         except ImportError:
@@ -432,22 +453,22 @@ class PandasMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
         """Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.
+
         Args:
             data_type: The type of the data to read.
+
         Raises:
             ImportError: If pyarrow or fastparquet is not installed.
+
         Returns:
             The pandas dataframe or series.
         """
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        if fileio.exists(self.parquet_path):
+        if self.artifact_store.exists(self.parquet_path):
             if self.pyarrow_exists:
-                # Create a temporary file
-                temp_file = os.path.join(str(temp_dir), PARQUET_FILENAME)
-                # Copy the data to the temporary file
-                fileio.copy(self.parquet_path, temp_file)
-                # Load the data from the temporary file
-                df = pd.read_parquet(temp_file)
+                with self.artifact_store.open(
+                    self.parquet_path, mode="rb"
+                ) as f:
+                    df = pd.read_parquet(f)
             else:
                 raise ImportError(
                     "You have an old version of a `PandasMaterializer` "
@@ -457,28 +478,23 @@ class PandasMaterializer(BaseMaterializer):
                     "'`pip install pyarrow fastparquet`'."
                 )
         else:
-            # Create a temporary file
-            temp_file = os.path.join(str(temp_dir), CSV_FILENAME)
-            # Copy the data to the temporary file
-            fileio.copy(self.csv_path, temp_file)
-            # Load the data from the temporary file
-            df = pd.read_csv(temp_file, index_col=0, parse_dates=True)
-
-        # Cleanup and return
-        fileio.rmtree(temp_dir)
+            with self.artifact_store.open(self.csv_path, mode="rb") as f:
+                df = pd.read_csv(f, index_col=0, parse_dates=True)
 
         # validate the type of the data.
         def is_dataframe_or_series(
-                df: Union[pd.DataFrame, pd.Series]
+            df: Union[pd.DataFrame, pd.Series],
         ) -> Union[pd.DataFrame, pd.Series]:
             """Checks if the data is a `pd.DataFrame` or `pd.Series`.
+
             Args:
                 df: The data to check.
+
             Returns:
                 The data if it is a `pd.DataFrame` or `pd.Series`.
             """
             if issubclass(data_type, pd.Series):
-                # Taking the first column if it's a series as the assumption
+                # Taking the first column if its a series as the assumption
                 # is that there will only be one
                 assert len(df.columns) == 1
                 df = df[df.columns[0]]
@@ -490,28 +506,19 @@ class PandasMaterializer(BaseMaterializer):
 
     def save(self, df: Union[pd.DataFrame, pd.Series]) -> None:
         """Writes a pandas dataframe or series to the specified filename.
+
         Args:
             df: The pandas dataframe or series to write.
         """
         if isinstance(df, pd.Series):
             df = df.to_frame(name="series")
 
-        # Create a temporary file to store the data
         if self.pyarrow_exists:
-            with tempfile.NamedTemporaryFile(
-                    mode="wb", suffix=".gzip", delete=False
-            ) as f:
-                df.to_parquet(f.name, compression=COMPRESSION_TYPE)
-                fileio.copy(f.name, self.parquet_path)
+            with self.artifact_store.open(self.parquet_path, mode="wb") as f:
+                df.to_parquet(f, compression=COMPRESSION_TYPE)
         else:
-            with tempfile.NamedTemporaryFile(
-                    mode="wb", suffix=".csv", delete=False
-            ) as f:
-                df.to_csv(f.name, index=True)
-                fileio.copy(f.name, self.csv_path)
-
-        # Close and remove the temporary file
-        fileio.remove(f.name)
+            with self.artifact_store.open(self.csv_path, mode="wb") as f:
+                df.to_csv(f, index=True)
 
 ```
 
@@ -567,7 +574,6 @@ import os
 from typing import Type
 
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
@@ -577,18 +583,18 @@ class MyMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store."""
-        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
+        with self.artifact_store.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store."""
-        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
+        with self.artifact_store.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 ```
 
 {% hint style="info" %}
-Pro-tip: Use the ZenML `fileio` module to ensure your materialization logic works across artifact stores (local and remote like S3 buckets).
+Pro-tip: Use the `self.artifact_store` property to ensure your materialization logic works across artifact stores (local and remote like S3 buckets).
 {% endhint %}
 
 Now, ZenML can use this materializer to handle the outputs and inputs of your customs object. Edit the pipeline as follows to see this in action:
@@ -628,7 +634,6 @@ from typing import Type
 from zenml import step, pipeline
 
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
@@ -643,13 +648,13 @@ class MyMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store."""
-        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
+        with self.artifact_store.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store."""
-        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
+        with self.artifact_store.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 
 
