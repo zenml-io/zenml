@@ -32,7 +32,9 @@ aws sts get-caller-identity --query Account --output text
 ```
 
 This will output your AWS account ID. Make a note of this as you will need it in
-the next steps.
+the next steps. (If you're doing anything more esoteric with your AWS account
+and IAM roles, this might not work for you. The account ID here that we're
+trying to get is the root account ID that you use to log in to the AWS console.)
 
 Then create a file named `assume-role-policy.json` with the
 following content:
