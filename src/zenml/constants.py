@@ -236,6 +236,34 @@ DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE = 5
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY = 1000
 
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
+    "max-age=63072000; includeSubdomains"
+)
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP = "0"
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP = (
+    "default-src 'none'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+    "connect-src 'self' https://sdkdocs.zenml.io https://hubapi.zenml.io; "
+    "img-src 'self' data: https://public-flavor-logos.s3.eu-central-1.amazonaws.com; "
+    "style-src 'self' 'unsafe-inline'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "font-src 'self';"
+    "frame-src https://zenml.hellonext.co https://sdkdocs.zenml.io "
+)
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER = "no-referrer-when-downgrade"
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE = (
+    "no-store, no-cache, must-revalidate"
+)
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
+    "accelerometer=(), autoplay=(), camera=(), encrypted-media=(), "
+    "geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), "
+    "payment=(), sync-xhr=(), usb=()"
+)
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
+
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
 # ENV_ZENML_REPORTABLE_RESOURCES='["Foo", "bar"]'

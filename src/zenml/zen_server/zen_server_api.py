@@ -17,7 +17,6 @@ import os
 from asyncio.log import logger
 from typing import Any, List
 
-import secure
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
@@ -67,8 +66,10 @@ from zenml.zen_server.utils import (
     initialize_feature_gate,
     initialize_plugins,
     initialize_rbac,
+    initialize_secure_headers,
     initialize_workload_manager,
     initialize_zen_store,
+    secure_headers,
     server_config,
 )
 
@@ -121,13 +122,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-secure_headers = secure.Secure(
-    # TODO: Add a nonce to the CSP header when ZenML supports it
-    # (see https://content-security-policy.com/examples/allow-inline-script/)
-    # csp=secure.ContentSecurityPolicy(),
-    permissions=secure.PermissionsPolicy()
-)
-
 
 @app.middleware("http")
 async def set_secure_headers(request: Request, call_next: Any) -> Any:
@@ -141,7 +135,7 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
         The response with secure headers set.
     """
     response = await call_next(request)
-    secure_headers.framework.fastapi(response)
+    secure_headers().framework.fastapi(response)
     return response
 
 
@@ -187,6 +181,7 @@ def initialize() -> None:
     initialize_feature_gate()
     initialize_workload_manager()
     initialize_plugins()
+    initialize_secure_headers()
 
 
 app.mount(
