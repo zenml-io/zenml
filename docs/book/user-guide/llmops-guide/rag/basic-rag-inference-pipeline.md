@@ -9,7 +9,7 @@ documents in the index store. We use some utility functions to make this happen
 but no external libraries are needed beyond an interface to the index store as
 well as the LLM itself.
 
-![](/docs/book/.github/assets/rag-stage-4.png)
+![](/docs/book/.gitbook/assets/rag-stage-4.png)
 
 If you've been following along with the guide, you should have some documents
 ingested already and you can pass a query in as a flag to the Python command
