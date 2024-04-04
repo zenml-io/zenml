@@ -10,6 +10,8 @@ we want to do every time we need to retrieve a document. Instead, we can store
 the embeddings in a vector database, which allows us to quickly retrieve the
 most relevant chunks based on their similarity to the query.
 
+![](/docs/book/.gitbook/assets/rag-stage-3.png)
+
 For the purposes of this guide, we'll use PostgreSQL as our vector database.
 This is a popular choice for storing embeddings, as it provides a scalable and
 efficient way to store and retrieve high-dimensional vectors. However, you can

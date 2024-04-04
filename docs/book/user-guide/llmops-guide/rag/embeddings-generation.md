@@ -11,6 +11,8 @@ high-dimensional space where similar items are closer together. By generating
 embeddings for your data, you can enhance the retrieval capabilities of your RAG
 pipeline and provide more accurate and relevant responses to user queries.
 
+![](/docs/book/.gitbook/assets/rag-stage-2.png)
+
 {% hint style="info" %} Embeddings are vector representations of data that capture the semantic
 meaning and context of the data in a high-dimensional space. They are generated
 using machine learning models, such as word embeddings or sentence embeddings,

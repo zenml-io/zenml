@@ -9,6 +9,8 @@ used to train and evaluate the retriever and generator models. This data can
 include a large corpus of documents, as well as any relevant metadata or
 annotations that can be used to train the retriever and generator.
 
+![](/docs/book/.gitbook/assets/rag-stage-1.png)
+
 In the interests of keeping things simple, we'll implement the bulk of what we
 need ourselves. However, it's worth noting that there are a number of tools and
 frameworks that can help you manage the data ingestion process, including

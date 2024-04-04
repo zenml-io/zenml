@@ -19,7 +19,7 @@ leverage the power of LLMs while addressing their limitations.
 
 # What exactly happens in a RAG pipeline?
 
-TODO: DIAGRAM GOES HERE (all the components of a RAG pipeline)
+![](/docs/book/.gitbook/assets/rag-process-whole.png)
 
 In a RAG pipeline, we use a retriever to find relevant documents from a large corpus and then uses a
 generator to produce a response based on the retrieved documents. This approach
@@ -43,7 +43,7 @@ models to resource-constrained environments.
 
 # When is RAG a good choice?
 
-TODO: DIAGRAM GOES HERE (when is RAG a good choice vs when not)
+![](/docs/book/.gitbook/assets/rag-when.png)
 
 RAG is a good choice when you need to generate long-form responses that require
 contextual understanding and when you have access to a large corpus of relevant
@@ -59,7 +59,7 @@ the benefits of LLMs with the limitations of the current generation of models.
 
 # How does RAG fit into the ZenML ecosystem?
 
-TODO: DIAGRAM GOES HERE (shows the parts of RAG that ZenML supports)
+![](/docs/book/.gitbook/assets/rag-and-zenml.png)
 
 In ZenML, you can set up RAG pipelines that combine the strengths of
 retrieval-based and generation-based models. This allows you to leverage the
