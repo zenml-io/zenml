@@ -32,6 +32,7 @@ from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
+    UserAuthModel,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -264,6 +265,29 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                 user,
                 action=Action.UPDATE,
             )
+
+            if user_update.password is not None:
+                raise IllegalOperationError(
+                    "Users cannot change the password of other users. Use the "
+                    "account deactivation and activation flow instead."
+                )
+
+        elif user_update.password is not None:
+            # If the user is updating their own password, we need to verify
+            # the old password
+            if user_update.old_password is None:
+                raise IllegalOperationError(
+                    "The current password must be supplied when changing the "
+                    "password."
+                )
+            auth_user = zen_store().get_auth_user(user_name_or_id)
+            if not UserAuthModel.verify_password(
+                user_update.old_password, auth_user
+            ):
+                raise IllegalOperationError(
+                    "The current password is incorrect."
+                )
+
         if (
             user_update.is_admin is not None
             and user.is_admin != user_update.is_admin
@@ -514,6 +538,21 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             The updated user.
         """
         current_user = zen_store().get_user(auth_context.user.id)
+
+        if user.password is not None:
+            # If the user is updating their password, we need to verify
+            # the old password
+            if user.old_password is None:
+                raise IllegalOperationError(
+                    "The current password must be supplied when changing the "
+                    "password."
+                )
+            auth_user = zen_store().get_auth_user(auth_context.user.id)
+            if not UserAuthModel.verify_password(user.old_password, auth_user):
+                raise IllegalOperationError(
+                    "The current password is incorrect."
+                )
+
         user.activation_token = current_user.activation_token
         user.active = current_user.active
         user.is_admin = current_user.is_admin
