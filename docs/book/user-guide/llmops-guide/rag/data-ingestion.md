@@ -16,10 +16,9 @@ downloading, preprocessing, and indexing large corpora of documents. ZenML
 integrates with a number of these tools and frameworks, making it easy to set up
 and manage RAG pipelines.
 
-{% hint style="info" %} You can view all the code referenced in this guide in
-the associated project repository. Please [visit the `llm-complete-guide`
-project](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) inside
-the ZenML projects repository if you want to dive deeper. {% endhint %}
+{% hint style="info" %}
+You can view all the code referenced in this guide in the associated project repository. Please <a href="https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide">visit the `llm-complete-guide` project</a> inside the ZenML projects repository if you want to dive deeper.
+{% endhint %}
 
 You can add a ZenML step that scrapes a series of URLs and outputs the URLs quite
 easily. Here we assemble a step that scrapes URLs related to ZenML from its documentation.
