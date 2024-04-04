@@ -20,7 +20,7 @@ options.
 
 {% hint style="info" %}
 For more information on how to set up a PostgreSQL database to follow along with
-this guide, please see the instructions in the repository which show how to set
+this guide, please <a href="https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide">see the instructions in the repository</a> which show how to set
 up a PostgreSQL database using Supabase.
 {% endhint %}
 
@@ -129,14 +129,12 @@ choose to only add new embeddings if they don't already exist in the database.
 
 We also generate an index for the embeddings using the `ivfflat` method with the
 `vector_cosine_ops` operator. This is a common method for indexing
-high-dimensional
-vectors in PostgreSQL and is well-suited for similarity search using cosine
-distance. The number of lists is calculated based on the number of records in
-the
-table, with a minimum of 10 lists and a maximum of the square root of the number
-of records. This is a good starting point for tuning the index parameters, but
-you might want to experiment with different values to see how they affect the
-performance of your RAG pipeline.
+high-dimensional vectors in PostgreSQL and is well-suited for similarity search
+using cosine distance. The number of lists is calculated based on the number of
+records in the table, with a minimum of 10 lists and a maximum of the square
+root of the number of records. This is a good starting point for tuning the
+index parameters, but you might want to experiment with different values to see
+how they affect the performance of your RAG pipeline.
 
 Now that we have our embeddings stored in a vector database, we can move on to
 the next step in the pipeline, which is to retrieve the most relevant documents
