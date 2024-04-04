@@ -251,7 +251,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 {% tab title="Lambda Labs" %}
 
-Lambda Labs is a cloud provider that offers GPU instances for machine learning workloads. Unlike the major cloud providers, with Lambda Labs we don't need to configure a service connector to authenticate with the cloud provider. Instead, we can directly use API keys to authenticate with the Lambda Labs API.
+[Lambda Labs](https://lambdalabs.com/service/gpu-cloud) is a cloud provider that offers GPU instances for machine learning workloads. Unlike the major cloud providers, with Lambda Labs we don't need to configure a service connector to authenticate with the cloud provider. Instead, we can directly use API keys to authenticate with the Lambda Labs API.
 
   ```shell
     zenml integration install skypilot_lambda
@@ -269,11 +269,11 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
-The lambda labs orchrestrator does not support some of the features like `spot_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended to not use these features with the lambda labs orchestrator and also not to use [step-specific settings](#configuring-step-specific-resources).
+The Lambda Labs orchestrator does not support some of the features like `spot_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended not to use these features with the Lambda Labs orchestrator and not to use [step-specific settings](#configuring-step-specific-resources).
 {% endhint %}
 
 {% hint style="warning" %}
-While testing the orchestrator, we have noticed that the Lambda Labs orchestrator does not support the `down` flag. This means that the orchestrator will not automatically tear down the cluster after all jobs finish. We recommend manually tearing down the cluster after all jobs finish to avoid unnecessary costs.
+While testing the orchestrator, we noticed that the Lambda Labs orchestrator does not support the `down` flag. This means the orchestrator will not automatically tear down the cluster after all jobs finish. We recommend manually tearing down the cluster after all jobs finish to avoid unnecessary costs.
 {% endhint %}
 
 {% endtab %}
@@ -421,7 +421,7 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot_lambda.flavors.skypilot_orchestrator_lambda_vm_flavor import SkypilotLambdaOrchestratorSettings
+from zenml.integrations.skypilot_lambda import SkypilotLambdaOrchestratorSettings
 
 
 skypilot_settings = SkypilotLambdaOrchestratorSettings(
