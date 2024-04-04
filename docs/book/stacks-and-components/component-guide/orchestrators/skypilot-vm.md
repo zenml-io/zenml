@@ -51,7 +51,7 @@ The SkyPilot VM Orchestrator does not currently support the ability to [schedule
 {% endhint %}
 
 {% hint style="info" %}
-All ZenML pipeline runs are executed using docker containers within the VMs provisioned by the orchestrator.
+All ZenML pipeline runs are executed using Docker containers within the VMs provisioned by the orchestrator.
 For that reason, you may need to configure your pipeline settings with `docker_run_args=["--gpus=all"]`
 to enable GPU support in the Docker container. 
 {% endhint %}
