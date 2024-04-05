@@ -254,7 +254,10 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Raises:
             IllegalOperationError: if the user tries change admin status,
-                while not an admin
+                while not an admin, if the user tries to change the password
+                of another user, or if the user tries to change their own
+                password without providing the old password or providing
+                an incorrect old password.
         """
         user = zen_store().get_user(user_name_or_id)
         if user.id != auth_context.user.id:
@@ -536,6 +539,10 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Returns:
             The updated user.
+
+        Raises:
+            IllegalOperationError: if the current password is not supplied when
+                changing the password or if the current password is incorrect.
         """
         current_user = zen_store().get_user(auth_context.user.id)
 

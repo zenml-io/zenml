@@ -835,6 +835,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The updated user.
+
+        Raises:
+            ValidationError: If the old password is not provided when updating
+                the password.
         """
         user = self.get_user(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False

@@ -2951,6 +2951,9 @@ class RestZenStore(BaseZenStore):
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
+
+        Returns:
+            The deactivated user containing the activation token.
         """
         response_body = self.put(
             f"{USERS}/{str(user_name_or_id)}{DEACTIVATE}",
