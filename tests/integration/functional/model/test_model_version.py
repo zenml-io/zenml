@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import multiprocessing
 from typing import Optional
 from unittest import mock
 from unittest.mock import patch
@@ -635,7 +634,7 @@ class TestModel:
                 "Unable to link saved artifact to step run."
             )
 
-    #TODO: Fix and re-enable this test
+    # TODO: Fix and re-enable this test
     # def test_model_versions_parallel_creation_version_unspecific(
     #     self, clean_client: "Client"
     # ):
