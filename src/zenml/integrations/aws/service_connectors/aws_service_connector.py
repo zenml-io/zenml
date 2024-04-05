@@ -68,7 +68,7 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-EKS_KUBE_API_TOKEN_EXPIRATION = 60
+EKS_KUBE_API_TOKEN_EXPIRATION = 15  # 15 minutes
 DEFAULT_IAM_ROLE_TOKEN_EXPIRATION = 3600  # 1 hour
 DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours
 
@@ -1097,7 +1097,6 @@ class AWSServiceConnector(ServiceConnector):
         signed_url = signer.generate_presigned_url(
             params,
             region_name=region,
-            expires_in=EKS_KUBE_API_TOKEN_EXPIRATION,
             operation_name="",
         )
 
@@ -2052,7 +2051,7 @@ class AWSServiceConnector(ServiceConnector):
             assert resource_id is not None
 
             # Get an authenticated boto3 session
-            session, expires_at = self.get_boto3_session(
+            session, _ = self.get_boto3_session(
                 self.auth_method,
                 resource_type=resource_type,
                 resource_id=resource_id,
@@ -2087,6 +2086,13 @@ class AWSServiceConnector(ServiceConnector):
                 raise AuthorizationException(
                     f"Failed to get EKS bearer token: {e}"
                 ) from e
+
+            # Kubernetes authentication tokens issued by AWS EKS have a fixed
+            # expiration time of 15 minutes
+            # source: https://aws.github.io/aws-eks-best-practices/security/docs/iam/#controlling-access-to-eks-clusters
+            expires_at = datetime.datetime.now(
+                tz=datetime.timezone.utc
+            ) + datetime.timedelta(minutes=EKS_KUBE_API_TOKEN_EXPIRATION)
 
             # get cluster details
             cluster_arn = cluster["cluster"]["arn"]
