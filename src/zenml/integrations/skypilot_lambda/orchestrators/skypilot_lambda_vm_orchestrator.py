@@ -33,8 +33,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-ENV_LAMBDA_API_KEY = "LAMBDA_API_KEY"
-
 
 class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
     """Orchestrator responsible for running pipelines remotely in a VM on Lambda.
