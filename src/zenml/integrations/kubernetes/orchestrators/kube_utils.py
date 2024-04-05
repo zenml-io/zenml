@@ -169,7 +169,7 @@ def get_pod(
 
 
 def wait_pod(
-    core_api_fn: Callable[..., k8s_client.CoreV1Api],
+    core_api_fn: Callable[[], k8s_client.CoreV1Api],
     pod_name: str,
     namespace: str,
     exit_condition_lambda: Callable[[k8s_client.V1Pod], bool],
