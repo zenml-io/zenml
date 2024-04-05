@@ -118,6 +118,18 @@ class LogsResponseMetadata(BaseResponseMetadata):
     @field_validator("artifact_store_id")
     @classmethod
     def str_field_max_length_check(cls, v: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum text length.
+
+        Args:
+            v: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
         assert len(str(v)) < STR_FIELD_MAX_LENGTH
         return v
 
