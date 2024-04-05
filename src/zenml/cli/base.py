@@ -73,19 +73,19 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2024.01.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024-04-05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.01.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.04.03",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
-        github_tag="2024.01.12",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024-04-05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     llm_finetuning=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-llm-finetuning",
-        github_tag="2024.03.18",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024-04-05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -93,9 +93,7 @@ ZENML_PROJECT_TEMPLATES = dict(
 @cli.command("init", help="Initialize a ZenML repository.")
 @click.option(
     "--path",
-    type=click.Path(
-        exists=True, file_okay=False, dir_okay=True, path_type=Path
-    ),
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
 )
 @click.option(
     "--template",
@@ -365,9 +363,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
-            declare(
-                f"Deleted local ZenML config from {local_zen_repo_config}."
-            )
+            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
 
         # delete the zen store and all other files and directories used by ZenML
         # to persist information locally (e.g. artifacts)
@@ -377,8 +373,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
             for dir_name in fileio.listdir(str(global_zen_config)):
                 if fileio.isdir(str(global_zen_config / str(dir_name))):
                     warning(
-                        f"Deleting '{str(dir_name)}' directory from global "
-                        f"config."
+                        f"Deleting '{str(dir_name)}' directory from global " f"config."
                     )
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
@@ -453,14 +448,11 @@ def go() -> None:
                         tmp_cloned_dir,
                         branch=f"release/{zenml_version}",
                     )
-                example_dir = os.path.join(
-                    tmp_cloned_dir, "examples/quickstart"
-                )
+                example_dir = os.path.join(tmp_cloned_dir, "examples/quickstart")
                 copy_dir(example_dir, zenml_tutorial_path)
         else:
             cli_utils.warning(
-                f"{zenml_tutorial_path} already exists! Continuing without "
-                "cloning."
+                f"{zenml_tutorial_path} already exists! Continuing without " "cloning."
             )
 
         # get list of all .ipynb files in zenml_tutorial_path
@@ -471,9 +463,7 @@ def go() -> None:
                     ipynb_files.append(os.path.join(dirpath, filename))
 
         ipynb_files.sort()
-        console.print(
-            zenml_go_notebook_tutorial_message(ipynb_files), width=80
-        )
+        console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
         input("Press ENTER to continue...")
     subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
 
@@ -529,9 +519,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     return False
 
 
-@cli.command(
-    "info", help="Show information about the current user setup.", hidden=True
-)
+@cli.command("info", help="Show information about the current user setup.", hidden=True)
 @click.option(
     "--all",
     "-a",
@@ -613,9 +601,7 @@ def info(
         if user_info.get("packages"):
             if isinstance(user_info["packages"], dict):
                 user_info["query_packages"] = {
-                    p: v
-                    for p, v in user_info["packages"].items()
-                    if p in packages
+                    p: v for p, v in user_info["packages"].items() if p in packages
                 }
         else:
             user_info["query_packages"] = cli_utils.get_package_information(
@@ -632,9 +618,7 @@ def info(
         cli_utils.print_debug_stack()
 
 
-@cli.command(
-    "migrate-database", help="Migrate the ZenML database.", hidden=True
-)
+@cli.command("migrate-database", help="Migrate the ZenML database.", hidden=True)
 @click.option(
     "--skip_default_registrations",
     is_flag=True,
@@ -720,9 +704,7 @@ def backup_database(
         )
         cli_utils.declare(f"Database was backed up to {msg}.")
     else:
-        cli_utils.warning(
-            "Cannot backup database while connected to a ZenML server."
-        )
+        cli_utils.warning("Cannot backup database while connected to a ZenML server.")
 
 
 @cli.command(
@@ -784,6 +766,4 @@ def restore_database(
         )
         cli_utils.declare("Database restore finished.")
     else:
-        cli_utils.warning(
-            "Cannot restore database while connected to a ZenML server."
-        )
+        cli_utils.warning("Cannot restore database while connected to a ZenML server.")
