@@ -95,7 +95,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         connector = self.get_connector()
         if connector:
             client = connector.connect()
-            breakpoint()
             if not isinstance(client, k8s_client.ApiClient):
                 raise RuntimeError(
                     f"Expected a k8s_client.ApiClient while trying to use the "
