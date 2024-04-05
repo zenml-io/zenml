@@ -113,8 +113,13 @@ class LogsResponseMetadata(BaseResponseMetadata):
     )
     artifact_store_id: Union[str, UUID] = Field(
         title="The artifact store ID to associate the logs with.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
+
+    @field_validator("artifact_store_id")
+    @classmethod
+    def str_field_max_length_check(cls, v: Any) -> Any:
+        assert len(str(v)) < STR_FIELD_MAX_LENGTH
+        return v
 
 
 class LogsResponseResources(BaseResponseResources):

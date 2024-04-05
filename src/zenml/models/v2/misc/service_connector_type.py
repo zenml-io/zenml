@@ -593,7 +593,6 @@ class ServiceConnectorResourcesModel(BaseModel):
 
     connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
         title="The type of service connector.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
 
     resources: List[ServiceConnectorTypedResourcesModel] = Field(
