@@ -201,11 +201,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            connector = self.get_connector()
             kubernetes_context = self.config.kubernetes_context
             msg = f"'{self.name}' Kubernetes orchestrator error: "
 
-            if not connector:
+            if not self.connector:
                 if not kubernetes_context:
                     return False, (
                         f"{msg}you must either link this stack component to a "
