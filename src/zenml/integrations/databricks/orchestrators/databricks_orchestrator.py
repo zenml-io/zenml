@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Databricks orchestrator."""
 
+import itertools
 import json
 import os
 import re
@@ -20,6 +21,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import uuid4
 
+from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -37,6 +39,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, yaml_utils
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -46,7 +49,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID = "ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID"
-ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "zenml.entrypoints.entrypoint"
+ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
 
 class DatabricksOrchestrator(WheeledOrchestrator):
     """Base class for Orchestrator responsible for running pipelines remotely in a VM.
@@ -113,19 +116,13 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         """Returns the active orchestrator run id.
 
         Raises:
-            RuntimeError: If the environment variable specifying the run id
-                is not set.
+            RuntimeError: If no run id exists. This happens when this method
+                gets called while the orchestrator is not running a pipeline.
 
         Returns:
             The orchestrator run id.
         """
-        try:
-            return os.environ[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID]
-        except KeyError:
-            raise RuntimeError(
-                "Unable to read run id from environment variable "
-                f"{ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID}."
-            )
+        return os.getenv(ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID)
 
     @property
     def root_directory(self) -> str:
@@ -230,6 +227,16 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     )
                 )
 
+                # Construct the --env argument
+                env_vars = []
+                for key, value in environment.items():
+                    env_vars.append(f"{key}={value}")
+                env_vars.append(f"ZENML_DATABRICKS_SOURCE_PREFIX=zenmlproject")
+                env_vars.append(f"ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID={deployment.id}")
+                env_arg = ",".join(env_vars)
+
+                arguments.extend(["--env", env_arg])
+
                 # Find the upstream container ops of the current step and
                 # configure the current container op to run after them
                 upstream_steps = [
@@ -237,7 +244,21 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     for upstream_step_name in step.spec.upstream_steps
                 ]
 
-                task = convert_step_to_task(f"{deployment.id}_{step_name}", ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND, arguments, depends_on=upstream_steps)
+                docker_settings = step.config.docker_settings
+                docker_image_builder = PipelineDockerImageBuilder()
+                requirements_files = docker_image_builder.gather_requirements_files(
+                    docker_settings=docker_settings,
+                    stack=Client().active_stack,
+                    log=False,
+                )
+                requirements = list(
+                    itertools.chain.from_iterable(
+                        r[1].split("\n") for r in requirements_files
+                    )
+                )
+
+
+                task = convert_step_to_task(f"{deployment.id}_{step_name}", ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND, arguments, requirements, depends_on=upstream_steps)
                 tasks.append(task)
                 # Create a container_op - the kubeflow equivalent of a step. It
                 # contains the name of the step, the name of the docker image,
@@ -287,6 +308,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
         )
 
+        breakpoint()
         # using the databricks client uploads the pipeline to kubeflow pipelines and
         # runs it there
         #self._upload_and_run_pipeline(

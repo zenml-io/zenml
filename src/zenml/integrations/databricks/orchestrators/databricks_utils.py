@@ -54,15 +54,7 @@ def generate_databricks_yaml(pipeline_name, tasks):
     }
 
 def convert_step_to_task(task_name: str, command: str, arguments: List[str], libraries: Optional[List[str]] = None, depends_on: Optional[List[str]] = None):
-    return DatabricksTask(
-        task_key=task_name,
-        job_cluster_key="Default",
-        python_wheel_task=PythonWheelTask(
-            entry_point=command,
-            package_name="zenml",
-            parameters=arguments,
-        ),
-        libraries=[
+    dependencies = [
             {
                 "whl": "../../dist/*.whl",
             },
@@ -71,7 +63,19 @@ def convert_step_to_task(task_name: str, command: str, arguments: List[str], lib
                     "package": "zenml",
                 }
             },
-        ],
+
+        ]
+    if libraries:
+        dependencies.extend([{"pypi": {"package": lib}} for lib in libraries])
+    return DatabricksTask(
+        task_key=task_name,
+        job_cluster_key="Default",
+        python_wheel_task=PythonWheelTask(
+            entry_point=command,
+            package_name="zenml",
+            parameters=arguments,
+        ),
+        libraries=dependencies,
         depends_on=[
             {"task_key": task} for task in depends_on
         ] if depends_on else None,

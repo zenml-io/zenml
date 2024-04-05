@@ -18,6 +18,7 @@ import hashlib
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
+import os
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -270,7 +271,19 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             ValueError: If the source is not a valid step source.
         """
-        obj = source_utils.load(source)
+        logger.info("Loading step from source: %s", source)
+
+        if prefix := os.environ.get("ZENML_DATABRICKS_SOURCE_PREFIX"):
+            step_source = Source(
+                module=f"{prefix}.{source.module}",
+                attribute=source.attribute,
+                type=source.type,
+            )
+        else:
+            step_source = source
+    
+        logger.info("Loading step from source: %s", step_source)
+        obj = source_utils.load(step_source)
 
         if isinstance(obj, BaseStep):
             return obj

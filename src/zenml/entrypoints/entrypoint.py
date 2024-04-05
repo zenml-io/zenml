@@ -15,6 +15,7 @@
 
 import argparse
 import logging
+import os
 import sys
 
 from zenml import constants
@@ -45,7 +46,15 @@ def main() -> None:
     # line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}", required=True)
+    parser.add_argument("--env", default="")
     args, remaining_args = parser.parse_known_args()
+
+    # Set environment variables from the --env parameter
+    env_vars = args.env.split(",")
+    for env_var in env_vars:
+        if "=" in env_var:
+            key, value = env_var.split("=", 1)
+            os.environ[key] = value
 
     source_utils.set_custom_source_root(source_root="custom_source_root")
     entrypoint_config_class = source_utils.load_and_validate_class(
