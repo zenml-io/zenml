@@ -15,7 +15,7 @@
 
 from typing import Generator, Generic, List, TypeVar
 
-from pydantic import BaseModel, ConfigDict, SecretStr
+from pydantic import BaseModel
 from pydantic.types import NonNegativeInt, PositiveInt
 
 from zenml.models.v2.base.base import BaseResponse
@@ -90,9 +90,3 @@ class Page(BaseModel, Generic[B]):
             Whether the item is in the page.
         """
         return item in self.items
-
-    model_config = ConfigDict(
-        json_encoders={
-            SecretStr: lambda v: v.get_secret_value() if v else None
-        }
-    )

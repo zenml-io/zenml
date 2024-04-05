@@ -74,6 +74,7 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.secret_utils import ZenSecretStr
 
 logger = get_logger(__name__)
 
@@ -84,7 +85,7 @@ DEFAULT_IMPERSONATE_TOKEN_EXPIRATION = 3600  # 1 hour
 class GCPUserAccountCredentials(AuthenticationConfig):
     """GCP user account credentials."""
 
-    user_account_json: SecretStr = Field(
+    user_account_json: ZenSecretStr = Field(
         title="GCP User Account Credentials JSON",
     )
 
@@ -164,7 +165,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 class GCPServiceAccountCredentials(AuthenticationConfig):
     """GCP service account credentials."""
 
-    service_account_json: SecretStr = Field(
+    service_account_json: ZenSecretStr = Field(
         title="GCP Service Account Key JSON",
     )
 
@@ -252,7 +253,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
 class GCPExternalAccountCredentials(AuthenticationConfig):
     """GCP external account credentials."""
 
-    external_account_json: SecretStr = Field(
+    external_account_json: ZenSecretStr = Field(
         title="GCP External Account JSON",
     )
 
@@ -333,7 +334,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
 class GCPOAuth2Token(AuthenticationConfig):
     """GCP OAuth 2.0 token credentials."""
 
-    token: SecretStr = Field(
+    token: ZenSecretStr = Field(
         title="GCP OAuth 2.0 Token",
     )
 

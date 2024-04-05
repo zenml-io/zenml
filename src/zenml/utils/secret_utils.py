@@ -14,9 +14,9 @@
 """Utility functions for secrets and secret references."""
 
 import re
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Annotated, Any, NamedTuple
 
-from pydantic import Field
+from pydantic import Field, PlainSerializer, SecretStr
 
 if TYPE_CHECKING:
     from pydantic.fields import FieldInfo
@@ -25,6 +25,13 @@ _secret_reference_expression = re.compile(r"\{\{\s*\S+?\.\S+\s*\}\}")
 
 PYDANTIC_SENSITIVE_FIELD_MARKER = "sensitive"
 PYDANTIC_CLEAR_TEXT_FIELD_MARKER = "prevent_secret_reference"
+
+ZenSecretStr = Annotated[
+    SecretStr,
+    PlainSerializer(
+        lambda v: v.get_secret_value() if v else None, when_used="json"
+    ),
+]
 
 
 def is_secret_reference(value: Any) -> bool:

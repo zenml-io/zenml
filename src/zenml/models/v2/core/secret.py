@@ -35,6 +35,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
+from zenml.utils.secret_utils import ZenSecretStr
 
 # ------------------ Request Model ------------------
 
@@ -51,7 +52,7 @@ class SecretRequest(WorkspaceScopedRequest):
     scope: SecretScope = Field(
         SecretScope.WORKSPACE, title="The scope of the secret."
     )
-    values: Dict[str, Optional[SecretStr]] = Field(
+    values: Dict[str, Optional[ZenSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 
@@ -106,7 +107,7 @@ class SecretResponseBody(WorkspaceScopedResponseBody):
     scope: SecretScope = Field(
         SecretScope.WORKSPACE, title="The scope of the secret."
     )
-    values: Dict[str, Optional[SecretStr]] = Field(
+    values: Dict[str, Optional[ZenSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 

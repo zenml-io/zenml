@@ -37,7 +37,7 @@ from aws_profile_manager import Common  # type: ignore[import-untyped]
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.signers import RequestSigner
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
@@ -65,6 +65,7 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.secret_utils import ZenSecretStr
 
 logger = get_logger(__name__)
 
@@ -76,11 +77,11 @@ DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours
 class AWSSecretKey(AuthenticationConfig):
     """AWS secret key credentials."""
 
-    aws_access_key_id: SecretStr = Field(
+    aws_access_key_id: ZenSecretStr = Field(
         title="AWS Access Key ID",
         description="An AWS access key ID associated with an AWS account or IAM user.",
     )
-    aws_secret_access_key: SecretStr = Field(
+    aws_secret_access_key: ZenSecretStr = Field(
         title="AWS Secret Access Key",
     )
 
@@ -88,7 +89,7 @@ class AWSSecretKey(AuthenticationConfig):
 class STSToken(AWSSecretKey):
     """AWS STS token."""
 
-    aws_session_token: SecretStr = Field(
+    aws_session_token: ZenSecretStr = Field(
         title="AWS Session Token",
     )
 

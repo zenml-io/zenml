@@ -25,7 +25,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    SecretStr,
     SerializeAsAny,
     ValidationError,
     field_validator,
@@ -802,9 +801,4 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
         extra="allow",
-        # This is needed to allow correct handling of SecretStr values during
-        # serialization.
-        json_encoders={
-            SecretStr: lambda v: v.get_secret_value() if v else None
-        },
     )

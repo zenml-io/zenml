@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any, Dict, Generic, Optional, TypeVar
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, SecretStr
+from pydantic import ConfigDict, Field
 
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 from zenml.enums import ResponseUpdateStrategy
@@ -34,16 +34,10 @@ class BaseZenModel(YAMLSerializationMixin, AnalyticsTrackedModelMixin):
     """Base model class for all ZenML models.
 
     This class is used as a base class for all ZenML models. It provides
-    functionality for tracking analytics events and proper encoding of
-    SecretStr values.
+    functionality for tracking analytics events.
     """
 
     model_config = ConfigDict(
-        json_encoders={
-            SecretStr: lambda v: v.get_secret_value()
-            if v is not None
-            else None
-        },
         # Allow extras on all models to support forwards and backwards
         # compatibility (e.g. new fields in newer versions of ZenML servers
         # are allowed to be present in older versions of ZenML clients and

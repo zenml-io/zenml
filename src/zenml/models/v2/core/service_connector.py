@@ -34,6 +34,7 @@ from zenml.models.v2.base.update import update_model
 from zenml.models.v2.misc.service_connector_type import (
     ServiceConnectorTypeModel,
 )
+from zenml.utils.secret_utils import ZenSecretStr
 
 logger = get_logger(__name__)
 
@@ -99,7 +100,7 @@ class ServiceConnectorRequest(WorkspaceScopedRequest):
         default_factory=dict,
         title="The service connector configuration, not including secrets.",
     )
-    secrets: Dict[str, Optional[SecretStr]] = Field(
+    secrets: Dict[str, Optional[ZenSecretStr]] = Field(
         default_factory=dict,
         title="The service connector secrets.",
     )
@@ -241,7 +242,7 @@ class ServiceConnectorUpdate(ServiceConnectorRequest):
         default=None,
         title="The service connector configuration, not including secrets.",
     )
-    secrets: Optional[Dict[str, Optional[SecretStr]]] = Field(  # type: ignore[assignment]
+    secrets: Optional[Dict[str, Optional[ZenSecretStr]]] = Field(  # type: ignore[assignment]
         default=None,
         title="The service connector secrets.",
     )
@@ -319,7 +320,7 @@ class ServiceConnectorResponseMetadata(WorkspaceScopedResponseMetadata):
         "connectors and authentication methods that involve generating "
         "temporary credentials from the ones configured in the connector.",
     )
-    secrets: Dict[str, Optional[SecretStr]] = Field(
+    secrets: Dict[str, Optional[ZenSecretStr]] = Field(
         default_factory=dict,
         title="The service connector secrets.",
     )

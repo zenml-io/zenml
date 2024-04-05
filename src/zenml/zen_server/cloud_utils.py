@@ -4,7 +4,7 @@ import os
 from typing import Any, Dict, Optional
 
 import requests
-from pydantic import field_validator, ConfigDict, BaseModel
+from pydantic import BaseModel, ConfigDict, field_validator
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.exceptions import SubscriptionUpgradeRequiredError
