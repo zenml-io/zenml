@@ -42,8 +42,8 @@ pip install -r requirements.txt
 The e2e template is also available as a [ZenML example](https://github.com/zenml-io/zenml/tree/main/examples/e2e). You can clone it:
 
 ```bash
-git clone git@github.com:zenml-io/zenml.git
-cd examples/e2e
+git clone --depth 1 git@github.com:zenml-io/zenml.git
+cd zenml/examples/e2e
 pip install -r requirements.txt
 zenml init
 ```
