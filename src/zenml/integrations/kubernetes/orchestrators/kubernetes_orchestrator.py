@@ -95,6 +95,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         connector = self.get_connector()
         if connector:
             client = connector.connect()
+            breakpoint()
             if not isinstance(client, k8s_client.ApiClient):
                 raise RuntimeError(
                     f"Expected a k8s_client.ApiClient while trying to use the "
@@ -440,7 +441,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if settings.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
-                core_api=self._k8s_core_api,
+                core_api_fn=self._k8s_core_api,
                 pod_name=pod_name,
                 namespace=self.config.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
