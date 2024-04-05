@@ -407,6 +407,7 @@ def go() -> None:
 
     Raises:
         GitNotFoundError: If git is not installed.
+        e: when Jupyter Notebook fails to launch.
     """
     from zenml.cli.text_utils import (
         zenml_cli_privacy_message,
