@@ -35,7 +35,7 @@ To run locally, install ZenML and pull this quickstart:
 pip install "zenml[server]"
 
 # clone the ZenML repository
-git clone https://github.com/zenml-io/zenml.git
+git clone --depth 1 git@github.com:zenml-io/zenml.git
 cd zenml/examples/quickstart
 ```
 
