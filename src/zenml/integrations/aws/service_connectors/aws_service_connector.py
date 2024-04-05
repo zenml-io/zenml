@@ -1074,6 +1074,8 @@ class AWSServiceConnector(ServiceConnector):
         Returns:
             A bearer token for authenticating to the EKS API server.
         """
+        STS_TOKEN_EXPIRES_IN = 60
+
         client = session.client("sts", region_name=region)
         service_id = client.meta.service_model.service_id
 
@@ -1097,6 +1099,7 @@ class AWSServiceConnector(ServiceConnector):
         signed_url = signer.generate_presigned_url(
             params,
             region_name=region,
+            expires_in=STS_TOKEN_EXPIRES_IN,
             operation_name="",
         )
 
