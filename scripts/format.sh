@@ -6,18 +6,18 @@ default_src="src/zenml tests examples docs/mkdocstrings_helper.py scripts"
 # Initialize SRC as an empty string
 SRC=""
 
-# Initialize SKIP_YAMLFIX as false
+# Initialize SKIP_YAMLFIX and SKIP_UPGRADE as false
 SKIP_YAMLFIX=false
-SKIP_PIP_INSTALL=false
+SKIP_UPGRADE=false
 
 # Process arguments
 for arg in "$@"
 do
-    # Check for the --no-yamlfix and --no-pip-install flags
+    # Check for the --no-yamlfix and --no-upgrade flags
     if [ "$arg" = "--no-yamlfix" ]; then
         SKIP_YAMLFIX=true
-    elif [ "$arg" = "--no-pip-install" ]; then
-        SKIP_PIP_INSTALL=true
+    elif [ "$arg" = "--no-upgrade" ]; then
+        SKIP_UPGRADE=true
     else
         # If it's not the flag, treat it as a source directory
         # Append the argument to SRC, separated by space
@@ -30,8 +30,9 @@ do
 done
 
 # Automatically upgrade packages to newest versions
-if [ "$SKIP_PIP_INSTALL" = false ]; then
-    pip install --upgrade ruff yamlfix
+# Assumes uv is installed, if not run pip install uv
+if [ "$SKIP_UPGRADE" = false ]; then
+    uv pip install --no-deps --upgrade ruff yamlfix
 fi
 
 # If no source directories were provided, use the default
