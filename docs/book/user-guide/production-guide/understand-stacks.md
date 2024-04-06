@@ -228,8 +228,8 @@ pip install -r requirements.txt
 The starter template is the same as the [ZenML quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). You can clone it like so:
 
 ```bash
-git clone git@github.com:zenml-io/zenml.git
-cd examples/quickstart
+git clone --depth 1 git@github.com:zenml-io/zenml.git
+cd zenml/examples/quickstart
 pip install -r requirements.txt
 zenml init
 ```
