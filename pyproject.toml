@@ -73,6 +73,7 @@ fastapi-utils = { version = "~0.2.1", optional = true }
 orjson = { version = "~3.10.0", optional = true }
 Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
+secure = { version = "~0.3.0", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -181,6 +182,7 @@ server = [
     "orjson",
     "Jinja2",
     "ipinfo",
+    "secure",
 ]
 templates = ["copier", "jinja2-time", "ruff", "pyyaml-include"]
 terraform = ["python-terraform"]

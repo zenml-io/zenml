@@ -248,6 +248,24 @@ These configuration options are not required for most use cases, but can be usef
     openssl rand -hex 32
     ```
 
+The environment variables starting with **ZENML\_SERVER\_SECURE*\_HEADERS\_** can be used to enable, disable or set custom values for security headers in the ZenML server's HTTP responses. The following values can be set for any of the supported secure headers configuration options:
+
+* `enabled`, `on`, `true` or `yes` - enables the secure header with the default value.
+* `disabled`, `off`, `false`, `none` or `no` - disables the secure header entirely, so that it is not set in the ZenML server's HTTP responses.
+* any other value - sets the secure header to the specified value.  
+
+The following secure headers environment variables are supported:
+
+* **ZENML\_SERVER\_SECURE*\_HEADERS\_SERVER**: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_XXP**: The `X-XSS-Protection` HTTP header value. The default value is `0`. NOTE: this header is deprecated and should not be customized anymore. The `Content-Security-Policy` header should be used instead.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_CONTENT**: The `X-Content-Type-Options` HTTP header value. The default value is `nosniff`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_CSP**: The `Content-Security-Policy` HTTP header value. This is by default set to a strict CSP policy that only allows content from the origins required by the ZenML dashboard. NOTE: customizing this header is discouraged, as it may cause the ZenML dashboard to malfunction.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_REFERRER**: The `Referrer-Policy` HTTP header value. The default value is `no-referrer-when-downgrade`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_CACHE**: The `Cache-Control` HTTP header value. The default value is `no-store, no-cache, must-revalidate`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_PERMISSIONS**: The `Permissions-Policy` HTTP header value. The default value is `accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()`.
+
 ## Run the ZenML server with Docker
 
 As previously mentioned, the ZenML server container image uses sensible defaults for most configuration options. This means that you can simply run the container with Docker without any additional configuration and it will work out of the box for most use cases:
