@@ -15,13 +15,8 @@ inappropriate responses, especially when the input prompt is ambiguous or
 misleading. They are also (currently) limited in the amount of text they can
 understand and/or generate. While there are some LLMs [like Google's Gemini 1.5
 Pro](https://developers.googleblog.com/2024/02/gemini-15-available-for-private-preview-in-google-ai-studio.html)
-that can consistently handle 1 million token, the vast majority (particularly
+that can consistently handle 1 million tokens (small units of text), the vast majority (particularly
 the open-source ones currently available) handle far less.
-
-{% hint style="info" %} A token is a single unit of text, such as a word or a
-punctuation mark. LLMs process text by breaking it down into tokens and then
-processing each token sequentially. The number of tokens in a piece of text is a
-rough measure of its length and complexity. {% endhint %}
 
 The first part of this guide to RAG pipelines with ZenML is about understanding
 the basic components and how they work together. We'll cover the following

@@ -13,7 +13,6 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Data ingestion and preprocessing](rag/data-ingestion.md)
   * [Embeddings generation](rag/embeddings-generation.md)
   * [Storing embeddings in a vector database](rag/storing-embeddings-in-a-vector-database.md)
-  * [Tracking RAG-associated artifacts with ZenML](rag/tracking-rag-associated-artifacts-with-zenml.md)
   * [Basic RAG inference pipeline](rag/basic-rag-inference-pipeline.md)
 * [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
   * [Finetuning embeddings for better retrieval performance](finetuning-embeddings/finetuning-embeddings-for-better-retrieval-performance.md)

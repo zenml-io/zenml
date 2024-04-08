@@ -71,7 +71,6 @@
     * [Data ingestion and preprocessing](user-guide/llmops-guide/rag/data-ingestion.md)
     * [Embeddings generation](user-guide/llmops-guide/rag/embeddings-generation.md)
     * [Storing embeddings in a vector database](user-guide/llmops-guide/rag/storing-embeddings-in-a-vector-database.md)
-    * [Tracking RAG-associated artifacts with ZenML](user-guide/llmops-guide/rag/tracking-rag-associated-artifacts-with-zenml.md)
     * [Basic RAG inference pipeline](user-guide/llmops-guide/rag/basic-rag-inference-pipeline.md)
   * [Finetuning with ZenML](user-guide/llmops-guide/finetuning-with-zenml.md)
   * [Deploying and Serving Finetuned Models](user-guide/llmops-guide/deploying-serving-finetuned-models.md)

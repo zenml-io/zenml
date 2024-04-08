@@ -19,7 +19,11 @@ integrates with a number of these tools and frameworks, making it easy to set up
 and manage RAG pipelines.
 
 {% hint style="info" %}
-You can view all the code referenced in this guide in the associated project repository. Please <a href="https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide">visit the `llm-complete-guide` project</a> inside the ZenML projects repository if you want to dive deeper.
+You can view all the code referenced in this guide in the associated project
+repository. Please visit <a
+href="https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide">the
+`llm-complete-guide` project</a> inside the ZenML projects repository if you
+want to dive deeper.
 {% endhint %}
 
 You can add a ZenML step that scrapes a series of URLs and outputs the URLs quite
