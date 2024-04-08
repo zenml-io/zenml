@@ -32,6 +32,7 @@ done
 # Automatically upgrade packages to newest versions
 # Assumes uv is installed, if not run pip install uv
 if [ "$SKIP_UPGRADE" = false ]; then
+    pip install uv
     uv pip install --no-deps --upgrade ruff yamlfix
 fi
 
