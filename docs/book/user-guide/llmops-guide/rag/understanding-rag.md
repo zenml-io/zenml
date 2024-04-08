@@ -59,8 +59,6 @@ the benefits of LLMs with the limitations of the current generation of models.
 
 # How does RAG fit into the ZenML ecosystem?
 
-![](/docs/book/.gitbook/assets/rag-and-zenml.png)
-
 In ZenML, you can set up RAG pipelines that combine the strengths of
 retrieval-based and generation-based models. This allows you to leverage the
 power of LLMs while addressing their limitations. ZenML provides tools for data
