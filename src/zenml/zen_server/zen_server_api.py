@@ -63,10 +63,13 @@ from zenml.zen_server.routers import (
     workspaces_endpoints,
 )
 from zenml.zen_server.utils import (
+    initialize_feature_gate,
     initialize_plugins,
     initialize_rbac,
+    initialize_secure_headers,
     initialize_workload_manager,
     initialize_zen_store,
+    secure_headers,
     server_config,
 )
 
@@ -121,6 +124,22 @@ app.add_middleware(
 
 
 @app.middleware("http")
+async def set_secure_headers(request: Request, call_next: Any) -> Any:
+    """Middleware to set secure headers.
+
+    Args:
+        request: The incoming request.
+        call_next: The next function to be called.
+
+    Returns:
+        The response with secure headers set.
+    """
+    response = await call_next(request)
+    secure_headers().framework.fastapi(response)
+    return response
+
+
+@app.middleware("http")
 async def infer_source_context(request: Request, call_next: Any) -> Any:
     """A middleware to track the source of an event.
 
@@ -159,8 +178,10 @@ def initialize() -> None:
     # race conditions
     initialize_zen_store()
     initialize_rbac()
+    initialize_feature_gate()
     initialize_workload_manager()
     initialize_plugins()
+    initialize_secure_headers()
 
 
 app.mount(

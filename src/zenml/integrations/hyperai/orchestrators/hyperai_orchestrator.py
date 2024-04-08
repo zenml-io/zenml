@@ -451,7 +451,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Log errors in case of failure
             for line in stderr.readlines():
                 logger.info(line)
-        else:
+        elif deployment.schedule and deployment.schedule.cron_expression:
             # Get cron expression for scheduled pipeline
             cron_expression = deployment.schedule.cron_expression
             if not cron_expression:
@@ -465,12 +465,46 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 )
 
             # Log about scheduling
-            logger.info("Scheduling ZenML pipeline on HyperAI instance.")
-            logger.info(f"Cron expression: {cron_expression}")
+            logger.info(f"Requested cron expression: {cron_expression}")
+            logger.info("Scheduling ZenML pipeline on HyperAI instance...")
 
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
                 f"(crontab -l ; echo '{cron_expression} bash {directory_name}/run_pipeline.sh') | crontab -"
             )
 
-            logger.info("Pipeline scheduled successfully.")
+            logger.info(
+                f"Pipeline scheduled successfully in crontab with cron expression: {cron_expression}"
+            )
+        elif deployment.schedule and deployment.schedule.run_once_start_time:
+            # Get start time for scheduled pipeline
+            start_time = deployment.schedule.run_once_start_time
+
+            # Log about scheduling
+            logger.info(f"Requested start time: {start_time}")
+            logger.info("Scheduling ZenML pipeline on HyperAI instance...")
+
+            # Check if `at` is installed on HyperAI instance
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
+                "which at"
+            )
+            if not stdout.readlines():
+                raise RuntimeError(
+                    "The `at` command is not installed on the HyperAI instance. Please install it to use start times for scheduled pipelines."
+                )
+
+            # Convert start time into YYYYMMDDHHMM.SS format
+            start_time_str = start_time.strftime("%Y%m%d%H%M.%S")
+
+            # Create cron job for scheduled pipeline on HyperAI instance
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
+                f"echo 'bash {directory_name}/run_pipeline.sh' | at -t {start_time_str}"
+            )
+
+            logger.info(
+                f"Pipeline scheduled successfully to run once at: {start_time}"
+            )
+        else:
+            raise RuntimeError(
+                "A cron expression or start time is required for scheduled pipelines."
+            )

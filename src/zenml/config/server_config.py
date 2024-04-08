@@ -16,7 +16,7 @@
 import json
 import os
 from secrets import token_hex
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
@@ -30,6 +30,14 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
     ENV_ZENML_SERVER_PREFIX,
 )
 from zenml.enums import AuthScheme
@@ -87,13 +95,13 @@ class ServerConfiguration(BaseModel):
             construct the OAuth 2.0 device authorization endpoint. If not set,
             a partial URL is returned to the client which is used to construct
             the full URL based on the server's root URL path.
-        device_expiration: The time in minutes that an OAuth 2.0 device is
+        device_expiration_minutes: The time in minutes that an OAuth 2.0 device is
             allowed to be used to authenticate with the ZenML server. If not
             set or if `jwt_token_expire_minutes` is not set, the devices are
             allowed to be used indefinitely. This controls the expiration time
             of the JWT tokens issued to clients after they have authenticated
             with the ZenML server using an OAuth 2.0 device.
-        trusted_device_expiration: The time in minutes that a trusted OAuth 2.0
+        trusted_device_expiration_minutes: The time in minutes that a trusted OAuth 2.0
             device is allowed to be used to authenticate with the ZenML server.
             If not set or if `jwt_token_expire_minutes` is not set, the devices
             are allowed to be used indefinitely. This controls the expiration
@@ -116,6 +124,11 @@ class ServerConfiguration(BaseModel):
             the RBAC interface defined by
             `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
             RBAC will not be enabled for this server.
+        feature_gate_implementation_source: Source pointing to a class
+            implementing the feature gate interface defined by
+            `zenml.zen_server.feature_gate.feature_gate_interface.FeatureGateInterface`.
+            If not specified, feature usage will not be gated/tracked for this
+            server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
         pipeline_run_auth_window: The default time window in minutes for which
@@ -123,6 +136,76 @@ class ServerConfiguration(BaseModel):
             server.
         login_rate_limit_minute: The number of login attempts allowed per minute.
         login_rate_limit_day: The number of login attempts allowed per day.
+        secure_headers_server: Custom value to be set in the `Server` HTTP
+            header to identify the server. If not specified, or if set to one of
+            the reserved values `enabled`, `yes`, `true`, `on`, the `Server`
+            header will be set to the default value (ZenML server ID). If set to
+            one of the reserved values `disabled`, `no`, `none`, `false`, `off`
+            or to an empty string, the `Server` header will not be included in
+            responses.
+        secure_headers_hsts: The server header value to be set in the HTTP
+            header `Strict-Transport-Security`. If not specified, or if set to
+            one of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Strict-Transport-Security` header will be set to the default value
+            (`max-age=63072000; includeSubdomains`). If set to one of
+            the reserved values `disabled`, `no`, `none`, `false`, `off` or to
+            an empty string, the `Strict-Transport-Security` header will not be
+            included in responses.
+        secure_headers_xfo: The server header value to be set in the HTTP
+            header `X-Frame-Options`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `X-Frame-Options`
+            header will be set to the default value (`SAMEORIGIN`). If set to
+            one of the reserved values `disabled`, `no`, `none`, `false`, `off`
+            or to an empty string, the `X-Frame-Options` header will not be
+            included in responses.
+        secure_headers_xxp: The server header value to be set in the HTTP
+            header `X-XSS-Protection`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `X-XSS-Protection`
+            header will be set to the default value (`0`). If set to one of the
+            reserved values `disabled`, `no`, `none`, `false`, `off` or
+            to an empty string, the `X-XSS-Protection` header will not be
+            included in responses. NOTE: this header is deprecated and should
+            always be set to `0`. The `Content-Security-Policy` header should be
+            used instead.
+        secure_headers_content: The server header value to be set in the HTTP
+            header `X-Content-Type-Options`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `X-Content-Type-Options` header will be set to the default value
+            (`nosniff`). If set to one of the reserved values `disabled`, `no`,
+            `none`, `false`, `off` or to an empty string, the
+            `X-Content-Type-Options` header will not be included in responses.
+        secure_headers_csp: The server header value to be set in the HTTP
+            header `Content-Security-Policy`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Content-Security-Policy` header will be set to a default value
+            that is compatible with the ZenML dashboard. If set to one of the
+            reserved values `disabled`, `no`, `none`, `false`, `off` or to an
+            empty string, the `Content-Security-Policy` header will not be
+            included in responses.
+        secure_headers_referrer: The server header value to be set in the HTTP
+            header `Referrer-Policy`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `Referrer-Policy`
+            header will be set to the default value
+            (`no-referrer-when-downgrade`). If set to one of the reserved values
+            `disabled`, `no`, `none`, `false`, `off` or to an empty string, the
+            `Referrer-Policy` header will not be included in responses.
+        secure_headers_cache: The server header value to be set in the HTTP
+            header `Cache-Control`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `Cache-Control`
+            header will be set to the default value
+            (`no-store, no-cache, must-revalidate`). If set to one of the
+            reserved values `disabled`, `no`, `none`, `false`, `off` or to an
+            empty string, the `Cache-Control` header will not be included in
+            responses.
+        secure_headers_permissions: The server header value to be set in the
+            HTTP header `Permissions-Policy`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Permissions-Policy` header will be set to the default value
+            (`accelerometer=(), camera=(), geolocation=(), gyroscope=(),
+              magnetometer=(), microphone=(), payment=(), usb=()`). If set to
+            one of the reserved values `disabled`, `no`, `none`, `false`, `off`
+            or to an empty string, the `Permissions-Policy` header will not be
+            included in responses.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -156,6 +239,7 @@ class ServerConfiguration(BaseModel):
     external_server_id: Optional[UUID] = None
 
     rbac_implementation_source: Optional[str] = None
+    feature_gate_implementation_source: Optional[str] = None
     workload_manager_implementation_source: Optional[str] = None
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
@@ -164,6 +248,32 @@ class ServerConfiguration(BaseModel):
     rate_limit_enabled: bool = False
     login_rate_limit_minute: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE
     login_rate_limit_day: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY
+
+    secure_headers_server: Union[bool, str] = True
+    secure_headers_hsts: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS
+    )
+    secure_headers_xfo: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO
+    )
+    secure_headers_xxp: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP
+    )
+    secure_headers_content: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT
+    )
+    secure_headers_csp: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP
+    )
+    secure_headers_referrer: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER
+    )
+    secure_headers_cache: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE
+    )
+    secure_headers_permissions: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
+    )
 
     _deployment_id: Optional[UUID] = None
 
@@ -215,6 +325,16 @@ class ServerConfiguration(BaseModel):
                     f"The server metadata is not a valid JSON string: {e}"
                 )
 
+        # if one of the secure headers options is set to a boolean value, set
+        # the corresponding value
+        for k, v in values.copy().items():
+            if k.startswith("secure_headers_") and isinstance(v, str):
+                if v.lower() in ["disabled", "no", "none", "false", "off", ""]:
+                    values[k] = False
+                if v.lower() in ["enabled", "yes", "true", "on"]:
+                    # Revert to the default value if the header is enabled
+                    del values[k]
+
         return values
 
     @property
@@ -243,6 +363,15 @@ class ServerConfiguration(BaseModel):
             Whether RBAC is enabled on the server or not.
         """
         return self.rbac_implementation_source is not None
+
+    @property
+    def feature_gate_enabled(self) -> bool:
+        """Whether feature gating is enabled on the server or not.
+
+        Returns:
+            Whether feature gating is enabled on the server or not.
+        """
+        return self.feature_gate_implementation_source is not None
 
     @property
     def workload_manager_enabled(self) -> bool:

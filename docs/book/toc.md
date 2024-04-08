@@ -24,6 +24,9 @@
   * [Configure your pipeline to add compute](user-guide/production-guide/configure-pipeline.md)
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
   * [An end-to-end project](user-guide/production-guide/end-to-end.md)
+* [☁️ Cloud Guide](user-guide/cloud-guide/cloud-guide.md)
+  * [AWS](user-guide/cloud-guide/aws-guide.md)
+  * [GCP](user-guide/cloud-guide/gcp-guide.md)
 * [🍗 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
     * [Understanding configuration](user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md)
@@ -62,6 +65,16 @@
     * [Project templates](user-guide/advanced-guide/best-practices/using-project-templates.md)
     * [Handling dependencies](user-guide/advanced-guide/best-practices/handling-dependencies.md)
     * [Debug and solve issues](user-guide/advanced-guide/best-practices/debug-and-solve-issues.md)
+* [🦜 LLMOps guide](user-guide/llmops-guide/llmops-guide.md)
+  * [RAG with ZenML](user-guide/llmops-guide/rag/rag-with-zenml.md)
+    * [Understanding Retrieval-Augmented Generation (RAG)](user-guide/llmops-guide/rag/understanding-rag.md)
+    * [Data ingestion and preprocessing](user-guide/llmops-guide/rag/data-ingestion.md)
+    * [Embeddings generation](user-guide/llmops-guide/rag/embeddings-generation.md)
+    * [Storing embeddings in a vector database](user-guide/llmops-guide/rag/storing-embeddings-in-a-vector-database.md)
+    * [Basic RAG inference pipeline](user-guide/llmops-guide/rag/basic-rag-inference-pipeline.md)
+  * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
+  * [Reranking for better retrieval](user-guide/llmops-guide/reranking/reranking.md)
+  * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
 
 ## Deploying ZenML
 
