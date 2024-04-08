@@ -39,8 +39,10 @@ a smooth transfer of Docker images.
 
 ### Scheduled pipelines
 
-[Scheduled pipelines](../../../user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md) are supported by the HyperAI orchestrator. Currently, only cron expressions are supported via `cron_expression`. When pipeline runs are scheduled, they are added as a crontab entry
-on the HyperAI instance.
+[Scheduled pipelines](../../../user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md) are supported by the HyperAI orchestrator. Currently, the HyperAI orchestrator supports the following inputs to `Schedule`:
+
+* Cron expressions via `cron_expression`. When pipeline runs are scheduled, they are added as a crontab entry on the HyperAI instance. Use this when you want pipelines to run in intervals. Using cron expressions assumes that `crontab` is available on your instance and that its daemon is running.
+* Scheduled runs via `run_once_start_time`. When pipeline runs are scheduled this way, they are added as an `at` entry on the HyperAI instance. Use this when you want pipelines to run just once and at a specified time. This assumes that `at` is available on your instance.
 
 ### How to deploy it
 To use the HyperAI orchestrator, you must configure a HyperAI Service Connector in ZenML and link it to the HyperAI orchestrator
