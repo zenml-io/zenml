@@ -32,6 +32,8 @@ answering system that can provide answers to common questions about ZenML. This
 will help you understand how to apply the concepts covered in this guide to your
 own projects.
 
-By the end of this guide, you'll have a solid understanding of how to leverage LLMs in your MLOps workflows using ZenML, enabling you to build powerful, scalable, and maintainable LLM-powered applications. Let's embark on this exciting journey together!
+By the end of this guide, you'll have a solid understanding of how to leverage
+LLMs in your MLOps workflows using ZenML, enabling you to build powerful,
+scalable, and maintainable LLM-powered applications. Let's get started!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
