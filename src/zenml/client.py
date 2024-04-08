@@ -3047,6 +3047,7 @@ class Client(metaclass=ClientMetaClass):
         interval_second: Optional[int] = None,
         catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
+        run_once_start_time: Optional[Union[datetime, str]] = None,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -3071,6 +3072,7 @@ class Client(metaclass=ClientMetaClass):
             catchup: Use to filter by catchup.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            run_once_start_time: Use to filter by run once start time.
 
         Returns:
             A list of schedules.
@@ -3094,6 +3096,7 @@ class Client(metaclass=ClientMetaClass):
             end_time=end_time,
             interval_second=interval_second,
             catchup=catchup,
+            run_once_start_time=run_once_start_time,
         )
         schedule_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_schedules(

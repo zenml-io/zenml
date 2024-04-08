@@ -675,6 +675,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     end_time=schedule.end_time,
                     interval_second=schedule.interval_second,
                     catchup=schedule.catchup,
+                    run_once_start_time=schedule.run_once_start_time,
                 )
                 schedule_id = (
                     Client().zen_store.create_schedule(schedule_model).id
