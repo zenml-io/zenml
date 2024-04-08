@@ -165,7 +165,10 @@ documents...
 
 ## Code Example
 
-To explore the full code, visit the [Complete Guide](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) repository.
+To explore the full code, visit the [Complete
+Guide](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)
+repository and particularly [the code for the steps](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide/steps/) in this section. Note, too,
+that a lot of the logic is encapsulated in utility functions inside [`url_scraping_utils.py`](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide/steps/url_scraping_utils.py).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
