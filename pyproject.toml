@@ -116,6 +116,9 @@ azure-mgmt-resource = { version = ">=21.0.0", optional = true }
 # Optional dependencies for the S3 artifact store
 s3fs = { version = ">=2022.11.0", optional = true }
 
+# Optional dependencies for materializers using safetensors
+safetensors = { version = "^0.4.2", optional = true }
+
 # Optional dependencies for the GCS artifact store
 gcsfs = { version = ">=2022.11.0", optional = true }
 
@@ -187,6 +190,7 @@ server = [
 templates = ["copier", "jinja2-time", "ruff", "pyyaml-include"]
 terraform = ["python-terraform"]
 secrets-aws = ["boto3"]
+safetensors = ["safetensors"]
 secrets-gcp = ["google-cloud-secret-manager"]
 secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
 secrets-hashicorp = ["hvac"]
