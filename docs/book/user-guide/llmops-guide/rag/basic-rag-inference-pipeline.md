@@ -19,7 +19,7 @@ used to run the pipeline:
 python run.py --rag-query "how do I use a custom materializer inside my own zenml steps? i.e. how do I set it? inside the @step decorator?" --model=gpt4
 ```
 
-![](/docs/book/.github/assets/rag-inference.png)
+![](/docs/book/.gitbook/assets/rag-inference.png)
 
 This inference query itself is not a ZenML pipeline, but rather a function call
 which uses the outputs and components of our pipeline to generate the response.
