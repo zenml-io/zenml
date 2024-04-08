@@ -161,6 +161,7 @@ schedule:
   interval_second: Optional[timedelta]
   name: Optional[str]
   start_time: Optional[datetime]
+  run_once_start_time: Optional[datetime]
 settings:
   docker:
     apt_packages: List[str]

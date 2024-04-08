@@ -43,6 +43,8 @@ class Schedule(BaseModel):
             schedules the latest interval if more than one interval is ready to
             be scheduled. Usually, if your pipeline handles backfill
             internally, you should turn catchup off to avoid duplicate backfill.
+        run_once_start_time: datetime object to indicate when to run the
+            pipeline once. This is useful for one-off runs.
     """
 
     name: Optional[str] = None
@@ -51,6 +53,7 @@ class Schedule(BaseModel):
     end_time: Optional[datetime.datetime] = None
     interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
+    run_once_start_time: Optional[datetime.datetime] = None
 
     @root_validator
     def _ensure_cron_or_periodic_schedule_configured(
@@ -72,6 +75,7 @@ class Schedule(BaseModel):
         periodic_schedule = values.get("start_time") and values.get(
             "interval_second"
         )
+        run_once_starts_at = values.get("run_once_start_time")
 
         if cron_expression and periodic_schedule:
             logger.warning(
@@ -82,11 +86,20 @@ class Schedule(BaseModel):
                 "expression."
             )
             return values
-        elif cron_expression or periodic_schedule:
+        elif cron_expression and run_once_starts_at:
+            logger.warning(
+                "This schedule was created with a cron expression as well as "
+                "a value for `run_once_start_time`. The resulting behavior "
+                "depends on the concrete orchestrator implementation but will "
+                "usually ignore the `run_once_start_time`."
+            )
+            return values
+        elif cron_expression or periodic_schedule or run_once_starts_at:
             return values
         else:
             raise ValueError(
-                "Either a cron expression or start time and interval seconds "
+                "Either a cron expression, a start time and interval seconds "
+                "or a run once start time "
                 "need to be set for a valid schedule."
             )
 
