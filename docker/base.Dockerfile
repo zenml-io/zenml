@@ -37,5 +37,5 @@ RUN groupadd --gid $USER_GID $USERNAME \
 RUN mkdir -p /zenml/.zenconfig/local_stores/default_zen_store && chown -R $USER_UID:$USER_GID /zenml
 ENV PATH="$PATH:/home/$USERNAME/.local/bin"
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header"]
 CMD ["--port", "8080", "--host",  "0.0.0.0"]
