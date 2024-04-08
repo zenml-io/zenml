@@ -72,9 +72,9 @@
     * [Embeddings generation](user-guide/llmops-guide/rag/embeddings-generation.md)
     * [Storing embeddings in a vector database](user-guide/llmops-guide/rag/storing-embeddings-in-a-vector-database.md)
     * [Basic RAG inference pipeline](user-guide/llmops-guide/rag/basic-rag-inference-pipeline.md)
-  * [Finetuning with ZenML](user-guide/llmops-guide/finetuning-with-zenml.md)
-  * [Deploying and Serving Finetuned Models](user-guide/llmops-guide/deploying-serving-finetuned-models.md)
-  * [Lifecycle Considerations with Finetuned Models](user-guide/llmops-guide/lifecycle-considerations-finetuned-models.md)
+  * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
+  * [Reranking for better retrieval](user-guide/llmops-guide/reranking/reranking.md)
+  * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
 
 ## Deploying ZenML
 
