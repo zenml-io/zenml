@@ -143,7 +143,10 @@ time.
 
 ## Code Example
 
-To explore the full code, visit the [Complete Guide](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) repository.
+To explore the full code, visit the [Complete
+Guide](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)
+repository. The embeddings generation step can be found
+[here](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide/steps/populate_index.py).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
