@@ -46,5 +46,5 @@ ENV ZENML_CONFIG_PATH=/zenml/.zenconfig \
     ZENML_DEBUG=true \
     ZENML_ANALYTICS_OPT_IN=false
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header"]
 CMD ["--port", "8080", "--host",  "0.0.0.0"]

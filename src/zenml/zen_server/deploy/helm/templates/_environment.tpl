@@ -88,6 +88,9 @@ base_url: {{ .ZenML.baseURL | quote }}
 {{- if .ZenML.auth.rbacImplementationSource }}
 rbac_implementation_source: {{ .ZenML.auth.rbacImplementationSource | quote }}
 {{- end }}
+{{- range $key, $value := .ZenML.secure_headers }}
+secure_headers_{{ $key }}: {{ $value | quote }}
+{{- end }}
 {{- end }}
 
 

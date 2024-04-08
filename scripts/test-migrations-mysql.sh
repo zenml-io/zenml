@@ -91,7 +91,7 @@ do
     git checkout release/$VERSION
     uv pip install -e ".[templates,server]"
     # handles unpinned sqlmodel dependency in older versions
-    uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1"
+    uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0"
 
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
@@ -131,7 +131,7 @@ source ".venv-current-branch/bin/activate"
 uv pip install setuptools wheel pip
 
 uv pip install -e ".[templates,server]"
-uv pip install importlib_metadata
+uv pip install importlib_metadata "pyyaml-include<2.0"
 
 if [ "$1" == "mysql" ]; then
     zenml connect --url mysql://127.0.0.1/zenml --username root --password password
@@ -242,7 +242,7 @@ for i in "${!MIGRATION_VERSIONS[@]}"; do
     git checkout release/${MIGRATION_VERSIONS[$i]}
     uv pip install -e ".[templates,server]"
     # Handles unpinned sqlmodel dependency in older versions
-    uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" importlib_metadata
+    uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" importlib_metadata "pyyaml-include<2.0"
 
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')

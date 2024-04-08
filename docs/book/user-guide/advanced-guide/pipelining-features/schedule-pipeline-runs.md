@@ -44,6 +44,8 @@ my_pipeline()
 
 You can specify an optional `end_time` for the schedule to prevent it from running after a certain time. The `catchup` parameter, which is a boolean, can be used to specify whether a recurring run should catch up (i.e. backfill pipeline runs) on missed runs if it has fallen behind schedule. This can happen, for example, if you paused the schedule.
 
+If you want to run a pipeline just once while running it at a specific time, instead of `start_time`, use `run_once_start_time` if it is supported by your orchestrator.
+
 In the context of scheduled cron or pipeline jobs, backfilling refers to running a missed job for a specific period in the past. For example, if a pipeline misses a scheduled run at 12:00 PM, backfilling can be used to run the pipeline for the 12:00 PM time slot, in order to collect the missing data. This helps ensure that the pipeline is up-to-date and that downstream jobs have the necessary data to run correctly. Backfilling is a useful technique for catching up on missed runs and filling in gaps in scheduled jobs and can help ensure that pipelines and cron schedules are running smoothly. Usually, if your pipeline handles backfill internally, you should turn catchup off to avoid duplicate backfill. Note that the `catchup` parameter enabling backfilling is not supported in all orchestrators.
 
 {% hint style="warning" %}
