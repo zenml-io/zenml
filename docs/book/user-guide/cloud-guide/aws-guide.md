@@ -182,7 +182,7 @@ is used to store Docker images for your pipelines.
 1. You'll need to create a repository in ECR. If you already have one, you can skip this step.
 
 ```shell
-aws ecr create-repository --repository-name zenml-repository --region <YOUR_REGION>
+aws ecr create-repository --repository-name zenml --region <YOUR_REGION>
 ```
 
 Once this is done, you can create the ZenML stack component as follows:
@@ -190,18 +190,11 @@ Once this is done, you can create the ZenML stack component as follows:
 2. Register an ECR container registry stack component:
 
 ```shell
-zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com/zenml-repository --connector aws-connector
+zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com --connector aws-connector
 ```
 
 More details
 [here](../../stacks-and-components/component-guide/container-registries/aws.md).
-
-Finally, you'll need to authenticate with the container registry to push images
-to it. You can do this by running:
-
-```shell
-aws ecr get-login-password --region <YOUR_REGION> | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com
-```
 
 ## 4) Create stack
 
