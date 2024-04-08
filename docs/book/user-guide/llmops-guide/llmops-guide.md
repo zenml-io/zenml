@@ -15,16 +15,8 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Storing embeddings in a vector database](rag/storing-embeddings-in-a-vector-database.md)
   * [Basic RAG inference pipeline](rag/basic-rag-inference-pipeline.md)
 * [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
-  * [Finetuning embeddings for better retrieval performance](finetuning-embeddings/finetuning-embeddings-for-better-retrieval-performance.md)
-  * [Integrating finetuned embeddings into ZenML pipelines](finetuning-embeddings/integrating-finetuned-embeddings-into-zenml-pipelines.md)
 * [Reranking for better retrieval](reranking/reranking.md)
-  * [Understanding reranking](reranking/understanding-reranking.md) and its importance in retrieval
-  * [Implementing reranking in ZenML pipelines](reranking/implementing-reranking.md)
 * [Finetuning LLMs with ZenML](finetuning-llms/finetuning-llms.md)
-  * [Synthetic data generation](finetuning-llms/synthetic-data-generation.md) for finetuning LLMs
-  * [Finetuning LLMs for specific tasks](finetuning-llms/finetuning-llms-for-specific-tasks.md) using LoRA
-  * [Tracking finetuned LLM models with ZenML](finetuning-llms/tracking-finetuned-llm-models.md)
-  * [Deploying finetuned models](finetuning-llms/deploying-finetuned-models.md)
 
 To follow along with the examples and tutorials in this guide, ensure you have a
 Python environment set up with ZenML installed. Familiarity with the concepts
