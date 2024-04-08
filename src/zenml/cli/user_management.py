@@ -343,6 +343,12 @@ def change_user_password(
             f"New password for user {active_user.name}",
             hide_input=True,
         )
+        password_again = click.prompt(
+            f"Please re-enter the new password for user {active_user.name}",
+            hide_input=True,
+        )
+        if password != password_again:
+            cli_utils.error("Passwords do not match.")
 
     try:
         Client().update_user(
