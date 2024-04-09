@@ -814,7 +814,9 @@ class Client(metaclass=ClientMetaClass):
         updated_email_opt_in: Optional[bool] = None,
         updated_hub_token: Optional[str] = None,
         updated_password: Optional[str] = None,
+        old_password: Optional[str] = None,
         updated_is_admin: Optional[bool] = None,
+        active: Optional[bool] = None,
     ) -> UserResponse:
         """Update a user.
 
@@ -826,10 +828,17 @@ class Client(metaclass=ClientMetaClass):
             updated_email_opt_in: The new email opt-in status of the user.
             updated_hub_token: Update the hub token
             updated_password: The new password of the user.
+            old_password: The old password of the user. Required for password
+                update.
             updated_is_admin: Whether the user should be an admin.
+            active: Use to activate or deactivate the user.
 
         Returns:
             The updated user.
+
+        Raises:
+            ValidationError: If the old password is not provided when updating
+                the password.
         """
         user = self.get_user(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
@@ -848,12 +857,35 @@ class Client(metaclass=ClientMetaClass):
             user_update.hub_token = updated_hub_token
         if updated_password is not None:
             user_update.password = updated_password
+            if old_password is None:
+                raise ValidationError(
+                    "Old password is required to update the password."
+                )
+            user_update.old_password = old_password
         if updated_is_admin is not None:
             user_update.is_admin = updated_is_admin
+        if active is not None:
+            user_update.active = active
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update
         )
+
+    @_fail_for_sql_zen_store
+    def deactivate_user(self, name_id_or_prefix: str) -> "UserResponse":
+        """Deactivate a user and generate an activation token.
+
+        Args:
+            name_id_or_prefix: The name or ID of the user to reset.
+
+        Returns:
+            The deactivated user.
+        """
+        from zenml.zen_stores.rest_zen_store import RestZenStore
+
+        user = self.get_user(name_id_or_prefix, allow_name_prefix_match=False)
+        assert isinstance(self.zen_store, RestZenStore)
+        return self.zen_store.deactivate_user(user_name_or_id=user.name)
 
     def delete_user(self, name_id_or_prefix: str) -> None:
         """Delete a user.

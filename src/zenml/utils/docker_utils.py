@@ -260,7 +260,7 @@ def push_image(
         RuntimeError: If fetching the repository digest of the image failed.
     """
     logger.info("Pushing Docker image `%s`.", image_name)
-    docker_client = _try_get_docker_client_from_env()
+    docker_client = docker_client or _try_get_docker_client_from_env()
     output_stream = docker_client.images.push(image_name, stream=True)
     aux_info = _process_stream(output_stream)
     logger.info("Finished pushing Docker image.")

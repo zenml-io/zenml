@@ -239,9 +239,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             assert container_registry is not None
 
             kubernetes_context = self.config.kubernetes_context
-            connector = self.get_connector()
 
-            if not connector:
+            if not self.connector:
                 if (
                     not kubernetes_context
                     and not self.config.kubeflow_hostname

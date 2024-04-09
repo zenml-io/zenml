@@ -32,7 +32,7 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import ServerProviderType, StoreType
-from zenml.exceptions import IllegalOperationError
+from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils import terraform_utils, yaml_utils
 from zenml.zen_server.utils import get_active_deployment
@@ -625,12 +625,6 @@ def status() -> None:
     type=str,
 )
 @click.option(
-    "--workspace",
-    help="The workspace to use when connecting to the ZenML server.",
-    required=False,
-    type=str,
-)
-@click.option(
     "--no-verify-ssl",
     is_flag=True,
     help="Whether to verify the server's TLS certificate",
@@ -661,7 +655,6 @@ def connect(
     username: Optional[str] = None,
     password: Optional[str] = None,
     api_key: Optional[str] = None,
-    workspace: Optional[str] = None,
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
     config: Optional[str] = None,
@@ -677,8 +670,6 @@ def connect(
             server.
         api_key: The API key that is used to authenticate with the ZenML
             server.
-        workspace: The active workspace that is used to connect to the ZenML
-            server.
         no_verify_ssl: Whether to verify the server's TLS certificate.
         ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
             certificate or the CA bundle value itself.
@@ -688,6 +679,12 @@ def connect(
     """
     from zenml.config.store_config import StoreConfiguration
     from zenml.zen_stores.base_zen_store import BaseZenStore
+
+    if password is not None:
+        cli_utils.warning(
+            "Supplying password values in the command line is not safe. "
+            "Please consider using the prompt option."
+        )
 
     # Raise an error if a local server is running when trying to connect to
     # another server
@@ -767,6 +764,16 @@ def connect(
             username = click.prompt("Username", type=str)
 
     if username:
+        cli_utils.warning(
+            "Connecting to a ZenML server using a username and password is "
+            "not recommended because the password is locally stored on your "
+            "filesystem. You should consider using the web login workflow by "
+            "omitting the `--username` and `--password` flags. An alternative "
+            "for non-interactive environments is to create and use a service "
+            "account API key (see https://docs.zenml.io/user-guide/advanced-guide/configuring-zenml/connecting-to-zenml#using-service-accounts-to-connect-to-a-deployed-zenml-server "
+            "for more information)."
+        )
+
         store_dict["username"] = username
 
         if password is None:
@@ -790,16 +797,8 @@ def connect(
             f"User '{username}' does not have sufficient permissions to "
             f"access the server at '{url}'."
         )
-
-    if workspace:
-        try:
-            Client().set_active_workspace(workspace_name_or_id=workspace)
-        except KeyError:
-            cli_utils.warning(
-                f"The workspace {workspace} does not exist or is not accessible. "
-                f"Please set another workspace by running `zenml "
-                f"workspace set`."
-            )
+    except AuthorizationException as e:
+        cli_utils.warning(f"Authorization error: {e}")
 
 
 @cli.command("disconnect", help="Disconnect from a ZenML server.")

@@ -28,7 +28,13 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import email_opt_int, track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.cli.utils import (
+    confirmation,
+    declare,
+    error,
+    is_jupyter_installed,
+    warning,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
@@ -401,6 +407,7 @@ def go() -> None:
 
     Raises:
         GitNotFoundError: If git is not installed.
+        e: when Jupyter Notebook fails to launch.
     """
     from zenml.cli.text_utils import (
         zenml_cli_privacy_message,
@@ -475,7 +482,24 @@ def go() -> None:
             zenml_go_notebook_tutorial_message(ipynb_files), width=80
         )
         input("Press ENTER to continue...")
-    subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+
+    if is_jupyter_installed():
+        try:
+            subprocess.check_call(
+                ["jupyter", "notebook"], cwd=zenml_tutorial_path
+            )
+        except subprocess.CalledProcessError as e:
+            cli_utils.error(
+                "An error occurred while launching Jupyter Notebook. "
+                "Please make sure Jupyter is properly installed and try again."
+            )
+            raise e
+    else:
+        cli_utils.error(
+            "Jupyter Notebook or JupyterLab is not installed. "
+            "Please install the 'notebook' package with `pip` "
+            "to run the tutorial notebooks."
+        )
 
 
 def _prompt_email(event_source: AnalyticsEventSource) -> bool:
