@@ -16,7 +16,7 @@ ingested already and you can pass a query in as a flag to the Python command
 used to run the pipeline:
 
 ```bash
-python run.py --rag-query "how do I use a custom materializer inside my own zenml steps? i.e. how do I set it? inside the @step decorator?" --model=gpt4
+python run.py --query "how do I use a custom materializer inside my own zenml steps? i.e. how do I set it? inside the @step decorator?" --model=gpt4
 ```
 
 ![](/docs/book/.gitbook/assets/rag-inference.png)
