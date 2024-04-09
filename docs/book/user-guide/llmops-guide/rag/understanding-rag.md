@@ -17,6 +17,12 @@ corpus and uses them to generate a response. This approach combines the
 strengths of retrieval-based and generation-based models, allowing you to
 leverage the power of LLMs while addressing their limitations.
 
+Let's take a look at a quick example in code to understand how RAG works:
+
+```python
+
+```
+
 # What exactly happens in a RAG pipeline?
 
 ![](/docs/book/.gitbook/assets/rag-process-whole.png)
