@@ -17,7 +17,6 @@ import inspect
 import os
 from functools import wraps
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Optional,
@@ -28,6 +27,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+import secure
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -52,8 +52,6 @@ from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
-
-import secure
 
 logger = get_logger(__name__)
 
