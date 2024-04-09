@@ -1,4 +1,53 @@
 <!-- markdown-link-check-disable -->
+# 0.56.3
+
+This release comes with a number of bug fixes and enhancements.
+
+With this release you can benefit from new Lambda Labs GPU orchestrator integration
+in your pipelines. [Lambda Labs](https://lambdalabs.com/service/gpu-cloud) is a 
+cloud provider that offers GPU instances for machine learning workloads.
+
+In this release we have also implemented a few important security improvements to 
+ZenML Server mostly around Content Security Policies. Also users are from now on
+mandated to provide previous password during the password change process.
+
+Also the documentation was significantly improved with the new AWS Cloud guide and
+the LLM guide covering various aspects of LLM lifecycle.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot who contributed to this release
+by adding support for `Schedule.start_time` to the HyperAI orchestrator.
+
+## What's Changed
+* Really run migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2562
+* Interact with feature gate by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2492
+* Allow for logs to be unformatted / without colours by @strickvl in https://github.com/zenml-io/zenml/pull/2544
+* Add VS Code extension to README / docs by @strickvl in https://github.com/zenml-io/zenml/pull/2568
+* Allow loading of artifacts without needing to activate the artifact store (again) by @avishniakov in https://github.com/zenml-io/zenml/pull/2545
+* Minor fix by @htahir1 in https://github.com/zenml-io/zenml/pull/2578
+* [DOCS] Fix code block in Vertex docs by @wjayesh in https://github.com/zenml-io/zenml/pull/2580
+* Added an AWS cloud guide by @htahir1 in https://github.com/zenml-io/zenml/pull/2570
+* Update AWS cloud guide by @strickvl in https://github.com/zenml-io/zenml/pull/2581
+* More docs fixes by @htahir1 in https://github.com/zenml-io/zenml/pull/2585
+* Bugfix for the `pyyaml_include` version for `copier` by @bcdurak in https://github.com/zenml-io/zenml/pull/2586
+* Update fastapi and orjson to fix python-multipart and orjson vulnerabilities by @stefannica in https://github.com/zenml-io/zenml/pull/2582
+* Add security headers to the ZenML server by @stefannica in https://github.com/zenml-io/zenml/pull/2583
+* Fix and update AWS cloud guide by @strickvl in https://github.com/zenml-io/zenml/pull/2591
+* Add `start_time` support to HyperAI orchestrator scheduled pipelines by @christianversloot in https://github.com/zenml-io/zenml/pull/2572
+* Make `secure` an optional import by @stefannica in https://github.com/zenml-io/zenml/pull/2592
+* RAG guide for docs by @strickvl in https://github.com/zenml-io/zenml/pull/2525
+* Update test-migrations scripts with new versions `0.56.2` by @safoinme in https://github.com/zenml-io/zenml/pull/2565
+* Check old password during password change and add missing CLI commands by @stefannica in https://github.com/zenml-io/zenml/pull/2587
+* Add a note about the `f` prefix being needed for template strings by @strickvl in https://github.com/zenml-io/zenml/pull/2593
+* Skypilot: Lambda Edition by @safoinme in https://github.com/zenml-io/zenml/pull/2526
+* Use the correct validity for EKS API tokens and handle long-running Kubernetes pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/2589
+* Catch missing jupyter installation for `zenml go` by @strickvl in https://github.com/zenml-io/zenml/pull/2571
+* Allow resources required for the fastapi OpenAPI docs in the CSP header by @stefannica in https://github.com/zenml-io/zenml/pull/2595
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.2...0.56.3
+
 # 0.56.2
 
 This release replaces 0.56.0 and 0.56.1, and fixes the major migration bugs that were in
@@ -8,7 +57,7 @@ that yanked release. Please upgrade directly to 0.56.2 and avoid upgrading to
 Note that 0.56.0 and 0.56.1 were removed from PyPI due to an issue with the
 alembic versions + migration which could affect the database state. This release
 fixes that issue.
-This release introduces introduces a wide array of new features, enhancements, and bug fixes, with a strong emphasis on elevating the user experience and streamlining machine
+This release introduces a wide array of new features, enhancements, and bug fixes, with a strong emphasis on elevating the user experience and streamlining machine
 learning workflows. Most notably, you can now deploy models using Hugging Face inference endpoints thanks for an open-source community contribution of this model deployer stack component!
 
 This release also comes with a breaking change to the services
