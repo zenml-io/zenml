@@ -53,8 +53,7 @@ from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-if TYPE_CHECKING:
-    from secure import Secure
+import secure
 
 logger = get_logger(__name__)
 
@@ -63,7 +62,7 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
-_secure_headers: Optional["Secure"] = None
+_secure_headers: Optional[secure.Secure] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -219,7 +218,7 @@ def initialize_zen_store() -> None:
     _zen_store = zen_store_
 
 
-def secure_headers() -> "Secure":
+def secure_headers() -> secure.Secure:
     """Return the secure headers component.
 
     Returns:
@@ -236,8 +235,6 @@ def secure_headers() -> "Secure":
 
 def initialize_secure_headers() -> None:
     """Initialize the secure headers component."""
-    import secure
-
     global _secure_headers
 
     config = server_config()
