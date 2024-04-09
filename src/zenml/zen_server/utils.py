@@ -54,7 +54,7 @@ from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 if TYPE_CHECKING:
-    import secure
+    from secure import Secure
 
 logger = get_logger(__name__)
 
@@ -63,7 +63,7 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
-_secure_headers: Optional["secure.Secure"] = None
+_secure_headers: Optional["Secure"] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -219,7 +219,7 @@ def initialize_zen_store() -> None:
     _zen_store = zen_store_
 
 
-def secure_headers() -> "secure.Secure":
+def secure_headers() -> "Secure":
     """Return the secure headers component.
 
     Returns:
