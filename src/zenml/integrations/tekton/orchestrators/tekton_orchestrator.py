@@ -140,10 +140,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             assert container_registry is not None
 
             kubernetes_context = self.config.kubernetes_context
-            connector = self.get_connector()
             msg = f"'{self.name}' Tekton orchestrator error: "
 
-            if not connector:
+            if not self.connector:
                 if not kubernetes_context:
                     return False, (
                         f"{msg}you must either link this stack component to a "

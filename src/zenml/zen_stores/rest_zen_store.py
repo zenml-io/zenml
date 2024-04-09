@@ -50,6 +50,7 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CURRENT_USER,
+    DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -2942,6 +2943,23 @@ class RestZenStore(BaseZenStore):
             route=USERS,
             response_model=UserResponse,
         )
+
+    def deactivate_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserResponse:
+        """Deactivates a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+
+        Returns:
+            The deactivated user containing the activation token.
+        """
+        response_body = self.put(
+            f"{USERS}/{str(user_name_or_id)}{DEACTIVATE}",
+        )
+
+        return UserResponse.parse_obj(response_body)
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
