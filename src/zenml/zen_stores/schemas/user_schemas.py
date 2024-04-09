@@ -206,6 +206,9 @@ class UserSchema(NamedSchema, table=True):
             The updated `UserSchema`.
         """
         for field, value in user_update.dict(exclude_unset=True).items():
+            if field == "old_password":
+                continue
+
             if field == "password":
                 setattr(self, field, user_update.create_hashed_password())
             elif field == "activation_token":

@@ -298,10 +298,14 @@ Pipeline run names must be unique, so if you plan to run your pipelines multiple
 
 ```python
 training_pipeline = training_pipeline.with_options(
-    run_name="custom_pipeline_run_name_{{date}}_{{time}}"
+    run_name=f"custom_pipeline_run_name_{{date}}_{{time}}"
 )
 training_pipeline()
 ```
+
+Be sure to include the `f` string prefix to allow for the placeholders to be
+replaced, as shown in the example above. Without the `f` prefix, the
+placeholders will not be replaced.
 
 ## Full Code Example
 
