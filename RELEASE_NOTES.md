@@ -11,8 +11,8 @@ In this release we have also implemented a few important security improvements t
 ZenML Server mostly around Content Security Policies. Also users are from now on
 mandated to provide previous password during the password change process.
 
-Also the documentation was significantly improved with the new AWS Cloud guide and
-the LLM guide covering various aspects of LLM lifecycle.
+Also the documentation was significantly improved with [the new AWS Cloud guide](https://docs.zenml.io/user-guide/cloud-guide/aws-guide) and
+[the LLMOps guide](https://docs.zenml.io/user-guide/llmops-guide) covering various aspects of the LLM lifecycle.
 
 ## 🥳 Community Contributions 🥳
 
