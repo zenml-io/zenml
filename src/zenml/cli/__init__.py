@@ -1648,6 +1648,7 @@ images for containerized stack components.
 
 To register a code repository, use the following CLI
 command:
+
 ```shell
 zenml code-repository register <NAME> --type=<CODE_REPOSITORY_TYPE] \
    [--CODE_REPOSITORY_OPTIONS]
@@ -1666,11 +1667,13 @@ The `CODE_REPOSITORY_OPTIONS` depend on the configuration necessary for the
 type of code repository that you're using.
 
 If you want to list your registered code repositories, run:
+
 ```shell
 zenml code-repository list
 ```
 
 You can delete one of your registered code repositories like this:
+
 ```shell
 zenml code-repository delete <REPOSITORY_NAME_OR_ID>
 ```
