@@ -17,7 +17,6 @@ import inspect
 import os
 from functools import wraps
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Optional,
@@ -28,6 +27,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+import secure
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -53,9 +53,6 @@ from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-if TYPE_CHECKING:
-    import secure
-
 logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
@@ -63,7 +60,7 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
-_secure_headers: Optional["secure.Secure"] = None
+_secure_headers: Optional[secure.Secure] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -219,7 +216,7 @@ def initialize_zen_store() -> None:
     _zen_store = zen_store_
 
 
-def secure_headers() -> "secure.Secure":
+def secure_headers() -> secure.Secure:
     """Return the secure headers component.
 
     Returns:
@@ -236,8 +233,6 @@ def secure_headers() -> "secure.Secure":
 
 def initialize_secure_headers() -> None:
     """Initialize the secure headers component."""
-    import secure
-
     global _secure_headers
 
     config = server_config()
