@@ -835,7 +835,7 @@ the active or currently used data validator:
 zenml data-validator describe [DATA_VALIDATOR_NAME]
 ```
 
-If you wish to update/rename an data validator, you can use the following
+If you wish to update/rename a data validator, you can use the following
 commands respectively:
 
 ```bash
@@ -843,7 +843,7 @@ zenml data-validator update DATA_VALIDATOR_NAME --property_to_update=new_value
 zenml data-validator rename DATA_VALIDATOR_OLD_NAME DATA_VALIDATOR_NEW_NAME
 ```
 
-To delete an data validator (and all of its contents), use the `delete` command:
+To delete a data validator (and all of its contents), use the `delete` command:
 
 ```bash
 zenml data-validator delete DATA_VALIDATOR_NAME
@@ -863,6 +863,94 @@ command:
 
 ```bash
 zenml data-validator --help
+```
+
+Customizing your Image Builder
+------------------------------
+
+In ZenML, image builders allow you to build container images are used
+to build container images such that your machine-learning pipelines and
+steps can be executed in remote environments.
+
+By default, a default ZenML local stack will not register an image builder. If
+you wish to register a new image builder, do so with the `register` command:
+
+```bash
+zenml image-builder register IMAGE_BUILDER_NAME --flavor IMAGE_BUILDER_FLAVOR [--IMAGE_BUILDER_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml image-builder register IMAGE_BUILDER_NAME --flavor IMAGE_BUILDER_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new image builder,
+you have to choose a flavor. To see the full list of available image builder
+flavors, you can use the command:
+
+```bash
+zenml image-builder flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml image-builder flavor describe FLAVOR_NAME
+```
+
+To list all image builders available and registered for use, use the `list`
+command:
+
+```bash
+zenml image-builder list
+```
+
+If you want the name of the image builder in the active stack, use the `get`
+command:
+
+```bash
+zenml image-builder get
+```
+
+For details about a particular image builder, use the `describe` command.
+By default, (without a specific image builder name passed in) it will describe
+the active or currently used image builder:
+
+```bash
+zenml image-builder describe [IMAGE_BUILDER_NAME]
+```
+
+If you wish to update/rename an image builder, you can use the following
+commands respectively:
+
+```bash
+zenml image-builder update IMAGE_BUILDER_NAME --property_to_update=new_value
+zenml image-builder rename IMAGE_BUILDER_OLD_NAME IMAGE_BUILDER_NEW_NAME
+```
+
+To delete a image builder (and all of its contents), use the `delete` command:
+
+```bash
+zenml image-builder delete IMAGE_BUILDER_NAME
+```
+
+If you would like to connect/disconnect your image builder to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml image-builder connect IMAGE_BUILDER_NAME -c CONNECTOR_NAME
+zenml image-builder disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+image builders. In order to get a full list of available functions, use the
+command:
+
+```bash
+zenml image-builder --help
 ```
 
 Customizing your Annotator
