@@ -474,7 +474,7 @@ active or currently used container registry:
 zenml container-registry describe [CONTAINER_REGISTRY_NAME]
 ```
 
-If you wish to update/rename an orchestrator, you can use the following
+If you wish to update/rename a container registry, you can use the following
 commands respectively:
 
 ```bash
@@ -493,8 +493,8 @@ If you would like to connect/disconnect your container registry to/from a
 service connector, you can use the following commands:
 
 ```bash
-zenml orchestrator connect CONTAINER_REGISTRY_NAME -c CONNECTOR_NAME
-zenml orchestrator disconnect
+zenml container-registry connect CONTAINER_REGISTRY_NAME -c CONNECTOR_NAME
+zenml container-registry disconnect
 ```
 
 The ZenML CLI provides a few more utility functions for you to manage your
@@ -502,15 +502,23 @@ container registries. In order to get a full list of available functions,
 use the command:
 
 ```bash
-zenml orchestrators --help
+zenml container-registry --help
 ```
 
 Customizing your Experiment Tracker
 -----------------------------------
 
 Experiment trackers let you track your ML experiments by logging the parameters
-and allowing you to compare between different runs. If you want to use an
-experiment tracker in one of your stacks, you need to first register it:
+and allowing you to compare between different runs. To get a better
+understanding regarding experiment trackers, use the command:
+
+```bash
+zenml experiment-tracker explain
+```
+
+By default, a default ZenML local stack will not register an experiment tracker.
+If you want to use an experiment tracker in one of your stacks, you need to
+first register it:
 
 ```bash
 zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
@@ -524,10 +532,20 @@ zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
       --flavor=EXPERIMENT_TRACKER_FLAVOR -l key1=value1 -l key2=value2
 ```
 
-If you want the name of the current experiment tracker, use the `get` command:
+As you can see from the command above, when you register a new experiment
+tracker, you have to choose a flavor. To see the full list of available
+experiment tracker flavors, you can use the command:
 
 ```bash
-zenml experiment-tracker get
+zenml experiment-tracker flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml experiment-tracker flavor describe FLAVOR_NAME
 ```
 
 To list all experiment trackers available and registered for use, use the
@@ -535,6 +553,13 @@ To list all experiment trackers available and registered for use, use the
 
 ```bash
 zenml experiment-tracker list
+```
+
+If you want the name of the experiment tracker in the active stack, use the
+`get` command:
+
+```bash
+zenml experiment-tracker get
 ```
 
 For details about a particular experiment tracker, use the `describe` command.
@@ -545,11 +570,34 @@ describe the active or currently-used experiment tracker:
 zenml experiment-tracker describe [EXPERIMENT_TRACKER_NAME]
 ```
 
+If you wish to update/rename an experiment tracker, you can use the following
+commands respectively:
+
+```bash
+zenml experiment-tracker update EXPERIMENT_TRACKER_NAME --property_to_update=new_value
+zenml experiment-tracker rename EXPERIMENT_TRACKER_OLD_NAME EXPERIMENT_TRACKER_NEW_NAME
+```
+
 To delete an experiment tracker, use the `delete` command:
 
 ```bash
 zenml experiment-tracker delete EXPERIMENT_TRACKER_NAME
 ```
+
+If you would like to connect/disconnect your experiment tracker to/from a
+service connector, you can use the following commands:
+
+```bash
+zenml experiment-tracker connect CONTAINER_REGISTRY_NAME -c CONNECTOR_NAME
+zenml experiment-tracker disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+experiment trackers. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml experiment-tracker --help
 
 Customizing your Step Operator
 ------------------------------
