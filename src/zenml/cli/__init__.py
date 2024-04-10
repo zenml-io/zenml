@@ -96,6 +96,16 @@ you can add ``--template-with-defaults`` to the same command, like this:
 zenml init --template <name_of_template> --template-with-defaults
 ```
 
+In a similar fashion, if you would like to quickly explore the capabilities
+of ZenML through a notebook, you can also use:
+
+```bash
+zenml go
+```
+
+Cleaning up
+-----------
+
 If you wish to delete all data relating to your workspace from the
 directory, use the ``zenml clean`` command. This will:
 
@@ -146,6 +156,20 @@ Uninstalling a specific integration is as simple as typing:
 
 ```bash
 zenml integration uninstall INTEGRATION_NAME
+```
+
+If you would like to export the requirements of all ZenML integrations, you can
+use the command:
+
+```bash
+zenml integration export-requirements
+```
+
+Here, you can also select a list of integrations and write the result into and
+output file:
+
+```bash
+zenml integration export-requirements gcp kubeflow -o OUTPUT_FILE
 ```
 
 Filtering CLI output when listing
@@ -203,8 +227,15 @@ Customizing your Artifact Store
 
 The artifact store is where all the inputs and outputs of your pipeline
 steps are stored. By default, ZenML initializes your repository with an
-artifact store with everything kept on your local machine. If you wish
-to register a new artifact store, do so with the ``register`` command:
+artifact store with everything kept on your local machine. You can get a better
+understanding about the concept of artifact stores by executing:
+
+```bash
+zenml artifact-store explain
+```
+
+If you wish to register a new artifact store, do so with the ``register``
+command:
 
 ```bash
 zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR [--OPTIONS]
@@ -216,11 +247,41 @@ You can also add any labels to your stack component using the `--label` or `-l` 
 zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR -l key1=value1 -l key2=value2
 ```
 
-If you wish to list the artifact stores that have already been
-registered within your ZenML workspace / repository, type:
+As you can see from the command above, when you register a new artifact store,
+you have to choose a flavor:
+
+```bash
+zenml artifact-store flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml artifact-store flavor describe FLAVOR_NAME
+```
+
+If you wish to list the artifact stores that have already been registered
+within your ZenML:
 
 ```bash
 zenml artifact-store list
+```
+
+If you want to take a closer look to a specific artifact store instance, you
+can use the `describe` command:
+
+```bash
+zenml artifact-store describe ARTIFACT_STORE_NAME
+```
+
+If you wish to update/rename a particular artifact store, you can use the
+following commands respectively:
+
+```bash
+zenml artifact-store update ARTIFACT_STORE_NAME --property_to_update=new_value
+zenml artifact-store rename ARTIFACT_STORE_OLD_NAME ARTIFACT_STORE_NEW_NAME
 ```
 
 If you wish to delete a particular artifact store, pass the name of the
@@ -228,6 +289,22 @@ artifact store into the CLI with the following command:
 
 ```bash
 zenml artifact-store delete ARTIFACT_STORE_NAME
+```
+
+If you would like to connect/disconnect your artifact store to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml artifact-store connect ARTIFACT_STORE_NAME -c CONNECTOR_NAME_OR_ID
+zenml artifact-store disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+artifact stores. In order to get a full list of functions, please use the
+command:
+
+```bash
+zenml artifact-store --help
 ```
 
 Customizing your Orchestrator
