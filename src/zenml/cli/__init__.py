@@ -248,7 +248,7 @@ zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR
 ```
 
 As you can see from the command above, when you register a new artifact store,
-you have to choose a flavor. To see the full list of all the available artifact
+you have to choose a flavor. To see the full list of available artifact
 store flavors, you can use the command:
 
 ```bash
@@ -270,8 +270,16 @@ within your ZenML:
 zenml artifact-store list
 ```
 
-If you want to take a closer look to a specific artifact store instance, you
-can use the `describe` command:
+If you want the name of the artifact store in the active stack, you can
+also use the `get` command:
+
+```bash
+zenml artifact-store get
+```
+
+For details about a particular artifact store, use the `describe` command.
+By default, (without a specific artifact store name passed in) it will describe
+the active or currently used artifact store:
 
 ```bash
 zenml artifact-store describe ARTIFACT_STORE_NAME
@@ -296,12 +304,12 @@ If you would like to connect/disconnect your artifact store to/from a service
 connector, you can use the following commands:
 
 ```bash
-zenml artifact-store connect ARTIFACT_STORE_NAME -c CONNECTOR_NAME_OR_ID
+zenml artifact-store connect ARTIFACT_STORE_NAME -c CONNECTOR_NAME
 zenml artifact-store disconnect
 ```
 
 The ZenML CLI provides a few more utility functions for you to manage your
-artifact stores. In order to get a full list of available functions, please use
+artifact stores. In order to get a full list of available functions, use
 the command:
 
 ```bash
@@ -335,8 +343,8 @@ zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR -l ke
 ```
 
 As you can see from the command above, when you register a new orchestrator,
-you have to choose a flavor. To see the full list of all the available
-orchestrator flavors, you can use the command:
+you have to choose a flavor. To see the full list of available orchestrator
+flavors, you can use the command:
 
 ```bash
 zenml orchestrator flavor list
@@ -357,11 +365,19 @@ within your ZenML workspace / repository, type:
 zenml orchestrator list
 ```
 
-If you want to take a closer look to a specific artifact store instance, you
-can use the `describe` command:
+If you want the name of the orchestrator in the active stack, you can
+also use the `get` command:
 
 ```bash
-zenml orchestrator describe ORCHESTRATOR_NAME
+zenml orchestrator get
+```
+
+For details about a particular orchestrator, use the `describe` command.
+By default, (without a specific orchestrator name passed in) it will describe
+the active or currently used orchestrator:
+
+```bash
+zenml orchestrator describe [ORCHESTRATOR_NAME]
 ```
 
 If you wish to update/rename an orchestrator, you can use the following
@@ -383,12 +399,12 @@ If you would like to connect/disconnect your orchestrator to/from a service
 connector, you can use the following commands:
 
 ```bash
-zenml orchestrator connect ORCHESTRATOR_NAME -c CONNECTOR_NAME_OR_ID
+zenml orchestrator connect ORCHESTRATOR_NAME -c CONNECTOR_NAME
 zenml orchestrator disconnect
 ```
 
 The ZenML CLI provides a few more utility functions for you to manage your
-orchestrators. In order to get a full list of available functions, please use
+orchestrators. In order to get a full list of available functions, use
 the command:
 
 ```bash
@@ -399,9 +415,16 @@ Customizing your Container Registry
 -----------------------------------
 
 The container registry is where all the images that are used by a
-container-based orchestrator are stored. By default, a default ZenML local stack
-will not register a container registry. If you wish to register a new container
-registry, do so with the `register` command:
+container-based orchestrator are stored. To get a better understanding regarding
+container registries, use the command:
+
+```bash
+zenml container-registry explain
+```
+
+By default, a default ZenML local stack will not register a container registry.
+If you wish to register a new container registry, do so with the `register`
+command:
 
 ```bash
 zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR [--REGISTRY_OPTIONS]
@@ -413,10 +436,20 @@ You can also add any label to your stack component using the `--label` or `-l` f
 zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR -l key1=value1 -l key2=value2
 ```
 
-If you want the name of the current container registry, use the `get` command:
+As you can see from the command above, when you register a new container
+registry, you have to choose a flavor. To see the full list of available
+container registry flavors, you can use the command:
 
 ```bash
-zenml container-registry get
+zenml container-registry flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml container-registry flavor describe FLAVOR_NAME
 ```
 
 To list all container registries available and registered for use, use the
@@ -426,12 +459,27 @@ To list all container registries available and registered for use, use the
 zenml container-registry list
 ```
 
+If you want the name of the container registry in the active stack, you can
+also use the `get` command:
+
+```bash
+zenml container-registry get
+```
+
 For details about a particular container registry, use the `describe` command.
 By default, (without a specific registry name passed in) it will describe the
 active or currently used container registry:
 
 ```bash
-zenml container-registry describe [REGISTRY_NAME]
+zenml container-registry describe [CONTAINER_REGISTRY_NAME]
+```
+
+If you wish to update/rename an orchestrator, you can use the following
+commands respectively:
+
+```bash
+zenml container-registry update CONTAINER_REGISTRY_NAME --property_to_update=new_value
+zenml container-registry rename CONTAINER_REGISTRY_OLD_NAME CONTAINER_REGISTRY_NEW_NAME
 ```
 
 To delete a container registry (and all of its contents), use the `delete`
@@ -439,6 +487,22 @@ command:
 
 ```bash
 zenml container-registry delete REGISTRY_NAME
+```
+
+If you would like to connect/disconnect your container registry to/from a
+service connector, you can use the following commands:
+
+```bash
+zenml orchestrator connect CONTAINER_REGISTRY_NAME -c CONNECTOR_NAME
+zenml orchestrator disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+container registries. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml orchestrators --help
 ```
 
 Customizing your Experiment Tracker
