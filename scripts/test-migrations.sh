@@ -257,3 +257,6 @@ done
 
 # Stop the database
 stop_db
+
+# Clean up
+rm -rf "$ZENML_CONFIG_PATH"
