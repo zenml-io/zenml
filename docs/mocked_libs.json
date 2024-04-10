@@ -71,6 +71,7 @@
     "google.api_core",
     "google.api_core.exceptions",
     "google.auth",
+    "google.auth.aws",
     "google.auth._default",
     "google.auth.exceptions",
     "google.auth.transport",

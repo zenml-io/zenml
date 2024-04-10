@@ -67,6 +67,7 @@
     * [Debug and solve issues](user-guide/advanced-guide/best-practices/debug-and-solve-issues.md)
 * [🦜 LLMOps guide](user-guide/llmops-guide/llmops-guide.md)
   * [RAG with ZenML](user-guide/llmops-guide/rag/rag-with-zenml.md)
+    * [RAG in 85 lines of code](user-guide/llmops-guide/rag/rag-85-loc.md)
     * [Understanding Retrieval-Augmented Generation (RAG)](user-guide/llmops-guide/rag/understanding-rag.md)
     * [Data ingestion and preprocessing](user-guide/llmops-guide/rag/data-ingestion.md)
     * [Embeddings generation](user-guide/llmops-guide/rag/embeddings-generation.md)
