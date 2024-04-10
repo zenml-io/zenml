@@ -695,6 +695,102 @@ use the command:
 zenml step-operator --help
 ```
 
+Customizing your Feature Store
+------------------------------
+
+Feature stores allow data teams to serve data via an offline store and
+an online low-latency store where data is kept in sync between the two.
+To get a better understanding regarding feature stores, use the command:
+
+```bash
+zenml feature-store explain
+```
+
+By default, a default ZenML local stack will not register a feature store. If
+you wish to register a new feature store, do so with the `register` command:
+
+```bash
+zenml feature-store register FEATURE_STORE_NAME --flavor FEATURE_STORE_FLAVOR [--FEATURE_STORE_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml feature-store register FEATURE_STORE_NAME --flavor FEATURE_STORE_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new feature store,
+you have to choose a flavor. To see the full list of available feature store
+flavors, you can use the command:
+
+```bash
+zenml feature-store flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+Note: Currently, ZenML only supports connecting to a Redis-backed Feast feature
+store as a stack component integration.
+
+```bash
+zenml feature-store flavor describe FLAVOR_NAME
+```
+
+To list all feature stores available and registered for use, use the
+`list` command:
+
+```bash
+zenml feature-store list
+```
+
+If you want the name of the feature store in the active stack, use the `get`
+command:
+
+```bash
+zenml feature-store get
+```
+
+For details about a particular feature store, use the `describe` command.
+By default, (without a specific feature store name passed in) it will describe
+the active or currently used feature store:
+
+```bash
+zenml feature-store describe [FEATURE_STORE_NAME]
+```
+
+If you wish to update/rename a feature store, you can use the following commands
+respectively:
+
+```bash
+zenml feature-store update FEATURE_STORE_NAME --property_to_update=new_value
+zenml feature-store rename FEATURE_STORE_OLD_NAME FEATURE_STORE_NEW_NAME
+```
+
+To delete a feature store (and all of its contents), use the `delete`
+command:
+
+```bash
+zenml feature-store delete FEATURE_STORE_NAME
+```
+
+If you would like to connect/disconnect your feature store to/from a
+service connector, you can use the following commands:
+
+```bash
+zenml feature-store connect FEATURE_STORE_NAME -c CONNECTOR_NAME
+zenml feature-store disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+feature stores. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml feature-store --help
+```
+
 Deploying Stack Components
 --------------------------
 
@@ -800,19 +896,7 @@ Secrets can be scoped to a workspace or a user. By default, secrets
 are scoped to the current workspace. To scope a secret to a user, use the
 `--scope user` argument in the `register` command.
 
-Add a Feature Store to your Stack
----------------------------------
 
-ZenML supports connecting to a Redis-backed Feast feature store as a stack
-component integration. To set up a feature store, use the following CLI command:
-
-```shell
-zenml feature-store register FEATURE_STORE_NAME --flavor=feast
---feast_repo=REPO_PATH --online_host HOST_NAME --online_port ONLINE_PORT_NUMBER
-```
-
-Once you have registered your feature store as a stack component, you can use it
-in your ZenML Stack.
 
 Interacting with Model Deployers
 --------------------------------
