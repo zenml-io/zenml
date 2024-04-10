@@ -900,7 +900,7 @@ If you want to completely remove a served model you can also irreversibly delete
 zenml model-deployer models delete <UUID>
 ```
 
-Administering the Stack
+Managing your Stack
 -----------------------
 
 The stack is a grouping of your artifact store, your orchestrator, and other
@@ -1045,13 +1045,31 @@ following command:
 zenml stack register-secrets [<STACK_NAME>]
 ```
 
+If you want to connect a service connector to a stack's components, you can use
+the `connect` command:
+
+```shell
+zenml stack connect STACK_NAME -c CONNECTOR_NAME
+```
+
+Note that this only connects the service connector to the current components
+of the stack and not to the stack itself, which means that you need to rerun
+the command after adding new components to the stack.
+
+The ZenML CLI provides a few more utility functions for you to manage your
+stacks. In order to get a full list of available functions, use the command:
+
+```bash
+zenml stack --help
+```
+
 Administering your Code Repositories
 ------------------------------------
 
 Code repositories enable ZenML to keep track of the code version that you use
 for your pipeline runs. Additionally, running a pipeline which is tracked in
-a registered code repository can decrease the time it takes Docker to build images for
-containerized stack components.
+a registered code repository can decrease the time it takes Docker to build
+images for containerized stack components.
 
 To register a code repository, use the following CLI
 command:
