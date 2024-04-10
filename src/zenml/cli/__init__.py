@@ -248,7 +248,8 @@ zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR
 ```
 
 As you can see from the command above, when you register a new artifact store,
-you have to choose a flavor:
+you have to choose a flavor. To see the full list of all the available artifact
+store flavors, you can use the command:
 
 ```bash
 zenml artifact-store flavor list
@@ -276,8 +277,8 @@ can use the `describe` command:
 zenml artifact-store describe ARTIFACT_STORE_NAME
 ```
 
-If you wish to update/rename a particular artifact store, you can use the
-following commands respectively:
+If you wish to update/rename an artifact store, you can use the following
+commands respectively:
 
 ```bash
 zenml artifact-store update ARTIFACT_STORE_NAME --property_to_update=new_value
@@ -300,8 +301,8 @@ zenml artifact-store disconnect
 ```
 
 The ZenML CLI provides a few more utility functions for you to manage your
-artifact stores. In order to get a full list of functions, please use the
-command:
+artifact stores. In order to get a full list of available functions, please use
+the command:
 
 ```bash
 zenml artifact-store --help
@@ -313,7 +314,12 @@ Customizing your Orchestrator
 An orchestrator is a special kind of backend that manages the running of
 each step of the pipeline. Orchestrators administer the actual pipeline
 runs. By default, ZenML initializes your repository with an orchestrator
-that runs everything on your local machine.
+that runs everything on your local machine. In order to get a more detailed
+explanation, you can use the command:
+
+```bash
+zenml orchestrator explain
+```
 
 If you wish to register a new orchestrator, do so with the ``register``
 command:
@@ -328,6 +334,22 @@ You can also add any label to your stack component using the `--label` or `-l` f
 zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR -l key1=value1 -l key2=value2
 ```
 
+As you can see from the command above, when you register a new orchestrator,
+you have to choose a flavor. To see the full list of all the available
+orchestrator flavors, you can use the command:
+
+```bash
+zenml orchestrator flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml orchestrator flavor describe FLAVOR_NAME
+```
+
 If you wish to list the orchestrators that have already been registered
 within your ZenML workspace / repository, type:
 
@@ -335,11 +357,42 @@ within your ZenML workspace / repository, type:
 zenml orchestrator list
 ```
 
+If you want to take a closer look to a specific artifact store instance, you
+can use the `describe` command:
+
+```bash
+zenml orchestrator describe ORCHESTRATOR_NAME
+```
+
+If you wish to update/rename an orchestrator, you can use the following
+commands respectively:
+
+```bash
+zenml orchestrator update ORCHESTRATOR_NAME --property_to_update=new_value
+zenml orchestrator rename ORCHESTRATOR_OLD_NAME ORCHESTRATOR_NEW_NAME
+```
+
 If you wish to delete a particular orchestrator, pass the name of the
 orchestrator into the CLI with the following command:
 
 ```bash
 zenml orchestrator delete ORCHESTRATOR_NAME
+```
+
+If you would like to connect/disconnect your orchestrator to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml orchestrator connect ORCHESTRATOR_NAME -c CONNECTOR_NAME_OR_ID
+zenml orchestrator disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+orchestrators. In order to get a full list of available functions, please use
+the command:
+
+```bash
+zenml orchestrators --help
 ```
 
 Customizing your Container Registry
