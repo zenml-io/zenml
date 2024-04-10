@@ -1107,32 +1107,38 @@ ZenML provides several CLI commands to help you administer your models and
 their versions as part of the Model Control Plane.
 
 To register a new model, you can use the following CLI command:
+
 ```bash
 zenml model register --name <NAME> [--MODEL_OPTIONS]
 ```
 
 To list all registered models, use:
+
 ```bash
 zenml model list [MODEL_FILTER_OPTIONS]
 ```
 
 To update a model, use:
+
 ```bash
 zenml model update <MODEL_NAME_OR_ID> [--MODEL_OPTIONS]
 ```
 
 If you would like to add or remove tags from the model, use:
+
 ```bash
 zenml model update <MODEL_NAME_OR_ID> --tag <TAG> --tag <TAG> .. 
    --remove-tag <TAG> --remove-tag <TAG> ..
 ```
 
 To delete a model, use:
+
 ```bash
 zenml model delete <MODEL_NAME_OR_ID>
 ```
 
 The CLI interface for models also helps to navigate through artifacts linked to a specific model versions.
+
 ```bash
 zenml model data_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
 zenml model deployment_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
@@ -1140,30 +1146,39 @@ zenml model model_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
 ```
 
 You can also navigate the pipeline runs linked to a specific model versions:
+
 ```bash
 zenml model runs <MODEL_NAME_OR_ID> [-v <VERSION>]
 ```
 
 To list the model versions of a specific model, use:
+
 ```bash
 zenml model version list [--model-name <MODEL_NAME> --name <MODEL_VERSION_NAME> OTHER_OPTIONS]
 ```
 
 To delete a model version, use:
+
 ```bash
 zenml model version delete <MODEL_NAME_OR_ID> <VERSION>
 ```
 
 To update a model version, use:
+
 ```bash
 zenml model version update <MODEL_NAME_OR_ID> <VERSION> [--MODEL_VERSION_OPTIONS]
 ```
+
 These are some of the more common uses of model version updates:
+
 - stage (i.e. promotion)
+
 ```bash
 zenml model version update <MODEL_NAME_OR_ID> <VERSION> --stage <STAGE>
 ```
+
 - tags
+
 ```bash
 zenml model version update <MODEL_NAME_OR_ID> <VERSION> --tag <TAG> --tag <TAG> .. 
    --remove-tag <TAG> --remove-tag <TAG> ..
@@ -1307,6 +1322,7 @@ zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
 
 If you want to build the pipeline for a stack different than your current active
 stack, use the `--stack` option.
+
 ```bash
 zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
 ```
@@ -1327,6 +1343,7 @@ zenml pipeline run <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
 
 If you want to run the pipeline on a stack different than your current active
 stack, use the `--stack` option.
+
 ```bash
 zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
 ```
@@ -1496,8 +1513,16 @@ the following command:
 
 ```bash
 zenml show
+```
 
-Note that if you have set your `AUTO_OPEN_DASHBOARD` environment variable to `false` then this will not open the dashboard until you set it back to `true`.
+If you would like to take a look at the logs for the ZenML server:
+
+```bash
+zenml logs
+```
+
+Note that if you have set your `AUTO_OPEN_DASHBOARD` environment variable to
+`false` then this will not open the dashboard until you set it back to `true`.
 To disconnect from the current ZenML server and revert to using the local
 default database, use the following command:
 
