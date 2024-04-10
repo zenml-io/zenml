@@ -696,7 +696,7 @@ zenml step-operator --help
 ```
 
 Customizing your Alerter
-------------------------------
+------------------------
 
 In ZenML, alerters allow you to send alerts from within your pipeline.
 
@@ -750,7 +750,7 @@ the active or currently used alerter:
 zenml alerter describe [ALERTER_NAME]
 ```
 
-If you wish to update/rename a alerter, you can use the following commands
+If you wish to update/rename an alerter, you can use the following commands
 respectively:
 
 ```bash
@@ -777,6 +777,98 @@ alerters. In order to get a full list of available functions, use the command:
 
 ```bash
 zenml alerter --help
+```
+
+Customizing your Annotator
+--------------------------
+
+Annotators enable the use of data annotation as part of your ZenML stack
+and pipelines
+
+By default, a default ZenML local stack will not register an annotator. If
+you wish to register a new annotator, do so with the `register` command:
+
+```bash
+zenml annotator register ANNOTATOR_NAME --flavor ANNOTATOR_FLAVOR [--ANNOTATOR_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml annotator register ANNOTATOR_NAME --flavor ANNOTATOR_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new annotator,
+you have to choose a flavor. To see the full list of available annotator
+flavors, you can use the command:
+
+```bash
+zenml annotator flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml annotator flavor describe FLAVOR_NAME
+```
+
+To list all annotator available and registered for use, use the `list` command:
+
+```bash
+zenml annotator list
+```
+
+If you want the name of the annotator in the active stack, use the `get`
+command:
+
+```bash
+zenml annotator get
+```
+
+For details about a particular annotator, use the `describe` command.
+By default, (without a specific annotator name passed in) it will describe
+the active or currently used annotator:
+
+```bash
+zenml annotator describe [ANNOTATOR_NAME]
+```
+
+If you wish to update/rename an annotator, you can use the following commands
+respectively:
+
+```bash
+zenml annotator update ANNOTATOR_NAME --property_to_update=new_value
+zenml annotator rename ANNOTATOR_OLD_NAME ANNOTATOR_NEW_NAME
+```
+
+To delete an annotator (and all of its contents), use the `delete` command:
+
+```bash
+zenml annotator delete ANNOTATOR_NAME
+```
+
+If you would like to connect/disconnect your annotator to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml annotator connect ANNOTATOR_NAME -c CONNECTOR_NAME
+zenml annotator disconnect
+```
+
+Finally, you can use the `dataset` command to interact with your annotation
+datasets:
+
+```bash
+zenml annotator dataset --help
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+annotator. In order to get a full list of available functions, use the command:
+
+```bash
+zenml annotator --help
 ```
 
 Customizing your Feature Store
