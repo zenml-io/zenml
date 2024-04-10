@@ -172,16 +172,12 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    @model_validator(mode="before")
-    @classmethod
-    def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
+    @model_validator(mode="after")
+    def _ensure_artifact_store(self) -> Any:
         """Validator function for the Artifact Stores.
 
         Checks whether supported schemes are defined and the given path is
         supported.
-
-        Args:
-            values: The values to validate.
 
         Returns:
             The validated values.
@@ -190,7 +186,7 @@ class BaseArtifactStoreConfig(StackComponentConfig):
             ArtifactStoreInterfaceError: If the scheme is not supported.
         """
         try:
-            getattr(cls, "SUPPORTED_SCHEMES")
+            getattr(self, "SUPPORTED_SCHEMES")
         except AttributeError:
             raise ArtifactStoreInterfaceError(
                 textwrap.dedent(
@@ -211,20 +207,16 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
+        path = self.path.strip("'\"`")
+        if not any(path.startswith(i) for i in self.SUPPORTED_SCHEMES):
+            raise ArtifactStoreInterfaceError(
+                f"The path: '{self.path}' you defined for your "
+                f"artifact store is not supported by the implementation of "
+                f"{self.schema()['title']}, because it does not start with "
+                f"one of its supported schemes: {self.SUPPORTED_SCHEMES}."
+            )
 
-        if "path" in values:
-            values["path"] = values["path"].strip("'\"`")
-            if not any(
-                values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
-            ):
-                raise ArtifactStoreInterfaceError(
-                    f"The path: '{values['path']}' you defined for your "
-                    f"artifact store is not supported by the implementation of "
-                    f"{cls.schema()['title']}, because it does not start with "
-                    f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
-                )
-
-        return values
+        return self
 
 
 class BaseArtifactStore(StackComponent):
