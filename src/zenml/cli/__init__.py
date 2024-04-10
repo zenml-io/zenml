@@ -1246,7 +1246,98 @@ Secrets can be scoped to a workspace or a user. By default, secrets
 are scoped to the current workspace. To scope a secret to a user, use the
 `--scope user` argument in the `register` command.
 
+Customizing your Model Registry
+-------------------------------
 
+Model registries are centralized repositories that facilitate the
+collaboration and management of machine learning models. To get a better
+understanding regarding model registries as a concept, use the command:
+
+```bash
+zenml model-registry explain
+```
+
+By default, a default ZenML local stack will not register a model registry. If
+you wish to register a new model registry, do so with the `register` command:
+
+```bash
+zenml model-registry register MODEL_REGISTRY_NAME --flavor MODEL_REGISTRY_FLAVOR [--MODEL_REGISTRY_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml model-registry register MODEL_REGISTRY_NAME --flavor MODEL_REGISTRY_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new model registry,
+you have to choose a flavor. To see the full list of available model registry
+flavors, you can use the command:
+
+```bash
+zenml model-registry flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml model-registry flavor describe FLAVOR_NAME
+```
+
+To list all model registries available and registered for use, use the
+`list` command:
+
+```bash
+zenml model-registry list
+```
+
+If you want the name of the model registry in the active stack, use the `get`
+command:
+
+```bash
+zenml model-registry get
+```
+
+For details about a particular model registry, use the `describe` command.
+By default, (without a specific operator name passed in) it will describe the
+active or currently used model registry:
+
+```bash
+zenml model-registry describe [MODEL_REGISTRY_NAME]
+```
+
+If you wish to update/rename a model registry, you can use the following commands
+respectively:
+
+```bash
+zenml model-registry update MODEL_REGISTRY_NAME --property_to_update=new_value
+zenml model-registry rename MODEL_REGISTRY_OLD_NAME MODEL_REGISTRY_NEW_NAME
+```
+
+To delete a model registry (and all of its contents), use the `delete`
+command:
+
+```bash
+zenml model-registry delete MODEL_REGISTRY_NAME
+```
+
+If you would like to connect/disconnect your model registry to/from a
+service connector, you can use the following commands:
+
+```bash
+zenml model-registry connect MODEL_REGISTRY_NAME -c CONNECTOR_NAME
+zenml model-registry disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+model registries. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml model-registry --help
+```
 
 Interacting with Model Deployers
 --------------------------------
