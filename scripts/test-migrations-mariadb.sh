@@ -64,6 +64,8 @@ do
 
     git checkout release/$VERSION
     uv pip install -e ".[templates,server]"
+    # handles copier conflicts
+    uv pip install "pyyaml-include<2.0"
 
     export ZENML_ANALYTICS_OPT_IN=false
     export ZENML_DEBUG=true
@@ -87,7 +89,8 @@ source ".venv-current-branch/bin/activate"
 
 uv pip install -U setuptools wheel pip
 uv pip install -e ".[templates,server]"
-uv pip install importlib_metadata
+# handles copier conflicts
+uv pip install importlib_metadata "pyyaml-include<2.0"
 
 zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 
@@ -161,6 +164,8 @@ for i in "${!MIGRATION_VERSIONS[@]}"; do
 
     git checkout release/${MIGRATION_VERSIONS[$i]}
     uv pip install -e ".[templates,server]"
+    # handles copier conflicts
+    uv pip install "pyyaml-include<2.0"
 
     export ZENML_ANALYTICS_OPT_IN=false
     export ZENML_DEBUG=true
