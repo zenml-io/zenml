@@ -17,7 +17,7 @@ import json
 import os
 from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import ValidationError, BaseModel, ValidatorFunctionWrapHandler, model_validator, ValidationInfo
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -40,29 +40,65 @@ class FileSyncModel(BaseModel):
     _config_file: str
     _config_file_timestamp: Optional[float] = None
 
-    def __init__(self, config_file: str, **kwargs: Any) -> None:
-        """Create a FileSyncModel instance synchronized with a configuration file on disk.
+    @model_validator(mode="wrap")
+    @classmethod
+    def config_validator(
+        cls,
+        data: Any,
+        handler: ValidatorFunctionWrapHandler,
+        info: ValidationInfo,
+    ) -> "FileSyncModel":
+        """Wrap model validator to infer the config_file during initialization.
 
         Args:
-            config_file: configuration file path. If the file exists, the model
-                will be initialized with the values from the file.
-            **kwargs: additional keyword arguments to pass to the Pydantic model
-                constructor. If supplied, these values will override those
-                loaded from the configuration file.
+            data: The raw data that is provided before the validation.
+            handler: The actual validation function pydantic would use for the
+                built-in validation function.
+            info: The context information during the execution of this
+                validation function.
+
+        Returns:
+            the actual instance after the validation
+
+        Raises:
+            ValidationError: if you try to validate through a JSON string. You
+                need to provide a config_file path when you create a
+                FileSyncModel.
+            AssertionError: if the raw input does not include a config_file
+                path for the configuration file.
         """
-        config_dict = {}
-        if fileio.exists(config_file):
-            config_dict = yaml_utils.read_yaml(config_file)
+        # Disable json validation
+        if info.mode == "json":
+            raise ValidationError(
+                "You can not instantiate filesync models using the JSON mode."
+            )
 
-        self._config_file = config_file
-        self._config_file_timestamp = None
+        if isinstance(data, dict):
+            # Assert that the config file is defined
+            assert (
+                "config_file" in data
+            ), "You have to provide a path for the configuration file."
 
-        config_dict.update(kwargs)
-        super(FileSyncModel, self).__init__(**config_dict)
+            config_file = data.pop("config_file")
 
-        # write the configuration file to disk, to reflect new attributes
-        # and schema changes
-        self.write_config()
+            # Load the current values and update with new values
+            config_dict = {}
+            if fileio.exists(config_file):
+                config_dict = yaml_utils.read_yaml(config_file)
+            config_dict.update(data)
+
+            # Execute the regular validation
+            model = handler(config_dict)
+
+            # Assign the private attribute and save the config
+            model._config_file = config_file
+            model.write_config()
+
+            return model
+        else:
+            # If the raw value is not a dict, apply proper validation.
+            return handler(data)
+
 
     def __setattr__(self, key: str, value: Any) -> None:
         """Sets an attribute on the model and persists it in the configuration file.

@@ -48,7 +48,6 @@ class EventSourceRequest(WorkspaceScopedRequest):
     )
     plugin_subtype: PluginSubType = Field(
         title="The plugin subtype of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     description: str = Field(
         default="",
@@ -118,7 +117,6 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
     )
     plugin_subtype: PluginSubType = Field(
         title="The plugin subtype of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     is_active: bool = Field(
         title="Whether the event source is active.",
