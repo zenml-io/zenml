@@ -1339,53 +1339,95 @@ use the command:
 zenml model-registry --help
 ```
 
-Interacting with Model Deployers
---------------------------------
+Configuring your Model Deployer
+-------------------------------
 
 Model deployers are stack components responsible for online model serving.
 They are responsible for deploying models to a remote server. Model deployers
-also act as a registry for models that are served with ZenML.
-
-If you wish to register a new model deployer, do so with the
-`register` command:
+also act as a registry for models that are served with ZenML. To get a better
+understanding regarding model deployers, use the command:
 
 ```bash
-zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR [--OPTIONS]
+zenml model-deployer explain
 ```
 
-If you wish to list the model-deployers that have already been registered
-within your ZenML workspace / repository, type:
+By default, a default ZenML local stack will not register a model deployer. If
+you wish to register a new model deployer, do so with the `register` command:
+
+```bash
+zenml model-deployer register MODEL_DEPLOYER_NAME --flavor MODEL_DEPLOYER_FLAVOR [--MODEL_DEPLOYER_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml model-deployer register MODEL_DEPLOYER_NAME --flavor MODEL_DEPLOYER_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new model deployer,
+you have to choose a flavor. To see the full list of available model deployer
+flavors, you can use the command:
+
+```bash
+zenml model-deployer flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml model-deployer flavor describe FLAVOR_NAME
+```
+
+To list all model deployers available and registered for use, use the
+`list` command:
 
 ```bash
 zenml model-deployer list
 ```
 
-If you wish to get more detailed information about a particular model deployer
-within your ZenML workspace / repository, type:
+If you want the name of the model deployer in the active stack, use the `get`
+command:
 
 ```bash
-zenml model-deployer describe MODEL_DEPLOYER_NAME
+zenml model-deployer get
 ```
 
-If you wish to delete a particular model deployer, pass the name of the
-model deployers into the CLI with the following command:
+For details about a particular model deployer, use the `describe` command.
+By default, (without a specific operator name passed in) it will describe the
+active or currently used model deployer:
+
+```bash
+zenml model-deployer describe [MODEL_DEPLOYER_NAME]
+```
+
+If you wish to update/rename a model deployer, you can use the following
+commands respectively:
+
+```bash
+zenml model-deployer update MODEL_DEPLOYER_NAME --property_to_update=new_value
+zenml model-deployer rename MODEL_DEPLOYER_OLD_NAME MODEL_DEPLOYER_NEW_NAME
+```
+
+To delete a model deployer (and all of its contents), use the `delete`
+command:
 
 ```bash
 zenml model-deployer delete MODEL_DEPLOYER_NAME
 ```
 
-If you wish to retrieve logs corresponding to a particular model deployer, pass
-the name of the model deployer into the CLI with the following command:
+If you would like to connect/disconnect your model deployer to/from a
+service connector, you can use the following commands:
 
 ```bash
-zenml model-deployer logs MODEL_DEPLOYER_NAME
+zenml model-deployer connect MODEL_DEPLOYER_NAME -c CONNECTOR_NAME
+zenml model-deployer disconnect
 ```
 
-Interacting with Deployed Models
---------------------------------
-
-If you want to simply see what models have been deployed within your stack, run
-the following command:
+Moreover, ZenML features a set of CLI commands specific to the model deployer
+interface. If you want to simply see what models have been deployed within
+your stack, run the following command:
 
 ```bash
 zenml model-deployer models list
@@ -1393,8 +1435,8 @@ zenml model-deployer models list
 
 This should give you a list of served models containing their uuid, the name
 of the pipeline that produced them including the run id and the step name as
-well as the status.
-This information should help you identify the different models.
+well as the status. This information should help you identify the different
+models.
 
 If you want further information about a specific model, simply copy the
 UUID and the following command.
@@ -1423,6 +1465,14 @@ If you want to completely remove a served model you can also irreversibly delete
 
 ```bash
 zenml model-deployer models delete <UUID>
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+model deployers. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml model-deployer --help
 ```
 
 Managing your Stacks
