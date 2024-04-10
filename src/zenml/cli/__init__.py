@@ -588,7 +588,7 @@ If you would like to connect/disconnect your experiment tracker to/from a
 service connector, you can use the following commands:
 
 ```bash
-zenml experiment-tracker connect CONTAINER_REGISTRY_NAME -c CONNECTOR_NAME
+zenml experiment-tracker connect EXPERIMENT_TRACKER_NAME -c CONNECTOR_NAME
 zenml experiment-tracker disconnect
 ```
 
@@ -598,6 +598,7 @@ use the command:
 
 ```bash
 zenml experiment-tracker --help
+```
 
 Customizing your Step Operator
 ------------------------------
@@ -605,9 +606,15 @@ Customizing your Step Operator
 Step operators allow you to run individual steps in a custom environment
 different from the default one used by your active orchestrator. One example
 use-case is to run a training step of your pipeline in an environment with GPUs
-available. By default, a default ZenML local stack will not register a step
-operator. If you wish to register a new step operator, do so with the
-`register` command:
+available. To get a better understanding regarding step operators, use the
+command:
+
+```bash
+zenml step-operator explain
+```
+
+By default, a default ZenML local stack will not register a step operator. If
+you wish to register a new step operator, do so with the `register` command:
 
 ```bash
 zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
@@ -619,10 +626,20 @@ You can also add any label to your stack component using the `--label` or `-l` f
 zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR -l key1=value1 -l key2=value2
 ```
 
-If you want the name of the current step operator, use the `get` command:
+As you can see from the command above, when you register a new step operator,
+you have to choose a flavor. To see the full list of available step operator
+flavors, you can use the command:
 
 ```bash
-zenml step-operator get
+zenml step-operator flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml step-operator flavor describe FLAVOR_NAME
 ```
 
 To list all step operators available and registered for use, use the
@@ -630,6 +647,13 @@ To list all step operators available and registered for use, use the
 
 ```bash
 zenml step-operator list
+```
+
+If you want the name of the step operator in the active stack, use the `get`
+command:
+
+```bash
+zenml step-operator get
 ```
 
 For details about a particular step operator, use the `describe` command.
@@ -640,11 +664,35 @@ active or currently used step operator:
 zenml step-operator describe [STEP_OPERATOR_NAME]
 ```
 
+If you wish to update/rename a step operator, you can use the following commands
+respectively:
+
+```bash
+zenml step-operator update STEP_OPERATOR_NAME --property_to_update=new_value
+zenml step-operator rename STEP_OPERATOR_OLD_NAME STEP_OPERATOR_NEW_NAME
+```
+
 To delete a step operator (and all of its contents), use the `delete`
 command:
 
 ```bash
 zenml step-operator delete STEP_OPERATOR_NAME
+```
+
+If you would like to connect/disconnect your step operator to/from a
+service connector, you can use the following commands:
+
+```bash
+zenml step-operator connect STEP_OPERATOR_NAME -c CONNECTOR_NAME
+zenml step-operator disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+step operators. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml step-operator --help
 ```
 
 Deploying Stack Components
