@@ -695,6 +695,90 @@ use the command:
 zenml step-operator --help
 ```
 
+Customizing your Alerter
+------------------------------
+
+In ZenML, alerters allow you to send alerts from within your pipeline.
+
+By default, a default ZenML local stack will not register an alerter. If
+you wish to register a new alerter, do so with the `register` command:
+
+```bash
+zenml alerter register ALERTER_NAME --flavor ALERTER_FLAVOR [--ALERTER_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml alerter register ALERTER_NAME --flavor ALERTER_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new alerter,
+you have to choose a flavor. To see the full list of available alerter
+flavors, you can use the command:
+
+```bash
+zenml alerter flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml alerter flavor describe FLAVOR_NAME
+```
+
+To list all alerters available and registered for use, use the `list` command:
+
+```bash
+zenml alerter list
+```
+
+If you want the name of the alerter in the active stack, use the `get`
+command:
+
+```bash
+zenml alerter get
+```
+
+For details about a particular alerter, use the `describe` command.
+By default, (without a specific alerter name passed in) it will describe
+the active or currently used alerter:
+
+```bash
+zenml alerter describe [ALERTER_NAME]
+```
+
+If you wish to update/rename a alerter, you can use the following commands
+respectively:
+
+```bash
+zenml alerter update ALERTER_NAME --property_to_update=new_value
+zenml alerter rename ALERTER_OLD_NAME ALERTER_NEW_NAME
+```
+
+To delete an alerter (and all of its contents), use the `delete` command:
+
+```bash
+zenml alerter delete ALERTER_NAME
+```
+
+If you would like to connect/disconnect your alerter to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml alerter connect ALERTER_NAME -c CONNECTOR_NAME
+zenml alerter disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+alerters. In order to get a full list of available functions, use the command:
+
+```bash
+zenml alerter --help
+```
+
 Customizing your Feature Store
 ------------------------------
 
