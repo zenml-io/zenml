@@ -900,8 +900,8 @@ If you want to completely remove a served model you can also irreversibly delete
 zenml model-deployer models delete <UUID>
 ```
 
-Managing your Stack
------------------------
+Managing your Stacks
+--------------------
 
 The stack is a grouping of your artifact store, your orchestrator, and other
 optional MLOps tools like experiment trackers or model deployers.
@@ -1311,7 +1311,6 @@ stack, use the `--stack` option.
 zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
 ```
 
-
 To run a pipeline that was previously registered, use:
 
 ```bash
@@ -1566,26 +1565,44 @@ ssl_key: null
 ssl_verify_server_cert: false
 ```
 
-Managing users and workspaces
+Managing users
 -------------------------------------------
 
-When using the ZenML service, you can manage permissions by managing users and
-workspaces and using the CLI.
-If you want to create a new user or delete an existing one, run either
+When using the ZenML service, you can manage permissions by managing users
+using the CLI. If you want to create a new user or delete an existing one,
+run either
 
 ```bash
 zenml user create USER_NAME
-```
-or
-```bash
 zenml user delete USER_NAME
 ```
 
 To see a list of all users, run:
+
 ```bash
 zenml user list
 ```
 
+For detail about the particular user, use the `describe` command. By default,
+(without a specific user name passed in) it will describe the active user:
+
+```bash
+zenml user describe [USER_NAME]
+```
+
+If you want to update any properties of a specific user, you can use the
+`update` command. Use the `--help` flag to get a full list of available
+properties to update:
+
+```bash
+zenml user update --help
+```
+
+If you want to change the password of the current user account:
+
+```bash
+zenml user change-password --help
+```
 
 Managing service accounts
 -------------------------
