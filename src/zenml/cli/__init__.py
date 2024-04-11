@@ -2372,7 +2372,7 @@ check out the `zenml.pipelines.base_pipeline.BasePipeline.build(...)` method.
 zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
 ```
 
-If you want to build the pipeline for a stack different than your current active
+If you want to build the pipeline for a stack other than your current active
 stack, use the `--stack` option.
 
 ```bash
