@@ -112,7 +112,7 @@ directory, use the ``zenml clean`` command. This will:
 -  delete all pipelines, pipeline runs and associated metadata
 -  delete all artifacts
 
-Using integrations
+Using Integrations
 ------------------
 
 Integrations are the different pieces of a project stack that enable custom
@@ -172,8 +172,8 @@ output file:
 zenml integration export-requirements gcp kubeflow -o OUTPUT_FILE
 ```
 
-Filtering CLI output when listing
----------------------------------
+Filtering when listing
+----------------------
 
 Certain CLI `list` commands allow you to filter their output. For example, all
 stack components allow you to pass custom parameters to the `list` command that
@@ -222,13 +222,14 @@ zenml orchestrator list --created "gt:2021-01-01 00:00:00"
 This syntax can also be combined to create more complex filters using the `or`
 and `and` keywords.
 
-Customizing your Artifact Store
--------------------------------
+Artifact Stores
+---------------
 
-The artifact store is where all the inputs and outputs of your pipeline
-steps are stored. By default, ZenML initializes your repository with an
-artifact store with everything kept on your local machine. You can get a better
-understanding about the concept of artifact stores by executing:
+In ZenML, [the artifact store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores)
+is where all the inputs and outputs of your pipeline steps are stored. By
+default, ZenML initializes your repository with an artifact store with
+everything kept on your local machine. You can get a better understanding
+about the concept of artifact stores by executing:
 
 ```bash
 zenml artifact-store explain
@@ -316,14 +317,15 @@ the command:
 zenml artifact-store --help
 ```
 
-Customizing your Orchestrator
------------------------------
+Orchestrators
+-------------
 
-An orchestrator is a special kind of backend that manages the running of
-each step of the pipeline. Orchestrators administer the actual pipeline
-runs. By default, ZenML initializes your repository with an orchestrator
-that runs everything on your local machine. In order to get a more detailed
-explanation, you can use the command:
+An [orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators)
+is a special kind of backend that manages the running of each step of the
+pipeline. Orchestrators administer the actual pipeline runs. By default,
+ZenML initializes your repository with an orchestrator that runs everything
+on your local machine. In order to get a more detailed explanation, you can use
+the command:
 
 ```bash
 zenml orchestrator explain
@@ -411,12 +413,13 @@ the command:
 zenml orchestrators --help
 ```
 
-Customizing your Container Registry
------------------------------------
+Container Registries
+--------------------
 
-The container registry is where all the images that are used by a
-container-based orchestrator are stored. To get a better understanding regarding
-container registries, use the command:
+[The container registry](https://docs.zenml.io/stacks-and-components/component-guide/container-registries)
+is where all the images that are used by a container-based orchestrator are
+stored. To get a better understanding regarding container registries, use
+the command:
 
 ```bash
 zenml container-registry explain
@@ -505,10 +508,98 @@ use the command:
 zenml container-registry --help
 ```
 
-Customizing your Experiment Tracker
------------------------------------
+Data Validators
+---------------
 
-Experiment trackers let you track your ML experiments by logging the parameters
+In ZenML, [data validators](https://docs.zenml.io/stacks-and-components/component-guide/data-validators)
+help you profile and validate your data.
+
+By default, a default ZenML local stack will not register a data validator. If
+you wish to register a new data validator, do so with the `register` command:
+
+```bash
+zenml data-validator register DATA_VALIDATOR_NAME --flavor DATA_VALIDATOR_FLAVOR [--DATA_VALIDATOR_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml data-validator register DATA_VALIDATOR_NAME --flavor DATA_VALIDATOR_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new data validator,
+you have to choose a flavor. To see the full list of available data validator
+flavors, you can use the command:
+
+```bash
+zenml data-validator flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml data-validator flavor describe FLAVOR_NAME
+```
+
+To list all data validators available and registered for use, use the `list`
+command:
+
+```bash
+zenml data-validator list
+```
+
+If you want the name of the data validator in the active stack, use the `get`
+command:
+
+```bash
+zenml data-validator get
+```
+
+For details about a particular data validator, use the `describe` command.
+By default, (without a specific data validator name passed in) it will describe
+the active or currently used data validator:
+
+```bash
+zenml data-validator describe [DATA_VALIDATOR_NAME]
+```
+
+If you wish to update/rename a data validator, you can use the following
+commands respectively:
+
+```bash
+zenml data-validator update DATA_VALIDATOR_NAME --property_to_update=new_value
+zenml data-validator rename DATA_VALIDATOR_OLD_NAME DATA_VALIDATOR_NEW_NAME
+```
+
+To delete a data validator (and all of its contents), use the `delete` command:
+
+```bash
+zenml data-validator delete DATA_VALIDATOR_NAME
+```
+
+If you would like to connect/disconnect your data validator to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml data-validator connect DATA_VALIDATOR_NAME -c CONNECTOR_NAME
+zenml data-validator disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+data validators. In order to get a full list of available functions, use the
+command:
+
+```bash
+zenml data-validator --help
+```
+
+Experiment Trackers
+-------------------
+
+[Experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers)
+ let you track your ML experiments by logging the parameters
 and allowing you to compare between different runs. To get a better
 understanding regarding experiment trackers, use the command:
 
@@ -600,752 +691,14 @@ use the command:
 zenml experiment-tracker --help
 ```
 
-Customizing your Step Operator
-------------------------------
-
-Step operators allow you to run individual steps in a custom environment
-different from the default one used by your active orchestrator. One example
-use-case is to run a training step of your pipeline in an environment with GPUs
-available. To get a better understanding regarding step operators, use the
-command:
-
-```bash
-zenml step-operator explain
-```
-
-By default, a default ZenML local stack will not register a step operator. If
-you wish to register a new step operator, do so with the `register` command:
-
-```bash
-zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
-```
-
-You can also add any label to your stack component using the `--label` or `-l` flag:
-
-```bash
-zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR -l key1=value1 -l key2=value2
-```
-
-As you can see from the command above, when you register a new step operator,
-you have to choose a flavor. To see the full list of available step operator
-flavors, you can use the command:
-
-```bash
-zenml step-operator flavor list
-```
-
-This list will show you which integration these flavors belong to and which
-service connectors they are adaptable with. If you would like to get additional
-information regarding a specific flavor, you can utilize the command:
-
-```bash
-zenml step-operator flavor describe FLAVOR_NAME
-```
-
-To list all step operators available and registered for use, use the
-`list` command:
-
-```bash
-zenml step-operator list
-```
-
-If you want the name of the step operator in the active stack, use the `get`
-command:
-
-```bash
-zenml step-operator get
-```
-
-For details about a particular step operator, use the `describe` command.
-By default, (without a specific operator name passed in) it will describe the
-active or currently used step operator:
-
-```bash
-zenml step-operator describe [STEP_OPERATOR_NAME]
-```
-
-If you wish to update/rename a step operator, you can use the following commands
-respectively:
-
-```bash
-zenml step-operator update STEP_OPERATOR_NAME --property_to_update=new_value
-zenml step-operator rename STEP_OPERATOR_OLD_NAME STEP_OPERATOR_NEW_NAME
-```
-
-To delete a step operator (and all of its contents), use the `delete`
-command:
-
-```bash
-zenml step-operator delete STEP_OPERATOR_NAME
-```
-
-If you would like to connect/disconnect your step operator to/from a
-service connector, you can use the following commands:
-
-```bash
-zenml step-operator connect STEP_OPERATOR_NAME -c CONNECTOR_NAME
-zenml step-operator disconnect
-```
-
-The ZenML CLI provides a few more utility functions for you to manage your
-step operators. In order to get a full list of available functions,
-use the command:
-
-```bash
-zenml step-operator --help
-```
-
-Customizing your Alerter
-------------------------
-
-In ZenML, alerters allow you to send alerts from within your pipeline.
-
-By default, a default ZenML local stack will not register an alerter. If
-you wish to register a new alerter, do so with the `register` command:
-
-```bash
-zenml alerter register ALERTER_NAME --flavor ALERTER_FLAVOR [--ALERTER_OPTIONS]
-```
-
-You can also add any label to your stack component using the `--label` or `-l` flag:
-
-```bash
-zenml alerter register ALERTER_NAME --flavor ALERTER_FLAVOR -l key1=value1 -l key2=value2
-```
-
-As you can see from the command above, when you register a new alerter,
-you have to choose a flavor. To see the full list of available alerter
-flavors, you can use the command:
-
-```bash
-zenml alerter flavor list
-```
-
-This list will show you which integration these flavors belong to and which
-service connectors they are adaptable with. If you would like to get additional
-information regarding a specific flavor, you can utilize the command:
-
-```bash
-zenml alerter flavor describe FLAVOR_NAME
-```
-
-To list all alerters available and registered for use, use the `list` command:
-
-```bash
-zenml alerter list
-```
-
-If you want the name of the alerter in the active stack, use the `get`
-command:
-
-```bash
-zenml alerter get
-```
-
-For details about a particular alerter, use the `describe` command.
-By default, (without a specific alerter name passed in) it will describe
-the active or currently used alerter:
-
-```bash
-zenml alerter describe [ALERTER_NAME]
-```
-
-If you wish to update/rename an alerter, you can use the following commands
-respectively:
-
-```bash
-zenml alerter update ALERTER_NAME --property_to_update=new_value
-zenml alerter rename ALERTER_OLD_NAME ALERTER_NEW_NAME
-```
-
-To delete an alerter (and all of its contents), use the `delete` command:
-
-```bash
-zenml alerter delete ALERTER_NAME
-```
-
-If you would like to connect/disconnect your alerter to/from a service
-connector, you can use the following commands:
-
-```bash
-zenml alerter connect ALERTER_NAME -c CONNECTOR_NAME
-zenml alerter disconnect
-```
-
-The ZenML CLI provides a few more utility functions for you to manage your
-alerters. In order to get a full list of available functions, use the command:
-
-```bash
-zenml alerter --help
-```
-
-Customizing your Data Validator
--------------------------------
-
-In ZenML, data validators help you profile and validate your data.
-
-By default, a default ZenML local stack will not register a data validator. If
-you wish to register a new data validator, do so with the `register` command:
-
-```bash
-zenml data-validator register DATA_VALIDATOR_NAME --flavor DATA_VALIDATOR_FLAVOR [--DATA_VALIDATOR_OPTIONS]
-```
-
-You can also add any label to your stack component using the `--label` or `-l` flag:
-
-```bash
-zenml data-validator register DATA_VALIDATOR_NAME --flavor DATA_VALIDATOR_FLAVOR -l key1=value1 -l key2=value2
-```
-
-As you can see from the command above, when you register a new data validator,
-you have to choose a flavor. To see the full list of available data validator
-flavors, you can use the command:
-
-```bash
-zenml data-validator flavor list
-```
-
-This list will show you which integration these flavors belong to and which
-service connectors they are adaptable with. If you would like to get additional
-information regarding a specific flavor, you can utilize the command:
-
-```bash
-zenml data-validator flavor describe FLAVOR_NAME
-```
-
-To list all data validators available and registered for use, use the `list`
-command:
-
-```bash
-zenml data-validator list
-```
-
-If you want the name of the data validator in the active stack, use the `get`
-command:
-
-```bash
-zenml data-validator get
-```
-
-For details about a particular data validator, use the `describe` command.
-By default, (without a specific data validator name passed in) it will describe
-the active or currently used data validator:
-
-```bash
-zenml data-validator describe [DATA_VALIDATOR_NAME]
-```
-
-If you wish to update/rename a data validator, you can use the following
-commands respectively:
-
-```bash
-zenml data-validator update DATA_VALIDATOR_NAME --property_to_update=new_value
-zenml data-validator rename DATA_VALIDATOR_OLD_NAME DATA_VALIDATOR_NEW_NAME
-```
-
-To delete a data validator (and all of its contents), use the `delete` command:
-
-```bash
-zenml data-validator delete DATA_VALIDATOR_NAME
-```
-
-If you would like to connect/disconnect your data validator to/from a service
-connector, you can use the following commands:
-
-```bash
-zenml data-validator connect DATA_VALIDATOR_NAME -c CONNECTOR_NAME
-zenml data-validator disconnect
-```
-
-The ZenML CLI provides a few more utility functions for you to manage your
-data validators. In order to get a full list of available functions, use the
-command:
-
-```bash
-zenml data-validator --help
-```
-
-Customizing your Image Builder
-------------------------------
-
-In ZenML, image builders allow you to build container images are used
-to build container images such that your machine-learning pipelines and
-steps can be executed in remote environments.
-
-By default, a default ZenML local stack will not register an image builder. If
-you wish to register a new image builder, do so with the `register` command:
-
-```bash
-zenml image-builder register IMAGE_BUILDER_NAME --flavor IMAGE_BUILDER_FLAVOR [--IMAGE_BUILDER_OPTIONS]
-```
-
-You can also add any label to your stack component using the `--label` or `-l` flag:
-
-```bash
-zenml image-builder register IMAGE_BUILDER_NAME --flavor IMAGE_BUILDER_FLAVOR -l key1=value1 -l key2=value2
-```
-
-As you can see from the command above, when you register a new image builder,
-you have to choose a flavor. To see the full list of available image builder
-flavors, you can use the command:
-
-```bash
-zenml image-builder flavor list
-```
-
-This list will show you which integration these flavors belong to and which
-service connectors they are adaptable with. If you would like to get additional
-information regarding a specific flavor, you can utilize the command:
-
-```bash
-zenml image-builder flavor describe FLAVOR_NAME
-```
-
-To list all image builders available and registered for use, use the `list`
-command:
-
-```bash
-zenml image-builder list
-```
-
-If you want the name of the image builder in the active stack, use the `get`
-command:
-
-```bash
-zenml image-builder get
-```
-
-For details about a particular image builder, use the `describe` command.
-By default, (without a specific image builder name passed in) it will describe
-the active or currently used image builder:
-
-```bash
-zenml image-builder describe [IMAGE_BUILDER_NAME]
-```
-
-If you wish to update/rename an image builder, you can use the following
-commands respectively:
-
-```bash
-zenml image-builder update IMAGE_BUILDER_NAME --property_to_update=new_value
-zenml image-builder rename IMAGE_BUILDER_OLD_NAME IMAGE_BUILDER_NEW_NAME
-```
-
-To delete a image builder (and all of its contents), use the `delete` command:
-
-```bash
-zenml image-builder delete IMAGE_BUILDER_NAME
-```
-
-If you would like to connect/disconnect your image builder to/from a service
-connector, you can use the following commands:
-
-```bash
-zenml image-builder connect IMAGE_BUILDER_NAME -c CONNECTOR_NAME
-zenml image-builder disconnect
-```
-
-The ZenML CLI provides a few more utility functions for you to manage your
-image builders. In order to get a full list of available functions, use the
-command:
-
-```bash
-zenml image-builder --help
-```
-
-Customizing your Annotator
---------------------------
-
-Annotators enable the use of data annotation as part of your ZenML stack
-and pipelines
-
-By default, a default ZenML local stack will not register an annotator. If
-you wish to register a new annotator, do so with the `register` command:
-
-```bash
-zenml annotator register ANNOTATOR_NAME --flavor ANNOTATOR_FLAVOR [--ANNOTATOR_OPTIONS]
-```
-
-You can also add any label to your stack component using the `--label` or `-l` flag:
-
-```bash
-zenml annotator register ANNOTATOR_NAME --flavor ANNOTATOR_FLAVOR -l key1=value1 -l key2=value2
-```
-
-As you can see from the command above, when you register a new annotator,
-you have to choose a flavor. To see the full list of available annotator
-flavors, you can use the command:
-
-```bash
-zenml annotator flavor list
-```
-
-This list will show you which integration these flavors belong to and which
-service connectors they are adaptable with. If you would like to get additional
-information regarding a specific flavor, you can utilize the command:
-
-```bash
-zenml annotator flavor describe FLAVOR_NAME
-```
-
-To list all annotator available and registered for use, use the `list` command:
-
-```bash
-zenml annotator list
-```
-
-If you want the name of the annotator in the active stack, use the `get`
-command:
-
-```bash
-zenml annotator get
-```
-
-For details about a particular annotator, use the `describe` command.
-By default, (without a specific annotator name passed in) it will describe
-the active or currently used annotator:
-
-```bash
-zenml annotator describe [ANNOTATOR_NAME]
-```
-
-If you wish to update/rename an annotator, you can use the following commands
-respectively:
-
-```bash
-zenml annotator update ANNOTATOR_NAME --property_to_update=new_value
-zenml annotator rename ANNOTATOR_OLD_NAME ANNOTATOR_NEW_NAME
-```
-
-To delete an annotator (and all of its contents), use the `delete` command:
-
-```bash
-zenml annotator delete ANNOTATOR_NAME
-```
-
-If you would like to connect/disconnect your annotator to/from a service
-connector, you can use the following commands:
-
-```bash
-zenml annotator connect ANNOTATOR_NAME -c CONNECTOR_NAME
-zenml annotator disconnect
-```
-
-Finally, you can use the `dataset` command to interact with your annotation
-datasets:
-
-```bash
-zenml annotator dataset --help
-```
-
-The ZenML CLI provides a few more utility functions for you to manage your
-annotator. In order to get a full list of available functions, use the command:
-
-```bash
-zenml annotator --help
-```
-
-Customizing your Feature Store
-------------------------------
-
-Feature stores allow data teams to serve data via an offline store and
-an online low-latency store where data is kept in sync between the two.
-To get a better understanding regarding feature stores, use the command:
-
-```bash
-zenml feature-store explain
-```
-
-By default, a default ZenML local stack will not register a feature store. If
-you wish to register a new feature store, do so with the `register` command:
-
-```bash
-zenml feature-store register FEATURE_STORE_NAME --flavor FEATURE_STORE_FLAVOR [--FEATURE_STORE_OPTIONS]
-```
-
-You can also add any label to your stack component using the `--label` or `-l` flag:
-
-```bash
-zenml feature-store register FEATURE_STORE_NAME --flavor FEATURE_STORE_FLAVOR -l key1=value1 -l key2=value2
-```
-
-As you can see from the command above, when you register a new feature store,
-you have to choose a flavor. To see the full list of available feature store
-flavors, you can use the command:
-
-```bash
-zenml feature-store flavor list
-```
-
-This list will show you which integration these flavors belong to and which
-service connectors they are adaptable with. If you would like to get additional
-information regarding a specific flavor, you can utilize the command:
-
-Note: Currently, ZenML only supports connecting to a Redis-backed Feast feature
-store as a stack component integration.
-
-```bash
-zenml feature-store flavor describe FLAVOR_NAME
-```
-
-To list all feature stores available and registered for use, use the
-`list` command:
-
-```bash
-zenml feature-store list
-```
-
-If you want the name of the feature store in the active stack, use the `get`
-command:
-
-```bash
-zenml feature-store get
-```
-
-For details about a particular feature store, use the `describe` command.
-By default, (without a specific feature store name passed in) it will describe
-the active or currently used feature store:
-
-```bash
-zenml feature-store describe [FEATURE_STORE_NAME]
-```
-
-If you wish to update/rename a feature store, you can use the following commands
-respectively:
-
-```bash
-zenml feature-store update FEATURE_STORE_NAME --property_to_update=new_value
-zenml feature-store rename FEATURE_STORE_OLD_NAME FEATURE_STORE_NEW_NAME
-```
-
-To delete a feature store (and all of its contents), use the `delete`
-command:
-
-```bash
-zenml feature-store delete FEATURE_STORE_NAME
-```
-
-If you would like to connect/disconnect your feature store to/from a
-service connector, you can use the following commands:
-
-```bash
-zenml feature-store connect FEATURE_STORE_NAME -c CONNECTOR_NAME
-zenml feature-store disconnect
-```
-
-The ZenML CLI provides a few more utility functions for you to manage your
-feature stores. In order to get a full list of available functions,
-use the command:
-
-```bash
-zenml feature-store --help
-```
-
-Deploying Stack Components
---------------------------
-
-Stack components can be deployed directly via the CLI. You can use the `deploy`
-subcommand for this. For example, you could deploy a GCP artifact store using
-the following command:
-
-```shell
-zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core basic_gcp_artifact_store
-```
-
-For full documentation on this functionality, please refer to [the dedicated
-documentation on stack component deploy](https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-component).
-
-Secrets Management
-------------------
-
-ZenML offers a way to securely store secrets associated with your other
-stack components and infrastructure. A ZenML Secret is a collection or grouping
-of key-value pairs stored by the ZenML secrets store.
-ZenML Secrets are identified by a unique name which allows you to fetch or
-reference them in your pipelines and stacks.
-
-Depending on how you set up and deployed ZenML, the secrets store keeps secrets
-in the local database or uses the ZenML server your client is connected to:
-
-* if you are using the default ZenML client settings, or if you connect your
-ZenML client to a local ZenML server started with `zenml up`, the secrets store
-is using the same local SQLite database as the rest of ZenML
-* if you connect your ZenML client to a remote ZenML server, the
-secrets are no longer managed on your local machine, but through the remote
-server instead. Secrets are stored in whatever secrets store back-end the
-remote server is configured to use. This can be a SQL database, one of the
-managed cloud secrets management services, or even a custom back-end.
-
-To create a secret, use the `create` command and pass the key-value pairs
-as command-line arguments:
-
-```bash
-zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
-
-# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
-zenml secret create SECRET_NAME --values='{"key1":"value2","key2":"value2","key3":"value3"}'
-```
-
-Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `create` command instead:
-
-```shell
-zenml secret create SECRET_NAME -i
-```
-
-As an alternative to the interactive mode, also useful for values that
-are long or contain newline or special characters, you can also use the special
-`@` syntax to indicate to ZenML that the value needs to be read from a file:
-
-```bash
-zenml secret create SECRET_NAME \
-   --aws_access_key_id=1234567890 \
-   --aws_secret_access_key=abcdefghij \
-   --aws_session_token=@/path/to/token.txt
-
-# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing
-# key-value pairs in either JSON or YAML format.
-zenml secret create SECRET_NAME --values=@/path/to/token.txt
-```
-
-To list all the secrets available, use the `list` command:
-
-```bash
-zenml secret list
-```
-
-To get the key-value pairs for a particular secret, use the `get` command:
-
-```bash
-zenml secret get SECRET_NAME
-```
-
-To update a secret, use the `update` command:
-
-```bash
-zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
-
-# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
-zenml secret update SECRET_NAME --values='{"key1":"value2","key2":"value2","key3":"value3"}'
-```
-
-Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `update` command instead:
-
-```shell
-zenml secret update SECRET_NAME -i
-```
-
-Finally, to delete a secret, use the `delete` command:
-
-```bash
-zenml secret delete SECRET_NAME
-```
-
-Secrets can be scoped to a workspace or a user. By default, secrets
-are scoped to the current workspace. To scope a secret to a user, use the
-`--scope user` argument in the `register` command.
-
-Customizing your Model Registry
--------------------------------
-
-Model registries are centralized repositories that facilitate the
-collaboration and management of machine learning models. To get a better
-understanding regarding model registries as a concept, use the command:
-
-```bash
-zenml model-registry explain
-```
-
-By default, a default ZenML local stack will not register a model registry. If
-you wish to register a new model registry, do so with the `register` command:
-
-```bash
-zenml model-registry register MODEL_REGISTRY_NAME --flavor MODEL_REGISTRY_FLAVOR [--MODEL_REGISTRY_OPTIONS]
-```
-
-You can also add any label to your stack component using the `--label` or `-l` flag:
-
-```bash
-zenml model-registry register MODEL_REGISTRY_NAME --flavor MODEL_REGISTRY_FLAVOR -l key1=value1 -l key2=value2
-```
-
-As you can see from the command above, when you register a new model registry,
-you have to choose a flavor. To see the full list of available model registry
-flavors, you can use the command:
-
-```bash
-zenml model-registry flavor list
-```
-
-This list will show you which integration these flavors belong to and which
-service connectors they are adaptable with. If you would like to get additional
-information regarding a specific flavor, you can utilize the command:
-
-```bash
-zenml model-registry flavor describe FLAVOR_NAME
-```
-
-To list all model registries available and registered for use, use the
-`list` command:
-
-```bash
-zenml model-registry list
-```
-
-If you want the name of the model registry in the active stack, use the `get`
-command:
-
-```bash
-zenml model-registry get
-```
-
-For details about a particular model registry, use the `describe` command.
-By default, (without a specific operator name passed in) it will describe the
-active or currently used model registry:
-
-```bash
-zenml model-registry describe [MODEL_REGISTRY_NAME]
-```
-
-If you wish to update/rename a model registry, you can use the following commands
-respectively:
-
-```bash
-zenml model-registry update MODEL_REGISTRY_NAME --property_to_update=new_value
-zenml model-registry rename MODEL_REGISTRY_OLD_NAME MODEL_REGISTRY_NEW_NAME
-```
-
-To delete a model registry (and all of its contents), use the `delete`
-command:
-
-```bash
-zenml model-registry delete MODEL_REGISTRY_NAME
-```
-
-If you would like to connect/disconnect your model registry to/from a
-service connector, you can use the following commands:
-
-```bash
-zenml model-registry connect MODEL_REGISTRY_NAME -c CONNECTOR_NAME
-zenml model-registry disconnect
-```
-
-The ZenML CLI provides a few more utility functions for you to manage your
-model registries. In order to get a full list of available functions,
-use the command:
-
-```bash
-zenml model-registry --help
-```
-
-Configuring your Model Deployer
--------------------------------
-
-Model deployers are stack components responsible for online model serving.
-They are responsible for deploying models to a remote server. Model deployers
-also act as a registry for models that are served with ZenML. To get a better
-understanding regarding model deployers, use the command:
+Model Deployers
+---------------
+
+[Model deployers](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers)
+are stack components responsible for online model serving. They are responsible
+for deploying models to a remote server. Model deployers also act as a registry
+for models that are served with ZenML. To get a better understanding regarding
+model deployers, use the command:
 
 ```bash
 zenml model-deployer explain
@@ -1475,10 +828,563 @@ use the command:
 zenml model-deployer --help
 ```
 
+Step Operators
+--------------
+
+[Step operators](https://docs.zenml.io/stacks-and-components/component-guide/step-operators)
+allow you to run individual steps in a custom environment different from the
+default one used by your active orchestrator. One example use-case is to run a
+training step of your pipeline in an environment with GPUs available. To get
+a better understanding regarding step operators, use the command:
+
+```bash
+zenml step-operator explain
+```
+
+By default, a default ZenML local stack will not register a step operator. If
+you wish to register a new step operator, do so with the `register` command:
+
+```bash
+zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new step operator,
+you have to choose a flavor. To see the full list of available step operator
+flavors, you can use the command:
+
+```bash
+zenml step-operator flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml step-operator flavor describe FLAVOR_NAME
+```
+
+To list all step operators available and registered for use, use the
+`list` command:
+
+```bash
+zenml step-operator list
+```
+
+If you want the name of the step operator in the active stack, use the `get`
+command:
+
+```bash
+zenml step-operator get
+```
+
+For details about a particular step operator, use the `describe` command.
+By default, (without a specific operator name passed in) it will describe the
+active or currently used step operator:
+
+```bash
+zenml step-operator describe [STEP_OPERATOR_NAME]
+```
+
+If you wish to update/rename a step operator, you can use the following commands
+respectively:
+
+```bash
+zenml step-operator update STEP_OPERATOR_NAME --property_to_update=new_value
+zenml step-operator rename STEP_OPERATOR_OLD_NAME STEP_OPERATOR_NEW_NAME
+```
+
+To delete a step operator (and all of its contents), use the `delete`
+command:
+
+```bash
+zenml step-operator delete STEP_OPERATOR_NAME
+```
+
+If you would like to connect/disconnect your step operator to/from a
+service connector, you can use the following commands:
+
+```bash
+zenml step-operator connect STEP_OPERATOR_NAME -c CONNECTOR_NAME
+zenml step-operator disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+step operators. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml step-operator --help
+```
+
+Alerters
+--------
+
+In ZenML, [alerters](https://docs.zenml.io/stacks-and-components/component-guide/alerters)
+allow you to send alerts from within your pipeline.
+
+By default, a default ZenML local stack will not register an alerter. If
+you wish to register a new alerter, do so with the `register` command:
+
+```bash
+zenml alerter register ALERTER_NAME --flavor ALERTER_FLAVOR [--ALERTER_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml alerter register ALERTER_NAME --flavor ALERTER_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new alerter,
+you have to choose a flavor. To see the full list of available alerter
+flavors, you can use the command:
+
+```bash
+zenml alerter flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml alerter flavor describe FLAVOR_NAME
+```
+
+To list all alerters available and registered for use, use the `list` command:
+
+```bash
+zenml alerter list
+```
+
+If you want the name of the alerter in the active stack, use the `get`
+command:
+
+```bash
+zenml alerter get
+```
+
+For details about a particular alerter, use the `describe` command.
+By default, (without a specific alerter name passed in) it will describe
+the active or currently used alerter:
+
+```bash
+zenml alerter describe [ALERTER_NAME]
+```
+
+If you wish to update/rename an alerter, you can use the following commands
+respectively:
+
+```bash
+zenml alerter update ALERTER_NAME --property_to_update=new_value
+zenml alerter rename ALERTER_OLD_NAME ALERTER_NEW_NAME
+```
+
+To delete an alerter (and all of its contents), use the `delete` command:
+
+```bash
+zenml alerter delete ALERTER_NAME
+```
+
+If you would like to connect/disconnect your alerter to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml alerter connect ALERTER_NAME -c CONNECTOR_NAME
+zenml alerter disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+alerters. In order to get a full list of available functions, use the command:
+
+```bash
+zenml alerter --help
+```
+
+Feature Stores
+--------------
+
+[Feature stores](https://docs.zenml.io/stacks-and-components/component-guide/feature-stores)
+allow data teams to serve data via an offline store and an online low-latency
+store where data is kept in sync between the two. To get a better understanding
+regarding feature stores, use the command:
+
+```bash
+zenml feature-store explain
+```
+
+By default, a default ZenML local stack will not register a feature store. If
+you wish to register a new feature store, do so with the `register` command:
+
+```bash
+zenml feature-store register FEATURE_STORE_NAME --flavor FEATURE_STORE_FLAVOR [--FEATURE_STORE_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml feature-store register FEATURE_STORE_NAME --flavor FEATURE_STORE_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new feature store,
+you have to choose a flavor. To see the full list of available feature store
+flavors, you can use the command:
+
+```bash
+zenml feature-store flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+Note: Currently, ZenML only supports connecting to a Redis-backed Feast feature
+store as a stack component integration.
+
+```bash
+zenml feature-store flavor describe FLAVOR_NAME
+```
+
+To list all feature stores available and registered for use, use the
+`list` command:
+
+```bash
+zenml feature-store list
+```
+
+If you want the name of the feature store in the active stack, use the `get`
+command:
+
+```bash
+zenml feature-store get
+```
+
+For details about a particular feature store, use the `describe` command.
+By default, (without a specific feature store name passed in) it will describe
+the active or currently used feature store:
+
+```bash
+zenml feature-store describe [FEATURE_STORE_NAME]
+```
+
+If you wish to update/rename a feature store, you can use the following commands
+respectively:
+
+```bash
+zenml feature-store update FEATURE_STORE_NAME --property_to_update=new_value
+zenml feature-store rename FEATURE_STORE_OLD_NAME FEATURE_STORE_NEW_NAME
+```
+
+To delete a feature store (and all of its contents), use the `delete`
+command:
+
+```bash
+zenml feature-store delete FEATURE_STORE_NAME
+```
+
+If you would like to connect/disconnect your feature store to/from a
+service connector, you can use the following commands:
+
+```bash
+zenml feature-store connect FEATURE_STORE_NAME -c CONNECTOR_NAME
+zenml feature-store disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+feature stores. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml feature-store --help
+```
+
+Annotators
+----------
+
+[Annotators](https://docs.zenml.io/stacks-and-components/component-guide/annotators)
+enable the use of data annotation as part of your ZenML stack and pipelines.
+
+By default, a default ZenML local stack will not register an annotator. If
+you wish to register a new annotator, do so with the `register` command:
+
+```bash
+zenml annotator register ANNOTATOR_NAME --flavor ANNOTATOR_FLAVOR [--ANNOTATOR_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml annotator register ANNOTATOR_NAME --flavor ANNOTATOR_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new annotator,
+you have to choose a flavor. To see the full list of available annotator
+flavors, you can use the command:
+
+```bash
+zenml annotator flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml annotator flavor describe FLAVOR_NAME
+```
+
+To list all annotator available and registered for use, use the `list` command:
+
+```bash
+zenml annotator list
+```
+
+If you want the name of the annotator in the active stack, use the `get`
+command:
+
+```bash
+zenml annotator get
+```
+
+For details about a particular annotator, use the `describe` command.
+By default, (without a specific annotator name passed in) it will describe
+the active or currently used annotator:
+
+```bash
+zenml annotator describe [ANNOTATOR_NAME]
+```
+
+If you wish to update/rename an annotator, you can use the following commands
+respectively:
+
+```bash
+zenml annotator update ANNOTATOR_NAME --property_to_update=new_value
+zenml annotator rename ANNOTATOR_OLD_NAME ANNOTATOR_NEW_NAME
+```
+
+To delete an annotator (and all of its contents), use the `delete` command:
+
+```bash
+zenml annotator delete ANNOTATOR_NAME
+```
+
+If you would like to connect/disconnect your annotator to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml annotator connect ANNOTATOR_NAME -c CONNECTOR_NAME
+zenml annotator disconnect
+```
+
+Finally, you can use the `dataset` command to interact with your annotation
+datasets:
+
+```bash
+zenml annotator dataset --help
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+annotator. In order to get a full list of available functions, use the command:
+
+```bash
+zenml annotator --help
+```
+
+Image Builders
+--------------
+
+In ZenML, [image builders](https://docs.zenml.io/stacks-and-components/component-guide/image-builders)
+allow you to build container images are used to build container images such
+that your machine-learning pipelines and steps can be executed in remote
+environments.
+
+By default, a default ZenML local stack will not register an image builder. If
+you wish to register a new image builder, do so with the `register` command:
+
+```bash
+zenml image-builder register IMAGE_BUILDER_NAME --flavor IMAGE_BUILDER_FLAVOR [--IMAGE_BUILDER_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml image-builder register IMAGE_BUILDER_NAME --flavor IMAGE_BUILDER_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new image builder,
+you have to choose a flavor. To see the full list of available image builder
+flavors, you can use the command:
+
+```bash
+zenml image-builder flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml image-builder flavor describe FLAVOR_NAME
+```
+
+To list all image builders available and registered for use, use the `list`
+command:
+
+```bash
+zenml image-builder list
+```
+
+If you want the name of the image builder in the active stack, use the `get`
+command:
+
+```bash
+zenml image-builder get
+```
+
+For details about a particular image builder, use the `describe` command.
+By default, (without a specific image builder name passed in) it will describe
+the active or currently used image builder:
+
+```bash
+zenml image-builder describe [IMAGE_BUILDER_NAME]
+```
+
+If you wish to update/rename an image builder, you can use the following
+commands respectively:
+
+```bash
+zenml image-builder update IMAGE_BUILDER_NAME --property_to_update=new_value
+zenml image-builder rename IMAGE_BUILDER_OLD_NAME IMAGE_BUILDER_NEW_NAME
+```
+
+To delete a image builder (and all of its contents), use the `delete` command:
+
+```bash
+zenml image-builder delete IMAGE_BUILDER_NAME
+```
+
+If you would like to connect/disconnect your image builder to/from a service
+connector, you can use the following commands:
+
+```bash
+zenml image-builder connect IMAGE_BUILDER_NAME -c CONNECTOR_NAME
+zenml image-builder disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+image builders. In order to get a full list of available functions, use the
+command:
+
+```bash
+zenml image-builder --help
+```
+
+Model Registries
+----------------
+
+[Model registries](https://docs.zenml.io/stacks-and-components/component-guide/model-registries)
+are centralized repositories that facilitate the collaboration and management
+of machine learning models. To get a better understanding regarding model
+registries as a concept, use the command:
+
+```bash
+zenml model-registry explain
+```
+
+By default, a default ZenML local stack will not register a model registry. If
+you wish to register a new model registry, do so with the `register` command:
+
+```bash
+zenml model-registry register MODEL_REGISTRY_NAME --flavor MODEL_REGISTRY_FLAVOR [--MODEL_REGISTRY_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml model-registry register MODEL_REGISTRY_NAME --flavor MODEL_REGISTRY_FLAVOR -l key1=value1 -l key2=value2
+```
+
+As you can see from the command above, when you register a new model registry,
+you have to choose a flavor. To see the full list of available model registry
+flavors, you can use the command:
+
+```bash
+zenml model-registry flavor list
+```
+
+This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:
+
+```bash
+zenml model-registry flavor describe FLAVOR_NAME
+```
+
+To list all model registries available and registered for use, use the
+`list` command:
+
+```bash
+zenml model-registry list
+```
+
+If you want the name of the model registry in the active stack, use the `get`
+command:
+
+```bash
+zenml model-registry get
+```
+
+For details about a particular model registry, use the `describe` command.
+By default, (without a specific operator name passed in) it will describe the
+active or currently used model registry:
+
+```bash
+zenml model-registry describe [MODEL_REGISTRY_NAME]
+```
+
+If you wish to update/rename a model registry, you can use the following commands
+respectively:
+
+```bash
+zenml model-registry update MODEL_REGISTRY_NAME --property_to_update=new_value
+zenml model-registry rename MODEL_REGISTRY_OLD_NAME MODEL_REGISTRY_NEW_NAME
+```
+
+To delete a model registry (and all of its contents), use the `delete`
+command:
+
+```bash
+zenml model-registry delete MODEL_REGISTRY_NAME
+```
+
+If you would like to connect/disconnect your model registry to/from a
+service connector, you can use the following commands:
+
+```bash
+zenml model-registry connect MODEL_REGISTRY_NAME -c CONNECTOR_NAME
+zenml model-registry disconnect
+```
+
+The ZenML CLI provides a few more utility functions for you to manage your
+model registries. In order to get a full list of available functions,
+use the command:
+
+```bash
+zenml model-registry --help
+```
+
 Managing your Stacks
 --------------------
 
-The stack is a grouping of your artifact store, your orchestrator, and other
+[The stack](https://docs.zenml.io/user-guide/production-guide/understand-stacks)
+is a grouping of your artifact store, your orchestrator, and other
 optional MLOps tools like experiment trackers or model deployers.
 With the ZenML tool, switching from a local stack to a distributed cloud
 environment can be accomplished with just a few CLI commands.
@@ -1536,7 +1442,7 @@ If you want to copy a stack, run the following command:
 zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME
 ```
 
-If you wish to transfer one of your stacks to another machine, you can do so 
+If you wish to transfer one of your stacks to another machine, you can do so
 by exporting the stack configuration and then importing it again.
 
 To export a stack to YAML, run the following command:
@@ -1638,51 +1544,11 @@ stacks. In order to get a full list of available functions, use the command:
 zenml stack --help
 ```
 
-Administering your Code Repositories
-------------------------------------
-
-Code repositories enable ZenML to keep track of the code version that you use
-for your pipeline runs. Additionally, running a pipeline which is tracked in
-a registered code repository can decrease the time it takes Docker to build
-images for containerized stack components.
-
-To register a code repository, use the following CLI
-command:
-
-```shell
-zenml code-repository register <NAME> --type=<CODE_REPOSITORY_TYPE] \
-   [--CODE_REPOSITORY_OPTIONS]
-```
-
-ZenML currently supports code repositories of type `github` and `gitlab`, but
-you can also use your custom code repository implementation by passing the
-type `custom` and a source of your repository class.
-
-```shell
-zenml code-repository register <NAME> --type=custom \
-   --source=<CODE_REPOSITORY_SOURCE> [--CODE_REPOSITORY_OPTIONS]
-```
-
-The `CODE_REPOSITORY_OPTIONS` depend on the configuration necessary for the
-type of code repository that you're using.
-
-If you want to list your registered code repositories, run:
-
-```shell
-zenml code-repository list
-```
-
-You can delete one of your registered code repositories like this:
-
-```shell
-zenml code-repository delete <REPOSITORY_NAME_OR_ID>
-```
-
-Administering your Models
-----------------------------
+Managing your Models
+--------------------
 
 ZenML provides several CLI commands to help you administer your models and
-their versions as part of the Model Control Plane.
+their versions as part of [the Model Control Plane](https://docs.zenml.io/user-guide/starter-guide/track-ml-models).
 
 To register a new model, you can use the following CLI command:
 
@@ -1705,7 +1571,7 @@ zenml model update <MODEL_NAME_OR_ID> [--MODEL_OPTIONS]
 If you would like to add or remove tags from the model, use:
 
 ```bash
-zenml model update <MODEL_NAME_OR_ID> --tag <TAG> --tag <TAG> .. 
+zenml model update <MODEL_NAME_OR_ID> --tag <TAG> --tag <TAG> ..
    --remove-tag <TAG> --remove-tag <TAG> ..
 ```
 
@@ -1758,15 +1624,15 @@ zenml model version update <MODEL_NAME_OR_ID> <VERSION> --stage <STAGE>
 - tags
 
 ```bash
-zenml model version update <MODEL_NAME_OR_ID> <VERSION> --tag <TAG> --tag <TAG> .. 
+zenml model version update <MODEL_NAME_OR_ID> <VERSION> --tag <TAG> --tag <TAG> ..
    --remove-tag <TAG> --remove-tag <TAG> ..
 ```
 
-Administering your Pipelines
-----------------------------
+Managing your Pipelines & Artifacts
+-----------------------------------
 
-ZenML provides several CLI commands to help you administer your pipelines and
-pipeline runs.
+ZenML provides several CLI commands to help you [administer your pipelines and
+pipeline runs](https://docs.zenml.io/user-guide/starter-guide/manage-artifacts).
 
 To explicitly register a pipeline you need to point to a pipeline instance
 in your Python code. Let's say you have a Python file called `run.py` and
@@ -1829,7 +1695,7 @@ zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
 
 Note, however, that this will only delete the reference saved in ZenML and does
 NOT stop/delete the schedule in the respective orchestrator. This still needs to
-be done manually. For example, using the Airflow orchestrator you would have 
+be done manually. For example, using the Airflow orchestrator you would have
 to open the web UI to manually click to stop the schedule from executing.
 
 Each pipeline run automatically saves its artifacts in the artifact store. To
@@ -1854,13 +1720,13 @@ zenml artifact update <NAME> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
 zenml artifact version update <NAME> -v <VERSION> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
 ```
 
-The metadata of artifacts or artifact versions stored by ZenML can only be 
+The metadata of artifacts or artifact versions stored by ZenML can only be
 deleted once they are no longer used by any pipeline runs. I.e., an artifact
 version can only be deleted if the run that produced it and all runs that used
 it as an input have been deleted. Similarly, an artifact can only be deleted if
 all its versions can be deleted.
 
-To delete all artifacts and artifact versions that are no longer linked to any 
+To delete all artifacts and artifact versions that are no longer linked to any
 pipeline runs, use:
 
 ```bash
@@ -1880,100 +1746,6 @@ To delete a specific build, use:
 zenml pipeline builds delete <BUILD_ID>
 ```
 
-Building an image without running your Pipelines
-------------------------------------------------
-
-To build Docker images for your pipeline without actually running the pipeline,
-use:
-
-```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME>
-```
-
-To specify settings for the Docker builds, use the `--config/-c` option of the
-command. For more information about the structure of this configuration file,
-check out the `zenml.pipelines.base_pipeline.BasePipeline.build(...)` method.
-
-```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
-```
-
-If you want to build the pipeline for a stack different than your current active
-stack, use the `--stack` option.
-
-```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
-```
-
-To run a pipeline that was previously registered, use:
-
-```bash
-zenml pipeline run  <PIPELINE_ID_OR_NAME>
-```
-
-To specify settings for the pipeline, use the `--config/-c` option of the
-command. For more information about the structure of this configuration file,
-check out the `zenml.pipelines.base_pipeline.BasePipeline.run(...)` method.
-
-```bash
-zenml pipeline run <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
-```
-
-If you want to run the pipeline on a stack different than your current active
-stack, use the `--stack` option.
-
-```bash
-zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
-```
-
-Tagging your resources with ZenML
----------------------------------
-
-When you are using ZenML, you can use tags to organize and categorize your
-assets. This way, you can streamline your workflows and enhance the
-discoverability of your resources more easily.
-
-Currently, you can use tags with artifacts, models and their versions:
-
-```bash
-# Tag the artifact
-zenml artifact update ARTIFACT_NAME -t TAG_NAME
-
-# Tag the artifact version
-zenml artifact version update ARTIFACT_NAME ARTIFACT_VERSION -t TAG_NAME
-
-# Tag an existing model
-zenml model update MODEL_NAME --tag TAG_NAME
-
-# Tag a specific model version
-zenml model version update MODEL_NAME VERSION_NAME --tag TAG_NAME
-```
-
-Besides these interactions, you can also create a new tag by using the
-`register` command:
-
-```bash
-zenml tag register -n TAG_NAME [-c COLOR]
-```
-
-If you would like to list all the tags that you have, you can use the command:
-
-```bash
-zenml tag list
-```
-
-To update the properties of a specific tag, you can use the `update` subcommand:
-
-```bash
-zenml tag update TAG_NAME_OR_ID [-n NEW_NAME] [-c NEW_COLOR]
-```
-
-Finally, in order to delete a tag, you can execute:
-
-```bash
-zenml tag delete TAG_NAME_OR_ID
-```
-
 Managing the local ZenML Dashboard
 ----------------------------------
 
@@ -1987,9 +1759,9 @@ zenml up
 ```
 
 This will start the dashboard on your local machine where you can access it at
-the URL printed to the console. 
+the URL printed to the console.
 
-If you have closed the dashboard in your browser and want to open it again, 
+If you have closed the dashboard in your browser and want to open it again,
 you can run:
 
 ```bash
@@ -2045,37 +1817,12 @@ the Docker bridge interface, which usually has the IP address `172.17.0.1`:
 zenml up --port 9000 --ip-address 172.17.0.1
 ```
 
-Managing the global configuration
----------------------------------
+Connecting to a ZenML Server
+----------------------------
 
-The ZenML global configuration CLI commands cover options such as enabling or
-disabling the collection of anonymous usage statistics, changing the logging
-verbosity and configuring your ZenML client to connect to a remote database or
-ZenML server.
-
-In order to help us better understand how the community uses ZenML, the library
-reports anonymized usage statistics. You can always opt-out by using the CLI
-command:
-
-```bash
-zenml analytics opt-out
-```
-
-If you want to opt back in, use the following command:
-
-```bash
-zenml analytics opt-in
-```
-
-The verbosity of the ZenML client output can be configured using the
-``zenml logging`` command. For example, to set the verbosity to DEBUG, run:
-
-```bash
-zenml logging set-verbosity DEBUG
-```
-
-The ZenML client can be configured to connect to a remote database or ZenML
-server with the `zenml connect` command. If no arguments are supplied, ZenML
+The ZenML client can be [configured to connect to a remote database or ZenML
+server](https://docs.zenml.io/user-guide/advanced-guide/configuring-zenml/connecting-to-zenml)
+with the `zenml connect` command. If no arguments are supplied, ZenML
 will attempt to connect to the last ZenML server deployed from the local host
 using the 'zenml deploy' command:
 
@@ -2173,7 +1920,7 @@ The current user is: 'default'
 The active workspace is: 'default' (global)
 The active stack is: 'default' (global)
 The status of the local dashboard:
-              ZenML server 'local'              
+              ZenML server 'local'
 ┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ URL            │ http://172.17.0.1:9000      ┃
 ┠────────────────┼─────────────────────────────┨
@@ -2247,6 +1994,96 @@ Finally, you can remove an authorized device by using the `delete` command:
 zenml authorized-device delete DEVICE_ID_OR_PREFIX
 ```
 
+Secrets management
+------------------
+
+ZenML offers a way to [securely store secrets associated with your other
+stack components and infrastructure](https://docs.zenml.io/user-guide/advanced-guide/secret-management).
+A ZenML Secret is a collection or grouping of key-value pairs stored by the
+ZenML secrets store. ZenML Secrets are identified by a unique name which
+allows you to fetch or reference them in your pipelines and stacks.
+
+Depending on how you set up and deployed ZenML, the secrets store keeps secrets
+in the local database or uses the ZenML server your client is connected to:
+
+* if you are using the default ZenML client settings, or if you connect your
+ZenML client to a local ZenML server started with `zenml up`, the secrets store
+is using the same local SQLite database as the rest of ZenML
+* if you connect your ZenML client to a remote ZenML server, the
+secrets are no longer managed on your local machine, but through the remote
+server instead. Secrets are stored in whatever secrets store back-end the
+remote server is configured to use. This can be a SQL database, one of the
+managed cloud secrets management services, or even a custom back-end.
+
+To create a secret, use the `create` command and pass the key-value pairs
+as command-line arguments:
+
+```bash
+zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret create SECRET_NAME --values='{"key1":"value2","key2":"value2","key3":"value3"}'
+```
+
+Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `create` command instead:
+
+```shell
+zenml secret create SECRET_NAME -i
+```
+
+As an alternative to the interactive mode, also useful for values that
+are long or contain newline or special characters, you can also use the special
+`@` syntax to indicate to ZenML that the value needs to be read from a file:
+
+```bash
+zenml secret create SECRET_NAME \
+   --aws_access_key_id=1234567890 \
+   --aws_secret_access_key=abcdefghij \
+   --aws_session_token=@/path/to/token.txt
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing
+# key-value pairs in either JSON or YAML format.
+zenml secret create SECRET_NAME --values=@/path/to/token.txt
+```
+
+To list all the secrets available, use the `list` command:
+
+```bash
+zenml secret list
+```
+
+To get the key-value pairs for a particular secret, use the `get` command:
+
+```bash
+zenml secret get SECRET_NAME
+```
+
+To update a secret, use the `update` command:
+
+```bash
+zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret update SECRET_NAME --values='{"key1":"value2","key2":"value2","key3":"value3"}'
+```
+
+Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead:
+
+```shell
+zenml secret update SECRET_NAME -i
+```
+
+Finally, to delete a secret, use the `delete` command:
+
+```bash
+zenml secret delete SECRET_NAME
+```
+
+Secrets can be scoped to a workspace or a user. By default, secrets
+are scoped to the current workspace. To scope a secret to a user, use the
+`--scope user` argument in the `register` command.
 
 Auth management
 ---------------
@@ -2348,7 +2185,7 @@ zenml service-connector delete SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
 ```
 
 Managing users
--------------------------------------------
+--------------
 
 When using the ZenML service, you can manage permissions by managing users
 using the CLI. If you want to create a new user or delete an existing one,
@@ -2386,8 +2223,8 @@ If you want to change the password of the current user account:
 zenml user change-password --help
 ```
 
-Managing service accounts
--------------------------
+Service Accounts
+----------------
 
 ZenML supports the use of service accounts to authenticate clients to the
 ZenML server using API keys. This is useful for automating tasks such as
@@ -2409,7 +2246,7 @@ zenml connect --url https://... --api-key <API_KEY>
 ```
 
 or by setting the `ZENML_STORE_URL` and `ZENML_STORE_API_KEY` environment
-variables when you set up your ZenML client for the first time: 
+variables when you set up your ZenML client for the first time:
 
 ```bash
 export ZENML_STORE_URL=https://...
@@ -2475,6 +2312,170 @@ command:
 zenml service-account api-key <SERVICE_ACCOUNT_NAME> delete <API_KEY_NAME>
 ```
 
+Managing Code Repositories
+--------------------------
+
+[Code repositories](https://docs.zenml.io/user-guide/production-guide/connect-code-repository)
+enable ZenML to keep track of the code version that you use for your pipeline
+runs. Additionally, running a pipeline which is tracked in a registered code
+repository can decrease the time it takes Docker to build images for
+containerized stack components.
+
+To register a code repository, use the following CLI
+command:
+
+```shell
+zenml code-repository register <NAME> --type=<CODE_REPOSITORY_TYPE] \
+   [--CODE_REPOSITORY_OPTIONS]
+```
+
+ZenML currently supports code repositories of type `github` and `gitlab`, but
+you can also use your custom code repository implementation by passing the
+type `custom` and a source of your repository class.
+
+```shell
+zenml code-repository register <NAME> --type=custom \
+   --source=<CODE_REPOSITORY_SOURCE> [--CODE_REPOSITORY_OPTIONS]
+```
+
+The `CODE_REPOSITORY_OPTIONS` depend on the configuration necessary for the
+type of code repository that you're using.
+
+If you want to list your registered code repositories, run:
+
+```shell
+zenml code-repository list
+```
+
+You can delete one of your registered code repositories like this:
+
+```shell
+zenml code-repository delete <REPOSITORY_NAME_OR_ID>
+```
+
+Building an image without Runs
+------------------------------
+
+To [build Docker images for your pipeline](https://docs.zenml.io/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline)
+without actually running the pipeline, use:
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME>
+```
+
+To specify settings for the Docker builds, use the `--config/-c` option of the
+command. For more information about the structure of this configuration file,
+check out the `zenml.pipelines.base_pipeline.BasePipeline.build(...)` method.
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+```
+
+If you want to build the pipeline for a stack different than your current active
+stack, use the `--stack` option.
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+```
+
+To run a pipeline that was previously registered, use:
+
+```bash
+zenml pipeline run  <PIPELINE_ID_OR_NAME>
+```
+
+To specify settings for the pipeline, use the `--config/-c` option of the
+command. For more information about the structure of this configuration file,
+check out the `zenml.pipelines.base_pipeline.BasePipeline.run(...)` method.
+
+```bash
+zenml pipeline run <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+```
+
+If you want to run the pipeline on a stack different than your current active
+stack, use the `--stack` option.
+
+```bash
+zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+```
+
+Tagging your resources with ZenML
+---------------------------------
+
+When you are using ZenML, you can [use tags to organize and categorize your
+assets](https://docs.zenml.io/user-guide/advanced-guide/data-management/tagging).
+This way, you can streamline your workflows and enhance the discoverability of
+your resources more easily.
+
+Currently, you can use tags with artifacts, models and their versions:
+
+```bash
+# Tag the artifact
+zenml artifact update ARTIFACT_NAME -t TAG_NAME
+
+# Tag the artifact version
+zenml artifact version update ARTIFACT_NAME ARTIFACT_VERSION -t TAG_NAME
+
+# Tag an existing model
+zenml model update MODEL_NAME --tag TAG_NAME
+
+# Tag a specific model version
+zenml model version update MODEL_NAME VERSION_NAME --tag TAG_NAME
+```
+
+Besides these interactions, you can also create a new tag by using the
+`register` command:
+
+```bash
+zenml tag register -n TAG_NAME [-c COLOR]
+```
+
+If you would like to list all the tags that you have, you can use the command:
+
+```bash
+zenml tag list
+```
+
+To update the properties of a specific tag, you can use the `update` subcommand:
+
+```bash
+zenml tag update TAG_NAME_OR_ID [-n NEW_NAME] [-c NEW_COLOR]
+```
+
+Finally, in order to delete a tag, you can execute:
+
+```bash
+zenml tag delete TAG_NAME_OR_ID
+```
+
+Managing the Global Configuration
+---------------------------------
+
+The ZenML global configuration CLI commands cover options such as enabling or
+disabling the collection of anonymous usage statistics, changing the logging
+verbosity.
+
+In order to help us better understand how the community uses ZenML, the library
+reports anonymized usage statistics. You can always opt-out by using the CLI
+command:
+
+```bash
+zenml analytics opt-out
+```
+
+If you want to opt back in, use the following command:
+
+```bash
+zenml analytics opt-in
+```
+
+The verbosity of the ZenML client output can be configured using the
+``zenml logging`` command. For example, to set the verbosity to DEBUG, run:
+
+```bash
+zenml logging set-verbosity DEBUG
+```
+
 Deploying ZenML to the cloud
 ----------------------------
 
@@ -2492,6 +2493,20 @@ database and any VPCs, permissions, and more that are needed.
 In order to be able to run the deploy command, you should have your cloud
 provider's CLI configured locally with permissions to create resources like
 MySQL databases and networks.
+
+Deploying Stack Components
+--------------------------
+
+Stack components can be deployed directly via the CLI. You can use the `deploy`
+subcommand for this. For example, you could deploy a GCP artifact store using
+the following command:
+
+```shell
+zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core basic_gcp_artifact_store
+```
+
+For full documentation on this functionality, please refer to [the dedicated
+documentation on stack component deploy](https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-component).
 
 Interacting with the ZenML Hub
 ------------------------------
