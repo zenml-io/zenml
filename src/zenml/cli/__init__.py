@@ -2216,6 +2216,37 @@ ssl_key: null
 ssl_verify_server_cert: false
 ```
 
+Keep in mind, while connecting to a ZenML server, you will be provided with the
+option to `Trust this device`. If you opt out of it a 24-hour token will be
+issued for authentication service, however, if you opt-in will issue a 30-day
+token instead.
+
+If you would like to see a list of all trusted devices, you can use:
+
+```bash
+zenml authorized-device list
+```
+
+or if you would like to get the details regarding a specific device can use:
+
+```bash
+zenml authorized-device describe DEVICE_ID_OR_PREFIX
+```
+
+Alternatively, you can lock and unlock an authorized device by using the
+following commands:
+
+```bash
+zenml authorized-device lock DEVICE_ID_OR_PREFIX
+zenml authorized-device unlock DEVICE_ID_OR_PREFIX
+```
+
+Finally, you can remove an authorized device by using the `delete` command:
+
+```bash
+zenml authorized-device delete DEVICE_ID_OR_PREFIX
+```
+
 Managing users
 -------------------------------------------
 
