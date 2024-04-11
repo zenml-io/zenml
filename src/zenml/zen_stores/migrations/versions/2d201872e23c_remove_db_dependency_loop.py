@@ -6,7 +6,6 @@ Create Date: 2024-04-11 09:47:47.557220
 
 """
 
-import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -18,16 +17,6 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("pipeline_build",))
-    build_table = sa.Table("pipeline_build", meta)
-
-    # Check if the foreign key constraint exists
-    if "fk_pipeline_build_template_deployment_id_pipeline_deployment" not in [
-        fk.name for fk in build_table.foreign_keys
-    ]:
-        return
-
     with op.batch_alter_table("pipeline_build", schema=None) as batch_op:
         batch_op.drop_constraint(
             "fk_pipeline_build_template_deployment_id_pipeline_deployment",
