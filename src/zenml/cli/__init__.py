@@ -1965,8 +1965,7 @@ ssl_verify_server_cert: false
 
 Keep in mind, while connecting to a ZenML server, you will be provided with the
 option to `Trust this device`. If you opt out of it a 24-hour token will be
-issued for the authentication service. If you opt-in, you will be issued
-with a 30-day token instead.
+issued for the authentication service. If you opt-in, you will be issued a 30-day token instead.
 
 If you would like to see a list of all trusted devices, you can use:
 
