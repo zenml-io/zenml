@@ -1881,7 +1881,7 @@ zenml pipeline builds delete <BUILD_ID>
 ```
 
 Building an image without running your Pipelines
-----------------------------------
+------------------------------------------------
 
 To build Docker images for your pipeline without actually running the pipeline,
 use:
@@ -1924,6 +1924,54 @@ stack, use the `--stack` option.
 
 ```bash
 zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+```
+
+Tagging your resources with ZenML
+---------------------------------
+
+When you are using ZenML, you can use tags to organize and categorize your
+assets. This way, you can streamline your workflows and enhance the
+discoverability of your resources more easily.
+
+Currently, you can use tags with artifacts, models and their versions:
+
+```bash
+# Tag the artifact
+zenml artifact update ARTIFACT_NAME -t TAG_NAME
+
+# Tag the artifact version
+zenml artifact version update ARTIFACT_NAME ARTIFACT_VERSION -t TAG_NAME
+
+# Tag an existing model
+zenml model update MODEL_NAME --tag TAG_NAME
+
+# Tag a specific model version
+zenml model version update MODEL_NAME VERSION_NAME --tag TAG_NAME
+```
+
+Besides these interactions, you can also create a new tag by using the
+`register` command:
+
+```bash
+zenml tag register -n TAG_NAME [-c COLOR]
+```
+
+If you would like to list all the tags that you have, you can use the command:
+
+```bash
+zenml tag list
+```
+
+To update the properties of a specific tag, you can use the `update` subcommand:
+
+```bash
+zenml tag update TAG_NAME_OR_ID [-n NEW_NAME] [-c NEW_COLOR]
+```
+
+Finally, in order to delete a tag, you can execute:
+
+```bash
+zenml tag delete TAG_NAME_OR_ID
 ```
 
 Managing the local ZenML Dashboard
