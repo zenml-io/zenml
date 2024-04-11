@@ -798,7 +798,7 @@ UUID and the following command.
 zenml model-deployer models describe <UUID>
 ```
 
-If you are only interested in the prediction-url of the specific model you can
+If you are only interested in the prediction url of the specific model you can
 also run:
 
 ```bash
