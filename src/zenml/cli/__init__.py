@@ -1068,7 +1068,7 @@ zenml feature-store get
 
 For details about a particular feature store, use the `describe` command.
 By default, (without a specific feature store name passed in) it will describe
-the active or currently used feature store:
+the active or currently-used feature store:
 
 ```bash
 zenml feature-store describe [FEATURE_STORE_NAME]
