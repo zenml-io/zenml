@@ -2247,6 +2247,106 @@ Finally, you can remove an authorized device by using the `delete` command:
 zenml authorized-device delete DEVICE_ID_OR_PREFIX
 ```
 
+
+Auth management
+---------------
+
+Building and maintaining an MLOps workflow can involve numerous third-party
+libraries and external services. In most cases, this ultimately presents a
+challenge in configuring uninterrupted, secure access to infrastructure
+resources. In ZenML, Service connectors streamline this process by abstracting
+away the complexity of authentication and help you connect your stack to your
+resources. You can find the full docs on the ZenML service connectors
+[here](https://docs.zenml.io/stacks-and-components/auth-management).
+
+The ZenML CLI features a variety of commands to help you manage your service
+connectors. First of all, to explore the different types of service connectors
+available in ZenML, you can use the following commands:
+
+```bash
+# To get the complete list
+zenml service-connector list-types
+
+# To get the details regarding a single type
+zenml service-connector describe-type
+```
+
+For each type of service connector, you will also see a list of supported
+resource types. These types provide a way for organizing different resources
+into logical classes based on the standard and/or protocol used to access them.
+In addition to the resource types, each type will feature a different set of
+authentication methods.
+
+Once you decided which service connector to use, you can create it with the
+`register` command as follows:
+
+```bash
+zenml service-connector register SERVICE_CONNECTOR_NAME \
+    --type TYPE [--description DESCRIPTION] [--resource-type RESOURCE_TYPE] \
+    [--auth-method AUTH_METHOD] ...
+```
+
+For more details on how to create a service connector, please refer to our
+[docs](https://docs.zenml.io/stacks-and-components/auth-management).
+
+To check if your service connector is registered properly, you can `verify` it.
+By doing this, you can both check if it is configured correctly and also, you
+can fetch the list of resource it has access to:
+
+```bash
+zenml service-connector verify SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
+```
+
+Some service connectors come equipped with the capability of configuring
+the clients and SDKs on your local machine with the credentials inferred from
+your service connector. To use this functionality, simply use the `login`
+command:
+
+```bash
+zenml service-connector login SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
+```
+
+To list all the service connectors that you have registered, you can use:
+
+```bash
+zenml service-connector list
+```
+
+Moreover, if you would like to list all the resources accessible by your
+service connectors, you can use the following command:
+
+```bash
+zenml service-connector list-resources [--resource-type RESOURCE_TYPE] /
+    [--connector-type CONNECTOR_TYPE] ...
+```
+
+Keep in mind that this command can possibly take a long time depending on the
+number of service connectors you have registered. Consider using the right
+filters when you are list different resources.
+
+If you want to see the details about a specific service connector that you have
+registered, you can simply use the `describe` command:
+
+```bash
+zenml service-connector describe SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
+```
+
+You can update a registered service connector by using the `update` command.
+Keep in mind that all service connector updates are validated before being
+applied. If you want to disable this behaviour please use the `--no-verify`
+flag.
+
+```bash
+zenml service-connector update SERVICE_CONNECTOR_NAME_ID_OR_PREFIX ...
+```
+
+Finally, if you wish to remove a service connector, you can use the `delete`
+command:
+
+```bash
+zenml service-connector delete SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
+```
+
 Managing users
 -------------------------------------------
 
