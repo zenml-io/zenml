@@ -600,7 +600,7 @@ Experiment Trackers
 
 [Experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers)
  let you track your ML experiments by logging the parameters
-and allowing you to compare between different runs. To get a better
+and allow you to compare between different runs. To get a better
 understanding regarding experiment trackers, use the command:
 
 ```bash
