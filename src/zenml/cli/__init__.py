@@ -559,7 +559,7 @@ zenml data-validator get
 
 For details about a particular data validator, use the `describe` command.
 By default, (without a specific data validator name passed in) it will describe
-the active or currently used data validator:
+the active or currently-used data validator:
 
 ```bash
 zenml data-validator describe [DATA_VALIDATOR_NAME]
