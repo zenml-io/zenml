@@ -1201,7 +1201,7 @@ Image Builders
 --------------
 
 In ZenML, [image builders](https://docs.zenml.io/stacks-and-components/component-guide/image-builders)
-allow you to build container images are used to build container images such
+allow you to build container images such
 that your machine-learning pipelines and steps can be executed in remote
 environments.
 
