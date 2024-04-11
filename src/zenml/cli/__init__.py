@@ -2254,13 +2254,13 @@ Auth management
 Building and maintaining an MLOps workflow can involve numerous third-party
 libraries and external services. In most cases, this ultimately presents a
 challenge in configuring uninterrupted, secure access to infrastructure
-resources. In ZenML, Service connectors streamline this process by abstracting
+resources. In ZenML, Service Connectors streamline this process by abstracting
 away the complexity of authentication and help you connect your stack to your
 resources. You can find the full docs on the ZenML service connectors
 [here](https://docs.zenml.io/stacks-and-components/auth-management).
 
 The ZenML CLI features a variety of commands to help you manage your service
-connectors. First of all, to explore the different types of service connectors
+connectors. First of all, to explore all the types of service connectors
 available in ZenML, you can use the following commands:
 
 ```bash
@@ -2320,12 +2320,12 @@ zenml service-connector list-resources [--resource-type RESOURCE_TYPE] /
     [--connector-type CONNECTOR_TYPE] ...
 ```
 
-Keep in mind that this command can possibly take a long time depending on the
-number of service connectors you have registered. Consider using the right
-filters when you are list different resources.
+This command can possibly take a long time depending on the number of service
+connectors you have registered. Consider using the right filters when you are
+listing resources.
 
 If you want to see the details about a specific service connector that you have
-registered, you can simply use the `describe` command:
+registered, you can use the `describe` command:
 
 ```bash
 zenml service-connector describe SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
