@@ -4,7 +4,7 @@ DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
 
 export ZENML_ANALYTICS_OPT_IN=false
-export ZENML_DEBUG=false
+export ZENML_DEBUG=true
 
 # Use a temporary directory for the config path
 export ZENML_CONFIG_PATH=/tmp/upgrade-tests
@@ -23,6 +23,21 @@ function version_compare() {
     local regex="^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$"
     local ver1="$1"
     local ver2="$2"
+
+    if [[ "$ver1" == "$ver2" ]]; then
+        echo "="
+        return
+    fi
+
+    if [[ $ver1 == "current" ]]; then
+        echo ">"
+        return
+    fi
+
+    if [[ $ver2 == "current" ]]; then
+        echo "<"
+        return
+    fi
 
     if ! [[ $ver1 =~ $regex ]]; then
         echo "First argument does not conform to semantic version format" >&2
@@ -202,43 +217,49 @@ function test_upgrade_to_version() {
 function start_db() {
     set -e  # Exit immediately if a command exits with a non-zero status
 
+    if [ "$DB" == "sqlite" ]; then
+        return
+    fi
+
+    stop_db    
+
+    echo "===== Starting $DB database ====="
     if [ "$DB" == "mysql" ]; then
-        echo "===== Starting MySQL database ====="
         # run a mysql instance in docker
         docker run --name mysql --rm -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:8
-        # mysql takes a while to start up
-        sleep $DB_STARTUP_DELAY
-        echo "===== Finished starting database ====="
     elif [ "$DB" == "mariadb" ]; then
-        echo "===== Starting MariaDB database ====="
         # run a mariadb instance in docker
         docker run --name mariadb --rm -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:10.6
-        # mariadb takes a while to start up
-        sleep $DB_STARTUP_DELAY
-        echo "===== Finished starting database ====="
-    else
-        echo "===== Testing SQLite ====="
     fi
+
+    # the database container takes a while to start up
+    sleep $DB_STARTUP_DELAY
+    echo "===== Finished starting $DB database ====="
+
 }
 
 function stop_db() {
     set -e  # Exit immediately if a command exits with a non-zero status
 
-    if [ "$DB" == "mysql" ]; then
-        echo "===== Stopping MySQL database ====="
-        docker stop mysql
-    elif [ "$DB" == "mariadb" ]; then
-        echo "===== Stopping MariaDB database ====="
-        docker stop mariadb
+    if [ "$DB" == "sqlite" ]; then
+        return
     fi
 
-    echo "===== Finished stopping database ====="
+    echo "===== Stopping $DB database ====="
+
+    if [ "$DB" == "mysql" ]; then
+        docker stop mysql || true
+    elif [ "$DB" == "mariadb" ]; then
+        docker stop mariadb || true
+    fi
+
+    echo "===== Finished stopping $DB database ====="
 }
 
 # If testing the mariadb database, we remove versions older than 0.54.0 because
 # we only started supporting mariadb from that version onwards
 if [ "$DB" == "mariadb" ]; then
-    MARIADB_VERSIONS=""
+    MARIADB_VERSIONS=()
     for VERSION in "${VERSIONS[@]}"
     do
         if [ "$(version_compare "$VERSION" "0.54.0")" == "<" ]; then
@@ -289,8 +310,24 @@ while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
     fi
 done
 
-# Sort the versions based on semantic versioning rules
-IFS=$'\n' MIGRATION_VERSIONS=($(sort -t. -k 1,1n -k 2,2n -k 3,3n <<<"${MIGRATION_VERSIONS[*]}"))
+
+# Sort the versions in ascending order using semantic version comparison
+sorted_versions=()
+for version in "${MIGRATION_VERSIONS[@]}"; do
+    inserted=false
+    for i in "${!sorted_versions[@]}"; do
+        if [ "$(version_compare "$version" "${sorted_versions[$i]}")" == "<" ]; then
+            sorted_versions=("${sorted_versions[@]:0:$i}" "$version" "${sorted_versions[@]:$i}")
+            inserted=true
+            break
+        fi
+    done
+    if [ "$inserted" == false ]; then
+        sorted_versions+=("$version")
+    fi
+done
+MIGRATION_VERSIONS=("${sorted_versions[@]}")
+
 
 # Echo the sorted list of migration versions
 echo "============================="
@@ -300,6 +337,9 @@ echo "============================="
 for i in "${!MIGRATION_VERSIONS[@]}"; do
     test_upgrade_to_version "${MIGRATION_VERSIONS[$i]}"
 done
+
+# Test the most recent migration with MySQL
+test_upgrade_to_version "current"
 
 # Stop the database
 stop_db
