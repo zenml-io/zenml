@@ -118,7 +118,7 @@ function run_tests_for_version() {
     zenml version
 
     # Confirm DB works and is accessible
-    pipelines=$(zenml pipeline runs list)
+    pipelines=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
     echo "$pipelines"
 
     # The database backup and restore feature is available since 0.55.1.
@@ -133,11 +133,13 @@ function run_tests_for_version() {
         zenml restore-database -s dump-file --location /tmp/zenml-backup.sql
 
         # Check that DB still works after restore and the content is the same
-        pipelines_after_restore=$(zenml pipeline runs list)
+        pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
         if [ "$pipelines" != "$pipelines_after_restore" ]; then
-            echo "Database contents are not the same after restore"
-            echo "Before restore: $pipelines"
-            echo "After restore: $pipelines_after_restore"
+            echo "----- Before restore -----"
+            echo "$pipelines"
+            echo "----- After restore -----"
+            echo "$pipelines_after_restore"
+            echo "ERROR: database backup and restore test failed!"
             exit 1
         fi
 
@@ -150,11 +152,13 @@ function run_tests_for_version() {
 
             # Check that DB still works after restore and the content is the
             # same
-            pipelines_after_restore=$(zenml pipeline runs list)
+            pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
             if [ "$pipelines" != "$pipelines_after_restore" ]; then
-                echo "Database contents are not the same after restore"
-                echo "Before restore: $pipelines"
-                echo "After restore: $pipelines_after_restore"
+                echo "----- Before restore -----"
+                echo "$pipelines"
+                echo "----- After restore -----"
+                echo "$pipelines_after_restore"
+                echo "ERROR: database backup and restore test failed!"
                 exit 1
             fi
         fi
