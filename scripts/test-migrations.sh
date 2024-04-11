@@ -183,7 +183,6 @@ function test_upgrade_to_version() {
 
     if [ "$VERSION" == "current" ]; then
         uv pip install -e ".[templates,server]"
-        uv pip install importlib_metadata "pyyaml-include<2.0"
     else
         uv pip install "zenml[templates,server]==$VERSION"
         # handles unpinned sqlmodel dependency in older versions
@@ -195,7 +194,7 @@ function test_upgrade_to_version() {
 
     # Check if the Python version is 3.9 and VERSION is > 0.44.0 and < 0.53.0
     if [[ "$PYTHON_VERSION" == "3.9" ]]; then
-        if [ "$(version_compare "$VERSION" "0.44.0")" == ">" ] && [ "$(version_compare "$VERSION" "0.52.0")" == "<" ]; then
+        if [ "$(version_compare "$VERSION" "0.44.0")" == ">" ] && [ "$(version_compare "$VERSION" "0.53.0")" == "<" ]; then
             # Install importlib_metadata for Python 3.9 and versions > 0.44.0 and < 0.53.0
             uv pip install importlib_metadata
         fi
