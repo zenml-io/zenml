@@ -16,7 +16,7 @@ else
 fi
 
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.2")
+VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.2" "0.56.3")
 
 # Function to compare semantic versions
 function version_compare() {
@@ -104,16 +104,14 @@ function run_tests_for_version() {
 
     # Confirm DB works and is accessible
     pipelines=$(zenml pipeline runs list)
-    echo "Pipelines: $pipelines"
+    echo "$pipelines"
 
-    # Check if the version supports database backup and restore (>= 0.55.1)
-    # NOTE: DB backup was broken in the 0.55.4 release and fixed after 0.56.3,
-    # so we also skip this test for those versions
-    if [ "$(version_compare "$VERSION" "0.55.1")" == "<" ]; then
-        echo "Skipping database backup and restore test for version $VERSION because it is not supported"
-    elif [ "$(version_compare "$VERSION" "0.55.3")" == ">" ] && [ "$(version_compare "$VERSION" "0.56.4")" == "<" ]; then
-        echo "Skipping database backup and restore test for version $VERSION because it is broken"
-    else
+    # The database backup and restore feature is available since 0.55.1.
+    # However, it has been broken for various reasons up to and including
+    # 0.56.3, so we skip this test for those versions.
+    if [ "$VERSION" == "current" ] || [ "$(version_compare "$VERSION" "0.56.3")" == ">" ]; then
+        echo "===== Testing database backup and restore ====="
+
         # Perform a DB backup and restore using a dump file
         rm -f /tmp/zenml-backup.sql
         zenml backup-database -s dump-file --location /tmp/zenml-backup.sql
@@ -145,6 +143,8 @@ function run_tests_for_version() {
                 exit 1
             fi
         fi
+    else
+        echo "Skipping database backup and restore test for version $VERSION"
     fi
 
     cd ..
