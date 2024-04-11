@@ -2457,7 +2457,7 @@ disabling the collection of anonymous usage statistics, changing the logging
 verbosity.
 
 In order to help us better understand how the community uses ZenML, the library
-reports anonymized usage statistics. You can always opt-out by using the CLI
+reports anonymized usage statistics. You can always opt out by using the CLI
 command:
 
 ```bash
