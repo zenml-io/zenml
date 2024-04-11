@@ -786,7 +786,7 @@ your stack, run the following command:
 zenml model-deployer models list
 ```
 
-This should give you a list of served models containing their uuid, the name
+This should give you a list of served models containing their `uuid`, the name
 of the pipeline that produced them including the run id and the step name as
 well as the status. This information should help you identify the different
 models.
