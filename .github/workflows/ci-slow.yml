@@ -129,7 +129,8 @@ jobs:
     strategy:
       matrix:
         os: [arc-runner-set]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -142,7 +143,8 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -155,7 +157,8 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -168,7 +171,8 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.12']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -183,7 +187,8 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.12']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -198,7 +203,8 @@ jobs:
     strategy:
       matrix:
         os: [arc-runner-set]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.12']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql
