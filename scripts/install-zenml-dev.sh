@@ -24,7 +24,7 @@ parse_args () {
 install_zenml() {
     # install ZenML in editable mode
 
-    uv pip install --system -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
+    uv pip install --system -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]"
 }
 
 install_integrations() {
@@ -54,7 +54,7 @@ install_integrations() {
     echo "" >> integration-requirements.txt
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
     echo "pyopenssl" >> integration-requirements.txt
-    echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> integration-requirements.txt
+    echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]" >> integration-requirements.txt
 
     uv pip install --system -r integration-requirements.txt
     rm integration-requirements.txt
