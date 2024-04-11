@@ -72,21 +72,17 @@ function version_compare() {
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
-    # versions pre-templates and pre-init test flag
-    # (zenml init --test allows for a non-interactive init)
-    local PRE_TEMPLATE_VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0")
-    local PRE_ARGS_VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0")
 
     echo "===== Testing version $VERSION ====="
 
     rm -rf test_starter template-starter
 
-    # Check if VERSION is in PRE_TEMPLATE_VERSIONS
-    if printf '%s\n' "${PRE_TEMPLATE_VERSIONS[@]}" | grep -q "^$VERSION$"; then
-        copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
-    else
+    # Check if the version supports templates via zenml init (> 0.43.0)
+    if [ "$(version_compare "$VERSION" "0.43.0")" == ">" ]; then
         mkdir test_starter
         zenml init --template starter --path test_starter --template-with-defaults <<< $'my@mail.com\n'
+    else
+        copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
     fi
 
     cd test_starter
@@ -97,16 +93,59 @@ function run_tests_for_version() {
     rm sklearn-requirements.txt
 
     echo "===== Running starter template pipeline ====="
-    if printf '%s\n' "${PRE_ARGS_VERSIONS[@]}" | grep -q "^$VERSION$"; then
-        python3 run.py --no-cache
-    else
+    # Check if the version supports templates with arguments (> 0.52.0)
+    if [ "$(version_compare "$VERSION" "0.52.0")" == ">" ]; then
         python3 run.py --feature-pipeline --training-pipeline --no-cache
+    else
+        python3 run.py --no-cache
     fi
     # Add additional CLI tests here
     zenml version
 
     # Confirm DB works and is accessible
-    zenml pipeline runs list
+    pipelines=$(zenml pipeline runs list)
+    echo "Pipelines: $pipelines"
+
+    # Check if the version supports database backup and restore (>= 0.55.1)
+    # NOTE: DB backup was broken in the 0.55.4 release and fixed after 0.56.3,
+    # so we also skip this test for those versions
+    if [ "$(version_compare "$VERSION" "0.55.1")" == "<" ]; then
+        echo "Skipping database backup and restore test for version $VERSION because it is not supported"
+    elif [ "$(version_compare "$VERSION" "0.55.3")" == ">" ] && [ "$(version_compare "$VERSION" "0.56.4")" == "<" ]; then
+        echo "Skipping database backup and restore test for version $VERSION because it is broken"
+    else
+        # Perform a DB backup and restore using a dump file
+        rm -f /tmp/zenml-backup.sql
+        zenml backup-database -s dump-file --location /tmp/zenml-backup.sql
+        zenml restore-database -s dump-file --location /tmp/zenml-backup.sql
+
+        # Check that DB still works after restore and the content is the same
+        pipelines_after_restore=$(zenml pipeline runs list)
+        if [ "$pipelines" != "$pipelines_after_restore" ]; then
+            echo "Database contents are not the same after restore"
+            echo "Before restore: $pipelines"
+            echo "After restore: $pipelines_after_restore"
+            exit 1
+        fi
+
+        # For a mysql compatible database, perform a DB backup and restore using
+        # the backup database
+        if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
+            # Perform a DB backup and restore
+            zenml backup-database -s database --location zenml-backup
+            zenml restore-database -s database --location zenml-backup
+
+            # Check that DB still works after restore and the content is the
+            # same
+            pipelines_after_restore=$(zenml pipeline runs list)
+            if [ "$pipelines" != "$pipelines_after_restore" ]; then
+                echo "Database contents are not the same after restore"
+                echo "Before restore: $pipelines"
+                echo "After restore: $pipelines_after_restore"
+                exit 1
+            fi
+        fi
+    fi
 
     cd ..
     rm -rf test_starter template-starter
@@ -139,29 +178,20 @@ function test_upgrade_to_version() {
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
-    # Check if the Python version is 3.9 and VERSION is > 0.44.0
+    # Check if the Python version is 3.9 and VERSION is > 0.44.0 and < 0.53.0
     if [[ "$PYTHON_VERSION" == "3.9" ]]; then
-        case "$VERSION" in
-            "0.44.1"|"0.44.3"|"0.45.2"|"0.45.3"|"0.45.4"|"0.45.5"|"0.45.6"|"0.46.0"|"0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
-                uv pip install importlib_metadata
-                ;;
-        esac
+        if [ "$(version_compare "$VERSION" "0.44.0")" == ">" ] && [ "$(version_compare "$VERSION" "0.52.0")" == "<" ]; then
+            # Install importlib_metadata for Python 3.9 and versions > 0.44.0 and < 0.53.0
+            uv pip install importlib_metadata
+        fi
     fi
 
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
-        # Use a database strategy for the database backup because this allows us
-        # to catch database integrity errors in the backup process. Other strategies
-        # save the database backup to a file or in memory and do not inject the
-        # database backup into the database and that can hide errors in the backup
-        # restoration process.
-        export ZENML_STORE_BACKUP_STRATEGY=database
-        export ZENML_STORE_BACKUP_DATABASE=zenml-backup
-
-        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+                zenml connect --url mysql://127.0.0.1/zenml --username root --password password
     fi
 
     # Run the tests for this version
-    run_tests_for_version $VERSION
+    run_tests_for_version "$VERSION"
 
     deactivate
     rm -rf ".venv-upgrade"
@@ -211,7 +241,7 @@ if [ "$DB" == "mariadb" ]; then
     MARIADB_VERSIONS=""
     for VERSION in "${VERSIONS[@]}"
     do
-        if [ "$(version_compare $VERSION "0.54.0")" == "<" ]; then
+        if [ "$(version_compare "$VERSION" "0.54.0")" == "<" ]; then
             continue
         fi
         MARIADB_VERSIONS+=("$VERSION")
@@ -232,7 +262,7 @@ start_db
 
 for VERSION in "${VERSIONS[@]}"
 do
-    test_upgrade_to_version $VERSION
+    test_upgrade_to_version "$VERSION"
 done
 
 # Test the most recent migration with MySQL
@@ -268,7 +298,7 @@ echo "TESTING MIGRATION_VERSIONS: ${MIGRATION_VERSIONS[@]}"
 echo "============================="
 
 for i in "${!MIGRATION_VERSIONS[@]}"; do
-    test_upgrade_to_version ${MIGRATION_VERSIONS[$i]}
+    test_upgrade_to_version "${MIGRATION_VERSIONS[$i]}"
 done
 
 # Stop the database

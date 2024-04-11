@@ -6,10 +6,8 @@ Create Date: 2024-04-11 09:47:47.557220
 
 """
 
-import sqlmodel
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "2d201872e23c"
@@ -35,6 +33,7 @@ def upgrade() -> None:
             "fk_pipeline_build_template_deployment_id_pipeline_deployment",
             type_="foreignkey",
         )
+
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
