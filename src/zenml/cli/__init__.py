@@ -1965,8 +1965,8 @@ ssl_verify_server_cert: false
 
 Keep in mind, while connecting to a ZenML server, you will be provided with the
 option to `Trust this device`. If you opt out of it a 24-hour token will be
-issued for authentication service, however, if you opt-in will issue a 30-day
-token instead.
+issued for the authentication service. If you opt-in, you will be issued
+with a 30-day token instead.
 
 If you would like to see a list of all trusted devices, you can use:
 
@@ -1974,7 +1974,8 @@ If you would like to see a list of all trusted devices, you can use:
 zenml authorized-device list
 ```
 
-or if you would like to get the details regarding a specific device can use:
+or if you would like to get the details regarding a specific device,
+you can use:
 
 ```bash
 zenml authorized-device describe DEVICE_ID_OR_PREFIX
@@ -2128,7 +2129,7 @@ For more details on how to create a service connector, please refer to our
 
 To check if your service connector is registered properly, you can `verify` it.
 By doing this, you can both check if it is configured correctly and also, you
-can fetch the list of resource it has access to:
+can fetch the list of resources it has access to:
 
 ```bash
 zenml service-connector verify SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
