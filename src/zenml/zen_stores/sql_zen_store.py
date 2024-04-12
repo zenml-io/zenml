@@ -1321,9 +1321,19 @@ class SqlZenStore(BaseZenStore):
                     # database schema. If the database is at version 0.56.3
                     # or earlier and if the backup fails, we only log the
                     # exception and leave the upgrade process to proceed.
-                    if version.parse(current_revisions[0]) <= version.parse(
-                        "0.56.3"
-                    ):
+                    allow_backup_failures = False
+                    try:
+                        if version.parse(
+                            current_revisions[0]
+                        ) <= version.parse("0.56.3"):
+                            allow_backup_failures = True
+                    except version.InvalidVersion:
+                        # This can happen if the database is not currently
+                        # stamped with an official ZenML version (e.g. in
+                        # development environments).
+                        pass
+
+                    if allow_backup_failures:
                         logger.exception(
                             "Failed to backup the database. The database "
                             "upgrade will proceed without a backup."
