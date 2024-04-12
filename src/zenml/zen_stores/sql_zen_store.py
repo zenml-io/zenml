@@ -77,6 +77,7 @@ from zenml.constants import (
     DEFAULT_USERNAME,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
+    ENV_ZENML_DEPLOYMENT_ID,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
@@ -1377,11 +1378,10 @@ class SqlZenStore(BaseZenStore):
                     SQLModel.metadata.create_all  # type: ignore[arg-type]
                 )
             with Session(self.engine) as session:
-                session.add(
-                    IdentitySchema(
-                        id=str(GlobalConfiguration().user_id).replace("-", "")
-                    )
+                deployment_id = os.getenv(
+                    ENV_ZENML_DEPLOYMENT_ID, GlobalConfiguration().user_id
                 )
+                session.add(IdentitySchema(id=deployment_id))
                 session.commit()
             self.alembic.stamp("head")
         else:
