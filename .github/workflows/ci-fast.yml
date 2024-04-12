@@ -72,6 +72,8 @@ jobs:
           python-version: '3.11'
       - name: Test API docs buildable
         run: bash scripts/generate-docs.sh -v DUMMY -c
+      - name: Dry run docs building
+        run: bash scripts/generate-docs.sh -v DUMMY --latest
   update-templates-to-examples:
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
