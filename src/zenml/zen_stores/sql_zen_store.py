@@ -1341,7 +1341,7 @@ class SqlZenStore(BaseZenStore):
                     else:
                         raise RuntimeError(
                             f"Failed to backup the database: {str(e)}. "
-                            "Please check the logs for more details."
+                            "Please check the logs for more details. "
                             "If you would like to disable the database backup "
                             "functionality, set the `backup_strategy` attribute "
                             "of the store configuration to `disabled`."
