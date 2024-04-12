@@ -39,6 +39,7 @@ from typing import (
 )
 from uuid import UUID
 
+from packaging import version
 from pydantic import Field, SecretStr, root_validator, validator
 from pydantic.json import pydantic_encoder
 from sqlalchemy import asc, desc, func
@@ -1315,13 +1316,26 @@ class SqlZenStore(BaseZenStore):
                         backup_location,
                     ) = self.backup_database(overwrite=True)
                 except Exception as e:
-                    raise RuntimeError(
-                        f"Failed to backup the database: {str(e)}. "
-                        "Please check the logs for more details."
-                        "If you would like to disable the database backup "
-                        "functionality, set the `backup_strategy` attribute "
-                        "of the store configuration to `disabled`."
-                    ) from e
+                    # The database backup feature was not entirely functional
+                    # in ZenML 0.56.3 and earlier, due to inconsistencies in the
+                    # database schema. If the database is at version 0.56.3
+                    # or earlier and if the backup fails, we only log the
+                    # exception and leave the upgrade process to proceed.
+                    if version.parse(current_revisions[0]) <= version.parse(
+                        "0.56.3"
+                    ):
+                        logger.exception(
+                            "Failed to backup the database. The database "
+                            "upgrade will proceed without a backup."
+                        )
+                    else:
+                        raise RuntimeError(
+                            f"Failed to backup the database: {str(e)}. "
+                            "Please check the logs for more details."
+                            "If you would like to disable the database backup "
+                            "functionality, set the `backup_strategy` attribute "
+                            "of the store configuration to `disabled`."
+                        ) from e
                 else:
                     if backup_location is not None:
                         logger.info(
