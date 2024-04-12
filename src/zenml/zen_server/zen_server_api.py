@@ -134,6 +134,12 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
     Returns:
         The response with secure headers set.
     """
+    # If the request is for the openAPI docs, don't set secure headers
+    if request.url.path.startswith("/docs") or request.url.path.startswith(
+        "/redoc"
+    ):
+        return await call_next(request)
+
     response = await call_next(request)
     secure_headers().framework.fastapi(response)
     return response
