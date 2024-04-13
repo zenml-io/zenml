@@ -72,6 +72,7 @@ python3 docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
 ############################################## Build the API docs ####################################################
 if [ -n "$ONLY_CHECK" ]; then
   python3 docs/sys_modules_mock.py
+  mkdocs build --config-file docs/mkdocs.yml
 else
   if [ -n "$PUSH" ]; then
     if [ -n "$LATEST" ]; then
