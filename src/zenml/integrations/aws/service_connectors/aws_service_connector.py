@@ -1132,19 +1132,19 @@ class AWSServiceConnector(ServiceConnector):
         # We need to extract the bucket name from the provided resource ID
         bucket_name: Optional[str] = None
         if re.match(
-            r"^arn:aws:s3:::[a-z0-9-]+(/.*)*$",
+            r"^arn:aws:s3:::[a-z0-9][a-z0-9\-\.]{1,61}[a-z0-9](/.*)*$",
             resource_id,
         ):
             # The resource ID is an S3 bucket ARN
             bucket_name = resource_id.split(":")[-1].split("/")[0]
         elif re.match(
-            r"^s3://[a-z0-9-]+(/.*)*$",
+            r"^s3://[a-z0-9][a-z0-9\-\.]{1,61}[a-z0-9](/.*)*$",
             resource_id,
         ):
             # The resource ID is an S3 bucket URI
             bucket_name = resource_id.split("/")[2]
         elif re.match(
-            r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$",
+            r"^[a-z0-9][a-z0-9\-\.]{1,61}[a-z0-9]$",
             resource_id,
         ):
             # The resource ID is the S3 bucket name
@@ -1243,14 +1243,14 @@ class AWSServiceConnector(ServiceConnector):
         cluster_name: Optional[str] = None
         region_id: Optional[str] = None
         if re.match(
-            r"^arn:aws:eks:[a-z0-9-]+:\d{12}:cluster/.+$",
+            r"^arn:aws:eks:[a-z0-9-]+:\d{12}:cluster/[0-9A-Za-z][A-Za-z0-9\-_]*$",
             resource_id,
         ):
             # The resource ID is an EKS cluster ARN
             cluster_name = resource_id.split("/")[-1]
             region_id = resource_id.split(":")[3]
         elif re.match(
-            r"^[a-z0-9]+[a-z0-9_-]*$",
+            r"^[0-9A-Za-z][A-Za-z0-9\-_]*$",
             resource_id,
         ):
             # Assume the resource ID is an EKS cluster name

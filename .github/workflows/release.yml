@@ -54,7 +54,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mysql.sh mysql
+        run: bash scripts/test-migrations.sh mysql
   sqlite-db-migration-testing:
     runs-on: arc-runner-set
     env:
@@ -70,7 +70,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mysql.sh sqlite
+        run: bash scripts/test-migrations.sh sqlite
   mariadb-db-migration-testing:
     runs-on: arc-runner-set
     env:
@@ -86,7 +86,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mariadb.sh
+        run: bash scripts/test-migrations.sh mariadb
   publish-python-package:
     if: github.repository == 'zenml-io/zenml'
     needs:
