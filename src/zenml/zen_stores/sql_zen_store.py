@@ -1405,11 +1405,11 @@ class SqlZenStore(BaseZenStore):
                     SQLModel.metadata.create_all  # type: ignore[arg-type]
                 )
             with Session(self.engine) as session:
-                session.add(
-                    IdentitySchema(
-                        id=str(GlobalConfiguration().user_id).replace("-", "")
-                    )
+                id_ = (
+                    ServerConfiguration.get_server_config().external_server_id
+                    or GlobalConfiguration().user_id
                 )
+                session.add(IdentitySchema(id=id_))
                 session.commit()
             self.alembic.stamp("head")
         else:
