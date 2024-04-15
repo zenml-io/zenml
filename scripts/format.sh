@@ -29,10 +29,22 @@ do
     fi
 done
 
-# Automatically upgrade packages to newest versions
+# Check for ruff and yamlfix versions
 if [ "$SKIP_UPGRADE" = false ]; then
-    pip install uv
-    uv pip install --no-deps --upgrade ruff yamlfix
+    RED='\033[0;31m'
+    NC='\033[0m'
+    
+    pip install uv -q
+    uv_output=$(uv pip install ".[dev]" --dry-run --upgrade --system 2>&1 | grep "+")
+    ruff_version_change=$(echo "$uv_output" | grep "+ ruff")
+    yamlfix_version_change=$(echo "$uv_output" | grep "+ yamlfix")
+    
+    if [ -n "$ruff_version_change" ]; then
+        echo "${RED}ruff version is outdated and might lead to CI failures. Consider upgrading to ${ruff_version_change:3}.${NC}"
+    fi
+    if [ -n "$yamlfix_version_change" ]; then
+        echo "${RED}yamlfix version is outdated and might lead to CI failures. Consider upgrading to ${yamlfix_version_change:3}.${NC}"
+    fi
 fi
 
 # If no source directories were provided, use the default
