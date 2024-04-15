@@ -337,6 +337,11 @@ To take this further, there are a number of ways it might be improved:
 - **Handcrafted questions based on context**: We're using the generated
   questions here. It would be interesting to see how the LLM performs when given
   handcrafted questions that are based on the context of the question.
+- **Human in the loop**: The LLM actually provides qualitative feedback on the
+  output as well as the JSON scores. This data could be passed into an
+  annotation tool to get human feedback on the quality of the output. This would
+    be a more reliable way to evaluate the quality of the output and would offer
+    some insight into the kinds of mistakes the LLM is making.
 
 Most notably, the scores we're currently getting are pretty high, so it would
 make sense to pass in harder questions and be more specific in the judging
