@@ -22,6 +22,9 @@ class AnalyticsEvent(str, Enum):
     # Login
     DEVICE_VERIFIED = "Device verified"
 
+    # Onboarding
+    USER_ENRICHED = "User Enriched"
+
     # Pipelines
     RUN_PIPELINE = "Pipeline run"
     RUN_PIPELINE_ENDED = "Pipeline run ended"

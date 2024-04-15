@@ -82,6 +82,10 @@ class UserBase(BaseModel):
         default=None,
         title="The external user ID associated with the account.",
     )
+    user_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The metadata associated with the user.",
+    )
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -291,6 +295,10 @@ class UserResponseMetadata(BaseResponseMetadata):
         default=None,
         title="The external user ID associated with the account. Only relevant "
         "for user accounts.",
+    )
+    user_metadata: Dict[str, Any] = Field(
+        default={},
+        title="The metadata associated with the user.",
     )
 
 
