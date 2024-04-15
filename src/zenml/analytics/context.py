@@ -211,15 +211,10 @@ class AnalyticsContext:
         """
         success = False
         if self.analytics_opt_in and self.user_id is not None:
-            if traits is None:
-                traits = {}
-
-            traits.update({"group_id": group_id})
-
             success, _ = default_client.group(
                 user_id=self.user_id,
                 group_id=group_id,
-                traits=traits,
+                traits=traits or {},
             )
 
         return success

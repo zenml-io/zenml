@@ -695,6 +695,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             group(
                 group_id=server_info.id,
                 group_metadata={
+                    "server_id": server_info.id,
                     "version": server_info.version,
                     "deployment_type": str(server_info.deployment_type),
                     "database_type": str(server_info.database_type),
