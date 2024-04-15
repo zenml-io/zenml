@@ -15,6 +15,7 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Embeddings generation](rag/embeddings-generation.md)
   * [Storing embeddings in a vector database](rag/storing-embeddings-in-a-vector-database.md)
   * [Basic RAG inference pipeline](rag/basic-rag-inference-pipeline.md)
+* [Evaluation and metrics](evaluation/evaluation.md)
 * [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
 * [Reranking for better retrieval](reranking/reranking.md)
 * [Finetuning LLMs with ZenML](finetuning-llms/finetuning-llms.md)
