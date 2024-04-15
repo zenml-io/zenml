@@ -338,6 +338,11 @@ To take this further, there are a number of ways it might be improved:
   questions here. It would be interesting to see how the LLM performs when given
   handcrafted questions that are based on the context of the question.
 
+Most notably, the scores we're currently getting are pretty high, so it would
+make sense to pass in harder questions and be more specific in the judging
+criteria. This will give us more room to improve as it is sure that the system
+is not perfect.
+
 There are many ways to improve this evaluation, but this is a good starting
 point. Other frameworks do exist that can help with this kind of evaluation (for
 example, [`ragas`](https://github.com/explodinggradients/ragas),
@@ -347,7 +352,9 @@ example, [`ragas`](https://github.com/explodinggradients/ragas),
 complex to set up and use. When you're starting on a project, it can be better
 to start simple and then expand as needed.
 
-
+We now have a working evaluation of both the retrieval and generation evaluation
+components of our RAG pipeline. We can use this to track how our pipeline
+improves as we make changes to the retrieval and generation components.
 
 ## Code Example
 
