@@ -1,10 +1,4 @@
-* [Evaluation and metrics](evaluation/evaluation.md)
-  * [Retrieval evaluation](evaluation/retrieval.md)
-  * [Generation evaluation](evaluation/generation.md)
-    * [Evaluation in practice](evaluation/evaluation-in-practice.md)
-  * [Reranking for better retrieval](reranking/reranking.md)
-  * [Evaluation in practice](evaluation/evaluation-in-practice.md)
-  ## Getting Started
+## Getting Started
 
 * [⭐ Introduction](introduction.md)
 * [🧙 Installation](getting-started/installation.md)
