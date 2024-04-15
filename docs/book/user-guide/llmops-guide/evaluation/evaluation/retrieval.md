@@ -237,6 +237,14 @@ def retrieval_evaluation_full(
 When we run this as part of the evaluation pipeline, we get a 16% failure rate
 which again tells us that we're doing pretty well but that there is room for
 improvement. As a baseline, this is a good starting point. We can then iterate
-on the retrieval component to improve its performance.
+on the retrieval component to improve its performance. Before we start working
+to improve or tweak our retrieval, let's look at how we can evaluate the
+generation component of our RAG pipeline.
+
+## Code Example
+
+To explore the full code, visit the [Complete
+Guide](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/)
+repository and for this section, particularly [the `eval_retrieval.py` file](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/steps/eval_retrieval.py).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
