@@ -16,9 +16,9 @@ Our RAG pipeline is a whole system, moreover, not just a model, and evaluating
 it requires a holistic approach. We'll look at various ways to evaluate the
 performance of your RAG pipeline but the two main areas we'll focus on are:
 
-- [Retrieval evaluation](evaluation/retrieval.md), so checking that the
+- [Retrieval evaluation](retrieval.md), so checking that the
   retrieved documents or document chunks are relevant to the query.
-- [Generation evaluation](evaluation/generation.md), so checking that the
+- [Generation evaluation](generation.md), so checking that the
   generated text is coherent and helpful for our specific use case.
 
 In the previous section we built out a basic RAG pipeline for our documentation
