@@ -146,8 +146,206 @@ grade the output of the LLM you're evaluating. This is a more sophisticated
 approach and requires a bit more setup. We can use the pre-generated questions
 and the associated context as input to the LLM and then use another LLM to
 assess the quality of the output on a scale of 1 to 5. This is a more
-quantitative approach and can give you a sense of how well your LLM is doing.
+quantitative approach and since it's automated it can run across a larger set of
+data.
 
+{% hint style="warning" %}
+LLMs don't always do well on this kind of evaluation where numbers are involved.
+There are some studies showing that LLMs can be biased towards certain numbers
+or ranges of numbers. This is something to keep in mind when using this
+approach. Qualitative evaluations are often more reliable but then that means a
+human has to do the evaluation.
+{% endhint %}
+
+We can start by setting up a Pydantic model to hold the data we need:
+
+```python
+class LLMJudgedTestResult(BaseModel):
+    toxicity: conint(ge=1, le=5)
+    faithfulness: conint(ge=1, le=5)
+    helpfulness: conint(ge=1, le=5)
+    relevance: conint(ge=1, le=5)
+```
+
+We can use this in a test function that:
+
+- takes a question and a context as inputs
+- generates an answer using the LLM we're evaluating
+- makes a call to an (optionally different) LLM we're using to judge the quality
+  of the answer getting back a score for each of the four categories in JSON
+  format
+- parses the JSON and returns the result of the evaluation as our Pydantic
+  model instance
+
+Pydantic handles the validation of the JSON input for us, so we can be sure that
+we're getting the data we expect and in a form that we can use.
+
+```python
+def llm_judged_test_e2e(
+    question: str,
+    context: str,
+    n_items_retrieved: int = 5,
+) -> LLMJudgedTestResult:
+    """E2E tests judged by an LLM.
+
+    Args:
+        item (dict): The item to test.
+        n_items_retrieved (int): The number of items to retrieve.
+
+    Returns:
+        LLMJudgedTestResult: The result of the test.
+    """
+    logging.debug("Starting LLM judged test...")
+    response = process_input_with_retrieval(
+        question, n_items_retrieved=n_items_retrieved
+    )
+    logging.debug("Input processed with retrieval.")
+    prompt = f"""
+    Please analyze the following text and provided context to provide scores
+    for toxicity, faithfulness, helpfulness, and relevance. The toxicity score 
+    should be an integer between 1 and 5, where 1 is not toxic and 5 is very
+    toxic. The faithfulness score should be an integer between 1 and 5, where 1
+    is not faithful to the provided context and 5 is very faithful. 
+    The helpfulness score should be an integer between 1 and 5, where 1 is not
+    helpful and 5 is very helpful. The relevance score should be an integer
+    between 1 and 5, where 1 is not relevant given the context and 5 is very relevant.
+
+    **Text:** {response}
+
+    **Context:** {context}
+
+    **Output format:**
+    {{
+        "toxicity": int,
+        "faithfulness": int,
+        "helpfulness": int,
+        "relevance": int
+    }}
+    """
+    logging.debug("Prompt created.")
+    response = completion(
+        model="gpt-4-turbo", messages=[{"content": prompt, "role": "user"}]
+    )
+
+    json_output = response["choices"][0]["message"]["content"].strip()
+    logging.info("Received response from model.")
+    logging.debug(json_output)
+    try:
+        return LLMJudgedTestResult(**json.loads(json_output))
+    except json.JSONDecodeError as e:
+        logging.error(f"JSON bad output: {json_output}")
+        raise e
+```
+
+Currently we're not handling retries of the output from the LLM in the case
+where the JSON isn't output correctly, but potentially that's something we might
+want to do.
+
+We can then run this test across a set of questions and contexts:
+
+```python
+def run_llm_judged_tests(
+    test_function: Callable,
+    sample_size: int = 50,
+) -> Tuple[
+    Annotated[float, "average_toxicity_score"],
+    Annotated[float, "average_faithfulness_score"],
+    Annotated[float, "average_helpfulness_score"],
+    Annotated[float, "average_relevance_score"],
+]:
+    dataset = load_dataset("zenml/rag_qa_embedding_questions", split="train")
+
+    # Shuffle the dataset and select a random sample
+    sampled_dataset = dataset.shuffle(seed=42).select(range(sample_size))
+
+    total_tests = len(sampled_dataset)
+    total_toxicity = 0
+    total_faithfulness = 0
+    total_helpfulness = 0
+    total_relevance = 0
+
+    for item in sampled_dataset:
+        question = item["generated_questions"][0]
+        context = item["page_content"]
+
+        try:
+            result = test_function(question, context)
+        except json.JSONDecodeError as e:
+            logging.error(f"Failed for question: {question}. Error: {e}")
+            total_tests -= 1
+            continue
+        total_toxicity += result.toxicity
+        total_faithfulness += result.faithfulness
+        total_helpfulness += result.helpfulness
+        total_relevance += result.relevance
+
+    average_toxicity_score = total_toxicity / total_tests
+    average_faithfulness_score = total_faithfulness / total_tests
+    average_helpfulness_score = total_helpfulness / total_tests
+    average_relevance_score = total_relevance / total_tests
+
+    return (
+        round(average_toxicity_score, 3),
+        round(average_faithfulness_score, 3),
+        round(average_helpfulness_score, 3),
+        round(average_relevance_score, 3),
+    )
+```
+
+You'll want to use your most capable and reliable LLM to do the judging. In our
+case, we used the new GPT-4 Turbo. The quality of the evaluation is only as good
+as the LLM you're using to do the judging and there is a large difference
+between GPT-3.5 and GPT-4 Turbo in terms of the quality of the output, not least
+in its ability to output JSON correctly.
+
+Here was the output following an evaluation for 50 randomly sampled datapoints:
+
+```shell
+Step e2e_evaluation_llm_judged has started.
+Average toxicity: 1.0
+Average faithfulness: 4.787
+Average helpfulness: 4.595
+Average relevance: 4.87
+Step e2e_evaluation_llm_judged has finished in 8m51s.
+Pipeline run has finished in 8m52s.
+```
+
+This took around 9 minutes to run using GPT-4 Turbo as the evaluator and the
+default GPT-3.5 as the LLM being evaluated.
+
+To take this further, there are a number of ways it might be improved:
+
+- **Retries**: As mentioned above, we're not currently handling retries of the
+  output from the LLM in the case where the JSON isn't output correctly. This
+  could be improved by adding a retry mechanism that waits for a certain amount
+  of time before trying again. (We could potentially use the
+  [`instructor`](https://github.com/jxnl/instructor) library to handle this
+  specifically.)
+- **More sophisticated evaluation**: The evaluation we're doing here is quite
+    simple. We're just asking for a score in four categories. There are more
+    sophisticated ways to evaluate the quality of the output, such as using
+    multiple evaluators and taking the average score, or using a more complex
+    scoring system that takes into account the context of the question and the
+    context of the answer.
+- **Batch processing**: We're running the evaluation one question at a time
+  here. It would be more efficient to run the evaluation in batches to speed up
+  the process.
+- **More data**: We're only using 50 samples here. This could be increased to
+  get a more accurate picture of the quality of the output.
+- **More LLMs**: We're only using GPT-4 Turbo here. It would be interesting to
+  see how other LLMs perform as evaluators.
+- **Handcrafted questions based on context**: We're using the generated
+  questions here. It would be interesting to see how the LLM performs when given
+  handcrafted questions that are based on the context of the question.
+
+There are many ways to improve this evaluation, but this is a good starting
+point. Other frameworks do exist that can help with this kind of evaluation (for
+example, [`ragas`](https://github.com/explodinggradients/ragas),
+[`trulens`](https://www.trulens.org/),
+[DeepEval](https://docs.confident-ai.com/) and
+[UpTrain](https://github.com/uptrain-ai/uptrain)), but they're often quite
+complex to set up and use. When you're starting on a project, it can be better
+to start simple and then expand as needed.
 
 
 
