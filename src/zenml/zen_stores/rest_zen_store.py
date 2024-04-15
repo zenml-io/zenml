@@ -355,9 +355,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         fileio.makedirs(str(secret_folder))
         file_path = Path(secret_folder, "ca_bundle.pem")
-        with open(file_path, "w") as f:
+        with os.fdopen(
+            os.open(file_path, flags=os.O_RDWR | os.O_CREAT, mode=0o600), "w"
+        ) as f:
             f.write(verify_ssl)
-        file_path.chmod(0o600)
         verify_ssl = str(file_path)
 
         return verify_ssl
