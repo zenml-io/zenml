@@ -41,7 +41,7 @@ You can see other examples in the project code base
 For the retrieval pipeline, all we have to do is encode the query as a vector
 and then query the PostgreSQL database for the most similar vectors. We then
 check whether the URL for the document we thought must show up is actually
-present in the top n results.
+present in the top `n` results.
 
 ```python
 def query_similar_docs(question: str, url_ending: str) -> tuple:
@@ -124,14 +124,119 @@ How do I create and configure a GCP stack in ZenML using an orchestrator, contai
 If we generate questions for all of our chunks, we can then use these
 question-chunk pairs to evaluate the retrieval component. We pass the generated
 query to the retrieval component and then we check if the URL for the original
-document is in the top n results.
+document is in the top `n` results.
+
+To generate the synthetic queries we can use the following code:
+
+```python
+from typing import List
+
+from litellm import completion
+from structures import Document
+from zenml import step
+
+LOCAL_MODEL = "ollama/mixtral"
 
 
+def generate_question(chunk: str, local: bool = False) -> str:
+    model = LOCAL_MODEL if local else "gpt-3.5-turbo"
+    response = completion(
+        model=model,
+        messages=[
+            {
+                "content": f"This is some text from ZenML's documentation. Please generate a question that can be asked about this text: `{chunk}`",
+                "role": "user",
+            }
+        ],
+        api_base="http://localhost:11434" if local else None,
+    )
+    return response.choices[0].message.content
 
-## what we're looking for in the results
 
-## frameworks that can maybe help in this context
+@step
+def generate_questions_from_chunks(
+    docs_with_embeddings: List[Document],
+    local: bool = False,
+) -> List[Document]:
+    for doc in docs_with_embeddings:
+        doc.generated_questions = [generate_question(doc.page_content, local)]
 
-just list some resources for people to check out
+    assert all(doc.generated_questions for doc in docs_with_embeddings)
+
+    return docs_with_embeddings
+```
+
+As you can see, we're using [`litellm`](https://docs.litellm.ai/) again as the
+wrapper for the API calls. This allows us to switch between using a cloud LLM
+API (like OpenAI's GPT3.5 or 4) and a local LLM (like a quantized version of
+Mistral AI's Mixtral made available with [Ollama](https://ollama.com/). This has
+a number of advantages:
+
+- you keep your costs down by using a local model
+- you can iterate faster by not having to wait for API calls
+- you can use the same code for both local and cloud models
+
+For some tasks you'll want to use the best model your budget can afford, but for
+this task of question generation we're fine using a local and slightly less
+capable model. Even better is that it'll be much faster to generate the
+questions, especially using the basic setup we have here.
+
+To give you an indication of how long this process takes, generating 1800+
+questions from an equivalent number of documentation chunks took a little over
+45 minutes using the local model on a GPU-enabled machine with Ollama.
+
+You can [view the generated
+dataset](https://huggingface.co/datasets/zenml/rag_qa_embedding_questions) on
+the Hugging Face Hub
+[here](https://huggingface.co/datasets/zenml/rag_qa_embedding_questions). This
+dataset contains the original document chunks, the generated questions, and the
+URL reference for the original document.
+
+Once we have the generated questions, we can then pass them to the retrieval
+component and check the results. For convenience we load the data from the
+Hugging Face Hub and then pass it to the retrieval component for evaluation. We
+shuffle the data and select a subset of it to speed up the evaluation process,
+but for a more thorough evaluation you could use the entire dataset. (The best
+practice of keeping a separate set of data for evaluation purposes is also
+recommended here, though we're not doing that in this example.)
+
+```python
+@step
+def retrieval_evaluation_full(
+    sample_size: int = 50,
+) -> Annotated[float, "full_failure_rate_retrieval"]:
+    dataset = load_dataset("zenml/rag_qa_embedding_questions", split="train")
+
+    sampled_dataset = dataset.shuffle(seed=42).select(range(sample_size))
+
+    total_tests = len(sampled_dataset)
+    failures = 0
+
+    for item in sampled_dataset:
+        generated_questions = item["generated_questions"]
+        question = generated_questions[
+            0
+        ]  # Assuming only one question per item
+        url_ending = item["filename"].split("/")[
+            -1
+        ]  # Extract the URL ending from the filename
+
+        _, _, urls = query_similar_docs(question, url_ending)
+
+        if all(url_ending not in url for url in urls):
+            logging.error(
+                f"Failed for question: {question}. Expected URL ending: {url_ending}. Got: {urls}"
+            )
+            failures += 1
+
+    logging.info(f"Total tests: {total_tests}. Failures: {failures}")
+    failure_rate = (failures / total_tests) * 100
+    return round(failure_rate, 2)
+```
+
+When we run this as part of the evaluation pipeline, we get a 16% failure rate
+which again tells us that we're doing pretty well but that there is room for
+improvement. As a baseline, this is a good starting point. We can then iterate
+on the retrieval component to improve its performance.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
