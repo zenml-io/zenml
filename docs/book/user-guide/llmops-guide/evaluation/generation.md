@@ -348,14 +348,7 @@ make sense to pass in harder questions and be more specific in the judging
 criteria. This will give us more room to improve as it is sure that the system
 is not perfect.
 
-There are many ways to improve this evaluation, but this is a good starting
-point. Other frameworks do exist that can help with this kind of evaluation (for
-example, [`ragas`](https://github.com/explodinggradients/ragas),
-[`trulens`](https://www.trulens.org/),
-[DeepEval](https://docs.confident-ai.com/) and
-[UpTrain](https://github.com/uptrain-ai/uptrain)), but they're often quite
-complex to set up and use. When you're starting on a project, it can be better
-to start simple and then expand as needed.
+While this evaluation approach serves as a solid foundation, it's worth noting that there are other frameworks available that can further enhance the evaluation process. Frameworks such as [`ragas`](https://github.com/explodinggradients/ragas), [`trulens`](https://www.trulens.org/), [DeepEval](https://docs.confident-ai.com/), and [UpTrain](https://github.com/uptrain-ai/uptrain) can be integrated with ZenML depending on your specific use-case and understanding of the underlying concepts. These frameworks, although potentially complex to set up and use, can provide more sophisticated evaluation capabilities as your project evolves and grows in complexity.
 
 We now have a working evaluation of both the retrieval and generation evaluation
 components of our RAG pipeline. We can use this to track how our pipeline
