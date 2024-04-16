@@ -104,9 +104,7 @@ You'd also want to examine the logs to see exactly which query failed. In our
 case, checking the logs in the ZenML dashboard, we find the following:
 
 <div style="max-width: 100%; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap;">
-```shell
 Failed for question: How do I generate embeddings as part of a RAG pipeline when using ZenML?. Expected URL ending: user-guide/llmops-guide/rag-with-zenml/embeddings-generation. Got: ['https://docs.zenml.io/user-guide/llmops-guide/rag-with-zenml/data-ingestion', 'https://docs.zenml.io/user-guide/llmops-guide/rag-with-zenml/understanding-rag', 'https://docs.zenml.io/v/docs/user-guide/advanced-guide/data-management/handle-custom-data-types', 'https://docs.zenml.io/user-guide/llmops-guide/rag-with-zenml', 'https://docs.zenml.io/v/docs/user-guide/llmops-guide/rag-with-zenml']
-```
 </div>
 
 We can maybe take a look at those documents to see why they were retrieved and
