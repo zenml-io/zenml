@@ -1,54 +1,82 @@
 # :running: MLOps 101 with ZenML
 
-Build your first MLOps pipelines with ZenML.
+ZenML allows you to standardize your internal MLOps process for your entire team. 
+This quickstart walks you through what a typical MLOps set up in a company might look like.
 
-## :earth_americas: Overview
+## 🏃 Run the quickstart 
 
-This repository is a minimalistic MLOps project intended as a starting point to learn how to put ML workflows in production. It features: 
+Depending on your preference, you can select three ways of running this tutorial.
 
-- A feature engineering pipeline that loads data and prepares it for training.
-- A training pipeline that loads the preprocessed dataset and trains a model.
-- A batch inference pipeline that runs predictions on the trained model with new data.
+<details>
 
-This is a representation of how it will all come together: 
+<summary> 🟡 Option 1: Run on Colab</summary>
 
-<img src=".assets/pipeline_overview.png" width="70%" alt="Pipelines Overview">
+### Use Google Colab 
 
-Along the way we will also show you how to:
-
-- Structure your code into MLOps pipelines.
-- Automatically version, track, and cache data, models, and other artifacts.
-- Transition your ML models from development to production.
-
-## 🏃 Run on Colab
-
-You can use Google Colab to see ZenML in action, no signup / installation required!
+You can use Google Colab to see ZenML in action, no signup/installation is required!
 
 <a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
-## :computer: Run Locally
+</details>
 
-To run locally, install ZenML and pull this quickstart:
+<details>
+
+<summary> 🔶 Option 2: Run on a local notebook</summary>
+
+### Use Jupyter
+
+To run locally, install ZenML:
 
 ```shell
 # Install ZenML
 pip install "zenml[server]"
 
-# clone the ZenML repository
+# (OPTIONAL) Connect to a deployed ZenML
+zenml connect --url <URL_OF_DEPLOYED_ZENML>
+```
+
+Clone the quickstart:
+
+```shell
 git clone https://github.com/zenml-io/zenml.git
 cd zenml/examples/quickstart
 ```
 
-Now we're ready to start. You have two options for running the quickstart locally:
+Now we're ready to start. Interactively explore the quickstart using Jupyter Notebook:
 
-#### Option 1 - Interactively explore the quickstart using Jupyter Notebook:
 ```bash
 pip install notebook
 jupyter notebook
 # open notebooks/quickstart.ipynb
 ```
 
-#### Option 2 - Execute the whole ML pipeline from a Python script:
+</details>
+
+<details>
+
+<summary> ⚪ Option 3: Use the terminal to run scripts</summary>
+
+### Run python scripts
+
+To run locally, install ZenML:
+
+```shell
+# Install ZenML
+pip install "zenml[server]"
+
+# (OPTIONAL) Connect to a deployed ZenML
+zenml connect --url <URL_OF_DEPLOYED_ZENML>
+```
+
+Clone the quickstart:
+
+```shell
+git clone https://github.com/zenml-io/zenml.git
+cd zenml/examples/quickstart
+```
+
+Now we're ready to start. Execute the whole ML pipeline from a Python script::
+
 ```bash
 # Install required zenml integrations
 zenml integration install sklearn -y
@@ -71,10 +99,26 @@ python run.py --training-pipeline --train-dataset-version-name=1 --test-dataset-
 # Run the inference pipeline
 python run.py --inference-pipeline
 ```
+</details>
+
 
 ## 🌵 Learning MLOps with ZenML
 
-This project is also a great source of learning about some fundamental MLOps concepts. In sum, there are four exemplary steps happening, that can be mapped onto many other projects:
+This repository is a minimalistic MLOps project intended as a starting point for learning how to put ML workflows into production. It features: 
+
+- A feature engineering pipeline that loads data and prepares it for training.
+- A training pipeline that loads the preprocessed dataset and trains a model.
+- A batch inference pipeline that runs predictions on the trained model with new data.
+
+This is a representation of how it will all come together: 
+
+<img src=".assets/pipeline_overview.png" width="50%" alt="Pipelines Overview">
+
+Along the way we will also show you how to:
+
+- Structure your code into MLOps pipelines.
+- Automatically version, track, and cache data, models, and other artifacts.
+- Transition your ML models from development to production.
 
 <details>
   <summary>🥇 Step 1: Load your data and execute feature engineering</summary>
