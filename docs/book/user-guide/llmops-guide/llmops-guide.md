@@ -16,6 +16,7 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Storing embeddings in a vector database](rag/storing-embeddings-in-a-vector-database.md)
   * [Basic RAG inference pipeline](rag/basic-rag-inference-pipeline.md)
 * [Evaluation and metrics](evaluation/evaluation.md)
+  * [Evaluation in 65 lines of code](evaluation/evaluation-in-65-loc.md)
   * [Retrieval evaluation](evaluation/retrieval.md)
   * [Generation evaluation](evaluation/generation.md)
   * [Evaluation in practice](evaluation/evaluation-in-practice.md)
