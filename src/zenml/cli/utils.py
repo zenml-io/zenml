@@ -1007,12 +1007,19 @@ def prompt_configuration(
 def install_packages(
     packages: List[str],
     upgrade: bool = False,
+    use_uv: bool = False,
 ) -> None:
-    """Installs pypi packages into the current environment with pip.
+    """Installs pypi packages into the current environment with pip or uv.
+
+    When using with `uv`, a virtual environment is required.
 
     Args:
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
+        use_uv: Whether to use uv for package installation.
+
+    Raises:
+        e: If the package installation fails.
     """
     if "neptune" in packages:
         declare(
@@ -1021,24 +1028,44 @@ def install_packages(
         )
         uninstall_package("neptune-client")
 
+    pip_command = ["uv", "pip"] if use_uv else ["pip"]
     if upgrade:
-        command = [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--upgrade",
-        ] + packages
+        command = (
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "install",
+                "--upgrade",
+            ]
+            + packages
+        )
     else:
-        command = [sys.executable, "-m", "pip", "install"] + packages
+        command = [sys.executable, "-m"] + pip_command + ["install"] + packages
 
     if not IS_DEBUG_ENV:
+        quiet_flag = "-q" if use_uv else "-qqq"
         command += [
-            "-qqq",
+            quiet_flag,
             "--no-warn-conflicts",
         ]
 
-    subprocess.check_call(command)
+    try:
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError as e:
+        if (
+            use_uv
+            and "Failed to locate a virtualenv or Conda environment" in str(e)
+        ):
+            error(
+                "Failed to locate a virtualenv or Conda environment. "
+                "When using uv, a virtual environment is required. "
+                "Run `uv venv` to create a virtualenv and retry."
+            )
+        else:
+            raise e
 
     if "label-studio" in packages:
         warning(
@@ -1051,23 +1078,56 @@ def install_packages(
         )
 
 
-def uninstall_package(package: str) -> None:
-    """Uninstalls pypi package from the current environment with pip.
+def uninstall_package(package: str, use_uv: bool = False) -> None:
+    """Uninstalls pypi package from the current environment with pip or uv.
 
     Args:
         package: The package to uninstall.
+        use_uv: Whether to use uv for package uninstallation.
     """
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "uninstall",
-            "-qqq",
-            "-y",
-            package,
-        ]
-    )
+    pip_command = ["uv", "pip"] if use_uv else ["pip"]
+    quiet_flag = "-q" if use_uv else "-qqq"
+
+    if use_uv:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "uninstall",
+                quiet_flag,
+                package,
+            ]
+        )
+    else:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "uninstall",
+                quiet_flag,
+                "-y",
+                package,
+            ]
+        )
+
+
+def is_uv_installed() -> bool:
+    """Check if uv is installed in the current environment.
+
+    Returns:
+        True if uv is installed, False otherwise.
+    """
+    try:
+        pkg_resources.get_distribution("uv")
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
 
 
 def pretty_print_secret(

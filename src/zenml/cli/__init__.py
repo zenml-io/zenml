@@ -158,6 +158,13 @@ Uninstalling a specific integration is as simple as typing:
 zenml integration uninstall INTEGRATION_NAME
 ```
 
+For all these `zenml integration` commands, you can pass the `--uv` flag and we
+will use `uv` as the package manager instead of `pip`. This will resolve and
+install much faster than with `pip`, but note that it requires `uv` to be
+installed on your machine. This is an experimental feature and may not work on
+all systems. In particular, note that installing onto machines with GPU
+acceleration may not work as expected.
+
 If you would like to export the requirements of all ZenML integrations, you can
 use the command:
 
