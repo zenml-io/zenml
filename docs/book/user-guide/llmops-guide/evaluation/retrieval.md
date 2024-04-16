@@ -35,8 +35,15 @@ query "How do I get going with the Label Studio integration? What are the first
 steps?" would require the retrieval component to find [the Label Studio
 integration
 page](https://docs.zenml.io/stacks-and-components/component-guide/annotators/label-studio).
-You can see other examples in the project code base
-[here](https://github.com/zenml-io/zenml-projects/blob/e59ada173c65f79d17025aa48b87fe593229bfe8/llm-complete-guide/steps/eval_retrieval.py#L33-L34).
+Some of the other examples used are:
+
+| Question | URL Ending |
+|----------|------------|
+| How do I get going with the Label Studio integration? What are the first steps? | stacks-and-components/component-guide/annotators/label-studio |
+| How can I write my own custom materializer? | user-guide/advanced-guide/data-management/handle-custom-data-types |
+| How do I generate embeddings as part of a RAG pipeline when using ZenML? | user-guide/llmops-guide/rag-with-zenml/embeddings-generation |
+| How do I use failure hooks in my ZenML pipeline? | user-guide/advanced-guide/pipelining-features/use-failure-success-hooks |
+| Can I deploy ZenML self-hosted with Helm? How do I do it? | deploying-zenml/zenml-self-hosted/deploy-with-helm |
 
 For the retrieval pipeline, all we have to do is encode the query as a vector
 and then query the PostgreSQL database for the most similar vectors. We then
