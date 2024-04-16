@@ -26,9 +26,10 @@ this guide, please <a href="https://github.com/zenml-io/zenml-projects/tree/main
 up a PostgreSQL database using Supabase.
 {% endhint %}
 
-Since PostgreSQL is such a standard kind of database, we can use known and
-minimal packages to connect and to interact with it. We can use the `psycopg2`
-package to connect and then raw SQL statements to interact with the database.
+Since PostgreSQL is a well-known and battle-tested database, we can use known
+and minimal packages to connect and to interact with it. We can use the
+[`psycopg2`](https://www.psycopg.org/docs/) package to connect and then raw SQL
+statements to interact with the database.
 
 The code for the step is fairly simple:
 
