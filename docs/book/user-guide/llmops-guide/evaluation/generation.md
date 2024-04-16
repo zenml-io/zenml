@@ -182,7 +182,9 @@ approach. Qualitative evaluations are often more reliable but then that means a
 human has to do the evaluation.
 {% endhint %}
 
-We can start by setting up a Pydantic model to hold the data we need:
+We can start by setting up a Pydantic model to hold the data we need. We set
+constraints to ensure that the data we're getting back are only integers between
+1 and 5, inclusive:
 
 ```python
 class LLMJudgedTestResult(BaseModel):
@@ -346,6 +348,10 @@ To take this further, there are a number of ways it might be improved:
   of time before trying again. (We could potentially use the
   [`instructor`](https://github.com/jxnl/instructor) library to handle this
   specifically.)
+- **Use OpenAI's 'JSON mode'**: OpenAI has a [JSON
+  mode](https://platform.openai.com/docs/guides/text-generation/json-mode) that
+  can be used to ensure that the output is always in JSON format. This could be
+  used to ensure that the output is always in the correct format.
 - **More sophisticated evaluation**: The evaluation we're doing here is quite
     simple. We're just asking for a score in four categories. There are more
     sophisticated ways to evaluate the quality of the output, such as using
