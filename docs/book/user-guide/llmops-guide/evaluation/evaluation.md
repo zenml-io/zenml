@@ -47,14 +47,14 @@ chatbot, you might need to evaluate the following:
 - Is the generated answer coherent and helpful for your specific use case?
 - Does the generated answer contain hate speech or any sort of toxic language?
 
-These are just examples, and the specific metrics and methods you
-use will depend on your use case. The [generation evaluation](generation.md)
-functions as an end-to-end evaluation of the RAG pipeline, as it checks the
-final output of the system. It's during these end-to-end evaluations that you'll
-have most leeway to use subjective metrics, as you're evaluating the system as a
-whole.
+These are just examples, and the specific metrics and methods you use will
+depend on your use case. The [generation evaluation](generation.md) functions as
+an end-to-end evaluation of the RAG pipeline, as it checks the final output of
+the system. It's during these end-to-end evaluations that you'll have most
+leeway to use subjective metrics, as you're evaluating the system as a whole.
 
-The following sections will cover the two main areas of evaluation in more
+Before we dive into the details, let's take a moment to look at [a short high-level code example](evaluation-in-65-loc.md) showcasing the two main areas of evaluation. Afterwards
+the following sections will cover the two main areas of evaluation in more
 detail [as well as offer practical
 guidance](evaluation/evaluation-in-practice.md) on when to run these evaluations
 and what to look for in the results.
