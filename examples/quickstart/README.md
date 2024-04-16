@@ -90,11 +90,13 @@ zenml up
 # Run the feature engineering pipeline
 python run.py --feature-pipeline
 
-# Run the training pipeline
-python run.py --training-pipeline
+# Run two trainings with two different models.
 
-# Run the training pipeline with versioned artifacts
-python run.py --training-pipeline --train-dataset-version-name=1 --test-dataset-version-name=1
+# Run the training pipeline with a random forrest model
+python run.py --training-pipeline --model-type="rf"
+
+# Run the training pipeline with a stochastic gradient descent model
+python run.py --training-pipeline --model-type="sgd"
 
 # Run the inference pipeline
 python run.py --inference-pipeline
