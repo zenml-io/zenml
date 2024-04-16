@@ -218,6 +218,8 @@ To give you an indication of how long this process takes, generating 1800+
 questions from an equivalent number of documentation chunks took a little over
 45 minutes using the local model on a GPU-enabled machine with Ollama.
 
+![](/docs/book/.gitbook/assets/hf-qa-embedding-questions.png)
+
 You can [view the generated
 dataset](https://huggingface.co/datasets/zenml/rag_qa_embedding_questions) on
 the Hugging Face Hub
