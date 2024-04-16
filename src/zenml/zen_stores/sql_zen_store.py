@@ -9403,5 +9403,5 @@ class SqlZenStore(BaseZenStore):
 
             return ReportResponse(
                 total=sum([r.count_ for r in result]),
-                results={r.time_index: r.count_ for r in result},
+                results={r.time_index_: r.count_ for r in result},
             )
