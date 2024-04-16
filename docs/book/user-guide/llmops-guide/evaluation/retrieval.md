@@ -149,7 +149,9 @@ cloud NextConfiguring ZenML Last updated 2 days ago
 we might get the question:
 
 ```
-How do I create and configure a GCP stack in ZenML using an orchestrator, container registry, and stack components, and how do I delete the resources when they are no longer needed?
+How do I create and configure a GCP stack in ZenML using an 
+orchestrator, container registry, and stack components, and how 
+do I delete the resources when they are no longer needed?
 ```
 
 If we generate questions for all of our chunks, we can then use these
