@@ -103,9 +103,11 @@ them and add them to your test suite.
 You'd also want to examine the logs to see exactly which query failed. In our
 case, checking the logs in the ZenML dashboard, we find the following:
 
+<div style="overflow-wrap: break-word; word-wrap: break-word;">
 ```shell
 Failed for question: How do I generate embeddings as part of a RAG pipeline when using ZenML?. Expected URL ending: user-guide/llmops-guide/rag-with-zenml/embeddings-generation. Got: ['https://docs.zenml.io/user-guide/llmops-guide/rag-with-zenml/data-ingestion', 'https://docs.zenml.io/user-guide/llmops-guide/rag-with-zenml/understanding-rag', 'https://docs.zenml.io/v/docs/user-guide/advanced-guide/data-management/handle-custom-data-types', 'https://docs.zenml.io/user-guide/llmops-guide/rag-with-zenml', 'https://docs.zenml.io/v/docs/user-guide/llmops-guide/rag-with-zenml']
 ```
+</div>
 
 We can maybe take a look at those documents to see why they were retrieved and
 not the one we expected. This is a good way to iteratively improve the retrieval
@@ -118,9 +120,11 @@ retrieval component's performance. We do this by using an LLM to generate
 synthetic data. In our case we take the text of each document chunk and pass it
 to an LLM, telling it to generate a question. For example, given the text:
 
+<div style="overflow-wrap: break-word; word-wrap: break-word;">
 ```
-zenml orchestrator connect ${ORCHESTRATOR_NAME} -iHead on over to our docs to learn more about orchestrators and how to configure them. Container Registry export CONTAINER_REGISTRY_NAME=gcp_container_registry zenml container-registry register ${CONTAINER_REGISTRY_NAME} --flavor=gcp --uri=<GCR-URI> # Connect the GCS orchestrator to the target gcp project via a GCP Service Connector zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i Head on over to our docs to learn more about container registries and how to configure them. 7) Create Stack export STACK_NAME=gcp_stack zenml stack register ${STACK_NAME} -o ${ORCHESTRATOR_NAME} \ a ${ARTIFACT_STORE_NAME} -c ${CONTAINER_REGISTRY_NAME} --set In case you want to also add any other stack components to this stack, feel free to do so. And you're already done! Just like that, you now have a fully working GCP stack ready to go. Feel free to take it for a spin by running a pipeline on it. Cleanup If you do not want to use any of the created resources in the future, simply delete the project you created. gcloud project delete <PROJECT_ID_OR_NUMBER> ```<!-- For scarf --> <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure> PreviousScale compute to the cloud NextConfiguring ZenML Last updated 2 days ago
+zenml orchestrator connect ${ORCHESTRATOR\_NAME} -iHead on over to our docs to learn more about orchestrators and how to configure them. Container Registry export CONTAINER\_REGISTRY\_NAME=gcp\_container\_registry zenml container-registry register ${CONTAINER\_REGISTRY\_NAME} --flavor=gcp --uri=<GCR-URI> # Connect the GCS orchestrator to the target gcp project via a GCP Service Connector zenml container-registry connect ${CONTAINER\_REGISTRY\_NAME} -i Head on over to our docs to learn more about container registries and how to configure them. 7) Create Stack export STACK\_NAME=gcp\_stack zenml stack register ${STACK\_NAME} -o ${ORCHESTRATOR\_NAME} \\ a ${ARTIFACT\_STORE\_NAME} -c ${CONTAINER\_REGISTRY\_NAME} --set In case you want to also add any other stack components to this stack, feel free to do so. And you're already done! Just like that, you now have a fully working GCP stack ready to go. Feel free to take it for a spin by running a pipeline on it. Cleanup If you do not want to use any of the created resources in the future, simply delete the project you created. gcloud project delete <PROJECT\_ID\_OR\_NUMBER> <!-- For scarf --> <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure> PreviousScale compute to the cloud NextConfiguring ZenML Last updated 2 days ago
 ```
+</div>
 
 we might get the question:
 
