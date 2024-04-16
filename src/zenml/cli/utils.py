@@ -1017,6 +1017,9 @@ def install_packages(
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
         use_uv: Whether to use uv for package installation.
+
+    Raises:
+        e: If the package installation fails.
     """
     if "neptune" in packages:
         declare(
