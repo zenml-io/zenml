@@ -26,6 +26,8 @@ driven by mistakes that you've already seen in the RAG output. The negative
 example of "Flyte" and "Prefect" showing up in the list of supported
 orchestrators, for example, shows up sometimes when you use GPT 3.5 as the LLM.
 
+![](/docs/book/.gitbook/assets/generation-eval-manual.png)
+
 As another example, when you make a query asking 'what is the default
 orchestrator in ZenML?' you would expect that the answer would include the word
 'local', so we can make a test case to confirm that.
@@ -148,6 +150,8 @@ and the associated context as input to the LLM and then use another LLM to
 assess the quality of the output on a scale of 1 to 5. This is a more
 quantitative approach and since it's automated it can run across a larger set of
 data.
+
+![](/docs/book/.gitbook/assets/generation-eval-automated.png)
 
 {% hint style="warning" %}
 LLMs don't always do well on this kind of evaluation where numbers are involved.

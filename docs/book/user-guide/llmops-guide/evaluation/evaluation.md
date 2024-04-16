@@ -21,6 +21,8 @@ performance of your RAG pipeline but the two main areas we'll focus on are:
 - [Generation evaluation](generation.md), so checking that the
   generated text is coherent and helpful for our specific use case.
 
+![](/docs/book/.gitbook/assets/evaluation-two-parts.png)
+
 In the previous section we built out a basic RAG pipeline for our documentation
 question-and-answer use case. We'll use this pipeline to demonstrate how to
 evaluate the performance of your RAG pipeline.

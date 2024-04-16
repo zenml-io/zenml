@@ -25,6 +25,8 @@ of how well the retrieval component is working. It can also be useful to target
 known edge cases or difficult queries to see how the retrieval component handles
 those known scenarios.
 
+![](/docs/book/.gitbook/assets/retrieval-eval-manual.png)
+
 Implementing this is pretty simple - you just need to create some queries and
 check the retrieved documents. Having tested the basic inference of our RAG
 setup quite a bit, there were some clear areas where the retrieval component
@@ -123,7 +125,11 @@ component.
 For a broader evaluation we can examine a larger number of queries to check the
 retrieval component's performance. We do this by using an LLM to generate
 synthetic data. In our case we take the text of each document chunk and pass it
-to an LLM, telling it to generate a question. For example, given the text:
+to an LLM, telling it to generate a question. 
+
+![](/docs/book/.gitbook/assets/retrieval-eval-automated.png)
+
+For example, given the text:
 
 ```
 zenml orchestrator connect ${ORCHESTRATOR\_NAME} -iHead on over to our docs to 
