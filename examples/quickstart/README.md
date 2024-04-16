@@ -1,7 +1,7 @@
 # :running: MLOps 101 with ZenML
 
 ZenML allows you to standardize your internal MLOps process for your entire team. 
-This quickstart walks you through what a typical MLOps setup in a company might look like.
+This quickstart walks you through what a typical MLOps set up in a company might look like.
 
 ## 🏃 Run the quickstart 
 
