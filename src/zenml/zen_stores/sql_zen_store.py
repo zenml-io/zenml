@@ -62,6 +62,7 @@ from sqlmodel import (
 )
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
+from zenml.analytics import track
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import (
     analytics_disabler,
@@ -200,6 +201,8 @@ from zenml.models import (
     SecretUpdate,
     ServerDatabaseType,
     ServerModel,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -287,6 +290,7 @@ from zenml.zen_stores.schemas import (
     RunMetadataSchema,
     ScheduleSchema,
     SecretSchema,
+    ServerSettingsSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
     StackSchema,
@@ -1471,6 +1475,64 @@ class SqlZenStore(BaseZenStore):
                     "The deployment ID could not be loaded from the database."
                 )
             return identity.id
+
+    # -------------------- Server Settings --------------------
+
+    def _get_or_create_server_settings(
+        self, session: Session
+    ) -> ServerSettingsSchema:
+        """Get or create server settings if they don't exist yet.
+
+        Args:
+            session: SQLAlchemy session to use.
+
+        Returns:
+            The settings table.
+        """
+        settings = session.exec(select(ServerSettingsSchema)).first()
+
+        if settings is None:
+            settings = ServerSettingsSchema()
+            session.add(settings)
+            session.commit()
+
+        return settings
+
+    def get_server_settings(
+        self, hydrate: bool = True
+    ) -> ServerSettingsResponse:
+        """Get the server settings.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The server settings.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_or_create_server_settings(session=session)
+            return settings.to_model(include_metadata=hydrate)
+
+    def update_server_settings(
+        self, server_settings_update: ServerSettingsUpdate
+    ) -> ServerSettingsResponse:
+        """Update the server settings.
+
+        Args:
+            server_settings_update: The server settings update.
+
+        Returns:
+            The updated server settings.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_or_create_server_settings(session=session)
+            settings.update(server_settings_update)
+            session.add(settings)
+            session.commit()
+            session.refresh(settings)
+
+            return settings.to_model(include_metadata=True)
 
     # ------------------------- API Keys -------------------------
 
@@ -7761,13 +7823,33 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
+            SURVEY_KEY = "key"
+            user_model = existing_user.to_model(include_metadata=True)
+            survey_finished_before = SURVEY_KEY in user_model.user_metadata
+
             existing_user.update_user(user_update=user_update)
             session.add(existing_user)
             session.commit()
 
             # Refresh the Model that was just created
             session.refresh(existing_user)
-            return existing_user.to_model(include_metadata=True)
+            updated_user = existing_user.to_model(include_metadata=True)
+
+            survey_finished_after = SURVEY_KEY in updated_user.user_metadata
+
+            if not survey_finished_before and survey_finished_after:
+                analytics_metadata = {
+                    **updated_user.user_metadata,
+                    "email": updated_user.email,
+                    "name": updated_user.name,
+                    "full_name": updated_user.full_name,
+                }
+                track(
+                    event=AnalyticsEvent.USER_ENRICHED,
+                    metadata=analytics_metadata,
+                )
+
+            return updated_user
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.

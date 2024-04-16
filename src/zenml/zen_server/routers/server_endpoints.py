@@ -13,11 +13,16 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Security
 
 import zenml
-from zenml.constants import API, INFO, VERSION_1
-from zenml.models import ServerModel
+from zenml.constants import API, INFO, SERVER_SETTINGS, VERSION_1
+from zenml.models import (
+    ServerModel,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
+)
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import handle_exceptions, zen_store
 
@@ -51,3 +56,42 @@ def server_info() -> ServerModel:
         Information about the server.
     """
     return zen_store().get_store_info()
+
+
+# TODO: should this also exist for cloud tenants?
+@router.get(
+    SERVER_SETTINGS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_server_settings(
+    _: AuthContext = Security(authorize),
+    hydrate: bool = True,
+) -> ServerSettingsResponse:
+    """Get settings of the server.
+
+    Returns:
+        Settings of the server.
+    """
+    return zen_store().get_server_settings(hydrate=hydrate)
+
+
+@router.put(
+    SERVER_SETTINGS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_server_settings(
+    settings_update: ServerSettingsUpdate,
+    _: AuthContext = Security(authorize),
+) -> ServerSettingsResponse:
+    """Updates a stack.
+
+    Args:
+        settings_update: Settings update.
+
+    Returns:
+        The updated settings.
+    """
+    # TODO: RBAC
+    return zen_store().update_server_settings(settings_update)
