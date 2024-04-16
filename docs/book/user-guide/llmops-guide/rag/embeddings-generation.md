@@ -84,6 +84,7 @@ UMAP and t-SNE to see which one works best for our use case since they both have
 somewhat different representations of the data and reduction algorithms, as you'll see.
 
 ```python
+from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.manifold import TSNE
@@ -93,41 +94,84 @@ from zenml.client import Client
 artifact = Client().get_artifact_version('EMBEDDINGS_ARTIFACT_UUID_GOES_HERE')
 embeddings = artifact.load()
 
+
+embeddings = np.array([doc.embedding for doc in documents])
+parent_sections = [doc.parent_section for doc in documents]
+
+# Get unique parent sections
+unique_parent_sections = list(set(parent_sections))
+
+# Tol color palette
+tol_colors = [
+    "#4477AA",
+    "#EE6677",
+    "#228833",
+    "#CCBB44",
+    "#66CCEE",
+    "#AA3377",
+    "#BBBBBB",
+]
+
+# Create a colormap with Tol colors
+tol_colormap = ListedColormap(tol_colors)
+
+# Assign colors to each unique parent section
+section_colors = tol_colors[: len(unique_parent_sections)]
+
+# Create a dictionary mapping parent sections to colors
+section_color_dict = dict(zip(unique_parent_sections, section_colors))
+
 # Dimensionality reduction using t-SNE
-def tsne_visualization(embeddings):
+def tsne_visualization(embeddings, parent_sections):
     tsne = TSNE(n_components=2, random_state=42)
     embeddings_2d = tsne.fit_transform(embeddings)
-    return embeddings_2d
+
+    plt.figure(figsize=(8, 8))
+    for section in unique_parent_sections:
+        if section in section_color_dict:
+            mask = [section == ps for ps in parent_sections]
+            plt.scatter(
+                embeddings_2d[mask, 0],
+                embeddings_2d[mask, 1],
+                c=[section_color_dict[section]],
+                label=section,
+            )
+
+    plt.title("t-SNE Visualization")
+    plt.legend()
+    plt.show()
+
 
 # Dimensionality reduction using UMAP
-def umap_visualization(embeddings):
+def umap_visualization(embeddings, parent_sections):
     umap_2d = umap.UMAP(n_components=2, random_state=42)
     embeddings_2d = umap_2d.fit_transform(embeddings)
-    return embeddings_2d
 
-# Visualize embeddings using t-SNE
-tsne_embeddings = tsne_visualization(embeddings)
-plt.figure(figsize=(8, 8))
-plt.scatter(tsne_embeddings[:, 0], tsne_embeddings[:, 1])
-plt.title("t-SNE Visualization")
-plt.show()
+    plt.figure(figsize=(8, 8))
+    for section in unique_parent_sections:
+        if section in section_color_dict:
+            mask = [section == ps for ps in parent_sections]
+            plt.scatter(
+                embeddings_2d[mask, 0],
+                embeddings_2d[mask, 1],
+                c=[section_color_dict[section]],
+                label=section,
+            )
 
-# Visualize embeddings using UMAP
-umap_embeddings = umap_visualization(embeddings)
-plt.figure(figsize=(8, 8))
-plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1])
-plt.title("UMAP Visualization")
-plt.show()
+    plt.title("UMAP Visualization")
+    plt.legend()
+    plt.show()
 ```
 
 ![UMAP visualization of the ZenML documentation chunks as embeddings](/docs/book/.gitbook/assets/umap.png)
 ![t-SNE visualization of the ZenML documentation chunks as embeddings](/docs/book/.gitbook/assets/tsne.png)
 
-At a later stage we could add some semantics to the chunks to represent certain
-labels or types of documentation to ensure that the semantic meanings are being
-represented in our embedding space. For now, this was just to show that you can
-visualize the embeddings and see how similar chunks are clustered together based
-on their semantic meaning and context.
+In this stage, we have utilized the 'parent directory', which we had previously
+stored in the vector store as an additional attribute, as a means to color the
+values. This approach allows us to gain some insight into the semantic space
+inherent in our data. It demonstrates that you can visualize the embeddings and
+observe how similar chunks are grouped together based on their semantic meaning
+and context.
 
 So this step iterates through all the chunks and generates embeddings
 representing each piece of text. These embeddings are then stored as an artifact
