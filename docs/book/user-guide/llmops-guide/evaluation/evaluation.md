@@ -23,23 +23,29 @@ performance of your RAG pipeline but the two main areas we'll focus on are:
 
 In the previous section we built out a basic RAG pipeline for our documentation
 question-and-answer use case. We'll use this pipeline to demonstrate how to
-evaluate the performance of your RAG pipeline. If you were running this in a
-real setting, you might want to set up evaluation to check the performance of a
-raw LLM model (i.e. without any retrieval / RAG components) as a baseline, and
-then compare this to the performance of your RAG pipeline. This will help you
-understand how much value the retrieval and generation components are adding to
-your system. We won't cover this here, but it's a good practice to keep in mind.
+evaluate the performance of your RAG pipeline.
+
+{% hint style="info" %}
+If you were running this in a real setting, you might want to set up evaluation
+to check the performance of a raw LLM model (i.e. without any retrieval / RAG
+components) as a baseline, and then compare this to the performance of your RAG
+pipeline. This will help you understand how much value the retrieval and
+generation components are adding to your system. We won't cover this here, but
+it's a good practice to keep in mind.
+{% endhint %}
 
 ## What are we evaluating?
 
 When evaluating the performance of your RAG pipeline, your specific use case and
 the extent to which you can tolerate errors or lower performance will determine
-what you need to evaluate. For example, if you're building a user-facing
-chatbot, you might need to evaluate the kinds of language that your LLM
-generates. You'll probably have low tolerance for toxic or offensive language,
-so you'll need to evaluate your LLM's generation for these kinds of errors.
+what you need to evaluate. For instance, if you're building a user-facing
+chatbot, you might need to evaluate the following:
 
-We'll evaluate the components in turn, but the specific metrics and methods you
+- Are the retrieved documents relevant to the query?
+- Is the generated answer coherent and helpful for your specific use case?
+- Does the generated answer contain hate speech or any sort of toxic language?
+
+These are just examples, and the specific metrics and methods you
 use will depend on your use case. The [generation evaluation](generation.md)
 functions as an end-to-end evaluation of the RAG pipeline, as it checks the
 final output of the system. It's during these end-to-end evaluations that you'll
