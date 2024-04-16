@@ -56,6 +56,7 @@ from zenml.constants import (
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+GENERATE_HISTOGRAM,
     EVENT_SOURCES,
     FLAVORS,
     GET_OR_CREATE,
@@ -4162,15 +4163,15 @@ class RestZenStore(BaseZenStore):
         """
         self.delete(f"{route}/{str(resource_id)}")
 
-    # -------------------------------- Reports ---------------------------------
+    # -------------------------------- Actions ---------------------------------
 
-    def generate_report(
+    def generate_histogram(
         self,
         filter_model: BaseFilter,
         report_request: ReportRequest,
         resource_type: ResourceType,
     ) -> ReportResponse:
-        """Generate a report about an entity type within a given time interval.
+        """Generate a histogram for an entity type within a given time interval.
 
         Args:
             filter_model: All filter parameters.
@@ -4187,5 +4188,5 @@ class RestZenStore(BaseZenStore):
             "resource_type": resource_type,
         }
         return ReportResponse.parse_obj(
-            self.get(f"{ACTION}/report", params=params)
+            self.get(f"{ACTION}{GENERATE_HISTOGRAM}", params=params)
         )

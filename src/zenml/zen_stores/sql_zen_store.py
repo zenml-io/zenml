@@ -9369,15 +9369,15 @@ class SqlZenStore(BaseZenStore):
             session.delete(tag_model)
             session.commit()
 
-    # -------------------------------- Reports ---------------------------------
+    # -------------------------------- Actions ---------------------------------
 
-    def generate_report(
+    def generate_histogram(
         self,
         filter_model: BaseFilter,
         report_request: ReportRequest,
         resource_type: ResourceType,
     ) -> ReportResponse:
-        """Generate a report about an entity type within a given time interval.
+        """Generate a histogram for an entity type within a given time interval.
 
         Args:
             filter_model: All filter parameters.

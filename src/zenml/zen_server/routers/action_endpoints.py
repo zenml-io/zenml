@@ -15,7 +15,7 @@
 
 from fastapi import APIRouter, Security
 
-from zenml.constants import ACTION, API, VERSION_1
+from zenml.constants import ACTION, API, VERSION_1, GENERATE_HISTOGRAM
 from zenml.enums import DurationType
 from zenml.models import (
     ArtifactFilter,
@@ -86,21 +86,21 @@ router = APIRouter(
 
 
 @router.get(
-    f"/report",
+    GENERATE_HISTOGRAM,
     response_model=ReportResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def generate_report(
+def generate_histogram(
     duration_length: int,
     duration_type: DurationType,
     resource_type: ResourceType,
     _: AuthContext = Security(authorize),
 ) -> ReportResponse:
-    """Generate a report for a specific type of entity based on a given amount of time.
+    """Generate a histogram for the creation a specific type of entities.
 
-    A report tells you how many total entries of a specific type are created in
-    a certain time period and also breaks it down by the type.
+    This histogram tells you how many total entries of a specific type are
+    created in a certain time period and also breaks it down by the type.
 
     For instance:
 
@@ -108,13 +108,13 @@ def generate_report(
     requests a pipeline run report on 25.11.2024, the outputs will be as follows
     based on the input values:
 
-    duration_type: "days" duration_length: 90
+    duration_type: "days" duration_length: "90"
         {"total": 2, "results": {"23.09.2024": 1, "24.10.2024": 1}}
 
-    duration_type: "months" duration_length: 1
+    duration_type: "months" duration_length: "1"
         {"total": 1, "results": {"10.2024": 1}}
 
-    duration_type: "years" duration_length: 3
+    duration_type: "years" duration_length: "3"
         {"total": 2, "results": {"2024": 2}}
 
     Args:
@@ -147,7 +147,7 @@ def generate_report(
     )
 
     # Generate report
-    return zen_store().generate_report(
+    return zen_store().generate_histogram(
         filter_model=filter_model,
         report_request=report_request,
         resource_type=resource_type,
