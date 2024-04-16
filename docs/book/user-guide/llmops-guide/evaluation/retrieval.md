@@ -304,12 +304,6 @@ To take this further, there are a number of ways it might be improved:
   that aren't being retrieved properly? Insights from error analysis can guide
   targeted improvements to the retrieval component.
 
-Before we start working to improve or tweak our retrieval based on these
-evaluation results, let's shift gears and look at how we can evaluate the
-generation component of our RAG pipeline. Assessing the quality of the final
-answers produced by the system is equally crucial to gauging the effectiveness
-of our retrieval.
-
 To wrap up, the retrieval evaluation process we've walked through - from manual
 spot-checking with carefully crafted queries to automated testing with synthetic
 question-document pairs - has provided a solid baseline understanding of our
@@ -328,7 +322,13 @@ more complex and wide-ranging queries, continued investment in comprehensive
 retrieval evaluation will be essential to ensure we're always surfacing the most
 relevant information.
 
-But retrieval is only half the story. The true test of our system is the quality
+Before we start working to improve or tweak our retrieval based on these
+evaluation results, let's shift gears and look at how we can evaluate the
+generation component of our RAG pipeline. Assessing the quality of the final
+answers produced by the system is equally crucial to gauging the effectiveness
+of our retrieval.
+
+Retrieval is only half the story. The true test of our system is the quality
 of the final answers it generates by combining retrieved content with LLM
 intelligence. In the next section, we'll dive into a parallel evaluation process
 for the generation component, exploring both automated metrics and human
