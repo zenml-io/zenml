@@ -275,8 +275,8 @@ REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
 REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline"]
 
 # API Endpoint paths:
+ACTION = "/action"
 ACTIVATE = "/activate"
-ACTIONS = "/action-flavors"
 API = "/api"
 API_KEYS = "/api_keys"
 API_KEY_ROTATE = "/rotate"
@@ -321,7 +321,6 @@ SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
-SERVICE_CONNECTOR_RESOURCES = "/resources"
 MODELS = "/models"
 MODEL_VERSIONS = "/model_versions"
 MODEL_VERSION_ARTIFACTS = "/model_version_artifacts"
