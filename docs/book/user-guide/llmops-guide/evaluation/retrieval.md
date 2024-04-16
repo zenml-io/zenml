@@ -237,14 +237,70 @@ def retrieval_evaluation_full(
 When we run this as part of the evaluation pipeline, we get a 16% failure rate
 which again tells us that we're doing pretty well but that there is room for
 improvement. As a baseline, this is a good starting point. We can then iterate
-on the retrieval component to improve its performance. Before we start working
-to improve or tweak our retrieval, let's look at how we can evaluate the
-generation component of our RAG pipeline.
+on the retrieval component to improve its performance. 
+
+To take this further, there are a number of ways it might be improved:
+
+- **More diverse question generation**: The current question generation approach
+  uses a single prompt to generate questions based on the document chunks. You
+  could experiment with different prompts or techniques to generate a wider
+  variety of questions that test the retrieval component more thoroughly. For
+  example, you could prompt the LLM to generate questions of different types
+  (factual, inferential, hypothetical, etc.) or difficulty levels.
+- **Semantic similarity metrics**: In addition to checking if the expected URL
+  is retrieved, you could calculate semantic similarity scores between the query
+  and the retrieved documents using metrics like cosine similarity. This would
+  give you a more nuanced view of retrieval performance beyond just binary
+  success/failure. You could track average similarity scores and use them as a
+  target metric to improve.
+- **Comparative evaluation**: Test out different retrieval approaches (e.g.
+  different embedding models, similarity search algorithms, etc.) and compare
+  their performance on the same set of queries. This would help identify the
+  strengths and weaknesses of each approach.
+- **Error analysis**: Do a deeper dive into the failure cases to understand
+  patterns and potential areas for improvement. Are certain types of questions
+  consistently failing? Are there common characteristics among the documents
+  that aren't being retrieved properly? Insights from error analysis can guide
+  targeted improvements to the retrieval component.
+
+Before we start working to improve or tweak our retrieval based on these
+evaluation results, let's shift gears and look at how we can evaluate the
+generation component of our RAG pipeline. Assessing the quality of the final
+answers produced by the system is equally crucial to gauging the effectiveness
+of our retrieval.
+
+To wrap up, the retrieval evaluation process we've walked through - from manual
+spot-checking with carefully crafted queries to automated testing with synthetic
+question-document pairs - has provided a solid baseline understanding of our
+retrieval component's performance. The failure rates of 20% on our handpicked
+test cases and 16% on a larger sample of generated queries highlight clear room
+for improvement, but also validate that our semantic search is generally
+pointing in the right direction.
+
+Going forward, we have a rich set of options to refine and upgrade our
+evaluation approach. Generating a more diverse array of test questions,
+leveraging semantic similarity metrics for a nuanced view beyond binary
+success/failure, performing comparative evaluations of different retrieval
+techniques, and conducting deep error analysis on failure cases - all of these
+avenues promise to yield valuable insights. As our RAG pipeline grows to handle
+more complex and wide-ranging queries, continued investment in comprehensive
+retrieval evaluation will be essential to ensure we're always surfacing the most
+relevant information.
+
+But retrieval is only half the story. The true test of our system is the quality
+of the final answers it generates by combining retrieved content with LLM
+intelligence. In the next section, we'll dive into a parallel evaluation process
+for the generation component, exploring both automated metrics and human
+assessment to get a well-rounded picture of our RAG pipeline's end-to-end
+performance. By shining a light on both halves of the RAG architecture, we'll be
+well-equipped to iterate and optimize our way to an ever more capable and
+reliable question-answering system.
 
 ## Code Example
 
 To explore the full code, visit the [Complete
 Guide](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/)
-repository and for this section, particularly [the `eval_retrieval.py` file](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/steps/eval_retrieval.py).
+repository and for this section, particularly [the `eval_retrieval.py`
+file](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/steps/eval_retrieval.py).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
