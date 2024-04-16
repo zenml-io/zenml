@@ -1049,7 +1049,20 @@ def install_packages(
             "--no-warn-conflicts",
         ]
 
-    subprocess.check_call(command)
+    try:
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError as e:
+        if (
+            use_uv
+            and "Failed to locate a virtualenv or Conda environment" in str(e)
+        ):
+            error(
+                "Failed to locate a virtualenv or Conda environment. "
+                "When using uv, a virtual environment is required. "
+                "Run `uv venv` to create a virtualenv and retry."
+            )
+        else:
+            raise e
 
     if "label-studio" in packages:
         warning(
