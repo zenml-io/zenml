@@ -125,11 +125,26 @@ retrieval component's performance. We do this by using an LLM to generate
 synthetic data. In our case we take the text of each document chunk and pass it
 to an LLM, telling it to generate a question. For example, given the text:
 
-<div style="overflow-wrap: break-word; word-wrap: break-word;">
 ```
-zenml orchestrator connect ${ORCHESTRATOR\_NAME} -iHead on over to our docs to learn more about orchestrators and how to configure them. Container Registry export CONTAINER\_REGISTRY\_NAME=gcp\_container\_registry zenml container-registry register ${CONTAINER\_REGISTRY\_NAME} --flavor=gcp --uri=<GCR-URI> # Connect the GCS orchestrator to the target gcp project via a GCP Service Connector zenml container-registry connect ${CONTAINER\_REGISTRY\_NAME} -i Head on over to our docs to learn more about container registries and how to configure them. 7) Create Stack export STACK\_NAME=gcp\_stack zenml stack register ${STACK\_NAME} -o ${ORCHESTRATOR\_NAME} \\ a ${ARTIFACT\_STORE\_NAME} -c ${CONTAINER\_REGISTRY\_NAME} --set In case you want to also add any other stack components to this stack, feel free to do so. And you're already done! Just like that, you now have a fully working GCP stack ready to go. Feel free to take it for a spin by running a pipeline on it. Cleanup If you do not want to use any of the created resources in the future, simply delete the project you created. gcloud project delete <PROJECT\_ID\_OR\_NUMBER> <!-- For scarf --> <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure> PreviousScale compute to the cloud NextConfiguring ZenML Last updated 2 days ago
+zenml orchestrator connect ${ORCHESTRATOR\_NAME} -iHead on over to our docs to 
+learn more about orchestrators and how to configure them. Container Registry export 
+CONTAINER\_REGISTRY\_NAME=gcp\_container\_registry zenml container-registry register $
+{CONTAINER\_REGISTRY\_NAME} --flavor=gcp --uri=<GCR-URI> # Connect the GCS 
+orchestrator to the target gcp project via a GCP Service Connector zenml 
+container-registry connect ${CONTAINER\_REGISTRY\_NAME} -i Head on over to our docs to 
+learn more about container registries and how to configure them. 7) Create Stack 
+export STACK\_NAME=gcp\_stack zenml stack register ${STACK\_NAME} -o $
+{ORCHESTRATOR\_NAME} \\ a ${ARTIFACT\_STORE\_NAME} -c ${CONTAINER\_REGISTRY\_NAME} 
+--set In case you want to also add any other stack components to this stack, feel free 
+to do so. And you're already done! Just like that, you now have a fully working GCP 
+stack ready to go. Feel free to take it for a spin by running a pipeline on it. 
+Cleanup If you do not want to use any of the created resources in the future, simply 
+delete the project you created. gcloud project delete <PROJECT\_ID\_OR\_NUMBER> <!-- 
+For scarf --> <figure><img alt="ZenML Scarf" 
+referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?
+x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure> PreviousScale compute to the 
+cloud NextConfiguring ZenML Last updated 2 days ago
 ```
-</div>
 
 we might get the question:
 
