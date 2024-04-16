@@ -1,10 +1,5 @@
 # :running: MLOps 101 with ZenML
 
-
-> [!IMPORTANT]  
-> Highlights information that users should take into account, even when skimming.
-
-
 ZenML allows you to standardize your internal MLOps process for your entire team. 
 This quickstart walks you through what a typical MLOps setup in a company might look like.
 
