@@ -140,6 +140,8 @@ from zenml.models import (
     SecretRequest,
     SecretResponse,
     SecretUpdate,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -692,6 +694,39 @@ class Client(metaclass=ClientMetaClass):
             # a local configuration
             GlobalConfiguration().set_active_workspace(workspace)
         return workspace
+
+    # ----------------------------- Server Settings ----------------------------
+
+    def get_server_settings(
+        self, hydrate: bool = True
+    ) -> ServerSettingsResponse:
+        """Get the server settings.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The server settings.
+        """
+        return self.zen_store.get_server_settings(hydrate=hydrate)
+
+    def update_server_settings(
+        self, updated_onboarding_state: Optional[Dict[str, Any]] = None
+    ) -> ServerSettingsResponse:
+        """Update the server settings.
+
+        Args:
+            updated_onboarding_state: The updated onboarding state for the
+                server.
+
+        Returns:
+            The updated server settings.
+        """
+        update_model = ServerSettingsUpdate(
+            onboarding_state=updated_onboarding_state
+        )
+        return self.zen_store.update_server_settings(update_model)
 
     # ---------------------------------- Users ---------------------------------
 

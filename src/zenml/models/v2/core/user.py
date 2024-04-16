@@ -423,6 +423,15 @@ class UserResponse(
         """
         return self.get_metadata().external_user_id
 
+    @property
+    def user_metadata(self) -> Dict[str, Any]:
+        """The `user_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().user_metadata
+
     # Helper methods
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
