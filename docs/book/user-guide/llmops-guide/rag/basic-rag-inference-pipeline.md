@@ -30,12 +30,15 @@ for the purposes of this initial guide we will keep it simple.
 Bringing everything together, the code for the inference pipeline is as follows:
 
 ```python
-def process_input_with_retrieval(input: str, model: str = OPENAI_MODEL) -> str:
-    """Process the input with retrieval."""
+def process_input_with_retrieval(
+    input: str, model: str = OPENAI_MODEL, n_items_retrieved: int = 5
+) -> str:
     delimiter = "```"
 
     # Step 1: Get documents related to the user input from database
-    related_docs = get_topn_similar_docs(get_embeddings(input), get_db_conn())
+    related_docs = get_topn_similar_docs(
+        get_embeddings(input), get_db_conn(), n=n_items_retrieved
+    )
 
     # Step 2: Get completion from OpenAI API
     # Set system message to help set appropriate tone and context for model
@@ -45,7 +48,9 @@ def process_input_with_retrieval(input: str, model: str = OPENAI_MODEL) -> str:
     You respond in a concise, technically credible tone. \
     You ONLY use the context from the ZenML documentation to provide relevant
     answers. \
-    You do not make up answers or provide opinions that you don't have information to support. \
+    You do not make up answers or provide opinions that you don't have
+    information to support. \
+    If you are unsure or don't know, just say so. \
     """
 
     # Prepare messages to pass to model
