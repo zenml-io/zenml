@@ -75,32 +75,42 @@ the documents in the index store to find the most similar documents to the
 query:
 
 ```python
-def get_topn_similar_docs(query_embedding, conn, n: int = 5):
-    """Fetches the top n most similar documents to the given query embedding from the database.
-
-    Args:
-        query_embedding (list): The query embedding to compare against.
-        conn (psycopg2.extensions.connection): The database connection object.
-        n (int, optional): The number of similar documents to fetch. Defaults to 5.
-
-    Returns:
-        list: A list of tuples containing the content of the top n most similar documents.
-    """
+def get_topn_similar_docs(
+    query_embedding: List[float],
+    conn: psycopg2.extensions.connection,
+    n: int = 5,
+    include_metadata: bool = False,
+    only_urls: bool = False,
+) -> List[Tuple]:
     embedding_array = np.array(query_embedding)
     register_vector(conn)
     cur = conn.cursor()
-    cur.execute(
-        f"SELECT content FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
-        (embedding_array,),
-    )
+
+    if include_metadata:
+        cur.execute(
+            f"SELECT content, url FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
+            (embedding_array,),
+        )
+    elif only_urls:
+        cur.execute(
+            f"SELECT url FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
+            (embedding_array,),
+        )
+    else:
+        cur.execute(
+            f"SELECT content FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
+            (embedding_array,),
+        )
+
     return cur.fetchall()
 ```
 
-Luckily we are able to get these similar documents using an inbuilt function in
-PostgreSQL, `ORDER BY embedding <=> %s`, which orders the documents by their
-similarity to the query embedding. This is a very efficient way to get the most
-relevant documents to the query and is a great example of how we can leverage
-the power of the database to do the heavy lifting for us.
+Luckily we are able to get these similar documents using a function in
+[`pgvector`](https://github.com/pgvector/pgvector), a plugin package for
+PostgreSQL: `ORDER BY embedding <=> %s` orders the documents by their similarity
+to the query embedding. This is a very efficient way to get the most relevant
+documents to the query and is a great example of how we can leverage the power
+of the database to do the heavy lifting for us.
 
 For the `get_completion_from_messages` function, we use
 [`litellm`](https://github.com/BerriAI/litellm) as a universal interface that
