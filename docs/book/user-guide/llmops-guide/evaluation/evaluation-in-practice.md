@@ -47,8 +47,33 @@ tests running frequently and others running less often, just as you would in any
 other software project.
 
 There's more we could improve our evaluation system, but for now we can continue
-onwards to adding a reranker to improve our retrieval. This will allow us to
+onwards to [adding a reranker](../reranking/reranking.md) to improve our retrieval. This will allow us to
 improve the performance of our retrieval system without needing to retrain the
 embeddings. We'll cover this in the next section.
+
+## Try it out!
+
+To see how this works in practice, you can run the evaluation pipeline using the
+project code. This will give you a sense of how the evaluation process works in
+practice and you can of course then play with and modify the evaluation code.
+
+To run the evaluation pipeline, first clone the project repository:
+
+```bash
+git clone -b feature/evaluation-llm-complete-guide https://github.com/zenml-io/zenml-projects.git
+```
+
+Then navigate to the `llm-complete-guide` directory and follow the instructions
+in the `README.md` file to run the evaluation pipeline. (You'll have to have
+first run the main pipeline to generate the embeddings.)
+
+To run the evaluation pipeline, you can use the following command:
+
+```bash
+python run.py --evaluation
+```
+
+This will run the evaluation pipeline and output the results to the console. You
+can then inspect the progress, logs and results in the dashboard!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
