@@ -2,10 +2,11 @@
 description: Learn how to implement evaluation for RAG in just 65 lines of code.
 ---
 
-Our RAG guide included a short example for how to implement a basic RAG pipeline
-in just 85 lines of code. In this section, we'll build on that example to show
-how you can evaluate the performance of your RAG pipeline in just 65 lines. For
-the full code, please visit the project repository
+Our RAG guide included [a short example](../rag/rag-85-loc.md) for how to
+implement a basic RAG pipeline in just 85 lines of code. In this section, we'll
+build on that example to show how you can evaluate the performance of your RAG
+pipeline in just 65 lines. For the full code, please visit the project
+repository
 [here](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/most_basic_eval.py).
 The code that follows requires the functions from the earlier RAG pipeline code
 to work.
@@ -82,10 +83,10 @@ print(f"Retrieval Accuracy: {retrieval_accuracy:.2f}")
 print(f"Generation Accuracy: {generation_accuracy:.2f}")
 ```
 
-In this code snippet, we've added two evaluation functions: `evaluate_retrieval`
-and `evaluate_generation`. The `evaluate_retrieval` function checks if the
-retrieved chunks contain any words from the expected answer. The
-`evaluate_generation` function uses OpenAI to evaluate the quality of the
+As you can see, we've added two evaluation functions: `evaluate_retrieval` and
+`evaluate_generation`. The `evaluate_retrieval` function checks if the retrieved
+chunks contain any words from the expected answer. The `evaluate_generation`
+function uses OpenAI's chat completion LLM to evaluate the quality of the
 generated answer.
 
 We then loop through the evaluation data, which contains questions and expected

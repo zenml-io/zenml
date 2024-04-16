@@ -28,7 +28,7 @@ question-and-answer use case. We'll use this pipeline to demonstrate how to
 evaluate the performance of your RAG pipeline.
 
 {% hint style="info" %}
-If you were running this in a real setting, you might want to set up evaluation
+If you were running this in a production setting, you might want to set up evaluation
 to check the performance of a raw LLM model (i.e. without any retrieval / RAG
 components) as a baseline, and then compare this to the performance of your RAG
 pipeline. This will help you understand how much value the retrieval and
