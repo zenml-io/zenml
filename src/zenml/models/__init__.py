@@ -303,6 +303,7 @@ from zenml.models.v2.core.workspace import (
 )
 
 # V2 Misc
+from zenml.models.v2.misc.reports import ReportRequest, ReportResponse
 from zenml.models.v2.misc.service_connector_type import (
     AuthenticationMethodModel,
     ServiceConnectorResourcesModel,
@@ -797,6 +798,8 @@ __all__ = [
     "ServiceResponseResources",
     # V2 Misc
     "AuthenticationMethodModel",
+    "ReportRequest",
+    "ReportResponse",
     "ServiceConnectorResourcesModel",
     "ServiceConnectorTypeModel",
     "ServiceConnectorTypedResourcesModel",
