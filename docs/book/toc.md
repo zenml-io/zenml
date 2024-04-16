@@ -74,6 +74,7 @@
     * [Storing embeddings in a vector database](user-guide/llmops-guide/rag/storing-embeddings-in-a-vector-database.md)
     * [Basic RAG inference pipeline](user-guide/llmops-guide/rag/basic-rag-inference-pipeline.md)
   * [Evaluation and metrics](user-guide/llmops-guide/evaluation/evaluation.md)
+    * [Evaluation in 65 lines of code](user-guide/llmops-guide/evaluation/evaluation-in-65-loc.md)
     * [Retrieval evaluation](user-guide/llmops-guide/evaluation/retrieval.md)
     * [Generation evaluation](user-guide/llmops-guide/evaluation/generation.md)
     * [Evaluation in practice](user-guide/llmops-guide/evaluation/evaluation-in-practice.md)
