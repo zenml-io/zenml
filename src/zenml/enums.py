@@ -383,3 +383,13 @@ class PluginSubType(StrEnum):
     WEBHOOK = "webhook"
     # Action Subtypes
     PIPELINE_RUN = "pipeline_run"
+
+
+class DurationType(str, Enum):
+    """All possible types of durations. Used when generating reports."""
+
+    MINUTE = "minute"
+    HOUR = "hour"
+    DAY = "day"
+    MONTH = "month"
+    YEAR = "year"
