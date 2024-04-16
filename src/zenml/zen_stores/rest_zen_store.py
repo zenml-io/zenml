@@ -40,6 +40,7 @@ from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    ACTION,
     API,
     API_KEY_ROTATE,
     API_KEYS,
@@ -169,6 +170,8 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ReportRequest,
+    ReportResponse,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -230,6 +233,7 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.zen_server.exceptions import exception_from_response
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -4157,3 +4161,31 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
         """
         self.delete(f"{route}/{str(resource_id)}")
+
+    # -------------------------------- Reports ---------------------------------
+
+    def generate_report(
+        self,
+        filter_model: BaseFilter,
+        report_request: ReportRequest,
+        resource_type: ResourceType,
+    ) -> ReportResponse:
+        """Generate a report about an entity type within a given time interval.
+
+        Args:
+            filter_model: All filter parameters.
+            report_request: The configuration of the report.
+            resource_type: The type of the resource.
+
+        Returns:
+            the generated report response.
+        """
+
+        params = {
+            "duration_length": report_request.duration_length,
+            "duration_type": report_request.duration_type,
+            "resource_type": resource_type,
+        }
+        return ReportResponse.parse_obj(
+            self.get(f"{ACTION}/report", params=params)
+        )

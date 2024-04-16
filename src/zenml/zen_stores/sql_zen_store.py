@@ -187,6 +187,8 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ReportRequest,
+    ReportResponse,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -257,6 +259,7 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.utils.string_utils import random_str
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
@@ -319,6 +322,32 @@ AnyIdentifiedResponse = TypeVar(
     "AnyIdentifiedResponse",
     bound=BaseIdentifiedResponse,  # type: ignore[type-arg]  # noqa: F821
 )
+
+ResourceTypeSchemaMapping = {
+    ResourceType.ARTIFACT: ArtifactSchema,
+    ResourceType.ARTIFACT_VERSION: ArtifactVersionSchema,
+    ResourceType.CODE_REPOSITORY: CodeRepositorySchema,
+    ResourceType.EVENT_SOURCE: EventSourceSchema,
+    ResourceType.FLAVOR: FlavorSchema,
+    ResourceType.MODEL: ModelSchema,
+    ResourceType.MODEL_VERSION: ModelVersionSchema,
+    ResourceType.PIPELINE: PipelineSchema,
+    ResourceType.PIPELINE_RUN: PipelineRunSchema,
+    ResourceType.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
+    ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
+    ResourceType.USER: UserSchema,
+    ResourceType.SERVICE: ServiceSchema,
+    ResourceType.RUN_METADATA: RunMetadataSchema,
+    ResourceType.SECRET: SecretSchema,
+    ResourceType.SERVICE_ACCOUNT: UserSchema,
+    ResourceType.SERVICE_CONNECTOR: ServiceConnectorSchema,
+    ResourceType.STACK: StackSchema,
+    ResourceType.STACK_COMPONENT: StackComponentSchema,
+    ResourceType.TAG: TagSchema,
+    ResourceType.TRIGGER: TriggerSchema,
+    ResourceType.TRIGGER_EXECUTION: TriggerExecutionSchema,
+    ResourceType.WORKSPACE: WorkspaceSchema,
+}
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -9339,3 +9368,40 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(tag_model)
             session.commit()
+
+    # -------------------------------- Reports ---------------------------------
+
+    def generate_report(
+        self,
+        filter_model: BaseFilter,
+        report_request: ReportRequest,
+        resource_type: ResourceType,
+    ) -> ReportResponse:
+        """Generate a report about an entity type within a given time interval.
+
+        Args:
+            filter_model: All filter parameters.
+            report_request: The configuration of the report.
+            resource_type: The type of the resource.
+
+        Returns:
+            the generated report response.
+        """
+
+        table = ResourceTypeSchemaMapping[resource_type]
+        with Session(self.engine) as session:
+            query = select(
+                func.strftime(report_request.time_format, table.created).label(
+                    "time_index_"
+                ),
+                func.count("*").label("count_"),
+            ).where(table.created > report_request.time_limit)
+            query = filter_model.apply_filter(query, table)
+            query = query.group_by("time_index_")
+
+            result = session.exec(query).all()
+
+            return ReportResponse(
+                total=sum([r.count_ for r in result]),
+                results={r.time_index: r.count_ for r in result},
+            )
