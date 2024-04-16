@@ -32,8 +32,6 @@ logger = get_logger(__name__)
 
 @pipeline
 def training(
-    train_dataset_id: Optional[UUID] = None,
-    test_dataset_id: Optional[UUID] = None,
     target: Optional[str] = "target",
     model_type: Optional[str] = "sgd",
 ):
@@ -47,8 +45,6 @@ def training(
     model version.
 
     Args:
-        train_dataset_id: ID of the train dataset produced by feature engineering.
-        test_dataset_id: ID of the test dataset produced by feature engineering.
         target: Name of target column in dataset.
         model_type: The type of model to train.
     """
@@ -56,16 +52,7 @@ def training(
     # of one step as the input of the next step.
 
     # Execute Feature Engineering Pipeline
-    if train_dataset_id is None or test_dataset_id is None:
-        dataset_trn, dataset_tst = feature_engineering()
-    else:
-        client = Client()
-        dataset_trn = client.get_artifact_version(
-            name_id_or_prefix=train_dataset_id
-        )
-        dataset_tst = client.get_artifact_version(
-            name_id_or_prefix=test_dataset_id
-        )
+    dataset_trn, dataset_tst = feature_engineering()
 
     model = model_trainer(
         dataset_trn=dataset_trn, target=target, model_type=model_type

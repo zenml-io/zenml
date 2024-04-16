@@ -29,7 +29,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@step
+@step(enable_cache=False)
 def model_trainer(
     dataset_trn: pd.DataFrame,
     model_type: str = "sgd",
@@ -64,8 +64,7 @@ def model_trainer(
         model = RandomForestClassifier()
     else:
         raise ValueError(f"Unknown model type {model_type}")
-    logger.info(f"Training model {model}...")
-
+    logger.info(f"Training {model_type} model {model}...")
     model.fit(
         dataset_trn.drop(columns=[target]),
         dataset_trn[target],
