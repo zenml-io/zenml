@@ -21,10 +21,11 @@ examples where we know that our generated output should or shouldn't include
 certain terms. For example, if we're generating answers to questions about
 which orchestrators ZenML supports, we can check that the generated answers
 include terms like "Airflow" and "Kubeflow" (since we do support them) and
-exclude terms like "Flyte" or "Prefect". These handcrafted tests should be
-driven by mistakes that you've already seen in the RAG output. The negative
-example of "Flyte" and "Prefect" showing up in the list of supported
-orchestrators, for example, shows up sometimes when you use GPT 3.5 as the LLM.
+exclude terms like "Flyte" or "Prefect" (since we don't (yet!) support them).
+These handcrafted tests should be driven by mistakes that you've already seen in
+the RAG output. The negative example of "Flyte" and "Prefect" showing up in the
+list of supported orchestrators, for example, shows up sometimes when you use
+GPT 3.5 as the LLM.
 
 ![](/docs/book/.gitbook/assets/generation-eval-manual.png)
 
@@ -36,6 +37,26 @@ You can view our starter set of these tests
 [here](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/steps/eval_e2e.py#L28-L55).
 It's better to start with something small and simple and then expand as is
 needed. There's no need for complicated harnesses or frameworks at this stage.
+
+**`bad_answers` table:**
+
+| Question | Bad Words |
+|----------|-----------|
+| What orchestrators does ZenML support? | AWS Step Functions, Flyte, Prefect, Dagster |
+| What is the default orchestrator in ZenML? | Flyte, AWS Step Functions |
+
+**`bad_immediate_responses` table:**
+
+| Question | Bad Words |
+|----------|-----------|
+| Does ZenML support the Flyte orchestrator out of the box? | Yes |
+
+**`good_responses` table:**
+
+| Question | Good Words |
+|----------|------------|
+| What are the supported orchestrators in ZenML? Please list as many of the supported ones as possible. | Kubeflow, Airflow |
+| What is the default orchestrator in ZenML? | local |
 
 Each type of test then catches a specific type of mistake. For example:
 
