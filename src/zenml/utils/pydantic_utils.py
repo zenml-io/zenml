@@ -15,17 +15,21 @@
 
 import inspect
 import json
+from json.decoder import JSONDecodeError
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationInfo
 
 # TODO: Investigate if we can solve this import a different way.
 from pydantic.deprecated.decorator import ValidatedFunction
 from pydantic.json import pydantic_encoder
 from pydantic.v1.utils import sequence_like
 
+from zenml.logger import get_logger
 from zenml.utils import dict_utils, yaml_utils
+
+logger = get_logger(__name__)
 
 M = TypeVar("M", bound="BaseModel")
 
@@ -213,7 +217,7 @@ class YAMLSerializationMixin(BaseModel):
             The model instance.
         """
         dict_ = yaml_utils.read_yaml(path)
-        return cls.parse_obj(dict_)
+        return cls.model_validate(dict_)
 
 
 def validate_function_args(
@@ -276,3 +280,118 @@ def validate_function_args(
     }
 
     return validated_args
+
+
+def before_validator_input_handler(
+    raw_data: Any,
+    base_class: Type[BaseModel],
+    validation_info: ValidationInfo,
+) -> Dict[str, Any]:
+    """Utility function to parse raw input data of varying types to a dict.
+
+    With the change to pydantic v2, validators which operate with "before"
+    (or previously known as the "pre" parameter) are getting "Any" types of raw
+    input instead of a "Dict[str, Any]" as before. Depending on the use-case,
+    this can create conflicts after the migration and this function will be
+    used as a helper function to handle different types of raw input data.
+
+    A code snippet to showcase how the behaviour changes. The "before" validator
+    prints the type of the input:
+
+        class Base(BaseModel):
+            a: int = 3
+
+        class MyClass(Base):
+            @model_validator(mode="before")
+            @classmethod
+            def wrap_validator(cls, data: Any) -> Any:
+                print(type(data))
+                return {}
+
+        one = MyClass() # prints "<class 'dict'>"
+        MyClass.model_validate(one)  # prints NOTHING, it is already validated
+        MyClass.model_validate("asdf")  # prints "<class 'str'>", fails without the modified return.
+        MyClass.model_validate(RandomClass())  # prints "<class 'RandomClass'>", fails without the modified return.
+        MyClass.model_validate(Base())  # prints "<class 'Base'>", fails without the modified return.
+        MyClass.model_validate_json(json.dumps("aria"))  # prints "<class 'str'>", fails without the modified return.
+        MyClass.model_validate_json(json.dumps([1]))  # prints "<class 'list'>", fails without the modified return.
+        MyClass.model_validate_json(one.model_dump_json())  # prints "<class 'dict'>"
+
+    Args:
+        raw_data: The raw data passed to the validator, can be "Any" type.
+        base_class: The class that the validator belongs to
+        validation_info: Extra information about the validation process.
+
+    Raises:
+        TypeError: if the type of the data is not processable.
+
+    Returns:
+        A dictionary which will be passed to the eventual validator of pydantic.
+    """
+
+    if validation_info.mode == "python":
+        # This is mode is only active if people validate objects using pythonic
+        # raw data such as MyClass(...) or MyClass.model_validate()
+
+        if isinstance(raw_data, dict):
+            # In most cases, this is the behaviour as the raw input is a dict
+            return raw_data
+
+        elif isinstance(raw_data, base_class):
+            # In some cases, we pass the same object type to the validation
+            # in such cases, it is critical we keep the original structure of
+            # fields that are already set.
+            return dict(raw_data)
+
+        elif issubclass(base_class, raw_data.__class__):
+            # There are a few occurrences where the annotation of the field is
+            # denoted by a class, and we use a subclass as the raw input. In
+            # such cases we will use the same approach as before, while raising
+            # a debug message.
+            logger.debug(
+                f"During the validation of a `{base_class}` object, an instance"
+                f"of `{raw_data.__class__}` (super class of `{base_class}`) "
+                f"has been passed as raw input. This might lead to unexpected "
+                f"behaviour in case `{base_class}` have features which can not"
+                f"be exracted from an instance of a `{raw_data.__class__}`."
+            )
+            return dict(raw_data)
+
+        elif isinstance(raw_data, str):
+            # If the raw input is a raw string, we can try to use the `json`
+            # module to parse it. The resulting data needs to be a proper
+            # dict for us to pass it to the validation process.
+            try:
+                json_data = json.loads(raw_data)
+
+                if isinstance(json_data, dict):
+                    return json_data
+                else:
+                    raise TypeError("The resulting json data is not a dict!")
+
+            except (TypeError, JSONDecodeError) as e:
+                raise TypeError(
+                    "The raw json input string can not be converted to a "
+                    f"dict: {e}"
+                )
+        else:
+            raise TypeError(
+                "Unsupported type of raw input data for the `python` validation"
+                "mode of the pydantic class. Please consider changing the way "
+                f"you are creating using the `{base_class}` or instead use"
+                f"`{base_class}.model_validate_json()`."
+            )
+
+    elif validation_info.mode == "json":
+        # This is mode is only active if people validate objects using json
+        # input data such as MyClass.model_validate_json()
+        if isinstance(raw_data, dict):
+            return raw_data
+        else:
+            raise TypeError(
+                f"The resulting JSON data {raw_data} is not a dict, therefore"
+                f"can not be used by the validation process."
+            )
+    else:
+        # Unknown validation mode
+        raise ValueError(f"Unknown validation mode. {validation_info.mode}")
