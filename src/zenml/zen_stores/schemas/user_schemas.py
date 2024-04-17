@@ -173,8 +173,8 @@ class UserSchema(NamedSchema, table=True):
             email=model.email,
             is_service_account=False,
             is_admin=model.is_admin,
-            user_metadata=json.dumps(model.user_metadata)
-            if model.user_metadata
+            user_metadata=json.dumps(model.metadata)
+            if model.metadata
             else None,
         )
 

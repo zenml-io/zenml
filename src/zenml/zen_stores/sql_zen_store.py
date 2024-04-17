@@ -81,6 +81,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    FINISHED_ONBOARDING_SURVEY_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
 )
@@ -7839,9 +7840,10 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            SURVEY_KEY = "key"
             user_model = existing_user.to_model(include_metadata=True)
-            survey_finished_before = SURVEY_KEY in user_model.user_metadata
+            survey_finished_before = (
+                FINISHED_ONBOARDING_SURVEY_KEY in user_model.metadata
+            )
 
             existing_user.update_user(user_update=user_update)
             session.add(existing_user)
@@ -7851,11 +7853,13 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_user)
             updated_user = existing_user.to_model(include_metadata=True)
 
-            survey_finished_after = SURVEY_KEY in updated_user.user_metadata
+            survey_finished_after = (
+                FINISHED_ONBOARDING_SURVEY_KEY in updated_user.metadata
+            )
 
             if not survey_finished_before and survey_finished_after:
                 analytics_metadata = {
-                    **updated_user.user_metadata,
+                    **updated_user.metadata,
                     "email": updated_user.email,
                     "name": updated_user.name,
                     "full_name": updated_user.full_name,
