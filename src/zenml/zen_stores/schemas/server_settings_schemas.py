@@ -20,6 +20,11 @@ from typing import Any, Optional
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, SQLModel
 
+from zenml.constants import (
+    DEFAULT_DISPLAY_USER_SURVEYS,
+    DEFAULT_DISPLAY_WHATS_NEW,
+    DEFAULT_SERVER_NAME,
+)
 from zenml.models import (
     ServerSettingsResponse,
     ServerSettingsResponseBody,
@@ -28,8 +33,6 @@ from zenml.models import (
     ServerSettingsUpdate,
 )
 
-DEFAULT_SERVER_NAME = "default"
-
 
 class ServerSettingsSchema(SQLModel, table=True):
     """SQL Model for settings."""
@@ -37,8 +40,8 @@ class ServerSettingsSchema(SQLModel, table=True):
     __tablename__ = "server_settings"
 
     name: str = Field(default=DEFAULT_SERVER_NAME, primary_key=True)
-    display_whats_new: bool = True
-    display_user_surveys: bool = True
+    display_whats_new: bool = DEFAULT_DISPLAY_WHATS_NEW
+    display_user_surveys: bool = DEFAULT_DISPLAY_USER_SURVEYS
     onboarding_state: Optional[str] = Field(
         default=None, sa_column=Column(TEXT, nullable=True)
     )
