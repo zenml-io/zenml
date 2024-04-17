@@ -7672,7 +7672,7 @@ class SqlZenStore(BaseZenStore):
 
                 context.group(
                     group_id=server_info.id,
-                    group_metadata={
+                    traits={
                         "server_id": server_info.id,
                         "version": server_info.version,
                         "deployment_type": str(server_info.deployment_type),
