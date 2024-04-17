@@ -82,7 +82,7 @@ class UserBase(BaseModel):
         default=None,
         title="The external user ID associated with the account.",
     )
-    user_metadata: Optional[Dict[str, Any]] = Field(
+    metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The metadata associated with the user.",
     )
@@ -296,7 +296,7 @@ class UserResponseMetadata(BaseResponseMetadata):
         title="The external user ID associated with the account. Only relevant "
         "for user accounts.",
     )
-    user_metadata: Dict[str, Any] = Field(
+    metadata: Dict[str, Any] = Field(
         default={},
         title="The metadata associated with the user.",
     )
@@ -424,13 +424,13 @@ class UserResponse(
         return self.get_metadata().external_user_id
 
     @property
-    def user_metadata(self) -> Dict[str, Any]:
-        """The `user_metadata` property.
+    def metadata(self) -> Dict[str, Any]:
+        """The `metadata` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().user_metadata
+        return self.get_metadata().metadata
 
     # Helper methods
     @classmethod

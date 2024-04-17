@@ -38,12 +38,15 @@ from zenml.models.v2.base.base import (
 
 class ServerSettingsUpdate(BaseZenModel):
     name: Optional[str] = Field(default=None, title="The name of the server.")
-    display_whats_new: Optional[bool] = Field(
-        default=None,
-        title="Whether to display information about what's new in ZenML.",
+    logo_url: Optional[str] = Field(
+        default=None, title="The logo URL of the server."
     )
-    display_user_surveys: Optional[bool] = Field(
-        default=None, title="Whether to display user surveys about ZenML."
+    display_announcements: Optional[bool] = Field(
+        default=None,
+        title="Whether to display announcements about ZenML.",
+    )
+    display_updates: Optional[bool] = Field(
+        default=None, title="Whether to display updates of ZenML."
     )
     onboarding_state: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -58,12 +61,14 @@ class ServerSettingsResponseBody(BaseResponseBody):
     """Response body for server settings."""
 
     name: str = Field(title="The name of the server.")
-    display_whats_new: bool = Field(
-        title="Whether to display information about what's new in ZenML."
+    logo_url: Optional[str] = Field(
+        default=None, title="The logo URL of the server."
     )
-    display_user_surveys: bool = Field(
-        title="Whether to display user surveys about ZenML."
+
+    display_announcements: bool = Field(
+        title="Whether to display announcements about ZenML."
     )
+    display_updates: bool = Field(title="Whether to display updates of ZenML.")
 
     onboarding_state: Dict[str, Any] = Field(
         default={},
@@ -108,22 +113,31 @@ class ServerSettingsResponse(
         return self.get_body().name
 
     @property
-    def display_whats_new(self) -> bool:
-        """The `display_whats_new` property.
+    def logo_url(self) -> str:
+        """The `logo_url` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().display_whats_new
+        return self.get_body().logo_url
 
     @property
-    def display_user_surveys(self) -> bool:
-        """The `display_user_surveys` property.
+    def display_announcements(self) -> bool:
+        """The `display_announcements` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().display_user_surveys
+        return self.get_body().display_announcements
+
+    @property
+    def display_updates(self) -> bool:
+        """The `display_updates` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().display_updates
 
     @property
     def onboarding_state(self) -> Dict[str, Any]:

@@ -220,9 +220,9 @@ class UserSchema(NamedSchema, table=True):
                 setattr(
                     self, field, user_update.create_hashed_activation_token()
                 )
-            elif field == "user_metadata":
+            elif field == "metadata":
                 if value:
-                    setattr(self, field, json.dumps(value))
+                    setattr(self, "user_metadata", json.dumps(value))
             else:
                 setattr(self, field, value)
 
@@ -275,7 +275,7 @@ class UserSchema(NamedSchema, table=True):
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
-                user_metadata=json.loads(self.user_metadata)
+                metadata=json.loads(self.user_metadata)
                 if self.user_metadata
                 else {},
             )
