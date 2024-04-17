@@ -1529,6 +1529,23 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             settings = self._get_or_create_server_settings(session=session)
+
+            analytics_metadata = server_settings_update.dict(
+                include={"display_announcements", "display_updates"},
+                exclude_none=True,
+            )
+            # Filter to only include the values that changed in this update
+            analytics_metadata = {
+                key: value
+                for key, value in analytics_metadata.items()
+                if getattr(settings, key) != value
+            }
+
+            track(
+                event=AnalyticsEvent.SERVER_SETTINGS_UPDATED,
+                metadata=analytics_metadata,
+            )
+
             settings.update(server_settings_update)
             session.add(settings)
             session.commit()

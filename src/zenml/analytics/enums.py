@@ -97,3 +97,6 @@ class AnalyticsEvent(str, Enum):
     ZENML_HUB_PLUGIN_UNINSTALL = "ZenML Hub plugin uninstalled"
     ZENML_HUB_PLUGIN_CLONE = "ZenML Hub plugin pulled"
     ZENML_HUB_PLUGIN_SUBMIT = "ZenML Hub plugin pushed"
+
+    # Server Settings
+    SERVER_SETTINGS_UPDATED = "Server Settings Updated"
