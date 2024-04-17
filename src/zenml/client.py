@@ -712,11 +712,20 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.get_server_settings(hydrate=hydrate)
 
     def update_server_settings(
-        self, updated_onboarding_state: Optional[Dict[str, Any]] = None
+        self,
+        updated_name: Optional[str] = None,
+        updated_display_whats_new: Optional[bool] = None,
+        updated_display_user_surveys: Optional[bool] = None,
+        updated_onboarding_state: Optional[Dict[str, Any]] = None,
     ) -> ServerSettingsResponse:
         """Update the server settings.
 
         Args:
+            updated_name: Updated name for the server.
+            updated_display_whats_new: Updated value whether to display
+                information about what's new in ZenML.
+            updated_display_user_surveys: Updated value whether to display user
+                surveys about ZenML.
             updated_onboarding_state: The updated onboarding state for the
                 server.
 
@@ -724,7 +733,10 @@ class Client(metaclass=ClientMetaClass):
             The updated server settings.
         """
         update_model = ServerSettingsUpdate(
-            onboarding_state=updated_onboarding_state
+            name=updated_name,
+            display_whats_new=updated_display_whats_new,
+            display_user_surveys=updated_display_user_surveys,
+            onboarding_state=updated_onboarding_state,
         )
         return self.zen_store.update_server_settings(update_model)
 
