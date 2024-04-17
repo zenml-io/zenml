@@ -389,6 +389,7 @@ class BaseZenStore(
             secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
             base_url=base_url,
+            analytics_enabled=GlobalConfiguration().analytics_opt_in,
             metadata=metadata,
         )
 
