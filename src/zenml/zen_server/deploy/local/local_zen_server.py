@@ -226,6 +226,7 @@ class LocalZenServer(LocalDaemonService):
                 host=self.endpoint.config.ip_address,
                 port=self.endpoint.config.port or 8000,
                 log_level="info",
+                server_header=False,
             )
         except KeyboardInterrupt:
             logger.info("ZenML Server stopped. Resuming normal execution.")

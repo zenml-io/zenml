@@ -40,6 +40,7 @@ from typing import (
 )
 from uuid import UUID
 
+from packaging import version
 from pydantic import (
     ConfigDict,
     Field,
@@ -599,9 +600,13 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 if content and not os.path.isfile(content):
                     fileio.makedirs(str(secret_folder))
                     file_path = Path(secret_folder, f"{key}.pem")
-                    with open(file_path, "w") as f:
+                    with os.fdopen(
+                        os.open(
+                            file_path, flags=os.O_RDWR | os.O_CREAT, mode=0o600
+                        ),
+                        "w",
+                    ) as f:
                         f.write(content)
-                    file_path.chmod(0o600)
                     setattr(self, key, str(file_path))
 
         self.url = str(sql_url)
@@ -1316,13 +1321,36 @@ class SqlZenStore(BaseZenStore):
                         backup_location,
                     ) = self.backup_database(overwrite=True)
                 except Exception as e:
-                    raise RuntimeError(
-                        f"Failed to backup the database: {str(e)}. "
-                        "Please check the logs for more details."
-                        "If you would like to disable the database backup "
-                        "functionality, set the `backup_strategy` attribute "
-                        "of the store configuration to `disabled`."
-                    ) from e
+                    # The database backup feature was not entirely functional
+                    # in ZenML 0.56.3 and earlier, due to inconsistencies in the
+                    # database schema. If the database is at version 0.56.3
+                    # or earlier and if the backup fails, we only log the
+                    # exception and leave the upgrade process to proceed.
+                    allow_backup_failures = False
+                    try:
+                        if version.parse(
+                            current_revisions[0]
+                        ) <= version.parse("0.56.3"):
+                            allow_backup_failures = True
+                    except version.InvalidVersion:
+                        # This can happen if the database is not currently
+                        # stamped with an official ZenML version (e.g. in
+                        # development environments).
+                        pass
+
+                    if allow_backup_failures:
+                        logger.exception(
+                            "Failed to backup the database. The database "
+                            "upgrade will proceed without a backup."
+                        )
+                    else:
+                        raise RuntimeError(
+                            f"Failed to backup the database: {str(e)}. "
+                            "Please check the logs for more details. "
+                            "If you would like to disable the database backup "
+                            "functionality, set the `backup_strategy` attribute "
+                            "of the store configuration to `disabled`."
+                        ) from e
                 else:
                     if backup_location is not None:
                         logger.info(
@@ -1380,11 +1408,11 @@ class SqlZenStore(BaseZenStore):
             with self.engine.begin() as conn:
                 SQLModel.metadata.create_all(conn)
             with Session(self.engine) as session:
-                session.add(
-                    IdentitySchema(
-                        id=str(GlobalConfiguration().user_id).replace("-", "")
-                    )
+                id_ = (
+                    ServerConfiguration.get_server_config().external_server_id
+                    or GlobalConfiguration().user_id
                 )
+                session.add(IdentitySchema(id=id_))
                 session.commit()
             self.alembic.stamp("head")
         else:
@@ -3829,6 +3857,19 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(deployment)
+
+            # Look for all pipeline builds that reference this deployment
+            # and remove the reference
+            pipeline_builds = session.exec(
+                select(PipelineBuildSchema).where(
+                    PipelineBuildSchema.template_deployment_id == deployment_id
+                )
+            ).all()
+
+            for pipeline_build in pipeline_builds:
+                pipeline_build.template_deployment_id = None
+                session.add(pipeline_build)
+
             session.commit()
 
     # -------------------- Event Sources  --------------------

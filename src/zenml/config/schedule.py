@@ -43,6 +43,8 @@ class Schedule(BaseModel):
             schedules the latest interval if more than one interval is ready to
             be scheduled. Usually, if your pipeline handles backfill
             internally, you should turn catchup off to avoid duplicate backfill.
+        run_once_start_time: datetime object to indicate when to run the
+            pipeline once. This is useful for one-off runs.
     """
 
     name: Optional[str] = None
@@ -51,13 +53,11 @@ class Schedule(BaseModel):
     end_time: Optional[datetime.datetime] = None
     interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
+    run_once_start_time: Optional[datetime.datetime] = None
 
     @model_validator(mode="after")
     def _ensure_cron_or_periodic_schedule_configured(self) -> "Schedule":
         """Ensures that the cron expression or start time + interval are set.
-
-        Args:
-            values: All attributes of the schedule.
 
         Returns:
             All schedule attributes.
@@ -66,6 +66,7 @@ class Schedule(BaseModel):
             ValueError: If no cron expression or start time + interval were
                 provided.
         """
+
         periodic_schedule = self.start_time and self.interval_second
 
         if self.cron_expression and periodic_schedule:
@@ -76,12 +77,26 @@ class Schedule(BaseModel):
                 "but will usually ignore the interval and use the cron "
                 "expression."
             )
+
             return self
-        elif self.cron_expression or periodic_schedule:
+        elif self.cron_expression and self.run_once_starts_at:
+            logger.warning(
+                "This schedule was created with a cron expression as well as "
+                "a value for `run_once_start_time`. The resulting behavior "
+                "depends on the concrete orchestrator implementation but will "
+                "usually ignore the `run_once_start_time`."
+            )
+            return self
+        elif (
+            self.cron_expression
+            or periodic_schedule
+            or self.run_once_starts_at
+        ):
             return self
         else:
             raise ValueError(
-                "Either a cron expression or start time and interval seconds "
+                "Either a cron expression, a start time and interval seconds "
+                "or a run once start time "
                 "need to be set for a valid schedule."
             )
 

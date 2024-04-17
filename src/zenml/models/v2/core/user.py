@@ -196,6 +196,12 @@ class UserUpdate(UserBase, BaseZenModel):
     active: Optional[bool] = Field(
         default=None, title="Whether the account is active."
     )
+    old_password: Optional[str] = Field(
+        default=None,
+        title="The previous password for the user. Only relevant for user "
+        "accounts. Required when updating the password.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
     @model_validator(mode="after")
     def user_email_updates(self) -> "UserUpdate":

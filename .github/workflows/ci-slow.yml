@@ -72,7 +72,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mysql.sh sqlite
+        run: bash scripts/test-migrations.sh sqlite
   small-checks:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set

@@ -15,6 +15,7 @@
 
 import json
 import os
+import re
 import shutil
 from typing import (
     Any,
@@ -222,6 +223,23 @@ class MigrationUtils(BaseModel):
                 # if any double quotes are used for column names, replace them
                 # with backticks
                 create_table_stmt = create_table_stmt.replace('"', "") + ";"
+
+                # enclose all table names in backticks. This is because some
+                # table names are reserved keywords in MySQL (e.g key
+                # and trigger).
+                create_table_stmt = create_table_stmt.replace(
+                    f"CREATE TABLE {table.name}",
+                    f"CREATE TABLE `{table.name}`",
+                )
+                # do the same for references to other tables
+                # (i.e. foreign key constraints) by replacing REFERENCES <word>
+                # with REFERENCES `<word>`
+                # use a regular expression for this
+                create_table_stmt = re.sub(
+                    r"REFERENCES\s+(\w+)",
+                    r"REFERENCES `\1`",
+                    create_table_stmt,
+                )
 
                 # Store the table schema
                 store_db_info(
@@ -578,15 +596,24 @@ class MigrationUtils(BaseModel):
                 for src_table in src_metadata.sorted_tables:
                     dst_table = dst_metadata.tables[src_table.name]
                     insert = dst_table.insert()
+
                     # If the table has a `created` column, we use it to sort
                     # the rows in the table starting with the oldest rows.
                     # This is to ensure that the rows are inserted in the
                     # correct order, since some tables have inner foreign key
                     # constraints.
                     if "created" in src_table.columns:
-                        order_by = src_table.columns["created"]
+                        order_by = [src_table.columns["created"]]
                     else:
-                        order_by = None
+                        order_by = []
+                    if "id" in src_table.columns:
+                        # If the table has an `id` column, we also use it to
+                        # sort the rows in the table, even if we already use
+                        # "created" to sort the rows. We need a unique field to
+                        # sort the rows, to break the tie between rows with the
+                        # same "created" date, otherwise the same entry might
+                        # end up multiple times in subsequent pages.
+                        order_by.append(src_table.columns["id"])
 
                     row_count = src_conn.scalar(
                         select([func.count("*")]).select_from(src_table)
@@ -597,7 +624,7 @@ class MigrationUtils(BaseModel):
                     for i in range(0, row_count, batch_size):
                         rows = src_conn.execute(
                             src_table.select()
-                            .order_by(order_by)
+                            .order_by(*order_by)
                             .limit(batch_size)
                             .offset(i)
                         ).fetchall()

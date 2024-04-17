@@ -17,7 +17,13 @@ import json
 import os
 from typing import Any, Optional
 
-from pydantic import ValidationError, BaseModel, ValidatorFunctionWrapHandler, model_validator, ValidationInfo
+from pydantic import (
+    BaseModel,
+    ValidationError,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    model_validator,
+)
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -98,7 +104,6 @@ class FileSyncModel(BaseModel):
         else:
             # If the raw value is not a dict, apply proper validation.
             return handler(data)
-
 
     def __setattr__(self, key: str, value: Any) -> None:
         """Sets an attribute on the model and persists it in the configuration file.
