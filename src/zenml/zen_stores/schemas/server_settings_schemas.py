@@ -21,8 +21,8 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, SQLModel
 
 from zenml.constants import (
-    DEFAULT_DISPLAY_USER_SURVEYS,
-    DEFAULT_DISPLAY_WHATS_NEW,
+    DEFAULT_DISPLAY_ANNOUNCEMENTS,
+    DEFAULT_DISPLAY_UPDATES,
     DEFAULT_SERVER_NAME,
 )
 from zenml.models import (
@@ -40,8 +40,9 @@ class ServerSettingsSchema(SQLModel, table=True):
     __tablename__ = "server_settings"
 
     name: str = Field(default=DEFAULT_SERVER_NAME, primary_key=True)
-    display_whats_new: bool = DEFAULT_DISPLAY_WHATS_NEW
-    display_user_surveys: bool = DEFAULT_DISPLAY_USER_SURVEYS
+    logo_url: Optional[str] = None
+    display_announcements: bool = DEFAULT_DISPLAY_ANNOUNCEMENTS
+    display_updates: bool = DEFAULT_DISPLAY_UPDATES
     onboarding_state: Optional[str] = Field(
         default=None, sa_column=Column(TEXT, nullable=True)
     )
@@ -91,8 +92,9 @@ class ServerSettingsSchema(SQLModel, table=True):
         """
         body = ServerSettingsResponseBody(
             name=self.name,
-            display_whats_new=self.display_whats_new,
-            display_user_surveys=self.display_user_surveys,
+            logo_url=self.logo_url,
+            display_announcements=self.display_announcements,
+            display_updates=self.display_updates,
             onboarding_state=json.loads(self.onboarding_state)
             if self.onboarding_state
             else {},

@@ -714,18 +714,20 @@ class Client(metaclass=ClientMetaClass):
     def update_server_settings(
         self,
         updated_name: Optional[str] = None,
-        updated_display_whats_new: Optional[bool] = None,
-        updated_display_user_surveys: Optional[bool] = None,
+        updated_logo_url: Optional[str] = None,
+        updated_display_announcements: Optional[bool] = None,
+        updated_display_updates: Optional[bool] = None,
         updated_onboarding_state: Optional[Dict[str, Any]] = None,
     ) -> ServerSettingsResponse:
         """Update the server settings.
 
         Args:
             updated_name: Updated name for the server.
-            updated_display_whats_new: Updated value whether to display
-                information about what's new in ZenML.
-            updated_display_user_surveys: Updated value whether to display user
-                surveys about ZenML.
+            updated_logo_url: Updated logo URL for the server.
+            updated_display_announcements: Updated value whether to display
+                announcements about ZenML.
+            updated_display_updates: Updated value whether to display updates
+                about ZenML.
             updated_onboarding_state: The updated onboarding state for the
                 server.
 
@@ -734,8 +736,9 @@ class Client(metaclass=ClientMetaClass):
         """
         update_model = ServerSettingsUpdate(
             name=updated_name,
-            display_whats_new=updated_display_whats_new,
-            display_user_surveys=updated_display_user_surveys,
+            logo_url=updated_logo_url,
+            display_announcements=updated_display_announcements,
+            display_updates=updated_display_updates,
             onboarding_state=updated_onboarding_state,
         )
         return self.zen_store.update_server_settings(update_model)
@@ -863,6 +866,7 @@ class Client(metaclass=ClientMetaClass):
         updated_password: Optional[str] = None,
         old_password: Optional[str] = None,
         updated_is_admin: Optional[bool] = None,
+        updated_metadata: Optional[Dict[str, Any]] = None,
         active: Optional[bool] = None,
     ) -> UserResponse:
         """Update a user.
@@ -878,6 +882,7 @@ class Client(metaclass=ClientMetaClass):
             old_password: The old password of the user. Required for password
                 update.
             updated_is_admin: Whether the user should be an admin.
+            updated_metadata: The new metadata for the user.
             active: Use to activate or deactivate the user.
 
         Returns:
@@ -913,6 +918,9 @@ class Client(metaclass=ClientMetaClass):
             user_update.is_admin = updated_is_admin
         if active is not None:
             user_update.active = active
+
+        if updated_metadata is not None:
+            user_update.metadata = updated_metadata
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update

@@ -24,8 +24,11 @@ def upgrade() -> None:
         "server_settings",
         sa.Column("onboarding_state", sa.TEXT(), nullable=True),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("display_whats_new", sa.Boolean(), nullable=False),
-        sa.Column("display_user_surveys", sa.Boolean(), nullable=False),
+        sa.Column(
+            "logo_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+        ),
+        sa.Column("display_announcements", sa.Boolean(), nullable=False),
+        sa.Column("display_updates", sa.Boolean(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("name"),
     )
