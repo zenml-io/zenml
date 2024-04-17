@@ -26,9 +26,10 @@ this guide, please <a href="https://github.com/zenml-io/zenml-projects/tree/main
 up a PostgreSQL database using Supabase.
 {% endhint %}
 
-Since PostgreSQL is such a standard kind of database, we can use known and
-minimal packages to connect and to interact with it. We can use the `psycopg2`
-package to connect and then raw SQL statements to interact with the database.
+Since PostgreSQL is a well-known and battle-tested database, we can use known
+and minimal packages to connect and to interact with it. We can use the
+[`psycopg2`](https://www.psycopg.org/docs/) package to connect and then raw SQL
+statements to interact with the database.
 
 The code for the step is fairly simple:
 
@@ -37,10 +38,8 @@ from zenml import step
 
 @step
 def index_generator(
-    embeddings: np.ndarray,
-    documents: List[str],
+    documents: List[Document],
 ) -> None:
-    """Generates an index for the given embeddings and documents."""
     try:
         conn = get_db_conn()
         with conn.cursor() as cur:
@@ -53,8 +52,11 @@ def index_generator(
             CREATE TABLE IF NOT EXISTS embeddings (
                         id SERIAL PRIMARY KEY,
                         content TEXT,
-                        tokens INTEGER,
-                        embedding VECTOR({EMBEDDING_DIMENSIONALITY})
+                        token_count INTEGER,
+                        embedding VECTOR({EMBEDDING_DIMENSIONALITY}),
+                        filename TEXT,
+                        parent_section TEXT,
+                        url TEXT
                         );
                         """
             cur.execute(table_create_command)
@@ -63,12 +65,13 @@ def index_generator(
             register_vector(conn)
 
             # Insert data only if it doesn't already exist
-            for i, doc in enumerate(documents):
-                content = doc
-                tokens = len(
-                    content.split()
-                )  # Approximate token count based on word count
-                embedding = embeddings[i].tolist()
+            for doc in documents:
+                content = doc.page_content
+                token_count = doc.token_count
+                embedding = doc.embedding.tolist()
+                filename = doc.filename
+                parent_section = doc.parent_section
+                url = doc.url
 
                 cur.execute(
                     "SELECT COUNT(*) FROM embeddings WHERE content = %s",
@@ -77,8 +80,15 @@ def index_generator(
                 count = cur.fetchone()[0]
                 if count == 0:
                     cur.execute(
-                        "INSERT INTO embeddings (content, tokens, embedding) VALUES (%s, %s, %s)",
-                        (content, tokens, embedding),
+                        "INSERT INTO embeddings (content, token_count, embedding, filename, parent_section, url) VALUES (%s, %s, %s, %s, %s, %s)",
+                        (
+                            content,
+                            token_count,
+                            embedding,
+                            filename,
+                            parent_section,
+                            url,
+                        ),
                     )
                     conn.commit()
 
