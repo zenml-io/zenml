@@ -19,7 +19,7 @@ from typing import (
     Optional,
 )
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.models.v2.base.base import (
     BaseResponse,
@@ -30,19 +30,21 @@ from zenml.models.v2.base.base import (
 )
 
 # ------------------ Base Model ------------------
-
-
-class ServerSettingsBase(BaseModel):
-    """Base model for server settings."""
-
-
 # ------------------ Request Model ------------------
 
 
 # ------------------ Update Model ------------------
 
 
-class ServerSettingsUpdate(ServerSettingsBase, BaseZenModel):
+class ServerSettingsUpdate(BaseZenModel):
+    name: Optional[str] = Field(default=None, title="The name of the server.")
+    display_whats_new: Optional[bool] = Field(
+        default=None,
+        title="Whether to display information about what's new in ZenML.",
+    )
+    display_user_surveys: Optional[bool] = Field(
+        default=None, title="Whether to display user surveys about ZenML."
+    )
     onboarding_state: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The onboarding state of the server.",
@@ -54,6 +56,14 @@ class ServerSettingsUpdate(ServerSettingsBase, BaseZenModel):
 
 class ServerSettingsResponseBody(BaseResponseBody):
     """Response body for server settings."""
+
+    name: str = Field(title="The name of the server.")
+    display_whats_new: bool = Field(
+        title="Whether to display information about what's new in ZenML."
+    )
+    display_user_surveys: bool = Field(
+        title="Whether to display user surveys about ZenML."
+    )
 
     onboarding_state: Dict[str, Any] = Field(
         default={},
@@ -87,6 +97,33 @@ class ServerSettingsResponse(
         return Client().zen_store.get_server_settings(hydrate=True)
 
     # Body and metadata properties
+
+    @property
+    def name(self) -> str:
+        """The `name` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().name
+
+    @property
+    def display_whats_new(self) -> bool:
+        """The `display_whats_new` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().display_whats_new
+
+    @property
+    def display_user_surveys(self) -> bool:
+        """The `display_user_surveys` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().display_user_surveys
 
     @property
     def onboarding_state(self) -> Dict[str, Any]:

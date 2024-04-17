@@ -14,10 +14,11 @@
 """SQLModel implementation of server settings tables."""
 
 import json
-from typing import TYPE_CHECKING, Any, Optional
+from datetime import datetime
+from typing import Any, Optional
 
 from sqlalchemy import TEXT, Column
-from sqlmodel import Field
+from sqlmodel import Field, SQLModel
 
 from zenml.models import (
     ServerSettingsResponse,
@@ -26,20 +27,22 @@ from zenml.models import (
     ServerSettingsResponseResources,
     ServerSettingsUpdate,
 )
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
-if TYPE_CHECKING:
-    pass
+DEFAULT_SERVER_NAME = "default"
 
 
-class ServerSettingsSchema(BaseSchema, table=True):
+class ServerSettingsSchema(SQLModel, table=True):
     """SQL Model for settings."""
 
     __tablename__ = "server_settings"
 
+    name: str = Field(default=DEFAULT_SERVER_NAME, primary_key=True)
+    display_whats_new: bool = True
+    display_user_surveys: bool = True
     onboarding_state: Optional[str] = Field(
         default=None, sa_column=Column(TEXT, nullable=True)
     )
+    updated: datetime = Field(default_factory=datetime.utcnow)
 
     def update(
         self, server_settings_update: ServerSettingsUpdate
@@ -53,10 +56,16 @@ class ServerSettingsSchema(BaseSchema, table=True):
         Returns:
             The updated `ServerSettingsSchema`.
         """
-        if server_settings_update.onboarding_state is not None:
-            self.onboarding_state = json.dumps(
-                server_settings_update.onboarding_state
-            )
+        for field, value in server_settings_update.dict(
+            exclude_unset=True
+        ).items():
+            if field == "onboarding_state":
+                if value is not None:
+                    setattr(self, field, json.dumps(value))
+            else:
+                setattr(self, field, value)
+
+        self.updated = datetime.utcnow()
 
         return self
 
@@ -78,6 +87,9 @@ class ServerSettingsSchema(BaseSchema, table=True):
             The created `ServerSettingsResponse`.
         """
         body = ServerSettingsResponseBody(
+            name=self.name,
+            display_whats_new=self.display_whats_new,
+            display_user_surveys=self.display_user_surveys,
             onboarding_state=json.loads(self.onboarding_state)
             if self.onboarding_state
             else {},
