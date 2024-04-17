@@ -2,13 +2,12 @@
 description: Understand the Retrieval-Augmented Generation (RAG) technique and its benefits.
 ---
 
-# Understanding Retrieval-Augmented Generation (RAG)
-
 LLMs are powerful but not without their limitations. They are prone to
 generating incorrect responses, especially when it's unclear what the input
 prompt is asking for. They are also limited in the amount of text they can
 understand and generate. While some LLMs can handle more than 1 million tokens
-of input, most open-source models can handle far less.
+of input, most open-source models can handle far less. Your use case also might
+not require all the complexity and cost associated with running a large LLM.
 
 RAG, [originally proposed in 2020](https://arxiv.org/abs/2005.11401v4) by researchers at Facebook, is a technique that
 supplements the inbuilt abilities of foundation models like LLMs with a
@@ -110,7 +109,7 @@ A summary of some of the advantages that ZenML brings to the table here includes
 In the next section, we'll showcase the components of a basic RAG pipeline. This
 will give you a taste of how you can leverage the power of LLMs in your MLOps
 workflows using ZenML. Subsequent sections will cover more advanced topics like
-finetuning embeddings, reranking retrieved documents, and finetuning the LLM
+reranking retrieved documents, finetuning embeddings, and finetuning the LLM
 itself.
 
 <!-- For scarf -->
