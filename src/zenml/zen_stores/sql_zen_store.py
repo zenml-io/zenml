@@ -63,6 +63,7 @@ from sqlmodel import (
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics import track
+from zenml.analytics.context import AnalyticsContext
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import (
     analytics_disabler,
@@ -7664,6 +7665,21 @@ class SqlZenStore(BaseZenStore):
             session.add(new_user)
             # on commit an IntegrityError may arise we let it bubble up
             session.commit()
+
+            server_info = self.get_store_info()
+            with AnalyticsContext() as context:
+                context.user_id = new_user.id
+
+                context.group(
+                    group_id=server_info.id,
+                    group_metadata={
+                        "server_id": server_info.id,
+                        "version": server_info.version,
+                        "deployment_type": str(server_info.deployment_type),
+                        "database_type": str(server_info.database_type),
+                    },
+                )
+
             return new_user.to_model(include_metadata=True)
 
     def get_user(
