@@ -502,7 +502,7 @@ class TestAdminUser:
                 response_body = zen_store.put(
                     f"{USERS}/{str(test_user2.id)}{DEACTIVATE}",
                 )
-                deactivated_user = UserResponse.parse_obj(response_body)
+                deactivated_user = UserResponse.model_validate(response_body)
                 assert deactivated_user.name == test_user2.name
 
     def test_delete_users(self):
@@ -995,7 +995,7 @@ def test_create_user_no_password():
                 is_admin=user.is_admin,
             ),
         )
-        activated_user = UserResponse.parse_obj(response_body)
+        activated_user = UserResponse.model_validate(response_body)
         assert activated_user.active
         assert activated_user.name == user.name
         assert activated_user.id == user.id
@@ -1024,7 +1024,7 @@ def test_reactivate_user():
         response_body = store.put(
             f"{USERS}/{str(user.id)}{DEACTIVATE}",
         )
-        deactivated_user = UserResponse.parse_obj(response_body)
+        deactivated_user = UserResponse.model_validate(response_body)
         assert not deactivated_user.active
         assert deactivated_user.activation_token is not None
 
@@ -1056,7 +1056,7 @@ def test_reactivate_user():
                 is_admin=user.is_admin,
             ),
         )
-        activated_user = UserResponse.parse_obj(response_body)
+        activated_user = UserResponse.model_validate(response_body)
         assert activated_user.active
         assert activated_user.name == user.name
         assert activated_user.id == user.id

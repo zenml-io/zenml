@@ -208,7 +208,7 @@ class DockerSettings(BaseSettings):
 
     @model_validator(mode="before")
     @classmethod
-    def _migrate_copy_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _migrate_copy_files(cls, values: Any) -> Any:
         """Migrates the value from the old copy_files attribute.
 
         Args:

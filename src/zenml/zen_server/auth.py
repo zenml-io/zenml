@@ -544,7 +544,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
 
         if isinstance(payload, dict):
             try:
-                external_user = ExternalUserModel.parse_obj(payload)
+                external_user = ExternalUserModel.model_validate(payload)
             except Exception as e:
                 logger.exception(
                     f"Error parsing user information from external "

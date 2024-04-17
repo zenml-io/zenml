@@ -111,7 +111,7 @@ def dehydrate_response_model(
                 value, permissions=permissions
             )
 
-    return type(model).parse_obj(dehydrated_values)
+    return type(model).model_validate(dehydrated_values)
 
 
 def _dehydrate_value(

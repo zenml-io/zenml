@@ -210,7 +210,7 @@ class StepRunSchema(NamedSchema, table=True):
         }
 
         if self.deployment is not None:
-            full_step_config = Step.parse_obj(
+            full_step_config = Step.model_validate(
                 json.loads(self.deployment.step_configurations)[self.name]
             )
         elif self.step_configuration is not None:

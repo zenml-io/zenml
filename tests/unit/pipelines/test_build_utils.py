@@ -338,7 +338,7 @@ def test_custom_build_verification(
         )
 
     correct_build = missing_image_build.copy(deep=True)
-    correct_build.metadata = PipelineBuildResponseMetadata.parse_obj(
+    correct_build.metadata = PipelineBuildResponseMetadata.model_validate(
         {
             **missing_image_build.metadata.dict(),
             "images": {"key": {"image": "docker_image_name"}},
@@ -354,7 +354,7 @@ def test_custom_build_verification(
 
     build_that_requires_download = missing_image_build.copy(deep=True)
     build_that_requires_download.metadata = (
-        PipelineBuildResponseMetadata.parse_obj(
+        PipelineBuildResponseMetadata.model_validate(
             {
                 **missing_image_build.metadata.dict(),
                 "images": {

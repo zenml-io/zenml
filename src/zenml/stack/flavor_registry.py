@@ -122,7 +122,7 @@ class FlavorRegistry:
                 if len(existing_flavor) == 0:
                     store.create_flavor(flavor_request_model)
                 else:
-                    flavor_update_model = FlavorUpdate.parse_obj(
+                    flavor_update_model = FlavorUpdate.model_validate(
                         flavor_request_model
                     )
                     store.update_flavor(
@@ -154,7 +154,7 @@ class FlavorRegistry:
                         if len(existing_flavor) == 0:
                             store.create_flavor(flavor_request_model)
                         else:
-                            flavor_update_model = FlavorUpdate.parse_obj(
+                            flavor_update_model = FlavorUpdate.model_validate(
                                 flavor_request_model
                             )
                             store.update_flavor(

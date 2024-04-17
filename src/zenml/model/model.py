@@ -549,7 +549,7 @@ class Model(BaseModel):
                 workspace=zenml_client.active_workspace.id,
                 save_models_to_registry=self.save_models_to_registry,
             )
-            model_request = ModelRequest.parse_obj(model_request)
+            model_request = ModelRequest.model_validate(model_request)
             try:
                 model = zenml_client.zen_store.create_model(
                     model=model_request
@@ -646,7 +646,7 @@ class Model(BaseModel):
             model=model.id,
             tags=self.tags,
         )
-        mv_request = ModelVersionRequest.parse_obj(model_version_request)
+        mv_request = ModelVersionRequest.model_validate(model_version_request)
         try:
             if not self.version:
                 try:

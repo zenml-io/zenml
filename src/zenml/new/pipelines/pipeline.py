@@ -1011,7 +1011,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         run_config = PipelineRunConfiguration(**self._from_config_file)
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
-        update = PipelineRunConfiguration.parse_obj(new_values)
+        update = PipelineRunConfiguration.model_validate(new_values)
 
         # Update with the values in code so they take precedence
         run_config = pydantic_utils.update_model(run_config, update=update)
@@ -1290,7 +1290,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 else:
                     from zenml.model.model import Model
 
-                    _from_config_file["model"] = Model.parse_obj(
+                    _from_config_file["model"] = Model.model_validate(
                         _from_config_file["model"]
                     )
         self._from_config_file = _from_config_file

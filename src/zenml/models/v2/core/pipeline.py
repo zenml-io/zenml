@@ -39,9 +39,7 @@ from zenml.models.v2.base.scoped import WorkspaceScopedResponseResources
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.pipeline_run import (
-        PipelineRunResponse,
-    )
+    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 
 # ------------------ Request Model ------------------

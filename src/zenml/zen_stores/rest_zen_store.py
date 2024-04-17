@@ -434,7 +434,7 @@ class RestZenStore(BaseZenStore):
             Information about the server.
         """
         body = self.get(INFO)
-        return ServerModel.parse_obj(body)
+        return ServerModel.model_validate(body)
 
     def get_deployment_id(self) -> UUID:
         """Get the ID of the deployment.
@@ -575,7 +575,7 @@ class RestZenStore(BaseZenStore):
             f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}/{str(api_key_name_or_id)}{API_KEY_ROTATE}",
             body=rotate_request,
         )
-        return APIKeyResponse.parse_obj(response_body)
+        return APIKeyResponse.model_validate(response_body)
 
     def delete_api_key(
         self,
@@ -1684,7 +1684,7 @@ class RestZenStore(BaseZenStore):
         result: List[RunMetadataResponse] = []
         if isinstance(response_body, list):
             for metadata in response_body or []:
-                result.append(RunMetadataResponse.parse_obj(metadata))
+                result.append(RunMetadataResponse.model_validate(metadata))
         return result
 
     def get_run_metadata(
@@ -2278,7 +2278,9 @@ class RestZenStore(BaseZenStore):
             params={"list_resources": list_resources},
         )
 
-        resources = ServiceConnectorResourcesModel.parse_obj(response_body)
+        resources = ServiceConnectorResourcesModel.model_validate(
+            response_body
+        )
         self._populate_connector_type(resources)
         return resources
 
@@ -2313,7 +2315,9 @@ class RestZenStore(BaseZenStore):
             params=params,
         )
 
-        resources = ServiceConnectorResourcesModel.parse_obj(response_body)
+        resources = ServiceConnectorResourcesModel.model_validate(
+            response_body
+        )
         self._populate_connector_type(resources)
         return resources
 
@@ -2344,7 +2348,7 @@ class RestZenStore(BaseZenStore):
             params=params,
         )
 
-        connector = ServiceConnectorResponse.parse_obj(response_body)
+        connector = ServiceConnectorResponse.model_validate(response_body)
         self._populate_connector_type(connector)
         return connector
 
@@ -2381,7 +2385,7 @@ class RestZenStore(BaseZenStore):
 
         assert isinstance(response_body, list)
         resource_list = [
-            ServiceConnectorResourcesModel.parse_obj(item)
+            ServiceConnectorResourcesModel.model_validate(item)
             for item in response_body
         ]
 
@@ -2454,7 +2458,8 @@ class RestZenStore(BaseZenStore):
 
         assert isinstance(response_body, list)
         remote_connector_types = [
-            ServiceConnectorTypeModel.parse_obj(item) for item in response_body
+            ServiceConnectorTypeModel.model_validate(item)
+            for item in response_body
         ]
 
         # Mark the remote connector types as being only remotely available
@@ -2510,7 +2515,7 @@ class RestZenStore(BaseZenStore):
             response_body = self.get(
                 f"{SERVICE_CONNECTOR_TYPES}/{connector_type}",
             )
-            remote_connector_type = ServiceConnectorTypeModel.parse_obj(
+            remote_connector_type = ServiceConnectorTypeModel.model_validate(
                 response_body
             )
             if local_connector_type:
@@ -2898,7 +2903,7 @@ class RestZenStore(BaseZenStore):
             )
         else:
             body = self.get(CURRENT_USER, params={"hydrate": hydrate})
-            return UserResponse.parse_obj(body)
+            return UserResponse.model_validate(body)
 
     def list_users(
         self,
@@ -2957,7 +2962,7 @@ class RestZenStore(BaseZenStore):
             f"{USERS}/{str(user_name_or_id)}{DEACTIVATE}",
         )
 
-        return UserResponse.parse_obj(response_body)
+        return UserResponse.model_validate(response_body)
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
@@ -3925,7 +3930,7 @@ class RestZenStore(BaseZenStore):
         """
         response_body = self.post(f"{route}", body=resource, params=params)
 
-        return response_model.parse_obj(response_body)
+        return response_model.model_validate(response_body)
 
     def _create_workspace_scoped_resource(
         self,
@@ -4001,7 +4006,7 @@ class RestZenStore(BaseZenStore):
                 f"response from the {route}{GET_OR_CREATE} endpoint but got "
                 f"{type(was_created)} instead."
             )
-        return response_model.parse_obj(model_json), was_created
+        return response_model.model_validate(model_json), was_created
 
     def _get_or_create_workspace_scoped_resource(
         self,
@@ -4049,7 +4054,7 @@ class RestZenStore(BaseZenStore):
             The retrieved resource.
         """
         body = self.get(f"{route}/{str(resource_id)}", params=params)
-        return response_model.parse_obj(body)
+        return response_model.model_validate(body)
 
     def _list_paginated_resources(
         self,
@@ -4081,10 +4086,10 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         # The initial page of items will be of type BaseResponseModel
-        page_of_items: Page[AnyResponse] = Page.parse_obj(body)
+        page_of_items: Page[AnyResponse] = Page.model_validate(body)
         # So these items will be parsed into their correct types like here
         page_of_items.items = [
-            response_model.parse_obj(generic_item)
+            response_model.model_validate(generic_item)
             for generic_item in body["items"]
         ]
         return page_of_items
@@ -4115,7 +4120,7 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [response_model.parse_obj(entry) for entry in body]
+        return [response_model.model_validate(entry) for entry in body]
 
     def _update_resource(
         self,
@@ -4142,7 +4147,7 @@ class RestZenStore(BaseZenStore):
             f"{route}/{str(resource_id)}", body=resource_update, params=params
         )
 
-        return response_model.parse_obj(response_body)
+        return response_model.model_validate(response_body)
 
     def _delete_resource(
         self, resource_id: Union[str, UUID], route: str

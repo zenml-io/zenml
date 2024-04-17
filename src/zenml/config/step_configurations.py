@@ -94,7 +94,7 @@ class PartialArtifactConfiguration(StrictBaseModel):
         if isinstance(value, str):
             value = (Source.from_import_path(value),)
         elif isinstance(value, dict):
-            value = (Source.parse_obj(value),)
+            value = (Source.model_validate(value),)
         elif isinstance(value, Source):
             value = (value,)
 
@@ -122,7 +122,7 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
         if isinstance(value, str):
             value = (Source.from_import_path(value),)
         elif isinstance(value, dict):
-            value = (Source.parse_obj(value),)
+            value = (Source.model_validate(value),)
         elif isinstance(value, Source):
             value = (value,)
 

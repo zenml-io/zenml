@@ -1168,8 +1168,8 @@ To avoid this consider setting step parameters only in one place (config or code
             }
         )
 
-        return StepConfiguration.model_validate_json(
-            self._configuration.model_dump_json()
+        return StepConfiguration.model_validate(
+            self._configuration.model_dump()
         )
 
     def _finalize_parameters(self) -> Dict[str, Any]:

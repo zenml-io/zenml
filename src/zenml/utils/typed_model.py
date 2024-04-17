@@ -87,7 +87,7 @@ class BaseTypedModel(BaseModel, metaclass=BaseTypedModelMeta):
 
     matrix = TheMatrix(choice=RedPill())
     d = matrix.dict()
-    new_matrix = TheMatrix.parse_obj(d)
+    new_matrix = TheMatrix.model_validate(d)
     assert isinstance(new_matrix.choice, RedPill)
     ```
 
@@ -128,7 +128,7 @@ class BaseTypedModel(BaseModel, metaclass=BaseTypedModelMeta):
                 f"Class `{cls}` is not a ZenML BaseTypedModel subclass."
             )
 
-        return cls.parse_obj(model_dict)
+        return cls.model_validate(model_dict)
 
     @classmethod
     def from_json(

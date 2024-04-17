@@ -67,7 +67,7 @@ class PipelineSpec(StrictBaseModel):
             dict_["source"] = self.source.import_path
 
         for step_dict in dict_["steps"]:
-            step_dict["source"] = Source.parse_obj(
+            step_dict["source"] = Source.model_validate(
                 step_dict["source"]
             ).import_path
 

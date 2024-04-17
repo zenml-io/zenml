@@ -227,7 +227,7 @@ def test_fetching_cached_step_run_uses_latest_candidate(
         clean_client.active_workspace.id
     )
 
-    sample_step = Step.parse_obj(
+    sample_step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",

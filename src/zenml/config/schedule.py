@@ -66,7 +66,6 @@ class Schedule(BaseModel):
             ValueError: If no cron expression or start time + interval were
                 provided.
         """
-
         periodic_schedule = self.start_time and self.interval_second
 
         if self.cron_expression and periodic_schedule:

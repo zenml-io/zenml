@@ -87,4 +87,4 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
         model_or_dict: SettingsOrDict = self.settings.get(
             DOCKER_SETTINGS_KEY, {}
         )
-        return DockerSettings.parse_obj(model_or_dict)
+        return DockerSettings.model_validate(model_or_dict)

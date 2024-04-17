@@ -394,7 +394,7 @@ class StepRunner:
 
             # Parse the parameters
             if issubclass(arg_type, BaseParameters):
-                step_params = arg_type.parse_obj(
+                step_params = arg_type.model_validate(
                     self.configuration.parameters[arg]
                 )
                 function_params[arg] = step_params
@@ -437,7 +437,7 @@ class StepRunner:
         """
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
-            return UnmaterializedArtifact.parse_obj(artifact)
+            return UnmaterializedArtifact.model_validate(artifact)
 
         if data_type is Any or get_origin(data_type) is Union:
             # Entrypoint function does not define a specific type for the input,

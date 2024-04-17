@@ -54,7 +54,7 @@ def test_running_a_successful_step(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
     )
 
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "tests.unit.orchestrators.test_step_runner.successful_step",
@@ -109,7 +109,7 @@ def test_running_a_failing_step(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
     )
 
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "tests.unit.orchestrators.test_step_runner.failing_step",
@@ -152,7 +152,7 @@ def test_loading_unmaterialized_input_artifact(
 ):
     """Tests that having an input of type `UnmaterializedArtifact` does not
     materialize the artifact but instead returns the response model."""
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",

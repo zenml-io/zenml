@@ -52,7 +52,7 @@ def _get_step(
     name: str, docker_settings: Optional[DockerSettings] = None
 ) -> Step:
     settings = {"docker": docker_settings} if docker_settings else {}
-    return Step.parse_obj(
+    return Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",

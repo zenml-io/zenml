@@ -357,7 +357,7 @@ def apply_run_config(
             copy.deepcopy(pipeline_configuration_dict),
             update=step.config.dict(exclude_none=True),
         )
-        step_config = StepConfiguration.parse_obj(step_config_dict)
+        step_config = StepConfiguration.model_validate(step_config_dict)
 
         if update := run_config.steps.get(invocation_id):
             if update.settings.get("docker"):

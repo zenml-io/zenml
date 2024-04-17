@@ -211,7 +211,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         )
         step_configurations = json.loads(self.step_configurations)
         for s, c in step_configurations.items():
-            step_configurations[s] = Step.parse_obj(c)
+            step_configurations[s] = Step.model_validate(c)
 
         body = PipelineDeploymentResponseBody(
             user=self.user.to_model() if self.user else None,

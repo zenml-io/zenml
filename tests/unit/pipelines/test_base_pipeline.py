@@ -642,7 +642,7 @@ def test_loading_legacy_pipeline_from_model(create_pipeline_model):
             )
         )
 
-    spec = PipelineSpec.parse_obj(
+    spec = PipelineSpec.model_validate(
         {
             "version": "0.3",
             "steps": [
@@ -672,7 +672,7 @@ def test_loading_legacy_pipeline_from_model(create_pipeline_model):
         pipeline_instance.run()
 
     # Invalid source
-    spec = PipelineSpec.parse_obj(
+    spec = PipelineSpec.model_validate(
         {
             "version": "0.3",
             "steps": [
@@ -690,7 +690,7 @@ def test_loading_legacy_pipeline_from_model(create_pipeline_model):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
 
     # Missing upstream step
-    spec = PipelineSpec.parse_obj(
+    spec = PipelineSpec.model_validate(
         {
             "version": "0.3",
             "steps": [
@@ -708,7 +708,7 @@ def test_loading_legacy_pipeline_from_model(create_pipeline_model):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
 
     # Missing output
-    spec = PipelineSpec.parse_obj(
+    spec = PipelineSpec.model_validate(
         {
             "version": "0.3",
             "steps": [
@@ -737,7 +737,7 @@ def test_loading_legacy_pipeline_from_model(create_pipeline_model):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
 
     # Wrong inputs
-    spec = PipelineSpec.parse_obj(
+    spec = PipelineSpec.model_validate(
         {
             "version": "0.3",
             "steps": [
@@ -782,7 +782,7 @@ def test_loading_legacy_pipeline_from_model(create_pipeline_model):
 #             )
 #         )
 
-#     spec = PipelineSpec.parse_obj(
+#     spec = PipelineSpec.model_validate(
 #         {
 #             "steps": [
 #                 {

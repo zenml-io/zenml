@@ -402,14 +402,14 @@ def sample_workspace_model() -> WorkspaceResponse:
 @pytest.fixture
 def sample_step_request_model() -> StepRunRequest:
     """Return a sample step model for testing purposes."""
-    spec = StepSpec.parse_obj(
+    spec = StepSpec.model_validate(
         {
             "source": "module.step_class",
             "upstream_steps": [],
             "inputs": {},
         }
     )
-    config = StepConfiguration.parse_obj(
+    config = StepConfiguration.model_validate(
         {"name": "step_name", "enable_cache": True}
     )
 
@@ -554,10 +554,10 @@ def create_step_run(
         output_artifacts: Optional[Dict[str, ArtifactVersionResponse]] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
-        spec = StepSpec.parse_obj(
+        spec = StepSpec.model_validate(
             {"source": "module.step_class", "upstream_steps": []}
         )
-        config = StepConfiguration.parse_obj(
+        config = StepConfiguration.model_validate(
             {
                 "name": step_name,
                 "outputs": outputs or {},
