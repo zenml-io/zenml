@@ -79,20 +79,7 @@ class ServerModel(BaseModel):
         title="The Base URL of the server.",
     )
 
-    whats_new_enabled: bool = Field(
-        default=True,
-        title="Show what's new information in the dashboard.",
-    )
-
-    analytics_enabled: bool = Field(
-        default=True,
-        title="Enable server-side analytics.",
-    )
-
-    user_surveys_enabled: bool = Field(
-        default=True,
-        title="Show ZenML user surveys in the frontend.",
-    )
+    analytics_enabled: bool = Field(title="Enable server-side analytics.")
 
     metadata: Dict[str, str] = Field(
         {},
