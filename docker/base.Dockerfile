@@ -67,7 +67,7 @@ RUN pip install --upgrade pip \
 
 FROM builder as server-builder
 
-RUN uv venv $VIRTUAL_ENV
+RUN uv venv $VIRTUAL_ENV --seed
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 
@@ -117,6 +117,8 @@ COPY --from=client-builder /opt/venv /opt/venv
 # Copy the requirements.txt file from the builder stage
 COPY --from=client-builder /zenml/requirements.txt /zenml/requirements.txt
 
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
 FROM base AS server
 
 ARG VIRTUAL_ENV=/opt/venv
@@ -161,12 +163,12 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && mkdir -p /zenml/.zenconfig/local_stores/default_zen_store \
     && chown -R $USER_UID:$USER_GID /zenml
 
-ENV PATH="$VIRTUAL_ENV/bin:$PATH:/home/$USERNAME/.local/bin"
+ENV PATH="$VIRTUAL_ENV/bin:/home/$USERNAME/.local/bin:$PATH"
 
 # Switch to non-privileged user
 USER $USERNAME
 
 # Start the ZenML server
 EXPOSE 8080
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*"]
 CMD ["--port", "8080", "--host",  "0.0.0.0"]

@@ -95,6 +95,13 @@ WORKDIR /zenml
 #
 # NOTE: System packages required at runtime should be installed here
 
+# Install some utilities for debugging and development
+RUN set -ex \
+  && apt-get update \
+  && apt-get install -y curl net-tools nmap inetutils-ping default-mysql-client mariadb-client git \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+
 # Copy the virtual environment from the builder stage
 COPY --from=builder /opt/venv /opt/venv
 # Copy the requirements.txt file from the builder stage

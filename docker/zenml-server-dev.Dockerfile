@@ -46,7 +46,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.cargo/bin:$PATH"
 
-RUN uv venv $VIRTUAL_ENV
+RUN uv venv $VIRTUAL_ENV --seed
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY README.md pyproject.toml ./
@@ -109,7 +109,7 @@ WORKDIR /zenml
 # Install some utilities for debugging and development
 RUN set -ex \
   && apt-get update \
-  && apt-get install -y curl net-tools nmap inetutils-ping default-mysql-client mariadb-client \
+  && apt-get install -y curl net-tools nmap inetutils-ping default-mysql-client mariadb-client git \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 
@@ -127,12 +127,12 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && mkdir -p /zenml/.zenconfig/local_stores/default_zen_store \
     && chown -R $USER_UID:$USER_GID /zenml
 
-ENV PATH="$VIRTUAL_ENV/bin:$PATH:/home/$USERNAME/.local/bin"
+ENV PATH="$VIRTUAL_ENV/bin:/home/$USERNAME/.local/bin:$PATH"
 
 # Switch to non-privileged user
 USER $USERNAME
 
 EXPOSE 8080
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*"]
 CMD ["--port", "8080", "--host",  "0.0.0.0"]
