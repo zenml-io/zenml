@@ -93,7 +93,7 @@ For this example, we need to use the [Service Account authentication feature
 of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account):
 
 ```shell
-zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project-id=<PROJECT_ID> --generate_temporary_tokens=False
+zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project_id=<PROJECT_ID> --generate_temporary_tokens=False
 ```
 Once the service connector is set up, we can register [a 
 Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
