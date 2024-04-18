@@ -85,7 +85,6 @@ def artifact_linker(
     model: Optional[Model] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
-    do_link: bool = True,
 ) -> None:
     """Step linking an artifact to a model via function or implicit."""
 
@@ -96,7 +95,7 @@ def artifact_linker(
         is_deployment_artifact=is_deployment_artifact,
     )
 
-    if do_link:
+    if model:
         link_artifact_to_model(
             artifact_version_id=artifact.id,
             model=model,
@@ -502,9 +501,7 @@ class TestModel:
     def test_link_artifact_via_function(self, clean_client: "Client"):
         """Test that user can link artifacts via function to a model version."""
 
-        @pipeline(
-            enable_cache=False,
-        )
+        @pipeline
         def _inner_pipeline(
             model: Model = None,
             is_model_artifact: bool = False,
@@ -520,46 +517,48 @@ class TestModel:
             name=MODEL_NAME,
         )
 
-        # no context, no model
-        with pytest.raises(RuntimeError):
-            _inner_pipeline()
+        # no context, no model, artifact produced but not linked
+        _inner_pipeline()
+        artifact = clean_client.get_artifact_version("manual_artifact")
+        assert int(artifact.version) == 1
 
-        # use context
+        # pipeline will run in a model context and will use cached step version
         _inner_pipeline.with_options(model=mv_in_pipe)()
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 1
-        assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
+        artifact = mv.get_artifact("manual_artifact")
+        assert artifact.load() == "Hello, World!"
+        assert int(artifact.version) == 1
 
-        # use custom model version
+        # use custom model version (cache invalidated)
         _inner_pipeline(model=Model(name="custom_model_version"))
 
         mv_custom = Model(name="custom_model_version", version="latest")
         assert mv_custom.number == 1
-        assert (
-            mv_custom.get_artifact("manual_artifact").load() == "Hello, World!"
-        )
+        artifact = mv_custom.get_artifact("manual_artifact")
+        assert artifact.load() == "Hello, World!"
+        assert int(artifact.version) == 2
 
-        # use context + model
+        # use context + model (cache invalidated)
         _inner_pipeline.with_options(model=mv_in_pipe)(is_model_artifact=True)
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 2
-        assert (
-            mv.get_model_artifact("manual_artifact").load() == "Hello, World!"
-        )
+        artifact = mv.get_artifact("manual_artifact")
+        assert artifact.load() == "Hello, World!"
+        assert int(artifact.version) == 3
 
-        # use context + deployment
+        # use context + deployment (cache invalidated)
         _inner_pipeline.with_options(model=mv_in_pipe)(
             is_deployment_artifact=True
         )
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 3
-        assert (
-            mv.get_deployment_artifact("manual_artifact").load()
-            == "Hello, World!"
-        )
+        artifact = mv.get_deployment_artifact("manual_artifact")
+        assert artifact.load() == "Hello, World!"
+        assert int(artifact.version) == 4
 
         # link outside of a step
         artifact = save_artifact(data="Hello, World!", name="manual_artifact")
@@ -570,7 +569,9 @@ class TestModel:
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 4
-        assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
+        artifact = mv.get_artifact("manual_artifact")
+        assert artifact.load() == "Hello, World!"
+        assert int(artifact.version) == 5
 
     def test_link_artifact_via_save_artifact(self, clean_client: "Client"):
         """Test that artifacts are auto-linked to a model version on call of `save_artifact`."""
