@@ -88,9 +88,9 @@ class CometExperimentTracker(BaseExperimentTracker):
         exp_url: Optional[str] = None
         exp_name: Optional[str] = None
 
-        if current_comet_exp := Experiment.get_global_experiment():
-            exp_url = current_comet_exp.url
-            exp_name = current_comet_exp.name
+        if self.experiment:
+            exp_url = self.experiment.url
+            exp_name = self.experiment.name
 
         # If the URL cannot be retrieved, use the default experiment URL
         default_exp_url = (
@@ -116,8 +116,28 @@ class CometExperimentTracker(BaseExperimentTracker):
             info: Info about the step that was executed.
             step_failed: Whether the step failed or not.
         """
-        Experiment.get_global_experiment().end()
+        if self.experiment:
+            self.experiment.end()
         os.environ.pop(COMET_API_KEY, None)
+
+    def log_metrics(self, metrics: Dict[str, Any], step: Optional[int] = None):
+        """Logs metrics to the Comet experiment.
+
+        Args:
+            metrics: Dictionary of metrics to log.
+            step: Optional step number associated with the metrics.
+        """
+        if self.experiment:
+            self.experiment.log_metrics(metrics, step=step)
+
+    def log_params(self, params: Dict[str, Any]):
+        """Logs parameters to the Comet experiment.
+
+        Args:
+            params: Dictionary of parameters to log.
+        """
+        if self.experiment:
+            self.experiment.log_parameters(params)
 
     def _initialize_comet(
         self,
@@ -128,7 +148,7 @@ class CometExperimentTracker(BaseExperimentTracker):
         """Initializes a Comet experiment.
 
         Args:
-            run_name: Name of the Comet experiment to create.
+            run_name: Name of the Comet experiment.
             tags: Tags to attach to the Comet experiment.
             settings: Additional settings for the Comet experiment.
         """
@@ -136,10 +156,10 @@ class CometExperimentTracker(BaseExperimentTracker):
             f"Initializing Comet with workspace {self.config.workspace}, project "
             f"name: {self.config.project_name}, run_name: {run_name}."
         )
-        Experiment(
+        self.experiment = Experiment(
             workspace=self.config.workspace,
             project_name=self.config.project_name,
-            experiment_name=run_name,
-            tags=tags,
             **settings or {},
         )
+        self.experiment.set_name(run_name)
+        self.experiment.add_tags(tags)
