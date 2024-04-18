@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.11
 
 # Use a minimal base image to reduce the attack surface
 FROM python:${PYTHON_VERSION}-slim-bookworm AS base
@@ -21,10 +21,6 @@ FROM base AS builder
 ARG VIRTUAL_ENV=/opt/venv
 ARG ZENML_VERSION
 
-# Install build dependencies
-#
-# NOTE: System packages required for the build stage should be installed here
-
 ENV \
   # Set up virtual environment
   VIRTUAL_ENV=$VIRTUAL_ENV \
@@ -38,10 +34,27 @@ ENV \
 
 WORKDIR /zenml
 
+# Install common build dependencies
+#
+# NOTE: System packages required for the build stages should be installed here
+
+# Install curl
+RUN apt-get update && apt-get install -y curl
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+ENV PATH="/root/.cargo/bin:$PATH"
+
+FROM builder as client-builder
+
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-FROM builder as client-builder
+# Install client build dependencies
+#
+# NOTE: System packages required for the client build stage should be installed
+# here
 
 # Upgrade pip to the latest version and install the given zenml version (default
 # to latest).
@@ -54,19 +67,35 @@ RUN pip install --upgrade pip \
 
 FROM builder as server-builder
 
+RUN uv venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+
+# Install server build dependencies
+#
+# NOTE: System packages required for the server build stage should be installed
+# here
+
 # Upgrade pip to the latest version and install the given zenml server version
 # (default to latest).
 # Also create a requirements.txt file to keep track of
 # dependencies for reproducibility and debugging.
-RUN pip install --upgrade pip \
-  && pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
-  && pip freeze > requirements.txt
+RUN uv pip install --upgrade pip \
+  && uv pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
+  && uv pip freeze > requirements.txt
 
 FROM base as client
 
 ARG VIRTUAL_ENV=/opt/venv
 
 ENV \
+  # Set the default timeout for pip to something more reasonable
+  # (the default is 15 seconds)
+  PIP_DEFAULT_TIMEOUT=100 \
+  # Disable a pip version check to reduce run-time & log-spam
+  PIP_DISABLE_PIP_VERSION_CHECK=1 \
+  # Cache is useless in docker image, so disable to reduce image size
+  PIP_NO_CACHE_DIR=1 \
   # Allow statements and log messages to immediately appear
   PYTHONUNBUFFERED=1 \
   # Enable the fault handler for better stack traces in case of segfaults
@@ -78,9 +107,10 @@ ENV \
 
 WORKDIR /zenml
 
-# Install runtime dependencies
+# Install client runtime dependencies
 #
-# NOTE: System packages required at runtime should be installed here
+# NOTE: System packages required by the client at runtime should be installed
+# here
 
 # Copy the virtual environment from the builder stage
 COPY --from=client-builder /opt/venv /opt/venv
@@ -112,9 +142,10 @@ ENV \
 
 WORKDIR /zenml
 
-# Install runtime dependencies
+# Install server runtime dependencies
 #
-# NOTE: System packages required at runtime should be installed here
+# NOTE: System packages required by the server at runtime should be installed
+# here
 
 # Copy the virtual environment from the builder stage
 COPY --from=server-builder /opt/venv /opt/venv
@@ -123,7 +154,7 @@ COPY --from=server-builder /zenml/requirements.txt /zenml/requirements.txt
 
 # Create the user and group which will be used to run the ZenML server
 # and set the ownership of the workdir directory to the user.
-# Create the local stores directory beforehand to ensure it is owned by the
+# Create the local stores directory beforehand and ensure it is owned by the
 # user.
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
@@ -131,6 +162,9 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chown -R $USER_UID:$USER_GID /zenml
 
 ENV PATH="$VIRTUAL_ENV/bin:$PATH:/home/$USERNAME/.local/bin"
+
+# Switch to non-privileged user
+USER $USERNAME
 
 # Start the ZenML server
 EXPOSE 8080
