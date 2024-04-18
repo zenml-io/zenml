@@ -50,6 +50,14 @@ Read more about how to configure step-specific resources [here](#configuring-ste
 The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](/docs/book/user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
 {% endhint %}
 
+{% hint style="info" %}
+All ZenML pipeline runs are executed using Docker containers within the VMs provisioned by the orchestrator.
+For that reason, you may need to configure your pipeline settings with `docker_run_args=["--gpus=all"]`
+to enable GPU support in the Docker container. 
+{% endhint %}
+
+{% hint style="info" %}
+
 
 ## How to deploy it
 
@@ -240,6 +248,36 @@ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector azure-skypilot-vm
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 {% endtab %}
+
+{% tab title="Lambda Labs" %}
+
+[Lambda Labs](https://lambdalabs.com/service/gpu-cloud) is a cloud provider that offers GPU instances for machine learning workloads. Unlike the major cloud providers, with Lambda Labs we don't need to configure a service connector to authenticate with the cloud provider. Instead, we can directly use API keys to authenticate with the Lambda Labs API.
+
+  ```shell
+    zenml integration install skypilot_lambda
+  ```
+
+Once the integration is installed, we can register the orchestrator with the following command:
+
+```shell
+# For more secure and recommended way, we will register the API key as a secret
+zenml secret create lambda_api_key --scope user --api_key=<VALUE_1>
+# Register the orchestrator
+zenml orchestrator register <ORCHESTRATOR_NAME> --flavor vm_lambda --api_key={{lambda_api_key.api_key}}
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+```
+
+{% hint style="info" %}
+The Lambda Labs orchestrator does not support some of the features like `spot_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended not to use these features with the Lambda Labs orchestrator and not to use [step-specific settings](#configuring-step-specific-resources).
+{% endhint %}
+
+{% hint style="warning" %}
+While testing the orchestrator, we noticed that the Lambda Labs orchestrator does not support the `down` flag. This means the orchestrator will not automatically tear down the cluster after all jobs finish. We recommend manually tearing down the cluster after all jobs finish to avoid unnecessary costs.
+{% endhint %}
+
+{% endtab %}
+
 {% endtabs %}
 
 #### Additional Configuration
@@ -263,6 +301,7 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `idle_minutes_to_autostop`: Automatically stop the cluster after this many minutes of idleness, i.e., no running or pending jobs in the cluster's job queue. Idleness gets reset whenever setting-up/running/pending jobs are found in the job queue. Setting this flag is equivalent to running `sky.launch(..., detach_run=True, ...)` and then `sky.autostop(idle_minutes=<minutes>)`. If not set, the cluster will not be autostopped.
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
 * `stream_logs`: If True, show the logs in the terminal as they are generated while the cluster is running.
+* `docker_run_args`: Additional arguments to pass to the `docker run` command. For example, `['--gpus=all']` to use all GPUs available on the VM.
 
 The following code snippets show how to configure the orchestrator settings for each cloud provider:
 
@@ -291,6 +330,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     idle_minutes_to_autostop=60,
     down=True,
     stream_logs=True
+    docker_run_args=["--gpus=all"]
 )
 
 
@@ -370,6 +410,34 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
 @pipeline(
     settings={
         "orchestrator.vm_azure": skypilot_settings
+    }
+)
+```
+
+{% endtab %}
+
+{% tab title="Lambda" %}
+
+**Code Example:**
+
+```python
+from zenml.integrations.skypilot_lambda import SkypilotLambdaOrchestratorSettings
+
+
+skypilot_settings = SkypilotLambdaOrchestratorSettings(
+    instance_type="gpu_1x_h100_pcie",
+    cluster_name="my_cluster",
+    retry_until_up=True,
+    idle_minutes_to_autostop=60,
+    down=True,
+    stream_logs=True,
+    docker_run_args=["--gpus=all"]
+)
+
+
+@pipeline(
+    settings={
+        "orchestrator.vm_lambda": skypilot_settings
     }
 )
 ```

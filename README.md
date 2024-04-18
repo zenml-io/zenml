@@ -92,7 +92,7 @@
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.56.2 is out. Check out the release notes
+    🎉 Version 0.56.3 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.
@@ -184,6 +184,8 @@ However, ZenML doesn't:
 
 ```bash
 pip install "zenml[server]"
+# you'll also need the `notebook` package installed to run Jupyter notebooks:
+# OPTIONALLY: `pip install notebook`
 ```
 
 Take a tour with the guided quickstart by running:

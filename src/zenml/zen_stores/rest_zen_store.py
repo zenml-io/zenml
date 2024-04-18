@@ -50,6 +50,7 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CURRENT_USER,
+    DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -354,9 +355,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         fileio.makedirs(str(secret_folder))
         file_path = Path(secret_folder, "ca_bundle.pem")
-        with open(file_path, "w") as f:
+        with os.fdopen(
+            os.open(file_path, flags=os.O_RDWR | os.O_CREAT, mode=0o600), "w"
+        ) as f:
             f.write(verify_ssl)
-        file_path.chmod(0o600)
         verify_ssl = str(file_path)
 
         return verify_ssl
@@ -2942,6 +2944,23 @@ class RestZenStore(BaseZenStore):
             route=USERS,
             response_model=UserResponse,
         )
+
+    def deactivate_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserResponse:
+        """Deactivates a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+
+        Returns:
+            The deactivated user containing the activation token.
+        """
+        response_body = self.put(
+            f"{USERS}/{str(user_name_or_id)}{DEACTIVATE}",
+        )
+
+        return UserResponse.parse_obj(response_body)
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.

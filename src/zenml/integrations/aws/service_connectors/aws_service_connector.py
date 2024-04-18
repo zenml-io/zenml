@@ -68,7 +68,7 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-EKS_KUBE_API_TOKEN_EXPIRATION = 60
+EKS_KUBE_API_TOKEN_EXPIRATION = 15  # 15 minutes
 DEFAULT_IAM_ROLE_TOKEN_EXPIRATION = 3600  # 1 hour
 DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours
 
@@ -1074,6 +1074,8 @@ class AWSServiceConnector(ServiceConnector):
         Returns:
             A bearer token for authenticating to the EKS API server.
         """
+        STS_TOKEN_EXPIRES_IN = 60
+
         client = session.client("sts", region_name=region)
         service_id = client.meta.service_model.service_id
 
@@ -1097,7 +1099,7 @@ class AWSServiceConnector(ServiceConnector):
         signed_url = signer.generate_presigned_url(
             params,
             region_name=region,
-            expires_in=EKS_KUBE_API_TOKEN_EXPIRATION,
+            expires_in=STS_TOKEN_EXPIRES_IN,
             operation_name="",
         )
 
@@ -1130,19 +1132,19 @@ class AWSServiceConnector(ServiceConnector):
         # We need to extract the bucket name from the provided resource ID
         bucket_name: Optional[str] = None
         if re.match(
-            r"^arn:aws:s3:::[a-z0-9-]+(/.*)*$",
+            r"^arn:aws:s3:::[a-z0-9][a-z0-9\-\.]{1,61}[a-z0-9](/.*)*$",
             resource_id,
         ):
             # The resource ID is an S3 bucket ARN
             bucket_name = resource_id.split(":")[-1].split("/")[0]
         elif re.match(
-            r"^s3://[a-z0-9-]+(/.*)*$",
+            r"^s3://[a-z0-9][a-z0-9\-\.]{1,61}[a-z0-9](/.*)*$",
             resource_id,
         ):
             # The resource ID is an S3 bucket URI
             bucket_name = resource_id.split("/")[2]
         elif re.match(
-            r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$",
+            r"^[a-z0-9][a-z0-9\-\.]{1,61}[a-z0-9]$",
             resource_id,
         ):
             # The resource ID is the S3 bucket name
@@ -1241,14 +1243,14 @@ class AWSServiceConnector(ServiceConnector):
         cluster_name: Optional[str] = None
         region_id: Optional[str] = None
         if re.match(
-            r"^arn:aws:eks:[a-z0-9-]+:\d{12}:cluster/.+$",
+            r"^arn:aws:eks:[a-z0-9-]+:\d{12}:cluster/[0-9A-Za-z][A-Za-z0-9\-_]*$",
             resource_id,
         ):
             # The resource ID is an EKS cluster ARN
             cluster_name = resource_id.split("/")[-1]
             region_id = resource_id.split(":")[3]
         elif re.match(
-            r"^[a-z0-9]+[a-z0-9_-]*$",
+            r"^[0-9A-Za-z][A-Za-z0-9\-_]*$",
             resource_id,
         ):
             # Assume the resource ID is an EKS cluster name
@@ -2052,7 +2054,7 @@ class AWSServiceConnector(ServiceConnector):
             assert resource_id is not None
 
             # Get an authenticated boto3 session
-            session, expires_at = self.get_boto3_session(
+            session, _ = self.get_boto3_session(
                 self.auth_method,
                 resource_type=resource_type,
                 resource_id=resource_id,
@@ -2087,6 +2089,13 @@ class AWSServiceConnector(ServiceConnector):
                 raise AuthorizationException(
                     f"Failed to get EKS bearer token: {e}"
                 ) from e
+
+            # Kubernetes authentication tokens issued by AWS EKS have a fixed
+            # expiration time of 15 minutes
+            # source: https://aws.github.io/aws-eks-best-practices/security/docs/iam/#controlling-access-to-eks-clusters
+            expires_at = datetime.datetime.now(
+                tz=datetime.timezone.utc
+            ) + datetime.timedelta(minutes=EKS_KUBE_API_TOKEN_EXPIRATION)
 
             # get cluster details
             cluster_arn = cluster["cluster"]["arn"]
