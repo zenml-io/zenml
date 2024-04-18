@@ -40,10 +40,10 @@ class CometIntegration(Integration):
             List of stack component flavors for this integration.
         """
         from zenml.integrations.comet.flavors import (
-            CometEnvironmentTrackerFlavor,
+            CometExperimentTrackerFlavor,
         )
 
-        return [CometEnvironmentTrackerFlavor]
+        return [CometExperimentTrackerFlavor]
 
 
 CometIntegration.check_installation()
