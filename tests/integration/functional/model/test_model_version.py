@@ -586,7 +586,6 @@ class TestModel:
             artifact_linker(
                 is_model_artifact=is_model_artifact,
                 is_deployment_artifact=is_deployment_artifact,
-                do_link=False,
             )
 
         mv_in_pipe = Model(
