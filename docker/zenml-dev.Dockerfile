@@ -106,3 +106,5 @@ RUN set -ex \
 COPY --from=builder /opt/venv /opt/venv
 # Copy the requirements.txt file from the builder stage
 COPY --from=builder /zenml/requirements.txt /zenml/requirements.txt
+
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
