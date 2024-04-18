@@ -58,7 +58,7 @@ RUN pip install --upgrade pip \
 COPY src src
 
 # Run pip install again to install the source code in the virtual environment
-RUN pip install .
+RUN pip install --no-deps --no-cache .
 
 # Inherit from the base image which has the minimal set of updated system
 # software packages

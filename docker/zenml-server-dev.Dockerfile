@@ -59,15 +59,19 @@ COPY src/zenml/__init__.py ./src/zenml/
 # Run pip install before copying the source files to install dependencies in
 # the virtual environment. Also create a requirements.txt file to keep track of
 # dependencies for reproducibility and debugging.
+# NOTE: we need to uninstall zenml at the end to remove the incomplete
+# installation
 RUN uv pip install --upgrade pip \
   && uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
-  && uv pip freeze > requirements.txt
+  && uv pip freeze > requirements.txt \
+  && uv pip uninstall zenml
 
 # Copy the source code
 COPY src src
 
 # Run pip install again to install the source code in the virtual environment
-RUN uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]
+RUN uv pip uninstall zenml \
+  && uv pip install --no-deps --no-cache .
 
 # Inherit from the base image which has the minimal set of updated system
 # software packages
