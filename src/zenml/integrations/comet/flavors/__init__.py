@@ -14,11 +14,11 @@
 """Comet integration flavors."""
 
 from zenml.integrations.comet.flavors.comet_experiment_tracker_flavor import (
-    CometEnvironmentTrackerConfig,
-    CometEnvironmentTrackerFlavor,
+    CometExperimentTrackerConfig,
+    CometExperimentTrackerFlavor,
 )
 
 __all__ = [
-    "CometEnvironmentTrackerFlavor",
-    "CometEnvironmentTrackerConfig",
+    "CometExperimentTrackerFlavor",
+    "CometExperimentTrackerConfig",
 ]
