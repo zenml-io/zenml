@@ -23,7 +23,7 @@ from zenml.logger import get_logger
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-
+from zenml.utils.pydantic_utils import before_validator_handler
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models import PipelineDeploymentResponse
@@ -36,17 +36,18 @@ class BaseOrchestratorConfig(StackComponentConfig):
 
     @model_validator(mode="before")
     @classmethod
-    def _deprecations(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @before_validator_handler
+    def _deprecations(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate and/or remove deprecated fields.
 
         Args:
-            values: The values to validate.
+            data: The values to validate.
 
         Returns:
             The validated values.
         """
-        if "custom_docker_base_image_name" in values:
-            image_name = values.pop("custom_docker_base_image_name", None)
+        if "custom_docker_base_image_name" in data:
+            image_name = data.pop("custom_docker_base_image_name", None)
             if image_name:
                 logger.warning(
                     "The 'custom_docker_base_image_name' field has been "
@@ -55,7 +56,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
                     "pipeline (see https://docs.zenml.io/user-guide/advanced-guide/environment-management/containerize-your-pipeline)."
                 )
 
-        return values
+        return data
 
     @property
     def is_synchronous(self) -> bool:

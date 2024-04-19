@@ -220,20 +220,20 @@ def convert_source_validator(*attributes: str) -> "AnyClassMethod":
     @field_validator(*attributes, mode="before")
     @classmethod
     def _convert_source(
-        cls: Type[BaseModel], value: Union[Source, str, None]
-    ) -> Optional[Source]:
+        cls: Type[BaseModel], v: Any,
+    ) -> Any:
         """Converts an old source string to a source object.
 
         Args:
             cls: The class on which the attributes are defined.
-            value: Source string or object.
+            v: Source string or object.
 
         Returns:
             The converted source.
         """
-        if isinstance(value, str):
-            value = Source.from_import_path(value)
+        if isinstance(v, str):
+            v = Source.from_import_path(v)
 
-        return value
+        return v
 
     return _convert_source

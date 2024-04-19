@@ -47,7 +47,7 @@ from google.cloud import container_v1, storage
 from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
 from pydantic import Field, SecretStr, field_validator, model_validator
-
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
@@ -99,22 +99,23 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 
     @model_validator(mode="before")
     @classmethod
+    @before_validator_handler
     def validate_user_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the user account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("user_account_json"), dict):
-            values["user_account_json"] = json.dumps(
-                values["user_account_json"]
+        if isinstance(data.get("user_account_json"), dict):
+            data["user_account_json"] = json.dumps(
+                data["user_account_json"]
             )
-        return values
+        return data
 
     @field_validator("user_account_json")
     @classmethod
@@ -179,22 +180,23 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
 
     @model_validator(mode="before")
     @classmethod
+    @before_validator_handler
     def validate_service_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the service account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("service_account_json"), dict):
-            values["service_account_json"] = json.dumps(
-                values["service_account_json"]
+        if isinstance(data.get("service_account_json"), dict):
+            data["service_account_json"] = json.dumps(
+                data["service_account_json"]
             )
-        return values
+        return data
 
     @field_validator("service_account_json")
     @classmethod
@@ -267,22 +269,23 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
 
     @model_validator(mode="before")
     @classmethod
+    @before_validator_handler
     def validate_service_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the external account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("external_account_json"), dict):
-            values["external_account_json"] = json.dumps(
-                values["external_account_json"]
+        if isinstance(data.get("external_account_json"), dict):
+            data["external_account_json"] = json.dumps(
+                data["external_account_json"]
             )
-        return values
+        return data
 
     @field_validator("external_account_json")
     @classmethod

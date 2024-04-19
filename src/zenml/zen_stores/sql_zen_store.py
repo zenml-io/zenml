@@ -39,7 +39,7 @@ from typing import (
     get_origin,
 )
 from uuid import UUID
-
+from zenml.utils.pydantic_utils import before_validator_handler
 from packaging import version
 from pydantic import (
     ConfigDict,
@@ -428,13 +428,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     @model_validator(mode="before")
     @classmethod
-    def _remove_grpc_attributes(
-        self, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @before_validator_handler
+    def _remove_grpc_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Removes old GRPC attributes.
 
         Args:
-            values: All model attribute values.
+            data: All model attribute values.
 
         Returns:
             The model attribute values
@@ -446,7 +445,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             "grpc_metadata_ssl_key",
             "grpc_metadata_ssl_cert",
         ]
-        grpc_values = [values.pop(key, None) for key in grpc_attribute_keys]
+        grpc_values = [data.pop(key, None) for key in grpc_attribute_keys]
         if any(grpc_values):
             logger.warning(
                 "The GRPC attributes %s are unused and will be removed soon. "
@@ -454,7 +453,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "become an error in future versions of ZenML."
             )
 
-        return values
+        return data
 
     @model_validator(mode="after")
     def _validate_backup_strategy(self) -> "SqlZenStoreConfiguration":

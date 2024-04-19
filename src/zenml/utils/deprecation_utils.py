@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, Set, Tuple, Type, Union
 from pydantic import BaseModel, model_validator
 
 from zenml.logger import get_logger
-
+from zenml.utils.pydantic_utils import before_validator_handler
 if TYPE_CHECKING:
     AnyClassMethod = classmethod[Any]  # type: ignore[type-arg]
 
@@ -64,14 +64,15 @@ def deprecate_pydantic_attributes(
 
     @model_validator(mode="before")
     @classmethod
+    @before_validator_handler
     def _deprecation_validator(
-        cls: Type[BaseModel], values: Dict[str, Any]
+        cls: Type[BaseModel], data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Pydantic validator function for deprecating pydantic attributes.
 
         Args:
             cls: The class on which the attributes are defined.
-            values: All values passed at model initialization.
+            data: All values passed at model initialization.
 
         Raises:
             AssertionError: If either the deprecated or replacement attribute
@@ -127,7 +128,7 @@ def deprecate_pydantic_attributes(
                     "annotation."
                 )
 
-            if values.get(deprecated_attribute, None) is None:
+            if data.get(deprecated_attribute, None) is None:
                 continue
 
             if replacement_attribute is None:
@@ -145,17 +146,17 @@ def deprecate_pydantic_attributes(
                 attribute=deprecated_attribute,
             )
 
-            if values.get(replacement_attribute, None) is None:
+            if data.get(replacement_attribute, None) is None:
                 logger.debug(
                     "Migrating value of deprecated attribute %s to "
                     "replacement attribute %s.",
                     deprecated_attribute,
                     replacement_attribute,
                 )
-                values[replacement_attribute] = values.pop(
+                data[replacement_attribute] = data.pop(
                     deprecated_attribute
                 )
-            elif values[deprecated_attribute] != values[replacement_attribute]:
+            elif data[deprecated_attribute] != data[replacement_attribute]:
                 raise ValueError(
                     "Got different values for deprecated attribute "
                     f"{deprecated_attribute} and replacement "
@@ -171,6 +172,6 @@ def deprecate_pydantic_attributes(
             previous_deprecation_warnings,
         )
 
-        return values
+        return data
 
     return _deprecation_validator

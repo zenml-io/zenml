@@ -57,29 +57,26 @@ class WandbExperimentTrackerSettings(BaseSettings):
 
     @field_validator("settings", mode="before")
     @classmethod
-    def _convert_settings(
-        cls,
-        value: Union[Dict[str, Any], "Settings"],
-    ) -> Dict[str, Any]:
+    def _convert_settings(cls, v: Any) -> Any:
         """Converts settings to a dictionary.
 
         Args:
-            value: The settings.
+            v: The settings.
 
         Returns:
             Dict representation of the settings.
         """
         import wandb
 
-        if isinstance(value, wandb.Settings):
+        if isinstance(v, wandb.Settings):
             # Depending on the wandb version, either `make_static` or `to_dict`
             # is available to convert the settings to a dictionary
-            if hasattr(value, "make_static"):
-                return cast(Dict[str, Any], value.make_static())
+            if hasattr(v, "make_static"):
+                return cast(Dict[str, Any], v.make_static())
             else:
-                return value.to_dict()
+                return v.to_dict()
         else:
-            return value
+            return v
 
 
 class WandbExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

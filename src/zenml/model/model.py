@@ -25,7 +25,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, model_validator
-
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
@@ -480,19 +480,20 @@ class Model(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @before_validator_handler
+    def _root_validator(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate all in one.
 
         Args:
-            values: Dict of values.
+            data: Dict of values.
 
         Returns:
             Dict of validated values.
         """
-        suppress_class_validation_warnings = values.get(
+        suppress_class_validation_warnings = data.get(
             "suppress_class_validation_warnings", False
         )
-        version = values.get("version", None)
+        version = data.get("version", None)
 
         if (
             version in [stage.value for stage in ModelStages]
@@ -507,8 +508,8 @@ class Model(BaseModel):
                 f"`version` `{version}` is numeric and will be fetched "
                 "using version number."
             )
-        values["suppress_class_validation_warnings"] = True
-        return values
+        data["suppress_class_validation_warnings"] = True
+        return data
 
     def _validate_config_in_runtime(self) -> "ModelVersionResponse":
         """Validate that config doesn't conflict with runtime environment.

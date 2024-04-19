@@ -44,7 +44,7 @@ from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
 )
-
+from zenml.utils.pydantic_utils import before_validator_handler
 logger = get_logger(__name__)
 
 
@@ -67,11 +67,12 @@ class AzureSecretsStoreConfiguration(
 
     @model_validator(mode="before")
     @classmethod
-    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @before_validator_handler
+    def populate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
         Args:
-            values: Dict representing user-specified runtime settings.
+            data: Dict representing user-specified runtime settings.
 
         Returns:
             Validated settings.
@@ -79,9 +80,9 @@ class AzureSecretsStoreConfiguration(
         # Search for legacy attributes and populate the connector configuration
         # from them, if they exist.
         if (
-            values.get("azure_client_id")
-            and values.get("azure_client_secret")
-            and values.get("azure_tenant_id")
+            data.get("azure_client_id")
+            and data.get("azure_client_secret")
+            and data.get("azure_tenant_id")
         ):
             logger.warning(
                 "The `azure_client_id`, `azure_client_secret` and "
@@ -89,16 +90,16 @@ class AzureSecretsStoreConfiguration(
                 "removed in a future version or ZenML. Please use the "
                 "`auth_method` and `auth_config` attributes instead."
             )
-            values["auth_method"] = (
+            data["auth_method"] = (
                 AzureAuthenticationMethods.SERVICE_PRINCIPAL
             )
-            values["auth_config"] = dict(
-                client_id=values.get("azure_client_id"),
-                client_secret=values.get("azure_client_secret"),
-                tenant_id=values.get("azure_tenant_id"),
+            data["auth_config"] = dict(
+                client_id=data.get("azure_client_id"),
+                client_secret=data.get("azure_client_secret"),
+                tenant_id=data.get("azure_tenant_id"),
             )
 
-        return values
+        return data
 
     model_config = ConfigDict(extra="allow")
 

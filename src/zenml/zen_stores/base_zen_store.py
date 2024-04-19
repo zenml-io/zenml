@@ -21,6 +21,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+Dict,
     Union,
 )
 from urllib.parse import urlparse
@@ -58,7 +59,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
-
+from zenml.utils.pydantic_utils import before_validator_handler
 logger = get_logger(__name__)
 
 
@@ -80,7 +81,8 @@ class BaseZenStore(
 
     @model_validator(mode="before")
     @classmethod
-    def convert_config(cls, data: Any) -> Any:
+    @before_validator_handler
+    def convert_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Method to infer the correct type of the config and convert.
 
         Args:

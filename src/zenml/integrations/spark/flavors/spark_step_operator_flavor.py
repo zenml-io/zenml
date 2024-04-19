@@ -47,13 +47,11 @@ class SparkStepOperatorSettings(BaseSettings):
 
     @field_validator("submit_kwargs", mode="before")
     @classmethod
-    def _convert_json_string(
-        cls, value: Union[None, str, Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
+    def _convert_json_string(cls, v: Any) -> Any:
         """Converts potential JSON strings passed via the CLI to dictionaries.
 
         Args:
-            value: The value to convert.
+            v: The value to convert.
 
         Returns:
             The converted value.
@@ -63,22 +61,22 @@ class SparkStepOperatorSettings(BaseSettings):
             ValueError: If the value is an invalid json string or a json string
                 that does not decode into a dictionary.
         """
-        if isinstance(value, str):
+        if isinstance(v, str):
             try:
-                dict_ = json.loads(value)
+                dict_ = json.loads(v)
             except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{value}'") from e
+                raise ValueError(f"Invalid json string '{v}'") from e
 
             if not isinstance(dict_, Dict):
                 raise ValueError(
-                    f"Json string '{value}' did not decode into a dictionary."
+                    f"Json string '{v}' did not decode into a dictionary."
                 )
 
             return dict_
-        elif isinstance(value, Dict) or value is None:
-            return value
+        elif isinstance(v, Dict) or v is None:
+            return v
         else:
-            raise TypeError(f"{value} is not a json string or a dictionary.")
+            raise TypeError(f"{v} is not a json string or a dictionary.")
 
 
 class SparkStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

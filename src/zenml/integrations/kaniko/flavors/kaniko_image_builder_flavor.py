@@ -91,13 +91,11 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
         mode="before",
     )
     @classmethod
-    def _convert_json_string(
-        cls, value: Union[None, str, List[Any]]
-    ) -> Optional[List[Any]]:
+    def _convert_json_string(cls, v: Any) -> Any:
         """Converts potential JSON strings passed via the CLI to lists.
 
         Args:
-            value: The value to convert.
+            v: The value to convert.
 
         Returns:
             The converted value.
@@ -107,22 +105,22 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
             ValueError: If the value is an invalid json string or a json string
                 that does not decode into a list.
         """
-        if isinstance(value, str):
+        if isinstance(v, str):
             try:
-                list_ = json.loads(value)
+                list_ = json.loads(v)
             except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{value}'") from e
+                raise ValueError(f"Invalid json string '{v}'") from e
 
             if not isinstance(list_, List):
                 raise ValueError(
-                    f"Json string '{value}' did not decode into a list."
+                    f"Json string '{v}' did not decode into a list."
                 )
 
             return list_
-        elif isinstance(value, List) or value is None:
-            return value
+        elif isinstance(v, List) or v is None:
+            return v
         else:
-            raise TypeError(f"{value} is not a json string or a list.")
+            raise TypeError(f"{v} is not a json string or a list.")
 
 
 class KanikoImageBuilderFlavor(BaseImageBuilderFlavor):

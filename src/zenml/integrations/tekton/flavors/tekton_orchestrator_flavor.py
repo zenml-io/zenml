@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import model_validator
-
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.models import ServiceConnectorRequirements
@@ -71,8 +71,9 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
 
     @model_validator(mode="before")
     @classmethod
+    @before_validator_handler
     def _validate_deprecated_attrs(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Pydantic root_validator for deprecated attributes.
 
@@ -81,7 +82,7 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
         mandatory in the meantime.
 
         Args:
-            values: Values passed to the object constructor
+            data: Values passed to the object constructor
 
         Returns:
             Values passed to the object constructor
@@ -94,10 +95,10 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
 
         # remove deprecated attributes from values dict
         for attr in provisioning_attrs:
-            if attr in values:
-                del values[attr]
+            if attr in data:
+                del data[attr]
 
-        return values
+        return data
 
     @property
     def is_remote(self) -> bool:

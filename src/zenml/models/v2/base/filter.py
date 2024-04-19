@@ -29,7 +29,7 @@ from typing import (
     Union,
 )
 from uuid import UUID
-
+from zenml.utils.pydantic_utils import before_validator_handler
 from pydantic import (
     BaseModel,
     Field,
@@ -82,11 +82,11 @@ class Filter(BaseModel, ABC):
 
     @field_validator("operation", mode="before")
     @classmethod
-    def validate_operation(cls, op: str) -> str:
+    def validate_operation(cls, v: Any) -> Any:
         """Validate that the operation is a valid op for the field type.
 
         Args:
-            op: The operation of this filter.
+            v: The operation of this filter.
 
         Returns:
             The operation if it is valid.
@@ -94,13 +94,13 @@ class Filter(BaseModel, ABC):
         Raises:
             ValueError: If the operation is not valid for this field type.
         """
-        if op not in cls.ALLOWED_OPS:
+        if v not in cls.ALLOWED_OPS:
             raise ValueError(
                 f"This datatype can not be filtered using this operation: "
-                f"'{op}'. The allowed operations are: {cls.ALLOWED_OPS}"
+                f"'{v}'. The allowed operations are: {cls.ALLOWED_OPS}"
             )
         else:
-            return op
+            return v
 
     def generate_query_conditions(
         self,
@@ -307,7 +307,7 @@ class BaseFilter(BaseModel):
 
     @field_validator("sort_by", mode="before")
     @classmethod
-    def validate_sort_by(cls, v: str) -> str:
+    def validate_sort_by(cls, v: Any) -> Any:
         """Validate that the sort_column is a valid column with a valid operand.
 
         Args:
@@ -356,17 +356,18 @@ class BaseFilter(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def filter_ops(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @before_validator_handler
+    def filter_ops(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse incoming filters to ensure all filters are legal.
 
         Args:
-            values: The values of the class.
+            data: The values of the class.
 
         Returns:
             The values of the class.
         """
-        cls._generate_filter_list(values)
-        return values
+        cls._generate_filter_list(data)
+        return data
 
     @property
     def list_of_filters(self) -> List[Filter]:

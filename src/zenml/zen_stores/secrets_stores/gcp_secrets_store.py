@@ -44,7 +44,7 @@ from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
 )
-
+from zenml.utils.pydantic_utils import before_validator_handler
 logger = get_logger(__name__)
 
 
@@ -80,18 +80,19 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
 
     @model_validator(mode="before")
     @classmethod
-    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @before_validator_handler
+    def populate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
         Args:
-            values: Dict representing user-specified runtime settings.
+            data: Dict representing user-specified runtime settings.
 
         Returns:
             Validated settings.
         """
         # Search for legacy attributes and populate the connector configuration
         # from them, if they exist.
-        if values.get("project_id"):
+        if data.get("project_id"):
             if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
                 logger.warning(
                     "The `project_id` GCP secrets store attribute is "
@@ -100,9 +101,9 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
                     "instead. Using an implicit GCP authentication to access "
                     "the GCP Secrets Manager API."
                 )
-                values["auth_method"] = GCPAuthenticationMethods.IMPLICIT
-                values["auth_config"] = dict(
-                    project_id=values.get("project_id"),
+                data["auth_method"] = GCPAuthenticationMethods.IMPLICIT
+                data["auth_config"] = dict(
+                    project_id=data.get("project_id"),
                 )
             else:
                 logger.warning(
@@ -112,17 +113,17 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
                     "Please use the `auth_method` and `auth_config` attributes "
                     "instead."
                 )
-                values["auth_method"] = (
+                data["auth_method"] = (
                     GCPAuthenticationMethods.SERVICE_ACCOUNT
                 )
-                values["auth_config"] = dict(
-                    project_id=values.get("project_id"),
+                data["auth_config"] = dict(
+                    project_id=data.get("project_id"),
                 )
                 # Load the service account credentials from the file
                 with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
-                    values["auth_config"]["service_account_json"] = f.read()
+                    data["auth_config"]["service_account_json"] = f.read()
 
-        return values
+        return data
 
     model_config = ConfigDict(extra="allow")
 

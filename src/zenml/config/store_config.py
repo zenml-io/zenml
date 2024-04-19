@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, SerializeAsAny, model_validator
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import StoreType
 from zenml.logger import get_logger
-
+from zenml.utils.pydantic_utils import before_validator_handler
 logger = get_logger(__name__)
 
 
@@ -65,27 +65,28 @@ class StoreConfiguration(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_secrets_store(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @before_validator_handler
+    def validate_secrets_store(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the secrets store configuration.
 
         Args:
-            values: The values of the store configuration.
+            data: The values of the store configuration.
 
         Returns:
             The values of the store configuration.
         """
-        if values.get("secrets_store") is None:
-            return values
+        if data.get("secrets_store") is None:
+            return data
 
         # Remove the legacy REST secrets store configuration since it is no
         # longer supported/needed
-        secrets_store = values["secrets_store"]
+        secrets_store = data["secrets_store"]
         if isinstance(secrets_store, dict):
             secrets_store_type = secrets_store.get("type")
             if secrets_store_type == "rest":
-                del values["secrets_store"]
+                del data["secrets_store"]
 
-        return values
+        return data
 
     model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order

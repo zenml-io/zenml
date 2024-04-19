@@ -16,13 +16,13 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import model_validator
+from pydantic import model_validator, ValidationInfo
 from pydantic_settings import SettingsConfigDict
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
 from zenml.utils import deprecation_utils
-
+from zenml.utils.pydantic_utils import before_validator_handler
 logger = get_logger(__name__)
 
 
@@ -208,35 +208,33 @@ class DockerSettings(BaseSettings):
 
     @model_validator(mode="before")
     @classmethod
-    def _migrate_copy_files(cls, values: Any) -> Any:
+    @before_validator_handler
+    def _migrate_copy_files(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Migrates the value from the old copy_files attribute.
 
         Args:
-            values: The settings values.
+            data: The settings values.
 
         Returns:
             The migrated settings values.
         """
-        if isinstance(values, cls) or issubclass(cls, values.__class__):
-            values = values.model_dump()
-
-        copy_files = values.get("copy_files", None)
+        copy_files = data.get("copy_files", None)
 
         if copy_files is None:
-            return values
+            return data
 
-        if values.get("source_files", None):
+        if data.get("source_files", None):
             # Ignore the copy files value in favor of the new source files
             logger.warning(
                 "Both `copy_files` and `source_files` specified for the "
                 "DockerSettings, ignoring the `copy_files` value."
             )
         elif copy_files is True:
-            values["source_files"] = SourceFileMode.INCLUDE
+            data["source_files"] = SourceFileMode.INCLUDE
         elif copy_files is False:
-            values["source_files"] = SourceFileMode.IGNORE
+            data["source_files"] = SourceFileMode.IGNORE
 
-        return values
+        return data
 
     @model_validator(mode="after")
     def _validate_skip_build(self) -> "DockerSettings":

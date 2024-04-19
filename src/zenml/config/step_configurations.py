@@ -28,9 +28,10 @@ from pydantic import (
     ConfigDict,
     SerializeAsAny,
     field_validator,
+ValidationInfo,
     model_validator,
 )
-
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
@@ -60,22 +61,25 @@ class PartialArtifactConfiguration(StrictBaseModel):
 
     @model_validator(mode="before")
     @classmethod
+    @before_validator_handler
     def _remove_deprecated_attributes(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Removes deprecated attributes from the values dict.
 
         Args:
-            values: The values dict used to instantiate the model.
+            data: The values dict used to instantiate the model.
 
         Returns:
             The values dict without deprecated attributes.
         """
         deprecated_attributes = ["artifact_source"]
+
         for deprecated_attribute in deprecated_attributes:
-            if deprecated_attribute in values:
-                values.pop(deprecated_attribute)
-        return values
+            if deprecated_attribute in data:
+                data.pop(deprecated_attribute)
+
+        return data
 
     @field_validator("materializer_source", mode="before")
     @classmethod
@@ -180,22 +184,23 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     @model_validator(mode="before")
     @classmethod
-    def _remove_deprecated_attributes(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @before_validator_handler
+    def _remove_deprecated_attributes(cls, data: Any) -> Any:
         """Removes deprecated attributes from the values dict.
 
         Args:
-            values: The values dict used to instantiate the model.
+            data: The values dict used to instantiate the model.
 
         Returns:
             The values dict without deprecated attributes.
         """
         deprecated_attributes = ["docstring", "inputs"]
+
         for deprecated_attribute in deprecated_attributes:
-            if deprecated_attribute in values:
-                values.pop(deprecated_attribute)
-        return values
+            if deprecated_attribute in data:
+                data.pop(deprecated_attribute)
+
+        return data
 
 
 class StepConfiguration(PartialStepConfiguration):

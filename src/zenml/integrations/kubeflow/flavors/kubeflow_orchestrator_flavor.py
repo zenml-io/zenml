@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
 from pydantic import model_validator
-
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
@@ -70,13 +70,14 @@ class KubeflowOrchestratorSettings(BaseSettings):
 
     @model_validator(mode="before")
     @classmethod
+    @before_validator_handler
     def _validate_and_migrate_pod_settings(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Validates settings and migrates pod settings from older version.
 
         Args:
-            values: Dict representing user-specified runtime settings.
+            data: Dict representing user-specified runtime settings.
 
         Returns:
             Validated settings.
@@ -85,13 +86,13 @@ class KubeflowOrchestratorSettings(BaseSettings):
             AssertionError: If old and new settings are used together.
             ValueError: If username and password are not specified together.
         """
-        has_pod_settings = bool(values.get("pod_settings"))
+        has_pod_settings = bool(data.get("pod_settings"))
 
         node_selectors = cast(
-            Dict[str, str], values.get("node_selectors") or {}
+            Dict[str, str], data.get("node_selectors") or {}
         )
         node_affinity = cast(
-            Dict[str, List[str]], values.get("node_affinity") or {}
+            Dict[str, List[str]], data.get("node_affinity") or {}
         )
 
         has_old_settings = any([node_selectors, node_affinity])
@@ -138,20 +139,20 @@ class KubeflowOrchestratorSettings(BaseSettings):
             pod_settings = KubernetesPodSettings(
                 node_selectors=node_selectors, affinity=affinity
             )
-            values["pod_settings"] = pod_settings
-            values["node_affinity"] = {}
-            values["node_selectors"] = {}
+            data["pod_settings"] = pod_settings
+            data["node_affinity"] = {}
+            data["node_selectors"] = {}
 
         # Validate username and password for auth cookie logic
-        username = values.get("client_username")
-        password = values.get("client_password")
+        username = data.get("client_username")
+        password = data.get("client_password")
         client_creds_error = "`client_username` and `client_password` both need to be set together."
         if username and password is None:
             raise ValueError(client_creds_error)
         if password and username is None:
             raise ValueError(client_creds_error)
 
-        return values
+        return data
 
 
 class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
@@ -189,9 +190,8 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_deprecated_attrs(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @before_validator_handler
+    def _validate_deprecated_attrs(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Pydantic root_validator for deprecated attributes.
 
         This root validator is used for backwards compatibility purposes. E.g.
@@ -199,7 +199,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         mandatory in the meantime.
 
         Args:
-            values: Values passed to the object constructor
+            data: Values passed to the object constructor
 
         Returns:
             Values passed to the object constructor
@@ -212,10 +212,10 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
 
         # remove deprecated attributes from values dict
         for attr in provisioning_attrs:
-            if attr in values:
-                del values[attr]
+            if attr in data:
+                del data[attr]
 
-        return values
+        return data
 
     @property
     def is_remote(self) -> bool:

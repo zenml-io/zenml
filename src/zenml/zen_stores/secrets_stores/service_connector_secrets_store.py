@@ -39,7 +39,7 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
-
+from zenml.utils.pydantic_utils import before_validator_handler
 logger = get_logger(__name__)
 
 
@@ -56,11 +56,12 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_auth_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @before_validator_handler
+    def validate_auth_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Convert the authentication configuration if given in JSON format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
@@ -69,15 +70,15 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
             ValueError: If the authentication configuration is not a valid
                 JSON object.
         """
-        if isinstance(values.get("auth_config"), str):
+        if isinstance(data.get("auth_config"), str):
             try:
-                values["auth_config"] = json.loads(values["auth_config"])
+                data["auth_config"] = json.loads(data["auth_config"])
             except json.JSONDecodeError as e:
                 raise ValueError(
                     f"The authentication configuration is not a valid JSON "
                     f"object: {e}"
                 )
-        return values
+        return data
 
 
 class ServiceConnectorSecretsStore(BaseSecretsStore):

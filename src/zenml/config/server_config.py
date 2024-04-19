@@ -19,8 +19,8 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
+from pydantic import BaseModel, ConfigDict, Field, model_validator, ValidationInfo
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
@@ -279,11 +279,12 @@ class ServerConfiguration(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @before_validator_handler
+    def _validate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the server configuration.
 
         Args:
-            values: The server configuration values.
+            data: The server configuration values.
 
         Returns:
             The validated server configuration values.
@@ -291,10 +292,10 @@ class ServerConfiguration(BaseModel):
         Raises:
             ValueError: If the server configuration is invalid.
         """
-        if values.get("auth_scheme") == AuthScheme.EXTERNAL:
+        if data.get("auth_scheme") == AuthScheme.EXTERNAL:
             # If the authentication scheme is set to `EXTERNAL`, the
             # external authenticator URLs must be specified.
-            if not values.get("external_login_url") or not values.get(
+            if not data.get("external_login_url") or not data.get(
                 "external_user_info_url"
             ):
                 raise ValueError(
@@ -305,22 +306,22 @@ class ServerConfiguration(BaseModel):
 
             # If the authentication scheme is set to `EXTERNAL`, the
             # external cookie name must be specified.
-            if not values.get("external_cookie_name"):
+            if not data.get("external_cookie_name"):
                 raise ValueError(
                     "The external cookie name must be specified when "
                     "using the EXTERNAL authentication scheme."
                 )
 
-        if cors_allow_origins := values.get("cors_allow_origins"):
+        if cors_allow_origins := data.get("cors_allow_origins"):
             origins = cors_allow_origins.split(",")
-            values["cors_allow_origins"] = origins
+            data["cors_allow_origins"] = origins
         else:
-            values["cors_allow_origins"] = ["*"]
+            data["cors_allow_origins"] = ["*"]
 
         # if metadata is a string, convert it to a dictionary
-        if isinstance(values.get("metadata"), str):
+        if isinstance(data.get("metadata"), str):
             try:
-                values["metadata"] = json.loads(values["metadata"])
+                data["metadata"] = json.loads(data["metadata"])
             except json.JSONDecodeError as e:
                 raise ValueError(
                     f"The server metadata is not a valid JSON string: {e}"
@@ -328,15 +329,15 @@ class ServerConfiguration(BaseModel):
 
         # if one of the secure headers options is set to a boolean value, set
         # the corresponding value
-        for k, v in values.copy().items():
+        for k, v in data.copy().items():
             if k.startswith("secure_headers_") and isinstance(v, str):
                 if v.lower() in ["disabled", "no", "none", "false", "off", ""]:
-                    values[k] = False
+                    data[k] = False
                 if v.lower() in ["enabled", "yes", "true", "on"]:
                     # Revert to the default value if the header is enabled
-                    del values[k]
+                    del data[k]
 
-        return values
+        return data
 
     @property
     def deployment_id(self) -> UUID:

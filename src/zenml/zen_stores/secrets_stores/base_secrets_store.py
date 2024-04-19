@@ -33,7 +33,7 @@ from zenml.utils import source_utils
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
 )
-
+from zenml.utils.pydantic_utils import before_validator_handler
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
@@ -60,7 +60,8 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
 
     @model_validator(mode="before")
     @classmethod
-    def convert_config(cls, data: Any) -> Any:
+    @before_validator_handler
+    def convert_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Method to infer the correct type of the config and convert.
 
         Args:
