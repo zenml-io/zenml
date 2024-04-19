@@ -37,16 +37,7 @@ WORKDIR /zenml
 #
 # NOTE: System packages required for the build stage should be installed here
 
-
-# Install curl
-RUN apt-get update && apt-get install -y curl
-
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
-ENV PATH="/root/.cargo/bin:$PATH"
-
-RUN uv venv $VIRTUAL_ENV --seed
+RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY README.md pyproject.toml ./
@@ -61,17 +52,15 @@ COPY src/zenml/__init__.py ./src/zenml/
 # dependencies for reproducibility and debugging.
 # NOTE: we need to uninstall zenml at the end to remove the incomplete
 # installation
-RUN uv pip install --upgrade pip \
-  && uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
-  && uv pip freeze > requirements.txt \
-  && uv pip uninstall zenml
+RUN pip install --upgrade pip \
+  && pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
+  && pip freeze > requirements.txt
 
 # Copy the source code
 COPY src src
 
 # Run pip install again to install the source code in the virtual environment
-RUN uv pip uninstall zenml \
-  && uv pip install --no-deps --no-cache .
+RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]
 
 # Inherit from the base image which has the minimal set of updated system
 # software packages

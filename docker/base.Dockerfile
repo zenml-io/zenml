@@ -38,14 +38,6 @@ WORKDIR /zenml
 #
 # NOTE: System packages required for the build stages should be installed here
 
-# Install curl
-RUN apt-get update && apt-get install -y curl
-
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
-ENV PATH="/root/.cargo/bin:$PATH"
-
 FROM builder as client-builder
 
 RUN python3 -m venv $VIRTUAL_ENV
@@ -67,7 +59,7 @@ RUN pip install --upgrade pip \
 
 FROM builder as server-builder
 
-RUN uv venv $VIRTUAL_ENV --seed
+RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 
@@ -80,9 +72,9 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # (default to latest).
 # Also create a requirements.txt file to keep track of
 # dependencies for reproducibility and debugging.
-RUN uv pip install --upgrade pip \
-  && uv pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
-  && uv pip freeze > requirements.txt
+RUN pip install --upgrade pip \
+  && pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
+  && pip freeze > requirements.txt
 
 FROM base as client
 
