@@ -30,10 +30,11 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
 from zenml.utils import source_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
 )
-from zenml.utils.pydantic_utils import before_validator_handler
+
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:

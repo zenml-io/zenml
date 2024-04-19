@@ -39,7 +39,7 @@ from typing import (
     get_origin,
 )
 from uuid import UUID
-from zenml.utils.pydantic_utils import before_validator_handler
+
 from packaging import version
 from pydantic import (
     ConfigDict,
@@ -263,6 +263,7 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,

@@ -16,11 +16,12 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import model_validator
-from zenml.utils.pydantic_utils import before_validator_handler
+
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.integrations.tekton.orchestrators import TektonOrchestrator

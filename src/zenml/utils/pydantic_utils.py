@@ -406,10 +406,9 @@ def before_validator_handler(method):
     Returns:
         the validator method
     """
+
     def before_validator(
-        cls,
-        data: Any,
-        validation_info: ValidationInfo
+        cls, data: Any, validation_info: ValidationInfo
     ) -> Any:
         """Wrapper method to handle the raw data
 
@@ -422,9 +421,7 @@ def before_validator_handler(method):
             the validated data
         """
         data = model_validator_data_handler(
-            raw_data=data,
-            base_class=cls,
-            validation_info=validation_info
+            raw_data=data, base_class=cls, validation_info=validation_info
         )
         return method(cls=cls, data=data)
 

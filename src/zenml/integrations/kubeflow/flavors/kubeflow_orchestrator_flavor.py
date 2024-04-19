@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
 from pydantic import model_validator
-from zenml.utils.pydantic_utils import before_validator_handler
+
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
@@ -24,6 +24,7 @@ from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
@@ -88,9 +89,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
         """
         has_pod_settings = bool(data.get("pod_settings"))
 
-        node_selectors = cast(
-            Dict[str, str], data.get("node_selectors") or {}
-        )
+        node_selectors = cast(Dict[str, str], data.get("node_selectors") or {})
         node_affinity = cast(
             Dict[str, List[str]], data.get("node_affinity") or {}
         )
@@ -191,7 +190,9 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _validate_deprecated_attrs(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_deprecated_attrs(
+        cls, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Pydantic root_validator for deprecated attributes.
 
         This root validator is used for backwards compatibility purposes. E.g.

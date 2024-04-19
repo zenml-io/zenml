@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes pod settings."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from pydantic import field_validator
 
@@ -21,13 +21,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import serialization_utils
 
 if TYPE_CHECKING:
-    from kubernetes.client.models import (
-        V1Affinity,
-        V1ResourceRequirements,
-        V1Toleration,
-        V1Volume,
-        V1VolumeMount,
-    )
+    pass
 
 
 class KubernetesPodSettings(BaseSettings):

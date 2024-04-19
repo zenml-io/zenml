@@ -19,8 +19,8 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, ValidationInfo
-from zenml.utils.pydantic_utils import before_validator_handler
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
@@ -43,6 +43,7 @@ from zenml.constants import (
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
 from zenml.models import ServerDeploymentType
+from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
 

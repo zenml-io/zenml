@@ -29,7 +29,7 @@ from typing import (
     Union,
 )
 from uuid import UUID
-from zenml.utils.pydantic_utils import before_validator_handler
+
 from pydantic import (
     BaseModel,
     Field,
@@ -47,6 +47,7 @@ from zenml.constants import (
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.exceptions import ValidationError
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.typing_utils import get_args
 
 if TYPE_CHECKING:

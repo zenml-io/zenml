@@ -14,7 +14,7 @@
 """Source classes."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Type
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -220,7 +220,8 @@ def convert_source_validator(*attributes: str) -> "AnyClassMethod":
     @field_validator(*attributes, mode="before")
     @classmethod
     def _convert_source(
-        cls: Type[BaseModel], v: Any,
+        cls: Type[BaseModel],
+        v: Any,
     ) -> Any:
         """Converts an old source string to a source object.
 

@@ -40,11 +40,12 @@ from zenml.integrations.azure.service_connectors.azure_service_connector import 
     AzureAuthenticationMethods,
 )
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
 )
-from zenml.utils.pydantic_utils import before_validator_handler
+
 logger = get_logger(__name__)
 
 
@@ -90,9 +91,7 @@ class AzureSecretsStoreConfiguration(
                 "removed in a future version or ZenML. Please use the "
                 "`auth_method` and `auth_config` attributes instead."
             )
-            data["auth_method"] = (
-                AzureAuthenticationMethods.SERVICE_PRINCIPAL
-            )
+            data["auth_method"] = AzureAuthenticationMethods.SERVICE_PRINCIPAL
             data["auth_config"] = dict(
                 client_id=data.get("azure_client_id"),
                 client_secret=data.get("azure_client_secret"),

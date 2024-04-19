@@ -36,10 +36,11 @@ from zenml.service_connectors.service_connector import ServiceConnector
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
-from zenml.utils.pydantic_utils import before_validator_handler
+
 logger = get_logger(__name__)
 
 

@@ -25,11 +25,12 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, model_validator
-from zenml.utils.pydantic_utils import before_validator_handler
+
 from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType

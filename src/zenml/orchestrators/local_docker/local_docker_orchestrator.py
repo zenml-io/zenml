@@ -18,7 +18,7 @@ import json
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 from uuid import uuid4
 
 from docker.errors import ContainerError

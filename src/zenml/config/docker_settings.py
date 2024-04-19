@@ -16,13 +16,14 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import model_validator, ValidationInfo
+from pydantic import model_validator
 from pydantic_settings import SettingsConfigDict
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
 from zenml.utils import deprecation_utils
 from zenml.utils.pydantic_utils import before_validator_handler
+
 logger = get_logger(__name__)
 
 

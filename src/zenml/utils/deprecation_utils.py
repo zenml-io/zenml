@@ -20,6 +20,7 @@ from pydantic import BaseModel, model_validator
 
 from zenml.logger import get_logger
 from zenml.utils.pydantic_utils import before_validator_handler
+
 if TYPE_CHECKING:
     AnyClassMethod = classmethod[Any]  # type: ignore[type-arg]
 
@@ -153,9 +154,7 @@ def deprecate_pydantic_attributes(
                     deprecated_attribute,
                     replacement_attribute,
                 )
-                data[replacement_attribute] = data.pop(
-                    deprecated_attribute
-                )
+                data[replacement_attribute] = data.pop(deprecated_attribute)
             elif data[deprecated_attribute] != data[replacement_attribute]:
                 raise ValueError(
                     "Got different values for deprecated attribute "

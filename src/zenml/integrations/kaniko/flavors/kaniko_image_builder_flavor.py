@@ -14,7 +14,7 @@
 """Kaniko image builder flavor."""
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pydantic import PositiveInt, field_validator
 

@@ -28,10 +28,9 @@ from pydantic import (
     ConfigDict,
     SerializeAsAny,
     field_validator,
-ValidationInfo,
     model_validator,
 )
-from zenml.utils.pydantic_utils import before_validator_handler
+
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
@@ -44,6 +43,7 @@ from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
 from zenml.utils import deprecation_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings

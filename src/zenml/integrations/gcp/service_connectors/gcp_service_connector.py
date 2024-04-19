@@ -47,7 +47,7 @@ from google.cloud import container_v1, storage
 from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
 from pydantic import Field, SecretStr, field_validator, model_validator
-from zenml.utils.pydantic_utils import before_validator_handler
+
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
@@ -74,6 +74,7 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.secret_utils import ZenSecretStr
 
 logger = get_logger(__name__)
@@ -112,9 +113,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
             The validated configuration values.
         """
         if isinstance(data.get("user_account_json"), dict):
-            data["user_account_json"] = json.dumps(
-                data["user_account_json"]
-            )
+            data["user_account_json"] = json.dumps(data["user_account_json"])
         return data
 
     @field_validator("user_account_json")

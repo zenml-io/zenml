@@ -23,7 +23,6 @@ from typing import (
     Optional,
     Set,
     Type,
-    Union,
 )
 
 from pydantic import field_validator

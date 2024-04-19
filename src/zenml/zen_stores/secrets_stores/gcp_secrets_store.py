@@ -40,11 +40,12 @@ from zenml.integrations.gcp.service_connectors.gcp_service_connector import (
     GCPAuthenticationMethods,
 )
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
 )
-from zenml.utils.pydantic_utils import before_validator_handler
+
 logger = get_logger(__name__)
 
 
@@ -113,9 +114,7 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
                     "Please use the `auth_method` and `auth_config` attributes "
                     "instead."
                 )
-                data["auth_method"] = (
-                    GCPAuthenticationMethods.SERVICE_ACCOUNT
-                )
+                data["auth_method"] = GCPAuthenticationMethods.SERVICE_ACCOUNT
                 data["auth_config"] = dict(
                     project_id=data.get("project_id"),
                 )

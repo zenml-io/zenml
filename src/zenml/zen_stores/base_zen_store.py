@@ -18,10 +18,10 @@ from abc import ABC
 from typing import (
     Any,
     ClassVar,
+    Dict,
     Optional,
     Tuple,
     Type,
-Dict,
     Union,
 )
 from urllib.parse import urlparse
@@ -55,11 +55,12 @@ from zenml.models import (
     UserResponse,
     WorkspaceResponse,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
-from zenml.utils.pydantic_utils import before_validator_handler
+
 logger = get_logger(__name__)
 
 

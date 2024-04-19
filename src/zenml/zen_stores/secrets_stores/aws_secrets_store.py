@@ -38,11 +38,12 @@ from zenml.integrations.aws.service_connectors.aws_service_connector import (
     AWSAuthenticationMethods,
 )
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
 )
-from zenml.utils.pydantic_utils import before_validator_handler
+
 logger = get_logger(__name__)
 
 

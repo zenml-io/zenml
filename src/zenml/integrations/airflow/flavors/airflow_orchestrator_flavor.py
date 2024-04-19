@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Airflow orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pydantic import field_validator
 
@@ -89,9 +89,7 @@ class AirflowOrchestratorSettings(BaseSettings):
 
     @field_validator("operator", mode="before")
     @classmethod
-    def _convert_operator(
-        cls, v: Any
-    ) -> Any:
+    def _convert_operator(cls, v: Any) -> Any:
         """Converts operator types to source strings.
 
         Args:
