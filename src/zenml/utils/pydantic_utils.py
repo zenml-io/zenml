@@ -282,7 +282,7 @@ def validate_function_args(
     return validated_args
 
 
-def before_validator_input_handler(
+def model_validator_data_handler(
     raw_data: Any,
     base_class: Type[BaseModel],
     validation_info: ValidationInfo,
@@ -304,7 +304,7 @@ def before_validator_input_handler(
         class MyClass(Base):
             @model_validator(mode="before")
             @classmethod
-            def wrap_validator(cls, data: Any) -> Any:
+            def before_validator(cls, data: Any) -> Any:
                 print(type(data))
                 return {}
 
@@ -345,15 +345,15 @@ def before_validator_input_handler(
 
         elif issubclass(base_class, raw_data.__class__):
             # There are a few occurrences where the annotation of the field is
-            # denoted by a class, and we use a subclass as the raw input. In
-            # such cases we will use the same approach as before, while raising
-            # a debug message.
+            # denoted by a subclass, and we use the instance of its super class
+            # as the raw input. In such cases we will use the same approach as
+            # before, while raising a debug message.
             logger.debug(
                 f"During the validation of a `{base_class}` object, an instance"
                 f"of `{raw_data.__class__}` (super class of `{base_class}`) "
                 f"has been passed as raw input. This might lead to unexpected "
                 f"behaviour in case `{base_class}` have features which can not"
-                f"be exracted from an instance of a `{raw_data.__class__}`."
+                f"be extracted from an instance of a `{raw_data.__class__}`."
             )
             return dict(raw_data)
 
@@ -395,3 +395,37 @@ def before_validator_input_handler(
     else:
         # Unknown validation mode
         raise ValueError(f"Unknown validation mode. {validation_info.mode}")
+
+
+def before_validator_handler(method):
+    """Decorator to handle the raw input data for pydantic model validators.
+
+    Args:
+        method: the class method with the actual validation logic.
+
+    Returns:
+        the validator method
+    """
+    def before_validator(
+        cls,
+        data: Any,
+        validation_info: ValidationInfo
+    ) -> Any:
+        """Wrapper method to handle the raw data
+
+        Args:
+            cls: the class handler
+            data: the raw input data
+            validation_info: the context of the validation.
+
+        Returns:
+            the validated data
+        """
+        data = model_validator_data_handler(
+            raw_data=data,
+            base_class=cls,
+            validation_info=validation_info
+        )
+        return method(cls=cls, data=data)
+
+    return before_validator
