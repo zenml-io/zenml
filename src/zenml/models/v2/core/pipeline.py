@@ -22,18 +22,11 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models import (
-    BaseFilter,
-    BaseResponseMetadata,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
-)
-from zenml.models.v2.base.base import (
-    BaseResponse,
-    BaseResponseBody,
-    BaseResponseResources,
 )
 from zenml.models.v2.base.scoped import WorkspaceScopedResponseResources
 from zenml.models.v2.base.update import update_model
@@ -279,60 +272,4 @@ class PipelineFilter(WorkspaceScopedFilter):
     )
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User of the Pipeline"
-    )
-
-
-# ------------------ Pipeline Namespaces ------------------
-
-
-class PipelineNamespaceResponseBody(BaseResponseBody):
-    """Response body for pipeline namespaces."""
-
-    latest_run_id: Optional[UUID] = Field(
-        default=None,
-        title="The ID of the latest run of the pipeline namespace.",
-    )
-    latest_run_status: Optional[ExecutionStatus] = Field(
-        default=None,
-        title="The status of the latest run of the pipeline namespace.",
-    )
-
-
-class PipelineNamespaceResponseMetadata(BaseResponseMetadata):
-    """Response metadata for pipeline namespaces."""
-
-
-class PipelineNamespaceResponseResources(BaseResponseResources):
-    """Class for all resource models associated with the pipeline namespace entity."""
-
-
-class PipelineNamespaceResponse(
-    BaseResponse[
-        PipelineNamespaceResponseBody,
-        PipelineNamespaceResponseMetadata,
-        PipelineNamespaceResponseResources,
-    ]
-):
-    """Response model for pipeline namespaces."""
-
-    name: str = Field(
-        title="The name of the pipeline namespace.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-
-    def get_hydrated_version(self) -> "PipelineNamespaceResponse":
-        """Get the hydrated version of this pipeline namespace.
-
-        Returns:
-            an instance of the same entity with the metadata field attached.
-        """
-        return self
-
-
-class PipelineNamespaceFilter(BaseFilter):
-    """Pipeline namespace filter model."""
-
-    name: Optional[str] = Field(
-        default=None,
-        description="Name of the pipeline namespace.",
     )
