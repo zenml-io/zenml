@@ -89,8 +89,11 @@ ENV \
   ZENML_CONTAINER=1 \
   # Set ZenML debug mode to true
   ZENML_DEBUG=true \
-  # Set ZenML logging verbosity to DEBUG
-  ZENML_LOGGING_VERBOSITY=DEBUG \
+  # Set ZenML logging verbosity to INFO
+  #
+  # NOTE: debug logs can be very verbose and make it in fact more difficult to
+  # spot issues during development.
+  ZENML_LOGGING_VERBOSITY=INFO \
   # Disable ZenML client-side analytics
   ZENML_ANALYTICS_OPT_IN=false
 
