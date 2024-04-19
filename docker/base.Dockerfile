@@ -88,8 +88,13 @@ ENV \
   PIP_DISABLE_PIP_VERSION_CHECK=1 \
   # Cache is useless in docker image, so disable to reduce image size
   PIP_NO_CACHE_DIR=1 \
-  # Allow statements and log messages to immediately appear
-  PYTHONUNBUFFERED=1 \
+  # Allow statements and log messages to be cached.
+  #
+  # NOTE: this is important for performance reasons. ZenML steps dump their
+  # logs into the configured Artifact Store, which can be an external object
+  # store. If the logs are not buffered, accessing the external object store
+  # for every log message can make the code very slow.
+  PYTHONUNBUFFERED=0 \
   # Enable the fault handler for better stack traces in case of segfaults
   PYTHONFAULTHANDLER=1 \
   # Use a random seed for random number generators
