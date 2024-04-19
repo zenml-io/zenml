@@ -1864,28 +1864,12 @@ verify_ssl: |
    value itself>
 ```
 
-Example of a ZenML server YAML configuration file:
-
-```yaml
-url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml
-username: admin
-password: Pa$$word123
-verify_ssl: |
------BEGIN CERTIFICATE-----
-MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT
-MREwDwYDVQQDEwh6ZW5tbC1jYTAeFw0yMjA5MjYxMzI3NDhaFw0yMzA5MjYxMzI3
-...
-ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
-1aZ/0iYnGKCu7rLJzxeguliMf69E
------END CERTIFICATE-----
-```
-
 Both options can be combined, in which case the command line arguments will
 override the values in the YAML file. For example, it is possible and
 recommended that you supply the password only as a command line argument:
 
 ```bash
-zenml connect --username zenml --password=Pa@#$#word --config=/path/to/zenml_server_config.yaml
+zenml connect --username zenml --password=... --config=/path/to/zenml_server_config.yaml
 ```
 
 You can open the ZenML dashboard of your currently connected ZenML server using
