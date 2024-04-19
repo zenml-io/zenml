@@ -328,7 +328,6 @@ def model_validator_data_handler(
     Returns:
         A dictionary which will be passed to the eventual validator of pydantic.
     """
-
     if validation_info.mode == "python":
         # This is mode is only active if people validate objects using pythonic
         # raw data such as MyClass(...) or MyClass.model_validate()
@@ -410,7 +409,7 @@ def before_validator_handler(method):
     def before_validator(
         cls, data: Any, validation_info: ValidationInfo
     ) -> Any:
-        """Wrapper method to handle the raw data
+        """Wrapper method to handle the raw data.
 
         Args:
             cls: the class handler
