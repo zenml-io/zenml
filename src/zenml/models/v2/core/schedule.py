@@ -59,9 +59,6 @@ class ScheduleRequest(WorkspaceScopedRequest):
     ) -> "ScheduleRequest":
         """Ensures that the cron expression or start time + interval are set.
 
-        Args:
-            values: All attributes of the schedule.
-
         Returns:
             All schedule attributes.
 

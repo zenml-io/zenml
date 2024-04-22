@@ -692,9 +692,6 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
     def validate_labels(self) -> "ServiceConnectorFilter":
         """Parse the labels string into a label dictionary and vice-versa.
 
-        Args:
-            values: The values to validate.
-
         Returns:
             The validated values.
         """

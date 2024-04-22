@@ -45,9 +45,6 @@ class SecretsStoreConfiguration(BaseModel):
     def validate_custom(self) -> "SecretsStoreConfiguration":
         """Validate that class_path is set for custom secrets stores.
 
-        Args:
-            values: Dict representing user-specified runtime settings.
-
         Returns:
             Validated settings.
 

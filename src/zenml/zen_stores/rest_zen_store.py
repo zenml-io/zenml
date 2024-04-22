@@ -278,9 +278,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
     def validate_credentials(self) -> "RestZenStoreConfiguration":
         """Validates the credentials provided in the values dictionary.
 
-        Args:
-            values: A dictionary containing the values to be validated.
-
         Raises:
             ValueError: If neither api_token nor username nor api_key is set.
 

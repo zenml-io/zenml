@@ -324,6 +324,7 @@ def model_validator_data_handler(
 
     Raises:
         TypeError: if the type of the data is not processable.
+        ValueError: in case of an unknown validation mode.
 
     Returns:
         A dictionary which will be passed to the eventual validator of pydantic.

@@ -86,6 +86,9 @@ class ArtifactConfig(BaseModel):
 
         Raises:
             ValueError: If both model_name and model_version is set incorrectly.
+
+        Returns:
+            the validated instance.
         """
         if self.model_name is not None and self.model_version is None:
             raise ValueError(

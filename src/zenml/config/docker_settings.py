@@ -241,9 +241,6 @@ class DockerSettings(BaseSettings):
     def _validate_skip_build(self) -> "DockerSettings":
         """Ensures that a parent image is passed when trying to skip the build.
 
-        Args:
-            values: The settings values.
-
         Returns:
             The validated settings values.
 

@@ -460,9 +460,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     def _validate_backup_strategy(self) -> "SqlZenStoreConfiguration":
         """Validate the backup strategy.
 
-        Args:
-            values: All model attribute values.
-
         Returns:
             The model attribute values.
 
@@ -488,9 +485,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         The validator also moves the MySQL username, password and database
         parameters from the URL into the other configuration arguments, if they
         are present in the URL.
-
-        Args:
-            values: The values to validate.
 
         Returns:
             The validated values.

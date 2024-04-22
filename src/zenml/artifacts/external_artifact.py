@@ -89,6 +89,9 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
         Raises:
             ValueError: if the value, id and name fields are set incorrectly.
+
+        Returns:
+            the validated instance.
         """
         deprecation_msg = (
             "Parameter `{param}` or `ExternalArtifact` will be deprecated "

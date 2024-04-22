@@ -42,6 +42,9 @@ class ExternalArtifactConfiguration(BaseModel):
 
         Raises:
             ValueError: if the version and model fields are set incorrectly.
+
+        Returns:
+            the validated instance.
         """
         if self.version and self.model:
             raise ValueError(
