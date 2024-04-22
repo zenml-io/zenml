@@ -67,7 +67,9 @@ class CometExperimentTracker(BaseExperimentTracker):
             info: Info about the step that will be executed.
         """
         os.environ[COMET_API_KEY] = self.config.api_key
-        settings = cast(CometExperimentTrackerSettings, self.get_settings(info))
+        settings = cast(
+            CometExperimentTrackerSettings, self.get_settings(info)
+        )
         tags = settings.tags + [info.run_name, info.pipeline.name]
         comet_exp_name = (
             settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
@@ -76,7 +78,9 @@ class CometExperimentTracker(BaseExperimentTracker):
             run_name=comet_exp_name, tags=tags, settings=settings.settings
         )
 
-    def get_step_run_metadata(self, info: "StepRunInfo") -> Dict[str, "MetadataType"]:
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:
@@ -101,7 +105,9 @@ class CometExperimentTracker(BaseExperimentTracker):
 
         # If the experiment name cannot be retrieved, use the default name
         default_exp_name = f"{info.run_name}_{info.pipeline_step_name}"
-        settings = cast(CometExperimentTrackerSettings, self.get_settings(info))
+        settings = cast(
+            CometExperimentTrackerSettings, self.get_settings(info)
+        )
         exp_name = exp_name or settings.run_name or default_exp_name
 
         return {

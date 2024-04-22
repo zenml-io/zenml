@@ -22,8 +22,6 @@ from typing import (
     Type,
 )
 
-from pydantic import validator
-
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTrackerConfig,
