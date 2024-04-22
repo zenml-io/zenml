@@ -16,7 +16,7 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 
-from comet_ml import Experiment
+from comet_ml import Experiment  # type: ignore
 
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -126,7 +126,11 @@ class CometExperimentTracker(BaseExperimentTracker):
             self.experiment.end()
         os.environ.pop(COMET_API_KEY, None)
 
-    def log_metrics(self, metrics: Dict[str, Any], step: Optional[int] = None):
+    def log_metrics(
+        self,
+        metrics: Dict[str, Any],
+        step: Optional[int] = None,
+    ) -> None:
         """Logs metrics to the Comet experiment.
 
         Args:
@@ -136,7 +140,7 @@ class CometExperimentTracker(BaseExperimentTracker):
         if self.experiment:
             self.experiment.log_metrics(metrics, step=step)
 
-    def log_params(self, params: Dict[str, Any]):
+    def log_params(self, params: Dict[str, Any]) -> None:
         """Logs parameters to the Comet experiment.
 
         Args:
