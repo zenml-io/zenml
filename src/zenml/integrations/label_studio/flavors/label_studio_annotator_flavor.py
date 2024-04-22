@@ -38,7 +38,7 @@ class LabelStudioAnnotatorSettings(BaseSettings):
     Attributes:
         instance_url: URL of the Label Studio instance.
         port: The port to use for the annotation interface.
-
+        api_key: The api_key for label studio.
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
