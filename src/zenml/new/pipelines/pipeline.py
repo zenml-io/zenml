@@ -759,7 +759,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 deployment=deployment_model, stack=stack, placeholder_run=run
             )
 
-            return run
+            return Client().get_pipeline_run(run.id)
 
     @staticmethod
     def log_pipeline_deployment_metadata(
