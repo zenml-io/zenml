@@ -191,8 +191,7 @@ def up(
         ServerProviderType.DOCKER,
     ]:
         config_attrs["ip_address"] = ip_address
-
-    os.environ["ZENML_SERVER_USE_LEGACY_DASHBOARD"] = str(legacy)
+    config_attrs["use_legacy_dashboard"] = legacy
 
     from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
