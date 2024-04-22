@@ -182,7 +182,7 @@ class BaseService(BaseTypedModel):
     config: ServiceConfig
     status: ServiceStatus
     # TODO [ENG-703]: allow multiple endpoints per service
-    endpoint: Optional[BaseServiceEndpoint]
+    endpoint: Optional[BaseServiceEndpoint] = None
 
     def __init__(
         self,

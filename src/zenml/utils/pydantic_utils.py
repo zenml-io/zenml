@@ -410,7 +410,7 @@ def before_validator_handler(
     """
 
     def before_validator(
-        cls, data: Any, validation_info: ValidationInfo
+        cls: Type[BaseModel], data: Any, validation_info: ValidationInfo
     ) -> Any:
         """Wrapper method to handle the raw data.
 

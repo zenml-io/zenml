@@ -96,6 +96,8 @@ class FileSyncModel(BaseModel):
             # Execute the regular validation
             model = handler(config_dict)
 
+            assert isinstance(model, cls)
+
             # Assign the private attribute and save the config
             model._config_file = config_file
             model.write_config()
