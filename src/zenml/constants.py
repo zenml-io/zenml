@@ -263,6 +263,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
     "payment=(), sync-xhr=(), usb=()"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
+DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
 
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:

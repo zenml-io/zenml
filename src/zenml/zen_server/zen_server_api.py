@@ -73,7 +73,10 @@ from zenml.zen_server.utils import (
     server_config,
 )
 
-DASHBOARD_DIRECTORY = "dashboard"
+if server_config().use_legacy_dashboard:
+    DASHBOARD_DIRECTORY = "dashboard_legacy"
+else:
+    DASHBOARD_DIRECTORY = "dashboard"
 
 
 def relative_path(rel: str) -> str:
@@ -190,13 +193,26 @@ def initialize() -> None:
     initialize_secure_headers()
 
 
-app.mount(
-    "/static",
-    StaticFiles(
-        directory=relative_path(os.path.join(DASHBOARD_DIRECTORY, "static")),
-        check_dir=False,
-    ),
-)
+if server_config().use_legacy_dashboard:
+    app.mount(
+        "/static",
+        StaticFiles(
+            directory=relative_path(
+                os.path.join(DASHBOARD_DIRECTORY, "static")
+            ),
+            check_dir=False,
+        ),
+    )
+else:
+    app.mount(
+        "/assets",
+        StaticFiles(
+            directory=relative_path(
+                os.path.join(DASHBOARD_DIRECTORY, "assets")
+            ),
+            check_dir=False,
+        ),
+    )
 
 
 # Basic Health Endpoint

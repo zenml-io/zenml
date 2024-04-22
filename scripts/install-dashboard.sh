@@ -4,7 +4,7 @@ APP_NAME="zenml-dashboard"
 REPO_URL="https://github.com/zenml-io/zenml-dashboard"
 
 : "${INSTALL_PATH:=./src/zenml/zen_server}"
-: "${INSTALL_DIR:=dashboard}"
+: "${INSTALL_DIR:=dashboard_legacy}"
 : "${VERIFY_CHECKSUM:=true}"
 # : "${DESIRED_VERSION:=latest}"
 
