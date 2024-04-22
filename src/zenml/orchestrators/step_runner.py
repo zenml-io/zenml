@@ -16,6 +16,7 @@
 
 import copy
 import inspect
+import time
 from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
@@ -197,75 +198,110 @@ class StepRunner:
                 )
 
                 step_failed = False
-                try:
-                    return_values = step_instance.call_entrypoint(
-                        **function_params
-                    )
-                except BaseException as step_exception:  # noqa: E722
-                    step_failed = True
-                    failure_hook_source = (
-                        self.configuration.failure_hook_source
-                    )
-                    if failure_hook_source:
-                        logger.info("Detected failure hook. Running...")
-                        self.load_and_run_hook(
-                            failure_hook_source,
-                            step_exception=step_exception,
-                        )
-                    raise
-                finally:
-                    step_run_metadata = self._stack.get_step_run_metadata(
-                        info=step_run_info,
-                    )
-                    publish_step_run_metadata(
-                        step_run_id=step_run_info.step_run_id,
-                        step_run_metadata=step_run_metadata,
-                    )
-                    self._stack.cleanup_step_run(
-                        info=step_run_info, step_failed=step_failed
-                    )
-                    if not step_failed:
-                        success_hook_source = (
-                            self.configuration.success_hook_source
-                        )
-                        if success_hook_source:
-                            logger.info("Detected success hook. Running...")
-                            self.load_and_run_hook(
-                                success_hook_source,
-                                step_exception=None,
-                            )
+                retries = 0
+                max_retries = (
+                    self.configuration.retry.max_retries
+                    if self.configuration.retry
+                    else 1
+                )
+                delay = (
+                    self.configuration.retry.delay
+                    if self.configuration.retry
+                    else 0
+                )
+                backoff = (
+                    self.configuration.retry.backoff
+                    if self.configuration.retry
+                    else 1
+                )
 
-                        # Store and publish the output artifacts of the step function.
-                        output_data = self._validate_outputs(
-                            return_values, output_annotations
+                while retries < max_retries:
+                    try:
+                        return_values = step_instance.call_entrypoint(
+                            **function_params
                         )
-                        artifact_metadata_enabled = is_setting_enabled(
-                            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                    except BaseException as step_exception:  # noqa: E722
+                        step_failed = True
+                        retries += 1
+                        failure_hook_source = (
+                            self.configuration.failure_hook_source
                         )
-                        artifact_visualization_enabled = is_setting_enabled(
-                            is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
-                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                        if failure_hook_source:
+                            logger.info("Detected failure hook. Running...")
+                            self.load_and_run_hook(
+                                failure_hook_source,
+                                step_exception=step_exception,
+                            )
+                        if retries < max_retries:
+                            logger.error(
+                                f"Step '{step_run_info.step_run_id}' failed. "
+                                f"Retrying in {delay} seconds."
+                            )
+                            time.sleep(delay)
+                            delay *= backoff
+                        else:
+                            logger.error(
+                                f"Step '{step_run_info.step_run_id}' failed after "
+                                f"{retries} retries."
+                            )
+                            raise
+                    finally:
+                        step_run_metadata = self._stack.get_step_run_metadata(
+                            info=step_run_info,
                         )
-                        output_artifact_ids = self._store_output_artifacts(
-                            output_data=output_data,
-                            output_artifact_uris=output_artifact_uris,
-                            output_materializers=output_materializers,
-                            output_annotations=output_annotations,
-                            artifact_metadata_enabled=artifact_metadata_enabled,
-                            artifact_visualization_enabled=artifact_visualization_enabled,
+                        publish_step_run_metadata(
+                            step_run_id=step_run_info.step_run_id,
+                            step_run_metadata=step_run_metadata,
                         )
-                        link_step_artifacts_to_model(
-                            artifact_version_ids=output_artifact_ids
+                        self._stack.cleanup_step_run(
+                            info=step_run_info, step_failed=step_failed
                         )
-                        self._link_pipeline_run_to_model_from_artifacts(
-                            pipeline_run=pipeline_run,
-                            artifact_names=list(output_artifact_ids.keys()),
-                            external_artifacts=list(
-                                step_run.config.external_input_artifacts.values()
-                            ),
-                        )
-                    StepContext._clear()  # Remove the step context singleton
+                        if not step_failed:
+                            success_hook_source = (
+                                self.configuration.success_hook_source
+                            )
+                            if success_hook_source:
+                                logger.info(
+                                    "Detected success hook. Running..."
+                                )
+                                self.load_and_run_hook(
+                                    success_hook_source,
+                                    step_exception=None,
+                                )
+
+                            # Store and publish the output artifacts of the step function.
+                            output_data = self._validate_outputs(
+                                return_values, output_annotations
+                            )
+                            artifact_metadata_enabled = is_setting_enabled(
+                                is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                            )
+                            artifact_visualization_enabled = is_setting_enabled(
+                                is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                            )
+                            output_artifact_ids = self._store_output_artifacts(
+                                output_data=output_data,
+                                output_artifact_uris=output_artifact_uris,
+                                output_materializers=output_materializers,
+                                output_annotations=output_annotations,
+                                artifact_metadata_enabled=artifact_metadata_enabled,
+                                artifact_visualization_enabled=artifact_visualization_enabled,
+                            )
+                            link_step_artifacts_to_model(
+                                artifact_version_ids=output_artifact_ids
+                            )
+                            self._link_pipeline_run_to_model_from_artifacts(
+                                pipeline_run=pipeline_run,
+                                artifact_names=list(
+                                    output_artifact_ids.keys()
+                                ),
+                                external_artifacts=list(
+                                    step_run.config.external_input_artifacts.values()
+                                ),
+                            )
+                        StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.
             publish_successful_step_run(

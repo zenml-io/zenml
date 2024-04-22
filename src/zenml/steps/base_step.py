@@ -37,6 +37,7 @@ from typing import (
 from pydantic import BaseModel, Extra, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
+from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
@@ -140,6 +141,7 @@ class BaseStep(metaclass=BaseStepMeta):
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        retry: Optional[StepRetryConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a step.
@@ -169,6 +171,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
+            retry: Configuration for retrying the step in case of failure.
             **kwargs: Keyword arguments passed to the step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
@@ -242,6 +245,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_failure=on_failure,
             on_success=on_success,
             model=model,
+            retry=retry,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
 
@@ -696,6 +700,7 @@ class BaseStep(metaclass=BaseStepMeta):
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         merge: bool = True,
+        retry: Optional[StepRetryConfig] = None,
     ) -> T:
         """Configures the step.
 
@@ -738,6 +743,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            retry: Configuration for retrying the step in case of failure.
 
         Returns:
             The step instance that this method was called on.
