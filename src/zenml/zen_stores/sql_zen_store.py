@@ -75,15 +75,15 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
-    DEFAULT_PASSWORD,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
     ENV_ZENML_DEFAULT_USER_NAME,
-    ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
+    handle_bool_env_var,
 )
 from zenml.enums import (
     AuthScheme,
@@ -202,6 +202,7 @@ from zenml.models import (
     SecretResponse,
     SecretUpdate,
     ServerDatabaseType,
+    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -7926,6 +7927,41 @@ class SqlZenStore(BaseZenStore):
         """
         return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
 
+    def _activate_default_user(self) -> bool:
+        """Check if the default user should be available immediately after deployment.
+
+        We allow the default user to be immediately accessible after
+        initialization with a default empty password in the following cases:
+
+        * local ZenML client deployments: the client is not connected to a ZenML
+        server, but uses the database directly.
+        * local ZenML server deployments: the server is deployed locally with
+        `zenml up`
+        * local ZenML docker deployments: the server is deployed locally with
+        `zenml up --docker`
+
+        For all other cases, the default user is created in an inactive state
+        and the user must activate it by setting a password the first time they
+        visit the dashboard.
+
+        Returns:
+            Whether the default user should be activated.
+        """
+        if not handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.utils import server_config
+
+            if server_config().deployment_type in {
+                ServerDeploymentType.LOCAL,
+                ServerDeploymentType.DOCKER,
+            }:
+                return True
+        else:
+            # Running inside client
+            return True
+
+        return False
+
     def _get_or_create_default_user(self) -> UserResponse:
         """Get or create the default user if it doesn't exist.
 
@@ -7936,27 +7972,27 @@ class SqlZenStore(BaseZenStore):
         try:
             return self.get_user(default_user_name)
         except KeyError:
-            default_password = os.getenv(
-                ENV_ZENML_DEFAULT_USER_PASSWORD
-            )
+            active = self._activate_default_user()
+            # The default user is created with an empty password if it should
+            # be activated immediately, otherwise it is created in an inactive
+            # state without a password.
+            password = "" if active else None
+            if active:
+                logger.info(
+                    f"Creating default user '{default_user_name}' with empty "
+                    "password..."
+                )
+            else:
+                logger.info(
+                    f"Creating default user '{default_user_name}' in inactive "
+                    "state..."
+                )
 
-            # There are two ways of on-boarding a newly deployed ZenML server:
-            #
-            # 1. If the default password is set, the default user is
-            #    initialized with the supplied a password and will already be
-            #    active after deployment. This mode should only be used for
-            #    local server deployments (i.e. `zenml up`).
-            # 2. If the default password is not set, the default user is
-            #    initialized in an inactive state and must be activated by the
-            #    user the first time they try to log in.
-            active = (default_password is not None)
-
-            logger.info(f"Creating default user '{default_user_name}' ...")
             return self.create_user(
                 UserRequest(
                     name=default_user_name,
                     active=active,
-                    password=default_password,
+                    password=password,
                     is_admin=True,
                 )
             )

@@ -278,7 +278,8 @@ docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 
 The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs, etc.) will be lost when the container is removed with `docker rm`.
 
-You can visit the ZenML dashboard at `http://localhost:8080` and login with the `default` username and empty password or connect your client to the server with the web login flow:
+You need to visit the ZenML dashboard at `http://localhost:8080` and configure an initial password for the `default` admin user account. You can then connect your client to the server with the web login flow:
+
 
 ```shell
 $ zenml connect --url http://localhost:8080
@@ -358,7 +359,7 @@ docker run -it -d -p 8080:8080 --name zenml \
     zenmldocker/zenml-server
 ```
 
-Connecting your client to the ZenML server is the same as before:
+You need to visit the ZenML dashboard at `http://localhost:8080` and configure an initial password for the `default` admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
 zenml connect --url http://localhost:8080
@@ -407,7 +408,6 @@ services:
     environment:
       - ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml
       - ZENML_DEFAULT_USER_NAME=admin
-      - ZENML_DEFAULT_USER_PASSWORD=zenml
     links:
       - mysql
     depends_on:
@@ -421,7 +421,7 @@ Note the following:
 
 * `ZENML_STORE_URL` is set to the special Docker `host.docker.internal` hostname to instruct the server to connect to the database over the Docker network.
 * The `extra_hosts` section is needed on Linux to make the `host.docker.internal` hostname resolvable from the ZenML server container.
-* This example also uses the `ZENML_DEFAULT_USER_NAME` and `ZENML_DEFAULT_USER_PASSWORD` environment variables to customize the default account credentials.
+* This example also uses the `ZENML_DEFAULT_USER_NAME` environment variable to customize the default account name.
 
 To start the containers, run the following command from the directory where the `docker-compose.yml` file is located:
 
@@ -435,10 +435,10 @@ or, if you need to use a different filename or path:
 docker-compose -f /path/to/docker-compose.yml -p zenml up -d
 ```
 
-Connecting your client to the ZenML server is the same as before:
+You need to visit the ZenML dashboard at `http://localhost:8080` and configure an initial password for the default `admin` user account. You can then connect your client to the server with the web login flow:
 
 ```shell
-zenml connect --url http://localhost:8080 --username admin --password zenml
+zenml connect --url http://localhost:8080
 ```
 
 Tearing down the installation is as simple as running:

@@ -83,6 +83,7 @@ services:
       - "{zenml_port}:8080"
     environment:
       - ZENML_STORE_URL=mysql://root:{MYSQL_DEFAULT_PASSWORD}@host.docker.internal/zenml
+      - ZENML_SERVER_DEPLOYMENT_TYPE=docker
     links:
       - mysql
     depends_on:

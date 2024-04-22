@@ -25,7 +25,7 @@ You're now ready to deploy ZenML! Run the following command:
 zenml deploy
 ```
 
-You will be prompted to provide a name for your deployment and details like what cloud provider you want to deploy to, in addition to the username, password, and email you want to set for the default user — and that's it! It creates the database and any VPCs, permissions, and more that are needed.
+You will be prompted to provide a name for your deployment and details like what cloud provider you want to deploy to, in addition to the username you want to set for the default user — and that's it! It creates the database and any VPCs, permissions, and more that are needed.
 
 {% hint style="info" %}
 In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
@@ -115,7 +115,6 @@ provider:
 
 # The username for the default ZenML server account.
 username:
-password:
 
 # The path to the kubectl config file to use for deployment.
 kubectl_config_path:
@@ -291,9 +290,8 @@ The YAML file should have the following structure when connecting to a ZenML ser
 # The URL of the ZenML server
 url:
 
-# The username and password to use for authentication
+# The username to use for authentication
 username:
-password:
 
 # Either a boolean, in which case it controls whether the server's TLS 
 # certificate is verified, or a string, in which case it must be a path 
@@ -305,22 +303,10 @@ Here is an example of a ZenML server YAML configuration file:
 
 ```yaml
 url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml
-username: admin
-password: Pa$$word123
 verify_ssl: |
   -----BEGIN CERTIFICATE-----
-  MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT
-  MREwDwYDVQQDEwh6ZW5tbC1jYTAeFw0yMjA5MjYxMzI3NDhaFw0yMzA5MjYxMzI3
 ...
-  ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
-  1aZ/0iYnGKCu7rLJzxeguliMf69E
   -----END CERTIFICATE-----
-```
-
-Both options can be combined, in which case the command line arguments will override the values in the YAML file. For example, it is possible and recommended that you supply the password only as a command line argument:
-
-```bash
-zenml connect --username zenml --password=Pa$$word --config=/path/to/zenml_server_config.yaml
 ```
 
 To disconnect from the current ZenML server and revert to using the local default database, use the following command:

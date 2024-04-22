@@ -83,6 +83,7 @@ services:
       - "{zenml_port}:8080"
     environment:
       - ZENML_STORE_URL=mysql://root:{MARIADB_ROOT_PASSWORD}@host.docker.internal/zenml
+      - ZENML_SERVER_DEPLOYMENT_TYPE=docker
     links:
       - mariadb
     depends_on:
