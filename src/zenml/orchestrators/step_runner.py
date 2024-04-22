@@ -436,7 +436,7 @@ class StepRunner:
         """
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
-            return UnmaterializedArtifact.parse_obj(artifact)
+            return UnmaterializedArtifact(**artifact.dict())
 
         if data_type is Any or is_union(get_origin(data_type)):
             # Entrypoint function does not define a specific type for the input,
