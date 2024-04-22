@@ -274,7 +274,7 @@ class StackFilter(WorkspaceScopedFilter):
         )
 
         if self.component_id:
-            component_id_filter = and_(  # type: ignore[type-var]
+            component_id_filter = and_(
                 StackCompositionSchema.stack_id == StackSchema.id,
                 StackCompositionSchema.component_id == self.component_id,
             )

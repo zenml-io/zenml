@@ -363,7 +363,7 @@ class ComponentFilter(WorkspaceScopedFilter):
                 or_ if self.logical_operator == LogicalOperators.OR else and_
             )
 
-            stack_filter = and_(  # type: ignore[type-var]
+            stack_filter = and_(
                 StackCompositionSchema.stack_id == self.stack_id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,
             )

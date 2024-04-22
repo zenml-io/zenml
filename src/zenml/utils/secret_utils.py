@@ -114,9 +114,6 @@ def ClearTextField(*args: Any, **kwargs: Any) -> Any:
     return Field(*args, **kwargs)
 
 
-# TODO: test
-
-
 def is_secret_field(field: "FieldInfo") -> bool:
     """Returns whether a pydantic field contains sensitive information or not.
 
@@ -126,8 +123,15 @@ def is_secret_field(field: "FieldInfo") -> bool:
     Returns:
         `True` if the field contains sensitive information, `False` otherwise.
     """
-    if json_schema_extra := field.json_schema_extra:
-        return json_schema_extra.get(PYDANTIC_SENSITIVE_FIELD_MARKER, False)
+    if field.json_schema_extra:
+        if marker := field.json_schema_extra.get(
+            PYDANTIC_SENSITIVE_FIELD_MARKER
+        ):
+            assert isinstance(marker, bool), (
+                f"The parameter `{PYDANTIC_SENSITIVE_FIELD_MARKER}` in the "
+                f"field definition can only be a boolean value."
+            )
+            return marker
     return False
 
 
@@ -140,6 +144,13 @@ def is_clear_text_field(field: "FieldInfo") -> bool:
     Returns:
         `True` if the field prevents secret references, `False` otherwise.
     """
-    if json_schema_extra := field.json_schema_extra:
-        return json_schema_extra.get(PYDANTIC_CLEAR_TEXT_FIELD_MARKER, False)
+    if field.json_schema_extra:
+        if marker := field.json_schema_extra.get(
+            PYDANTIC_CLEAR_TEXT_FIELD_MARKER
+        ):
+            assert isinstance(marker, bool), (
+                f"The parameter `{PYDANTIC_CLEAR_TEXT_FIELD_MARKER}` in the "
+                f"field definition can only be a boolean value."
+            )
+            return marker
     return False

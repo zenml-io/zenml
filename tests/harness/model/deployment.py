@@ -59,7 +59,7 @@ class DeploymentStoreConfig(BaseTestSecretConfigModel):
 class DeploymentConfig(BaseTestConfigModel):
     """ZenML deployment settings."""
 
-    name: str = Field(regex="^[a-z][a-z0-9-_]+$")
+    name: str = Field(pattern="^[a-z][a-z0-9-_]+$")
     description: str = ""
     server: ServerType = ServerType.LOCAL
     database: DatabaseType = DatabaseType.SQLITE

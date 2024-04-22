@@ -348,7 +348,7 @@ class BaseFilter(BaseModel):
             raise ValueError(
                 f"This resource can not be sorted by this field: '{v}'"
             )
-        elif column in cls.__fields__:
+        elif column in cls.model_fields:
             return v
         else:
             raise ValueError(

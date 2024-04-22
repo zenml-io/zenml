@@ -43,7 +43,7 @@ class HyperAIOrchestratorSettings(BaseSettings):
     mounts_from_to: Dict[str, str] = {}
 
 
-class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class HyperAIOrchestratorConfig(
     BaseOrchestratorConfig, HyperAIOrchestratorSettings
 ):
     """Configuration for the HyperAI orchestrator.

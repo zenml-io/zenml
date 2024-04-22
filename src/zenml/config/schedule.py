@@ -78,7 +78,7 @@ class Schedule(BaseModel):
             )
 
             return self
-        elif self.cron_expression and self.run_once_starts_at:
+        elif self.cron_expression and self.run_once_start_time:
             logger.warning(
                 "This schedule was created with a cron expression as well as "
                 "a value for `run_once_start_time`. The resulting behavior "
@@ -89,7 +89,7 @@ class Schedule(BaseModel):
         elif (
             self.cron_expression
             or periodic_schedule
-            or self.run_once_starts_at
+            or self.run_once_start_time
         ):
             return self
         else:

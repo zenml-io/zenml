@@ -86,7 +86,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
     output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
 
 
-class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SagemakerOrchestratorConfig(
     BaseOrchestratorConfig, SagemakerOrchestratorSettings
 ):
     """Config for the Sagemaker orchestrator.

@@ -66,7 +66,7 @@ class SagemakerStepOperatorSettings(BaseSettings):
     )
 
 
-class SagemakerStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SagemakerStepOperatorConfig(
     BaseStepOperatorConfig, SagemakerStepOperatorSettings
 ):
     """Config for the Sagemaker step operator.

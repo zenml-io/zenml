@@ -342,7 +342,7 @@ def apply_run_config(
         )
 
     pipeline_updates = run_config.dict(
-        exclude_none=True, include=set(PipelineConfiguration.__fields__)
+        exclude_none=True, include=set(PipelineConfiguration.model_fields)
     )
 
     pipeline_configuration = pydantic_utils.update_model(

@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class Secret(BaseTestConfigModel):
     """Configuration secret."""
 
-    name: str = Field(regex="^[A-Z][A-Z0-9_]+$")
+    name: str = Field(pattern="^[A-Z][A-Z0-9_]+$")
     value: ZenSecretStr
 
 
@@ -95,7 +95,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
             The attribute value.
         """
         value = super().__getattribute__(key)
-        if key.startswith("_") or key not in type(self).__fields__:
+        if key.startswith("_") or key not in type(self).model_fields:
             return value
 
         secret_name = self._get_secret_name(value)

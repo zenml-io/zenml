@@ -3504,7 +3504,7 @@ class SqlZenStore(BaseZenStore):
 
         with Session(self.engine) as session:
             max_date_subquery = (
-                select(  # type: ignore[call-overload]
+                select(
                     PipelineSchema.name,
                     func.max(PipelineRunSchema.created).label("max_created"),
                 )

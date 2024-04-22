@@ -494,14 +494,14 @@ class PipelineRunFilter(WorkspaceScopedFilter):
                 column="name",
                 value=value,
             )
-            pipeline_name_filter = and_(  # type: ignore[type-var]
+            pipeline_name_filter = and_(
                 PipelineRunSchema.pipeline_id == PipelineSchema.id,
                 filter_.generate_query_conditions(PipelineSchema),
             )
             custom_filters.append(pipeline_name_filter)
 
         if self.code_repository_id:
-            code_repo_filter = and_(  # type: ignore[type-var]
+            code_repo_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.code_reference_id
                 == CodeReferenceSchema.id,
@@ -511,7 +511,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             custom_filters.append(code_repo_filter)
 
         if self.stack_id:
-            stack_filter = and_(  # type: ignore[type-var]
+            stack_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
                 StackSchema.id == self.stack_id,
@@ -519,7 +519,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             custom_filters.append(stack_filter)
 
         if self.schedule_id:
-            schedule_filter = and_(  # type: ignore[type-var]
+            schedule_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.schedule_id == ScheduleSchema.id,
                 ScheduleSchema.id == self.schedule_id,
@@ -527,7 +527,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             custom_filters.append(schedule_filter)
 
         if self.build_id:
-            pipeline_build_filter = and_(  # type: ignore[type-var]
+            pipeline_build_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.build_id == PipelineBuildSchema.id,
                 PipelineBuildSchema.id == self.build_id,

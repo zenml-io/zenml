@@ -378,7 +378,7 @@ class Pipeline:
             to_be_reapplied = []
             for param_, value_ in values.items():
                 if (
-                    param_ in PipelineRunConfiguration.__fields__
+                    param_ in PipelineRunConfiguration.model_fields
                     and param_ in self._from_config_file
                     and value_ != self._from_config_file[param_]
                 ):
@@ -389,16 +389,17 @@ class Pipeline:
                 msg = ""
                 reapply_during_run_warning = (
                     "The value of parameter '{name}' has changed from "
-                    "'{file_value}' to '{new_value}' set in your configuration file.\n"
+                    "'{file_value}' to '{new_value}' set in your configuration "
+                    "file.\n"
                 )
                 for name, file_value, new_value in to_be_reapplied:
                     msg += reapply_during_run_warning.format(
                         name=name, file_value=file_value, new_value=new_value
                     )
                 msg += (
-                    "Configuration file value will be used during pipeline run, "
-                    "so you change will not be efficient. Consider updating your "
-                    "configuration file instead."
+                    "Configuration file value will be used during pipeline "
+                    "run, so you change will not be efficient. Consider "
+                    "updating your configuration file instead."
                 )
                 logger.warning(msg)
 
@@ -1005,7 +1006,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         self._parse_config_file(
             config_path=config_path,
-            matcher=list(PipelineRunConfiguration.__fields__.keys()),
+            matcher=list(PipelineRunConfiguration.model_fields.keys()),
         )
 
         run_config = PipelineRunConfiguration(**self._from_config_file)

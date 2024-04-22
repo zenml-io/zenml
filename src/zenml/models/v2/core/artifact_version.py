@@ -518,7 +518,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
                 column="name",
                 value=value,
             )
-            artifact_name_filter = and_(  # type: ignore[type-var]
+            artifact_name_filter = and_(
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
                 filter_.generate_query_conditions(ArtifactSchema),
             )
@@ -536,7 +536,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             custom_filters.append(unused_filter)
 
         if self.has_custom_name is not None:
-            custom_name_filter = and_(  # type: ignore[type-var]
+            custom_name_filter = and_(
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
                 ArtifactSchema.has_custom_name == self.has_custom_name,
             )

@@ -290,25 +290,25 @@ def print_pydantic_models(
             if isinstance(model, BaseIdentifiedResponse):
                 include_columns = ["id"]
 
-                if "name" in model.__fields__:
+                if "name" in model.model_fields:
                     include_columns.append("name")
 
                 include_columns.extend(
                     [
                         k
-                        for k in model.__fields__[
-                            "body"
-                        ].type_.__fields__.keys()
-                        if k not in exclude_columns
-                    ]
-                    + [
-                        k
-                        for k in model.__fields__[
-                            "metadata"
-                        ].type_.__fields__.keys()
+                        for k in model.get_body().model_fields.keys()
                         if k not in exclude_columns
                     ]
                 )
+
+                if model.metadata is not None:
+                    include_columns.extend(
+                        [
+                            k
+                            for k in model.get_metadata().model_fields.keys()
+                            if k not in exclude_columns
+                        ]
+                    )
 
             else:
                 include_columns = [
@@ -431,17 +431,19 @@ def print_pydantic_model(
             include_columns.extend(
                 [
                     k
-                    for k in model.__fields__["body"].type_.__fields__.keys()
-                    if k not in exclude_columns
-                ]
-                + [
-                    k
-                    for k in model.__fields__[
-                        "metadata"
-                    ].type_.__fields__.keys()
+                    for k in model.get_body().model_fields.keys()
                     if k not in exclude_columns
                 ]
             )
+
+            if model.metadata is not None:
+                include_columns.extend(
+                    [
+                        k
+                        for k in model.get_metadata().model_fields.keys()
+                        if k not in exclude_columns
+                    ]
+                )
 
         else:
             include_columns = [
@@ -2245,7 +2247,7 @@ def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
         A configuration with secret values removed.
     """
     config_dict = {}
-    config_fields = dict(config.__class__.__fields__)
+    config_fields = config.__class__.model_fields
     for key, value in config_fields.items():
         if secret_utils.is_secret_field(value):
             config_dict[key] = "********"
@@ -2522,7 +2524,7 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     def inner_decorator(func: F) -> F:
         options = []
         data_type_descriptors = set()
-        for k, v in filter_model.__fields__.items():
+        for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
                 options.append(
                     click.option(

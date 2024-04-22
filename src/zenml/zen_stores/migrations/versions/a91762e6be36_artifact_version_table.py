@@ -52,7 +52,7 @@ def upgrade() -> None:
     artifact_versions = sa.Table("artifact_version", meta)
     artifact_names = conn.execute(
         sa.select(
-            [artifact_versions.c.name, artifact_versions.c.has_custom_name]
+            artifact_versions.c.name, artifact_versions.c.has_custom_name
         ).distinct()
     ).all()
     unique_artifact_names = {
@@ -72,7 +72,7 @@ def upgrade() -> None:
     # Set artifact_id column in artifact_version
     conn.execute(
         artifact_versions.update().values(
-            artifact_id=sa.select([artifacts.c.id])
+            artifact_id=sa.select(artifacts.c.id)
             .where(artifacts.c.name == artifact_versions.c.name)
             .scalar_subquery()
         )

@@ -239,7 +239,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
                 column="name",
                 value=value,
             )
-            artifact_name_filter = and_(  # type: ignore[type-var]
+            artifact_name_filter = and_(
                 ModelVersionArtifactSchema.artifact_version_id
                 == ArtifactVersionSchema.id,
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
@@ -267,7 +267,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
             custom_filters.append(deployment_artifact_filter)
 
         if self.has_custom_name is not None:
-            custom_name_filter = and_(  # type: ignore[type-var]
+            custom_name_filter = and_(
                 ModelVersionArtifactSchema.artifact_version_id
                 == ArtifactVersionSchema.id,
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,

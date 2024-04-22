@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class EnvironmentConfig(BaseTestConfigModel):
     """ZenML test environment settings."""
 
-    name: str = Field(regex="^[a-z][a-z0-9-_]+$")
+    name: str = Field(pattern="^[a-z][a-z0-9-_]+$")
     description: str = ""
     deployment: Union[str, DeploymentConfig]
     requirements: List[Union[str, TestRequirements]] = Field(

@@ -207,9 +207,6 @@ class UserUpdate(UserBase, BaseZenModel):
     def user_email_updates(self) -> "UserUpdate":
         """Validate that the UserUpdateModel conforms to the email-opt-in-flow.
 
-        Args:
-            values: The values to validate.
-
         Returns:
             The validated values.
 

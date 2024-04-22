@@ -52,53 +52,46 @@ class ServiceRequest(WorkspaceScopedRequest):
         title="The name of the service.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
     service_type: ServiceType = Field(
         title="The type of the service.",
     )
-
     service_source: Optional[str] = Field(
         title="The class of the service.",
         description="The fully qualified class name of the service "
         "implementation.",
+        default=None,
     )
-
     admin_state: Optional[ServiceState] = Field(
         title="The admin state of the service.",
         description="The administrative state of the service, e.g., ACTIVE, "
         "INACTIVE.",
+        default=None,
     )
-
     config: Dict[str, Any] = Field(
         title="The service config.",
         description="A dictionary containing configuration parameters for the "
         "service.",
     )
-
     labels: Optional[Dict[str, str]] = Field(
         default=None,
         title="The service labels.",
     )
-
     status: Optional[Dict[str, Any]] = Field(
+        default=None,
         title="The status of the service.",
     )
-
     endpoint: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The service endpoint.",
     )
-
     prediction_url: Optional[str] = Field(
         default=None,
         title="The service endpoint URL.",
     )
-
     health_check_url: Optional[str] = Field(
         default=None,
         title="The service health check URL.",
     )
-
     model_version_id: Optional[UUID] = Field(
         default=None,
         title="The model version id linked to the service.",

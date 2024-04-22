@@ -194,7 +194,7 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
                 column="name",
                 value=value,
             )
-            pipeline_run_name_filter = and_(  # type: ignore[type-var]
+            pipeline_run_name_filter = and_(
                 ModelVersionPipelineRunSchema.pipeline_run_id
                 == PipelineRunSchema.id,
                 filter_.generate_query_conditions(PipelineRunSchema),

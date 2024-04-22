@@ -61,7 +61,7 @@ class VertexStepOperatorSettings(BaseSettings):
     boot_disk_type: str = "pd-ssd"
 
 
-class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class VertexStepOperatorConfig(
     BaseStepOperatorConfig,
     GoogleCredentialsConfigMixin,
     VertexStepOperatorSettings,

@@ -26,7 +26,7 @@ def upgrade() -> None:
 
     # Find all secrets manager components
     secrets_manager_components = conn.execute(
-        sa.select([components.c.id]).where(
+        sa.select(components.c.id).where(
             components.c.type == "secrets_manager"
         )
     ).all()

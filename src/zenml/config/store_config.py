@@ -67,7 +67,7 @@ class StoreConfiguration(BaseModel):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def validate_secrets_store(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_store_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the secrets store configuration.
 
         Args:
