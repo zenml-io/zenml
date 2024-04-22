@@ -102,10 +102,13 @@ class FileSyncModel(BaseModel):
             model._config_file = config_file
             model.write_config()
 
-            return model
         else:
             # If the raw value is not a dict, apply proper validation.
-            return handler(data)
+            model = handler(data)
+
+            assert isinstance(model, cls)
+
+        return model
 
     def __setattr__(self, key: str, value: Any) -> None:
         """Sets an attribute on the model and persists it in the configuration file.

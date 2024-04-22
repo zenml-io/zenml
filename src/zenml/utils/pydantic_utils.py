@@ -136,7 +136,7 @@ class TemplateGenerator:
         """
         template: Dict[str, Any] = {}
 
-        for name, field in model_class.__fields__.items():
+        for name, field in model_class.model_fields.items():
             if self._is_model_class(field.outer_type_):
                 template[name] = self._generate_template_for_model_class(
                     field.outer_type_

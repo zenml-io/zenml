@@ -79,7 +79,7 @@ class SparkStepOperatorSettings(BaseSettings):
             raise TypeError(f"{v} is not a json string or a dictionary.")
 
 
-class SparkStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SparkStepOperatorConfig(
     BaseStepOperatorConfig, SparkStepOperatorSettings
 ):
     """Spark step operator config.

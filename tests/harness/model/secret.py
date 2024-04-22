@@ -118,7 +118,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
         Args:
             harness: The test harness to validate against.
         """
-        for field in type(self).__fields__.keys():
+        for field in type(self).model_fields.keys():
             secret_name = self._get_secret_name(getattr(self, field))
             if secret_name:
                 # Check that the secret is defined in the test harness
