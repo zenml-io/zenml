@@ -173,7 +173,7 @@ Run it by using the ID's from the first step:
 ```python
 # You can also ignore the `--train-dataset-version-name` and `--test-dataset-version-name` to use 
 #  the latest versions
-python run.py --training-pipeline --train-dataset-version-name 1 --test-dataset-version-name 1
+python run.py --training-pipeline
 ```
 
 To track these models, ZenML offers a *Model Control Plane*, which is a central register of all your ML models.
