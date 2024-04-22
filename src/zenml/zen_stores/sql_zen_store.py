@@ -7936,16 +7936,27 @@ class SqlZenStore(BaseZenStore):
         try:
             return self.get_user(default_user_name)
         except KeyError:
-            password = os.getenv(
-                ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
+            default_password = os.getenv(
+                ENV_ZENML_DEFAULT_USER_PASSWORD
             )
+
+            # There are two ways of on-boarding a newly deployed ZenML server:
+            #
+            # 1. If the default password is set, the default user is
+            #    initialized with the supplied a password and will already be
+            #    active after deployment. This mode should only be used for
+            #    local server deployments (i.e. `zenml up`).
+            # 2. If the default password is not set, the default user is
+            #    initialized in an inactive state and must be activated by the
+            #    user the first time they try to log in.
+            active = (default_password is not None)
 
             logger.info(f"Creating default user '{default_user_name}' ...")
             return self.create_user(
                 UserRequest(
                     name=default_user_name,
-                    active=True,
-                    password=password,
+                    active=active,
+                    password=default_password,
                     is_admin=True,
                 )
             )
