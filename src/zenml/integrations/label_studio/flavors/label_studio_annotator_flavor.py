@@ -19,8 +19,10 @@ from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
     BaseAnnotatorFlavor,
 )
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.label_studio.annotators import LabelStudioAnnotator
@@ -30,18 +32,26 @@ DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
 DEFAULT_LOCAL_LABEL_STUDIO_PORT = 8093
 
 
-class LabelStudioAnnotatorConfig(
-    BaseAnnotatorConfig, AuthenticationConfigMixin
-):
-    """Config for the Label Studio annotator.
+class LabelStudioAnnotatorSettings(BaseSettings):
+    """Label studio annotator settings.
 
     Attributes:
         instance_url: URL of the Label Studio instance.
         port: The port to use for the annotation interface.
+
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
     port: int = DEFAULT_LOCAL_LABEL_STUDIO_PORT
+    api_key: Optional[str] = SecretField()
+
+
+class LabelStudioAnnotatorConfig(
+    BaseAnnotatorConfig,
+    LabelStudioAnnotatorSettings,
+    AuthenticationConfigMixin,
+):
+    """Config for the Label Studio annotator."""
 
 
 class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):

@@ -11,19 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the Label Studio annotation integration."""
+"""Implementatioain of the Label Studio annotation integration."""
 
 import json
 import os
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
 from label_studio_sdk import Client, Project  # type: ignore[import-not-found]
 
+from zenml import get_step_context
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.config.global_config import GlobalConfiguration
+from zenml.integrations.label_studio.flavors import (
+    LabelStudioAnnotatorSettings,
+)
 from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
     LabelStudioAnnotatorConfig,
 )
@@ -48,6 +52,15 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             The configuration.
         """
         return cast(LabelStudioAnnotatorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Type[LabelStudioAnnotatorSettings]:
+        """Settings class for the Kubeflow orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return LabelStudioAnnotatorSettings
 
     def get_url(self) -> str:
         """Gets the top-level URL of the annotation interface.
@@ -151,12 +164,23 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             ValueError: when unable to access the Label Studio API key.
         """
-        secret = self.get_authentication_secret()
-        if not secret:
-            raise ValueError(
-                "Unable to access predefined secret to access Label Studio API key."
+        try:
+            settings = cast(
+                LabelStudioAnnotatorSettings,
+                self.get_settings(get_step_context().step_run),
             )
-        api_key = secret.secret_values.get("api_key")
+            if settings.api_key is None:
+                raise RuntimeError
+            else:
+                api_key = settings.api_key
+        except RuntimeError:
+            # Try to get from secret
+            secret = self.get_authentication_secret()
+            if not secret:
+                raise ValueError(
+                    "Unable to access predefined secret to access Label Studio API key."
+                )
+            api_key = secret.secret_values.get("api_key")
         if not api_key:
             raise ValueError(
                 "Unable to access Label Studio API key from secret."
