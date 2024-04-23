@@ -302,7 +302,8 @@ class StepRunner:
                                 ),
                             )
                         StepContext._clear()  # Remove the step context singleton
-
+                    if not step_failed:
+                        break
             # Update the status and output artifacts of the step run.
             publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
