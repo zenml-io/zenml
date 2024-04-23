@@ -55,7 +55,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
     @property
     def settings_class(self) -> Type[LabelStudioAnnotatorSettings]:
-        """Settings class for the Kubeflow orchestrator.
+        """Settings class for the Label Studio annotator.
 
         Returns:
             The settings class.
