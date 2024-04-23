@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 
+# update those variables accrodingly, if the new ZenML
+# Dashboard version was released
+RELEASE="v0.16.1"
+LEGACY_RELEASE="v0.16.1"
+
 APP_NAME="zenml-dashboard"
 REPO_URL="https://github.com/zenml-io/zenml-dashboard"
 
 : "${INSTALL_PATH:=./src/zenml/zen_server}"
-: "${INSTALL_DIR:=dashboard_legacy}"
+: "${LEGACY_INSTALL_DIR:=dashboard_legacy}"
+: "${INSTALL_DIR:=dashboard}"
 : "${VERIFY_CHECKSUM:=true}"
 # : "${DESIRED_VERSION:=latest}"
 
@@ -36,29 +42,34 @@ checkGitIgnore() {
   fi
 }
 
-# checkTagProvided checks whether TAG has provided as an environment variable
-# so we can skip checkLatestVersion
-checkTagProvided() {
-  if [ -n "$TAG" ]; then
-    return 0
+# buildTags builds the TAG and LEGACY_TAG, if not already provided 
+# as an environment variable
+buildTags() {
+  if [ -z "$LEGACY_TAG" ]; then
+    local legacy_release_url="$REPO_URL/releases/$LEGACY_RELEASE"
+    if type "curl" > /dev/null; then
+      LEGACY_TAG=$(curl -Ls -o /dev/null -w '%{url_effective}' $legacy_release_url | grep -oE "[^/]+$" )
+    elif type "wget" > /dev/null; then
+      LEGACY_TAG=$(wget $legacy_release_url --server-response -O /dev/null 2>&1 | awk '/^\s*Location: /{DEST=$2} END{ print DEST}' | grep -oE "[^/]+$")
+    fi
   fi
-  return 1
-}
 
-# checkLatestVersion grabs the latest version string from the releases
-checkLatestVersion() {
-  local latest_release_url="$REPO_URL/releases/latest"
-  if type "curl" > /dev/null; then
-    TAG=$(curl -Ls -o /dev/null -w '%{url_effective}' $latest_release_url | grep -oE "[^/]+$" )
-  elif type "wget" > /dev/null; then
-    TAG=$(wget $latest_release_url --server-response -O /dev/null 2>&1 | awk '/^\s*Location: /{DEST=$2} END{ print DEST}' | grep -oE "[^/]+$")
+  if [ -z "$TAG" ]; then
+    local release_url="$REPO_URL/releases/$RELEASE"
+    if type "curl" > /dev/null; then
+      TAG=$(curl -Ls -o /dev/null -w '%{url_effective}' $release_url | grep -oE "[^/]+$" )
+    elif type "wget" > /dev/null; then
+      TAG=$(wget $release_url --server-response -O /dev/null 2>&1 | awk '/^\s*Location: /{DEST=$2} END{ print DEST}' | grep -oE "[^/]+$")
+    fi
   fi
+
 }
 
 # downloadFile downloads the latest release archive and checksum
 downloadFile() {
+  local local_tag=$1
   ZENML_DASHBOARD_ARCHIVE="zenml-dashboard.tar.gz"
-  DOWNLOAD_URL="$REPO_URL/releases/download/$TAG/$ZENML_DASHBOARD_ARCHIVE"
+  DOWNLOAD_URL="$REPO_URL/releases/download/$local_tag/$ZENML_DASHBOARD_ARCHIVE"
   TMP_ROOT="$(mktemp -dt zenml-dashboard-XXXXXX)"
   TMP_FILE="$TMP_ROOT/$ZENML_DASHBOARD_ARCHIVE"
   if type "curl" > /dev/null; then
@@ -80,11 +91,15 @@ verifyFile() {
 
 # installFile unpacks and installs the binary.
 installFile() {
-  echo "Preparing to install $APP_NAME into ${INSTALL_PATH}/${INSTALL_DIR}"
+  local local_install_dir=$1
+  local current_dir=$(pwd)
+  echo "Preparing to install $APP_NAME into ${INSTALL_PATH}/${local_install_dir}"
   cd "$INSTALL_PATH"
-  mkdir -p "$INSTALL_DIR"
-  tar xzf "$TMP_FILE" -C "$INSTALL_DIR"
-  echo "$APP_NAME installed into $INSTALL_PATH/$INSTALL_DIR"
+  rm -rf "$local_install_dir"
+  mkdir -p "$local_install_dir"
+  tar xzf "$TMP_FILE" -C "$local_install_dir"
+  echo "$APP_NAME installed into $INSTALL_PATH/$local_install_dir"
+  cd "$current_dir"
 }
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
@@ -155,10 +170,15 @@ set +u
 
 verifySupported
 checkGitIgnore
-checkTagProvided || checkLatestVersion
+buildTags
 if [[ ! -z "$TAG" ]]; then
-  downloadFile
+  downloadFile $TAG
   verifyFile
-  installFile
+  installFile $INSTALL_DIR
+fi
+if [[ ! -z "$LEGACY_TAG" ]]; then
+  downloadFile $LEGACY_TAG
+  verifyFile
+  installFile $LEGACY_INSTALL_DIR
 fi
 cleanup
