@@ -380,6 +380,7 @@ class BaseZenStore(
         secrets_store_type = SecretsStoreType.NONE
         if isinstance(self, SqlZenStore):
             secrets_store_type = self.secrets_store.type
+        use_legacy_dashboard = server_config.use_legacy_dashboard
         return ServerModel(
             id=GlobalConfiguration().user_id,
             version=zenml.__version__,
@@ -390,6 +391,7 @@ class BaseZenStore(
             auth_scheme=auth_scheme,
             base_url=base_url,
             metadata=metadata,
+            use_legacy_dashboard=use_legacy_dashboard,
         )
 
     def is_local_store(self) -> bool:

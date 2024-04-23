@@ -37,19 +37,18 @@ def get_base_url() -> Optional[str]:
     if client.zen_store.type == StoreType.REST:
         # if the server config has a base URL use that
         server_model = client.zen_store.get_store_info()
+        if server_model.use_legacy_dashboard:
+            suffix = f"{constants.WORKSPACES}/{client.active_workspace.name}"
+        else:
+            suffix = ""
         if server_model.base_url:
             url = server_model.base_url
             # if the base url has cloud.zenml.io in it, then it is a cloud
             # deployment and there isn't a workspace in the URL
             if "cloud.zenml.io" in url:
                 return url
-            return (
-                url + f"{constants.WORKSPACES}/{client.active_workspace.name}"
-            )
-        url = (
-            client.zen_store.url
-            + f"{constants.WORKSPACES}/{client.active_workspace.name}"
-        )
+            return url + suffix
+        url = client.zen_store.url + suffix
         return url
 
     return None

@@ -82,6 +82,10 @@ class ServerModel(BaseModel):
         {},
         title="The metadata associated with the server.",
     )
+    use_legacy_dashboard: bool = Field(
+        False,
+        title="Flag to indicate whether the server is using the legacy dashboard.",
+    )
 
     def is_local(self) -> bool:
         """Return whether the server is running locally.
