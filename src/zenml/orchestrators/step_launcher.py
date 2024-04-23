@@ -389,18 +389,21 @@ class StepLauncher:
             step_instance.entrypoint
         )
         for output_name_, output_id in step_run.outputs.items():
+            artifact_config_ = None
             if output_name_ in output_annotations:
                 annotation = output_annotations.get(output_name_, None)
                 if annotation and annotation.artifact_config is not None:
                     artifact_config_ = annotation.artifact_config.copy()
-                else:
-                    artifact_config_ = ArtifactConfig(name=output_name_)
+            # no artifact config found or artifact was produced by `save_artifact`
+            # inside the step body, so was never in annotations
+            if artifact_config_ is None:
+                artifact_config_ = ArtifactConfig(name=output_name_)
 
-                link_artifact_config_to_model(
-                    artifact_config=artifact_config_,
-                    model=model_from_context,
-                    artifact_version_id=output_id,
-                )
+            link_artifact_config_to_model(
+                artifact_config=artifact_config_,
+                model=model_from_context,
+                artifact_version_id=output_id,
+            )
 
     def _run_step(
         self,
