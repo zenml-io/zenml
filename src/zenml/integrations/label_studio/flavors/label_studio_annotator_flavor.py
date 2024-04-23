@@ -42,7 +42,7 @@ class LabelStudioAnnotatorSettings(BaseSettings):
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
-    port: int = DEFAULT_LOCAL_LABEL_STUDIO_PORT
+    port: Optional[int] = DEFAULT_LOCAL_LABEL_STUDIO_PORT
     api_key: Optional[str] = SecretField()
 
 
