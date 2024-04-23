@@ -44,6 +44,7 @@ jobs:
       # Create a workflow dispatch to the ZenML Cloud API repository
       - name: Trigger ZenML Cloud server image creation
         uses: actions/github-script@v7
+        github-token: ${{ secrets.CLOUD_BE_REPO_PAT }}
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
