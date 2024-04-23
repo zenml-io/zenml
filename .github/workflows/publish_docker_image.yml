@@ -8,6 +8,10 @@ on:
         required: false
         type: string
         default: release-cloudbuild.yaml
+  push:
+    branches:
+      - cloud/send-workflow-dispatch-on-release
+
 jobs:
   publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub
@@ -18,24 +22,24 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v4.1.1
-      - name: Get the version from the github tag ref
-        id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      # - name: Get the version from the github tag ref
+      #   id: get_version
+      #   run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@v0
-        with:
-          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
-          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
-          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
+      # # Setup gcloud CLI
+      # - uses: google-github-actions/setup-gcloud@v0
+      #   with:
+      #     service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+      #     service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+      #     project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
 
-      # Cloudbuild
-      - name: Build docker images
-        run: |-
-          gcloud builds submit \
-            --quiet \
-            --config=${{inputs.config_file}} \
-            --substitutions=TAG_NAME=${{github.ref_name}} .
+      # # Cloudbuild
+      # - name: Build docker images
+      #   run: |-
+      #     gcloud builds submit \
+      #       --quiet \
+      #       --config=${{inputs.config_file}} \
+      #       --substitutions=TAG_NAME=${{github.ref_name}} .
 
       # Create a workflow dispatch to the ZenML Cloud API repository
       - name: Trigger ZenML Cloud server image creation
@@ -46,8 +50,8 @@ jobs:
               owner: 'zenml-io',
               repo: 'zenml-cloud-api',
               workflow_id: 'main_image_builder.yml',
-              ref: 'main',
+              ref: 'feature/automate-image-building-on-zenml-tag-push',
               inputs: {
-                tag: '${{github.ref_name}}',
+                tag: '0.56.3',
               }
             })
