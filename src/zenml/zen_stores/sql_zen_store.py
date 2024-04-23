@@ -279,7 +279,6 @@ from zenml.zen_stores.schemas import (
     CodeRepositorySchema,
     EventSourceSchema,
     FlavorSchema,
-    IdentitySchema,
     ModelSchema,
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
@@ -295,6 +294,7 @@ from zenml.zen_stores.schemas import (
     SecretSchema,
     ServerSettingsSchema,
     ServiceConnectorSchema,
+    SettingsSchema,
     StackComponentSchema,
     StackSchema,
     StepRunInputArtifactSchema,
@@ -1404,8 +1404,8 @@ class SqlZenStore(BaseZenStore):
         elif self.alembic.db_is_empty():
             # Case 1: the database is empty. We can just create the
             # tables from scratch with from SQLModel. After tables are
-            # created we put an alembic revision to latest and populate
-            # identity table with needed info.
+            # created we put an alembic revision to latest and initialize
+            # the settings table with needed info.
             logger.info("Creating database tables")
             with self.engine.begin() as conn:
                 conn.run_callable(
@@ -1416,7 +1416,13 @@ class SqlZenStore(BaseZenStore):
                     ServerConfiguration.get_server_config().external_server_id
                     or GlobalConfiguration().user_id
                 )
-                session.add(IdentitySchema(id=id_))
+                session.add(
+                    SettingsSchema(
+                        id=id_,
+                        name=str(id_),
+                        active=self._activate_default_user(),
+                    )
+                )
                 session.commit()
             self.alembic.stamp("head")
         else:
@@ -1471,7 +1477,7 @@ class SqlZenStore(BaseZenStore):
         """
         # Fetch the deployment ID from the database
         with Session(self.engine) as session:
-            identity = session.exec(select(IdentitySchema)).first()
+            identity = session.exec(select(SettingsSchema)).first()
 
             if identity is None:
                 raise KeyError(
@@ -7947,7 +7953,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Whether the default user should be activated.
         """
-        if not handle_bool_env_var(ENV_ZENML_SERVER):
+        if handle_bool_env_var(ENV_ZENML_SERVER):
             # Running inside server
             from zenml.zen_server.utils import server_config
 

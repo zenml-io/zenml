@@ -31,7 +31,7 @@ from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
-from zenml.zen_stores.schemas.identity_schemas import IdentitySchema
+from zenml.zen_stores.schemas.settings import SettingsSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
 )
@@ -80,7 +80,7 @@ __all__ = [
     "CodeRepositorySchema",
     "EventSourceSchema",
     "FlavorSchema",
-    "IdentitySchema",
+    "SettingsSchema",
     "LogsSchema",
     "NamedSchema",
     "OAuthDeviceSchema",
