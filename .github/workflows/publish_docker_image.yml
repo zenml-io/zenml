@@ -45,7 +45,7 @@ jobs:
       - name: Trigger ZenML Cloud server image creation
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.CLOUD_BE_REPO_PAT }}
+          github-token: ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: 'zenml-io',
