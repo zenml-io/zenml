@@ -51,7 +51,7 @@ jobs:
               owner: 'zenml-io',
               repo: 'zenml-cloud-plugins',
               workflow_id: 'main_image_builder.yml',
-              ref: 'cloud/send-workflow-dispatch-on-release',
+              ref: 'main',
               inputs: {
                 tag: '0.56.3',
               }
