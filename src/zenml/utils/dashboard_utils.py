@@ -63,9 +63,15 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     Returns:
         the URL to the stack if the dashboard is available, else None.
     """
+    client = Client()
     base_url = get_base_url()
     if base_url:
-        return base_url + f"{constants.STACKS}/{stack.id}/configuration"
+        server_model = client.zen_store.get_store_info()
+        if server_model.use_legacy_dashboard:
+            return base_url + f"{constants.STACKS}/{stack.id}/configuration"
+        else:
+            # TODO: this is a fallback URL, to be replaced once UI is ready for it
+            return base_url + constants.STACKS
     return None
 
 
@@ -78,12 +84,18 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
     Returns:
         the URL to the component if the dashboard is available, else None.
     """
+    client = Client()
     base_url = get_base_url()
     if base_url:
-        return (
-            base_url
-            + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
-        )
+        server_model = client.zen_store.get_store_info()
+        if server_model.use_legacy_dashboard:
+            return (
+                base_url
+                + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
+            )
+        else:
+            # TODO: this is a fallback URL, to be replaced once UI is ready for it
+            return base_url + constants.STACKS
     return None
 
 
@@ -101,7 +113,10 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     if base_url:
         server_model = client.zen_store.get_store_info()
         # if the server is a zenml cloud tenant, use a different URL
-        if server_model.metadata.get("organization_id"):
+        if (
+            server_model.metadata.get("organization_id")
+            or not server_model.use_legacy_dashboard
+        ):
             return f"{base_url}{constants.RUNS}/{run.id}"
         if run.pipeline:
             return f"{base_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
