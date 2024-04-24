@@ -2,7 +2,7 @@
 
 # update those variables accrodingly, if the new ZenML
 # Dashboard version was released
-RELEASE="v0.16.1"
+RELEASE="###PLACEHOLDER###" # TODO: UPDATE ME BEFORE MERGING
 LEGACY_RELEASE="v0.16.1"
 
 APP_NAME="zenml-dashboard"
