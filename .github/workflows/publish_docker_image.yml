@@ -49,7 +49,7 @@ jobs:
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: 'zenml-io',
-              repo: 'zenml-cloud-api',
+              repo: 'zenml-cloud-plugins',
               workflow_id: 'main_image_builder.yml',
               ref: 'feature/automate-image-building-on-zenml-tag-push',
               inputs: {
