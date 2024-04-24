@@ -6,6 +6,7 @@ Create Date: 2024-04-17 14:17:08.142652
 
 """
 
+from datetime import datetime
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -48,7 +49,10 @@ def upgrade() -> None:
 
     # Fetch the deployment id from the identity table
     deployment_id = (
-        sa.select([meta.tables["identity"].c.id]).limit(1).execute().fetchone()
+        sa.select([meta.tables["identity"].c.id])
+        .limit(1)
+        .execute()
+        .fetchone()[0]
     )
 
     # Prefill the settings table with a single row that contains the deployment
@@ -70,6 +74,8 @@ def upgrade() -> None:
                 # Enable announcements and updates by default
                 "display_announcements": True,
                 "display_updates": True,
+                # Set the updated timestamp to the current time
+                "updated": datetime.utcnow(),
             },
         ],
     )
@@ -97,7 +103,7 @@ def downgrade() -> None:
         sa.select([meta.tables["server_settings"].c.id])
         .limit(1)
         .execute()
-        .fetchone()
+        .fetchone()[0]
     )
 
     # Prefill the identity table with a single row that contains the deployment

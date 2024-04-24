@@ -740,7 +740,7 @@ class Client(metaclass=ClientMetaClass):
             enable_analytics=updated_enable_analytics,
             display_announcements=updated_enable_announcements,
             display_updates=updated_enable_updates,
-            metadata=updated_metadata,
+            server_metadata=updated_metadata,
         )
         return self.zen_store.update_server_settings(update_model)
 
@@ -921,7 +921,7 @@ class Client(metaclass=ClientMetaClass):
             user_update.active = active
 
         if updated_metadata is not None:
-            user_update.metadata = updated_metadata
+            user_update.user_metadata = updated_metadata
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing server settings stored in the database."""
 
+from datetime import datetime
 from typing import (
     Any,
     Dict,
@@ -56,7 +57,7 @@ class ServerSettingsUpdate(BaseZenModel):
         default=None,
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
-    metadata: Optional[Dict[str, Any]] = Field(
+    server_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The metadata associated with the server.",
     )
@@ -87,12 +88,15 @@ class ServerSettingsResponseBody(BaseResponseBody):
     display_updates: Optional[bool] = Field(
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
+    updated: datetime = Field(
+        title="The timestamp when this resource was last updated."
+    )
 
 
 class ServerSettingsResponseMetadata(BaseResponseMetadata):
     """Response metadata for server settings."""
 
-    metadata: Dict[str, Any] = Field(
+    server_metadata: Dict[str, Any] = Field(
         default={},
         title="The metadata associated with the server.",
     )
@@ -187,13 +191,22 @@ class ServerSettingsResponse(
         return self.get_body().active
 
     @property
+    def updated(self) -> datetime:
+        """The `updated` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().updated
+
+    @property
     def server_metadata(self) -> Dict[str, Any]:
         """The `server_metadata` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().metadata
+        return self.get_metadata().server_metadata
 
 
 # ------------------ Filter Model ------------------

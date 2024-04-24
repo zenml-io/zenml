@@ -57,7 +57,7 @@ class ServerSettingsSchema(SQLModel, table=True):
             The updated `ServerSettingsSchema`.
         """
         for field, value in settings_update.dict(exclude_unset=True).items():
-            if field == "metadata":
+            if field == "server_metadata":
                 if value:
                     self.server_metadata = json.dumps(value)
             else:
@@ -92,6 +92,7 @@ class ServerSettingsSchema(SQLModel, table=True):
             display_announcements=self.display_announcements,
             display_updates=self.display_updates,
             active=self.active,
+            updated=self.updated,
         )
 
         metadata = None
@@ -99,7 +100,7 @@ class ServerSettingsSchema(SQLModel, table=True):
 
         if include_metadata:
             metadata = ServerSettingsResponseMetadata(
-                metadata=json.loads(self.server_metadata)
+                server_metadata=json.loads(self.server_metadata)
                 if self.server_metadata
                 else {},
             )

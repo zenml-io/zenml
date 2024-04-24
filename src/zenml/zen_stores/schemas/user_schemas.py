@@ -173,8 +173,8 @@ class UserSchema(NamedSchema, table=True):
             email=model.email,
             is_service_account=False,
             is_admin=model.is_admin,
-            user_metadata=json.dumps(model.metadata)
-            if model.metadata
+            user_metadata=json.dumps(model.user_metadata)
+            if model.user_metadata
             else None,
         )
 
@@ -220,7 +220,7 @@ class UserSchema(NamedSchema, table=True):
                 setattr(
                     self, field, user_update.create_hashed_activation_token()
                 )
-            elif field == "metadata":
+            elif field == "user_metadata":
                 if value:
                     self.user_metadata = json.dumps(value)
             else:
@@ -275,7 +275,7 @@ class UserSchema(NamedSchema, table=True):
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
-                metadata=json.loads(self.user_metadata)
+                user_metadata=json.loads(self.user_metadata)
                 if self.user_metadata
                 else {},
             )

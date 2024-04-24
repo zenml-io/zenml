@@ -7892,7 +7892,7 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_user)
             updated_user = existing_user.to_model(include_metadata=True)
 
-            if user_update.metadata is not None:
+            if user_update.user_metadata is not None:
                 analytics_metadata = {
                     **updated_user.user_metadata,
                     "email": updated_user.email,
