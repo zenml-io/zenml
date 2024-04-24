@@ -2,6 +2,11 @@
 description: Managing steps in ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Managing steps in ZenML
 
 We have learned a lot about [step configurations](configure-steps-pipelines.md) in the last section. Here we go into even further detail on how to manage steps and their configuration in ZenML.
