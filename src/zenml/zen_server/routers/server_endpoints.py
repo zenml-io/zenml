@@ -64,7 +64,7 @@ def server_info() -> ServerModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_server_settings(
+def get_settings(
     _: AuthContext = Security(authorize),
     hydrate: bool = True,
 ) -> ServerSettingsResponse:
@@ -81,7 +81,7 @@ def get_server_settings(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def update_server_settings(
+def update_settings(
     settings_update: ServerSettingsUpdate,
     _: AuthContext = Security(authorize),
 ) -> ServerSettingsResponse:
@@ -94,4 +94,4 @@ def update_server_settings(
         The updated settings.
     """
     # TODO: RBAC
-    return zen_store().update_server_settings(settings_update)
+    return zen_store().update_settings(settings_update)

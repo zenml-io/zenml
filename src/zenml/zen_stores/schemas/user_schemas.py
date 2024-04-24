@@ -222,7 +222,7 @@ class UserSchema(NamedSchema, table=True):
                 )
             elif field == "metadata":
                 if value:
-                    setattr(self, "user_metadata", json.dumps(value))
+                    self.user_metadata = json.dumps(value)
             else:
                 setattr(self, field, value)
 

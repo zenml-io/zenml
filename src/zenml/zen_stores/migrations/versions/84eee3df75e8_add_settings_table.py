@@ -33,8 +33,8 @@ def upgrade() -> None:
         ),
         sa.Column("active", sa.Boolean(), nullable=False),
         sa.Column("enable_analytics", sa.Boolean(), nullable=False),
-        sa.Column("enable_announcements", sa.Boolean(), nullable=False),
-        sa.Column("enable_updates", sa.Boolean(), nullable=False),
+        sa.Column("display_announcements", sa.Boolean(), nullable=False),
+        sa.Column("display_updates", sa.Boolean(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
 
@@ -69,8 +69,8 @@ def upgrade() -> None:
                 # Enable analytics if already enabled through the global config
                 "enable_analytics": opt_in,
                 # Enable announcements and updates if analytics is enabled
-                "enable_announcements": opt_in,
-                "enable_updates": opt_in,
+                "display_announcements": opt_in,
+                "display_updates": opt_in,
             },
         ],
     )

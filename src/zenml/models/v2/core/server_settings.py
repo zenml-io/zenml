@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing server settings."""
+"""Models representing server settings stored in the database."""
 
 from typing import (
     Any,
     Dict,
     Optional,
 )
+from uuid import UUID
 
 from pydantic import Field
 
@@ -37,20 +38,31 @@ from zenml.models.v2.base.base import (
 
 
 class ServerSettingsUpdate(BaseZenModel):
+    """Model for updating server settings."""
+
     name: Optional[str] = Field(default=None, title="The name of the server.")
     logo_url: Optional[str] = Field(
         default=None, title="The logo URL of the server."
     )
+    enable_analytics: Optional[bool] = Field(
+        default=None,
+        title="Whether to enable analytics for the server.",
+    )
     display_announcements: Optional[bool] = Field(
         default=None,
-        title="Whether to display announcements about ZenML.",
+        title="Whether to display announcements about ZenML in the dashboard.",
     )
     display_updates: Optional[bool] = Field(
-        default=None, title="Whether to display updates of ZenML."
-    )
-    onboarding_state: Optional[Dict[str, Any]] = Field(
         default=None,
-        title="The onboarding state of the server.",
+        title="Whether to display notifications about ZenML updates in the dashboard.",
+    )
+    active: Optional[bool] = Field(
+        default=None,
+        title="Whether the server has been activated or not.",
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The metadata associated with the server.",
     )
 
 
@@ -60,24 +72,34 @@ class ServerSettingsUpdate(BaseZenModel):
 class ServerSettingsResponseBody(BaseResponseBody):
     """Response body for server settings."""
 
+    server_id: UUID = Field(
+        title="The unique server id.",
+    )
     name: str = Field(title="The name of the server.")
     logo_url: Optional[str] = Field(
         default=None, title="The logo URL of the server."
     )
-
-    display_announcements: bool = Field(
-        title="Whether to display announcements about ZenML."
+    active: bool = Field(
+        title="Whether the server has been activated or not.",
     )
-    display_updates: bool = Field(title="Whether to display updates of ZenML.")
-
-    onboarding_state: Dict[str, Any] = Field(
-        default={},
-        title="The onboarding state of the server.",
+    enable_analytics: bool = Field(
+        title="Whether analytics are enabled for the server.",
+    )
+    display_announcements: Optional[bool] = Field(
+        title="Whether to display announcements about ZenML in the dashboard.",
+    )
+    display_updates: Optional[bool] = Field(
+        title="Whether to display notifications about ZenML updates in the dashboard.",
     )
 
 
 class ServerSettingsResponseMetadata(BaseResponseMetadata):
     """Response metadata for server settings."""
+
+    metadata: Dict[str, Any] = Field(
+        default={},
+        title="The metadata associated with the server.",
+    )
 
 
 class ServerSettingsResponseResources(BaseResponseResources):
@@ -91,17 +113,28 @@ class ServerSettingsResponse(
         ServerSettingsResponseResources,
     ]
 ):
+    """Response model for server settings."""
+
     def get_hydrated_version(self) -> "ServerSettingsResponse":
-        """Get the hydrated version of the settings.
+        """Get the hydrated version of the server settings.
 
         Returns:
-            an instance of the same entity with the metadata field attached.
+            An instance of the same entity with the metadata field attached.
         """
         from zenml.client import Client
 
         return Client().zen_store.get_server_settings(hydrate=True)
 
     # Body and metadata properties
+
+    @property
+    def server_id(self) -> UUID:
+        """The `server_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().server_id
 
     @property
     def name(self) -> str:
@@ -113,7 +146,7 @@ class ServerSettingsResponse(
         return self.get_body().name
 
     @property
-    def logo_url(self) -> str:
+    def logo_url(self) -> Optional[str]:
         """The `logo_url` property.
 
         Returns:
@@ -122,7 +155,16 @@ class ServerSettingsResponse(
         return self.get_body().logo_url
 
     @property
-    def display_announcements(self) -> bool:
+    def enable_analytics(self) -> bool:
+        """The `enable_analytics` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().enable_analytics
+
+    @property
+    def display_announcements(self) -> Optional[bool]:
         """The `display_announcements` property.
 
         Returns:
@@ -131,7 +173,7 @@ class ServerSettingsResponse(
         return self.get_body().display_announcements
 
     @property
-    def display_updates(self) -> bool:
+    def display_updates(self) -> Optional[bool]:
         """The `display_updates` property.
 
         Returns:
@@ -140,13 +182,22 @@ class ServerSettingsResponse(
         return self.get_body().display_updates
 
     @property
-    def onboarding_state(self) -> Dict[str, Any]:
-        """The `onboarding_state` property.
+    def active(self) -> bool:
+        """The `active` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().onboarding_state
+        return self.get_body().active
+
+    @property
+    def server_metadata(self) -> Dict[str, Any]:
+        """The `server_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().metadata
 
 
 # ------------------ Filter Model ------------------

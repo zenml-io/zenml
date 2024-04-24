@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,20 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQLModel implementation of server settings tables."""
+"""SQLModel implementation for the server settings table."""
 
 import json
 from datetime import datetime
 from typing import Any, Optional
+from uuid import UUID
 
-from sqlalchemy import TEXT, Column
 from sqlmodel import Field, SQLModel
 
-from zenml.constants import (
-    DEFAULT_DISPLAY_ANNOUNCEMENTS,
-    DEFAULT_DISPLAY_UPDATES,
-    DEFAULT_SERVER_NAME,
-)
 from zenml.models import (
     ServerSettingsResponse,
     ServerSettingsResponseBody,
@@ -35,37 +30,37 @@ from zenml.models import (
 
 
 class ServerSettingsSchema(SQLModel, table=True):
-    """SQL Model for settings."""
+    """SQL Model for the server settings."""
 
     __tablename__ = "server_settings"
 
-    name: str = Field(default=DEFAULT_SERVER_NAME, primary_key=True)
-    logo_url: Optional[str] = None
-    display_announcements: bool = DEFAULT_DISPLAY_ANNOUNCEMENTS
-    display_updates: bool = DEFAULT_DISPLAY_UPDATES
-    onboarding_state: Optional[str] = Field(
-        default=None, sa_column=Column(TEXT, nullable=True)
-    )
+    id: UUID = Field(primary_key=True)
+    name: str
+    email: Optional[str] = Field(nullable=True)
+    logo_url: Optional[str] = Field(nullable=True)
+    active: bool = Field(default=False)
+    enable_analytics: bool = Field(default=False)
+    display_announcements: Optional[bool] = Field(nullable=True)
+    display_updates: Optional[bool] = Field(nullable=True)
+    server_metadata: Optional[str] = Field(nullable=True)
     updated: datetime = Field(default_factory=datetime.utcnow)
 
     def update(
-        self, server_settings_update: ServerSettingsUpdate
+        self, settings_update: ServerSettingsUpdate
     ) -> "ServerSettingsSchema":
         """Update a `ServerSettingsSchema` from a `ServerSettingsUpdate`.
 
         Args:
-            server_settings_update: The `ServerSettingsUpdate` from which
+            settings_update: The `ServerSettingsUpdate` from which
                 to update the schema.
 
         Returns:
             The updated `ServerSettingsSchema`.
         """
-        for field, value in server_settings_update.dict(
-            exclude_unset=True
-        ).items():
-            if field == "onboarding_state":
-                if value is not None:
-                    setattr(self, field, json.dumps(value))
+        for field, value in settings_update.dict(exclude_unset=True).items():
+            if field == "metadata":
+                if value:
+                    self.server_metadata = json.dumps(value)
             else:
                 setattr(self, field, value)
 
@@ -88,23 +83,27 @@ class ServerSettingsSchema(SQLModel, table=True):
 
 
         Returns:
-            The created `ServerSettingsResponse`.
+            The created `SettingsResponse`.
         """
         body = ServerSettingsResponseBody(
+            server_id=self.id,
             name=self.name,
             logo_url=self.logo_url,
+            enable_analytics=self.enable_analytics,
             display_announcements=self.display_announcements,
             display_updates=self.display_updates,
-            onboarding_state=json.loads(self.onboarding_state)
-            if self.onboarding_state
-            else {},
+            active=self.active,
         )
 
         metadata = None
         resources = None
 
         if include_metadata:
-            metadata = ServerSettingsResponseMetadata()
+            metadata = ServerSettingsResponseMetadata(
+                metadata=json.loads(self.server_metadata)
+                if self.server_metadata
+                else {},
+            )
 
         if include_resources:
             resources = ServerSettingsResponseResources()

@@ -80,7 +80,6 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER,
-    FINISHED_ONBOARDING_SURVEY_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -294,7 +293,6 @@ from zenml.zen_stores.schemas import (
     SecretSchema,
     ServerSettingsSchema,
     ServiceConnectorSchema,
-    SettingsSchema,
     StackComponentSchema,
     StackSchema,
     StepRunInputArtifactSchema,
@@ -1412,15 +1410,22 @@ class SqlZenStore(BaseZenStore):
                     SQLModel.metadata.create_all  # type: ignore[arg-type]
                 )
             with Session(self.engine) as session:
+                # Initialize the settings
                 id_ = (
                     ServerConfiguration.get_server_config().external_server_id
                     or GlobalConfiguration().user_id
                 )
                 session.add(
-                    SettingsSchema(
+                    ServerSettingsSchema(
                         id=id_,
                         name=str(id_),
                         active=self._activate_default_user(),
+                        enable_analytics=GlobalConfiguration().analytics_opt_in,
+                        display_announcements=True,
+                        display_updates=True,
+                        email=None,
+                        logo_url=None,
+                        server_metadata=None,
                     )
                 )
                 session.commit()
@@ -1460,9 +1465,12 @@ class SqlZenStore(BaseZenStore):
         model = super().get_store_info()
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
+        settings = self.get_server_settings(hydrate=True)
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
-        model.id = self.get_deployment_id()
+        model.id = settings.server_id
+        model.active = settings.active
+        model.analytics_enabled = settings.enable_analytics
         return model
 
     def get_deployment_id(self) -> UUID:
@@ -1477,7 +1485,7 @@ class SqlZenStore(BaseZenStore):
         """
         # Fetch the deployment ID from the database
         with Session(self.engine) as session:
-            identity = session.exec(select(SettingsSchema)).first()
+            identity = session.exec(select(ServerSettingsSchema)).first()
 
             if identity is None:
                 raise KeyError(
@@ -1487,23 +1495,22 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Server Settings --------------------
 
-    def _get_or_create_server_settings(
-        self, session: Session
-    ) -> ServerSettingsSchema:
-        """Get or create server settings if they don't exist yet.
+    def _get_server_settings(self, session: Session) -> ServerSettingsSchema:
+        """Get the server settings or fail.
 
         Args:
             session: SQLAlchemy session to use.
 
         Returns:
             The settings table.
+
+        Raises:
+            RuntimeError: If the settings table is not found.
         """
         settings = session.exec(select(ServerSettingsSchema)).first()
 
         if settings is None:
-            settings = ServerSettingsSchema()
-            session.add(settings)
-            session.commit()
+            raise RuntimeError("The server settings have not been initialized")
 
         return settings
 
@@ -1520,25 +1527,29 @@ class SqlZenStore(BaseZenStore):
             The server settings.
         """
         with Session(self.engine) as session:
-            settings = self._get_or_create_server_settings(session=session)
+            settings = self._get_server_settings(session=session)
             return settings.to_model(include_metadata=hydrate)
 
-    def update_server_settings(
-        self, server_settings_update: ServerSettingsUpdate
+    def update_settings(
+        self, settings_update: ServerSettingsUpdate
     ) -> ServerSettingsResponse:
         """Update the server settings.
 
         Args:
-            server_settings_update: The server settings update.
+            settings_update: The server settings update.
 
         Returns:
             The updated server settings.
         """
         with Session(self.engine) as session:
-            settings = self._get_or_create_server_settings(session=session)
+            settings = self._get_server_settings(session=session)
 
-            analytics_metadata = server_settings_update.dict(
-                include={"display_announcements", "display_updates"},
+            analytics_metadata = settings_update.dict(
+                include={
+                    "enable_analytics",
+                    "display_announcements",
+                    "display_updates",
+                },
                 exclude_none=True,
             )
             # Filter to only include the values that changed in this update
@@ -1553,7 +1564,7 @@ class SqlZenStore(BaseZenStore):
                 metadata=analytics_metadata,
             )
 
-            settings.update(server_settings_update)
+            settings.update(settings_update)
             session.add(settings)
             session.commit()
             session.refresh(settings)
@@ -7864,11 +7875,6 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            user_model = existing_user.to_model(include_metadata=True)
-            survey_finished_before = (
-                FINISHED_ONBOARDING_SURVEY_KEY in user_model.metadata
-            )
-
             existing_user.update_user(user_update=user_update)
             session.add(existing_user)
             session.commit()
@@ -7877,13 +7883,9 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_user)
             updated_user = existing_user.to_model(include_metadata=True)
 
-            survey_finished_after = (
-                FINISHED_ONBOARDING_SURVEY_KEY in updated_user.metadata
-            )
-
-            if not survey_finished_before and survey_finished_after:
+            if user_update.metadata is not None:
                 analytics_metadata = {
-                    **updated_user.metadata,
+                    **updated_user.user_metadata,
                     "email": updated_user.email,
                     "name": updated_user.name,
                     "full_name": updated_user.full_name,

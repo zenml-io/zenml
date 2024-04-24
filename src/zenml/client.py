@@ -697,9 +697,7 @@ class Client(metaclass=ClientMetaClass):
 
     # ----------------------------- Server Settings ----------------------------
 
-    def get_server_settings(
-        self, hydrate: bool = True
-    ) -> ServerSettingsResponse:
+    def get_settings(self, hydrate: bool = True) -> ServerSettingsResponse:
         """Get the server settings.
 
         Args:
@@ -711,12 +709,12 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.get_server_settings(hydrate=hydrate)
 
-    def update_server_settings(
+    def update_settings(
         self,
         updated_name: Optional[str] = None,
         updated_logo_url: Optional[str] = None,
-        updated_display_announcements: Optional[bool] = None,
-        updated_display_updates: Optional[bool] = None,
+        updated_enable_announcements: Optional[bool] = None,
+        updated_enable_updates: Optional[bool] = None,
         updated_onboarding_state: Optional[Dict[str, Any]] = None,
     ) -> ServerSettingsResponse:
         """Update the server settings.
@@ -724,9 +722,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             updated_name: Updated name for the server.
             updated_logo_url: Updated logo URL for the server.
-            updated_display_announcements: Updated value whether to display
+            updated_enable_announcements: Updated value whether to display
                 announcements about ZenML.
-            updated_display_updates: Updated value whether to display updates
+            updated_enable_updates: Updated value whether to display updates
                 about ZenML.
             updated_onboarding_state: The updated onboarding state for the
                 server.
@@ -737,11 +735,11 @@ class Client(metaclass=ClientMetaClass):
         update_model = ServerSettingsUpdate(
             name=updated_name,
             logo_url=updated_logo_url,
-            display_announcements=updated_display_announcements,
-            display_updates=updated_display_updates,
+            display_announcements=updated_enable_announcements,
+            display_updates=updated_enable_updates,
             onboarding_state=updated_onboarding_state,
         )
-        return self.zen_store.update_server_settings(update_model)
+        return self.zen_store.update_settings(update_model)
 
     # ---------------------------------- Users ---------------------------------
 

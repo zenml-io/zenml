@@ -55,6 +55,10 @@ class ServerModel(BaseModel):
         title="The ZenML version that the server is running.",
     )
 
+    active: bool = Field(
+        True, title="Flag to indicate whether the server is active."
+    )
+
     debug: bool = Field(
         False, title="Flag to indicate whether ZenML is running on debug mode."
     )

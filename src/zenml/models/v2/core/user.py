@@ -424,8 +424,8 @@ class UserResponse(
         return self.get_metadata().external_user_id
 
     @property
-    def metadata(self) -> Dict[str, Any]:
-        """The `metadata` property.
+    def user_metadata(self) -> Dict[str, Any]:
+        """The `user_metadata` property.
 
         Returns:
             the value of the property.

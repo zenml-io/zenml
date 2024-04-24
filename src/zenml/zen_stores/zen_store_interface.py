@@ -249,13 +249,13 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_server_settings(
-        self, server_settings_update: ServerSettingsUpdate
+    def update_settings(
+        self, settings_update: ServerSettingsUpdate
     ) -> ServerSettingsResponse:
         """Update the server settings.
 
         Args:
-            server_settings_update: The server settings update.
+            settings_update: The server settings update.
 
         Returns:
             The updated server settings.
