@@ -1410,20 +1410,21 @@ class SqlZenStore(BaseZenStore):
                     SQLModel.metadata.create_all  # type: ignore[arg-type]
                 )
             with Session(self.engine) as session:
+                server_config = ServerConfiguration.get_server_config()
+
                 # Initialize the settings
                 id_ = (
-                    ServerConfiguration.get_server_config().external_server_id
+                    server_config.external_server_id
                     or GlobalConfiguration().user_id
                 )
                 session.add(
                     ServerSettingsSchema(
                         id=id_,
-                        name=str(id_),
+                        name=server_config.name or str(id_),
                         active=self._activate_default_user(),
                         enable_analytics=GlobalConfiguration().analytics_opt_in,
-                        display_announcements=True,
-                        display_updates=True,
-                        email=None,
+                        display_announcements=server_config.display_announcements,
+                        display_updates=server_config.display_updates,
                         logo_url=None,
                         server_metadata=None,
                     )
@@ -1530,7 +1531,7 @@ class SqlZenStore(BaseZenStore):
             settings = self._get_server_settings(session=session)
             return settings.to_model(include_metadata=hydrate)
 
-    def update_settings(
+    def update_server_settings(
         self, settings_update: ServerSettingsUpdate
     ) -> ServerSettingsResponse:
         """Update the server settings.
@@ -1570,6 +1571,14 @@ class SqlZenStore(BaseZenStore):
             session.refresh(settings)
 
             return settings.to_model(include_metadata=True)
+
+    def activate_server(self) -> None:
+        """Activate the server."""
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+            settings.active = True
+            session.add(settings)
+            session.commit()
 
     # ------------------------- API Keys -------------------------
 

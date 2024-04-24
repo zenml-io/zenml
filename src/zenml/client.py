@@ -709,25 +709,27 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.get_server_settings(hydrate=hydrate)
 
-    def update_settings(
+    def update_server_settings(
         self,
         updated_name: Optional[str] = None,
         updated_logo_url: Optional[str] = None,
+        updated_enable_analytics: Optional[bool] = None,
         updated_enable_announcements: Optional[bool] = None,
         updated_enable_updates: Optional[bool] = None,
-        updated_onboarding_state: Optional[Dict[str, Any]] = None,
+        updated_metadata: Optional[Dict[str, Any]] = None,
     ) -> ServerSettingsResponse:
         """Update the server settings.
 
         Args:
             updated_name: Updated name for the server.
             updated_logo_url: Updated logo URL for the server.
+            updated_enable_analytics: Updated value whether to enable
+                analytics for the server.
             updated_enable_announcements: Updated value whether to display
                 announcements about ZenML.
             updated_enable_updates: Updated value whether to display updates
                 about ZenML.
-            updated_onboarding_state: The updated onboarding state for the
-                server.
+            updated_metadata: Updated metadata for the server.
 
         Returns:
             The updated server settings.
@@ -735,11 +737,12 @@ class Client(metaclass=ClientMetaClass):
         update_model = ServerSettingsUpdate(
             name=updated_name,
             logo_url=updated_logo_url,
+            enable_analytics=updated_enable_analytics,
             display_announcements=updated_enable_announcements,
             display_updates=updated_enable_updates,
-            onboarding_state=updated_onboarding_state,
+            metadata=updated_metadata,
         )
-        return self.zen_store.update_settings(update_model)
+        return self.zen_store.update_server_settings(update_model)
 
     # ---------------------------------- Users ---------------------------------
 

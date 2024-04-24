@@ -36,7 +36,6 @@ class ServerSettingsSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True)
     name: str
-    email: Optional[str] = Field(nullable=True)
     logo_url: Optional[str] = Field(nullable=True)
     active: bool = Field(default=False)
     enable_analytics: bool = Field(default=False)

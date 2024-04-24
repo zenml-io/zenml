@@ -467,7 +467,7 @@ class RestZenStore(BaseZenStore):
         response_body = self.get(SERVER_SETTINGS, params={"hydrate": hydrate})
         return ServerSettingsResponse.parse_obj(response_body)
 
-    def update_settings(
+    def update_server_settings(
         self, settings_update: ServerSettingsUpdate
     ) -> ServerSettingsResponse:
         """Update the server settings.

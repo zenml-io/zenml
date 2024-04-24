@@ -80,7 +80,6 @@ __all__ = [
     "CodeRepositorySchema",
     "EventSourceSchema",
     "FlavorSchema",
-    "ServerSettingsSchema",
     "LogsSchema",
     "NamedSchema",
     "OAuthDeviceSchema",
@@ -91,6 +90,7 @@ __all__ = [
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
+    "ServerSettingsSchema",
     "ServiceConnectorSchema",
     "ServiceSchema",
     "StackComponentSchema",
@@ -111,5 +111,4 @@ __all__ = [
     "ModelVersionArtifactSchema",
     "ModelVersionPipelineRunSchema",
     "WorkspaceSchema",
-    "ServerSettingsSchema"
 ]

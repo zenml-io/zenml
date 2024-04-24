@@ -56,10 +56,6 @@ class ServerSettingsUpdate(BaseZenModel):
         default=None,
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
-    active: Optional[bool] = Field(
-        default=None,
-        title="Whether the server has been activated or not.",
-    )
     metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The metadata associated with the server.",

@@ -206,6 +206,14 @@ class ServerConfiguration(BaseModel):
             one of the reserved values `disabled`, `no`, `none`, `false`, `off`
             or to an empty string, the `Permissions-Policy` header will not be
             included in responses.
+        name: The name of the ZenML server. Used only during initial deployment.
+            Can be changed later as a part of the server settings.
+        display_announcements: Whether to display announcements about ZenML in
+            the dashboard. Used only during initial deployment. Can be changed
+            later as a part of the server settings.
+        display_updates: Whether to display notifications about ZenML updates in
+            the dashboard. Used only during initial deployment. Can be changed
+            later as a part of the server settings.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -274,6 +282,10 @@ class ServerConfiguration(BaseModel):
     secure_headers_permissions: Union[bool, str] = (
         DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
     )
+
+    name: Optional[str] = None
+    display_announcements: bool = True
+    display_updates: bool = True
 
     _deployment_id: Optional[UUID] = None
 
