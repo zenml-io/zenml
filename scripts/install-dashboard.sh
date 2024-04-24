@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# update those variables accrodingly, if the new ZenML
+# update those variables accordingly, if the new ZenML
 # Dashboard version was released
 RELEASE="###PLACEHOLDER###" # TODO: UPDATE ME BEFORE MERGING
 LEGACY_RELEASE="v0.16.1"
@@ -171,14 +171,14 @@ set +u
 verifySupported
 checkGitIgnore
 buildTags
-if [[ ! -z "$TAG" ]]; then
-  downloadFile $TAG
+if [[ -n "$TAG" ]]; then
+  downloadFile "$TAG"
   verifyFile
-  installFile $INSTALL_DIR
+  installFile "$INSTALL_DIR"
 fi
-if [[ ! -z "$LEGACY_TAG" ]]; then
-  downloadFile $LEGACY_TAG
+if [[ -n "$LEGACY_TAG" ]]; then
+  downloadFile "$LEGACY_TAG"
   verifyFile
-  installFile $LEGACY_INSTALL_DIR
+  installFile "$LEGACY_INSTALL_DIR"
 fi
 cleanup
