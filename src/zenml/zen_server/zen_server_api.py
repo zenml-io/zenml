@@ -363,16 +363,6 @@ def catch_all(request: Request, file_path: str) -> Any:
         full_path = os.path.join(relative_path(DASHBOARD_DIRECTORY), file_path)
         return FileResponse(full_path)
 
-    tokens = file_path.split("/")
-    if len(tokens) == 1 and not request.query_params:
-        logger.debug(f"Requested non-existent static file: {file_path}")
-        raise HTTPException(status_code=404)
-
-    if not os.path.isfile(
-        os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
-    ):
-        raise HTTPException(status_code=404)
-
     # everything else is directed to the index.html file that hosts the
     # single-page application
     return templates.TemplateResponse("index.html", {"request": request})
