@@ -31,7 +31,7 @@ class BaseSecretSchema(BaseModel):
         Returns:
             A list of all attribute names that are part of the schema.
         """
-        return list(cls.__fields__.keys())
+        return list(cls.model_fields.keys())
 
     def get_values(self) -> Dict[str, Any]:
         """Get all values of the secret schema.

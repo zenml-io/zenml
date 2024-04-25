@@ -323,6 +323,77 @@ class ServiceConnectorUpdate(BaseUpdate):
         metadata["connector_type"] = self.type
         return metadata
 
+    # Helper methods
+    @property
+    def type(self) -> str:
+        """Get the connector type.
+
+        Returns:
+            The connector type.
+        """
+        if isinstance(self.connector_type, str):
+            return self.connector_type
+        return self.connector_type.connector_type
+
+    @property
+    def emojified_connector_type(self) -> str:
+        """Get the emojified connector type.
+
+        Returns:
+            The emojified connector type.
+        """
+        if not isinstance(self.connector_type, str):
+            return self.connector_type.emojified_connector_type
+
+        return self.connector_type
+
+    @property
+    def emojified_resource_types(self) -> List[str]:
+        """Get the emojified connector type.
+
+        Returns:
+            The emojified connector type.
+        """
+        if not isinstance(self.connector_type, str):
+            return [
+                self.connector_type.resource_type_dict[
+                    resource_type
+                ].emojified_resource_type
+                for resource_type in self.resource_types
+            ]
+
+        return self.resource_types
+
+    def validate_and_configure_resources(
+        self,
+        connector_type: "ServiceConnectorTypeModel",
+        resource_types: Optional[Union[str, List[str]]] = None,
+        resource_id: Optional[str] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+    ) -> None:
+        """Validate and configure the resources that the connector can be used to access.
+
+        Args:
+            connector_type: The connector type specification used to validate
+                the connector configuration.
+            resource_types: The type(s) of resource that the connector instance
+                can be used to access. If omitted, a multi-type connector is
+                configured.
+            resource_id: Uniquely identifies a specific resource instance that
+                the connector instance can be used to access.
+            configuration: The connector configuration.
+            secrets: The connector secrets.
+        """
+        _validate_and_configure_resources(
+            connector=self,
+            connector_type=connector_type,
+            resource_types=resource_types,
+            resource_id=resource_id,
+            configuration=configuration,
+            secrets=secrets,
+        )
+
 
 # ------------------ Response Model ------------------
 
@@ -788,7 +859,11 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
 
 
 def _validate_and_configure_resources(
-    connector: Union[ServiceConnectorRequest, ServiceConnectorResponse],
+    connector: Union[
+        ServiceConnectorRequest,
+        ServiceConnectorResponse,
+        ServiceConnectorUpdate,
+    ],
     connector_type: "ServiceConnectorTypeModel",
     resource_types: Optional[Union[str, List[str]]] = None,
     resource_id: Optional[str] = None,

@@ -128,7 +128,10 @@ class StackComponentSchema(NamedSchema, table=True):
                     json.dumps(component_update.labels).encode("utf-8")
                 )
             elif field == "type":
-                self.type = component_update.type.value
+                component_type = component_update.type
+
+                if component_type is not None:
+                    self.type = component_type
             else:
                 setattr(self, field, value)
 

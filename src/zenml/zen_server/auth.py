@@ -154,7 +154,7 @@ def _fetch_and_verify_api_key(
     # Update the "last used" timestamp of the API key
     store.update_internal_api_key(
         api_key.id,
-        APIKeyInternalUpdate(update_last_login=True),  # type: ignore[call-arg]
+        APIKeyInternalUpdate(update_last_login=True),
     )
 
     return api_key

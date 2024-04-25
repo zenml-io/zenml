@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import Any, List, Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -168,7 +168,7 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    ) -> List[Union["BinaryExpression", "BooleanClauseList"]]:
         """Get custom filters.
 
         Returns:

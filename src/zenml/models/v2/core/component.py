@@ -374,7 +374,7 @@ class ComponentFilter(WorkspaceScopedFilter):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the filter for the query.
 
         Stack components can be scoped by type to narrow the search.

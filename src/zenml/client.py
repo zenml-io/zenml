@@ -1244,7 +1244,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdate(  # type: ignore[call-arg]
+        update_model = StackUpdate(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             stack_spec_path=stack_spec_file,
@@ -1970,7 +1970,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdate(  # type: ignore[call-arg]
+        update_model = ComponentUpdate(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             component_spec_path=component_spec_path,
@@ -4190,7 +4190,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate=True,
         )
 
-        secret_update = SecretUpdate(name=new_name or secret.name)  # type: ignore[call-arg]
+        secret_update = SecretUpdate(name=new_name or secret.name)
 
         if new_scope:
             secret_update.scope = new_scope
@@ -4509,7 +4509,7 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdate(  # type: ignore[call-arg]
+        update = CodeRepositoryUpdate(
             name=name, description=description, logo_url=logo_url
         )
         return self.zen_store.update_code_repository(

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """MLflow experiment tracker flavor."""
 
+import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import model_validator
@@ -23,12 +24,15 @@ from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTrackerFlavor,
 )
 from zenml.integrations.mlflow import MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
+from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.mlflow.experiment_trackers import (
         MLFlowExperimentTracker,
     )
+
+logger = get_logger(__name__)
 
 
 def is_remote_mlflow_tracking_uri(tracking_uri: str) -> bool:
@@ -107,11 +111,9 @@ class MLFlowExperimentTrackerConfig(
     tracking_insecure_tls: bool = False
     databricks_host: Optional[str] = None
 
-    # TODO: Investigate the option skip on failure here.
-    @model_validator(skip_on_failure=True)
-    @classmethod
+    @model_validator(mode="after")
     def _ensure_authentication_if_necessary(
-        cls, values: Dict[str, Any]
+        self, values: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Ensures that credentials or a token for authentication exist.
 
@@ -126,39 +128,34 @@ class MLFlowExperimentTrackerConfig(
         Raises:
             ValueError: If neither credentials nor a token are provided.
         """
-        tracking_uri = values.get("tracking_uri")
-
-        if tracking_uri:
-            if is_databricks_tracking_uri(tracking_uri):
-                # If the tracking uri is "databricks", then we need the databricks
-                # host to be set.
-                databricks_host = values.get("databricks_host")
-
-                if not databricks_host:
-                    raise ValueError(
+        if self.tracking_uri:
+            if is_databricks_tracking_uri(self.tracking_uri):
+                # If the tracking uri is "databricks", then we need the
+                # databricks host to be set.
+                if self.databricks_host:
+                    logging.warning(
                         "MLflow experiment tracking with a Databricks MLflow "
-                        "managed tracking server requires the `databricks_host` "
-                        "to be set in your stack component. To update your "
-                        "component, run `zenml experiment-tracker update "
+                        "managed tracking server requires the "
+                        "`databricks_host` to be set in your stack component. "
+                        "To update your component, run "
+                        "`zenml experiment-tracker update "
                         "<NAME> --databricks_host=DATABRICKS_HOST` "
                         "and specify the hostname of your Databricks workspace."
                     )
 
-            if is_remote_mlflow_tracking_uri(tracking_uri):
-                # we need either username + password or a token to authenticate to
-                # the remote backend
-                basic_auth = values.get("tracking_username") and values.get(
-                    "tracking_password"
-                )
-                token_auth = values.get("tracking_token")
+            if is_remote_mlflow_tracking_uri(self.tracking_uri):
+                # we need either username + password or a token to authenticate
+                # to the remote backend
+                basic_auth = self.tracking_username and self.tracking_password
 
-                if not (basic_auth or token_auth):
-                    raise ValueError(
+                if not (basic_auth or self.token_auth):
+                    logging.warning(
                         f"MLflow experiment tracking with a remote backend "
-                        f"{tracking_uri} is only possible when specifying either "
-                        f"username and password or an authentication token in your "
-                        f"stack component. To update your component, run the "
-                        f"following command: `zenml experiment-tracker update "
+                        f"{self.tracking_uri} is only possible when specifying "
+                        f"either username and password or an authentication "
+                        f"token in your stack component. To update your "
+                        f"component, run the following command: "
+                        f"`zenml experiment-tracker update "
                         f"<NAME> --tracking_username=MY_USERNAME "
                         f"--tracking_password=MY_PASSWORD "
                         f"--tracking_token=MY_TOKEN` and specify either your "

@@ -19,10 +19,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID
 
-from pydantic import Field
 from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
-from sqlmodel import Relationship
+from sqlmodel import Field, Relationship
 
 from zenml import EventSourceResponseMetadata
 from zenml.models import (

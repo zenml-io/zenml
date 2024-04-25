@@ -112,7 +112,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     docker_run_args: List[str] = []
 
 
-class SkypilotBaseOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SkypilotBaseOrchestratorConfig(
     BaseOrchestratorConfig, SkypilotBaseOrchestratorSettings
 ):
     """Skypilot orchestrator base config.

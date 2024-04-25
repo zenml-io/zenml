@@ -16,7 +16,6 @@
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
-    Any,
     ClassVar,
     Dict,
     List,
@@ -460,7 +459,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    ) -> List[Union["BinaryExpression", "BooleanClauseList"]]:
         """Get custom filters.
 
         Returns:
