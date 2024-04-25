@@ -315,7 +315,6 @@ def deploy(
     Args:
         name: Name for the ZenML server deployment.
         provider: ZenML server provider name.
-        connect: Connecting the client to the ZenML server.
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
         gcp_project_id: The project in GCP to deploy the server to.

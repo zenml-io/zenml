@@ -85,6 +85,9 @@ if server_config().external_server_id is None:
     ) -> ServerSettingsResponse:
         """Get settings of the server.
 
+        Args:
+            hydrate: Whether to hydrate the response.
+
         Returns:
             Settings of the server.
         """
