@@ -12,12 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pigeon annotator."""
+
 import os
 from datetime import datetime
 from typing import Any, List, Optional, Tuple
 
 from zenml.annotators.base_annotator import BaseAnnotator
-from zenml.enums import StackComponentType
 from zenml.stack.stack_component import StackComponentConfig
 
 try:

@@ -19,6 +19,7 @@ from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
     BaseAnnotatorFlavor,
 )
+from zenml.integrations.pigeon import PIGEON_ANNOTATOR_FLAVOR
 
 if TYPE_CHECKING:
     from zenml.integrations.pigeon.annotators import PigeonAnnotator
@@ -44,7 +45,7 @@ class PigeonAnnotatorFlavor(BaseAnnotatorFlavor):
         Returns:
             The name of the flavor.
         """
-        return "pigeon"
+        return PIGEON_ANNOTATOR_FLAVOR
 
     @property
     def docs_url(self) -> Optional[str]:

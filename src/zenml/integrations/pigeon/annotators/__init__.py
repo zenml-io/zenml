@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Initialization of the Pigeon annotators submodule."""
 
-from zenml.integrations.label_studio.annotators.label_studio_annotator import (
-    LabelStudioAnnotator,
+from zenml.integrations.pigeon.annotators.pigeon_annotator import (
+    PigeonAnnotator,
 )
 
-__all__ = ["LabelStudioAnnotator"]
+__all__ = ["PigeonAnnotator"]
