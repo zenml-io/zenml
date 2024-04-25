@@ -22,11 +22,10 @@ https://github.com/agermanidis/pigeon
 import json
 import os
 from datetime import datetime
-from functools import partial
 from typing import Any, List, Optional, Tuple, cast
 
+import ipywidgets as widgets
 from IPython.display import clear_output, display
-from ipywidgets import HTML, Button, HBox, Output
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.integrations.pigeon.flavors.pigeon_annotator_flavor import (
@@ -118,12 +117,11 @@ class PigeonAnnotator(BaseAnnotator):
         """
         examples = list(data)
         annotations = []
-        current_index = -1
-        out = Output()
+        current_index = 0
+        out = widgets.Output()
 
         def show_next():
             nonlocal current_index
-            current_index += 1
             if current_index >= len(examples):
                 with out:
                     clear_output(wait=True)
@@ -136,13 +134,16 @@ class PigeonAnnotator(BaseAnnotator):
                 else:
                     display(examples[current_index])
 
-        def add_annotation(annotation, btn):
+        def add_annotation(btn):
             """Add an annotation to the list of annotations.
 
             Args:
-                annotation: The label to add.
+                btn: The button that triggered the event.
             """
+            nonlocal current_index
+            annotation = btn.description
             annotations.append((examples[current_index], annotation))
+            current_index += 1
             show_next()
 
         def submit_annotations(btn):
@@ -156,21 +157,22 @@ class PigeonAnnotator(BaseAnnotator):
                 clear_output(wait=True)
                 print("Annotations saved.")
 
-        count_label = HTML()
+        count_label = widgets.Label()
         display(count_label)
 
         buttons = []
         for label in options:
-            btn = Button(description=label)
-            # Use partial from functools to properly pass both the label and the button to the event handler
-            btn.on_click(partial(add_annotation, label))
+            btn = widgets.Button(description=label)
+            btn.on_click(add_annotation)
             buttons.append(btn)
 
-        submit_btn = Button(description="Save labels", button_style="success")
+        submit_btn = widgets.Button(
+            description="Save labels", button_style="success"
+        )
         submit_btn.on_click(submit_annotations)
         buttons.append(submit_btn)
 
-        navigation_box = HBox(buttons)
+        navigation_box = widgets.HBox(buttons)
         display(navigation_box)
         display(out)
         show_next()
@@ -233,9 +235,8 @@ class PigeonAnnotator(BaseAnnotator):
         """
         dataset_path = os.path.join(self.config.output_dir, dataset_name)
         with open(dataset_path, "r") as f:
-            lines = f.readlines()
-        annotations = [line.strip().split("\t") for line in lines]
-        return list(annotations)
+            annotations = json.load(f)
+        return annotations
 
     def get_labeled_data(self, dataset_name: str) -> List[Tuple[Any, Any]]:
         """Get the labeled examples from a dataset (annotation file).
