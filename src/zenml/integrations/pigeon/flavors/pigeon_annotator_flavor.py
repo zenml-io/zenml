@@ -37,11 +37,11 @@ class PigeonAnnotatorConfig(
     """Config for the Pigeon annotator.
 
     Attributes:
-        annotations_path: Path where the annotations will be stored.
+        output_dir: The directory to store the annotations.
         notebook_only: Whether the annotator only works within a notebook.
     """
 
-    annotations_path: str = "annotations"
+    output_dir: str = "annotations"
     notebook_only: bool = True
 
 

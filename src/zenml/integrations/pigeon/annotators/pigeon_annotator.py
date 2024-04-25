@@ -63,10 +63,13 @@ class PigeonAnnotator(BaseAnnotator):
         """Get a list of datasets (annotation files) in the output directory.
 
         Returns:
-            A list of dataset names (annotation file names).
+            A list of dataset names (annotation file names) (or empty list when no datasets are present).
         """
         output_dir = self.config.output_dir
-        return [f for f in os.listdir(output_dir) if f.endswith(".txt")]
+        try:
+            return [f for f in os.listdir(output_dir) if f.endswith(".txt")]
+        except FileNotFoundError:
+            return []
 
     def get_dataset_names(self) -> List[str]:
         """Get a list of dataset names (annotation file names) in the output
@@ -93,7 +96,6 @@ class PigeonAnnotator(BaseAnnotator):
 
     def launch(
         self,
-        type: str,
         data: List[Any],
         options: List[str],
         display_fn: Optional[Any] = None,
@@ -101,16 +103,21 @@ class PigeonAnnotator(BaseAnnotator):
         """Launch the Pigeon annotator in the Jupyter notebook.
 
         Args:
-            type: Type of annotation task ('text_classification', 'image_classification', etc.).
             data: List of data items to annotate.
             options: List of options for classification tasks.
             display_fn: Optional function for displaying data items.
         """
-        annotations = annotate(
-            examples=data,
-            options=options,
-            display_fn=display_fn,
-        )
+        if not display_fn:
+            annotations = annotate(
+                examples=data,
+                options=options,
+            )
+        else:
+            annotations = annotate(
+                examples=data,
+                options=options,
+                display_fn=display_fn,
+            )
         self._save_annotations(annotations)
 
     def add_dataset(self, **kwargs: Any) -> Any:
