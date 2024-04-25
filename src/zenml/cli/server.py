@@ -285,18 +285,6 @@ def down() -> None:
     "resources.",
 )
 @click.option(
-    "--username",
-    type=str,
-    default=None,
-    help="The username to use for the provisioned admin account.",
-)
-@click.option(
-    "--password",
-    type=str,
-    default=None,
-    help="The initial password to use for the provisioned admin account.",
-)
-@click.option(
     "--timeout",
     "-t",
     type=click.INT,
@@ -310,14 +298,6 @@ def down() -> None:
     type=str,
 )
 @click.option(
-    "--connect",
-    is_flag=True,
-    help="Connect your client to the ZenML server after it is successfully "
-    "deployed.",
-    default=False,
-    type=click.BOOL,
-)
-@click.option(
     "--gcp-project-id",
     help="The project in GCP to deploy the server to. ",
     required=False,
@@ -325,9 +305,6 @@ def down() -> None:
 )
 def deploy(
     provider: Optional[str] = None,
-    connect: bool = False,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
     name: Optional[str] = None,
     timeout: Optional[int] = None,
     config: Optional[str] = None,
@@ -339,8 +316,6 @@ def deploy(
         name: Name for the ZenML server deployment.
         provider: ZenML server provider name.
         connect: Connecting the client to the ZenML server.
-        username: The username for the provisioned admin account.
-        password: The initial password to use for the provisioned admin account.
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
         gcp_project_id: The project in GCP to deploy the server to.
@@ -368,8 +343,6 @@ def deploy(
 
             name = config_dict.get("name", name)
             provider = config_dict.get("provider", provider)
-            username = config_dict.get("username", username)
-            password = config_dict.get("password", password)
 
         if not name:
             name = click.prompt(
@@ -401,19 +374,6 @@ def deploy(
                         "GCP project ID",
                     )
                 config_dict["project_id"] = gcp_project_id
-
-        if not username:
-            username = click.prompt(
-                "ZenML admin account username", default="default"
-            )
-        config_dict["username"] = username
-
-        password = password or config_dict.get("password", None)
-        if not password:
-            password = click.prompt(
-                "ZenML admin account password", hide_input=True
-            )
-        config_dict["password"] = password
 
         from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
@@ -451,18 +411,10 @@ def deploy(
 
         if server.status and server.status.url:
             cli_utils.declare(
-                f"ZenML server '{name}' running at '{server.status.url}'."
+                f"ZenML server '{name}' running at '{server.status.url}'. To "
+                "connect to the server, run `zenml connect --url "
+                f"{server.status.url}`."
             )
-
-            if connect and username:
-                deployer.connect_to_server(
-                    server_config.name,
-                    username,
-                    password or "",
-                    verify_ssl=server.status.ca_crt
-                    if server.status.ca_crt is not None
-                    else False,
-                )
 
 
 @cli.command(

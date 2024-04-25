@@ -1,12 +1,11 @@
 {{- if .Values.zenml.ingress.enabled }}
 {{- if .Values.zenml.ingress.host }}
-Please access the ZenML server at the following URL to set up a password for the {{ .Values.zenml.defaultUsername }} user account:
+
+Please access the ZenML server at the following URL {{- if .Release.IsInstall }} to activate the server and create an initial admin user account {{-end }}:
 
   http{{ if $.Values.zenml.ingress.tls.enabled }}s{{ end }}://{{ .Values.zenml.ingress.host }}{{ .Values.zenml.ingress.path }}
 
 {{- else }}
-
-
 {{- end }}
 {{- else }}
 

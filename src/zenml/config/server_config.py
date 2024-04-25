@@ -218,7 +218,9 @@ class ServerConfiguration(BaseModel):
             admin user account with an empty password. Used only during initial
             deployment.
         auto_activate: Whether to automatically activate the ZenML server during
-            deployment. Used only during initial deployment.
+            deployment. Used only during initial deployment. If
+            `auto_create_default_user` is set to `True`, this setting is ignored
+            and the server is activated automatically.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER

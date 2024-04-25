@@ -62,7 +62,7 @@ class AnalyticsContext:
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
         self.external_server_id: Optional[UUID] = None
-        self.onboarding_state: Optional[Dict[str, str]] = None
+        self.server_metadata: Optional[Dict[str, str]] = None
 
         self.database_type: Optional["ServerDatabaseType"] = None
         self.deployment_type: Optional["ServerDeploymentType"] = None
@@ -121,7 +121,7 @@ class AnalyticsContext:
             self.server_id = store_info.id
             self.deployment_type = store_info.deployment_type
             self.database_type = store_info.database_type
-            self.onboarding_state = store_info.metadata
+            self.server_metadata = store_info.metadata
         except Exception as e:
             self.analytics_opt_in = False
             logger.debug(f"Analytics initialization failed: {e}")
@@ -288,8 +288,8 @@ class AnalyticsContext:
         if self.external_server_id:
             properties["external_server_id"] = self.external_server_id
 
-        if self.onboarding_state:
-            properties.update(self.onboarding_state)
+        if self.server_metadata:
+            properties.update(self.server_metadata)
 
         for k, v in properties.items():
             if isinstance(v, UUID):

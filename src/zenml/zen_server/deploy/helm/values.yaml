@@ -175,10 +175,7 @@ zenml:
   # ```
   rootUrlPath:
 
-
-
   defaultProject: default
-  defaultUsername: default
   
   # Implicit authentication methods featured by service connectors that support
   # them are disabled by default, for security reasons. This is because they

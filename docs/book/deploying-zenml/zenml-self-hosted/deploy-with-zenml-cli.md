@@ -25,7 +25,7 @@ You're now ready to deploy ZenML! Run the following command:
 zenml deploy
 ```
 
-You will be prompted to provide a name for your deployment and details like what cloud provider you want to deploy to, in addition to the username you want to set for the default user — and that's it! It creates the database and any VPCs, permissions, and more that are needed.
+You will be prompted to provide a name for your deployment and details like what cloud provider you want to deploy to — and that's it! It creates the database and any VPCs, permissions, and more that are needed.
 
 {% hint style="info" %}
 In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
@@ -112,9 +112,6 @@ name:
 
 # The server provider type, one of aws, gcp or azure.
 provider:
-
-# The username for the default ZenML server account.
-username:
 
 # The path to the kubectl config file to use for deployment.
 kubectl_config_path:
@@ -262,6 +259,8 @@ The `database_username` and `database_password` from the general config is used 
 
 ## Connecting to deployed ZenML
 
+Immediately after deployment, the ZenML server needs to be activated before it can be used. The activation process includes creating an initial admin user account and configuring some server settings. You can do this only by visiting the ZenML server URL in your browser and following the on-screen instructions. Connecting your local ZenML client to the server is not possible until the server is properly initialized.
+
 Once ZenML is deployed, one or multiple users can connect to it with the `zenml connect` command.
 
 ```bash
@@ -289,9 +288,6 @@ The YAML file should have the following structure when connecting to a ZenML ser
 ```yaml
 # The URL of the ZenML server
 url:
-
-# The username to use for authentication
-username:
 
 # Either a boolean, in which case it controls whether the server's TLS 
 # certificate is verified, or a string, in which case it must be a path 

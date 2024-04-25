@@ -1,10 +1,4 @@
 
-variable "username" {
-  description = "Username for the default ZenML server account"
-  default     = "default"
-  type        = string
-}
-
 variable "name" {
   description = "The prefix to use for all AWS resource names"
   default     = "zenmlserver"
@@ -96,8 +90,7 @@ variable "db_allocated_storage" {
 }
 
 # If you haven't enabled the deploy_db option, provide
-# the following value in addition to setting the username in the
-# values.tfvars.json file.
+# the following value in the values.tfvars.json file.
 variable "database_url" {
   description = "The URL for the AWS RDS instance"
   default     = ""

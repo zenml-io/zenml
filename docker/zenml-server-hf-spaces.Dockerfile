@@ -21,7 +21,6 @@ ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 # information on how to configure these environment variables.
 
 # ENV ZENML_DEFAULT_PROJECT_NAME=""
-# ENV ZENML_DEFAULT_USER_NAME=""
 # ENV ZENML_STORE_URL=""
 # ENV ZENML_STORE_SSL_CA=""
 # ENV ZENML_STORE_SSL_CERT=""

@@ -716,7 +716,7 @@ class Client(metaclass=ClientMetaClass):
         updated_enable_analytics: Optional[bool] = None,
         updated_enable_announcements: Optional[bool] = None,
         updated_enable_updates: Optional[bool] = None,
-        updated_metadata: Optional[Dict[str, Any]] = None,
+        updated_onboarding_state: Optional[Dict[str, Any]] = None,
     ) -> ServerSettingsResponse:
         """Update the server settings.
 
@@ -729,7 +729,7 @@ class Client(metaclass=ClientMetaClass):
                 announcements about ZenML.
             updated_enable_updates: Updated value whether to display updates
                 about ZenML.
-            updated_metadata: Updated metadata for the server.
+            updated_onboarding_state: Updated onboarding state for the server.
 
         Returns:
             The updated server settings.
@@ -740,7 +740,7 @@ class Client(metaclass=ClientMetaClass):
             enable_analytics=updated_enable_analytics,
             display_announcements=updated_enable_announcements,
             display_updates=updated_enable_updates,
-            onboarding_state=updated_metadata,
+            onboarding_state=updated_onboarding_state,
         )
         return self.zen_store.update_server_settings(update_model)
 

@@ -109,7 +109,7 @@ helm -n <namespace> --create-namespace install zenml-server . --values custom-va
 
 ### Connect to the deployed ZenML server
 
-Immediately after deployment, the ZenML server needs to be initialized before it can be used. The on-boarding process includes setting an initial password for the default admin user and configuring some server settings. You can do this only by visiting the ZenML server URL in your browser and following the on-screen instructions. Connecting your local ZenML client to the server is not possible until the server is properly initialized.
+Immediately after deployment, the ZenML server needs to be activated before it can be used. The activation process includes creating an initial admin user account and configuring some server settings. You can do this only by visiting the ZenML server URL in your browser and following the on-screen instructions. Connecting your local ZenML client to the server is not possible until the server is properly initialized.
 
 The Helm chart should print out a message with the URL of the deployed ZenML server. You can use the URL to open the ZenML UI in your browser.
 
