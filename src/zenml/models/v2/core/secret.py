@@ -96,34 +96,19 @@ class SecretUpdate(BaseUpdate):
         default=None,
     )
 
-    @property
-    def secret_values(self) -> Dict[str, str]:
-        """A dictionary with all un-obfuscated values stored in this secret.
-
-        The values are returned as strings, not SecretStr. If a value is
-        None, it is not included in the returned dictionary. This is to enable
-        the use of None values in the update model to indicate that a secret
-        value should be deleted.
-
-        Returns:
-            A dictionary containing the secret's values.
-        """
-        return {
-            k: v.get_secret_value()
-            for k, v in self.values.items()
-            if v is not None
-        }
-
     def get_secret_values_update(self) -> Dict[str, Optional[str]]:
         """Returns a dictionary with the secret values to update.
 
         Returns:
             A dictionary with the secret values to update.
         """
-        return {
-            k: v.get_secret_value() if v is not None else None
-            for k, v in self.values.items()
-        }
+        if self.values is not None:
+            return {
+                k: v.get_secret_value() if v is not None else None
+                for k, v in self.values.items()
+            }
+
+        return {}
 
 
 # ------------------ Response Model ------------------
