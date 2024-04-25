@@ -491,7 +491,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression", "BooleanClauseList"]]:
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
         """Get custom filters.
 
         Returns:

@@ -106,7 +106,7 @@ class Filter(BaseModel, ABC):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
         """Generate the query conditions for the database.
 
         This method converts the Filter class into an appropriate SQLModel
@@ -800,7 +800,7 @@ class BaseFilter(BaseModel):
 
     def generate_filter(
         self, table: Type[SQLModel]
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
         """Generate the filter for the query.
 
         Args:
@@ -831,7 +831,7 @@ class BaseFilter(BaseModel):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression", "BooleanClauseList"]]:
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
         """Get custom filters.
 
         This can be overridden by subclasses to define custom filters that are
