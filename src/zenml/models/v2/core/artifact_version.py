@@ -43,7 +43,7 @@ from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.model.model import Model
     from zenml.models.v2.core.artifact_visualization import (
@@ -489,9 +489,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="Filter only artifacts with/without custom names.",
     )
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
+    def get_custom_filters(self) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
 
         Returns:

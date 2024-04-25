@@ -1873,7 +1873,9 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def verify_service_connector_config(
         self,
-        service_connector: ServiceConnectorRequest,
+        service_connector: Union[
+            ServiceConnectorRequest, ServiceConnectorUpdate
+        ],
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.

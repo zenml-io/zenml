@@ -14,12 +14,11 @@
 """Models representing stacks."""
 
 import json
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
 from sqlalchemy import and_
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
@@ -33,6 +32,9 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.component import ComponentResponse
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
 
 # ------------------ Request Model ------------------
 
@@ -277,9 +279,7 @@ class StackFilter(WorkspaceScopedFilter):
         default=None, description="Component in the stack"
     )
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         Returns:

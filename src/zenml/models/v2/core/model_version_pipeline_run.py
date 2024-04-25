@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import Any, List, Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from sqlalchemy.sql.elements import ColumnElement
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
@@ -166,9 +166,7 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         Returns:

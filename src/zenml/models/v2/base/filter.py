@@ -51,7 +51,11 @@ from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.typing_utils import get_args
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import (
+        BinaryExpression,
+        BooleanClauseList,
+        ColumnElement,
+    )
 
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -829,9 +833,7 @@ class BaseFilter(BaseModel):
         else:
             raise RuntimeError("No valid logical operator was supplied.")
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         This can be overridden by subclasses to define custom filters that are

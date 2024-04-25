@@ -16,7 +16,6 @@
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
-    Any,
     ClassVar,
     Dict,
     List,
@@ -41,7 +40,7 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
@@ -460,7 +459,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
+    ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         Returns:

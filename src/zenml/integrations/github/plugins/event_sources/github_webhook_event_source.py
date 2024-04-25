@@ -438,7 +438,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         if config.rotate_secret:
             # In case the secret is being rotated
             secret_key_value = random_str(12)
-            webhook_secret = SecretUpdate(  # type: ignore[call-arg]
+            webhook_secret = SecretUpdate(
                 values={"webhook_secret": secret_key_value}
             )
             self.zen_store.update_secret(

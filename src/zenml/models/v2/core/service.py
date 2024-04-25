@@ -26,7 +26,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import SQLModel
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -468,7 +468,7 @@ class ServiceFilter(WorkspaceScopedFilter):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
+    ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
         Services can be scoped by type to narrow the search.
