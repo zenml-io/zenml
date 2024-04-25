@@ -316,53 +316,31 @@ class ServiceConnectorUpdate(BaseUpdate):
             Dict of analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        if len(self.resource_types) == 1:
-            metadata["resource_types"] = self.resource_types[0]
-        else:
-            metadata["resource_types"] = ", ".join(self.resource_types)
-        metadata["connector_type"] = self.type
+
+        if self.resource_types is not None:
+            if len(self.resource_types) == 1:
+                metadata["resource_types"] = self.resource_types[0]
+            else:
+                metadata["resource_types"] = ", ".join(self.resource_types)
+
+        if self.connector_type is not None:
+            metadata["connector_type"] = self.type
+
         return metadata
 
     # Helper methods
     @property
-    def type(self) -> str:
+    def type(self) -> Optional[str]:
         """Get the connector type.
 
         Returns:
             The connector type.
         """
-        if isinstance(self.connector_type, str):
-            return self.connector_type
-        return self.connector_type.connector_type
-
-    @property
-    def emojified_connector_type(self) -> str:
-        """Get the emojified connector type.
-
-        Returns:
-            The emojified connector type.
-        """
-        if not isinstance(self.connector_type, str):
-            return self.connector_type.emojified_connector_type
-
-        return self.connector_type
-
-    @property
-    def emojified_resource_types(self) -> List[str]:
-        """Get the emojified connector type.
-
-        Returns:
-            The emojified connector type.
-        """
-        if not isinstance(self.connector_type, str):
-            return [
-                self.connector_type.resource_type_dict[
-                    resource_type
-                ].emojified_resource_type
-                for resource_type in self.resource_types
-            ]
-
-        return self.resource_types
+        if self.connector_type is not None:
+            if isinstance(self.connector_type, str):
+                return self.connector_type
+            return self.connector_type.connector_type
+        return None
 
     def validate_and_configure_resources(
         self,
