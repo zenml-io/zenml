@@ -148,7 +148,7 @@ class MLFlowExperimentTrackerConfig(
                 # to the remote backend
                 basic_auth = self.tracking_username and self.tracking_password
 
-                if not (basic_auth or self.token_auth):
+                if not (basic_auth or self.tracking_token):
                     logging.warning(
                         f"MLflow experiment tracking with a remote backend "
                         f"{self.tracking_uri} is only possible when specifying "

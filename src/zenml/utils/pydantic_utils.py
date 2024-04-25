@@ -398,7 +398,7 @@ def model_validator_data_handler(
 
 
 def before_validator_handler(
-    method: Callable[[Any, Any], Any],
+    method: Callable[..., Any],
 ) -> Callable[[Any, Any, Any], Any]:
     """Decorator to handle the raw input data for pydantic model validators.
 
