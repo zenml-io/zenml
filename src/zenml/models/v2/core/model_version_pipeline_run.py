@@ -168,7 +168,7 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         """Get custom filters.
 
         Returns:

@@ -106,7 +106,7 @@ class Filter(BaseModel, ABC):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the query conditions for the database.
 
         This method converts the Filter class into an appropriate SQLModel
@@ -413,14 +413,14 @@ class BaseFilter(BaseModel):
             column_allowed_ids: Set of IDs per column to limit the query to.
                 If given, the remaining filters will be applied to entities
                 within this set only. If `None`, the remaining filters will
-                applied to all entries in the table.
+                be applied to all entries in the table.
         """
         self._rbac_configuration = (authenticated_user_id, column_allowed_ids)
 
     def generate_rbac_filter(
         self,
         table: Type["AnySchema"],
-    ) -> Optional["BooleanClauseList"]:
+    ) -> Optional["BooleanClauseList[Any]"]:
         """Generates an optional RBAC filter.
 
         Args:
@@ -800,7 +800,7 @@ class BaseFilter(BaseModel):
 
     def generate_filter(
         self, table: Type[SQLModel]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the filter for the query.
 
         Args:
@@ -831,7 +831,7 @@ class BaseFilter(BaseModel):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         """Get custom filters.
 
         This can be overridden by subclasses to define custom filters that are

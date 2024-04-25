@@ -468,7 +468,7 @@ class ServiceFilter(WorkspaceScopedFilter):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the filter for the query.
 
         Services can be scoped by type to narrow the search.
