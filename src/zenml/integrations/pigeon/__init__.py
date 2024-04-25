@@ -25,10 +25,7 @@ class PigeonIntegration(Integration):
     """Definition of Pigeon integration for ZenML."""
 
     NAME = PIGEON
-    REQUIREMENTS = [
-        "pigeon-jupyter~=0.1.0",
-        "ipywidgets==7.0.0",
-    ]
+    REQUIREMENTS = ["ipywidgets==7.0.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

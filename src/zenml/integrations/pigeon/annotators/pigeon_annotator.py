@@ -11,13 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Pigeon annotator."""
+"""Pigeon annotator
+
+Credit for the implementation of this code to @agermanidis in the pigeon package
+and library. This code has been slightly modified to fit the ZenML framework.
+
+https://github.com/agermanidis/pigeon
+"""
 
 import os
 from datetime import datetime
+from functools import partial
 from typing import Any, List, Optional, Tuple, cast
 
-from pigeon import annotate
+from IPython.display import clear_output, display
+from ipywidgets import HTML, Button, HBox, Output
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.integrations.pigeon.flavors.pigeon_annotator_flavor import (
@@ -94,6 +102,80 @@ class PigeonAnnotator(BaseAnnotator):
         num_unlabeled_examples = 0  # Assuming all examples are labeled
         return num_labeled_examples, num_unlabeled_examples
 
+    def _annotate(
+        self,
+        data: List[Any],
+        options: List[str],
+        display_fn: Optional[Any] = None,
+    ):
+        """Internal method to build an interactive widget for annotating.
+
+        Args:
+            data: List of examples to annotate.
+            options: List of labels to choose from.
+            display_fn: Optional function to display examples.
+        """
+        examples = list(data)
+        annotations = []
+        current_index = -1
+        out = Output()
+
+        def show_next():
+            nonlocal current_index
+            current_index += 1
+            if current_index >= len(examples):
+                with out:
+                    clear_output(wait=True)
+                    print("Annotation done.")
+                return
+            with out:
+                clear_output(wait=True)
+                if display_fn:
+                    display_fn(examples[current_index])
+                else:
+                    display(examples[current_index])
+
+        def add_annotation(annotation, btn):
+            """Add an annotation to the list of annotations.
+
+            Args:
+                annotation: The label to add.
+            """
+            annotations.append((examples[current_index], annotation))
+            show_next()
+
+        def submit_annotations(btn):
+            """Submit all annotations and save them to a file.
+
+            Args:
+                btn: The button that triggered the event.
+            """
+            self._save_annotations(annotations)
+            with out:
+                clear_output(wait=True)
+                print("Annotations saved.")
+
+        count_label = HTML()
+        display(count_label)
+
+        buttons = []
+        for label in options:
+            btn = Button(description=label)
+            # Use partial from functools to properly pass both the label and the button to the event handler
+            btn.on_click(partial(add_annotation, label))
+            buttons.append(btn)
+
+        submit_btn = Button(
+            description="Submit All Annotations", button_style="success"
+        )
+        submit_btn.on_click(submit_annotations)
+        buttons.append(submit_btn)
+
+        navigation_box = HBox(buttons)
+        display(navigation_box)
+        display(out)
+        show_next()
+
     def launch(
         self,
         data: List[Any],
@@ -103,24 +185,32 @@ class PigeonAnnotator(BaseAnnotator):
         """Launch the Pigeon annotator in the Jupyter notebook.
 
         Args:
-            data: List of data items to annotate.
-            options: List of options for classification tasks.
-            display_fn: Optional function for displaying data items.
+            data: List of examples to annotate.
+            options: List of labels to choose from.
+            display_fn: Optional function to display examples.
         """
-        if not display_fn:
-            annotations = annotate(
-                examples=data,
-                options=options,
-            )
-        else:
-            annotations = annotate(
-                examples=data,
-                options=options,
-                display_fn=display_fn,
-            )
-        self._save_annotations(annotations)
+        self._annotate(data, options, display_fn)
+
+    def _save_annotations(self, annotations: List[Tuple[Any, Any]]) -> None:
+        """Save annotations to a file with a unique date-time suffix.
+
+        Args:
+            annotations: List of tuples containing (example, label) for each annotated example.
+        """
+        output_dir = self.config.output_dir
+        os.makedirs(output_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_file = os.path.join(output_dir, f"annotations_{timestamp}.txt")
+        with open(output_file, "w") as f:
+            for example, label in annotations:
+                f.write(f"{example}\t{label}\n")
 
     def add_dataset(self, **kwargs: Any) -> Any:
+        """Add a dataset (annotation file) to the Pigeon annotator.
+
+        Raises:
+            NotImplementedError: Pigeon annotator does not support adding datasets.
+        """
         raise NotImplementedError(
             "Pigeon annotator does not support adding datasets."
         )
@@ -169,17 +259,3 @@ class PigeonAnnotator(BaseAnnotator):
         raise NotImplementedError(
             "Pigeon annotator does not support retrieving unlabeled data."
         )
-
-    def _save_annotations(self, annotations: List[Any]) -> None:
-        """Save annotations to a file with a unique date-time suffix.
-
-        Args:
-            annotations: List of annotated examples.
-        """
-        output_dir = self.config.output_dir
-        os.makedirs(output_dir, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = os.path.join(output_dir, f"annotations_{timestamp}.txt")
-        with open(output_file, "w") as f:
-            for example, label in annotations:
-                f.write(f"{example}\t{label}\n")
