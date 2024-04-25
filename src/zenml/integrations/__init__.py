@@ -17,8 +17,6 @@ The ZenML integrations module contains sub-modules for each integration that we
 support. This includes orchestrators like Apache Airflow, visualization tools
 like the ``facets`` library, as well as deep learning libraries like PyTorch.
 """
-import sys
-
 from zenml.integrations.airflow import AirflowIntegration  # noqa
 from zenml.integrations.aws import AWSIntegration  # noqa
 from zenml.integrations.azure import AzureIntegration  # noqa
