@@ -487,7 +487,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         ):
             return self
 
-        copy = self.copy()
+        copy = self.model_copy()
         copy.resource_type = resource_type
         copy.resource_id = resource_id
         return copy

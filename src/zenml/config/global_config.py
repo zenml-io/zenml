@@ -564,7 +564,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 logger.debug(
                     "Using environment variables to update the default store"
                 )
-                store = store.copy(update=env_store_config, deep=True)
+                store = store.model_copy(update=env_store_config, deep=True)
 
         # Step 3: Replace or update the baseline secrets store configuration
         # with the environment variables. This only applies to SQL stores.
@@ -594,7 +594,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                         "Using environment variables to update the secrets "
                         "store"
                     )
-                    store.secrets_store = store.secrets_store.copy(
+                    store.secrets_store = store.secrets_store.model_copy(
                         update=env_secrets_store_config, deep=True
                     )
 
@@ -613,7 +613,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                         "secrets store"
                     )
                     store.backup_secrets_store = (
-                        store.backup_secrets_store.copy(
+                        store.backup_secrets_store.model_copy(
                             update=env_backup_secrets_store_config, deep=True
                         )
                     )

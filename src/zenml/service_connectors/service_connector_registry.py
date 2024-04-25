@@ -90,7 +90,7 @@ class ServiceConnectorRegistry:
                 f"Please make sure the corresponding packages and/or ZenML "
                 f"integration are installed and try again."
             )
-        return self.service_connector_types[connector_type].copy()
+        return self.service_connector_types[connector_type].model_copy()
 
     def __getitem__(self, key: str) -> ServiceConnectorTypeModel:
         """Get a service connector type by its connector type identifier.
@@ -155,7 +155,7 @@ class ServiceConnectorRegistry:
                     or auth_method in service_connector_type.auth_method_dict
                 )
             ):
-                matches.append(service_connector_type.copy())
+                matches.append(service_connector_type.model_copy())
 
         return matches
 

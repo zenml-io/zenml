@@ -72,7 +72,7 @@ def dehydrate_page(page: Page[AnyResponse]) -> Page[AnyResponse]:
         for item in page.items
     ]
 
-    return page.copy(update={"items": new_items})
+    return page.model_copy(update={"items": new_items})
 
 
 def dehydrate_response_model(
@@ -189,8 +189,8 @@ def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
     Returns:
         The permission denied model.
     """
-    return model.copy(
-        exclude={"body", "metadata"}, update={"permission_denied": True}
+    return model.model_copy(
+        update={"body": None, "metadata": None, "permission_denied": True}
     )
 
 

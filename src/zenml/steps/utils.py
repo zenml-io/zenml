@@ -249,7 +249,7 @@ def get_artifact_config_from_annotation_metadata(
         if not artifact_config:
             artifact_config = ArtifactConfig(name=output_name)
         elif not artifact_config.name:
-            artifact_config = artifact_config.copy()
+            artifact_config = artifact_config.model_copy()
             artifact_config.name = output_name
 
     if artifact_config and artifact_config.name == "":

@@ -61,7 +61,7 @@ def huggingface_model_deployer_step(
     step_name = context.step_run.name
 
     # update the step configuration with the real pipeline runtime information
-    service_config = service_config.copy()
+    service_config = service_config.model_copy()
     service_config.pipeline_name = pipeline_name
     service_config.pipeline_step_name = step_name
 

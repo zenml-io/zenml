@@ -1159,7 +1159,7 @@ To avoid this consider setting step parameters only in one place (config or code
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config)
 
-        self._configuration = self._configuration.copy(
+        self._configuration = self._configuration.model_copy(
             update={
                 "caching_parameters": self.caching_parameters,
                 "external_input_artifacts": external_artifacts,

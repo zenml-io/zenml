@@ -8557,7 +8557,7 @@ class SqlZenStore(BaseZenStore):
                 "`number` field  must be None during model version creation."
             )
         with Session(self.engine) as session:
-            model_version_ = model_version.copy()
+            model_version_ = model_version.model_copy()
             model = self.get_model(model_version_.model)
 
             def _check(tolerance: int = 0) -> None:
