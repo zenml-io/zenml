@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Pigeon integration flavors."""
 
-from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
-    LabelStudioAnnotatorConfig,
-    LabelStudioAnnotatorFlavor,
+from zenml.integrations.pigeon.flavors.pigeon_annotator_flavor import (
+    PigeonAnnotatorConfig,
+    PigeonAnnotatorFlavor,
 )
 
 __all__ = [
-    "LabelStudioAnnotatorFlavor",
-    "LabelStudioAnnotatorConfig",
+    "PigeonAnnotatorFlavor",
+    "PigeonAnnotatorConfig",
 ]
