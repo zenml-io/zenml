@@ -258,7 +258,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             code_reference = deployment.code_reference
 
         elif self.pipeline_configuration is not None:
-            config = PipelineConfiguration.parse_raw(
+            config = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )
             client_environment = (

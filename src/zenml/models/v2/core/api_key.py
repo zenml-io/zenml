@@ -64,7 +64,7 @@ class APIKey(BaseModel):
             encoded_key = encoded_key[len(ZENML_API_KEY_PREFIX) :]
         try:
             json_key = b64_decode(encoded_key)
-            return cls.parse_raw(json_key)
+            return cls.model_validate_json(json_key)
         except Exception:
             raise ValueError("Invalid API key.")
 

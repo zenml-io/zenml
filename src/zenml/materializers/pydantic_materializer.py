@@ -45,7 +45,7 @@ class PydanticMaterializer(BaseMaterializer):
         """
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(data_path)
-        return data_type.parse_raw(contents)
+        return data_type.model_validate_json(contents)
 
     def save(self, data: BaseModel) -> None:
         """Serialize a BaseModel to JSON.

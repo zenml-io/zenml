@@ -302,13 +302,13 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             The created `ArtifactVersionResponse`.
         """
         try:
-            materializer = Source.parse_raw(self.materializer)
+            materializer = Source.model_validate_json(self.materializer)
         except ValidationError:
             # This is an old source which was an importable source path
             materializer = Source.from_import_path(self.materializer)
 
         try:
-            data_type = Source.parse_raw(self.data_type)
+            data_type = Source.model_validate_json(self.data_type)
         except ValidationError:
             # This is an old source which was an importable source path
             data_type = Source.from_import_path(self.data_type)

@@ -199,7 +199,7 @@ else:
     import airflow
 
     config_str = archive.read(CONFIG_FILENAME)
-    dag_config = DagConfiguration.parse_raw(config_str)
+    dag_config = DagConfiguration.model_validate_json(config_str)
 
     step_name_to_airflow_operator = {}
 

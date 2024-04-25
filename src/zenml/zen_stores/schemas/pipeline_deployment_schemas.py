@@ -206,7 +206,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentResponse`.
         """
-        pipeline_configuration = PipelineConfiguration.parse_raw(
+        pipeline_configuration = PipelineConfiguration.model_validate_json(
             self.pipeline_configuration
         )
         step_configurations = json.loads(self.step_configurations)

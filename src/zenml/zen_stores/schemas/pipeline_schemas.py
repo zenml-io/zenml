@@ -153,7 +153,7 @@ class PipelineSchema(NamedSchema, table=True):
             metadata = PipelineResponseMetadata(
                 workspace=self.workspace.to_model(),
                 version_hash=self.version_hash,
-                spec=PipelineSpec.parse_raw(self.spec),
+                spec=PipelineSpec.model_validate_json(self.spec),
                 docstring=self.docstring,
             )
 

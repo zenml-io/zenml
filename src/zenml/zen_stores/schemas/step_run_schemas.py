@@ -214,7 +214,9 @@ class StepRunSchema(NamedSchema, table=True):
                 json.loads(self.deployment.step_configurations)[self.name]
             )
         elif self.step_configuration is not None:
-            full_step_config = Step.parse_raw(self.step_configuration)
+            full_step_config = Step.model_validate_json(
+                self.step_configuration
+            )
         else:
             raise RuntimeError(
                 "Step run model creation has failed. Each step run entry "
