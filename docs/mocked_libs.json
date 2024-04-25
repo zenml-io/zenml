@@ -25,6 +25,7 @@
     "botocore.exceptions",
     "botocore.signers",
     "catboost",
+    "comet_ml",
     "datasets",
     "datasets.dataset_dict",
     "deepchecks",

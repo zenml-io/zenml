@@ -43,9 +43,10 @@ Experiment Trackers are optional stack components provided by integrations:
 
 | Experiment Tracker                 | Flavor    | Integration | Notes                                                                                           |
 |------------------------------------|-----------|-------------|-------------------------------------------------------------------------------------------------|
+| [Comet](comet.md)                | `comet`  | `comet`    | Add Comet experiment tracking and visualization capabilities to your ZenML pipelines           |
 | [MLflow](mlflow.md)                | `mlflow`  | `mlflow`    | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines           |
-| [Weights & Biases](wandb.md)       | `wandb`   | `wandb`     | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
 | [Neptune](neptune.md)              | `neptune` | `neptune`   | Add Neptune experiment tracking and visualization capabilities to your ZenML pipelines          |
+| [Weights & Biases](wandb.md)       | `wandb`   | `wandb`     | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
 | [Custom Implementation](custom.md) | _custom_  |             | _custom_                                                                                        |
 
 If you would like to see the available flavors of Experiment Tracker, you can use the command:
