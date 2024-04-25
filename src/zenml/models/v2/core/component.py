@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import LogicalOperators, StackComponentType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -37,7 +38,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.update import update_model
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
@@ -136,12 +136,51 @@ class InternalComponentRequest(ComponentRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class ComponentUpdate(ComponentRequest):
+class ComponentUpdate(BaseUpdate):
     """Update model for stack components."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+
+    name: Optional[str] = Field(
+        title="The name of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    type: Optional[StackComponentType] = Field(
+        title="The type of the stack component.",
+        default=None,
+    )
+    flavor: Optional[str] = Field(
+        title="The flavor of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    configuration: Optional[Dict[str, Any]] = Field(
+        title="The stack component configuration.",
+        default=None,
+    )
+    connector_resource_id: Optional[str] = Field(
+        description="The ID of a specific resource instance to "
+        "gain access to through the connector",
+        default=None,
+    )
+    labels: Optional[Dict[str, Any]] = Field(
+        title="The stack component labels.",
+        default=None,
+    )
+    component_spec_path: Optional[str] = Field(
+        title="The path to the component spec used for mlstacks deployments.",
+        default=None,
+    )
+    connector: Optional[UUID] = Field(
+        title="The service connector linked to this stack component.",
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------
+
+
 class ComponentResponseBody(WorkspaceScopedResponseBody):
     """Response body for components."""
 

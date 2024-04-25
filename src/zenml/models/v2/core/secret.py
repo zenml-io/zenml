@@ -26,6 +26,7 @@ from zenml.enums import (
     SecretScope,
     SorterOps,
 )
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -34,7 +35,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.update import update_model
 from zenml.utils.secret_utils import ZenSecretStr
 
 # ------------------ Request Model ------------------
@@ -78,13 +78,41 @@ class SecretRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class SecretUpdate(SecretRequest):
+class SecretUpdate(BaseUpdate):
     """Secret update model."""
 
-    scope: Optional[SecretScope] = Field(  # type: ignore[assignment]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+
+    name: Optional[str] = Field(
+        title="The name of the secret.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    scope: Optional[SecretScope] = Field(
         default=None, title="The scope of the secret."
     )
+    values: Optional[Dict[str, Optional[ZenSecretStr]]] = Field(
+        title="The values stored in this secret.",
+        default=None,
+    )
+
+    @property
+    def secret_values(self) -> Dict[str, str]:
+        """A dictionary with all un-obfuscated values stored in this secret.
+
+        The values are returned as strings, not SecretStr. If a value is
+        None, it is not included in the returned dictionary. This is to enable
+        the use of None values in the update model to indicate that a secret
+        value should be deleted.
+
+        Returns:
+            A dictionary containing the secret's values.
+        """
+        return {
+            k: v.get_secret_value()
+            for k, v in self.values.items()
+            if v is not None
+        }
 
     def get_secret_values_update(self) -> Dict[str, Optional[str]]:
         """Returns a dictionary with the secret values to update.

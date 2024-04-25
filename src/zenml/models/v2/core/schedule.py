@@ -21,6 +21,7 @@ from pydantic import Field, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -29,7 +30,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.update import update_model
 
 logger = get_logger(__name__)
 
@@ -100,9 +100,19 @@ class ScheduleRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class ScheduleUpdate(ScheduleRequest):
+class ScheduleUpdate(BaseUpdate):
     """Update model for schedules."""
+
+    name: Optional[str] = None
+    active: Optional[bool] = None
+    cron_expression: Optional[str] = None
+    start_time: Optional[datetime.datetime] = None
+    end_time: Optional[datetime.datetime] = None
+    interval_second: Optional[datetime.timedelta] = None
+    catchup: Optional[bool] = None
+    run_once_start_time: Optional[datetime.datetime] = None
+    orchestrator_id: Optional[UUID] = None
+    pipeline_id: Optional[UUID] = None
 
 
 # ------------------ Response Model ------------------

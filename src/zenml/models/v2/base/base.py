@@ -56,6 +56,21 @@ class BaseRequest(BaseZenModel):
     """
 
 
+# -------------------- Update Model --------------------
+
+
+class BaseUpdate(BaseZenModel):
+    """Base update model.
+
+    Used as a base class for all update models.
+    """
+
+    model_config = ConfigDict(
+        # Ignore extras on all update models.
+        extra="ignore",
+    )
+
+
 # -------------------- Response Model --------------------
 
 

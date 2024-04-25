@@ -23,6 +23,7 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -31,7 +32,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.component import ComponentResponse
 
 # ------------------ Request Model ------------------
@@ -85,9 +85,28 @@ class InternalStackRequest(StackRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class StackUpdate(StackRequest):
+class StackUpdate(BaseUpdate):
     """Update model for stacks."""
+
+    name: Optional[str] = Field(
+        title="The name of the stack.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    description: Optional[str] = Field(
+        title="The description of the stack",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    stack_spec_path: Optional[str] = Field(
+        title="The path to the stack spec used for mlstacks deployments.",
+        default=None,
+    )
+    components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
+        title="A mapping of stack component types to the actual"
+        "instances of components of this type.",
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------

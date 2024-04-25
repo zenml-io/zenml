@@ -20,6 +20,7 @@ from zenml.models.v2.base.base import (
     BaseZenModel,
     BaseRequest,
     BaseResponse,
+    BaseUpdate,
     BaseIdentifiedResponse,
     BaseResponseBody,
     BaseResponseMetadata,
@@ -37,6 +38,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter
 )
 from zenml.models.v2.base.filter import (
@@ -429,6 +431,7 @@ __all__ = [
     # V2 Base
     "BaseRequest",
     "BaseResponse",
+    "BaseUpdate",
     "BaseIdentifiedResponse",
     "BaseResponseBody",
     "BaseResponseMetadata",
@@ -446,6 +449,7 @@ __all__ = [
     "WorkspaceScopedResponse",
     "WorkspaceScopedResponseBody",
     "WorkspaceScopedResponseMetadata",
+    "WorkspaceScopedResponseResources",
     "WorkspaceScopedTaggableFilter",
     "BaseFilter",
     "StrFilter",

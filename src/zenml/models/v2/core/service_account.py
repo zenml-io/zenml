@@ -24,9 +24,9 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
+    BaseUpdate,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
-from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from zenml.models.v2.base.filter import AnySchema
@@ -58,9 +58,27 @@ class ServiceAccountRequest(BaseRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class ServiceAccountUpdate(ServiceAccountRequest):
+class ServiceAccountUpdate(BaseUpdate):
     """Update model for service accounts."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["name", "active"]
+
+    name: Optional[str] = Field(
+        title="The unique name for the service account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    description: Optional[str] = Field(
+        title="A description of the service account.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    active: Optional[bool] = Field(
+        title="Whether the service account is active or not.",
+        default=None,
+    )
+
+    model_config = ConfigDict(validate_assignment=True)
 
 
 # ------------------ Response Model ------------------

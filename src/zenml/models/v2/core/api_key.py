@@ -31,9 +31,9 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
+    BaseUpdate,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
-from zenml.models.v2.base.update import update_model
 from zenml.utils.string_utils import b64_decode, b64_encode
 
 if TYPE_CHECKING:
@@ -109,13 +109,22 @@ class APIKeyRotateRequest(BaseModel):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class APIKeyUpdate(APIKeyRequest):
+class APIKeyUpdate(BaseUpdate):
     """Update model for API keys."""
 
+    name: Optional[str] = Field(
+        title="The name of the API Key.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    description: Optional[str] = Field(
+        title="The description of the API Key.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
+    )
     active: Optional[bool] = Field(
-        default=True,
         title="Whether the API key is active.",
+        default=None,
     )
 
 

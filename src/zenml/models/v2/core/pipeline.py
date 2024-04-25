@@ -21,15 +21,15 @@ from pydantic import Field
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
-from zenml.models import (
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.scoped import WorkspaceScopedResponseResources
-from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
@@ -56,6 +56,7 @@ class PipelineRequest(WorkspaceScopedRequest):
     docstring: Optional[str] = Field(
         title="The docstring of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     spec: PipelineSpec = Field(title="The spec of the pipeline.")
 
@@ -63,9 +64,33 @@ class PipelineRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class PipelineUpdate(PipelineRequest):
+class PipelineUpdate(BaseUpdate):
     """Update model for pipelines."""
+
+    name: Optional[str] = Field(
+        title="The name of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    version: Optional[str] = Field(
+        title="The version of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    version_hash: Optional[str] = Field(
+        title="The version hash of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    docstring: Optional[str] = Field(
+        title="The docstring of the pipeline.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    spec: Optional[PipelineSpec] = Field(
+        title="The spec of the pipeline.",
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------
