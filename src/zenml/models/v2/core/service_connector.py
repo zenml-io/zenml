@@ -22,6 +22,7 @@ from pydantic import Field, SecretStr, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -30,7 +31,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.misc.service_connector_type import (
     ServiceConnectorTypeModel,
 )
