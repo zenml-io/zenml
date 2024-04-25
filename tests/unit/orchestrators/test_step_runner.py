@@ -16,6 +16,7 @@ from uuid import uuid4
 
 import pytest
 
+from zenml import save_artifact
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
@@ -147,11 +148,14 @@ def test_running_a_failing_step(
     mock_publish_successful_step_run.assert_not_called()
 
 
-def test_loading_unmaterialized_input_artifact(
-    local_stack, sample_artifact_version_model
-):
+def test_loading_unmaterialized_input_artifact(local_stack, clean_client):
     """Tests that having an input of type `UnmaterializedArtifact` does not
     materialize the artifact but instead returns the response model."""
+
+    artifact_response = save_artifact(
+        42, "main_answer", manual_save=False
+    ).get_hydrated_version()
+
     step = Step.model_validate(
         {
             "spec": {
@@ -164,8 +168,6 @@ def test_loading_unmaterialized_input_artifact(
         }
     )
     runner = StepRunner(step=step, stack=local_stack)
-    artifact_response = sample_artifact_version_model
-
     artifact = runner._load_input_artifact(
         artifact=artifact_response, data_type=UnmaterializedArtifact
     )
