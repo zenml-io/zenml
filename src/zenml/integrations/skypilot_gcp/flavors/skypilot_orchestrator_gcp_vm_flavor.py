@@ -40,7 +40,7 @@ class SkypilotGCPOrchestratorSettings(SkypilotBaseOrchestratorSettings):
     """Skypilot orchestrator settings for GCP."""
 
 
-class SkypilotGCPOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SkypilotGCPOrchestratorConfig(
     SkypilotBaseOrchestratorConfig,
     GoogleCredentialsConfigMixin,
     SkypilotGCPOrchestratorSettings,
