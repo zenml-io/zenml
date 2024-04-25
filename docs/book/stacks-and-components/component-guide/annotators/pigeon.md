@@ -22,24 +22,23 @@ If you need to label a small to medium-sized dataset as part of your ML workflow
 
 To use the Pigeon annotator, you first need to install the ZenML Pigeon integration:
 
-````shell
+```shell
 zenml integration install pigeon
-````
+```
 
 Next, register the Pigeon annotator with ZenML, specifying the output directory where the annotation files will be stored:
 
-````shell
-zenml annotator register pigeon --flavor pigeon --output_dir="annotations"
-````
+```shell
+zenml annotator register pigeon --flavor pigeon --output_dir="path/to/dir"
+```
 
 Note that the `output_dir` is relative to the repository or notebook root.
 
 Finally, add the Pigeon annotator to your stack and set it as the active stack:
 
-````shell
-zenml stack update --annotator pigeon
-zenml stack set default
-````
+```shell
+zenml stack update <YOUR_STACK_NAME> --annotator pigeon
+```
 
 Now you're ready to use the Pigeon annotator in your ML workflow!
 
@@ -56,11 +55,11 @@ annotator = Client().active_stack.annotator
 
 annotations = annotator.launch(
     data=[
-        'I love this movie', 
+        'I love this movie',
         'I was really disappointed by the book'
-    ], 
+    ],
     options=[
-        'positive', 
+        'positive',
         'negative'
     ]
 )
@@ -76,13 +75,13 @@ annotator = Client().active_stack.annotator
 
 annotations = annotator.launch(
     data=[
-        '/path/to/image1.png', 
+        '/path/to/image1.png',
         '/path/to/image2.png'
-    ], 
+    ],
     options=[
-        'cat', 
+        'cat',
         'dog'
-    ], 
+    ],
     display_fn=lambda filename: display(Image(filename))
 )
 ````
