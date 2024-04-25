@@ -12,6 +12,8 @@ Pigeon is a lightweight, open-source annotation tool designed for quick and easy
 
 ### When would you want to use it?
 
+![Pigeon annotator interface](../../../.gitbook/assets/pigeon.png)
+
 If you need to label a small to medium-sized dataset as part of your ML workflow and prefer the convenience of doing it directly within your Jupyter notebook, Pigeon is a great choice. It is particularly useful for:
 
 * Quick labeling tasks that don't require a full-fledged annotation platform
