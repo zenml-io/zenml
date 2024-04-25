@@ -19,7 +19,7 @@ import webbrowser
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
-from label_studio_sdk import Client, Project  # type: ignore[import-not-found]
+from label_studio_sdk import Client, Project  # type: ignore[import-untyped]
 
 from zenml import get_step_context
 from zenml.annotators.base_annotator import BaseAnnotator
@@ -184,7 +184,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 raise ValueError(
                     "Unable to access predefined secret to access Label Studio API key."
                 )
-            api_key = secret.secret_values.get("api_key")
+            api_key = secret.secret_values.get("api_key", "")
         if not api_key:
             raise ValueError(
                 "Unable to access Label Studio API key from secret."
