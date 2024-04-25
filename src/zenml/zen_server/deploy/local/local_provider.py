@@ -48,9 +48,9 @@ class LocalServerProvider(BaseServerProvider):
     """Local ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.LOCAL
-    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
-        LocalServerDeploymentConfig
-    )
+    CONFIG_TYPE: ClassVar[
+        Type[ServerDeploymentConfig]
+    ] = LocalServerDeploymentConfig
 
     @staticmethod
     def check_local_server_dependencies() -> None:
