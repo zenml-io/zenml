@@ -214,13 +214,9 @@ class ServerConfiguration(BaseModel):
         display_updates: Whether to display notifications about ZenML updates in
             the dashboard. Used only during initial deployment. Can be changed
             later as a part of the server settings.
-        auto_create_default_user: Whether to automatically create a default
-            admin user account with an empty password. Used only during initial
+        auto_activate: Whether to automatically activate the server and create a
+            default admin user account with an empty password during the initial
             deployment.
-        auto_activate: Whether to automatically activate the ZenML server during
-            deployment. Used only during initial deployment. If
-            `auto_create_default_user` is set to `True`, this setting is ignored
-            and the server is activated automatically.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -293,7 +289,6 @@ class ServerConfiguration(BaseModel):
     server_name: Optional[str] = None
     display_announcements: bool = True
     display_updates: bool = True
-    auto_create_default_user: bool = False
     auto_activate: bool = False
 
     _deployment_id: Optional[UUID] = None

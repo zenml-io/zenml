@@ -8072,7 +8072,7 @@ class SqlZenStore(BaseZenStore):
 
         * local ZenML client deployments: the client is not connected to a ZenML
         server, but uses the database directly.
-        * server deployments that set the `auto_create_default_user` server
+        * server deployments that set the `auto_activate` server
         setting explicitly to `True`. This includes:
             * local ZenML server deployments: the server is deployed locally
             with `zenml up`
@@ -8098,7 +8098,7 @@ class SqlZenStore(BaseZenStore):
                 # Running inside server with external auth
                 return False
 
-            if config.auto_create_default_user:
+            if config.auto_activate:
                 return True
 
         else:
@@ -8116,8 +8116,6 @@ class SqlZenStore(BaseZenStore):
         * all the cases in which the default user account is also automatically
         created on initialization (see `_create_default_user_on_db_init`)
         * when the authentication scheme is set to external
-        * server deployments that set the `auto_activate` server
-        setting explicitly to `True`.
 
         Returns:
             Whether the server should be activated on database initialization.
@@ -8130,9 +8128,6 @@ class SqlZenStore(BaseZenStore):
             from zenml.zen_server.utils import server_config
 
             config = server_config()
-
-            if config.auto_activate:
-                return True
 
             if config.auth_scheme == AuthScheme.EXTERNAL:
                 return True

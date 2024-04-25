@@ -265,7 +265,7 @@ The following secure headers environment variables are supported:
 
 If you prefer to activate the server automatically during the initial deployment and also automate the creation of the initial admin user account, this legacy behavior can be brought back by setting the following environment variables:
 
-* **ZENML\_SERVER\_AUTO\_CREATE\_DEFAULT\_USER**: Set this to `1` to automatically create the initial admin user account when the server is first deployed. Defaults to `0`.
+* **ZENML\_SERVER\_AUTO\_ACTIVATE**: Set this to `1` to automatically activate the server and create the initial admin user account when the server is first deployed. Defaults to `0`.
 * **ZENML\_DEFAULT\_USER\_NAME**: The name of the initial admin user account created by the server on the first deployment, during database initialization. Defaults to `default`.
 * **ZENML\_DEFAULT\_USER\_PASSWORD**: The password to use for the initial admin user account. Defaults to an empty password value, if not set.
 
