@@ -89,7 +89,8 @@ class _DecoratedStep(BaseStep):
 
 
 @overload
-def step(_func: F) -> Type[BaseStep]: ...
+def step(_func: F) -> Type[BaseStep]:
+    ...
 
 
 @overload
@@ -108,7 +109,8 @@ def step(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
-) -> Callable[[F], Type[BaseStep]]: ...
+) -> Callable[[F], Type[BaseStep]]:
+    ...
 
 
 def step(

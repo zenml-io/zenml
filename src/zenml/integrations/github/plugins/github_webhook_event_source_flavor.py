@@ -30,9 +30,9 @@ class GithubWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
     """Enables users to configure github event sources."""
 
     FLAVOR: ClassVar[str] = GITHUB_EVENT_FLAVOR
-    PLUGIN_CLASS: ClassVar[Type[GithubWebhookEventSourceHandler]] = (
-        GithubWebhookEventSourceHandler
-    )
+    PLUGIN_CLASS: ClassVar[
+        Type[GithubWebhookEventSourceHandler]
+    ] = GithubWebhookEventSourceHandler
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[

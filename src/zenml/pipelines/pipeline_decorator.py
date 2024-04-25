@@ -55,7 +55,8 @@ F = TypeVar("F", bound=Callable[..., None])
 
 
 @overload
-def pipeline(_func: F) -> Type[BasePipeline]: ...
+def pipeline(_func: F) -> Type[BasePipeline]:
+    ...
 
 
 @overload
@@ -69,7 +70,8 @@ def pipeline(
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     model: Optional["Model"] = None,
-) -> Callable[[F], Type[BasePipeline]]: ...
+) -> Callable[[F], Type[BasePipeline]]:
+    ...
 
 
 def pipeline(

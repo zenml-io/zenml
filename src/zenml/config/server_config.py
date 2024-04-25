@@ -251,30 +251,30 @@ class ServerConfiguration(BaseModel):
     login_rate_limit_day: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY
 
     secure_headers_server: Union[bool, str] = True
-    secure_headers_hsts: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS
-    )
-    secure_headers_xfo: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO
-    )
-    secure_headers_xxp: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP
-    )
-    secure_headers_content: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT
-    )
-    secure_headers_csp: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP
-    )
-    secure_headers_referrer: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER
-    )
-    secure_headers_cache: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE
-    )
-    secure_headers_permissions: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
-    )
+    secure_headers_hsts: Union[
+        bool, str
+    ] = DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS
+    secure_headers_xfo: Union[
+        bool, str
+    ] = DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO
+    secure_headers_xxp: Union[
+        bool, str
+    ] = DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP
+    secure_headers_content: Union[
+        bool, str
+    ] = DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT
+    secure_headers_csp: Union[
+        bool, str
+    ] = DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP
+    secure_headers_referrer: Union[
+        bool, str
+    ] = DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER
+    secure_headers_cache: Union[
+        bool, str
+    ] = DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE
+    secure_headers_permissions: Union[
+        bool, str
+    ] = DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
 
     _deployment_id: Optional[UUID] = None
 

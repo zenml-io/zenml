@@ -1093,9 +1093,9 @@ To avoid this consider setting step parameters only in one place (config or code
             StepConfigurationUpdate,
         )
 
-        outputs: Dict[str, Dict[str, Union[Source, Tuple[Source, ...]]]] = (
-            defaultdict(dict)
-        )
+        outputs: Dict[
+            str, Dict[str, Union[Source, Tuple[Source, ...]]]
+        ] = defaultdict(dict)
 
         for (
             output_name,
@@ -1110,10 +1110,10 @@ To avoid this consider setting step parameters only in one place (config or code
             if not output.materializer_source:
                 if output_annotation.resolved_annotation is Any:
                     outputs[output_name]["materializer_source"] = ()
-                    outputs[output_name]["default_materializer_source"] = (
-                        source_utils.resolve(
-                            materializer_registry.get_default_materializer()
-                        )
+                    outputs[output_name][
+                        "default_materializer_source"
+                    ] = source_utils.resolve(
+                        materializer_registry.get_default_materializer()
                     )
                     continue
 
@@ -1197,9 +1197,9 @@ To avoid this consider setting step parameters only in one place (config or code
 
         if self.entrypoint_definition.legacy_params:
             legacy_params = self._finalize_legacy_parameters()
-            params[self.entrypoint_definition.legacy_params.name] = (
-                legacy_params
-            )
+            params[
+                self.entrypoint_definition.legacy_params.name
+            ] = legacy_params
 
         return params
 

@@ -132,9 +132,9 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
     config: GCPSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.GCP
-    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
-        GCPSecretsStoreConfiguration
-    )
+    CONFIG_TYPE: ClassVar[
+        Type[ServiceConnectorSecretsStoreConfiguration]
+    ] = GCPSecretsStoreConfiguration
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = GCP_CONNECTOR_TYPE
     SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = GCP_RESOURCE_TYPE
 

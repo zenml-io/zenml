@@ -20,7 +20,6 @@ from typing import (
     List,
     Optional,
     Type,
-    Union,
     cast,
 )
 
@@ -35,8 +34,6 @@ from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from wandb import Settings
-
     from zenml.integrations.wandb.experiment_trackers import (
         WandbExperimentTracker,
     )
