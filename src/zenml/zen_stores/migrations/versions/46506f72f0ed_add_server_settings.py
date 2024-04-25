@@ -27,7 +27,9 @@ def upgrade() -> None:
     op.create_table(
         "server_settings",
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column(
+            "server_name", sqlmodel.sql.sqltypes.AutoString(), nullable=False
+        ),
         sa.Column(
             "logo_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
         ),
@@ -35,7 +37,7 @@ def upgrade() -> None:
         sa.Column("enable_analytics", sa.Boolean(), nullable=False),
         sa.Column("display_announcements", sa.Boolean(), nullable=False),
         sa.Column("display_updates", sa.Boolean(), nullable=False),
-        sa.Column("server_metadata", sa.TEXT(), nullable=True),
+        sa.Column("onboarding_state", sa.TEXT(), nullable=True),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -66,7 +68,7 @@ def upgrade() -> None:
             {
                 "id": deployment_id,
                 # Use the deployment ID as the default server name
-                "name": str(UUID(deployment_id)),
+                "server_name": str(UUID(deployment_id)),
                 # Mark existing servers as active
                 "active": True,
                 # Enable analytics if already enabled through the global config

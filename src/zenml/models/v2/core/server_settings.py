@@ -32,8 +32,6 @@ from zenml.models.v2.base.base import (
 )
 
 # ------------------ Base Model ------------------
-# ------------------ Request Model ------------------
-
 
 # ------------------ Update Model ------------------
 
@@ -41,7 +39,9 @@ from zenml.models.v2.base.base import (
 class ServerSettingsUpdate(BaseZenModel):
     """Model for updating server settings."""
 
-    name: Optional[str] = Field(default=None, title="The name of the server.")
+    server_name: Optional[str] = Field(
+        default=None, title="The name of the server."
+    )
     logo_url: Optional[str] = Field(
         default=None, title="The logo URL of the server."
     )
@@ -57,9 +57,9 @@ class ServerSettingsUpdate(BaseZenModel):
         default=None,
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
-    server_metadata: Optional[Dict[str, Any]] = Field(
+    onboarding_state: Optional[Dict[str, Any]] = Field(
         default=None,
-        title="The metadata associated with the server.",
+        title="The server's onboarding state.",
     )
 
 
@@ -72,7 +72,7 @@ class ServerSettingsResponseBody(BaseResponseBody):
     server_id: UUID = Field(
         title="The unique server id.",
     )
-    name: str = Field(title="The name of the server.")
+    server_name: str = Field(title="The name of the server.")
     logo_url: Optional[str] = Field(
         default=None, title="The logo URL of the server."
     )
@@ -96,9 +96,9 @@ class ServerSettingsResponseBody(BaseResponseBody):
 class ServerSettingsResponseMetadata(BaseResponseMetadata):
     """Response metadata for server settings."""
 
-    server_metadata: Dict[str, Any] = Field(
+    onboarding_state: Dict[str, Any] = Field(
         default={},
-        title="The metadata associated with the server.",
+        title="The server's onboarding state.",
     )
 
 
@@ -137,13 +137,13 @@ class ServerSettingsResponse(
         return self.get_body().server_id
 
     @property
-    def name(self) -> str:
-        """The `name` property.
+    def server_name(self) -> str:
+        """The `server_name` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().name
+        return self.get_body().server_name
 
     @property
     def logo_url(self) -> Optional[str]:
@@ -200,15 +200,33 @@ class ServerSettingsResponse(
         return self.get_body().updated
 
     @property
-    def server_metadata(self) -> Dict[str, Any]:
-        """The `server_metadata` property.
+    def onboarding_state(self) -> Dict[str, Any]:
+        """The `onboarding_state` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().server_metadata
+        return self.get_metadata().onboarding_state
 
 
 # ------------------ Filter Model ------------------
 
 # Server Settings can't be filtered
+
+# ------------------ Request Model ------------------
+
+
+class ServerActivationRequest(ServerSettingsUpdate):
+    """Model for activating the server."""
+
+    admin_username: Optional[str] = Field(
+        default=None,
+        title="The username of the default admin account to create. Leave "
+        "empty to skip creating the default admin account.",
+    )
+
+    admin_password: Optional[str] = Field(
+        default=None,
+        title="The password of the default admin account to create. Leave "
+        "empty to skip creating the default admin account.",
+    )

@@ -13,18 +13,23 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
+from typing import Optional
+
 from fastapi import APIRouter, Security
 
 import zenml
-from zenml.constants import API, INFO, SERVER_SETTINGS, VERSION_1
+from zenml.constants import ACTIVATE, API, INFO, SERVER_SETTINGS, VERSION_1
+from zenml.enums import AuthScheme
 from zenml.models import (
+    ServerActivationRequest,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
+    UserResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.utils import handle_exceptions, zen_store
+from zenml.zen_server.utils import handle_exceptions, server_config, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1,
@@ -58,7 +63,6 @@ def server_info() -> ServerModel:
     return zen_store().get_store_info()
 
 
-# TODO: should this also exist for cloud tenants?
 @router.get(
     SERVER_SETTINGS,
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -85,7 +89,7 @@ def update_server_settings(
     settings_update: ServerSettingsUpdate,
     _: AuthContext = Security(authorize),
 ) -> ServerSettingsResponse:
-    """Updates a stack.
+    """Updates the settings of the server.
 
     Args:
         settings_update: Settings update.
@@ -95,3 +99,30 @@ def update_server_settings(
     """
     # TODO: RBAC
     return zen_store().update_server_settings(settings_update)
+
+
+# When the auth scheme is set to EXTERNAL, users cannot be managed via the
+# API and the server is activated on deployment
+if server_config().auth_scheme != AuthScheme.EXTERNAL:
+
+    @router.put(
+        ACTIVATE,
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
+    )
+    @handle_exceptions
+    def activate_server(
+        activate_request: ServerActivationRequest,
+    ) -> Optional[UserResponse]:
+        """Updates a stack.
+
+        Args:
+            activate_request: The request to activate the server.
+
+        Returns:
+            The default admin user that was created during activation, if any.
+        """
+        return zen_store().activate_server(activate_request)

@@ -735,12 +735,12 @@ class Client(metaclass=ClientMetaClass):
             The updated server settings.
         """
         update_model = ServerSettingsUpdate(
-            name=updated_name,
+            server_name=updated_name,
             logo_url=updated_logo_url,
             enable_analytics=updated_enable_analytics,
             display_announcements=updated_enable_announcements,
             display_updates=updated_enable_updates,
-            server_metadata=updated_metadata,
+            onboarding_state=updated_metadata,
         )
         return self.zen_store.update_server_settings(update_model)
 

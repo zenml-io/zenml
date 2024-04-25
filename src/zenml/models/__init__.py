@@ -364,6 +364,7 @@ from zenml.models.v2.misc.server_models import (
     ServerDeploymentType,
 )
 from zenml.models.v2.core.server_settings import (
+    ServerActivationRequest,
     ServerSettingsResponse,
     ServerSettingsResponseResources,
     ServerSettingsResponseBody,
@@ -731,6 +732,7 @@ __all__ = [
     "SecretResponseBody",
     "SecretResponseMetadata",
     "SecretUpdate",
+    "ServerActivationRequest",
     "ServerSettingsResponse",
     "ServerSettingsResponseResources",
     "ServerSettingsResponseBody",

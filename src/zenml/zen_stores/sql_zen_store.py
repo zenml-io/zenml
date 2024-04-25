@@ -75,9 +75,11 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    DEFAULT_PASSWORD,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
     ENV_ZENML_DEFAULT_USER_NAME,
+    ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
@@ -200,8 +202,8 @@ from zenml.models import (
     SecretRequest,
     SecretResponse,
     SecretUpdate,
+    ServerActivationRequest,
     ServerDatabaseType,
-    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -1041,13 +1043,12 @@ class SqlZenStore(BaseZenStore):
             )
 
     def _initialize_database(self) -> None:
-        """Initialize the database on first use."""
+        """Initialize the database if not already initialized."""
+        # Make sure the default workspace exists
         self._get_or_create_default_workspace()
-
-        config = ServerConfiguration.get_server_config()
-        # If the auth scheme is external, don't create the default user
-        if config.auth_scheme != AuthScheme.EXTERNAL:
-            self._get_or_create_default_user()
+        # Make sure the server is activated and the default user exists, if
+        # applicable
+        self._auto_activate_server()
 
     def _get_db_backup_file_path(self) -> str:
         """Get the path to the database backup file.
@@ -1420,13 +1421,15 @@ class SqlZenStore(BaseZenStore):
                 session.add(
                     ServerSettingsSchema(
                         id=id_,
-                        name=server_config.name or str(id_),
-                        active=self._activate_default_user(),
+                        server_name=server_config.server_name or str(id_),
+                        # We always initialize the server as inactive and decide
+                        # whether to activate it later in `_initialize_database`
+                        active=False,
                         enable_analytics=GlobalConfiguration().analytics_opt_in,
                         display_announcements=server_config.display_announcements,
                         display_updates=server_config.display_updates,
                         logo_url=None,
-                        server_metadata=None,
+                        onboarding_state=None,
                     )
                 )
                 session.commit()
@@ -1572,13 +1575,71 @@ class SqlZenStore(BaseZenStore):
 
             return settings.to_model(include_metadata=True)
 
-    def activate_server(self) -> None:
-        """Activate the server."""
+    def activate_server(
+        self, request: ServerActivationRequest
+    ) -> Optional[UserResponse]:
+        """Activate the server and optionally create the default admin user.
+
+        Args:
+            request: The server activation request.
+
+        Returns:
+            The default admin user that was created, if any.
+
+        Raises:
+            IllegalOperationError: If the server is already active.
+        """
         with Session(self.engine) as session:
             settings = self._get_server_settings(session=session)
+
+            if settings.active:
+                # The server can only be activated once
+                raise IllegalOperationError("The server is already active.")
+
             settings.active = True
             session.add(settings)
             session.commit()
+
+        # Update the server settings to reflect the activation
+        self.update_server_settings(request)
+
+        if request.admin_username and request.admin_password:
+            # Create the default admin user
+            return self.create_user(
+                UserRequest(
+                    name=request.admin_username,
+                    active=True,
+                    password=request.admin_password,
+                    is_admin=True,
+                )
+            )
+
+        return None
+
+    def _auto_activate_server(self) -> None:
+        """Automatically activate the server if needed."""
+        settings = self.get_server_settings()
+        if settings.active:
+            # Activation only happens once
+            return
+
+        if not self._activate_server_at_initialization():
+            # The server is not configured to be activated automatically
+            return
+
+        # Activate the server
+        request = ServerActivationRequest()
+        if self._create_default_user_on_db_init():
+            # Create the default admin user too, if needed
+
+            request.admin_username = os.getenv(
+                ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME
+            )
+            request.admin_password = os.getenv(
+                ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
+            )
+
+        self.activate_server(request)
 
     # ------------------------- API Keys -------------------------
 
@@ -7675,6 +7736,48 @@ class SqlZenStore(BaseZenStore):
 
         return False
 
+    def _get_active_user(self, session: Session) -> UserSchema:
+        """Get the active user.
+
+        Depending on context, this is:
+
+        - the user that is currently authenticated, when running in the ZenML
+        server
+        - the default admin user, when running in the ZenML client connected
+        directly to a database
+
+        Args:
+            session: The database session to use for the query.
+
+        Returns:
+            The active user schema.
+
+        Raises:
+            KeyError: If no active user is found.
+        """
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.auth import get_auth_context
+
+            # If the code is running on the server, use the auth context.
+            auth_context = get_auth_context()
+            if auth_context is not None:
+                return self._get_account_schema(
+                    session=session, account_name_or_id=auth_context.user.id
+                )
+
+            raise KeyError("No active user found.")
+        else:
+            # If the code is running on the client, use the default user.
+            admin_username = os.getenv(
+                ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME
+            )
+            return self._get_account_schema(
+                account_name_or_id=admin_username,
+                session=session,
+                service_account=False,
+            )
+
     def create_user(self, user: UserRequest) -> UserResponse:
         """Creates a new user.
 
@@ -7755,20 +7858,21 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If the user does not exist.
         """
-        if not user_name_or_id:
-            user_name_or_id = self._default_user_name
-
         with Session(self.engine) as session:
-            # If a UUID is passed, we also allow fetching service accounts
-            # with that ID.
-            service_account: Optional[bool] = False
-            if uuid_utils.is_valid_uuid(user_name_or_id):
-                service_account = None
-            user = self._get_account_schema(
-                user_name_or_id,
-                session=session,
-                service_account=service_account,
-            )
+            if user_name_or_id is None:
+                # Get the active account, depending on the context
+                user = self._get_active_user(session=session)
+            else:
+                # If a UUID is passed, we also allow fetching service accounts
+                # with that ID.
+                service_account: Optional[bool] = False
+                if uuid_utils.is_valid_uuid(user_name_or_id):
+                    service_account = None
+                user = self._get_account_schema(
+                    user_name_or_id,
+                    session=session,
+                    service_account=service_account,
+                )
 
             return user.to_model(
                 include_private=include_private, include_metadata=hydrate
@@ -7853,23 +7957,26 @@ class SqlZenStore(BaseZenStore):
             )
 
             if (
-                existing_user.name == self._default_user_name
+                existing_user.is_admin is True
                 and user_update.is_admin is False
             ):
-                raise IllegalOperationError(
-                    "The default user's admin status cannot be removed."
+                # There must be at least one admin account configured
+                admin_accounts_count = session.scalar(
+                    select([func.count(UserSchema.id)]).where(
+                        UserSchema.is_admin == True  # noqa: E712
+                    )
                 )
+                if admin_accounts_count == 1:
+                    raise IllegalOperationError(
+                        "This is the only admin account and cannot be "
+                        "demoted to a regular user account. Please create "
+                        "another admin account before demoting this one."
+                    )
 
             if (
                 user_update.name is not None
                 and user_update.name != existing_user.name
             ):
-                if existing_user.name == self._default_user_name:
-                    raise IllegalOperationError(
-                        "The username of the default user account cannot be "
-                        "changed."
-                    )
-
                 try:
                     self._get_account_schema(
                         user_update.name,
@@ -7920,10 +8027,20 @@ class SqlZenStore(BaseZenStore):
             user = self._get_account_schema(
                 user_name_or_id, session=session, service_account=False
             )
-            if user.name == self._default_user_name:
-                raise IllegalOperationError(
-                    "The default user account cannot be deleted."
+            if user.is_admin:
+                # Don't allow the last admin to be deleted
+                admin_accounts_count = session.scalar(
+                    select([func.count(UserSchema.id)]).where(
+                        UserSchema.is_admin == True  # noqa: E712
+                    )
                 )
+                if admin_accounts_count == 1:
+                    raise IllegalOperationError(
+                        "This is the last admin account and cannot be deleted "
+                        "because you would lose admin access to the system. "
+                        "Please create another admin account before deleting "
+                        "this one."
+                    )
             if self._account_owns_resources(user, session=session):
                 raise IllegalOperationError(
                     "The user account has already been used to create "
@@ -7935,84 +8052,80 @@ class SqlZenStore(BaseZenStore):
             session.delete(user)
             session.commit()
 
-    @property
-    def _default_user_name(self) -> str:
-        """Get the default user name.
+    def _create_default_user_on_db_init(self) -> bool:
+        """Check if the default user should be created on database initialization.
 
-        Returns:
-            The default user name.
-        """
-        return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
-
-    def _activate_default_user(self) -> bool:
-        """Check if the default user should be available immediately after deployment.
-
-        We allow the default user to be immediately accessible after
-        initialization with a default empty password in the following cases:
+        We create a default admin user account with an empty password when the
+        database is initialized in the following cases:
 
         * local ZenML client deployments: the client is not connected to a ZenML
         server, but uses the database directly.
-        * local ZenML server deployments: the server is deployed locally with
-        `zenml up`
-        * local ZenML docker deployments: the server is deployed locally with
-        `zenml up --docker`
+        * server deployments that set the `auto_create_default_user` server
+        setting explicitly to `True`. This includes:
+            * local ZenML server deployments: the server is deployed locally
+            with `zenml up`
+            * local ZenML docker deployments: the server is deployed locally
+            with `zenml up --docker`
 
-        For all other cases, the default user is created in an inactive state
-        and the user must activate it by setting a password the first time they
-        visit the dashboard.
+        For all other cases, or if the external authentication scheme is used,
+        no default admin user is created. The user must activate the server and
+        create a default admin user account the first time they visit the
+        dashboard.
 
         Returns:
-            Whether the default user should be activated.
+            Whether the default user should be created on database
+            initialization.
         """
         if handle_bool_env_var(ENV_ZENML_SERVER):
             # Running inside server
             from zenml.zen_server.utils import server_config
 
-            if server_config().deployment_type in {
-                ServerDeploymentType.LOCAL,
-                ServerDeploymentType.DOCKER,
-            }:
+            config = server_config()
+
+            if config.auth_scheme == AuthScheme.EXTERNAL:
+                # Running inside server with external auth
+                return False
+
+            if config.auto_create_default_user:
                 return True
+
         else:
             # Running inside client
             return True
 
         return False
 
-    def _get_or_create_default_user(self) -> UserResponse:
-        """Get or create the default user if it doesn't exist.
+    def _activate_server_at_initialization(self) -> bool:
+        """Check if the server should be activated on database initialization.
+
+        We activate the server when the database is initialized in the following
+        cases:
+
+        * all the cases in which the default user account is also automatically
+        created on initialization (see `_create_default_user_on_db_init`)
+        * when the authentication scheme is set to external
+        * server deployments that set the `auto_activate` server
+        setting explicitly to `True`.
 
         Returns:
-            The default user.
+            Whether the server should be activated on database initialization.
         """
-        default_user_name = self._default_user_name
-        try:
-            return self.get_user(default_user_name)
-        except KeyError:
-            active = self._activate_default_user()
-            # The default user is created with an empty password if it should
-            # be activated immediately, otherwise it is created in an inactive
-            # state without a password.
-            password = "" if active else None
-            if active:
-                logger.info(
-                    f"Creating default user '{default_user_name}' with empty "
-                    "password..."
-                )
-            else:
-                logger.info(
-                    f"Creating default user '{default_user_name}' in inactive "
-                    "state..."
-                )
+        if self._create_default_user_on_db_init():
+            return True
 
-            return self.create_user(
-                UserRequest(
-                    name=default_user_name,
-                    active=active,
-                    password=password,
-                    is_admin=True,
-                )
-            )
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.utils import server_config
+
+            config = server_config()
+
+            if config.auto_activate:
+                return True
+
+            if config.auth_scheme == AuthScheme.EXTERNAL:
+                return True
+
+        return False
 
     # ----------------------------- Workspaces -----------------------------
 

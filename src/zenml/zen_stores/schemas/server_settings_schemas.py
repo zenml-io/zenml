@@ -35,13 +35,13 @@ class ServerSettingsSchema(SQLModel, table=True):
     __tablename__ = "server_settings"
 
     id: UUID = Field(primary_key=True)
-    name: str
+    server_name: str
     logo_url: Optional[str] = Field(nullable=True)
     active: bool = Field(default=False)
     enable_analytics: bool = Field(default=False)
     display_announcements: Optional[bool] = Field(nullable=True)
     display_updates: Optional[bool] = Field(nullable=True)
-    server_metadata: Optional[str] = Field(nullable=True)
+    onboarding_state: Optional[str] = Field(nullable=True)
     updated: datetime = Field(default_factory=datetime.utcnow)
 
     def update(
@@ -57,9 +57,9 @@ class ServerSettingsSchema(SQLModel, table=True):
             The updated `ServerSettingsSchema`.
         """
         for field, value in settings_update.dict(exclude_unset=True).items():
-            if field == "server_metadata":
+            if field == "onboarding_state":
                 if value:
-                    self.server_metadata = json.dumps(value)
+                    self.onboarding_state = json.dumps(value)
             else:
                 setattr(self, field, value)
 
@@ -86,7 +86,7 @@ class ServerSettingsSchema(SQLModel, table=True):
         """
         body = ServerSettingsResponseBody(
             server_id=self.id,
-            name=self.name,
+            server_name=self.server_name,
             logo_url=self.logo_url,
             enable_analytics=self.enable_analytics,
             display_announcements=self.display_announcements,
@@ -100,8 +100,8 @@ class ServerSettingsSchema(SQLModel, table=True):
 
         if include_metadata:
             metadata = ServerSettingsResponseMetadata(
-                server_metadata=json.loads(self.server_metadata)
-                if self.server_metadata
+                onboarding_state=json.loads(self.onboarding_state)
+                if self.onboarding_state
                 else {},
             )
 
