@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Pigeon annotator
+"""Pigeon annotator.
 
 Credit for the implementation of this code to @agermanidis in the pigeon package
 and library. This code has been slightly modified to fit the ZenML framework.
@@ -80,8 +80,7 @@ class PigeonAnnotator(BaseAnnotator):
             return []
 
     def get_dataset_names(self) -> List[str]:
-        """Get a list of dataset names (annotation file names) in the output
-        directory.
+        """List dataset names (annotation file names) in the output directory.
 
         Returns:
             A list of dataset names (annotation file names).
@@ -89,7 +88,7 @@ class PigeonAnnotator(BaseAnnotator):
         return self.get_datasets()
 
     def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
-        """Get the number of labeled and unlabeled examples in a dataset (annotation file).
+        """List labeled and unlabeled examples in a dataset (annotation file).
 
         Args:
             dataset_name: Name of the dataset (annotation file).
