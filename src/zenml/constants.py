@@ -428,3 +428,6 @@ SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS = 60 * 5  # 5 minutes
 MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION = (
     10  # empirical value to pass heavy parallelized tests
 )
+
+
+FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"
