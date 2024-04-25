@@ -19,6 +19,7 @@ and library. This code has been slightly modified to fit the ZenML framework.
 https://github.com/agermanidis/pigeon
 """
 
+import json
 import os
 from datetime import datetime
 from functools import partial
@@ -165,9 +166,7 @@ class PigeonAnnotator(BaseAnnotator):
             btn.on_click(partial(add_annotation, label))
             buttons.append(btn)
 
-        submit_btn = Button(
-            description="Submit All Annotations", button_style="success"
-        )
+        submit_btn = Button(description="Save labels", button_style="success")
         submit_btn.on_click(submit_annotations)
         buttons.append(submit_btn)
 
@@ -200,10 +199,9 @@ class PigeonAnnotator(BaseAnnotator):
         output_dir = self.config.output_dir
         os.makedirs(output_dir, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = os.path.join(output_dir, f"annotations_{timestamp}.txt")
+        output_file = os.path.join(output_dir, f"annotations_{timestamp}.json")
         with open(output_file, "w") as f:
-            for example, label in annotations:
-                f.write(f"{example}\t{label}\n")
+            json.dump(annotations, f)
 
     def add_dataset(self, **kwargs: Any) -> Any:
         """Add a dataset (annotation file) to the Pigeon annotator.
