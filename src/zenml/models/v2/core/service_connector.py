@@ -871,12 +871,18 @@ def _validate_and_configure_resources(
     # connector model itself, while for the response model, they are in the
     # metadata field.
     update_connector_metadata: Union[
-        ServiceConnectorRequest, ServiceConnectorResponseMetadata
+        ServiceConnectorRequest,
+        ServiceConnectorUpdate,
+        ServiceConnectorResponseMetadata,
     ]
     update_connector_body: Union[
-        ServiceConnectorRequest, ServiceConnectorResponseBody
+        ServiceConnectorRequest,
+        ServiceConnectorUpdate,
+        ServiceConnectorResponseBody,
     ]
-    if isinstance(connector, ServiceConnectorRequest):
+    if isinstance(connector, ServiceConnectorRequest) or isinstance(
+        connector, ServiceConnectorUpdate
+    ):
         update_connector_metadata = connector
         update_connector_body = connector
     else:
