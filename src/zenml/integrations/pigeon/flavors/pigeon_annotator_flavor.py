@@ -19,13 +19,21 @@ from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
     BaseAnnotatorFlavor,
 )
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.pigeon import PIGEON_ANNOTATOR_FLAVOR
+from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
     from zenml.integrations.pigeon.annotators import PigeonAnnotator
 
 
-class PigeonAnnotatorConfig(BaseAnnotatorConfig):
+class PigeonAnnotatorSettings(BaseSettings):
+    """Settings for the Pigeon annotator."""
+
+
+class PigeonAnnotatorConfig(
+    BaseAnnotatorConfig, PigeonAnnotatorSettings, AuthenticationConfigMixin
+):
     """Config for the Pigeon annotator.
 
     Attributes:
