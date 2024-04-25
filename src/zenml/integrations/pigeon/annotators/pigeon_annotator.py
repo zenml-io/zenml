@@ -28,7 +28,7 @@ from datetime import datetime
 from typing import Any, List, Optional, Tuple, cast
 
 import ipywidgets as widgets  # type: ignore
-from IPython.display import clear_output, display  # type: ignore
+from IPython.core.display_functions import clear_output, display
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.integrations.pigeon.flavors.pigeon_annotator_flavor import (
