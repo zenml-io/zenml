@@ -31,7 +31,7 @@ class PigeonAnnotatorSettings(BaseSettings):
     """Settings for the Pigeon annotator."""
 
 
-class PigeonAnnotatorConfig(
+class PigeonAnnotatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseAnnotatorConfig, PigeonAnnotatorSettings, AuthenticationConfigMixin
 ):
     """Config for the Pigeon annotator.
