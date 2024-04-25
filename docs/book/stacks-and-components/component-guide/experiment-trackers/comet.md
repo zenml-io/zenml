@@ -60,12 +60,12 @@ This method requires you to [configure a ZenML secret](/docs/book/user-guide/adv
 
 You can create the secret using the `zenml secret create` command:
 
-````bash
+```bash
 zenml secret create comet_secret \
     --workspace=<WORKSPACE> \
     --project_name=<PROJECT_NAME> \
     --api_key=<API_KEY>
-```
+111
 
 Once the secret is created, you can use it to configure the Comet Experiment Tracker:
 
