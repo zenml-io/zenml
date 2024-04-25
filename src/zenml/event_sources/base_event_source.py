@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base implementation for event sources."""
 
-import json
 from abc import ABC, abstractmethod
 from typing import (
     Any,
@@ -647,11 +646,7 @@ class BaseEventSourceFlavor(BasePluginFlavor, ABC):
         Returns:
             The config schema.
         """
-        config_schema: Dict[str, Any] = json.loads(
-            cls.EVENT_SOURCE_CONFIG_CLASS.schema_json()
-        )
-
-        return config_schema
+        return cls.EVENT_SOURCE_CONFIG_CLASS.model_json_schema()
 
     @classmethod
     def get_event_source_config_schema(cls) -> Dict[str, Any]:
@@ -660,11 +655,7 @@ class BaseEventSourceFlavor(BasePluginFlavor, ABC):
         Returns:
             The config schema.
         """
-        config_schema: Dict[str, Any] = json.loads(
-            cls.EVENT_FILTER_CONFIG_CLASS.schema_json()
-        )
-
-        return config_schema
+        return cls.EVENT_FILTER_CONFIG_CLASS.model_json_schema()
 
     @classmethod
     def get_flavor_response_model(

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML service connectors."""
 
-import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
@@ -141,7 +140,8 @@ class AuthenticationMethodModel(BaseModel):
             **values: The data to initialize the authentication method with.
         """
         if config_class:
-            values["config_schema"] = json.loads(config_class.schema_json())
+            values["config_schema"] = config_class.model_json_schema()
+
         super().__init__(**values)
         self._config_class = config_class
 

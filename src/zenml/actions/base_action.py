@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base implementation of actions."""
 
-import json
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Type
 
@@ -66,10 +65,7 @@ class BaseActionFlavor(BasePluginFlavor, ABC):
         Returns:
             The config schema.
         """
-        config_schema: Dict[str, Any] = json.loads(
-            cls.ACTION_CONFIG_CLASS.schema_json()
-        )
-        return config_schema
+        return cls.ACTION_CONFIG_CLASS.model_json_schema()
 
     @classmethod
     def get_flavor_response_model(cls, hydrate: bool) -> ActionFlavorResponse:
