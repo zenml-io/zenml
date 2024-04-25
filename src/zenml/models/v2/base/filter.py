@@ -378,7 +378,7 @@ class BaseFilter(BaseModel):
             A list of Filter models.
         """
         return self._generate_filter_list(
-            {key: getattr(self, key) for key in self.__fields__}
+            {key: getattr(self, key) for key in self.model_fields}
         )
 
     @property

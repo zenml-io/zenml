@@ -82,7 +82,7 @@ class ModelRegistryModelMetadata(BaseModel):
         return {
             k: str(v)
             for k, v in self.__dict__.items()
-            if k not in self.__fields__.keys()
+            if k not in self.model_fields.keys()
         }
 
     def dict(

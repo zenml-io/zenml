@@ -7953,7 +7953,7 @@ class SqlZenStore(BaseZenStore):
                 )
             if (
                 existing_workspace.name == self._default_workspace_name
-                and "name" in workspace_update.__fields_set__
+                and "name" in workspace_update.model_fields_set
                 and workspace_update.name != existing_workspace.name
             ):
                 raise IllegalOperationError(

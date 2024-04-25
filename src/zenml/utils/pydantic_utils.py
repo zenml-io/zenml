@@ -116,7 +116,7 @@ class TemplateGenerator:
         """
         template = self._generate_template_for_model_class(model.__class__)
 
-        for name in model.__fields_set__:
+        for name in model.model_fields_set:
             value = getattr(model, name)
             template[name] = self._generate_template_for_value(value)
 
@@ -273,10 +273,10 @@ def validate_function_args(
 
     validated_args = {
         k[len(parameter_prefix) :]: v
-        for k, v in model._iter()
-        if k in model.__fields_set__
-        or model.__fields__[k].default_factory
-        or model.__fields__[k].default
+        for k, v in dict(model).items()
+        if k in model.model_fields_set
+        or model.model_fields[k].default_factory
+        or model.model_fields[k].default
     }
 
     return validated_args
