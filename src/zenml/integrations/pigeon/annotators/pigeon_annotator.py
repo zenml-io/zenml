@@ -15,24 +15,17 @@
 
 import os
 from datetime import datetime
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, cast
+
+from pigeon import annotate
 
 from zenml.annotators.base_annotator import BaseAnnotator
-from zenml.stack.stack_component import StackComponentConfig
+from zenml.integrations.pigeon.flavors.pigeon_annotator_flavor import (
+    PigeonAnnotatorConfig,
+)
+from zenml.logger import get_logger
 
-try:
-    from pigeon import annotate
-except ImportError:
-    raise ImportError(
-        "The 'pigeon-jupyter' package is not installed. Please install it to use the PigeonAnnotator."
-    )
-
-
-class PigeonAnnotatorConfig(StackComponentConfig):
-    """Config for the Pigeon annotator."""
-
-    notebook_only: bool = True
-    output_dir: str
+logger = get_logger(__name__)
 
 
 class PigeonAnnotator(BaseAnnotator):
@@ -40,21 +33,48 @@ class PigeonAnnotator(BaseAnnotator):
 
     @property
     def config(self) -> PigeonAnnotatorConfig:
-        return PigeonAnnotatorConfig(self._config)
+        """Get the Pigeon annotator config.
+
+        Returns:
+            The Pigeon annotator config.
+        """
+        return cast(PigeonAnnotatorConfig, self._config)
 
     def get_url(self) -> str:
+        """Get the URL of the Pigeon annotator.
+
+        Raises:
+            NotImplementedError: Pigeon annotator does not have a URL.
+        """
         raise NotImplementedError("Pigeon annotator does not have a URL.")
 
     def get_url_for_dataset(self, dataset_name: str) -> str:
+        """Get the URL of the Pigeon annotator for a specific dataset.
+
+        Args:
+            dataset_name: Name of the dataset (annotation file).
+
+        Raises:
+            NotImplementedError: Pigeon annotator does not have a URL.
+        """
         raise NotImplementedError("Pigeon annotator does not have a URL.")
 
     def get_datasets(self) -> List[str]:
-        """Get a list of datasets (annotation files) in the output directory."""
+        """Get a list of datasets (annotation files) in the output directory.
+        
+        Returns:
+            A list of dataset names (annotation file names).
+        """
         output_dir = self.config.output_dir
         return [f for f in os.listdir(output_dir) if f.endswith(".txt")]
 
     def get_dataset_names(self) -> List[str]:
-        """Get a list of dataset names (annotation file names) in the output directory."""
+        """Get a list of dataset names (annotation file names) in the output
+        directory.
+        
+        Returns:
+            A list of dataset names (annotation file names).
+        """
         return self.get_datasets()
 
     def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
@@ -134,6 +154,11 @@ class PigeonAnnotator(BaseAnnotator):
         return self.get_dataset(dataset_name)
 
     def get_unlabeled_data(self, **kwargs: Any) -> Any:
+        """Get the unlabeled examples from a dataset (annotation file).
+
+        Raises:
+            NotImplementedError: Pigeon annotator does not support retrieving unlabeled data.
+        """
         raise NotImplementedError(
             "Pigeon annotator does not support retrieving unlabeled data."
         )

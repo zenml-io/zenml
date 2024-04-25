@@ -30,9 +30,11 @@ class PigeonAnnotatorConfig(BaseAnnotatorConfig):
 
     Attributes:
         annotations_path: Path where the annotations will be stored.
+        notebook_only: Whether the annotator only works within a notebook.
     """
 
     annotations_path: str = "annotations"
+    notebook_only: bool = True
 
 
 class PigeonAnnotatorFlavor(BaseAnnotatorFlavor):
