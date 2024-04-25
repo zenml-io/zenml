@@ -42,7 +42,6 @@ class PigeonAnnotatorConfig(  # type: ignore[misc] # https://github.com/pydantic
     """
 
     output_dir: str = "annotations"
-    notebook_only: bool = True
 
 
 class PigeonAnnotatorFlavor(BaseAnnotatorFlavor):

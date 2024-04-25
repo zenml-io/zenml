@@ -24,8 +24,8 @@ import os
 from datetime import datetime
 from typing import Any, List, Optional, Tuple, cast
 
-import ipywidgets as widgets
-from IPython.display import clear_output, display
+import ipywidgets as widgets  # type: ignore
+from IPython.display import clear_output, display  # type: ignore
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.integrations.pigeon.flavors.pigeon_annotator_flavor import (
@@ -122,7 +122,7 @@ class PigeonAnnotator(BaseAnnotator):
         current_index = 0
         out = widgets.Output()
 
-        def show_next():
+        def show_next() -> None:
             nonlocal current_index
             if current_index >= len(examples):
                 with out:
@@ -136,7 +136,7 @@ class PigeonAnnotator(BaseAnnotator):
                 else:
                     display(examples[current_index])
 
-        def add_annotation(btn):
+        def add_annotation(btn: widgets.Button) -> None:
             """Add an annotation to the list of annotations.
 
             Args:
@@ -148,7 +148,7 @@ class PigeonAnnotator(BaseAnnotator):
             current_index += 1
             show_next()
 
-        def submit_annotations(btn):
+        def submit_annotations(btn: widgets.Button) -> None:
             """Submit all annotations and save them to a file.
 
             Args:
@@ -181,13 +181,26 @@ class PigeonAnnotator(BaseAnnotator):
 
         return annotations
 
-    def launch(
+    def launch(self, url: Optional[str] = None) -> None:
+        """Launch the Pigeon annotator in the Jupyter notebook.
+
+        Args:
+            url: Optional URL to launch the annotator with.
+
+        Raises:
+            NotImplementedError: Pigeon annotator does not support launching with a URL.
+        """
+        raise NotImplementedError(
+            "Pigeon annotator does not support launching with a URL."
+        )
+
+    def annotate(
         self,
         data: List[Any],
         options: List[str],
         display_fn: Optional[Any] = None,
     ) -> List[Tuple[Any, Any]]:
-        """Launch the Pigeon annotator in the Jupyter notebook.
+        """Annotate with the Pigeon annotator in the Jupyter notebook.
 
         Args:
             data: List of examples to annotate.
@@ -223,39 +236,60 @@ class PigeonAnnotator(BaseAnnotator):
             "Pigeon annotator does not support adding datasets."
         )
 
-    def delete_dataset(self, dataset_name: str) -> None:
+    def delete_dataset(self, **kwargs: Any) -> None:
         """Delete a dataset (annotation file).
 
+        Takes the `dataset_name` argument from the kwargs.
+
         Args:
-            dataset_name: Name of the dataset (annotation file) to delete.
+            **kwargs: Keyword arguments containing the `dataset_name` to delete.
         """
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError(
+                "Dataset name (`dataset_name`) is required to delete a dataset."
+            )
         dataset_path = os.path.join(self.config.output_dir, dataset_name)
         os.remove(dataset_path)
 
-    def get_dataset(self, dataset_name: str) -> List[Tuple[Any, Any]]:
+    def get_dataset(self, **kwargs: Any) -> List[Tuple[Any, Any]]:
         """Get the annotated examples from a dataset (annotation file).
 
+        Takes the `dataset_name` argument from the kwargs.
+
         Args:
-            dataset_name: Name of the dataset (annotation file).
+            **kwargs: Keyword arguments containing the `dataset_name` to retrieve.
 
         Returns:
             A list of tuples containing (example, label) for each annotated example.
         """
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError(
+                "Dataset name (`dataset_name`) is required to retrieve a dataset."
+            )
         dataset_path = os.path.join(self.config.output_dir, dataset_name)
         with open(dataset_path, "r") as f:
             annotations = json.load(f)
-        return annotations
+        return cast(List[Tuple[Any, Any]], annotations)
 
-    def get_labeled_data(self, dataset_name: str) -> List[Tuple[Any, Any]]:
+    def get_labeled_data(self, **kwargs: Any) -> List[Tuple[Any, Any]]:
         """Get the labeled examples from a dataset (annotation file).
 
+        Takes the `dataset_name` argument from the kwargs.
+
         Args:
-            dataset_name: Name of the dataset (annotation file).
+            **kwargs: Keyword arguments containing the `dataset_name` to retrieve.
 
         Returns:
             A list of tuples containing (example, label) for each labeled example.
         """
-        return self.get_dataset(dataset_name)
+        if dataset_name := kwargs.get("dataset_name"):
+            return self.get_dataset(dataset_name=dataset_name)
+        else:
+            raise ValueError(
+                "Dataset name (`dataset_name`) is required to retrieve labeled data."
+            )
 
     def get_unlabeled_data(self, **kwargs: Any) -> Any:
         """Get the unlabeled examples from a dataset (annotation file).
