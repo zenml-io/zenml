@@ -1596,6 +1596,7 @@ class SqlZenStore(BaseZenStore):
                 # The server can only be activated once
                 raise IllegalOperationError("The server is already active.")
 
+            settings.update(request)
             settings.active = True
             session.add(settings)
             session.commit()

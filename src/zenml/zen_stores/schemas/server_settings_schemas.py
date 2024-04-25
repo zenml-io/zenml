@@ -60,7 +60,7 @@ class ServerSettingsSchema(SQLModel, table=True):
             if field == "onboarding_state":
                 if value:
                     self.onboarding_state = json.dumps(value)
-            else:
+            elif hasattr(self, field):
                 setattr(self, field, value)
 
         self.updated = datetime.utcnow()
