@@ -19,28 +19,22 @@ from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
     BaseAnnotatorFlavor,
 )
-from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
-from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
-    from zenml.integrations.label_studio.annotators import LabelStudioAnnotator
+    from zenml.integrations.pigeon.annotators import PigeonAnnotator
 
 
-class LabelStudioAnnotatorConfig(
-    BaseAnnotatorConfig, AuthenticationConfigMixin
-):
+class PigeonAnnotatorConfig(BaseAnnotatorConfig):
     """Config for the Pigeon annotator.
 
     Attributes:
-        instance_url: URL of the Pigeon instance.
-        port: The port to use for the annotation interface.
+        annotations_path: Path where the annotations will be stored.
     """
 
-    instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
-    port: int = DEFAULT_LOCAL_LABEL_STUDIO_PORT
+    annotations_path: str = "annotations"
 
 
-class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
+class PigeonAnnotatorFlavor(BaseAnnotatorFlavor):
     """Pigeon annotator flavor."""
 
     @property
@@ -50,7 +44,7 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         Returns:
             The name of the flavor.
         """
-        return LABEL_STUDIO_ANNOTATOR_FLAVOR
+        return "pigeon"
 
     @property
     def docs_url(self) -> Optional[str]:
@@ -77,26 +71,24 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/label_studio.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/pigeon.png"
 
     @property
-    def config_class(self) -> Type[LabelStudioAnnotatorConfig]:
-        """Returns `LabelStudioAnnotatorConfig` config class.
+    def config_class(self) -> Type[PigeonAnnotatorConfig]:
+        """Returns `PigeonAnnotatorConfig` config class.
 
         Returns:
-                The config class.
+            The config class.
         """
-        return LabelStudioAnnotatorConfig
+        return PigeonAnnotatorConfig
 
     @property
-    def implementation_class(self) -> Type["LabelStudioAnnotator"]:
+    def implementation_class(self) -> Type["PigeonAnnotator"]:
         """Implementation class for this flavor.
 
         Returns:
             The implementation class.
         """
-        from zenml.integrations.label_studio.annotators import (
-            LabelStudioAnnotator,
-        )
+        from zenml.integrations.pigeon.annotators import PigeonAnnotator
 
-        return LabelStudioAnnotator
+        return PigeonAnnotator
