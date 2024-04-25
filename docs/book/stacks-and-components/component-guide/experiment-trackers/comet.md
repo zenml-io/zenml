@@ -125,7 +125,7 @@ tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
 print(tracking_url)
 ```
 
-Alternatively, you can see an overview of all experiments at https://www.comet.com/{WORKSPACE_NAME}/{PROJECT_NAME}/experiments/.
+Alternatively, you can see an overview of all experiments at `https://www.comet.com/{WORKSPACE_NAME}/{PROJECT_NAME}/experiments/`.
 
 {% hint style="info" %}
 The naming convention of each Comet experiment is `{pipeline_run_name}_{step_name}` (e.g., `comet_example_pipeline-25_Apr_22-20_06_33_535737_my_step`), and each experiment will be tagged with both `pipeline_name` and `pipeline_run_name`, which you can use to group and filter experiments.
