@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Pigeon annotator.
 
-Credit for the implementation of this code to @agermanidis in the pigeon package
-and library. This code has been slightly modified to fit the ZenML framework.
+Credit for the implementation of this code to @agermanidis in the
+Pigeon package and library. This code has been slightly modified to
+fit the ZenML framework. We use the modified code directly here because
+the original package (and code) is no longer compatible with more recent
+versions of ipywidgets.
 
 https://github.com/agermanidis/pigeon
 """
