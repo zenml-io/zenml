@@ -61,7 +61,7 @@ class PigeonAnnotator(BaseAnnotator):
 
     def get_datasets(self) -> List[str]:
         """Get a list of datasets (annotation files) in the output directory.
-        
+
         Returns:
             A list of dataset names (annotation file names).
         """
@@ -71,7 +71,7 @@ class PigeonAnnotator(BaseAnnotator):
     def get_dataset_names(self) -> List[str]:
         """Get a list of dataset names (annotation file names) in the output
         directory.
-        
+
         Returns:
             A list of dataset names (annotation file names).
         """
