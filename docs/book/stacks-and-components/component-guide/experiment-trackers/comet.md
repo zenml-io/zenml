@@ -65,7 +65,7 @@ zenml secret create comet_secret \
     --workspace=<WORKSPACE> \
     --project_name=<PROJECT_NAME> \
     --api_key=<API_KEY>
-111
+```
 
 Once the secret is created, you can use it to configure the Comet Experiment Tracker:
 
