@@ -260,7 +260,7 @@ class StackFilter(WorkspaceScopedFilter):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList"]]:
         """Get custom filters.
 
         Returns:
