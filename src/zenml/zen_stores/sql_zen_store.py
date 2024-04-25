@@ -7971,9 +7971,10 @@ class SqlZenStore(BaseZenStore):
                 )
                 if admin_accounts_count == 1:
                     raise IllegalOperationError(
-                        "This is the only admin account and cannot be "
-                        "demoted to a regular user account. Please create "
-                        "another admin account before demoting this one."
+                        "There has to be at least one admin account configured "
+                        "on your system at all times. This is the only admin "
+                        "account and therefore it cannot be demoted to a "
+                        "regular user account."
                     )
 
             if (
@@ -8048,10 +8049,9 @@ class SqlZenStore(BaseZenStore):
                 )
                 if admin_accounts_count == 1:
                     raise IllegalOperationError(
-                        "This is the last admin account and cannot be deleted "
-                        "because you would lose admin access to the system. "
-                        "Please create another admin account before deleting "
-                        "this one."
+                        "There has to be at least one admin account configured "
+                        "on your system. This is the only admin account and "
+                        "therefore it cannot be deleted."
                     )
             if self._account_owns_resources(user, session=session):
                 raise IllegalOperationError(
