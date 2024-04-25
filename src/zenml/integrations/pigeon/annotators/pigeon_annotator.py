@@ -107,13 +107,16 @@ class PigeonAnnotator(BaseAnnotator):
         data: List[Any],
         options: List[str],
         display_fn: Optional[Any] = None,
-    ):
+    ) -> List[Tuple[Any, Any]]:
         """Internal method to build an interactive widget for annotating.
 
         Args:
             data: List of examples to annotate.
             options: List of labels to choose from.
             display_fn: Optional function to display examples.
+
+        Returns:
+            A list of tuples containing (example, label) for each annotated example.
         """
         examples = list(data)
         annotations = []
@@ -177,20 +180,26 @@ class PigeonAnnotator(BaseAnnotator):
         display(out)
         show_next()
 
+        return annotations
+
     def launch(
         self,
         data: List[Any],
         options: List[str],
         display_fn: Optional[Any] = None,
-    ) -> None:
+    ) -> List[Tuple[Any, Any]]:
         """Launch the Pigeon annotator in the Jupyter notebook.
 
         Args:
             data: List of examples to annotate.
             options: List of labels to choose from.
             display_fn: Optional function to display examples.
+
+        Returns:
+            A list of tuples containing (example, label) for each annotated example.
         """
-        self._annotate(data, options, display_fn)
+        annotations = self._annotate(data, options, display_fn)
+        return annotations
 
     def _save_annotations(self, annotations: List[Tuple[Any, Any]]) -> None:
         """Save annotations to a file with a unique date-time suffix.
