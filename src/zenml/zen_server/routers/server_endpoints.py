@@ -20,6 +20,7 @@ from fastapi import APIRouter, Security
 import zenml
 from zenml.constants import ACTIVATE, API, INFO, SERVER_SETTINGS, VERSION_1
 from zenml.enums import AuthScheme
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ServerActivationRequest,
     ServerModel,
@@ -28,7 +29,7 @@ from zenml.models import (
     UserResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.exceptions import IllegalOperationError, error_response
+from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import handle_exceptions, server_config, zen_store
 
 router = APIRouter(
