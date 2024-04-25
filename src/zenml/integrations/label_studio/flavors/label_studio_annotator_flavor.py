@@ -46,12 +46,17 @@ class LabelStudioAnnotatorSettings(BaseSettings):
     api_key: Optional[str] = SecretField()
 
 
-class LabelStudioAnnotatorConfig(
+class LabelStudioAnnotatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseAnnotatorConfig,
     LabelStudioAnnotatorSettings,
     AuthenticationConfigMixin,
 ):
-    """Config for the Label Studio annotator."""
+    """Config for the Label Studio annotator.
+
+    This class combines settings and authentication configurations for
+    Label Studio into a single, usable configuration object without adding
+    additional functionality.
+    """
 
 
 class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
