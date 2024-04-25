@@ -34,7 +34,7 @@ from pydantic import (
     SecretStr,
     ValidationError,
 )
-from pydantic.main import ModelMetaclass
+from pydantic._internal._model_construction import ModelMetaclass
 
 from zenml.client import Client
 from zenml.constants import (
