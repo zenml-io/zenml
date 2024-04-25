@@ -53,9 +53,9 @@ class AWSServerProvider(TerraformServerProvider):
     """AWS ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.AWS
-    CONFIG_TYPE: ClassVar[
-        Type[TerraformServerDeploymentConfig]
-    ] = AWSServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[TerraformServerDeploymentConfig]] = (
+        AWSServerDeploymentConfig
+    )
 
 
 AWSServerProvider.register_as_provider()

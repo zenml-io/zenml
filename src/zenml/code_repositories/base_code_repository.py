@@ -75,10 +75,10 @@ class BaseCodeRepository(ABC):
         Returns:
             The loaded code repository object.
         """
-        class_: Type[
-            BaseCodeRepository
-        ] = source_utils.load_and_validate_class(
-            source=model.source, expected_class=BaseCodeRepository
+        class_: Type[BaseCodeRepository] = (
+            source_utils.load_and_validate_class(
+                source=model.source, expected_class=BaseCodeRepository
+            )
         )
         return class_(id=model.id, config=model.config)
 

@@ -140,9 +140,9 @@ def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
                 value, class_name=inner_class
             )
         elif is_model_class(attribute_class):
-            deserialized_attributes[
-                attribute_name
-            ] = deserialize_kubernetes_model(value, attribute_class)
+            deserialized_attributes[attribute_name] = (
+                deserialize_kubernetes_model(value, attribute_class)
+            )
         else:
             deserialized_attributes[attribute_name] = value
 

@@ -137,11 +137,11 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(
+            back_populates="workspace",
+            sa_relationship_kwargs={"cascade": "delete"},
+        )
     )
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"

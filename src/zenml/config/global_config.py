@@ -474,9 +474,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
 
         for key, value in secrets_store_dict.items():
-            environment_vars[
-                ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()
-            ] = str(value)
+            environment_vars[ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()] = (
+                str(value)
+            )
 
         for key, value in backup_secrets_store_dict.items():
             environment_vars[

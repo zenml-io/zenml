@@ -117,9 +117,9 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     """
 
     name: str
-    type: Optional[
-        SeldonDeploymentPredictiveUnitType
-    ] = SeldonDeploymentPredictiveUnitType.MODEL
+    type: Optional[SeldonDeploymentPredictiveUnitType] = (
+        SeldonDeploymentPredictiveUnitType.MODEL
+    )
     implementation: Optional[str] = None
     modelUri: Optional[str] = None
     parameters: Optional[List[SeldonDeploymentPredictorParameter]] = None
@@ -278,9 +278,9 @@ class SeldonDeployment(BaseModel):
     """
 
     kind: Literal[SELDON_DEPLOYMENT_KIND] = SELDON_DEPLOYMENT_KIND
-    apiVersion: Literal[
+    apiVersion: Literal[SELDON_DEPLOYMENT_API_VERSION] = (
         SELDON_DEPLOYMENT_API_VERSION
-    ] = SELDON_DEPLOYMENT_API_VERSION
+    )
     metadata: SeldonDeploymentMetadata
     spec: SeldonDeploymentSpec
     status: Optional[SeldonDeploymentStatus] = None

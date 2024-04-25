@@ -246,11 +246,11 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(
-        back_populates="artifact_version",
-        sa_relationship_kwargs={"cascade": "delete"},
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(
+            back_populates="artifact_version",
+            sa_relationship_kwargs={"cascade": "delete"},
+        )
     )
 
     @classmethod

@@ -126,9 +126,9 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
 
     config: AzureSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AZURE
-    CONFIG_TYPE: ClassVar[
-        Type[ServiceConnectorSecretsStoreConfiguration]
-    ] = AzureSecretsStoreConfiguration
+    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
+        AzureSecretsStoreConfiguration
+    )
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = AZURE_CONNECTOR_TYPE
     SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = AZURE_RESOURCE_TYPE
 

@@ -45,9 +45,9 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
     """Hugging Face endpoint model deployer."""
 
     NAME: ClassVar[str] = "HuggingFace"
-    FLAVOR: ClassVar[
-        Type[BaseModelDeployerFlavor]
-    ] = HuggingFaceModelDeployerFlavor
+    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = (
+        HuggingFaceModelDeployerFlavor
+    )
 
     @property
     def config(self) -> HuggingFaceModelDeployerConfig:
