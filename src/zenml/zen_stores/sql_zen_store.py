@@ -82,6 +82,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER,
+    FINISHED_ONBOARDING_SURVEY_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -1604,7 +1605,7 @@ class SqlZenStore(BaseZenStore):
         # Update the server settings to reflect the activation
         self.update_server_settings(request)
 
-        if request.admin_username and request.admin_password:
+        if request.admin_username and request.admin_password is not None:
             # Create the default admin user
             return self.create_user(
                 UserRequest(
@@ -1620,6 +1621,7 @@ class SqlZenStore(BaseZenStore):
     def _auto_activate_server(self) -> None:
         """Automatically activate the server if needed."""
         settings = self.get_server_settings()
+
         if settings.active:
             # Activation only happens once
             return
@@ -7992,6 +7994,11 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
+            user_model = existing_user.to_model(include_metadata=True)
+            survey_finished_before = (
+                FINISHED_ONBOARDING_SURVEY_KEY in user_model.user_metadata
+            )
+
             existing_user.update_user(user_update=user_update)
             session.add(existing_user)
             session.commit()
@@ -8000,7 +8007,11 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_user)
             updated_user = existing_user.to_model(include_metadata=True)
 
-            if user_update.user_metadata is not None:
+            survey_finished_after = (
+                FINISHED_ONBOARDING_SURVEY_KEY in updated_user.user_metadata
+            )
+
+            if not survey_finished_before and survey_finished_after:
                 analytics_metadata = {
                     **updated_user.user_metadata,
                     "email": updated_user.email,
