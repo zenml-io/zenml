@@ -45,7 +45,7 @@ class SecretReferenceMixin(BaseModel):
         """
         for key, value in kwargs.items():
             try:
-                field = self.__class__.__fields__[key]
+                field = self.__class__.model_fields[key]
             except KeyError:
                 # Value for a private attribute or non-existing field, this
                 # will fail during the upcoming pydantic validation

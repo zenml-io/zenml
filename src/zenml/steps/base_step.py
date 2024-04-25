@@ -1246,7 +1246,7 @@ To avoid this consider setting step parameters only in one place (config or code
         for (
             name,
             field,
-        ) in self.entrypoint_definition.legacy_params.annotation.__fields__.items():
+        ) in self.entrypoint_definition.legacy_params.annotation.model_fields.items():
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
                 values[name] = self.configuration.parameters[name]
@@ -1254,7 +1254,7 @@ To avoid this consider setting step parameters only in one place (config or code
                 # a value for this parameter has been set in the "new" way
                 # already
                 values[name] = params_defined_in_new_way[name]
-            elif field.required:
+            elif field.is_required():
                 # this field has no default value set and therefore needs
                 # to be passed via an initialized config object
                 missing_keys.append(name)

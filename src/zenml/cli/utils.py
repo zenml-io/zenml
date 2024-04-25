@@ -325,7 +325,7 @@ def print_pydantic_models(
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
             if isinstance(value, BaseIdentifiedResponse):
-                if "name" in value.__fields__:
+                if "name" in value.model_fields:
                     items[k] = str(getattr(value, "name"))
                 else:
                     items[k] = str(value.id)
@@ -335,7 +335,7 @@ def print_pydantic_models(
             elif isinstance(value, list):
                 for v in value:
                     if isinstance(v, BaseIdentifiedResponse):
-                        if "name" in v.__fields__:
+                        if "name" in v.model_fields:
                             items.setdefault(k, []).append(
                                 str(getattr(v, "name"))
                             )
@@ -425,7 +425,7 @@ def print_pydantic_model(
         if isinstance(model, BaseIdentifiedResponse):
             include_columns = ["id"]
 
-            if "name" in model.__fields__:
+            if "name" in model.model_fields:
                 include_columns.append("name")
 
             include_columns.extend(
@@ -457,7 +457,7 @@ def print_pydantic_model(
     for k in include_columns:
         value = getattr(model, k)
         if isinstance(value, BaseIdentifiedResponse):
-            if "name" in value.__fields__:
+            if "name" in value.model_fields:
                 items[k] = str(getattr(value, "name"))
             else:
                 items[k] = str(value.id)
@@ -467,7 +467,7 @@ def print_pydantic_model(
         elif isinstance(value, list):
             for v in value:
                 if isinstance(v, BaseIdentifiedResponse):
-                    if "name" in v.__fields__:
+                    if "name" in v.model_fields:
                         items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:
                         items.setdefault(k, []).append(str(v.id))

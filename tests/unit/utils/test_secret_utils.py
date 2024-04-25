@@ -67,6 +67,6 @@ def test_secret_field_detection():
         secret: str = secret_utils.SecretField()
 
     assert (
-        secret_utils.is_secret_field(Model.__fields__["non_secret"]) is False
+        secret_utils.is_secret_field(Model.model_fields["non_secret"]) is False
     )
-    assert secret_utils.is_secret_field(Model.__fields__["secret"]) is True
+    assert secret_utils.is_secret_field(Model.model_fields["secret"]) is True

@@ -444,7 +444,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         environment_vars = {}
 
-        for key in self.__fields__.keys():
+        for key in self.model_fields.keys():
             if key == "store":
                 # The store configuration uses its own environment variable
                 # naming scheme
