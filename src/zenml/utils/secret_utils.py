@@ -95,7 +95,7 @@ def SecretField(*args: Any, **kwargs: Any) -> Any:
         Pydantic field info.
     """
     kwargs[PYDANTIC_SENSITIVE_FIELD_MARKER] = True
-    return Field(*args, **kwargs)
+    return Field(*args, **kwargs)  # type: ignore[pydantic-field]
 
 
 def ClearTextField(*args: Any, **kwargs: Any) -> Any:
@@ -111,7 +111,7 @@ def ClearTextField(*args: Any, **kwargs: Any) -> Any:
         Pydantic field info.
     """
     kwargs[PYDANTIC_CLEAR_TEXT_FIELD_MARKER] = True
-    return Field(*args, **kwargs)
+    return Field(*args, **kwargs)  # type: ignore[pydantic-field]
 
 
 def is_secret_field(field: "FieldInfo") -> bool:
@@ -120,18 +120,29 @@ def is_secret_field(field: "FieldInfo") -> bool:
     Args:
         field: The field to check.
 
+    Raises:
+        ValueError: if the extras for the field are set incorrectly.
+
     Returns:
         `True` if the field contains sensitive information, `False` otherwise.
     """
-    if field.json_schema_extra:
-        if marker := field.json_schema_extra.get(
-            PYDANTIC_SENSITIVE_FIELD_MARKER
-        ):
-            assert isinstance(marker, bool), (
-                f"The parameter `{PYDANTIC_SENSITIVE_FIELD_MARKER}` in the "
-                f"field definition can only be a boolean value."
+    if field.json_schema_extra is not None:
+        if isinstance(field.json_schema_extra, dict):
+            if marker := field.json_schema_extra.get(
+                PYDANTIC_SENSITIVE_FIELD_MARKER
+            ):
+                assert isinstance(marker, bool), (
+                    f"The parameter `{PYDANTIC_SENSITIVE_FIELD_MARKER}` in the "
+                    f"field definition can only be a boolean value."
+                )
+                return marker
+
+        else:
+            raise ValueError(
+                f"Please make sure that the extras are set correctly "
+                f"for field: {field.title}"
             )
-            return marker
+
     return False
 
 
@@ -141,16 +152,27 @@ def is_clear_text_field(field: "FieldInfo") -> bool:
     Args:
         field: The field to check.
 
+    Raises:
+        ValueError: if the extras for the field are set incorrectly.
+
     Returns:
         `True` if the field prevents secret references, `False` otherwise.
     """
-    if field.json_schema_extra:
-        if marker := field.json_schema_extra.get(
-            PYDANTIC_CLEAR_TEXT_FIELD_MARKER
-        ):
-            assert isinstance(marker, bool), (
-                f"The parameter `{PYDANTIC_CLEAR_TEXT_FIELD_MARKER}` in the "
-                f"field definition can only be a boolean value."
+    if field.json_schema_extra is not None:
+        if isinstance(field.json_schema_extra, dict):
+            if marker := field.json_schema_extra.get(
+                PYDANTIC_CLEAR_TEXT_FIELD_MARKER
+            ):
+                assert isinstance(marker, bool), (
+                    f"The parameter `{PYDANTIC_CLEAR_TEXT_FIELD_MARKER}` in the "
+                    f"field definition can only be a boolean value."
+                )
+                return marker
+
+        else:
+            raise ValueError(
+                f"Please make sure that the extras are set correctly "
+                f"for field: {field.title}"
             )
-            return marker
+
     return False
