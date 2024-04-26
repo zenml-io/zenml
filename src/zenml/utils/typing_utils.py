@@ -230,3 +230,15 @@ def get_args(tp: Type[Any]) -> Tuple[Any, ...]:
         or getattr(tp, "__args__", ())
         or _generic_get_args(tp)
     )
+
+
+def is_optional(tp: Type[Any]) -> bool:
+    """Checks whether a given annotation is typing.Optional.
+
+    Args:
+        tp: the type to check.
+
+    Returns:
+        boolean indicating if the type is typing.Optional.
+    """
+    return get_origin(tp) is Union and type(None) in get_args(tp)

@@ -27,7 +27,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements, StepRunResponse
-from zenml.utils import secret_utils, settings_utils
+from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -61,7 +61,8 @@ class StackComponentConfig(BaseModel, ABC):
         custom pydantic validation are set as secret references.
 
         Args:
-            warn_about_plain_text_secrets: If true, then warns about using plain-text secrets.
+            warn_about_plain_text_secrets: If true, then warns about using
+                plain-text secrets.
             **kwargs: Arguments to initialize this stack component.
 
         Raises:
@@ -97,9 +98,9 @@ class StackComponentConfig(BaseModel, ABC):
                     )
                 continue
 
-            # TODO: This won't work, fields do not have pre and post validators
-            requires_validation = field.pre_validators or field.post_validators
-            if requires_validation:
+            if pydantic_utils.check_validators(
+                pydantic_class=self.__class__, field_name=key
+            ):
                 raise ValueError(
                     f"Passing the stack component attribute `{key}` as a "
                     "secret reference is not allowed as additional validation "

@@ -13,69 +13,15 @@
 #  permissions and limitations under the License.
 """Secret reference mixin implementation."""
 
-from typing import TYPE_CHECKING, Any, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, Set
 
-from pydantic import (
-    AfterValidator,
-    BaseModel,
-    BeforeValidator,
-    PlainValidator,
-    WrapValidator,
-)
+from pydantic import BaseModel
 
 from zenml.logger import get_logger
 from zenml.utils import secret_utils
+from zenml.utils.pydantic_utils import check_validators
 
 logger = get_logger(__name__)
-
-
-def check_validators(
-    pydantic_class: Type[BaseModel],
-    field_name: Optional[str] = None,
-) -> bool:
-    """Function to check if a Pydantic model or a pydantic field has validators.
-
-    Args:
-        pydantic_class: The class defining the pydantic model.
-        field_name: Optional, field info. If specified, this function will focus
-            on a singular field within the class. If not specified, it will
-            check model validators.
-
-    Returns:
-        boolean, indicating whether the specified field or class has a validator
-    """
-    # If field is not specified check model validators
-    if field_name is None:
-        if pydantic_class.__pydantic_decorators__.model_validators:
-            return True
-
-    # Else, check field validators
-    else:
-        # 1. Field validators can be defined through @field_validator decorators
-        f_validators = pydantic_class.__pydantic_decorators__.field_validators
-
-        for name, f_v in f_validators.items():
-            if field_name in f_v.info.fields:
-                return True
-
-        # 2. Field validators can be defined through the Annotation[.....]
-        field_info = pydantic_class.model_fields[field_name]
-        if metadata := field_info.metadata:
-            if any(
-                isinstance(
-                    m,
-                    (
-                        AfterValidator,
-                        BeforeValidator,
-                        PlainValidator,
-                        WrapValidator,
-                    ),
-                )
-                for m in metadata
-            ):
-                return True
-
-    return False
 
 
 class SecretReferenceMixin(BaseModel):

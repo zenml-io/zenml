@@ -19,7 +19,14 @@ from json.decoder import JSONDecodeError
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 import yaml
-from pydantic import BaseModel, ValidationInfo
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    PlainValidator,
+    ValidationInfo,
+    WrapValidator,
+)
 
 # TODO: Investigate if we can solve this import a different way.
 from pydantic.deprecated.decorator import ValidatedFunction
@@ -27,7 +34,7 @@ from pydantic.json import pydantic_encoder
 from pydantic.v1.utils import sequence_like
 
 from zenml.logger import get_logger
-from zenml.utils import dict_utils, yaml_utils
+from zenml.utils import dict_utils, typing_utils, yaml_utils
 
 logger = get_logger(__name__)
 
@@ -100,7 +107,7 @@ class TemplateGenerator:
                 self.instance_or_class
             )
 
-        # Convert to json in an intermediate step so we can leverage Pydantic's
+        # Convert to json in an intermediate step, so we can leverage Pydantic's
         # encoder to support types like UUID and datetime
         json_string = json.dumps(template, default=pydantic_encoder)
         return cast(Dict[str, Any], json.loads(json_string))
@@ -137,18 +144,24 @@ class TemplateGenerator:
         template: Dict[str, Any] = {}
 
         for name, field in model_class.model_fields.items():
-            if self._is_model_class(field.outer_type_):
-                template[name] = self._generate_template_for_model_class(
-                    field.outer_type_
-                )
-            elif field.outer_type_ is Optional and self._is_model_class(
-                field.type_
-            ):
-                template[name] = self._generate_template_for_model_class(
-                    field.type_
-                )
-            else:
-                template[name] = field._type_display()
+            annotation = field.annotation
+
+            if annotation is not None:
+                if self._is_model_class(annotation):
+                    template[name] = self._generate_template_for_model_class(
+                        annotation
+                    )
+
+                elif typing_utils.is_optional(
+                    annotation
+                ) and self._is_model_class(
+                    typing_utils.get_args(annotation)[0]
+                ):
+                    template[name] = self._generate_template_for_model_class(
+                        typing_utils.get_args(annotation)[0]
+                    )
+                else:
+                    template[name] = str(annotation)
 
         return template
 
@@ -428,3 +441,52 @@ def before_validator_handler(
         return method(cls=cls, data=data)
 
     return before_validator
+
+
+def check_validators(
+    pydantic_class: Type[BaseModel],
+    field_name: Optional[str] = None,
+) -> bool:
+    """Function to check if a Pydantic model or a pydantic field has validators.
+
+    Args:
+        pydantic_class: The class defining the pydantic model.
+        field_name: Optional, field info. If specified, this function will focus
+            on a singular field within the class. If not specified, it will
+            check model validators.
+
+    Returns:
+        boolean, indicating whether the specified field or class has a validator
+    """
+    # If field is not specified check model validators
+    if field_name is None:
+        if pydantic_class.__pydantic_decorators__.model_validators:
+            return True
+
+    # Else, check field validators
+    else:
+        # 1. Field validators can be defined through @field_validator decorators
+        f_validators = pydantic_class.__pydantic_decorators__.field_validators
+
+        for name, f_v in f_validators.items():
+            if field_name in f_v.info.fields:
+                return True
+
+        # 2. Field validators can be defined through the Annotation[.....]
+        field_info = pydantic_class.model_fields[field_name]
+        if metadata := field_info.metadata:
+            if any(
+                isinstance(
+                    m,
+                    (
+                        AfterValidator,
+                        BeforeValidator,
+                        PlainValidator,
+                        WrapValidator,
+                    ),
+                )
+                for m in metadata
+            ):
+                return True
+
+    return False
