@@ -100,14 +100,18 @@ class BaseZenStore(
         if data["config"].type == StoreType.SQL:
             from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
-            data["config"] = SqlZenStoreConfiguration(**data["config"].dict())
+            data["config"] = SqlZenStoreConfiguration(
+                **data["config"].model_dump()
+            )
 
         elif data["config"].type == StoreType.REST:
             from zenml.zen_stores.rest_zen_store import (
                 RestZenStoreConfiguration,
             )
 
-            data["config"] = RestZenStoreConfiguration(**data["config"].dict())
+            data["config"] = RestZenStoreConfiguration(
+                **data["config"].model_dump()
+            )
         else:
             raise ValueError(
                 f"Unknown type '{data['config'].type}' for the configuration."

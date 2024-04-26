@@ -6110,7 +6110,9 @@ class SqlZenStore(BaseZenStore):
 
     def verify_service_connector_config(
         self,
-        service_connector: ServiceConnectorRequest,
+        service_connector: Union[
+            ServiceConnectorRequest, ServiceConnectorUpdate
+        ],
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
@@ -6350,7 +6352,11 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
         """
         with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists(stack=stack, session=session)
+            self._fail_if_stack_with_name_exists(
+                stack_name=stack.name,
+                workspace_id=stack.workspace,
+                session=session,
+            )
 
             # Get the Schemas of all components mentioned
             component_ids = (
@@ -6472,7 +6478,8 @@ class SqlZenStore(BaseZenStore):
             if stack_update.name:
                 if existing_stack.name != stack_update.name:
                     self._fail_if_stack_with_name_exists(
-                        stack=stack_update,
+                        stack_name=stack_update.name,
+                        workspace_id=existing_stack.workspace.id,
                         session=session,
                     )
 
@@ -6541,14 +6548,16 @@ class SqlZenStore(BaseZenStore):
 
     def _fail_if_stack_with_name_exists(
         self,
-        stack: StackRequest,
+        stack_name: str,
+        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a stack with same name exists.
 
         Args:
-            stack: The Stack
-            session: The Session
+            stack_name: The name of the stack
+            workspace_id: The ID of the workspace
+            session: The session
 
         Returns:
             None
@@ -6558,16 +6567,16 @@ class SqlZenStore(BaseZenStore):
         """
         existing_domain_stack = session.exec(
             select(StackSchema)
-            .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == stack.workspace)
+            .where(StackSchema.name == stack_name)
+            .where(StackSchema.workspace_id == workspace_id)
         ).first()
         if existing_domain_stack is not None:
             workspace = self._get_workspace_schema(
-                workspace_name_or_id=stack.workspace, session=session
+                workspace_name_or_id=workspace_id, session=session
             )
             raise StackExistsError(
                 f"Unable to register stack with name "
-                f"'{stack.name}': Found an existing stack with the same "
+                f"'{stack_name}': Found an existing stack with the same "
                 f"name in the active workspace, '{workspace.name}'."
             )
         return None

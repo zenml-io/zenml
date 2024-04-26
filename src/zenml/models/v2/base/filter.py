@@ -424,7 +424,7 @@ class BaseFilter(BaseModel):
     def generate_rbac_filter(
         self,
         table: Type["AnySchema"],
-    ) -> Optional["BooleanClauseList"]:
+    ) -> Optional["ColumnElement[bool]"]:
         """Generates an optional RBAC filter.
 
         Args:

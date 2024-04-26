@@ -26,7 +26,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from zenml.config.source import Source, convert_source_validator
+from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
@@ -80,10 +80,10 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     uri: str = Field(
         title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
-    materializer: Source = Field(
+    materializer: SourceWithValidator = Field(
         title="Materializer class to use for this artifact.",
     )
-    data_type: Source = Field(
+    data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
     tags: Optional[List[str]] = Field(
@@ -116,8 +116,6 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         )
         return v
 
-    _convert_source = convert_source_validator("materializer", "data_type")
-
 
 # ------------------ Update Model ------------------
 
@@ -144,10 +142,10 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
     type: ArtifactType = Field(title="Type of the artifact.")
-    materializer: Source = Field(
+    materializer: SourceWithValidator = Field(
         title="Materializer class to use for this artifact.",
     )
-    data_type: Source = Field(
+    data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
     tags: List[TagResponse] = Field(
@@ -177,8 +175,6 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
             f"exceed {STR_FIELD_MAX_LENGTH}"
         )
         return v
-
-    _convert_source = convert_source_validator("materializer", "data_type")
 
 
 class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):

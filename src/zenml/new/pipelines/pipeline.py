@@ -730,7 +730,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 build=build_id,
                 schedule=schedule_id,
                 code_reference=code_reference,
-                **deployment.dict(),
+                **deployment.model_dump(),
             )
             deployment_model = Client().zen_store.create_deployment(
                 deployment=deployment_request

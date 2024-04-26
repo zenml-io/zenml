@@ -82,7 +82,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             )
 
             data["config"] = SqlSecretsStoreConfiguration(
-                **data["config"].dict()
+                **data["config"].model_dump()
             )
 
         elif data["config"].type == SecretsStoreType.GCP:
@@ -91,7 +91,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             )
 
             data["config"] = GCPSecretsStoreConfiguration(
-                **data["config"].dict()
+                **data["config"].model_dump()
             )
 
         elif data["config"].type == SecretsStoreType.AWS:
@@ -100,7 +100,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             )
 
             data["config"] = AWSSecretsStoreConfiguration(
-                **data["config"].dict()
+                **data["config"].model_dump()
             )
 
         elif data["config"].type == SecretsStoreType.AZURE:
@@ -109,7 +109,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             )
 
             data["config"] = AzureSecretsStoreConfiguration(
-                **data["config"].dict()
+                **data["config"].model_dump()
             )
 
         elif data["config"].type == SecretsStoreType.HASHICORP:
@@ -118,7 +118,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             )
 
             data["config"] = HashiCorpVaultSecretsStoreConfiguration(
-                **data["config"].dict()
+                **data["config"].model_dump()
             )
         elif (
             data["config"].type == SecretsStoreType.CUSTOM
