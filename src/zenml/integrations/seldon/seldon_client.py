@@ -30,9 +30,6 @@ logger = get_logger(__name__)
 
 api = k8s_client.ApiClient()
 
-SELDON_DEPLOYMENT_KIND = "SeldonDeployment"
-SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
-
 
 class SeldonDeploymentPredictorParameter(BaseModel):
     """Parameter for Seldon Deployment predictor.
@@ -277,9 +274,9 @@ class SeldonDeployment(BaseModel):
         status: Seldon Deployment status.
     """
 
-    kind: Literal[SELDON_DEPLOYMENT_KIND] = SELDON_DEPLOYMENT_KIND
-    apiVersion: Literal[SELDON_DEPLOYMENT_API_VERSION] = (
-        SELDON_DEPLOYMENT_API_VERSION
+    kind: Literal["SeldonDeployment"] = "SeldonDeployment"
+    apiVersion: Literal["machinelearning.seldon.io/v1"] = (
+        "machinelearning.seldon.io/v1"
     )
     metadata: SeldonDeploymentMetadata
     spec: SeldonDeploymentSpec
