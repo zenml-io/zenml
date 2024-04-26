@@ -595,12 +595,29 @@ class BaseFilter(BaseModel):
 
         Returns:
             True if the field is a datetime field, False otherwise.
+
+        Raises:
+            KeyError, if the key does not exist in model fields.
+            ValueError, if the pydantic field info does not have an annotation.
         """
         try:
-            return (
-                issubclass(datetime, get_args(cls.model_fields[k].annotation))
-                or cls.model_fields[k].annotation is datetime
-            )
+            if k not in cls.model_fields:
+                raise KeyError(
+                    f"The model {cls.__name__} does not have a field: {k}"
+                )
+
+            field_annotation = cls.model_fields[k].annotation
+
+            if field_annotation is not None:
+                return (
+                    issubclass(datetime, get_args(field_annotation))
+                    or cls.model_fields[k].annotation is datetime
+                )
+            else:
+                raise ValueError(
+                    f"The field {k} inside the model {cls.__name__} does not "
+                    f"have an annotation."
+                )
         except TypeError:
             return False
 
@@ -613,12 +630,29 @@ class BaseFilter(BaseModel):
 
         Returns:
             True if the field is a UUID field, False otherwise.
+
+        Raises:
+            KeyError, if the key does not exist in model fields.
+            ValueError, if the pydantic field info does not have an annotation.
         """
         try:
-            return (
-                issubclass(UUID, get_args(cls.model_fields[k].annotation))
-                or cls.model_fields[k].annotation is UUID
-            )
+            if k not in cls.model_fields:
+                raise KeyError(
+                    f"The model {cls.__name__} does not have a field: {k}"
+                )
+
+            field_annotation = cls.model_fields[k].annotation
+
+            if field_annotation is not None:
+                return (
+                    issubclass(UUID, get_args(field_annotation))
+                    or cls.model_fields[k].annotation is UUID
+                )
+            else:
+                raise ValueError(
+                    f"The field {k} inside the model {cls.__name__} does not "
+                    f"have an annotation."
+                )
         except TypeError:
             return False
 
@@ -631,12 +665,29 @@ class BaseFilter(BaseModel):
 
         Returns:
             True if the field is an int field, False otherwise.
+
+        Raises:
+            KeyError, if the key does not exist in model fields.
+            ValueError, if the pydantic field info does not have an annotation.
         """
         try:
-            return (
-                issubclass(int, get_args(cls.model_fields[k].annotation))
-                or cls.model_fields[k].annotation is int
-            )
+            if k not in cls.model_fields:
+                raise KeyError(
+                    f"The model {cls.__name__} does not have a field: {k}"
+                )
+
+            field_annotation = cls.model_fields[k].annotation
+
+            if field_annotation is not None:
+                return (
+                    issubclass(int, get_args(field_annotation))
+                    or cls.model_fields[k].annotation is int
+                )
+            else:
+                raise ValueError(
+                    f"The field {k} inside the model {cls.__name__} does not "
+                    f"have an annotation."
+                )
         except TypeError:
             return False
 
@@ -649,12 +700,29 @@ class BaseFilter(BaseModel):
 
         Returns:
             True if the field is a bool field, False otherwise.
+
+        Raises:
+            KeyError, if the key does not exist in model fields.
+            ValueError, if the pydantic field info does not have an annotation.
         """
         try:
-            return (
-                issubclass(bool, get_args(cls.model_fields[k].annotation))
-                or cls.model_fields[k].annotation is bool
-            )
+            if k not in cls.model_fields:
+                raise KeyError(
+                    f"The model {cls.__name__} does not have a field: {k}"
+                )
+
+            field_annotation = cls.model_fields[k].annotation
+
+            if field_annotation is not None:
+                return (
+                    issubclass(bool, get_args(field_annotation))
+                    or cls.model_fields[k].annotation is bool
+                )
+            else:
+                raise ValueError(
+                    f"The field {k} inside the model {cls.__name__} does not "
+                    f"have an annotation."
+                )
         except TypeError:
             return False
 
@@ -667,12 +735,29 @@ class BaseFilter(BaseModel):
 
         Returns:
             True if the field is a string field, False otherwise.
+
+        Raises:
+            KeyError, if the key does not exist in model fields.
+            ValueError, if the pydantic field info does not have an annotation.
         """
         try:
-            return (
-                issubclass(str, get_args(cls.model_fields[k].annotation))
-                or cls.model_fields[k].annotation is str
-            )
+            if k not in cls.model_fields:
+                raise KeyError(
+                    f"The model {cls.__name__} does not have a field: {k}"
+                )
+
+            field_annotation = cls.model_fields[k].annotation
+
+            if field_annotation is not None:
+                return (
+                    issubclass(str, get_args(field_annotation))
+                    or cls.model_fields[k].annotation is str
+                )
+            else:
+                raise ValueError(
+                    f"The field {k} inside the model {cls.__name__} does not "
+                    f"have an annotation."
+                )
         except TypeError:
             return False
 
@@ -685,12 +770,29 @@ class BaseFilter(BaseModel):
 
         Returns:
             True if the field is a sort by field, False otherwise.
+
+        Raises:
+            KeyError, if the key does not exist in model fields.
+            ValueError, if the pydantic field info does not have an annotation.
         """
         try:
-            return (
-                issubclass(str, get_args(cls.model_fields[k].annotation))
-                or cls.model_fields[k].annotation is str
-            ) and k == "sort_by"
+            if k not in cls.model_fields:
+                raise KeyError(
+                    f"The model {cls.__name__} does not have a field: {k}"
+                )
+
+            field_annotation = cls.model_fields[k].annotation
+
+            if field_annotation is not None:
+                return (
+                    issubclass(str, get_args(field_annotation))
+                    or cls.model_fields[k].annotation is str
+                ) and k == "sort_by"
+            else:
+                raise ValueError(
+                    f"The field {k} inside the model {cls.__name__} does not "
+                    f"have an annotation."
+                )
         except TypeError:
             return False
 
