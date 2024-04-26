@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Filesync utils for ZenML."""
 
-import json
 import os
 from typing import Any, Optional
 
@@ -137,8 +136,7 @@ class FileSyncModel(BaseModel):
 
     def write_config(self) -> None:
         """Writes the model to the configuration file."""
-        config_dict = json.loads(self.json())
-        yaml_utils.write_yaml(self._config_file, config_dict)
+        yaml_utils.write_yaml(self._config_file, self.model_dump(mode="json"))
         self._config_file_timestamp = os.path.getmtime(self._config_file)
 
     def load_config(self) -> None:

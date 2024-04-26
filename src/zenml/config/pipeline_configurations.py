@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from pydantic import SerializeAsAny, field_validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
-from zenml.config.source import Source, convert_source_validator
+from zenml.config.source import SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model import Model
 
@@ -39,14 +39,10 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_step_logs: Optional[bool] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[Source] = None
-    success_hook_source: Optional[Source] = None
+    failure_hook_source: Optional[SourceWithValidator] = None
+    success_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
-
-    _convert_source = convert_source_validator(
-        "failure_hook_source", "success_hook_source"
-    )
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):

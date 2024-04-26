@@ -241,4 +241,4 @@ def is_optional(tp: Type[Any]) -> bool:
     Returns:
         boolean indicating if the type is typing.Optional.
     """
-    return get_origin(tp) is Union and type(None) in get_args(tp)
+    return is_union(get_origin(tp)) and type(None) in get_args(tp)

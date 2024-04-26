@@ -266,7 +266,7 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The updated step run schema.
         """
-        for key, value in step_update.dict(
+        for key, value in step_update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
             if key == "status":

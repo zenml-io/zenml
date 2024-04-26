@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML GlobalConfiguration."""
 
-import json
 import os
 import uuid
 from pathlib import Path
@@ -329,7 +328,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             return
 
         config_file = self._config_file
-        yaml_dict = json.loads(self.json(exclude_none=True))
+        yaml_dict = self.model_dump(mode="json", exclude_none=True)
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
@@ -456,7 +455,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     value
                 )
 
-        store_dict = self.store_configuration.dict(exclude_none=True)
+        store_dict = self.store_configuration.model_dump(exclude_none=True)
 
         # The secrets store and backup secrets store configurations use their
         # own environment variables naming scheme

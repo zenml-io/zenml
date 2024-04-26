@@ -90,7 +90,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             config=json.dumps(request.config),
-            source=request.source.json(),
+            source=request.source.model_dump_json(),
             description=request.description,
             logo_url=request.logo_url,
         )

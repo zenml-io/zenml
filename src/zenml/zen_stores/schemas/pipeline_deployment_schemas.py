@@ -178,7 +178,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             schedule_id=request.schedule,
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
-            pipeline_configuration=request.pipeline_configuration.json(),
+            pipeline_configuration=request.pipeline_configuration.model_dump_json(),
             step_configurations=json.dumps(
                 request.step_configurations,
                 sort_keys=False,

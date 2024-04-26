@@ -37,7 +37,7 @@ from zenml.artifacts.external_artifact_config import (
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
-from zenml.config.source import Source, convert_source_validator
+from zenml.config.source import Source, SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
@@ -146,15 +146,12 @@ class StepConfigurationUpdate(StrictBaseModel):
     parameters: Dict[str, Any] = {}
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[Source] = None
-    success_hook_source: Optional[Source] = None
+    failure_hook_source: Optional[SourceWithValidator] = None
+    success_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
-    _convert_source = convert_source_validator(
-        "failure_hook_source", "success_hook_source"
-    )
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "name"
     )
@@ -247,13 +244,11 @@ class InputSpec(StrictBaseModel):
 class StepSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
-    source: Source
+    source: SourceWithValidator
     upstream_steps: List[str]
     inputs: Dict[str, InputSpec] = {}
     # The default value is to ensure compatibility with specs of version <0.2
     pipeline_parameter_name: str = ""
-
-    _convert_source = convert_source_validator("source")
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same step.

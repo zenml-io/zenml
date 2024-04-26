@@ -61,7 +61,7 @@ class PipelineSpec(StrictBaseModel):
         """
         from packaging import version
 
-        dict_ = self.dict()
+        dict_ = self.model_dump()
 
         if self.source:
             dict_["source"] = self.source.import_path

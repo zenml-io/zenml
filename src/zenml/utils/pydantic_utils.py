@@ -67,9 +67,9 @@ def update_model(
         else:
             update_dict = update
     else:
-        update_dict = update.dict(exclude_unset=True)
+        update_dict = update.model_dump(exclude_unset=True)
 
-    original_dict = original.dict(exclude_unset=True)
+    original_dict = original.model_dump(exclude_unset=True)
     if recursive:
         values = dict_utils.recursive_update(original_dict, update_dict)
     else:

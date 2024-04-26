@@ -14,10 +14,10 @@
 """Source classes."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Annotated, Any, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, field_validator
 
 from zenml.logger import get_logger
 
@@ -200,41 +200,19 @@ class CodeRepositorySource(Source):
         return value
 
 
-def convert_source_validator(*attributes: str) -> "AnyClassMethod":
-    """Function to convert pydantic fields containing legacy class paths.
-
-    In older versions, sources (sometimes also called class paths) like
-    `zenml.materializers.BuiltInMaterializer` were stored as strings in our
-    configuration classes. These strings got replaced by a separate class, and
-    this function returns a validator to convert those old strings to the new
-    classes.
+def convert_source(v: Any) -> Any:
+    """Converts an old source string to a source object.
 
     Args:
-        *attributes: List of attributes to convert.
+        v: Source string or object.
 
     Returns:
-        Pydantic validator class method to be used on BaseModel subclasses
-        to convert source fields.
+        The converted source.
     """
+    if isinstance(v, str):
+        v = Source.from_import_path(v)
 
-    @field_validator(*attributes, mode="before")
-    @classmethod
-    def _convert_source(
-        cls: Type[BaseModel],
-        v: Any,
-    ) -> Any:
-        """Converts an old source string to a source object.
+    return v
 
-        Args:
-            cls: The class on which the attributes are defined.
-            v: Source string or object.
 
-        Returns:
-            The converted source.
-        """
-        if isinstance(v, str):
-            v = Source.from_import_path(v)
-
-        return v
-
-    return _convert_source
+SourceWithValidator = Annotated[Source, BeforeValidator(convert_source)]

@@ -279,8 +279,8 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             user_id=artifact_version_request.user,
             type=artifact_version_request.type.value,
             uri=artifact_version_request.uri,
-            materializer=artifact_version_request.materializer.json(),
-            data_type=artifact_version_request.data_type.json(),
+            materializer=artifact_version_request.materializer.model_dump_json(),
+            data_type=artifact_version_request.data_type.model_dump_json(),
         )
 
     def to_model(
