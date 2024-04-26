@@ -231,3 +231,9 @@ class LazyRunMetadataResponse(RunMetadataResponse):
         raise RuntimeError(
             "Cannot access run metadata metadata before pipeline runs."
         )
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Allow extras to include the lazy load attributes
+        extra = "allow"
