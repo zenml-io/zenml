@@ -41,7 +41,7 @@ from zenml.models.v2.base.scoped import (
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
     from sqlmodel import SQLModel
 
     from zenml.models.v2.core.service_connector import (
@@ -374,7 +374,7 @@ class ComponentFilter(WorkspaceScopedFilter):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
+    ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
         Stack components can be scoped by type to narrow the search.
@@ -385,7 +385,7 @@ class ComponentFilter(WorkspaceScopedFilter):
         Returns:
             The filter expression for the query.
         """
-        from sqlalchemy import and_, or_
+        from sqlmodel import and_, or_
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,

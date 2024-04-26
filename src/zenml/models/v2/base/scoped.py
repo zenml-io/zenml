@@ -341,6 +341,6 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
 
         custom_filters = super().get_custom_filters()
         if self.tag:
-            custom_filters.append(col(TagSchema.name) == self.tag)  # type: ignore[arg-type]
+            custom_filters.append(col(TagSchema.name) == self.tag)
 
         return custom_filters

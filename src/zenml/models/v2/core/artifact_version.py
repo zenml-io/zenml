@@ -497,8 +497,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlalchemy import and_
-        from sqlmodel import select
+        from sqlmodel import and_, select
 
         from zenml.zen_stores.schemas.artifact_schemas import (
             ArtifactSchema,

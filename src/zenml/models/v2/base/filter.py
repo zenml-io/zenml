@@ -804,7 +804,7 @@ class BaseFilter(BaseModel):
 
     def generate_filter(
         self, table: Type[SQLModel]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
+    ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
         Args:
@@ -816,8 +816,7 @@ class BaseFilter(BaseModel):
         Raises:
             RuntimeError: If a valid logical operator is not supplied.
         """
-        from sqlalchemy import and_
-        from sqlmodel import or_
+        from sqlmodel import and_, or_
 
         filters = []
         for column_filter in self.list_of_filters:

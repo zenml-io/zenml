@@ -174,7 +174,7 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlalchemy import and_
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas.model_schemas import (
             ModelVersionPipelineRunSchema,

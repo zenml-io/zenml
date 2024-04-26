@@ -479,7 +479,7 @@ class ServiceFilter(WorkspaceScopedFilter):
         Returns:
             The filter expression for the query.
         """
-        from sqlalchemy import and_
+        from sqlmodel import and_
 
         base_filter = super().generate_filter(table)
 
