@@ -232,6 +232,9 @@ class PigeonAnnotator(BaseAnnotator):
     def add_dataset(self, **kwargs: Any) -> Any:
         """Add a dataset (annotation file) to the Pigeon annotator.
 
+        Args:
+            **kwargs: keyword arguments.
+
         Raises:
             NotImplementedError: Pigeon annotator does not support adding datasets.
         """
@@ -246,6 +249,9 @@ class PigeonAnnotator(BaseAnnotator):
 
         Args:
             **kwargs: Keyword arguments containing the `dataset_name` to delete.
+
+        Raises:
+            ValueError: Dataset name is required to delete a dataset.
         """
         dataset_name = kwargs.get("dataset_name")
         if not dataset_name:
@@ -264,7 +270,11 @@ class PigeonAnnotator(BaseAnnotator):
             **kwargs: Keyword arguments containing the `dataset_name` to retrieve.
 
         Returns:
-            A list of tuples containing (example, label) for each annotated example.
+            A list of tuples containing (example, label) for each annotated
+            example.
+
+        Raises:
+            ValueError: Dataset name is required to retrieve a dataset.
         """
         dataset_name = kwargs.get("dataset_name")
         if not dataset_name:
@@ -285,7 +295,11 @@ class PigeonAnnotator(BaseAnnotator):
             **kwargs: Keyword arguments containing the `dataset_name` to retrieve.
 
         Returns:
-            A list of tuples containing (example, label) for each labeled example.
+            A list of tuples containing (example, label) for each labeled
+            example.
+
+        Raises:
+            ValueError: Dataset name is required to retrieve labeled data.
         """
         if dataset_name := kwargs.get("dataset_name"):
             return self.get_dataset(dataset_name=dataset_name)
@@ -296,6 +310,9 @@ class PigeonAnnotator(BaseAnnotator):
 
     def get_unlabeled_data(self, **kwargs: Any) -> Any:
         """Get the unlabeled examples from a dataset (annotation file).
+
+        Args:
+            **kwargs: keyword arguments.
 
         Raises:
             NotImplementedError: Pigeon annotator does not support retrieving unlabeled data.
