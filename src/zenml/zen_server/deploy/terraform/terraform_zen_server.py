@@ -81,8 +81,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     Attributes:
         log_level: The log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
-        username: The username for the default ZenML server account.
-        password: The password for the default ZenML server account.
         helm_chart: The path to the ZenML server helm chart to use for
             deployment.
         zenmlserver_image_repo: The repository to use for the zenml server.
@@ -118,8 +116,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
 
     log_level: str = "ERROR"
 
-    username: str
-    password: str
     helm_chart: str = get_helm_chart_path()
     zenmlserver_image_repo: str = "zenmldocker/zenml-server"
     zenmlserver_image_tag: str = "latest"
