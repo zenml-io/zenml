@@ -566,13 +566,14 @@ class TestAdminUser:
                 user_name=test_user.name, password=self.default_pwd
             ):
                 new_zen_store: RestZenStore = Client().zen_store
-                new_zen_store.update_user(
-                    test_user.id,
-                    UserUpdate(
-                        name=test_user.name,
-                        is_admin=False,
-                    ),
-                )
+                with pytest.raises(IllegalOperationError):
+                    new_zen_store.update_user(
+                        test_user.id,
+                        UserUpdate(
+                            name=test_user.name,
+                            is_admin=False,
+                        ),
+                    )
 
     def test_update_self_via_current_user_endpoint(self):
         """Tests updating self in admin and non-admin setting."""
