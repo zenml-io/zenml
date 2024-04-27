@@ -89,7 +89,6 @@ Next, to customize the Helm chart for your deployment, you should create a copy 
 
 In most cases, you’ll need to change the following configuration values in `custom-values.yaml`:
 
-* the default username and password values
 * the database configuration, if you mean to use an external database:
   * the database URL, formatted as `mysql://<username>:<password>@<hostname>:<port>/<database>`
   * CA and/or client TLS certificates, if you’re using SSL to secure the connection to the database
@@ -110,9 +109,11 @@ helm -n <namespace> --create-namespace install zenml-server . --values custom-va
 
 ### Connect to the deployed ZenML server
 
-The Helm chart should print out a message with the URL of the deployed ZenML server. You can use the URL to open the ZenML UI in your browser. You can also use the URL to connect your local ZenML client to the server.
+Immediately after deployment, the ZenML server needs to be activated before it can be used. The activation process includes creating an initial admin user account and configuring some server settings. You can do this only by visiting the ZenML server URL in your browser and following the on-screen instructions. Connecting your local ZenML client to the server is not possible until the server is properly initialized.
 
-To connect to a ZenML server, you can either pass the configuration as command line arguments or as a YAML file:
+The Helm chart should print out a message with the URL of the deployed ZenML server. You can use the URL to open the ZenML UI in your browser.
+
+To connect your local client to the ZenML server, you can either pass the configuration as command line arguments or as a YAML file:
 
 ```bash
 zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
@@ -141,18 +142,8 @@ Example of a ZenML server YAML configuration file:
 url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml
 verify_ssl: |
   -----BEGIN CERTIFICATE-----
-  MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT
-  MREwDwYDVQQDEwh6ZW5tbC1jYTAeFw0yMjA5MjYxMzI3NDhaFw0yMzA5MjYxMzI3
 ...
-  ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
-  1aZ/0iYnGKCu7rLJzxeguliMf69E
   -----END CERTIFICATE-----
-```
-
-Both options can be combined, in which case the command line arguments will override the values in the YAML file. For example, it is possible to supply the password only as a command line argument:
-
-```bash
-zenml connect --username zenml --password='Pa@#$#word' --config=/path/to/zenml_server_config.yaml
 ```
 
 To disconnect from the current ZenML server and revert to using the local default database, use the following command:
@@ -172,9 +163,6 @@ The example below is a minimal configuration for a ZenML server deployment that 
 ```yaml
 zenml:
 
-  # Use your own password here
-  defaultPassword: password
-
   ingress:
     enabled: false
 ```
@@ -183,7 +171,7 @@ Once deployed, you have to use port-forwarding to access the ZenML server and to
 
 ```bash
 kubectl -n zenml-server port-forward svc/zenml-server 8080:8080
-zenml connect --url=http://localhost:8080 --username=default --password password
+zenml connect --url=http://localhost:8080
 ```
 
 This is just a simple example only fit for testing and evaluation purposes. For production deployments, you should use an external database and an Ingress service with TLS certificates to secure and expose the ZenML server to the internet.
@@ -229,9 +217,6 @@ Finally, you can deploy the ZenML server with the following Helm values:
 ```yaml
 zenml:
 
-  # Use your own password here
-  defaultPassword: password
-
   ingress:
     enabled: true
     annotations:
@@ -262,9 +247,6 @@ You can deploy the ZenML server with the following Helm values:
 ```yaml
 zenml:
 
-  # Use your own password here
-  defaultPassword: password
-
   ingress:
     enabled: true
     annotations:
@@ -285,9 +267,6 @@ To deploy the ZenML server with a dedicated Ingress URL path, you can use the fo
 
 ```yaml
 zenml:
-
-  # Use your own password here
-  defaultPassword: password
 
   ingress:
     enabled: true

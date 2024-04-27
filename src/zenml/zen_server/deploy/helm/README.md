@@ -32,16 +32,6 @@ This chart offers a multitude of configuration options. For detailed
 information, check the default [`values.yaml`](values.yaml) file. For full
 details of the configuration options, refer to the [ZenML documentation](https://docs.zenml.io/deploying-zenml/zenml-self-hosted/deploy-with-helm).
 
-### Basic Options
-
-- `zenml.replicaCount`: Number of ZenML server replicas.
-- `zenml.defaultUsername`: Default username to use for the server.
-- `zenml.defaultPassword`: Default password to use for the server.
-
-### Advanced Options
-
-Refer to the [`values.yaml`](values.yaml) file for a full list of configurable options.
-
 ## Telemetry
 
 The ZenML server collects anonymous usage data to help us improve the product. You can opt out by setting `zenml.analyticsOptIn` to false.

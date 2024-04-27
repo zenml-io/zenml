@@ -12,7 +12,7 @@ with the following properties:
 - Project name: ZenML NLP project
 - Technical Name: nlp_use_case
 - Version: `0.0.1`
-- Licensed with apache to ZenML GmbH<>
+- Licensed with apache to ZenML GmbH<info@zenml.io>
 - Deployment environment: `staging`
 
 Settings of your project are:

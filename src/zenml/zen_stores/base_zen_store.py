@@ -382,6 +382,7 @@ class BaseZenStore(
             secrets_store_type = self.secrets_store.type
         return ServerModel(
             id=GlobalConfiguration().user_id,
+            active=True,
             version=zenml.__version__,
             deployment_type=deployment_type,
             database_type=ServerDatabaseType.OTHER,
@@ -389,6 +390,7 @@ class BaseZenStore(
             secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
             base_url=base_url,
+            analytics_enabled=GlobalConfiguration().analytics_opt_in,
             metadata=metadata,
         )
 
