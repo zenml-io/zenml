@@ -230,7 +230,7 @@ A model's versions can exist in various stages. These are meant to signify their
 {% tabs %}
 {% tab title="Python SDK" %}
 ```python
-from zenml.model import Model
+from zenml import Model
 
 # Get the latest version of a model
 model = Model(
