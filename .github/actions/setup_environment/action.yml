@@ -109,7 +109,7 @@ runs:
       shell: bash
       run: choco install terraform -y
     - name: Install Terraform (Mac)
-      if: ${{ inputs.os == 'macos-13' }}
+      if: ${{ inputs.os == 'macos-13' || inputs.os == 'macos-latest' }}
       shell: bash
       run: |
         brew tap hashicorp/tap
