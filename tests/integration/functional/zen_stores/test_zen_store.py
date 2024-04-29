@@ -938,25 +938,6 @@ def test_updating_user_with_existing_name_fails():
                 )
 
 
-def test_updating_default_user_fails():
-    """Tests that updating the default user is prohibited."""
-    client = Client()
-    default_user = client.zen_store.get_user(DEFAULT_USERNAME)
-    assert default_user
-    user_update = UserUpdate(name="axl")
-    with pytest.raises(IllegalOperationError):
-        client.zen_store.update_user(
-            user_id=default_user.id, user_update=user_update
-        )
-
-
-def test_deleting_default_user_fails():
-    """Tests that deleting the default user is prohibited."""
-    zen_store = Client().zen_store
-    with pytest.raises(IllegalOperationError):
-        zen_store.delete_user("default")
-
-
 def test_create_user_no_password():
     """Tests that creating a user without a password needs to be activated."""
     client = Client()

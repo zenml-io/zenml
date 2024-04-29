@@ -383,6 +383,7 @@ class BaseZenStore(
         use_legacy_dashboard = server_config.use_legacy_dashboard
         return ServerModel(
             id=GlobalConfiguration().user_id,
+            active=True,
             version=zenml.__version__,
             deployment_type=deployment_type,
             database_type=ServerDatabaseType.OTHER,
@@ -390,6 +391,7 @@ class BaseZenStore(
             secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
             base_url=base_url,
+            analytics_enabled=GlobalConfiguration().analytics_opt_in,
             metadata=metadata,
             use_legacy_dashboard=use_legacy_dashboard,
         )

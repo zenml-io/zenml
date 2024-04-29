@@ -210,6 +210,17 @@ class ServerConfiguration(BaseModel):
         use_legacy_dashboard: Whether to use the legacy dashboard. If set to
             `True`, the dashboard will be used with the old UI. If set to
             `False`, the new dashboard will be used.
+        server_name: The name of the ZenML server. Used only during initial
+            deployment. Can be changed later as a part of the server settings.
+        display_announcements: Whether to display announcements about ZenML in
+            the dashboard. Used only during initial deployment. Can be changed
+            later as a part of the server settings.
+        display_updates: Whether to display notifications about ZenML updates in
+            the dashboard. Used only during initial deployment. Can be changed
+            later as a part of the server settings.
+        auto_activate: Whether to automatically activate the server and create a
+            default admin user account with an empty password during the initial
+            deployment.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -279,6 +290,11 @@ class ServerConfiguration(BaseModel):
         DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
     )
     use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
+
+    server_name: Optional[str] = None
+    display_announcements: bool = True
+    display_updates: bool = True
+    auto_activate: bool = False
 
     _deployment_id: Optional[UUID] = None
 

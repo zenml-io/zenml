@@ -26,6 +26,7 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ZEN_SERVER_ENTRYPOINT,
@@ -162,6 +163,7 @@ class LocalZenServer(LocalDaemonService):
         env[ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD] = str(
             self.config.server.use_legacy_dashboard
         )
+        env[ENV_ZENML_SERVER_AUTO_ACTIVATE] = "True"
 
         return cmd, env
 
