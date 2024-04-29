@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 
-# update those variables accordingly, if the new ZenML
-# Dashboard version was released
-RELEASE="###PLACEHOLDER###" # TODO: UPDATE ME BEFORE MERGING
-LEGACY_RELEASE="v0.16.1"
-
 APP_NAME="zenml-dashboard"
 REPO_URL="https://github.com/zenml-io/zenml-dashboard"
 
 : "${INSTALL_PATH:=./src/zenml/zen_server}"
-: "${LEGACY_INSTALL_DIR:=dashboard_legacy}"
 : "${INSTALL_DIR:=dashboard}"
+: "${LEGACY_INSTALL_DIR:=dashboard_legacy}"
 : "${VERIFY_CHECKSUM:=true}"
 # : "${DESIRED_VERSION:=latest}"
 
@@ -42,36 +37,31 @@ checkGitIgnore() {
   fi
 }
 
-# buildTags builds the TAG and LEGACY_TAG, if not already provided 
-# as an environment variable
-buildTags() {
-  if [ -z "$LEGACY_TAG" ]; then
-    local legacy_release_url="$REPO_URL/releases/$LEGACY_RELEASE"
-    if type "curl" > /dev/null; then
-      LEGACY_TAG=$(curl -Ls -o /dev/null -w '%{url_effective}' $legacy_release_url | grep -oE "[^/]+$" )
-    elif type "wget" > /dev/null; then
-      LEGACY_TAG=$(wget $legacy_release_url --server-response -O /dev/null 2>&1 | awk '/^\s*Location: /{DEST=$2} END{ print DEST}' | grep -oE "[^/]+$")
-    fi
+# checkTagProvided checks whether TAG has provided as an environment variable
+# so we can skip checkLatestVersion
+checkTagProvided() {
+  if [ -n "$TAG" ]; then
+    return 0
   fi
+  return 1
+}
 
-  if [ -z "$TAG" ]; then
-    local release_url="$REPO_URL/releases/$RELEASE"
-    if type "curl" > /dev/null; then
-      TAG=$(curl -Ls -o /dev/null -w '%{url_effective}' $release_url | grep -oE "[^/]+$" )
-    elif type "wget" > /dev/null; then
-      TAG=$(wget $release_url --server-response -O /dev/null 2>&1 | awk '/^\s*Location: /{DEST=$2} END{ print DEST}' | grep -oE "[^/]+$")
-    fi
+# checkLatestVersion grabs the latest version string from the releases
+checkLatestVersion() {
+  local latest_release_url="$REPO_URL/releases/latest"
+  if type "curl" > /dev/null; then
+    TAG=$(curl -Ls -o /dev/null -w '%{url_effective}' $latest_release_url | grep -oE "[^/]+$" )
+  elif type "wget" > /dev/null; then
+    TAG=$(wget $latest_release_url --server-response -O /dev/null 2>&1 | awk '/^\s*Location: /{DEST=$2} END{ print DEST}' | grep -oE "[^/]+$")
   fi
-
 }
 
 # downloadFile downloads the latest release archive and checksum
 downloadFile() {
-  local local_tag=$1
-  ZENML_DASHBOARD_ARCHIVE="zenml-dashboard.tar.gz"
-  DOWNLOAD_URL="$REPO_URL/releases/download/$local_tag/$ZENML_DASHBOARD_ARCHIVE"
+  local archive_name=$1
+  DOWNLOAD_URL="$REPO_URL/releases/download/$TAG/$archive_name"
   TMP_ROOT="$(mktemp -dt zenml-dashboard-XXXXXX)"
-  TMP_FILE="$TMP_ROOT/$ZENML_DASHBOARD_ARCHIVE"
+  TMP_FILE="$TMP_ROOT/$archive_name"
   if type "curl" > /dev/null; then
     curl -SsL "$DOWNLOAD_URL" -o "$TMP_FILE"
     curl -SsL "$DOWNLOAD_URL.sha256" -o "$TMP_FILE.sha256"
@@ -84,8 +74,9 @@ downloadFile() {
 # verifyFile verifies the SHA256 checksum of the binary package
 # (depending on settings in environment).
 verifyFile() {
+  local archive_name=$1
   if [ "${VERIFY_CHECKSUM}" == "true" ]; then
-    verifyChecksum
+    verifyChecksum "$archive_name"
   fi
 }
 
@@ -104,13 +95,14 @@ installFile() {
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
 verifyChecksum() {
+  local archive_name=$1
   printf "Verifying checksum... "
   local sum
   local expected_sum
   sum=$(openssl sha1 -sha256 "${TMP_FILE}" | awk '{print $2}')
-  expected_sum=$(grep -i "${ZENML_DASHBOARD_ARCHIVE}" "${TMP_FILE}.sha256" | cut -f 1 -d " ")
+  expected_sum=$(grep -i "${archive_name}" "${TMP_FILE}.sha256" | cut -f 1 -d " ")
   if [ "$sum" != "$expected_sum" ]; then
-    echo "SHA sum of ${ZENML_DASHBOARD_ARCHIVE} does not match. Aborting."
+    echo "SHA sum of ${archive_name} does not match. Aborting."
     exit 1
   fi
   echo "Done."
@@ -170,15 +162,14 @@ set +u
 
 verifySupported
 checkGitIgnore
-buildTags
+checkTagProvided || checkLatestVersion
 if [[ -n "$TAG" ]]; then
-  downloadFile "$TAG"
-  verifyFile
+  downloadFile "zenml-dashboard.tar.gz"
+  verifyFile "zenml-dashboard.tar.gz"
   installFile "$INSTALL_DIR"
-fi
-if [[ -n "$LEGACY_TAG" ]]; then
-  downloadFile "$LEGACY_TAG"
-  verifyFile
+
+  downloadFile "zenml-dashboard-legacy.tar.gz"
+  verifyFile "zenml-dashboard-legacy.tar.gz"
   installFile "$LEGACY_INSTALL_DIR"
 fi
 cleanup
