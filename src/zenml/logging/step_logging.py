@@ -135,11 +135,14 @@ class StepLogsStorage:
 
     def save_to_file(self) -> None:
         """Method to save the buffer to the given URI."""
-        artifact_store = Client().active_stack.artifact_store
         if not self.disabled:
-            try:
-                self.disabled = True
+            # IMPORTANT: keep this as the first code line in this method! The
+            # code that follows might still emit logging messages, which will
+            # end up triggering this method again, causing an infinite loop.
+            self.disabled = True
 
+            artifact_store = Client().active_stack.artifact_store
+            try:
                 if self.buffer:
                     with artifact_store.open(self.logs_uri, "a") as file:
                         for message in self.buffer:
