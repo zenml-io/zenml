@@ -48,8 +48,8 @@ which, when you click on it, will offer you a menu option to "Embed this Space".
 documentation](https://huggingface.co/docs/hub/spaces-embed) for more details on
 this feature.) Copy the "Direct URL" shown in the box that you can now see on
 the screen. This should look something like this:
-`https://<YOUR_USERNAME>-<SPACE_NAME>.hf.space`. Open that URL and use our default 
-login to access the dashboard (username: 'default', password: (leave it empty)).
+`https://<YOUR_USERNAME>-<SPACE_NAME>.hf.space`. Open that URL and follow the instructions to
+initialize your ZenML server and set up an initial admin user account.
 
 ## Connecting to your ZenML Server from your local machine
 

@@ -1,5 +1,5 @@
 steps:  
-  # build base image - python 3.8
+  # build client base image - python 3.8
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
@@ -7,7 +7,7 @@ steps:
         docker build \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.8 \
-          --target base \
+          --target client \
           -f docker/base.Dockerfile . \
           -t $$USERNAME/zenml:$TAG_NAME-py3.8 \
           -t $$USERNAME/zenml:$TAG_NAME
@@ -23,7 +23,7 @@ steps:
     secretEnv:
       - USERNAME
 
-  # build base image - python 3.9
+  # build client base image - python 3.9
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
@@ -31,7 +31,7 @@ steps:
         docker build \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.9 \
-          --target base \
+          --target client \
           -f docker/base.Dockerfile . \
           -t $$USERNAME/zenml:$TAG_NAME-py3.9
 
@@ -45,7 +45,7 @@ steps:
     secretEnv:
       - USERNAME
 
-  # build base image - python 3.10
+  # build client base image - python 3.10
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
@@ -53,7 +53,7 @@ steps:
         docker build \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.10 \
-          --target base \
+          --target client \
           -f docker/base.Dockerfile . \
           -t $$USERNAME/zenml:$TAG_NAME-py3.10
 
@@ -75,7 +75,7 @@ steps:
         docker build \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
-          --target base \
+          --target client \
           -f docker/base.Dockerfile . \
           -t $$USERNAME/zenml:$TAG_NAME-py3.11
 
@@ -89,14 +89,15 @@ steps:
     secretEnv:
       - USERNAME
 
-  # build server image - python 3.8 only
+  # build server image - python 3.11 only
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
       - |
         docker build \
         --build-arg ZENML_VERSION=$TAG_NAME \
-        --build-arg PYTHON_VERSION=3.8 \
+        --build-arg PYTHON_VERSION=3.11 \
+        --target server \
         -f docker/base.Dockerfile . \
         -t $$USERNAME/zenml-server:$TAG_NAME
         

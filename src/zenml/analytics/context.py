@@ -77,7 +77,12 @@ class AnalyticsContext:
         from zenml.config.global_config import GlobalConfiguration
 
         gc = GlobalConfiguration()
-        self.analytics_opt_in = gc.analytics_opt_in
+        store_info = gc.zen_store.get_store_info()
+
+        if self.in_server:
+            self.analytics_opt_in = store_info.analytics_enabled
+        else:
+            self.analytics_opt_in = gc.analytics_opt_in
 
         if not self.analytics_opt_in:
             return self
@@ -114,9 +119,6 @@ class AnalyticsContext:
             else:
                 # If the code is running on the client, attach the client id.
                 self.client_id = gc.user_id
-
-            # Fetch the store information including the `server_id`
-            store_info = gc.zen_store.get_store_info()
 
             self.server_id = store_info.id
             self.deployment_type = store_info.deployment_type

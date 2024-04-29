@@ -58,8 +58,6 @@ spec:
             {{- end }}
             - name: ZENML_DEFAULT_PROJECT_NAME
               value: {{ .Values.zenml.defaultProject | quote }}
-            - name: ZENML_DEFAULT_USER_NAME
-              value: {{ .Values.zenml.defaultUsername | quote }}
             {{- if .Values.zenml.enableImplicitAuthMethods }}
             - name: ZENML_ENABLE_IMPLICIT_AUTH_METHODS
               value: "True"
