@@ -29,8 +29,8 @@ verifySupported() {
 # checkGitIgnore checks if the dashboard directories are ignored by Git
 checkGitIgnore() {
   if [ -f ".gitignore" ]; then
-    if grep -q -E "(^|\/)dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard($|\/)" ".gitignore"; then
-      echo "Error: The '/dashboard' or 'src/zenml/zen_server/dashboard' directory is ignored by Git."
+    if grep -q -E "(^|\/)dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)dashboard-legacy($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard-legacy($|\/)" ".gitignore"; then
+      echo "Error: The '/dashboard', '/dashboard-legacy', 'src/zenml/zen_server/dashboard-legacy' or 'src/zenml/zen_server/dashboard' directory is ignored by Git."
       echo "Please remove the corresponding entries from the .gitignore file to proceed with the installation."
       exit 1
     fi
