@@ -152,7 +152,7 @@ jobs:
         run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
-        run: brew install graphviz
+        run: brew install graphviz libomp
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
         run: choco install graphviz
