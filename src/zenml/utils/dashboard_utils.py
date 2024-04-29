@@ -67,21 +67,21 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     client = Client()
     base_url = get_base_url()
 
-    # the cloud dashboard doesn't support stacks yet
-    # use the legacy URL for now
-    server_config = ServerConfiguration()
-    legacy_url = server_config.dashboard_url
-
-    if legacy_url:
-        return legacy_url + f"{constants.STACKS}/{stack.id}/configuration"
-
     if base_url:
         server_model = client.zen_store.get_store_info()
         if server_model.use_legacy_dashboard:
             return base_url + f"{constants.STACKS}/{stack.id}/configuration"
         else:
             # TODO: this is a fallback URL, to be replaced once UI is ready for it
-            return base_url + constants.STACKS
+            # the cloud dashboard doesn't support stacks yet
+            # use the legacy URL for now
+            server_config = ServerConfiguration()
+            legacy_url = server_config.dashboard_url
+
+            if legacy_url:
+                return legacy_url + f"{constants.STACKS}/{stack.id}/configuration"
+            else:
+                return base_url + constants.STACKS
     return None
 
 
@@ -96,18 +96,6 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
     """
     client = Client()
     base_url = get_base_url()
-
-    # the cloud dashboard doesn't support components yet
-    # use the legacy URL for now
-    server_config = ServerConfiguration()
-    legacy_url = server_config.dashboard_url
-
-    if legacy_url:
-        return (
-            legacy_url
-            + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
-        )
-
     if base_url:
         server_model = client.zen_store.get_store_info()
         if server_model.use_legacy_dashboard:
@@ -117,7 +105,18 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
             )
         else:
             # TODO: this is a fallback URL, to be replaced once UI is ready for it
-            return base_url + constants.STACKS
+            # the cloud dashboard doesn't support components yet
+            # use the legacy URL for now
+            server_config = ServerConfiguration()
+            legacy_url = server_config.dashboard_url
+
+            if legacy_url:
+                return (
+                    legacy_url
+                    + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
+                )
+            else:
+                return base_url + constants.STACKS
     return None
 
 
