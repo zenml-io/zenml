@@ -248,7 +248,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP = "0"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP = (
     "default-src 'none'; "
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widgets-v3.featureos.app; "
     "connect-src 'self' https://sdkdocs.zenml.io https://hubapi.zenml.io; "
     "img-src 'self' data: https://public-flavor-logos.s3.eu-central-1.amazonaws.com"
     " https://avatar.vercel.sh; "
@@ -256,7 +256,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP = (
     "base-uri 'self'; "
     "form-action 'self'; "
     "font-src 'self';"
-    "frame-src https://zenml.hellonext.co https://sdkdocs.zenml.io "
+    "frame-src https://zenml.hellonext.co https://sdkdocs.zenml.io https://widgets-v3.hellonext.co https://widgets-v3.featureos.app"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER = "no-referrer-when-downgrade"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE = (
