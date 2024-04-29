@@ -32,7 +32,7 @@ on:
         type: choice
         options:
           - ubuntu-latest
-          - macos-latest
+          - macos-13
           - windows-latest
           - arc-runner-set
         required: false

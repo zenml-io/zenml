@@ -154,7 +154,7 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-13]
         python-version: ['3.8', '3.9', '3.10', '3.11']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
@@ -182,7 +182,7 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-13]
         python-version: ['3.8', '3.9', '3.10', '3.11']
         test_environment: [default]
       fail-fast: false
