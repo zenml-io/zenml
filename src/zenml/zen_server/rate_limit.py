@@ -143,6 +143,9 @@ class RequestLimiter:
 
         Args:
             request: Request object.
+
+        Yields:
+            None
         """
         self.hit_limiter(request)
 
