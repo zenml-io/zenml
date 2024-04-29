@@ -1,5 +1,21 @@
 <!-- markdown-link-check-disable -->
 
+# 0.57.0rc1
+
+This release candidate brings in a support for the fully new ZenML Dashboard experience, 
+a number of improvement to documentation and a few bug fixes.
+
+## What's Changed
+* Add Comet to Experiment Trackers in TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2637
+* Fix Comet docs formatting by @strickvl in https://github.com/zenml-io/zenml/pull/2639
+* ZenML Server activation and user on-boarding by @stefannica in https://github.com/zenml-io/zenml/pull/2630
+* Slimmer and more secure Docker container images by @stefannica in https://github.com/zenml-io/zenml/pull/2617
+* Add dashboard v2 source context by @schustmi in https://github.com/zenml-io/zenml/pull/2642
+* Support New Dashboard release by @avishniakov in https://github.com/zenml-io/zenml/pull/2635
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.4...0.57.0rc1
+
 # 0.56.4
 
 This release brings a variety of bug fixes and enhancements, including a new
