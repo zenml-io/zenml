@@ -18,6 +18,7 @@ from uuid import UUID
 
 from zenml import constants
 from zenml.client import Client
+from zenml.config.server_config import ServerConfiguration
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
@@ -65,6 +66,15 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
         the URL to the stack if the dashboard is available, else None.
     """
     base_url = get_base_url()
+
+    # the cloud dashboard doesn't support stacks yet
+    # use the legacy URL for now
+    server_config = ServerConfiguration()
+    legacy_url = server_config.dashboard_url
+
+    if legacy_url:
+        return legacy_url + f"{constants.STACKS}/{stack.id}/configuration"
+
     if base_url:
         return base_url + f"{constants.STACKS}/{stack.id}/configuration"
     return None
@@ -80,6 +90,18 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
         the URL to the component if the dashboard is available, else None.
     """
     base_url = get_base_url()
+
+    # the cloud dashboard doesn't support components yet
+    # use the legacy URL for now
+    server_config = ServerConfiguration()
+    legacy_url = server_config.dashboard_url
+
+    if legacy_url:
+        return (
+            legacy_url
+            + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
+        )
+
     if base_url:
         return (
             base_url
