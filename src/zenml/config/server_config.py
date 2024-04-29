@@ -38,6 +38,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
+    DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ENV_ZENML_SERVER_PREFIX,
 )
 from zenml.enums import AuthScheme
@@ -206,6 +207,9 @@ class ServerConfiguration(BaseModel):
             one of the reserved values `disabled`, `no`, `none`, `false`, `off`
             or to an empty string, the `Permissions-Policy` header will not be
             included in responses.
+        use_legacy_dashboard: Whether to use the legacy dashboard. If set to
+            `True`, the dashboard will be used with the old UI. If set to
+            `False`, the new dashboard will be used.
         server_name: The name of the ZenML server. Used only during initial
             deployment. Can be changed later as a part of the server settings.
         display_announcements: Whether to display announcements about ZenML in
@@ -285,6 +289,7 @@ class ServerConfiguration(BaseModel):
     secure_headers_permissions: Union[bool, str] = (
         DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
     )
+    use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
 
     server_name: Optional[str] = None
     display_announcements: bool = True

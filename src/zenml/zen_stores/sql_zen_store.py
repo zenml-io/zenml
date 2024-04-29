@@ -8078,6 +8078,7 @@ class SqlZenStore(BaseZenStore):
             with `zenml up`
             * local ZenML docker deployments: the server is deployed locally
             with `zenml up --docker`
+        * legacy dashboard deployments
 
         For all other cases, or if the external authentication scheme is used,
         no default admin user is created. The user must activate the server and
@@ -8098,7 +8099,7 @@ class SqlZenStore(BaseZenStore):
                 # Running inside server with external auth
                 return False
 
-            if config.auto_activate:
+            if config.auto_activate or config.use_legacy_dashboard:
                 return True
 
         else:
