@@ -583,13 +583,23 @@ class TestAdminUser:
         zen_store: RestZenStore = Client().zen_store
         default_user = zen_store.get_user(DEFAULT_USERNAME)
         assert default_user.is_admin
-        # self update cannot change admin status
         zen_store.put(
             "/current-user",
-            body=UserUpdate(name=default_user.name, is_admin=False),
+            body=UserUpdate(name=default_user.name, full_name="Axl"),
         )
         default_user = zen_store.get_user(DEFAULT_USERNAME)
-        assert default_user.is_admin
+        assert default_user.full_name == "Axl"
+        assert default_user.is_admin  # admin status is not changed
+
+        # User cannot change own admin status
+        with pytest.raises(IllegalOperationError):
+            zen_store.put(
+                "/current-user",
+                body=UserUpdate(name=default_user.name, is_admin=False),
+            )
+        default_user = zen_store.get_user(DEFAULT_USERNAME)
+        assert default_user.is_admin  # admin status is not changed
+
         with UserContext(
             password=self.default_pwd, is_admin=False
         ) as test_user:
@@ -598,14 +608,26 @@ class TestAdminUser:
             ):
                 new_zen_store: RestZenStore = Client().zen_store
                 assert not test_user.is_admin
-                # self update cannot change admin status
                 new_zen_store.put(
                     "/current-user",
                     body=UserUpdate(
                         name=test_user.name,
-                        is_admin=True,
+                        full_name="Axl",
                     ),
                 )
+                user = zen_store.get_user(test_user.id)
+                assert not user.is_admin
+                assert user.full_name == "Axl"
+
+                # self update cannot change admin status
+                with pytest.raises(IllegalOperationError):
+                    new_zen_store.put(
+                        "/current-user",
+                        body=UserUpdate(
+                            name=test_user.name,
+                            is_admin=True,
+                        ),
+                    )
                 user = zen_store.get_user(test_user.id)
                 assert not user.is_admin
 
