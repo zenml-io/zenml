@@ -76,6 +76,9 @@ jobs:
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install libomp
+        if: ${{ inputs.os == 'macos-latest' || inputs.os == 'macos-13' }}
+        run: brew install libomp
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
