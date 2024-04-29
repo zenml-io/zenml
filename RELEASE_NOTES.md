@@ -2,7 +2,7 @@
 
 # 0.57.0rc1
 
-This release candidate brings in a support for the fully new ZenML Dashboard experience, 
+This release candidate introduces support for the fully new ZenML Dashboard experience, 
 a number of improvement to documentation and a few bug fixes.
 
 ## What's Changed
