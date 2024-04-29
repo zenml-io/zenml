@@ -351,10 +351,6 @@ def catch_all(request: Request, file_path: str) -> Any:
 
     Returns:
         The ZenML dashboard.
-
-    Raises:
-        HTTPException: 404 error if requested a non-existent static file or if
-            the dashboard files are not included.
     """
     # some static files need to be served directly from the root dashboard
     # directory
