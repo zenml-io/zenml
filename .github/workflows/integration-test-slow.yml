@@ -30,11 +30,7 @@ on:
       os:
         description: OS
         type: choice
-        options:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-          - arc-runner-set
+        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
         required: false
         default: ubuntu-latest
       python-version:
@@ -156,7 +152,7 @@ jobs:
         run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
-        run: brew install graphviz
+        run: brew install graphviz libomp
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
         run: choco install graphviz

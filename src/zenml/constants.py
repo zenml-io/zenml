@@ -155,6 +155,10 @@ ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 ENV_ZENML_SERVER_REPORTABLE_RESOURCES = (
     f"{ENV_ZENML_SERVER_PREFIX}REPORTABLE_RESOURCES"
 )
+ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD = (
+    f"{ENV_ZENML_SERVER_PREFIX}USE_LEGACY_DASHBOARD"
+)
+ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -244,14 +248,15 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP = "0"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP = (
     "default-src 'none'; "
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widgets-v3.featureos.app; "
     "connect-src 'self' https://sdkdocs.zenml.io https://hubapi.zenml.io; "
-    "img-src 'self' data: https://public-flavor-logos.s3.eu-central-1.amazonaws.com; "
+    "img-src 'self' data: https://public-flavor-logos.s3.eu-central-1.amazonaws.com"
+    " https://avatar.vercel.sh; "
     "style-src 'self' 'unsafe-inline'; "
     "base-uri 'self'; "
     "form-action 'self'; "
     "font-src 'self';"
-    "frame-src https://zenml.hellonext.co https://sdkdocs.zenml.io "
+    "frame-src https://zenml.hellonext.co https://sdkdocs.zenml.io https://widgets-v3.hellonext.co https://widgets-v3.featureos.app"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER = "no-referrer-when-downgrade"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE = (
@@ -263,6 +268,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
     "payment=(), sync-xhr=(), usb=()"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
+DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
 
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
@@ -316,6 +322,7 @@ SECRETS = "/secrets"
 SECRETS_OPERATIONS = "/secrets_operations"
 SECRETS_BACKUP = "/backup"
 SECRETS_RESTORE = "/restore"
+SERVER_SETTINGS = "/settings"
 SERVICE_ACCOUNTS = "/service_accounts"
 SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
@@ -423,3 +430,6 @@ SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS = 60 * 5  # 5 minutes
 MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION = (
     10  # empirical value to pass heavy parallelized tests
 )
+
+
+FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"

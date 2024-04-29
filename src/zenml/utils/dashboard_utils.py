@@ -18,6 +18,7 @@ from uuid import UUID
 
 from zenml import constants
 from zenml.client import Client
+from zenml.config.server_config import ServerConfiguration
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
@@ -37,19 +38,18 @@ def get_base_url() -> Optional[str]:
     if client.zen_store.type == StoreType.REST:
         # if the server config has a base URL use that
         server_model = client.zen_store.get_store_info()
+        if server_model.use_legacy_dashboard:
+            suffix = f"{constants.WORKSPACES}/{client.active_workspace.name}"
+        else:
+            suffix = ""
         if server_model.base_url:
             url = server_model.base_url
             # if the base url has cloud.zenml.io in it, then it is a cloud
             # deployment and there isn't a workspace in the URL
             if "cloud.zenml.io" in url:
                 return url
-            return (
-                url + f"{constants.WORKSPACES}/{client.active_workspace.name}"
-            )
-        url = (
-            client.zen_store.url
-            + f"{constants.WORKSPACES}/{client.active_workspace.name}"
-        )
+            return url + suffix
+        url = client.zen_store.url + suffix
         return url
 
     return None
@@ -64,9 +64,26 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     Returns:
         the URL to the stack if the dashboard is available, else None.
     """
+    client = Client()
     base_url = get_base_url()
+
     if base_url:
-        return base_url + f"{constants.STACKS}/{stack.id}/configuration"
+        server_model = client.zen_store.get_store_info()
+        if server_model.use_legacy_dashboard:
+            return base_url + f"{constants.STACKS}/{stack.id}/configuration"
+        else:
+            # TODO: this is a fallback URL, to be replaced once UI is ready for it
+            # the cloud dashboard doesn't support stacks yet
+            # use the legacy URL for now
+            server_config = ServerConfiguration()
+            legacy_url = server_config.dashboard_url
+
+            if legacy_url:
+                return (
+                    legacy_url + f"{constants.STACKS}/{stack.id}/configuration"
+                )
+            else:
+                return base_url + constants.STACKS
     return None
 
 
@@ -79,12 +96,29 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
     Returns:
         the URL to the component if the dashboard is available, else None.
     """
+    client = Client()
     base_url = get_base_url()
     if base_url:
-        return (
-            base_url
-            + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
-        )
+        server_model = client.zen_store.get_store_info()
+        if server_model.use_legacy_dashboard:
+            return (
+                base_url
+                + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
+            )
+        else:
+            # TODO: this is a fallback URL, to be replaced once UI is ready for it
+            # the cloud dashboard doesn't support components yet
+            # use the legacy URL for now
+            server_config = ServerConfiguration()
+            legacy_url = server_config.dashboard_url
+
+            if legacy_url:
+                return (
+                    legacy_url
+                    + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
+                )
+            else:
+                return base_url + constants.STACKS
     return None
 
 
@@ -102,7 +136,10 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     if base_url:
         server_model = client.zen_store.get_store_info()
         # if the server is a zenml cloud tenant, use a different URL
-        if server_model.metadata.get("organization_id"):
+        if (
+            server_model.metadata.get("organization_id")
+            or not server_model.use_legacy_dashboard
+        ):
             return f"{base_url}{constants.RUNS}/{run.id}"
         if run.pipeline:
             return f"{base_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"

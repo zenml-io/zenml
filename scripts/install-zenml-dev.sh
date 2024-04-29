@@ -56,6 +56,10 @@ install_integrations() {
     echo "pyopenssl" >> integration-requirements.txt
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> integration-requirements.txt
 
+    # TODO: remove after torch 2.3.0+ is released
+    # https://github.com/pytorch/pytorch/issues/124897
+    echo "torch<2.3.0" >> integration-requirements.txt
+
     uv pip install --system -r integration-requirements.txt
     rm integration-requirements.txt
 }
