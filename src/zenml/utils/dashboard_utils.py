@@ -79,7 +79,9 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
             legacy_url = server_config.dashboard_url
 
             if legacy_url:
-                return legacy_url + f"{constants.STACKS}/{stack.id}/configuration"
+                return (
+                    legacy_url + f"{constants.STACKS}/{stack.id}/configuration"
+                )
             else:
                 return base_url + constants.STACKS
     return None
