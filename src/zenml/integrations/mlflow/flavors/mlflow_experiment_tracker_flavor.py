@@ -113,8 +113,8 @@ class MLFlowExperimentTrackerConfig(
 
     @model_validator(mode="after")
     def _ensure_authentication_if_necessary(
-        self, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self,
+    ) -> "MLFlowExperimentTrackerConfig":
         """Ensures that credentials or a token for authentication exist.
 
         We make this check when running MLflow tracking with a remote backend.
@@ -162,7 +162,7 @@ class MLFlowExperimentTrackerConfig(
                         f"username and password or token."
                     )
 
-        return values
+        return self
 
     @property
     def is_local(self) -> bool:
