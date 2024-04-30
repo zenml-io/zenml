@@ -101,7 +101,7 @@ else:
         """
         import types
 
-        return type_ is Union or type_ is types.UnionType  # noqa: E721
+        return type_ is Union or type_ is types.UnionType  # type: ignore[comparison-overlap]
 
 
 # ----- literal -----
@@ -192,7 +192,7 @@ def _generic_get_args(tp: Type[Any]) -> Tuple[Any, ...]:
         Tuple of all the args.
     """
     if hasattr(tp, "_nparams"):
-        return (Any,) * tp._nparams
+        return (Any,) * tp._nparams  # type: ignore[no-any-return]
     # Special case for `tuple[()]`, which used to return ((),) with
     # `typing.Tuple in python 3.10- but now returns () for `tuple` and `Tuple`.
     # This will probably be clarified in pydantic v2
@@ -223,7 +223,7 @@ def get_args(tp: Type[Any]) -> Tuple[Any, ...]:
         Tuple of all the args.
     """
     if type(tp).__name__ in AnnotatedTypeNames:
-        return tp.__args__ + tp.__metadata__
+        return tp.__args__ + tp.__metadata__  # type: ignore[no-any-return]
     # the fallback is needed for the same reasons as `get_origin` (see above)
     return (
         _typing_get_args(tp)
