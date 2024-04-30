@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import MetadataResourceTypes
@@ -254,9 +254,4 @@ class LazyRunMetadataResponse(RunMetadataResponse):
         raise RuntimeError(
             "Cannot access run metadata metadata before pipeline runs."
         )
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extras to include the lazy load attributes
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")

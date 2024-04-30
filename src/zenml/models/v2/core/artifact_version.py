@@ -24,7 +24,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import ConfigDict, BaseModel, Field, field_validator
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -585,9 +585,4 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
             self._lazy_load_name,
             self._lazy_load_version,
         )
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extras to include the lazy load attributes
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
