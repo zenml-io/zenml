@@ -293,7 +293,7 @@ class ModelVersionSchema(NamedSchema, table=True):
     #  configuration, however the ultimate solution is to rename these fields.
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
-    model_config = ConfigDict(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(
@@ -513,7 +513,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     #  configuration, however the ultimate solution is to rename these fields.
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
-    model_config = ConfigDict(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(
@@ -637,7 +637,7 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
     #  configuration, however the ultimate solution is to rename these fields.
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
-    model_config = ConfigDict(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(

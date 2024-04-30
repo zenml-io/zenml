@@ -115,7 +115,7 @@ class ServiceSchema(NamedSchema, table=True):
     #  configuration, however the ultimate solution is to rename these fields.
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
-    model_config = ConfigDict(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     def to_model(
         self,
