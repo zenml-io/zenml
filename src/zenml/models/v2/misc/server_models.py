@@ -56,8 +56,7 @@ class ServerModel(BaseModel):
     )
 
     active: bool = Field(
-        True,
-        title="Flag to indicate whether the server is active."
+        True, title="Flag to indicate whether the server is active."
     )
 
     debug: bool = Field(
@@ -86,7 +85,7 @@ class ServerModel(BaseModel):
 
     analytics_enabled: bool = Field(
         default=True,  # We set a default for migrations from < 0.57.0
-        title="Enable server-side analytics."
+        title="Enable server-side analytics.",
     )
 
     metadata: Dict[str, str] = Field(
