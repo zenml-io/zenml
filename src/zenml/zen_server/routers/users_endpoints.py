@@ -431,7 +431,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         #
         # - activation_token
         # - external_user_id
-        # - admin
+        # - is_admin
         # - active
         # - old_password
         # - hub_token
@@ -440,7 +440,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             exclude={
                 "activation_token",
                 "external_user_id",
-                "admin",
+                "is_admin",
                 "active",
                 "old_password",
                 "hub_token",
@@ -665,14 +665,14 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # - activation_token
         # - external_user_id
         # - admin
-        # - active
+        # - is_active
         # - old_password
         #
         safe_user_update = user.create_copy(
             exclude={
                 "activation_token",
                 "external_user_id",
-                "admin",
+                "is_admin",
                 "active",
                 "old_password",
             },
