@@ -106,7 +106,7 @@ class FlavorRequest(UserScopedRequest):
 class InternalFlavorRequest(FlavorRequest):
     """Internal flavor request model."""
 
-    user: Optional[UUID] = Field(
+    user: Optional[UUID] = Field(  # type: ignore[assignment]
         title="The id of the user that created this resource.",
         default=None,
     )

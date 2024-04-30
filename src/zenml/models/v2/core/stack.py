@@ -78,7 +78,7 @@ class StackRequest(WorkspaceScopedRequest):
 class InternalStackRequest(StackRequest):
     """Internal stack request model."""
 
-    user: Optional[UUID] = Field(
+    user: Optional[UUID] = Field(  # type: ignore[assignment]
         title="The id of the user that created this resource.",
         default=None,
     )
