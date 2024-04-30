@@ -23,7 +23,7 @@ from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
-    from zenml.integrations.label_studio.annotators import LabelStudioAnnotator
+    from zenml.integrations.label_studio.annotators import ProdigyAnnotator
 
 
 DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
@@ -93,14 +93,14 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         return LabelStudioAnnotatorConfig
 
     @property
-    def implementation_class(self) -> Type["LabelStudioAnnotator"]:
+    def implementation_class(self) -> Type["ProdigyAnnotator"]:
         """Implementation class for this flavor.
 
         Returns:
             The implementation class.
         """
         from zenml.integrations.label_studio.annotators import (
-            LabelStudioAnnotator,
+            ProdigyAnnotator,
         )
 
-        return LabelStudioAnnotator
+        return ProdigyAnnotator

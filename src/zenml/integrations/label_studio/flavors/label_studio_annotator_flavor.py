@@ -23,14 +23,14 @@ from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
-    from zenml.integrations.label_studio.annotators import LabelStudioAnnotator
+    from zenml.integrations.label_studio.annotators import ProdigyAnnotator
 
 
 DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
 DEFAULT_LOCAL_LABEL_STUDIO_PORT = 8093
 
 
-class LabelStudioAnnotatorConfig(
+class ProdigyAnnotatorConfig(
     BaseAnnotatorConfig, AuthenticationConfigMixin
 ):
     """Config for the Label Studio annotator.
@@ -84,23 +84,23 @@ class ProdigyFlavor(BaseAnnotatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/label_studio.png"
 
     @property
-    def config_class(self) -> Type[LabelStudioAnnotatorConfig]:
+    def config_class(self) -> Type[ProdigyAnnotatorConfig]:
         """Returns `LabelStudioAnnotatorConfig` config class.
 
         Returns:
                 The config class.
         """
-        return LabelStudioAnnotatorConfig
+        return ProdigyAnnotatorConfig
 
     @property
-    def implementation_class(self) -> Type["LabelStudioAnnotator"]:
+    def implementation_class(self) -> Type["ProdigyAnnotator"]:
         """Implementation class for this flavor.
 
         Returns:
             The implementation class.
         """
         from zenml.integrations.label_studio.annotators import (
-            LabelStudioAnnotator,
+            ProdigyAnnotator,
         )
 
-        return LabelStudioAnnotator
+        return ProdigyAnnotator

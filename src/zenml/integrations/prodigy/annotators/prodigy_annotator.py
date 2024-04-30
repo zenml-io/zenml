@@ -19,17 +19,13 @@ import webbrowser
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from label_studio_sdk import Client, Project  # type: ignore[import-not-found]
-
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.config.global_config import GlobalConfiguration
-from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
-    LabelStudioAnnotatorConfig,
+from zenml.integrations.prodigy.flavors.prodigy_annotator_flavor import (
+    ProdigyAnnotatorConfig,
 )
-from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
-    LabelStudioDatasetSyncParameters,
-)
+
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack.authentication_mixin import AuthenticationMixin
@@ -37,17 +33,17 @@ from zenml.stack.authentication_mixin import AuthenticationMixin
 logger = get_logger(__name__)
 
 
-class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
+class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
     """Class to interact with the Prodigy annotation interface."""
 
     @property
-    def config(self) -> LabelStudioAnnotatorConfig:
+    def config(self) -> ProdigyAnnotatorConfig:
         """Returns the `LabelStudioAnnotatorConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(LabelStudioAnnotatorConfig, self._config)
+        return cast(ProdigyAnnotatorConfig, self._config)
 
     def get_url(self) -> str:
         """Gets the top-level URL of the annotation interface.
