@@ -5059,21 +5059,21 @@ class Client(metaclass=ClientMetaClass):
 
         if verify:
             # Prefer to verify the connector config server-side if the
-            # implementation if available there, because it ensures
+            # implementation, if available there, because it ensures
             # that the connector can be shared with other users or used
             # from other machines and because some auth methods rely on the
             # server-side authentication environment
             if connector.remote:
                 connector_resources = (
                     self.zen_store.verify_service_connector_config(
-                        connector_update,
+                        connector_update.convert_to_request(),
                         list_resources=list_resources,
                     )
                 )
             else:
                 connector_instance = (
                     service_connector_registry.instantiate_connector(
-                        model=connector_update
+                        model=connector_update.convert_to_request(),
                     )
                 )
                 connector_resources = connector_instance.verify(
