@@ -42,6 +42,7 @@ def is_cloud_server(server_info: ServerModel) -> bool:
     """
     return (
         "organization_id" in server_info.metadata
+        and server_info.base_url
         and "cloud.zenml.io" in server_info.base_url
     )
 
