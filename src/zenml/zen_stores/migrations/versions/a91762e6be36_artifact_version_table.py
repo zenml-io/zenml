@@ -46,8 +46,8 @@ def upgrade() -> None:
 
     # Find all unique artifact names and create a new artifact entry for each
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("artifact", "artifact_version"))
+    meta = sa.MetaData()
+    meta.reflect(only=("artifact", "artifact_version"), bind=op.get_bind())
     artifacts = sa.Table("artifact", meta)
     artifact_versions = sa.Table("artifact_version", meta)
     artifact_names = conn.execute(

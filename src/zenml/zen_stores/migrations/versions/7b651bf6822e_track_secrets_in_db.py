@@ -603,8 +603,10 @@ def upgrade() -> None:
     # Transfer secrets from the external secrets store to the db
 
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("secret", "user", "workspace", "identity"))
+    meta = sa.MetaData()
+    meta.reflect(
+        only=("secret", "user", "workspace", "identity"), bind=op.get_bind()
+    )
     secrets = sa.Table("secret", meta)
     users = sa.Table("user", meta)
     workspaces = sa.Table("workspace", meta)

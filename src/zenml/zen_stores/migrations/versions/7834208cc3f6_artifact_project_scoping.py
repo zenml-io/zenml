@@ -49,15 +49,16 @@ def upgrade() -> None:
     # ------------
 
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
     meta.reflect(
+        bind=op.get_bind(),
         only=(
             "pipeline_run",
             "step_run",
             "artifact",
             "step_run_output_artifact",
             "workspace",
-        )
+        ),
     )
     pipeline_runs = sa.Table("pipeline_run", meta)
     step_runs = sa.Table("step_run", meta)

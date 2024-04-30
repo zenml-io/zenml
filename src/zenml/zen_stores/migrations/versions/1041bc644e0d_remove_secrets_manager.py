@@ -19,8 +19,10 @@ depends_on = None
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("stack_component", "stack_composition"))
+    meta = sa.MetaData()
+    meta.reflect(
+        only=("stack_component", "stack_composition"), bind=op.get_bind()
+    )
     components = sa.Table("stack_component", meta)
     compositions = sa.Table("stack_composition", meta)
 

@@ -62,7 +62,7 @@ def upgrade() -> None:
             "pipeline_configuration",
             existing_type=sa.TEXT(),
             type_=sa.String(length=16777215).with_variant(
-                mysql.MEDIUMTEXT(), "mysql"
+                mysql.MEDIUMTEXT, "mysql"
             ),
             existing_nullable=False,
         )
@@ -121,7 +121,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "step_configuration",
             existing_type=sa.String(length=16777215).with_variant(
-                mysql.MEDIUMTEXT(), "mysql"
+                mysql.MEDIUMTEXT, "mysql"
             ),
             nullable=True,
         )
@@ -272,7 +272,7 @@ def downgrade() -> None:
         batch_op.alter_column(
             "pipeline_configuration",
             existing_type=sa.String(length=16777215).with_variant(
-                mysql.MEDIUMTEXT(), "mysql"
+                mysql.MEDIUMTEXT, "mysql"
             ),
             type_=sa.TEXT(),
             existing_nullable=False,

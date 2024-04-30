@@ -24,8 +24,8 @@ def add_orchestrator_run_id_for_old_runs() -> None:
     this constraint. This is not the case for old pipeline runs which existed
     before we had deployments, so we add a dummy value for those runs.
     """
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("pipeline_run",))
+    meta = sa.MetaData()
+    meta.reflect(bind=op.get_bind(), only=("pipeline_run",))
     run_table = sa.Table("pipeline_run", meta)
     connection = op.get_bind()
 
@@ -48,8 +48,8 @@ def verify_unique_constraint_satisfied() -> None:
         RuntimeError: If there are rows which have identical values for the
             `deployment_id` and `orchestrator_run_id` columns.
     """
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("pipeline_run",))
+    meta = sa.MetaData()
+    meta.reflect(bind=op.get_bind(), only=("pipeline_run",))
     run_table = sa.Table("pipeline_run", meta)
     connection = op.get_bind()
 

@@ -27,11 +27,11 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     # get metadata from current connection
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
 
     # pass in tuple with tables we want to reflect, otherwise whole database
     #  will get reflected
-    meta.reflect(only=("identity",))
+    meta.reflect(only=("identity",), bind=op.get_bind())
     # Prefill the identity table with a single row that contains the deployment
     # id extracted from the global configuration
     op.bulk_insert(
