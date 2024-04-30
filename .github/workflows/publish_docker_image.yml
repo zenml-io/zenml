@@ -35,5 +35,5 @@ jobs:
         run: |-
           gcloud builds submit \
             --quiet \
-            --config=${{inputs.config_file}} \
+            --config=release-cloudbuild.yaml \
             --substitutions=TAG_NAME=0.57.0rc1 .
