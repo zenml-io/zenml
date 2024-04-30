@@ -57,6 +57,7 @@ from sqlalchemy.exc import (
     NoResultFound,
 )
 from sqlalchemy.orm import Mapped, noload
+from sqlalchemy.util import immutabledict
 from sqlmodel import (
     Session,
     SQLModel,
@@ -551,13 +552,31 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             if sql_url.query:
                 for k, v in sql_url.query.items():
                     if k == "ssl_ca":
-                        self.ssl_ca = v
+                        if isinstance(v, tuple) and len(v) > 0:
+                            self.ssl_ca = v[0]
+                        elif isinstance(v, str):
+                            self.ssl_ca = v
                     elif k == "ssl_cert":
-                        self.ssl_cert = v
+                        if isinstance(v, tuple) and len(v) > 0:
+                            self.ssl_cert = v[0]
+                        elif isinstance(v, str):
+                            self.ssl_cert = v
                     elif k == "ssl_key":
-                        self.ssl_key = v
+                        if isinstance(v, tuple) and len(v) > 0:
+                            self.ssl_key = v[0]
+                        elif isinstance(v, str):
+                            self.ssl_key = v
                     elif k == "ssl_verify_server_cert":
-                        self.ssl_verify_server_cert = v
+                        if isinstance(v, tuple) and len(v) > 0:
+                            if v[0] in ["1", "y", "yes", "True", "true"]:
+                                self.ssl_verify_server_cert = True
+                            elif v[0] in ["0", "n", "no", "False", "false"]:
+                                self.ssl_verify_server_cert = False
+                        elif isinstance(v, str):
+                            if v in ["1", "y", "yes", "True", "true"]:
+                                self.ssl_verify_server_cert = True
+                            elif v in ["0", "n", "no", "False", "false"]:
+                                self.ssl_verify_server_cert = False
                     else:
                         raise ValueError(
                             "Invalid MySQL URL query parameter `%s`: The "
@@ -565,7 +584,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                             "ssl_key, or ssl_verify_server_cert.",
                             k,
                         )
-                sql_url = sql_url._replace(query={})
+                sql_url = sql_url._replace(query=immutabledict())
 
             database = self.database
             if not self.username or not self.password or not database:
@@ -870,10 +889,10 @@ class SqlZenStore(BaseZenStore):
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
         else:
-            total = (
-                session.query(func.count())
-                .select_from(query.options(noload("*")).subquery())
-                .scalar()
+            total = session.scalar(
+                select(func.count()).select_from(
+                    query.options(noload("*")).subquery()
+                )
             )
 
         # Sorting
@@ -886,7 +905,7 @@ class SqlZenStore(BaseZenStore):
         # We always add the `id` column as a tiebreaker to ensure a stable,
         # repeatable order of items, otherwise subsequent pages might contain
         # the same items.
-        query = query.order_by(sort_clause, asc(table.id))
+        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
@@ -3504,7 +3523,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 .outerjoin(
                     PipelineRunSchema,
-                    PipelineSchema.id == PipelineRunSchema.pipeline_id,
+                    PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
                 )
                 .group_by(PipelineSchema.name)
                 .subquery()
@@ -3518,14 +3537,14 @@ class SqlZenStore(BaseZenStore):
                 )
                 .outerjoin(
                     PipelineSchema,
-                    PipelineSchema.name == max_date_subquery.c.name,
+                    PipelineSchema.name == max_date_subquery.c.name,  # type: ignore[arg-type]
                 )
                 .outerjoin(
                     PipelineRunSchema,
-                    PipelineRunSchema.created
+                    PipelineRunSchema.created  # type: ignore[arg-type]
                     == max_date_subquery.c.max_created,
                 )
-                .order_by(desc(PipelineRunSchema.updated))
+                .order_by(desc(PipelineRunSchema.updated))  # type: ignore[arg-type]
             )
 
             return self.filter_and_paginate(
@@ -6110,9 +6129,7 @@ class SqlZenStore(BaseZenStore):
 
     def verify_service_connector_config(
         self,
-        service_connector: Union[
-            ServiceConnectorRequest, ServiceConnectorUpdate
-        ],
+        service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
@@ -6483,16 +6500,18 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
-            components = []
+            components: List["StackComponentSchema"] = []
             if stack_update.components:
                 filters = [
                     (StackComponentSchema.id == component_id)
                     for list_of_component_ids in stack_update.components.values()
                     for component_id in list_of_component_ids
                 ]
-                components = session.exec(
-                    select(StackComponentSchema).where(or_(*filters))
-                ).all()
+                components = list(
+                    session.exec(
+                        select(StackComponentSchema).where(or_(*filters))
+                    ).all()
+                )
 
             existing_stack.update(
                 stack_update=stack_update,
@@ -8037,14 +8056,14 @@ class SqlZenStore(BaseZenStore):
             Count of the entity as integer.
         """
         with Session(self.engine) as session:
-            query = select(func.count(schema.id))
+            query = select(func.count(schema.id))  # type: ignore[arg-type]
 
             if filter_model:
                 query = filter_model.apply_filter(query=query, table=schema)
 
             entity_count = session.scalar(query)
 
-        return int(entity_count)
+        return int(entity_count) if entity_count else 0
 
     def entity_exists(
         self, entity_id: UUID, schema_class: Type[AnySchema]
@@ -8953,7 +8972,7 @@ class SqlZenStore(BaseZenStore):
                 )
             session.execute(
                 delete(ModelVersionArtifactSchema).where(
-                    ModelVersionArtifactSchema.model_version_id
+                    ModelVersionArtifactSchema.model_version_id  # type: ignore[arg-type]
                     == model_version_id
                 )
             )
