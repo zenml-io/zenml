@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Label Studio annotator flavor."""
+"""Prodigy annotator flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type
 
@@ -33,10 +33,10 @@ DEFAULT_LOCAL_LABEL_STUDIO_PORT = 8093
 class LabelStudioAnnotatorConfig(
     BaseAnnotatorConfig, AuthenticationConfigMixin
 ):
-    """Config for the Label Studio annotator.
+    """Config for the Prodigy annotator.
 
     Attributes:
-        instance_url: URL of the Label Studio instance.
+        instance_url: URL of the Prodigy instance.
         port: The port to use for the annotation interface.
     """
 
@@ -44,8 +44,8 @@ class LabelStudioAnnotatorConfig(
     port: int = DEFAULT_LOCAL_LABEL_STUDIO_PORT
 
 
-class ProdigyFlavor(BaseAnnotatorFlavor):
-    """Label Studio annotator flavor."""
+class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
+    """Prodigy annotator flavor."""
 
     @property
     def name(self) -> str:

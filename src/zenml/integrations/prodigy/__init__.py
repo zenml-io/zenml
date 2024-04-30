@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,29 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Label Studio integration."""
+"""Initialization of the Prodigy integration."""
 from typing import List, Type
 
-from zenml.enums import StackComponentType
-from zenml.integrations.constants import LABEL_STUDIO
+from zenml.integrations.constants import PRODIGY
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-LABEL_STUDIO_ANNOTATOR_FLAVOR = "label_studio"
+PRODIGY_ANNOTATOR_FLAVOR = "prodigy"
 
 
-class LabelStudioIntegration(Integration):
-    """Definition of Label Studio integration for ZenML."""
+class ProdigyIntegration(Integration):
+    """Definition of Prodigy integration for ZenML."""
 
-    NAME = LABEL_STUDIO
+    NAME = PRODIGY
     REQUIREMENTS = [
-        "label-studio>=1.6.0,<=1.9.1",
-        "label-studio-sdk>=0.0.17,<=0.0.32",
+        "prodigy",
     ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Label Studio integration.
+        """Declare the stack component flavors for the Prodigy integration.
 
         Returns:
             List of stack component flavors for this integration.
@@ -45,4 +43,4 @@ class LabelStudioIntegration(Integration):
         return [ProdigyFlavor]
 
 
-LabelStudioIntegration.check_installation()
+ProdigyIntegration.check_installation()
