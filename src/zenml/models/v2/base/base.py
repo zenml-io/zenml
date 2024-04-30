@@ -253,6 +253,10 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
         if self.metadata is None:
             # If the metadata is not there, check the class first.
             metadata_annotation = self.model_fields["metadata"].annotation
+            assert metadata_annotation is not None, (
+                "For each response model, an annotated metadata"
+                "field should exist."
+            )
 
             # metadata is defined as:
             #   metadata: Optional[....ResponseMetadata] = Field(default=None)
@@ -289,6 +293,10 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
         if self.resources is None:
             # If the resources are not there, check the class first.
             resources_annotation = self.model_fields["resources"].annotation
+            assert resources_annotation is not None, (
+                "For each response model, an annotated resources"
+                "field should exist."
+            )
 
             # metadata is defined as:
             #   metadata: Optional[....ResponseMetadata] = Field(default=None)

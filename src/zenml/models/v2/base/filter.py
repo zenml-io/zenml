@@ -51,11 +51,7 @@ from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.typing_utils import get_args
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import (
-        BinaryExpression,
-        BooleanClauseList,
-        ColumnElement,
-    )
+    from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -110,7 +106,7 @@ class Filter(BaseModel, ABC):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList"]:
+    ) -> Union["ColumnElement[bool]"]:
         """Generate the query conditions for the database.
 
         This method converts the Filter class into an appropriate SQLModel
