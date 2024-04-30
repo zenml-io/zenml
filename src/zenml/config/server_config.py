@@ -29,6 +29,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
+    DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT,
@@ -291,7 +292,7 @@ class ServerConfiguration(BaseModel):
     )
     use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
 
-    server_name: Optional[str] = None
+    server_name: str = DEFAULT_ZENML_SERVER_NAME
     display_announcements: bool = True
     display_updates: bool = True
     auto_activate: bool = False
