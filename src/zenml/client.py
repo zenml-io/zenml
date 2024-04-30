@@ -140,6 +140,8 @@ from zenml.models import (
     SecretRequest,
     SecretResponse,
     SecretUpdate,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -689,6 +691,55 @@ class Client(metaclass=ClientMetaClass):
             GlobalConfiguration().set_active_workspace(workspace)
         return workspace
 
+    # ----------------------------- Server Settings ----------------------------
+
+    def get_settings(self, hydrate: bool = True) -> ServerSettingsResponse:
+        """Get the server settings.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The server settings.
+        """
+        return self.zen_store.get_server_settings(hydrate=hydrate)
+
+    def update_server_settings(
+        self,
+        updated_name: Optional[str] = None,
+        updated_logo_url: Optional[str] = None,
+        updated_enable_analytics: Optional[bool] = None,
+        updated_enable_announcements: Optional[bool] = None,
+        updated_enable_updates: Optional[bool] = None,
+        updated_onboarding_state: Optional[Dict[str, Any]] = None,
+    ) -> ServerSettingsResponse:
+        """Update the server settings.
+
+        Args:
+            updated_name: Updated name for the server.
+            updated_logo_url: Updated logo URL for the server.
+            updated_enable_analytics: Updated value whether to enable
+                analytics for the server.
+            updated_enable_announcements: Updated value whether to display
+                announcements about ZenML.
+            updated_enable_updates: Updated value whether to display updates
+                about ZenML.
+            updated_onboarding_state: Updated onboarding state for the server.
+
+        Returns:
+            The updated server settings.
+        """
+        update_model = ServerSettingsUpdate(
+            server_name=updated_name,
+            logo_url=updated_logo_url,
+            enable_analytics=updated_enable_analytics,
+            display_announcements=updated_enable_announcements,
+            display_updates=updated_enable_updates,
+            onboarding_state=updated_onboarding_state,
+        )
+        return self.zen_store.update_server_settings(update_model)
+
     # ---------------------------------- Users ---------------------------------
 
     def create_user(
@@ -812,6 +863,7 @@ class Client(metaclass=ClientMetaClass):
         updated_password: Optional[str] = None,
         old_password: Optional[str] = None,
         updated_is_admin: Optional[bool] = None,
+        updated_metadata: Optional[Dict[str, Any]] = None,
         active: Optional[bool] = None,
     ) -> UserResponse:
         """Update a user.
@@ -827,6 +879,7 @@ class Client(metaclass=ClientMetaClass):
             old_password: The old password of the user. Required for password
                 update.
             updated_is_admin: Whether the user should be an admin.
+            updated_metadata: The new metadata for the user.
             active: Use to activate or deactivate the user.
 
         Returns:
@@ -862,6 +915,9 @@ class Client(metaclass=ClientMetaClass):
             user_update.is_admin = updated_is_admin
         if active is not None:
             user_update.active = active
+
+        if updated_metadata is not None:
+            user_update.user_metadata = updated_metadata
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update

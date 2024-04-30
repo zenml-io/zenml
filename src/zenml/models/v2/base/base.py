@@ -38,11 +38,11 @@ class BaseZenModel(YAMLSerializationMixin, AnalyticsTrackedModelMixin):
     """
 
     model_config = ConfigDict(
-        # Allow extras on all models to support forwards and backwards
+        # Ignore extras on all models to support forwards and backwards
         # compatibility (e.g. new fields in newer versions of ZenML servers
-        # are allowed to be present in older versions of ZenML clients and
-        # vice versa).
-        extra="allow",
+        # are allowed to be passed to older versions of ZenML clients and
+        # vice versa but will be ignored).
+        extra="ignore",
     )
 
 

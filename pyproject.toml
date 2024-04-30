@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.56.4"
+version = "0.57.0rc2"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -78,7 +78,7 @@ ipinfo = { version = ">=4.4.3", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
-pyyaml-include = {version = "<2.0", optional = true}
+pyyaml-include = { version = "<2.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
 
 # Optional terraform dependency for stack recipes and ZenServer deployments
@@ -458,6 +458,7 @@ module = [
     "mlstacks.*",
     "matplotlib.*",
     "IPython.*",
-    "huggingface_hub.*"
+    "huggingface_hub.*",
+    "label_studio_sdk.*"
 ]
 ignore_missing_imports = true

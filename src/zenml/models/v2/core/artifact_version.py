@@ -585,3 +585,9 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
             self._lazy_load_name,
             self._lazy_load_version,
         )
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Allow extras to include the lazy load attributes
+        extra = "allow"
