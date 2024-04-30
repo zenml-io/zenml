@@ -149,7 +149,7 @@ steps:
 timeout: 3600s
 availableSecrets:
   secretManager:
-    - versionName: projects/$PROJECT_ID/secrets/docker-password/versions/1
-      env: PASSWORD
+    # - versionName: projects/$PROJECT_ID/secrets/docker-password/versions/1
+    #   env: PASSWORD
     - versionName: projects/$PROJECT_ID/secrets/docker-username/versions/1
       env: USERNAME
