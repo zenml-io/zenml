@@ -16,7 +16,8 @@ ingested already and you can pass a query in as a flag to the Python command
 used to run the pipeline:
 
 ```bash
-python run.py --rag-query "how do I use a custom materializer inside my own zenml steps? i.e. how do I set it? inside the @step decorator?" --model=gpt4
+python run.py --rag-query "how do I use a custom materializer inside my own zenml 
+steps? i.e. how do I set it? inside the @step decorator?" --model=gpt4
 ```
 
 ![](/docs/book/.gitbook/assets/rag-inference.png)
@@ -29,12 +30,15 @@ for the purposes of this initial guide we will keep it simple.
 Bringing everything together, the code for the inference pipeline is as follows:
 
 ```python
-def process_input_with_retrieval(input: str, model: str = OPENAI_MODEL) -> str:
-    """Process the input with retrieval."""
+def process_input_with_retrieval(
+    input: str, model: str = OPENAI_MODEL, n_items_retrieved: int = 5
+) -> str:
     delimiter = "```"
 
     # Step 1: Get documents related to the user input from database
-    related_docs = get_topn_similar_docs(get_embeddings(input), get_db_conn())
+    related_docs = get_topn_similar_docs(
+        get_embeddings(input), get_db_conn(), n=n_items_retrieved
+    )
 
     # Step 2: Get completion from OpenAI API
     # Set system message to help set appropriate tone and context for model
@@ -44,7 +48,9 @@ def process_input_with_retrieval(input: str, model: str = OPENAI_MODEL) -> str:
     You respond in a concise, technically credible tone. \
     You ONLY use the context from the ZenML documentation to provide relevant
     answers. \
-    You do not make up answers or provide opinions that you don't have information to support. \
+    You do not make up answers or provide opinions that you don't have
+    information to support. \
+    If you are unsure or don't know, just say so. \
     """
 
     # Prepare messages to pass to model
@@ -69,32 +75,42 @@ the documents in the index store to find the most similar documents to the
 query:
 
 ```python
-def get_topn_similar_docs(query_embedding, conn, n: int = 5):
-    """Fetches the top n most similar documents to the given query embedding from the database.
-
-    Args:
-        query_embedding (list): The query embedding to compare against.
-        conn (psycopg2.extensions.connection): The database connection object.
-        n (int, optional): The number of similar documents to fetch. Defaults to 5.
-
-    Returns:
-        list: A list of tuples containing the content of the top n most similar documents.
-    """
+def get_topn_similar_docs(
+    query_embedding: List[float],
+    conn: psycopg2.extensions.connection,
+    n: int = 5,
+    include_metadata: bool = False,
+    only_urls: bool = False,
+) -> List[Tuple]:
     embedding_array = np.array(query_embedding)
     register_vector(conn)
     cur = conn.cursor()
-    cur.execute(
-        f"SELECT content FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
-        (embedding_array,),
-    )
+
+    if include_metadata:
+        cur.execute(
+            f"SELECT content, url FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
+            (embedding_array,),
+        )
+    elif only_urls:
+        cur.execute(
+            f"SELECT url FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
+            (embedding_array,),
+        )
+    else:
+        cur.execute(
+            f"SELECT content FROM embeddings ORDER BY embedding <=> %s LIMIT {n}",
+            (embedding_array,),
+        )
+
     return cur.fetchall()
 ```
 
-Luckily we are able to get these similar documents using an inbuilt function in
-PostgreSQL, `ORDER BY embedding <=> %s`, which orders the documents by their
-similarity to the query embedding. This is a very efficient way to get the most
-relevant documents to the query and is a great example of how we can leverage
-the power of the database to do the heavy lifting for us.
+Luckily we are able to get these similar documents using a function in
+[`pgvector`](https://github.com/pgvector/pgvector), a plugin package for
+PostgreSQL: `ORDER BY embedding <=> %s` orders the documents by their similarity
+to the query embedding. This is a very efficient way to get the most relevant
+documents to the query and is a great example of how we can leverage the power
+of the database to do the heavy lifting for us.
 
 For the `get_completion_from_messages` function, we use
 [`litellm`](https://github.com/BerriAI/litellm) as a universal interface that

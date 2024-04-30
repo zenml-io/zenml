@@ -35,7 +35,7 @@ class TensorflowIntegration(Integration):
             not platform.system() == "Darwin"
             or not platform.machine() == "arm64"
         ):
-            import tensorflow_io  # type: ignore [import-untyped]
+            import tensorflow_io  # type: ignore
 
         from zenml.integrations.tensorflow import materializers  # noqa
 
