@@ -1,4 +1,65 @@
 <!-- markdown-link-check-disable -->
+
+# 0.57.0rc1
+
+This release candidate introduces support for the fully new ZenML Dashboard experience, 
+a number of improvement to documentation and a few bug fixes.
+
+## What's Changed
+* Add Comet to Experiment Trackers in TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2637
+* Fix Comet docs formatting by @strickvl in https://github.com/zenml-io/zenml/pull/2639
+* ZenML Server activation and user on-boarding by @stefannica in https://github.com/zenml-io/zenml/pull/2630
+* Slimmer and more secure Docker container images by @stefannica in https://github.com/zenml-io/zenml/pull/2617
+* Add dashboard v2 source context by @schustmi in https://github.com/zenml-io/zenml/pull/2642
+* Support New Dashboard release by @avishniakov in https://github.com/zenml-io/zenml/pull/2635
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.4...0.57.0rc1
+
+# 0.56.4
+
+This release brings a variety of bug fixes and enhancements, including a new
+Comet Experiment Tracker integration, additional support for the `uv` package
+installer for `zenml integration ...` commands which significantly improves
+the speed of integration installations and dependency management, and a new
+evaluation section in the LLMOps guide.
+
+In addition, it includes a number of bug fixes and documentation updates, such
+as a fix for cached artifacts produced via `save_artifact` inside steps linkage
+to the MCP.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot who contributed to this release by bumping the `mlflow` version to 2.12.1
+
+
+## What's Changed
+* Fix mariadb test script by @avishniakov in https://github.com/zenml-io/zenml/pull/2599
+* Disable CSP headers for the openAPI docs pages and fix API docs building by @stefannica in https://github.com/zenml-io/zenml/pull/2598
+* Add short motivating example for RAG pipeline by @strickvl in https://github.com/zenml-io/zenml/pull/2596
+* Fix DB backup and restore and add database upgrade testing improvements by @stefannica in https://github.com/zenml-io/zenml/pull/2607
+* Fix for #2556 by @avishniakov in https://github.com/zenml-io/zenml/pull/2603
+* Fix AWS service connector resource ID regexp by @stefannica in https://github.com/zenml-io/zenml/pull/2611
+* Add dry run for docs CI by @avishniakov in https://github.com/zenml-io/zenml/pull/2612
+* Completing and refining the CLI documentation by @bcdurak in https://github.com/zenml-io/zenml/pull/2605
+* Allow DB backup failures if the database version is 0.56.3 or earlier by @stefannica in https://github.com/zenml-io/zenml/pull/2613
+* Mixpanel grouping improvements by @schustmi in https://github.com/zenml-io/zenml/pull/2610
+* Add support for `uv` package installer for `zenml integration ...` commands by @strickvl in https://github.com/zenml-io/zenml/pull/2609
+* Add evaluation section to LLMOps guide by @strickvl in https://github.com/zenml-io/zenml/pull/2614
+* Fix GCP commands in docs for `project_id` by @strickvl in https://github.com/zenml-io/zenml/pull/2616
+* Minor fix for GitGuardian warnings. by @bcdurak in https://github.com/zenml-io/zenml/pull/2621
+* Bump mlflow to version 2.12.1 by @christianversloot in https://github.com/zenml-io/zenml/pull/2618
+* Updated security email by @htahir1 in https://github.com/zenml-io/zenml/pull/2625
+* Add Comet Experiment Tracker integration by @strickvl in https://github.com/zenml-io/zenml/pull/2620
+* Fix cached artifacts produced via `save_artifact` inside steps linkage to MCP by @avishniakov in https://github.com/zenml-io/zenml/pull/2619
+* Update MCP instructions by @avishniakov in https://github.com/zenml-io/zenml/pull/2632
+* Replace parse_obj by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2623
+* Fix imports in for `Model` in documentation by @strickvl in https://github.com/zenml-io/zenml/pull/2631
+* Return up-to-date `PipelineRunResponse` from pipeline run by @avishniakov in https://github.com/zenml-io/zenml/pull/2624
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.3...0.56.4
+
 # 0.56.3
 
 This release comes with a number of bug fixes and enhancements.

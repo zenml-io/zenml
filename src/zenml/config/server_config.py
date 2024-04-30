@@ -29,6 +29,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
+    DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT,
@@ -38,6 +39,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
+    DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ENV_ZENML_SERVER_PREFIX,
 )
 from zenml.enums import AuthScheme
@@ -206,6 +208,20 @@ class ServerConfiguration(BaseModel):
             one of the reserved values `disabled`, `no`, `none`, `false`, `off`
             or to an empty string, the `Permissions-Policy` header will not be
             included in responses.
+        use_legacy_dashboard: Whether to use the legacy dashboard. If set to
+            `True`, the dashboard will be used with the old UI. If set to
+            `False`, the new dashboard will be used.
+        server_name: The name of the ZenML server. Used only during initial
+            deployment. Can be changed later as a part of the server settings.
+        display_announcements: Whether to display announcements about ZenML in
+            the dashboard. Used only during initial deployment. Can be changed
+            later as a part of the server settings.
+        display_updates: Whether to display notifications about ZenML updates in
+            the dashboard. Used only during initial deployment. Can be changed
+            later as a part of the server settings.
+        auto_activate: Whether to automatically activate the server and create a
+            default admin user account with an empty password during the initial
+            deployment.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -274,6 +290,12 @@ class ServerConfiguration(BaseModel):
     secure_headers_permissions: Union[bool, str] = (
         DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
     )
+    use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
+
+    server_name: str = DEFAULT_ZENML_SERVER_NAME
+    display_announcements: bool = True
+    display_updates: bool = True
+    auto_activate: bool = False
 
     _deployment_id: Optional[UUID] = None
 

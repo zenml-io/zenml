@@ -531,6 +531,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
             email_opt_int(opted_in=True, email=email, source=event_source)
 
             GlobalConfiguration().user_email_opt_in = True
+            GlobalConfiguration().user_email = email
 
             # Add consent and email to user model
             client.update_user(

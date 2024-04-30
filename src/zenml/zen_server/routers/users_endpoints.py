@@ -17,6 +17,7 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from starlette.requests import Request
 
 from zenml.analytics.utils import email_opt_int
 from zenml.constants import (
@@ -44,6 +45,7 @@ from zenml.zen_server.auth import (
     authorize,
 )
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rate_limit import RequestLimiter
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
 )
@@ -226,6 +228,10 @@ def get_user(
 # When the auth scheme is set to EXTERNAL, users cannot be updated via the
 # API.
 if server_config().auth_scheme != AuthScheme.EXTERNAL:
+    pass_change_limiter = RequestLimiter(
+        day_limit=server_config().login_rate_limit_day,
+        minute_limit=server_config().login_rate_limit_minute,
+    )
 
     @router.put(
         "/{user_name_or_id}",
@@ -240,6 +246,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     def update_user(
         user_name_or_id: Union[str, UUID],
         user_update: UserUpdate,
+        request: Request,
         auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Updates a specific user.
@@ -247,6 +254,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         Args:
             user_name_or_id: Name or ID of the user.
             user_update: the user to use for the update.
+            request: The request object.
             auth_context: Authentication context.
 
         Returns:
@@ -283,13 +291,15 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                     "The current password must be supplied when changing the "
                     "password."
                 )
-            auth_user = zen_store().get_auth_user(user_name_or_id)
-            if not UserAuthModel.verify_password(
-                user_update.old_password, auth_user
-            ):
-                raise IllegalOperationError(
-                    "The current password is incorrect."
-                )
+
+            with pass_change_limiter.limit_failed_requests(request):
+                auth_user = zen_store().get_auth_user(user_name_or_id)
+                if not UserAuthModel.verify_password(
+                    user_update.old_password, auth_user
+                ):
+                    raise IllegalOperationError(
+                        "The current password is incorrect."
+                    )
 
         if (
             user_update.is_admin is not None
@@ -529,12 +539,14 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def update_myself(
         user: UserUpdate,
+        request: Request,
         auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Updates a specific user.
 
         Args:
             user: the user to use for the update.
+            request: The request object.
             auth_context: The authentication context.
 
         Returns:
@@ -554,11 +566,14 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                     "The current password must be supplied when changing the "
                     "password."
                 )
-            auth_user = zen_store().get_auth_user(auth_context.user.id)
-            if not UserAuthModel.verify_password(user.old_password, auth_user):
-                raise IllegalOperationError(
-                    "The current password is incorrect."
-                )
+            with pass_change_limiter.limit_failed_requests(request):
+                auth_user = zen_store().get_auth_user(auth_context.user.id)
+                if not UserAuthModel.verify_password(
+                    user.old_password, auth_user
+                ):
+                    raise IllegalOperationError(
+                        "The current password is incorrect."
+                    )
 
         user.activation_token = current_user.activation_token
         user.active = current_user.active

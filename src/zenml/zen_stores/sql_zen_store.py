@@ -62,6 +62,8 @@ from sqlmodel import (
 )
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
+from zenml.analytics import track
+from zenml.analytics.context import AnalyticsContext
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import (
     analytics_disabler,
@@ -79,8 +81,11 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    ENV_ZENML_SERVER,
+    FINISHED_ONBOARDING_SURVEY_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
+    handle_bool_env_var,
 )
 from zenml.enums import (
     AuthScheme,
@@ -198,8 +203,11 @@ from zenml.models import (
     SecretRequest,
     SecretResponse,
     SecretUpdate,
+    ServerActivationRequest,
     ServerDatabaseType,
     ServerModel,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -273,7 +281,6 @@ from zenml.zen_stores.schemas import (
     CodeRepositorySchema,
     EventSourceSchema,
     FlavorSchema,
-    IdentitySchema,
     ModelSchema,
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
@@ -287,6 +294,7 @@ from zenml.zen_stores.schemas import (
     RunMetadataSchema,
     ScheduleSchema,
     SecretSchema,
+    ServerSettingsSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
     StackSchema,
@@ -1036,13 +1044,12 @@ class SqlZenStore(BaseZenStore):
             )
 
     def _initialize_database(self) -> None:
-        """Initialize the database on first use."""
+        """Initialize the database if not already initialized."""
+        # Make sure the default workspace exists
         self._get_or_create_default_workspace()
-
-        config = ServerConfiguration.get_server_config()
-        # If the auth scheme is external, don't create the default user
-        if config.auth_scheme != AuthScheme.EXTERNAL:
-            self._get_or_create_default_user()
+        # Make sure the server is activated and the default user exists, if
+        # applicable
+        self._auto_activate_server()
 
     def _get_db_backup_file_path(self) -> str:
         """Get the path to the database backup file.
@@ -1397,19 +1404,35 @@ class SqlZenStore(BaseZenStore):
         elif self.alembic.db_is_empty():
             # Case 1: the database is empty. We can just create the
             # tables from scratch with from SQLModel. After tables are
-            # created we put an alembic revision to latest and populate
-            # identity table with needed info.
+            # created we put an alembic revision to latest and initialize
+            # the settings table with needed info.
             logger.info("Creating database tables")
             with self.engine.begin() as conn:
                 conn.run_callable(
                     SQLModel.metadata.create_all  # type: ignore[arg-type]
                 )
             with Session(self.engine) as session:
+                server_config = ServerConfiguration.get_server_config()
+
+                # Initialize the settings
                 id_ = (
-                    ServerConfiguration.get_server_config().external_server_id
+                    server_config.external_server_id
                     or GlobalConfiguration().user_id
                 )
-                session.add(IdentitySchema(id=id_))
+                session.add(
+                    ServerSettingsSchema(
+                        id=id_,
+                        server_name=server_config.server_name,
+                        # We always initialize the server as inactive and decide
+                        # whether to activate it later in `_initialize_database`
+                        active=False,
+                        enable_analytics=GlobalConfiguration().analytics_opt_in,
+                        display_announcements=server_config.display_announcements,
+                        display_updates=server_config.display_updates,
+                        logo_url=None,
+                        onboarding_state=None,
+                    )
+                )
                 session.commit()
             self.alembic.stamp("head")
         else:
@@ -1447,9 +1470,12 @@ class SqlZenStore(BaseZenStore):
         model = super().get_store_info()
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
+        settings = self.get_server_settings(hydrate=True)
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
-        model.id = self.get_deployment_id()
+        model.id = settings.server_id
+        model.active = settings.active
+        model.analytics_enabled = settings.enable_analytics
         return model
 
     def get_deployment_id(self) -> UUID:
@@ -1464,13 +1490,159 @@ class SqlZenStore(BaseZenStore):
         """
         # Fetch the deployment ID from the database
         with Session(self.engine) as session:
-            identity = session.exec(select(IdentitySchema)).first()
+            identity = session.exec(select(ServerSettingsSchema)).first()
 
             if identity is None:
                 raise KeyError(
                     "The deployment ID could not be loaded from the database."
                 )
             return identity.id
+
+    # -------------------- Server Settings --------------------
+
+    def _get_server_settings(self, session: Session) -> ServerSettingsSchema:
+        """Get the server settings or fail.
+
+        Args:
+            session: SQLAlchemy session to use.
+
+        Returns:
+            The settings table.
+
+        Raises:
+            RuntimeError: If the settings table is not found.
+        """
+        settings = session.exec(select(ServerSettingsSchema)).first()
+
+        if settings is None:
+            raise RuntimeError("The server settings have not been initialized")
+
+        return settings
+
+    def get_server_settings(
+        self, hydrate: bool = True
+    ) -> ServerSettingsResponse:
+        """Get the server settings.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The server settings.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+            return settings.to_model(include_metadata=hydrate)
+
+    def update_server_settings(
+        self, settings_update: ServerSettingsUpdate
+    ) -> ServerSettingsResponse:
+        """Update the server settings.
+
+        Args:
+            settings_update: The server settings update.
+
+        Returns:
+            The updated server settings.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+
+            analytics_metadata = settings_update.dict(
+                include={
+                    "enable_analytics",
+                    "display_announcements",
+                    "display_updates",
+                },
+                exclude_none=True,
+            )
+            # Filter to only include the values that changed in this update
+            analytics_metadata = {
+                key: value
+                for key, value in analytics_metadata.items()
+                if getattr(settings, key) != value
+            }
+
+            track(
+                event=AnalyticsEvent.SERVER_SETTINGS_UPDATED,
+                metadata=analytics_metadata,
+            )
+
+            settings.update(settings_update)
+            session.add(settings)
+            session.commit()
+            session.refresh(settings)
+
+            return settings.to_model(include_metadata=True)
+
+    def activate_server(
+        self, request: ServerActivationRequest
+    ) -> Optional[UserResponse]:
+        """Activate the server and optionally create the default admin user.
+
+        Args:
+            request: The server activation request.
+
+        Returns:
+            The default admin user that was created, if any.
+
+        Raises:
+            IllegalOperationError: If the server is already active.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+
+            if settings.active:
+                # The server can only be activated once
+                raise IllegalOperationError("The server is already active.")
+
+            settings.update(request)
+            settings.active = True
+            session.add(settings)
+            session.commit()
+
+        # Update the server settings to reflect the activation
+        self.update_server_settings(request)
+
+        if request.admin_username and request.admin_password is not None:
+            # Create the default admin user
+            return self.create_user(
+                UserRequest(
+                    name=request.admin_username,
+                    active=True,
+                    password=request.admin_password,
+                    is_admin=True,
+                )
+            )
+
+        return None
+
+    def _auto_activate_server(self) -> None:
+        """Automatically activate the server if needed."""
+        settings = self.get_server_settings()
+
+        if settings.active:
+            # Activation only happens once
+            return
+
+        if not self._activate_server_at_initialization():
+            # The server is not configured to be activated automatically
+            return
+
+        # Activate the server
+        request = ServerActivationRequest()
+        if self._create_default_user_on_db_init():
+            # Create the default admin user too, if needed
+
+            request.admin_username = os.getenv(
+                ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME
+            )
+            request.admin_password = os.getenv(
+                ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
+            )
+
+        self.activate_server(request)
 
     # ------------------------- API Keys -------------------------
 
@@ -7567,6 +7739,48 @@ class SqlZenStore(BaseZenStore):
 
         return False
 
+    def _get_active_user(self, session: Session) -> UserSchema:
+        """Get the active user.
+
+        Depending on context, this is:
+
+        - the user that is currently authenticated, when running in the ZenML
+        server
+        - the default admin user, when running in the ZenML client connected
+        directly to a database
+
+        Args:
+            session: The database session to use for the query.
+
+        Returns:
+            The active user schema.
+
+        Raises:
+            KeyError: If no active user is found.
+        """
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.auth import get_auth_context
+
+            # If the code is running on the server, use the auth context.
+            auth_context = get_auth_context()
+            if auth_context is not None:
+                return self._get_account_schema(
+                    session=session, account_name_or_id=auth_context.user.id
+                )
+
+            raise KeyError("No active user found.")
+        else:
+            # If the code is running on the client, use the default user.
+            admin_username = os.getenv(
+                ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME
+            )
+            return self._get_account_schema(
+                account_name_or_id=admin_username,
+                session=session,
+                service_account=False,
+            )
+
     def create_user(self, user: UserRequest) -> UserResponse:
         """Creates a new user.
 
@@ -7602,6 +7816,21 @@ class SqlZenStore(BaseZenStore):
             session.add(new_user)
             # on commit an IntegrityError may arise we let it bubble up
             session.commit()
+
+            server_info = self.get_store_info()
+            with AnalyticsContext() as context:
+                context.user_id = new_user.id
+
+                context.group(
+                    group_id=server_info.id,
+                    traits={
+                        "server_id": server_info.id,
+                        "version": server_info.version,
+                        "deployment_type": str(server_info.deployment_type),
+                        "database_type": str(server_info.database_type),
+                    },
+                )
+
             return new_user.to_model(include_metadata=True)
 
     def get_user(
@@ -7632,20 +7861,21 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If the user does not exist.
         """
-        if not user_name_or_id:
-            user_name_or_id = self._default_user_name
-
         with Session(self.engine) as session:
-            # If a UUID is passed, we also allow fetching service accounts
-            # with that ID.
-            service_account: Optional[bool] = False
-            if uuid_utils.is_valid_uuid(user_name_or_id):
-                service_account = None
-            user = self._get_account_schema(
-                user_name_or_id,
-                session=session,
-                service_account=service_account,
-            )
+            if user_name_or_id is None:
+                # Get the active account, depending on the context
+                user = self._get_active_user(session=session)
+            else:
+                # If a UUID is passed, we also allow fetching service accounts
+                # with that ID.
+                service_account: Optional[bool] = False
+                if uuid_utils.is_valid_uuid(user_name_or_id):
+                    service_account = None
+                user = self._get_account_schema(
+                    user_name_or_id,
+                    session=session,
+                    service_account=service_account,
+                )
 
             return user.to_model(
                 include_private=include_private, include_metadata=hydrate
@@ -7730,23 +7960,27 @@ class SqlZenStore(BaseZenStore):
             )
 
             if (
-                existing_user.name == self._default_user_name
+                existing_user.is_admin is True
                 and user_update.is_admin is False
             ):
-                raise IllegalOperationError(
-                    "The default user's admin status cannot be removed."
+                # There must be at least one admin account configured
+                admin_accounts_count = session.scalar(
+                    select([func.count(UserSchema.id)]).where(
+                        UserSchema.is_admin == True  # noqa: E712
+                    )
                 )
+                if admin_accounts_count == 1:
+                    raise IllegalOperationError(
+                        "There has to be at least one admin account configured "
+                        "on your system at all times. This is the only admin "
+                        "account and therefore it cannot be demoted to a "
+                        "regular user account."
+                    )
 
             if (
                 user_update.name is not None
                 and user_update.name != existing_user.name
             ):
-                if existing_user.name == self._default_user_name:
-                    raise IllegalOperationError(
-                        "The username of the default user account cannot be "
-                        "changed."
-                    )
-
                 try:
                     self._get_account_schema(
                         user_update.name,
@@ -7761,13 +7995,36 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
+            user_model = existing_user.to_model(include_metadata=True)
+            survey_finished_before = (
+                FINISHED_ONBOARDING_SURVEY_KEY in user_model.user_metadata
+            )
+
             existing_user.update_user(user_update=user_update)
             session.add(existing_user)
             session.commit()
 
             # Refresh the Model that was just created
             session.refresh(existing_user)
-            return existing_user.to_model(include_metadata=True)
+            updated_user = existing_user.to_model(include_metadata=True)
+
+            survey_finished_after = (
+                FINISHED_ONBOARDING_SURVEY_KEY in updated_user.user_metadata
+            )
+
+            if not survey_finished_before and survey_finished_after:
+                analytics_metadata = {
+                    **updated_user.user_metadata,
+                    "email": updated_user.email,
+                    "name": updated_user.name,
+                    "full_name": updated_user.full_name,
+                }
+                track(
+                    event=AnalyticsEvent.USER_ENRICHED,
+                    metadata=analytics_metadata,
+                )
+
+            return updated_user
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
@@ -7783,10 +8040,19 @@ class SqlZenStore(BaseZenStore):
             user = self._get_account_schema(
                 user_name_or_id, session=session, service_account=False
             )
-            if user.name == self._default_user_name:
-                raise IllegalOperationError(
-                    "The default user account cannot be deleted."
+            if user.is_admin:
+                # Don't allow the last admin to be deleted
+                admin_accounts_count = session.scalar(
+                    select([func.count(UserSchema.id)]).where(
+                        UserSchema.is_admin == True  # noqa: E712
+                    )
                 )
+                if admin_accounts_count == 1:
+                    raise IllegalOperationError(
+                        "There has to be at least one admin account configured "
+                        "on your system. This is the only admin account and "
+                        "therefore it cannot be deleted."
+                    )
             if self._account_owns_resources(user, session=session):
                 raise IllegalOperationError(
                     "The user account has already been used to create "
@@ -7798,38 +8064,76 @@ class SqlZenStore(BaseZenStore):
             session.delete(user)
             session.commit()
 
-    @property
-    def _default_user_name(self) -> str:
-        """Get the default user name.
+    def _create_default_user_on_db_init(self) -> bool:
+        """Check if the default user should be created on database initialization.
+
+        We create a default admin user account with an empty password when the
+        database is initialized in the following cases:
+
+        * local ZenML client deployments: the client is not connected to a ZenML
+        server, but uses the database directly.
+        * server deployments that set the `auto_activate` server
+        setting explicitly to `True`. This includes:
+            * local ZenML server deployments: the server is deployed locally
+            with `zenml up`
+            * local ZenML docker deployments: the server is deployed locally
+            with `zenml up --docker`
+        * legacy dashboard deployments
+
+        For all other cases, or if the external authentication scheme is used,
+        no default admin user is created. The user must activate the server and
+        create a default admin user account the first time they visit the
+        dashboard.
 
         Returns:
-            The default user name.
+            Whether the default user should be created on database
+            initialization.
         """
-        return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.utils import server_config
 
-    def _get_or_create_default_user(self) -> UserResponse:
-        """Get or create the default user if it doesn't exist.
+            config = server_config()
+
+            if config.auth_scheme == AuthScheme.EXTERNAL:
+                # Running inside server with external auth
+                return False
+
+            if config.auto_activate or config.use_legacy_dashboard:
+                return True
+
+        else:
+            # Running inside client
+            return True
+
+        return False
+
+    def _activate_server_at_initialization(self) -> bool:
+        """Check if the server should be activated on database initialization.
+
+        We activate the server when the database is initialized in the following
+        cases:
+
+        * all the cases in which the default user account is also automatically
+        created on initialization (see `_create_default_user_on_db_init`)
+        * when the authentication scheme is set to external
 
         Returns:
-            The default user.
+            Whether the server should be activated on database initialization.
         """
-        default_user_name = self._default_user_name
-        try:
-            return self.get_user(default_user_name)
-        except KeyError:
-            password = os.getenv(
-                ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
-            )
+        if self._create_default_user_on_db_init():
+            return True
 
-            logger.info(f"Creating default user '{default_user_name}' ...")
-            return self.create_user(
-                UserRequest(
-                    name=default_user_name,
-                    active=True,
-                    password=password,
-                    is_admin=True,
-                )
-            )
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.utils import server_config
+
+            config = server_config()
+
+            if config.auth_scheme == AuthScheme.EXTERNAL:
+                return True
+
+        return False
 
     # ----------------------------- Workspaces -----------------------------
 
