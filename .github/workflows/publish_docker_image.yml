@@ -8,6 +8,7 @@ on:
         required: false
         type: string
         default: release-cloudbuild.yaml
+  pull_request:
 jobs:
   publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub
@@ -35,4 +36,4 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=${{inputs.config_file}} \
-            --substitutions=TAG_NAME=${{github.ref_name}} .
+            --substitutions=TAG_NAME=0.57.0rc1 .

@@ -21,6 +21,9 @@ FROM base AS builder
 ARG VIRTUAL_ENV=/opt/venv
 ARG ZENML_VERSION
 
+RUN echo zenml${ZENML_VERSION:+==$ZENML_VERSION}
+RUN echo ZENML_VERSION
+
 ENV \
   # Set up virtual environment
   VIRTUAL_ENV=$VIRTUAL_ENV \
