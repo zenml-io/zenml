@@ -254,4 +254,5 @@ class LazyRunMetadataResponse(RunMetadataResponse):
         raise RuntimeError(
             "Cannot access run metadata metadata before pipeline runs."
         )
+
     model_config = ConfigDict(extra="allow")
