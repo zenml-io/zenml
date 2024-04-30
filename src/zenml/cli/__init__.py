@@ -1855,8 +1855,6 @@ server:
 
 ```yaml
 url: <The URL of the ZenML server>
-username: <The username to use for authentication>
-password: <The password to use for authentication>
 verify_ssl: |
    <Either a boolean, in which case it controls whether the
    server's TLS certificate is verified, or a string, in which case it
@@ -1865,11 +1863,10 @@ verify_ssl: |
 ```
 
 Both options can be combined, in which case the command line arguments will
-override the values in the YAML file. For example, it is possible and
-recommended that you supply the password only as a command line argument:
+override the values in the YAML file. For example:
 
 ```bash
-zenml connect --username zenml --password=... --config=/path/to/zenml_server_config.yaml
+zenml connect --no-verify-ssl --config=/path/to/zenml_server_config.yaml
 ```
 
 You can open the ZenML dashboard of your currently connected ZenML server using
@@ -1940,13 +1937,7 @@ type: sql
 url: mysql://<username>:<password>@mysql.database.com/<database_name>
 ssl_ca: |
    -----BEGIN CERTIFICATE-----
-   MIIEBjCCAu6gAwIBAgIJAMc0ZzaSUK51MA0GCSqGSIb3DQEBCwUAMIGPMQswCQYD
-   VQQGEwJVUzEQMA4GA1UEBwwHU2VhdHRsZTETMBEGA1UECAwKV2FzaGluZ3RvbjEi
-   MCAGA1UECgwZQW1hem9uIFdlYiBTZXJ2aWNlcywgSW5jLjETMBEGA1UECwwKQW1h
    ...
-   KoZIzj0EAwMDaAAwZQIxAIqqZWCSrIkZ7zsv/FygtAusW6yvlL935YAWYPVXU30m
-   jkMFLM+/RJ9GMvnO8jHfCgIwB+whlkcItzE9CRQ6CsMo/d5cEHDUu/QW6jSIh9BR
-   OGh9pTYPVkUbBiKPA7lVVhre
    -----END CERTIFICATE-----
 
 ssl_cert: null
@@ -2477,8 +2468,7 @@ zenml deploy
 ```
 
 You will be prompted to provide a name for your deployment and details like what
-cloud provider you want to deploy to, in addition to the username, password, and
-email you want to set for the default user — and that's it! It creates the
+cloud provider you want to deploy to — and that's it! It creates the
 database and any VPCs, permissions, and more that are needed.
 
 In order to be able to run the deploy command, you should have your cloud
