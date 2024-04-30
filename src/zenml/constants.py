@@ -250,7 +250,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP = (
     "default-src 'none'; "
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widgets-v3.featureos.app; "
-    "connect-src 'self' https://sdkdocs.zenml.io https://hubapi.zenml.io; "
+    "connect-src 'self' https://sdkdocs.zenml.io https://hubapi.zenml.io https://analytics.zenml.io; "
     "img-src 'self' data: https://public-flavor-logos.s3.eu-central-1.amazonaws.com"
     " https://avatar.vercel.sh; "
     "style-src 'self' 'unsafe-inline'; "
