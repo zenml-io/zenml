@@ -140,10 +140,6 @@ Successfully registered service connector `gcs-zenml-bucket-sl` with access to t
 ```
 {% endcode %}
 
-Alternatively, you can configure a GCP Service Connector through the ZenML dashboard, but you'll need to provide GCP credentials explicitly, such as [a GCP service account key](https://cloud.google.com/iam/docs/keys-create-delete#creating):
-
-![GCP Service Connector Type](../../../.gitbook/assets/gcp-service-connector-type.png)
-![GCP GCS Service Connector Configuration](../../../.gitbook/assets/gcp-gcs-service-connector-configuration.png)
 
 > **Note**: Please remember to grant the entity associated with your GCP credentials permissions to read and write to your GCS bucket as well as to list accessible GCS buckets. For a full list of permissions required to use a GCP Service Connector to access one or more GCS buckets, please refer to the [GCP Service Connector GCS bucket resource type documentation](../../auth-management/gcp-service-connector.md#gcs-bucket) or read the documentation available in the interactive CLI commands and dashboard. The GCP Service Connector supports [many different authentication methods](../../auth-management/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
@@ -199,9 +195,6 @@ Successfully connected artifact store `gcs-zenml-bucket-sl` to the following res
 ``` 
 {% endcode %}
 
-A similar experience is available when you configure the GCS Artifact Store through the ZenML dashboard:
-
-![GCS Artifact Store Configuration](../../../.gitbook/assets/gcs-artifact-store-service-connector.png)
 
 As a final step, you can use the GCS Artifact Store in a ZenML Stack:
 

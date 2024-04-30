@@ -137,10 +137,6 @@ Successfully registered service connector `aws-us-east-1` with access to the fol
 ```
 {% endcode %}
 
-Alternatively, you can configure an AWS Service Connector through the ZenML dashboard, but you'll need to provide AWS credentials explicitly, such as [an AWS access key](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/) associated with your AWS root account or IAM user account:
-
-![AWS Service Connector Type](../../../.gitbook/assets/aws-service-connector-type.png)
-![AWS ECR Service Connector Configuration](../../../.gitbook/assets/aws-ecr-service-connector-configuration.png)
 
 > **Note**: Please remember to grant the entity associated with your AWS credentials permissions to read and write to one or more ECR repositories as well as to list accessible ECR repositories. For a full list of permissions required to use an AWS Service Connector to access an ECR registry, please refer to the [AWS Service Connector ECR registry resource type documentation](../../auth-management/aws-service-connector.md#ecr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The AWS Service Connector supports [many different authentication methods](../../auth-management/aws-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
@@ -191,10 +187,6 @@ Successfully connected container registry `aws-us-east-1` to the following resou
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
-
-A similar experience is available when you configure the AWS Container Registry through the ZenML dashboard:
-
-![AWS Container Registry Configuration](../../../.gitbook/assets/aws-container-registry-service-connector.png)
 
 As a final step, you can use the AWS Container Registry in a ZenML Stack:
 

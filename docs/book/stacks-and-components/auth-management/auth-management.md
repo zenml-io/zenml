@@ -112,7 +112,6 @@ zenml service-connector list-types
 
 Service Connector Types are also displayed in the dashboard during the configuration of a new Service Connector:
 
-![Service Connector Types](../../.gitbook/assets/service-connector-types.png)
 
 The cloud provider of choice for our example is AWS and we're looking to hook up an S3 bucket to an S3 Artifact Store Stack Component. We'll use the AWS Service Connector Type.
 
@@ -357,9 +356,6 @@ Successfully registered service connector `aws-s3` with access to the following 
 
 The CLI validates and shows all S3 buckets that can be accessed with the auto-discovered credentials.
 
-The auto-configuration feature is not available in the dashboard, so registering an AWS Service Connector requires configuring credentials explicitly:
-
-![AWS S3 Service Connector Configuration](../../.gitbook/assets/aws-s3-service-connector-configuration.png)
 
 {% hint style="info" %}
 The ZenML CLI provides an interactive way of registering Service Connectors. Just use the `-i` command line argument and follow the interactive guide:
@@ -523,9 +519,6 @@ zenml artifact-store connect s3-zenfiles -i
 ```
 {% endhint %}
 
-The dashboard equivalent:
-
-![S3 Artifact Store Configuration with Service Connector](../../.gitbook/assets/s3-artifact-store-service-connector.png)
 
 The S3 Artifact Store Stack Component we just connected to the infrastructure is now ready to be used in a stack to run a pipeline:
 

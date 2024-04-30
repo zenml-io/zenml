@@ -194,11 +194,6 @@ Successfully registered service connector `gcp-zenml-core` with access to the fo
 ```
 {% endcode %}
 
-Alternatively, you can configure a GCP Service Connector through the ZenML dashboard, but you'll need to provide GCP credentials explicitly, such as [a GCP service account key](https://cloud.google.com/iam/docs/keys-create-delete#creating):
-
-![GCP Service Connector Type](../../../.gitbook/assets/gcp-service-connector-type.png)
-![GCP GCR Service Connector Configuration](../../../.gitbook/assets/gcp-gcr-service-connector-configuration.png)
-
 > **Note**: Please remember to grant the entity associated with your GCP credentials permissions to read and write to your GCR registry. For a full list of permissions required to use a GCP Service Connector to access a GCR registry, please refer to the [GCP Service Connector GCR registry resource type documentation](../../auth-management/gcp-service-connector.md#gcr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The GCP Service Connector supports [many different authentication methods](../../auth-management/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
 
 If you already have one or more GCP Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the GCR registry you want to use for your GCP Container Registry by running e.g.:
@@ -268,10 +263,6 @@ Successfully connected container registry `gcp-zenml-core` to the following reso
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
-
-A similar experience is available when you configure the GCP Container Registry through the ZenML dashboard:
-
-![GCP Container Registry Configuration](../../../.gitbook/assets/gcp-container-registry-service-connector.png)
 
 As a final step, you can use the GCP Container Registry in a ZenML Stack:
 

@@ -235,8 +235,6 @@ Pipeline run `training_pipeline-2023_04_29-09_19_54_273710` has finished in 0.23
 
 In the dashboard, you should now be able to see this new run, along with its runtime configuration and a visualization of the training data.
 
-<figure><img src="../../.gitbook/assets/RunWithVisualization.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
-
 ### Configure with a YAML file
 
 Instead of configuring your pipeline runs in code, you can also do so from a YAML file. This is best when we do not want to make unnecessary changes to the code; in production this is usually the case.

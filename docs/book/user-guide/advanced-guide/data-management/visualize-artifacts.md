@@ -4,9 +4,7 @@ description: Configuring ZenML to display data visualizations in the dashboard.
 
 # Visualize artifacts
 
-ZenML automatically saves visualizations of many common data types and allows you to view these visualizations in the ZenML dashboard:
-
-![ZenML Artifact Visualizations](<../../../.gitbook/assets/artifact_visualization_dashboard.png>)
+ZenML automatically saves visualizations of many common data types and allows you to view these visualizations in the ZenML dashboard.
 
 Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the `artifact.visualize()` method:
 
@@ -74,10 +72,6 @@ def my_step() -> CSVString:
     some_csv = "a,b,c\n1,2,3"
     return CSVString(some_csv)
 ```
-
-This would create the following visualization in the dashboard:
-
-![CSV Visualization Example](../../../.gitbook/assets/artifact_visualization_csv.png)
 
 ### Visualization via Materializers
 
