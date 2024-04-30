@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, ValidationError, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
@@ -371,6 +371,28 @@ class ServiceConnectorUpdate(BaseUpdate):
             configuration=configuration,
             secrets=secrets,
         )
+
+    def convert_to_request(self) -> "ServiceConnectorRequest":
+        """Method to generate a service connector request object from self.
+
+        For certain operations, the service connector update model need to
+        adhere to the limitations set by the request model. In order to use
+        update models in such situations, we need to be able to convert an
+        update model into a request model.
+
+        Returns:
+            The equivalent request model
+
+        Raises:
+            RuntimeError, if the model can not be converted to a request model.
+        """
+        try:
+            return ServiceConnectorRequest.model_validate(self.model_dump())
+        except ValidationError as e:
+            raise RuntimeError(
+                "The service connector update model can not be converted into "
+                f"an equivalent request model: {e}"
+            )
 
 
 # ------------------ Response Model ------------------
@@ -989,7 +1011,12 @@ def _validate_and_configure_resources(
             f"{supported_attrs}",
         )
     # Warn about secrets that are not part of the configuration schema
-    for attr_name in set(secrets.keys()) - connector.secrets.keys():
+    connector_secrets = (
+        set(connector.secrets.keys())
+        if connector.secrets is not None
+        else set()
+    )
+    for attr_name in set(secrets.keys()) - connector_secrets:
         logger.warning(
             f"Ignoring unknown attribute in connector '{connector.name}' "
             f"configuration {attr_name}. Supported attributes are: "

@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from zenml.models import (
         ServiceConnectorRequest,
         ServiceConnectorResponse,
-        ServiceConnectorUpdate,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
 logger = get_logger(__name__)
@@ -164,7 +163,6 @@ class ServiceConnectorRegistry:
         model: Union[
             "ServiceConnectorRequest",
             "ServiceConnectorResponse",
-            "ServiceConnectorUpdate",
         ],
     ) -> "ServiceConnector":
         """Validate a service connector model and create an instance from it.
