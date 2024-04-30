@@ -25,7 +25,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.prodigy.flavors.prodigy_annotator_flavor import (
     ProdigyAnnotatorConfig,
 )
-
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack.authentication_mixin import AuthenticationMixin
@@ -154,9 +153,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             )
         api_key = secret.secret_values.get("api_key")
         if not api_key:
-            raise ValueError(
-                "Unable to access Prodigy API key from secret."
-            )
+            raise ValueError("Unable to access Prodigy API key from secret.")
         return Client(url=self.get_url(), api_key=api_key)
 
     def _connection_available(self) -> bool:

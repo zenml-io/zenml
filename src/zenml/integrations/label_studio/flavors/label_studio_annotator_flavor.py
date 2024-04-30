@@ -30,9 +30,7 @@ DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
 DEFAULT_LOCAL_LABEL_STUDIO_PORT = 8093
 
 
-class ProdigyAnnotatorConfig(
-    BaseAnnotatorConfig, AuthenticationConfigMixin
-):
+class ProdigyAnnotatorConfig(BaseAnnotatorConfig, AuthenticationConfigMixin):
     """Config for the Label Studio annotator.
 
     Attributes:
