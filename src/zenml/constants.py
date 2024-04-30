@@ -248,7 +248,11 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP = "0"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
 _csp_script_src_urls = ["https://widgets-v3.featureos.app"]
-_csp_connect_src_urls = ["https://sdkdocs.zenml.io", "https://hubapi.zenml.io"]
+_csp_connect_src_urls = [
+    "https://sdkdocs.zenml.io",
+    "https://hubapi.zenml.io",
+    "https://analytics.zenml.io",
+]
 _csp_img_src_urls = [
     "https://public-flavor-logos.s3.eu-central-1.amazonaws.com",
     "https://avatar.vercel.sh",
