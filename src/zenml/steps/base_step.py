@@ -813,6 +813,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
                 "model": model,
+                "retry": retry,
             }
         )
         config = StepConfigurationUpdate(**values)

@@ -220,6 +220,7 @@ class StepRunner:
                         return_values = step_instance.call_entrypoint(
                             **function_params
                         )
+                        step_failed = False
                     except BaseException as step_exception:  # noqa: E722
                         step_failed = True
                         retries += 1
