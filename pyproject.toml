@@ -53,7 +53,7 @@ gitpython = "^3.1.18"
 pandas = ">=1.1.5"
 passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
-pydantic = "~2.6.3"
+pydantic = "~2.7"
 pydantic-settings = "~2.2.1"
 pymysql = { version = "~1.0.2" }
 pyparsing = "<3,>=2.4.0"
@@ -63,8 +63,8 @@ pyyaml = ">=6.0.1"
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
 secure = "~0.3.0"
 sqlalchemy = "^2.0.0"
-sqlalchemy_utils = "0.41.1"
-sqlmodel = ">=0.0.14, <=0.0.16"
+sqlalchemy_utils = "*"
+sqlmodel = "0.0.18"
 importlib_metadata = { version = "<=7.0.0", python = "<3.10" }
 
 # Optional dependencies for the ZenServer
