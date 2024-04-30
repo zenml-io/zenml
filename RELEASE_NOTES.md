@@ -1,5 +1,21 @@
 <!-- markdown-link-check-disable -->
 
+# 0.57.0-rc2
+
+This release candidate introduces support for the fully new ZenML Dashboard experience, 
+a number of improvement to documentation and a few bug fixes.
+
+## What's Changed
+* Fix CI by @strickvl in https://github.com/zenml-io/zenml/pull/2645
+* Misc/prepare release 0.57.0rc1 by @avishniakov in https://github.com/zenml-io/zenml/pull/2646
+* Add rate limiting to user password reset operations by @stefannica in https://github.com/zenml-io/zenml/pull/2643
+* Set zenml server name to default if not customized by @stefannica in https://github.com/zenml-io/zenml/pull/2647
+* Docker release fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2649
+* Fix dashboard urls by @schustmi in https://github.com/zenml-io/zenml/pull/2648
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.57.0rc1...0.57.0-rc2
+
 # 0.57.0rc1
 
 This release candidate introduces support for the fully new ZenML Dashboard experience, 
