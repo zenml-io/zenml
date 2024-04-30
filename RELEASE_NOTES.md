@@ -1,6 +1,6 @@
 <!-- markdown-link-check-disable -->
 
-# 0.57.0-rc2
+# 0.57.0rc2
 
 This release candidate introduces support for the fully new ZenML Dashboard experience, 
 a number of improvement to documentation and a few bug fixes.
