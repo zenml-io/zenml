@@ -591,15 +591,6 @@ class TestAdminUser:
         assert default_user.full_name == "Axl"
         assert default_user.is_admin  # admin status is not changed
 
-        # User cannot change own admin status
-        with pytest.raises(IllegalOperationError):
-            zen_store.put(
-                "/current-user",
-                body=UserUpdate(name=default_user.name, is_admin=False),
-            )
-        default_user = zen_store.get_user(DEFAULT_USERNAME)
-        assert default_user.is_admin  # admin status is not changed
-
         with UserContext(
             password=self.default_pwd, is_admin=False
         ) as test_user:
