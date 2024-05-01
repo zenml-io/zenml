@@ -14,9 +14,10 @@
 """Implementation of the Prodigy annotation integration."""
 
 import json
-from typing import Any, List, Tuple, cast
+from typing import Any, List, Optional, Tuple, cast
 
 import prodigy
+from peewee import Database as PeeweeDatabase
 from prodigy.components.db import Database as ProdigyDatabase
 from prodigy.components.db import connect
 
@@ -67,7 +68,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         the top-level URL since that's what will be served for the user.
 
         Args:
-            dataset_name: The name of the dataset. (Unused)
+            dataset_name: The name of the dataset. (Unuse)
 
         Returns:
             The URL of the annotation interface.
@@ -140,18 +141,32 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
 
     def _get_db(
         self,
+        custom_database: PeeweeDatabase = None,
+        display_id: Optional[str] = None,
+        display_name: Optional[str] = None,
     ) -> ProdigyDatabase:
         """Gets Prodigy database / client.
+
+        Args:
+            custom_database: Custom database to use.
+            display_id: The display id of the database.
+            display_name: The display name of the database.
 
         Returns:
             Prodigy database client.
         """
-        if self.config.custom_config_path:
-            with open(self.config.custom_config_path, "r") as f:
-                config = json.load(f)
-            return connect(**config)
-        else:
-            return connect()
+        db_kwargs = {}
+        if custom_database:
+            db_kwargs["db"] = custom_database
+        if display_id:
+            db_kwargs["display_id"] = display_id
+        if display_name:
+            db_kwargs["display_name"] = display_name
+
+        # database is passed in without the keyword argument
+        if custom_database:
+            return connect(custom_database, **db_kwargs)
+        return connect(**db_kwargs)
 
     def add_dataset(self, **kwargs: Any) -> Any:
         """Registers a dataset for annotation.
