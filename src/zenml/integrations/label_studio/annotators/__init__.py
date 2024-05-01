@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization of the Label Studio annotators submodule."""
 
-from zenml.integrations.label_studio.annotators.prodigy_annotator import (
+from zenml.integrations.label_studio.annotators.label_studio_annotator import (
     ProdigyAnnotator,
 )
 

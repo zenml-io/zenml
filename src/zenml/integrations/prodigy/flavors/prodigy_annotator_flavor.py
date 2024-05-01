@@ -19,11 +19,11 @@ from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
     BaseAnnotatorFlavor,
 )
-from zenml.integrations.label_studio import PRODIGY_ANNOTATOR_FLAVOR
+from zenml.integrations.prodigy import PRODIGY_ANNOTATOR_FLAVOR
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
-    from zenml.integrations.label_studio.annotators import ProdigyAnnotator
+    from zenml.integrations.prodigy.annotators import ProdigyAnnotator
 
 
 DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
