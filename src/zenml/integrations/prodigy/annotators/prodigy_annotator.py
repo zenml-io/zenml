@@ -168,22 +168,6 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             kwargs["display_name"] = display_name
         return connect(**kwargs)
 
-    def _connection_available(self) -> bool:
-        """Checks if the connection to the annotation server is available.
-
-        Returns:
-            True if the connection is available, False otherwise.
-        """
-        try:
-            result = self._get_db().check_connection()
-            return result.get("status") == "UP"  # type: ignore[no-any-return]
-        # TODO: [HIGH] refactor to use a more specific exception
-        except Exception:
-            logger.error(
-                "Connection error: No connection was able to be established to the Prodigy backend."
-            )
-            return False
-
     def add_dataset(self, **kwargs: Any) -> Any:
         """Registers a dataset for annotation.
 
@@ -191,22 +175,19 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             **kwargs: Additional keyword arguments to pass to the Prodigy client.
 
         Returns:
-            A Prodigy Project object.
+            A Prodigy list representing the dataset.
 
         Raises:
             ValueError: if 'dataset_name' and 'label_config' aren't provided.
         """
-        dataset_name = kwargs.get("dataset_name")
-        label_config = kwargs.get("label_config")
-        if not dataset_name:
+        db = self._get_db()
+        dataset_kwargs = {"dataset_name": kwargs.get("dataset_name")}
+        if not dataset_kwargs["dataset_name"]:
             raise ValueError("`dataset_name` keyword argument is required.")
-        elif not label_config:
-            raise ValueError("`label_config` keyword argument is required.")
 
-        return self._get_db().start_project(
-            title=dataset_name,
-            label_config=label_config,
-        )
+        if kwargs.get("dataset_meta"):
+            dataset_kwargs["dataset_meta"] = kwargs.get("dataset_meta")
+        return db.add_dataset(**dataset_kwargs)
 
     def delete_dataset(self, **kwargs: Any) -> None:
         """Deletes a dataset from the annotation interface.
@@ -219,17 +200,18 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided or if the dataset
                 does not exist.
         """
-        ls = self._get_db()
-        dataset_name = kwargs.get("dataset_name")
-        if not dataset_name:
+        db = self._get_db()
+        if dataset_name := kwargs.get("dataset_name"):
+            try:
+                db.drop_dataset(name=dataset_name)
+            # use this exception when we find out how to import it
+            # except DatasetDoesNotExist as e:
+            except Exception as e:
+                raise ValueError(
+                    f"Dataset name '{dataset_name}' does not exist."
+                ) from e
+        else:
             raise ValueError("`dataset_name` keyword argument is required.")
-
-        dataset_id = self.get_id_from_name(dataset_name)
-        if not dataset_id:
-            raise ValueError(
-                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Prodigy."
-            )
-        ls.delete_project(dataset_id)
 
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
