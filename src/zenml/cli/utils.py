@@ -1035,6 +1035,10 @@ def install_packages(
             "license key. Please visit https://prodi.gy/docs/install for more "
             "information."
         )
+    if not packages:
+        # if user only tried to install prodigy, we can
+        # just return without doing anything
+        return
 
     pip_command = ["uv", "pip"] if use_uv else ["pip"]
     if upgrade:
