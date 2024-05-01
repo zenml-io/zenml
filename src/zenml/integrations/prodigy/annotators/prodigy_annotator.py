@@ -64,21 +64,6 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         return self.get_url()
 
-    # def get_id_from_name(self, dataset_name: str) -> Optional[int]:
-    #     """Gets the ID of the given dataset.
-
-    #     Args:
-    #         dataset_name: The name of the dataset.
-
-    #     Returns:
-    #         The ID of the dataset.
-    #     """
-    #     projects = self.get_datasets()
-    #     for project in projects:
-    #         if project.get_params()["title"] == dataset_name:
-    #             return cast(int, project.get_params()["id"])
-    #     return None
-
     def get_datasets(self) -> List[Any]:
         """Gets the datasets currently available for annotation.
 
