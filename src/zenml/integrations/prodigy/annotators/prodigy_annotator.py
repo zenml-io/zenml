@@ -126,7 +126,6 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         config = {
             key: value for key, value in kwargs.items() if key != "command"
         }
-
         prodigy.serve(command=command, **config)
 
     def _get_db(

@@ -191,7 +191,7 @@ def register_annotator_subcommands() -> None:
                 raise ValueError(
                     "The 'command' keyword argument is required for launching the Prodigy interface."
                 )
-            annotator.launch(command=command, **kwargs_dict)
+            annotator.launch(**kwargs_dict)
         else:
             try:
                 annotator.get_dataset(dataset_name=dataset_name)
