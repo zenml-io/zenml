@@ -105,6 +105,7 @@ def register_annotator_subcommands() -> None:
         cli_utils.declare(f"Total annotation tasks: {total_task_count}")
         cli_utils.declare(f"Labeled annotation tasks: {labeled_task_count}")
         if annotator.flavor != "prodigy":
+            # Prodigy doesn't allow you to get the unlabeled task count
             cli_utils.declare(
                 f"Unlabeled annotation tasks: {unlabeled_task_count}"
             )
