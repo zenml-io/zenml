@@ -97,6 +97,11 @@ def register_annotator_subcommands() -> None:
                 f"annotator dataset list` to list the available datasets."
             )
             return
+        if annotator.flavor == "prodigy":
+            cli_utils.declare(
+                "Prodigy annotator detected. Count for unlabeled dataset is "
+                "not able to be displayed here."
+            )
 
         total_task_count = unlabeled_task_count + labeled_task_count
         cli_utils.declare(

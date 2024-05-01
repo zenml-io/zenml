@@ -117,15 +117,8 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             IndexError: If the dataset does not exist.
         """
-        # for project in self.get_datasets():
-        #     if dataset_name in project.get_params()["title"]:
-        #         labeled_task_count = len(project.get_labeled_tasks())
-        #         unlabeled_task_count = len(project.get_unlabeled_tasks())
-        #         return (labeled_task_count, unlabeled_task_count)
-        # raise IndexError(
-        #     f"Dataset {dataset_name} not found. Please use "
-        #     f"`zenml annotator dataset list` to list all available datasets."
-        # )
+        db = self._get_client()
+        return (db.count_dataset(name=dataset_name), 0)
 
     def launch(self, url: Optional[str]) -> None:
         """Launches the annotation interface.
