@@ -104,10 +104,10 @@ def get_or_create_dataset(
     """
     annotator = Client().active_stack.annotator
     from zenml.integrations.label_studio.annotators.label_studio_annotator import (
-        ProdigyAnnotator,
+        LabelStudioAnnotator,
     )
 
-    if not isinstance(annotator, ProdigyAnnotator):
+    if not isinstance(annotator, LabelStudioAnnotator):
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
         )
@@ -146,10 +146,10 @@ def get_labeled_data(dataset_name: str) -> List:  # type: ignore[type-arg]
     if not annotator:
         raise StackComponentInterfaceError("No active annotator.")
     from zenml.integrations.label_studio.annotators.label_studio_annotator import (
-        ProdigyAnnotator,
+        LabelStudioAnnotator,
     )
 
-    if not isinstance(annotator, ProdigyAnnotator):
+    if not isinstance(annotator, LabelStudioAnnotator):
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
         )
@@ -192,10 +192,10 @@ def sync_new_data_to_label_studio(
         )
 
     from zenml.integrations.label_studio.annotators.label_studio_annotator import (
-        ProdigyAnnotator,
+        LabelStudioAnnotator,
     )
 
-    if not isinstance(annotator, ProdigyAnnotator):
+    if not isinstance(annotator, LabelStudioAnnotator):
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
         )

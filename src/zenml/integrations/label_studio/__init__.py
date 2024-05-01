@@ -39,10 +39,10 @@ class LabelStudioIntegration(Integration):
             List of stack component flavors for this integration.
         """
         from zenml.integrations.label_studio.flavors import (
-            ProdigyFlavor,
+            LabelStudioAnnotatorFlavor,
         )
 
-        return [ProdigyFlavor]
+        return [LabelStudioAnnotatorFlavor]
 
 
 LabelStudioIntegration.check_installation()

@@ -14,11 +14,11 @@
 """Label Studio integration flavors."""
 
 from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
-    ProdigyAnnotatorConfig,
-    ProdigyFlavor,
+    LabelStudioAnnotatorConfig,
+    LabelStudioFlavor,
 )
 
 __all__ = [
-    "ProdigyFlavor",
-    "ProdigyAnnotatorConfig",
+    "LabelStudioFlavor",
+    "LabelStudioAnnotatorConfig",
 ]

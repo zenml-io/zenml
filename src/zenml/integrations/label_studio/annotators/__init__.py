@@ -14,7 +14,7 @@
 """Initialization of the Label Studio annotators submodule."""
 
 from zenml.integrations.label_studio.annotators.label_studio_annotator import (
-    ProdigyAnnotator,
+    LabelStudioAnnotator,
 )
 
-__all__ = ["ProdigyAnnotator"]
+__all__ = ["LabelStudioAnnotator"]

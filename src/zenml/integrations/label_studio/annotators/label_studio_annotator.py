@@ -25,7 +25,7 @@ from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
-    ProdigyAnnotatorConfig,
+    LabelStudioAnnotatorConfig,
 )
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
     LabelStudioDatasetSyncParameters,
@@ -37,17 +37,17 @@ from zenml.stack.authentication_mixin import AuthenticationMixin
 logger = get_logger(__name__)
 
 
-class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
+class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
     """Class to interact with the Label Studio annotation interface."""
 
     @property
-    def config(self) -> ProdigyAnnotatorConfig:
+    def config(self) -> LabelStudioAnnotatorConfig:
         """Returns the `LabelStudioAnnotatorConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(ProdigyAnnotatorConfig, self._config)
+        return cast(LabelStudioAnnotatorConfig, self._config)
 
     def get_url(self) -> str:
         """Gets the top-level URL of the annotation interface.
