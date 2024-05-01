@@ -41,7 +41,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
 
     @property
     def config(self) -> ProdigyAnnotatorConfig:
-        """Returns the `LabelStudioAnnotatorConfig` config.
+        """Returns the `ProdigyAnnotatorConfig` config.
 
         Returns:
             The configuration.
