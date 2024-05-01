@@ -126,14 +126,13 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             f"`zenml annotator dataset list` to list all available datasets."
         )
 
-    def launch(self, url: Optional[str]) -> None:
+    def launch(self, **kwargs: Any) -> None:
         """Launches the annotation interface.
 
         Args:
-            url: The URL of the annotation interface.
+            **kwargs: Additional keyword arguments to pass to the annotation client.
         """
-        if not url:
-            url = self.get_url()
+        url = kwargs.get("url") or self.get_url()
         if self._connection_available():
             webbrowser.open(url, new=1, autoraise=True)
         else:

@@ -15,6 +15,7 @@
 
 from typing import Any, List, Optional, Tuple, cast
 
+import prodigy
 from peewee import Database as PeeweeDatabase
 from prodigy.components.db import Database as ProdigyDatabase
 from prodigy.components.db import connect
@@ -118,21 +119,30 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             ) from e
         return (labeled_data_count, 0)
 
-    def launch(self, url: Optional[str]) -> None:
+    def launch(self, **kwargs: Any) -> None:
         """Launches the annotation interface.
 
+        This method extracts the 'command' and additional config
+            parameters from kwargs.
+
         Args:
-            url: The URL of the annotation interface.
+            **kwargs: Should include:
+                - command: The full recipe command without "prodigy".
+                - Any additional config parameters to overwrite the
+                    project-specific, global, and recipe config.
         """
-        # if not url:
-        #     url = self.get_url()
-        # if self._connection_available():
-        #     webbrowser.open(url, new=1, autoraise=True)
-        # else:
-        #     logger.warning(
-        #         "Could not launch annotation interface"
-        #         "because the connection could not be established."
-        #     )
+        command = kwargs.get("command")
+        if not command:
+            raise ValueError(
+                "The 'command' keyword argument is required for launching Prodigy."
+            )
+
+        # Remove 'command' from kwargs to pass the rest as config parameters
+        config = {
+            key: value for key, value in kwargs.items() if key != "command"
+        }
+
+        prodigy.serve(command=command, **config)
 
     def _get_db(
         self,
