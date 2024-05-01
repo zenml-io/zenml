@@ -16,10 +16,10 @@
 import json
 from typing import Any, List, Optional, Tuple, cast
 
-import prodigy  # type: ignore[import-untyped]
-from peewee import Database as PeeweeDatabase  # type: ignore[import-untyped]
+import prodigy
+from peewee import Database as PeeweeDatabase
 from prodigy.components.db import (
-    Database as ProdigyDatabase,  # type: ignore[import-untyped]
+    Database as ProdigyDatabase,
 )
 from prodigy.components.db import connect
 
