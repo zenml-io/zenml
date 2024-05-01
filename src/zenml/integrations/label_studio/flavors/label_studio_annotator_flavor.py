@@ -44,7 +44,7 @@ class LabelStudioAnnotatorConfig(
     port: int = DEFAULT_LOCAL_LABEL_STUDIO_PORT
 
 
-class LabelStudioFlavor(BaseAnnotatorFlavor):
+class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
     """Label Studio annotator flavor."""
 
     @property
