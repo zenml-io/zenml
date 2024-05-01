@@ -12,7 +12,7 @@ systems to use in combination with your statistical models.
 ![Prodigy Annotator](../../../.gitbook/assets/prodigy-annotator.png)
 
 {% hint style="info" %} Prodigy is a paid annotation tool. You will need a
-license in order to download the package to use it with ZenML. {% endhint %}
+Prodigy is a paid tool. A license is required to download and use it with ZenML. {% endhint %}
 
 
 The Prodigy Python library includes a range of pre-built workflows and
