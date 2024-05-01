@@ -16,9 +16,11 @@
 import json
 from typing import Any, List, Optional, Tuple, cast
 
-import prodigy
-from peewee import Database as PeeweeDatabase
-from prodigy.components.db import Database as ProdigyDatabase
+import prodigy  # type: ignore[import-untyped]
+from peewee import Database as PeeweeDatabase  # type: ignore[import-untyped]
+from prodigy.components.db import (
+    Database as ProdigyDatabase,  # type: ignore[import-untyped]
+)
 from prodigy.components.db import connect
 
 from zenml.annotators.base_annotator import BaseAnnotator
