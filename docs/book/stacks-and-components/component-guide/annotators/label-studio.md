@@ -27,13 +27,6 @@ The Label Studio integration currently is built to support workflows using the f
 AWS S3, GCP/GCS, and Azure Blob Storage. Purely local stacks will currently _not_ work if you want to do add the
 annotation stack component as part of your stack.
 
-{% hint style="info" %}
-COMING SOON: The Label Studio Integration supports the use of annotations in an ML workflow, but we do not currently
-handle the universal conversion between data formats as part of the training workflow. Our initial use case was built to
-support image classification and object detection, but we will add helper steps and functions for other use cases in due
-course. We will update the docs when we enable this functionality.
-{% endhint %}
-
 ### How to deploy it?
 
 The Label Studio Annotator flavor is provided by the Label Studio ZenML integration, you need to install it, to be able
@@ -49,11 +42,6 @@ Studio installation breaks the ZenML CLI. In this case, please run `pip install 
 issue or [message us on Slack](https://zenml.io/slack-invite) if you need more help with this. We are working on a more
 definitive fix.
 {% endhint %}
-
-The following instructions below offer a general guide to the parts that need attention when deploying/using the Label
-Studio stack component and integration.
-The [`label_studio_annotation` example](https://github.com/zenml-io/zenml/tree/develop/examples/label\_studio\_annotation)
-offers a detailed guide for each cloud provider on how to set it up.
 
 Before registering a `label_studio` flavor stack component as part of your stack, you'll need to have registered a cloud
 artifact store. (See the docs on how to register and set
@@ -84,13 +72,13 @@ At this point you should register the API key under a custom secret name, making
 with whatever you choose:
 
 ```shell
-zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
+zenml secret create label_studio_secrets --api_key="<your_label_studio_api_key>"
 ```
 
 Then register your annotator with ZenML:
 
 ```shell
-zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
+zenml annotator register label_studio --flavor label_studio --api_key={{label_studio_secrets.api_key}}
 
 # for deployed instances of Label Studio, you can also pass in the URL as follows, for example:
 # zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>" --instance_url="<your_label_studio_url>" --port=80
@@ -124,7 +112,7 @@ ZenML supports access to your data and annotations via the `zenml annotator ...`
 You can access information about the datasets you're using with the `zenml annotator dataset list`. To work on
 annotation for a particular dataset, you can run `zenml annotator dataset annotate <dataset_name>`.
 
-[Our full continuous annotation/training example](https://github.com/zenml-io/zenml/tree/develop/examples/label\_studio\_annotation)
+[Our computer vision end to end example](https://github.com/zenml-io/zenml-projects/tree/main/cv-webinar/end-to-end-computer-vision)
 is the best place to see how all the pieces of making this integration work fit together. What follows is an overview of
 some key components to the Label Studio integration and how it can be used.
 
@@ -167,10 +155,9 @@ Studio integration quickly. These include:
 Label Studio requires the use of what it calls 'label config' when you are creating/registering your dataset. These are
 strings containing HTML-like syntax that allow you to define a custom interface for your annotation. ZenML provides
 three helper functions that will construct these label config strings in the case of object detection, image
-classification, and OCR. See the `integrations.label_studio.label_config_generators` module for those three functions.
-
-A concrete example of using the Label Studio annotator can be
-found [here](https://github.com/zenml-io/zenml/tree/develop/examples/label\_studio\_annotation).
+classification, and OCR. See the
+[`integrations.label_studio.label_config_generators`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/label_studio/label_config_generators/label_config_generators.py)
+module for those three functions.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
