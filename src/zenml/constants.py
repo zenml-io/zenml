@@ -247,17 +247,33 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP = "0"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
+_csp_script_src_urls = ["https://widgets-v3.featureos.app"]
+_csp_connect_src_urls = [
+    "https://sdkdocs.zenml.io",
+    "https://hubapi.zenml.io",
+    "https://analytics.zenml.io",
+]
+_csp_img_src_urls = [
+    "https://public-flavor-logos.s3.eu-central-1.amazonaws.com",
+    "https://avatar.vercel.sh",
+]
+_csp_frame_src_urls = [
+    "https://zenml.hellonext.co",
+    "https://sdkdocs.zenml.io",
+    "https://widgets-v3.hellonext.co",
+    "https://widgets-v3.featureos.app",
+    "https://zenml.portal.trainn.co",
+]
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP = (
     "default-src 'none'; "
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widgets-v3.featureos.app; "
-    "connect-src 'self' https://sdkdocs.zenml.io https://hubapi.zenml.io; "
-    "img-src 'self' data: https://public-flavor-logos.s3.eu-central-1.amazonaws.com"
-    " https://avatar.vercel.sh; "
+    f"script-src 'self' 'unsafe-inline' 'unsafe-eval' {' '.join(_csp_script_src_urls)}; "
+    f"connect-src 'self' {' '.join(_csp_connect_src_urls)}; "
+    f"img-src 'self' data: {' '.join(_csp_img_src_urls)}; "
     "style-src 'self' 'unsafe-inline'; "
     "base-uri 'self'; "
     "form-action 'self'; "
     "font-src 'self';"
-    "frame-src https://zenml.hellonext.co https://sdkdocs.zenml.io https://widgets-v3.hellonext.co https://widgets-v3.featureos.app"
+    f"frame-src {' '.join(_csp_frame_src_urls)}"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER = "no-referrer-when-downgrade"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE = (
