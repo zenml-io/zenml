@@ -19,7 +19,7 @@ from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
     BaseAnnotatorFlavor,
 )
-from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
+from zenml.integrations.label_studio import PRODIGY_ANNOTATOR_FLAVOR
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
@@ -27,12 +27,10 @@ if TYPE_CHECKING:
 
 
 DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
-DEFAULT_LOCAL_LABEL_STUDIO_PORT = 8093
+DEFAULT_LOCAL_PRODIGY_PORT = 8080
 
 
-class LabelStudioAnnotatorConfig(
-    BaseAnnotatorConfig, AuthenticationConfigMixin
-):
+class ProdigyAnnotatorConfig(BaseAnnotatorConfig, AuthenticationConfigMixin):
     """Config for the Prodigy annotator.
 
     Attributes:
@@ -41,10 +39,10 @@ class LabelStudioAnnotatorConfig(
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
-    port: int = DEFAULT_LOCAL_LABEL_STUDIO_PORT
+    port: int = DEFAULT_LOCAL_PRODIGY_PORT
 
 
-class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
+class ProdigyAnnotatorFlavor(BaseAnnotatorFlavor):
     """Prodigy annotator flavor."""
 
     @property
@@ -54,7 +52,7 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         Returns:
             The name of the flavor.
         """
-        return LABEL_STUDIO_ANNOTATOR_FLAVOR
+        return PRODIGY_ANNOTATOR_FLAVOR
 
     @property
     def docs_url(self) -> Optional[str]:
@@ -81,16 +79,16 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/label_studio.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/prodigy.png"
 
     @property
-    def config_class(self) -> Type[LabelStudioAnnotatorConfig]:
-        """Returns `LabelStudioAnnotatorConfig` config class.
+    def config_class(self) -> Type[ProdigyAnnotatorConfig]:
+        """Returns `ProdigyAnnotatorConfig` config class.
 
         Returns:
                 The config class.
         """
-        return LabelStudioAnnotatorConfig
+        return ProdigyAnnotatorConfig
 
     @property
     def implementation_class(self) -> Type["ProdigyAnnotator"]:
