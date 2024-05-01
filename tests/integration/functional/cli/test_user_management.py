@@ -20,6 +20,8 @@ from tests.integration.functional.cli.utils import (
     user_delete_command,
     user_update_command,
 )
+from zenml.client import Client
+from zenml.enums import StoreType
 
 # ----- #
 # USERS #
@@ -69,15 +71,18 @@ def test_update_user_with_new_full_name_succeeds() -> None:
     assert result.exit_code == 0
 
 
-def test_update_user_with_new_email_succeeds() -> None:
-    """Test that creating a new user succeeds."""
+def test_update_user_with_new_email() -> None:
+    """Test that updating the personal details for an account only works locally."""
     u = create_sample_user()
     runner = CliRunner()
     result = runner.invoke(
         user_update_command,
         [u.name, "--email='aria@catnip.io'"],
     )
-    assert result.exit_code == 0
+    if Client().zen_store.type == StoreType.SQL:
+        assert result.exit_code == 0
+    else:
+        assert result.exit_code == 1
 
 
 def test_delete_user_succeeds() -> None:

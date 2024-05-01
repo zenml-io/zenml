@@ -16,6 +16,7 @@
 from secrets import token_hex
 from typing import (
     TYPE_CHECKING,
+    AbstractSet,
     Any,
     ClassVar,
     Dict,
@@ -240,6 +241,22 @@ class UserUpdate(UserBase, BaseZenModel):
                     "your email."
                 )
         return values
+
+    def create_copy(self, exclude: AbstractSet[str]) -> "UserUpdate":
+        """Create a copy of the current instance.
+
+        Args:
+            exclude: Fields to exclude from the copy.
+
+        Returns:
+            A copy of the current instance.
+        """
+        return UserUpdate(
+            **self.dict(
+                exclude_unset=True,
+                exclude=exclude,
+            )
+        )
 
 
 # ------------------ Response Model ------------------
