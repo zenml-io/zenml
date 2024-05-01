@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Prodigy integration flavors."""
 
-from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
+from zenml.integrations.prodigy.flavors.prodigy_annotator_flavor import (
     ProdigyAnnotatorConfig,
-    ProdigyFlavor,
+    ProdigyAnnotatorFlavor,
 )
 
 __all__ = [
-    "ProdigyFlavor",
+    "ProdigyAnnotatorFlavor",
     "ProdigyAnnotatorConfig",
 ]
