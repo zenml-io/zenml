@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Prodigy annotation integration."""
 
+import json
 from typing import Any, List, Optional, Tuple, cast
 
 import prodigy
@@ -28,6 +29,9 @@ from zenml.logger import get_logger
 from zenml.stack.authentication_mixin import AuthenticationMixin
 
 logger = get_logger(__name__)
+
+DEFAULT_LOCAL_INSTANCE_HOST = "localhost"
+DEFAULT_LOCAL_PRODIGY_PORT = 8080
 
 
 class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
@@ -48,7 +52,14 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             The URL of the annotation interface.
         """
-        return f"{self.config.instance_url}:{self.config.port}"
+        instance_url = DEFAULT_LOCAL_INSTANCE_HOST
+        port = DEFAULT_LOCAL_PRODIGY_PORT
+        if self.config.custom_config_path:
+            with open(self.config.custom_config_path, "r") as f:
+                config = json.load(f)
+            instance_url = config.get("instance_url", instance_url)
+            port = config.get("port", port)
+        return f"http://{instance_url}:{port}"
 
     def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.
@@ -57,7 +68,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         the top-level URL since that's what will be served for the user.
 
         Args:
-            dataset_name: The name of the dataset.
+            dataset_name: The name of the dataset. (Unused)
 
         Returns:
             The URL of the annotation interface.

@@ -26,20 +26,17 @@ if TYPE_CHECKING:
     from zenml.integrations.prodigy.annotators import ProdigyAnnotator
 
 
-DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
-DEFAULT_LOCAL_PRODIGY_PORT = 8080
-
-
 class ProdigyAnnotatorConfig(BaseAnnotatorConfig, AuthenticationConfigMixin):
     """Config for the Prodigy annotator.
 
+    See https://prodi.gy/docs/install#config for more on custom config files,
+    but this allows you to override the default Prodigy config.
+
     Attributes:
-        instance_url: URL of the Prodigy instance.
-        port: The port to use for the annotation interface.
+        custom_config_path: The path to a custom config file for Prodigy.
     """
 
-    instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
-    port: int = DEFAULT_LOCAL_PRODIGY_PORT
+    custom_config_path: Optional[str] = None
 
 
 class ProdigyAnnotatorFlavor(BaseAnnotatorFlavor):
