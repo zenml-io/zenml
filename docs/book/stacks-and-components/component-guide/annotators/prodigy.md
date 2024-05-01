@@ -78,7 +78,16 @@ CLI command.
 You can access information about the datasets you're using with the `zenml
 annotator dataset list`. To work on annotation for a particular dataset, you can
 run `zenml annotator dataset annotate <DATASET_NAME> <CUSTOM_COMMAND>`. This is
-the equivalent of running `prodigy <CUSTOM_COMMAND>` in the terminal.
+the equivalent of running `prodigy <CUSTOM_COMMAND>` in the terminal. For
+example, you might run:
+
+```shell
+zenml annotator dataset annotate your_dataset --command="textcat.manual news_topics ./news_headlines.jsonl --label Technology,Politics,Economy,Entertainment"
+```
+
+This would launch the Prodigy interface for the `textcat.manual` recipe with the
+`news_topics` dataset and the labels `Technology`, `Politics`, `Economy`, and
+`Entertainment`. The data would be loaded from the `news_headlines.jsonl` file.
 
 A common workflow for Prodigy is to annotate data as you would usually do, and
 then use the connection into ZenML to import those annotations within a step in
