@@ -15,13 +15,15 @@
 
 import json
 import os
-import webbrowser
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
+from peewee import Database as PeeweeDatabase
+from prodigy.components.db import Database as ProdigyDatabase
+from prodigy.components.db import connect
+
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.prodigy.flavors.prodigy_annotator_flavor import (
     ProdigyAnnotatorConfig,
@@ -59,37 +61,39 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
     def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.
 
+        Prodigy does not support dataset-specific URLs, so this method returns
+        the top-level URL since that's what will be served for the user.
+
         Args:
             dataset_name: The name of the dataset.
 
         Returns:
             The URL of the annotation interface.
         """
-        project_id = self.get_id_from_name(dataset_name)
-        return f"{self.get_url()}/projects/{project_id}/"
+        return self.get_url()
 
-    def get_id_from_name(self, dataset_name: str) -> Optional[int]:
-        """Gets the ID of the given dataset.
+    # def get_id_from_name(self, dataset_name: str) -> Optional[int]:
+    #     """Gets the ID of the given dataset.
 
-        Args:
-            dataset_name: The name of the dataset.
+    #     Args:
+    #         dataset_name: The name of the dataset.
 
-        Returns:
-            The ID of the dataset.
-        """
-        projects = self.get_datasets()
-        for project in projects:
-            if project.get_params()["title"] == dataset_name:
-                return cast(int, project.get_params()["id"])
-        return None
+    #     Returns:
+    #         The ID of the dataset.
+    #     """
+    #     projects = self.get_datasets()
+    #     for project in projects:
+    #         if project.get_params()["title"] == dataset_name:
+    #             return cast(int, project.get_params()["id"])
+    #     return None
 
     def get_datasets(self) -> List[Any]:
         """Gets the datasets currently available for annotation.
 
         Returns:
-            A list of datasets.
+            A list of datasets (str).
         """
-        datasets = self._get_client().get_projects()
+        datasets = self._get_client().datasets
         return cast(List[Any], datasets)
 
     def get_dataset_names(self) -> List[str]:
@@ -98,9 +102,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             A list of dataset names.
         """
-        return [
-            dataset.get_params()["title"] for dataset in self.get_datasets()
-        ]
+        return self.get_datasets()
 
     def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
         """Gets the statistics of the given dataset.
@@ -115,15 +117,15 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             IndexError: If the dataset does not exist.
         """
-        for project in self.get_datasets():
-            if dataset_name in project.get_params()["title"]:
-                labeled_task_count = len(project.get_labeled_tasks())
-                unlabeled_task_count = len(project.get_unlabeled_tasks())
-                return (labeled_task_count, unlabeled_task_count)
-        raise IndexError(
-            f"Dataset {dataset_name} not found. Please use "
-            f"`zenml annotator dataset list` to list all available datasets."
-        )
+        # for project in self.get_datasets():
+        #     if dataset_name in project.get_params()["title"]:
+        #         labeled_task_count = len(project.get_labeled_tasks())
+        #         unlabeled_task_count = len(project.get_unlabeled_tasks())
+        #         return (labeled_task_count, unlabeled_task_count)
+        # raise IndexError(
+        #     f"Dataset {dataset_name} not found. Please use "
+        #     f"`zenml annotator dataset list` to list all available datasets."
+        # )
 
     def launch(self, url: Optional[str]) -> None:
         """Launches the annotation interface.
@@ -131,34 +133,40 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         Args:
             url: The URL of the annotation interface.
         """
-        if not url:
-            url = self.get_url()
-        if self._connection_available():
-            webbrowser.open(url, new=1, autoraise=True)
-        else:
-            logger.warning(
-                "Could not launch annotation interface"
-                "because the connection could not be established."
-            )
+        # if not url:
+        #     url = self.get_url()
+        # if self._connection_available():
+        #     webbrowser.open(url, new=1, autoraise=True)
+        # else:
+        #     logger.warning(
+        #         "Could not launch annotation interface"
+        #         "because the connection could not be established."
+        #     )
 
-    def _get_client(self) -> Client:
-        """Gets Prodigy client.
+    def _get_client(
+        self,
+        custom_database: PeeweeDatabase = None,
+        display_id: Optional[str] = None,
+        display_name: Optional[str] = None,
+    ) -> ProdigyDatabase:
+        """Gets Prodigy database / client.
+
+        Args:
+            custom_database: Custom database to use.
+            display_id: The display id of the database.
+            display_name: The display name of the database.
 
         Returns:
-            Prodigy client.
-
-        Raises:
-            ValueError: when unable to access the Prodigy API key.
+            Prodigy database client.
         """
-        secret = self.get_authentication_secret()
-        if not secret:
-            raise ValueError(
-                "Unable to access predefined secret to access Prodigy API key."
-            )
-        api_key = secret.secret_values.get("api_key")
-        if not api_key:
-            raise ValueError("Unable to access Prodigy API key from secret.")
-        return Client(url=self.get_url(), api_key=api_key)
+        kwargs = {}
+        if custom_database:
+            kwargs["custom_database"] = custom_database
+        if display_id:
+            kwargs["display_id"] = display_id
+        if display_name:
+            kwargs["display_name"] = display_name
+        return connect(**kwargs)
 
     def _connection_available(self) -> bool:
         """Checks if the connection to the annotation server is available.
