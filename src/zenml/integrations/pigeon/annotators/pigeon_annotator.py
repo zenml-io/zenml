@@ -184,11 +184,11 @@ class PigeonAnnotator(BaseAnnotator):
 
         return annotations
 
-    def launch(self, url: Optional[str] = None) -> None:
+    def launch(self, **kwargs: Any) -> None:
         """Launch the Pigeon annotator in the Jupyter notebook.
 
         Args:
-            url: Optional URL to launch the annotator with.
+            **kwargs: Additional keyword arguments to pass to the annotation client.
 
         Raises:
             NotImplementedError: Pigeon annotator does not support launching with a URL.
