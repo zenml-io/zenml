@@ -21,9 +21,13 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.prodigy.flavors.prodigy_annotator_flavor import (
     ProdigyAnnotatorConfig,
+)
+from zenml.integrations.prodigy.steps.prodigy_standard_steps import (
+    LabelStudioDatasetSyncParameters,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -407,7 +411,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         self,
         uri: str,
         params: LabelStudioDatasetSyncParameters,
-        dataset: Project,
+        dataset: str,
     ) -> bool:
         """Returns whether a storage source already exists.
 
@@ -646,7 +650,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         self,
         uri: str,
         params: LabelStudioDatasetSyncParameters,
-        dataset: Project,
+        dataset: str,
     ) -> Optional[Dict[str, Any]]:
         """Syncs the external storage for the given project.
 
