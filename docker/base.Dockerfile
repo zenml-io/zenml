@@ -40,6 +40,9 @@ WORKDIR /zenml
 
 FROM builder as client-builder
 
+ARG VIRTUAL_ENV=/opt/venv
+ARG ZENML_VERSION
+
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
@@ -59,6 +62,9 @@ RUN pip install --upgrade pip \
 
 FROM builder as server-builder
 
+ARG VIRTUAL_ENV=/opt/venv
+ARG ZENML_VERSION
+
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
@@ -73,7 +79,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Also create a requirements.txt file to keep track of
 # dependencies for reproducibility and debugging.
 RUN pip install --upgrade pip \
-  && pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure] \
+  && pip install "zenml[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]${ZENML_VERSION:+==$ZENML_VERSION}" \
   && pip freeze > requirements.txt
 
 FROM base as client

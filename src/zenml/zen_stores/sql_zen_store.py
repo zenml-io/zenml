@@ -1422,7 +1422,7 @@ class SqlZenStore(BaseZenStore):
                 session.add(
                     ServerSettingsSchema(
                         id=id_,
-                        server_name=server_config.server_name or str(id_),
+                        server_name=server_config.server_name,
                         # We always initialize the server as inactive and decide
                         # whether to activate it later in `_initialize_database`
                         active=False,
