@@ -93,7 +93,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             A list of datasets (str).
         """
-        datasets = self._get_client().datasets
+        datasets = self._get_db().datasets
         return cast(List[Any], datasets)
 
     def get_dataset_names(self) -> List[str]:
@@ -117,7 +117,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             IndexError: If the dataset does not exist.
         """
-        db = self._get_client()
+        db = self._get_db()
         try:
             labeled_data_count = db.count_dataset(name=dataset_name)
         except ValueError as e:
@@ -143,7 +143,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         #         "because the connection could not be established."
         #     )
 
-    def _get_client(
+    def _get_db(
         self,
         custom_database: PeeweeDatabase = None,
         display_id: Optional[str] = None,
@@ -175,7 +175,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             True if the connection is available, False otherwise.
         """
         try:
-            result = self._get_client().check_connection()
+            result = self._get_db().check_connection()
             return result.get("status") == "UP"  # type: ignore[no-any-return]
         # TODO: [HIGH] refactor to use a more specific exception
         except Exception:
@@ -203,7 +203,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         elif not label_config:
             raise ValueError("`label_config` keyword argument is required.")
 
-        return self._get_client().start_project(
+        return self._get_db().start_project(
             title=dataset_name,
             label_config=label_config,
         )
@@ -219,7 +219,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided or if the dataset
                 does not exist.
         """
-        ls = self._get_client()
+        ls = self._get_db()
         dataset_name = kwargs.get("dataset_name")
         if not dataset_name:
             raise ValueError("`dataset_name` keyword argument is required.")
@@ -254,7 +254,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError(
                 f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Prodigy."
             )
-        return self._get_client().get_project(dataset_id)
+        return self._get_db().get_project(dataset_id)
 
     def get_converted_dataset(
         self, dataset_name: str, output_format: str
@@ -293,7 +293,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError(
                 f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Prodigy."
             )
-        return self._get_client().get_project(dataset_id).get_labeled_tasks()
+        return self._get_db().get_project(dataset_id).get_labeled_tasks()
 
     def get_unlabeled_data(self, **kwargs: str) -> Any:
         """Gets the unlabeled data for the given dataset.
@@ -316,7 +316,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError(
                 f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Prodigy."
             )
-        return self._get_client().get_project(dataset_id).get_unlabeled_tasks()
+        return self._get_db().get_project(dataset_id).get_unlabeled_tasks()
 
     def register_dataset_for_annotation(
         self,
@@ -334,7 +334,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         project_id = self.get_id_from_name(dataset_name)
         if project_id:
-            dataset = self._get_client().get_project(project_id)
+            dataset = self._get_db().get_project(project_id)
         else:
             dataset = self.add_dataset(
                 dataset_name=dataset_name,
@@ -359,7 +359,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         # TODO: check if client actually is connected etc
         query_url = f"/api/storages/azure?project={dataset_id}"
-        response = self._get_client().make_request(method="GET", url=query_url)
+        response = self._get_db().make_request(method="GET", url=query_url)
         if response.status_code == 200:
             return cast(List[Dict[str, Any]], response.json())
         else:
@@ -383,7 +383,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         # TODO: check if client actually is connected etc
         query_url = f"/api/storages/gcs?project={dataset_id}"
-        response = self._get_client().make_request(method="GET", url=query_url)
+        response = self._get_db().make_request(method="GET", url=query_url)
         if response.status_code == 200:
             return cast(List[Dict[str, Any]], response.json())
         else:
@@ -407,7 +407,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         # TODO: check if client actually is connected etc
         query_url = f"/api/storages/s3?project={dataset_id}"
-        response = self._get_client().make_request(method="GET", url=query_url)
+        response = self._get_db().make_request(method="GET", url=query_url)
         if response.status_code == 200:
             return cast(List[Dict[str, Any]], response.json())
         else:
@@ -475,7 +475,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If no dataset is found for the given id.
         """
         # TODO: check if client actually is connected etc
-        dataset = self._get_client().get_project(dataset_id)
+        dataset = self._get_db().get_project(dataset_id)
         if dataset:
             return cast(Dict[str, Any], dataset.parsed_label_config)
         raise ValueError("No dataset found for the given id.")
@@ -726,7 +726,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
             # temporary fix using client method until LS supports
             # recursive_scan in their SDK
             # (https://github.com/heartexlabs/label-studio-sdk/pull/130)
-            ls_client = self._get_client()
+            ls_client = self._get_db()
             payload = {
                 "bucket": uri,
                 "prefix": params.prefix,
@@ -787,7 +787,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
                 "between 'azure', 'gcs', 'aws' or 'local'."
             )
 
-        synced_storage = self._get_client().sync_storage(
+        synced_storage = self._get_db().sync_storage(
             storage_id=storage["id"], storage_type=storage["type"]
         )
         return cast(Dict[str, Any], synced_storage)
