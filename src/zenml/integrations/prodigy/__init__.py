@@ -36,11 +36,11 @@ class ProdigyIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.label_studio.flavors import (
-            ProdigyFlavor,
+        from zenml.integrations.prodigy.flavors import (
+            ProdigyAnnotatorFlavor,
         )
 
-        return [ProdigyFlavor]
+        return [ProdigyAnnotatorFlavor]
 
 
 ProdigyIntegration.check_installation()

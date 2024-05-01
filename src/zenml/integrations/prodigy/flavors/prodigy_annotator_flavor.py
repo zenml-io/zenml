@@ -97,7 +97,7 @@ class ProdigyAnnotatorFlavor(BaseAnnotatorFlavor):
         Returns:
             The implementation class.
         """
-        from zenml.integrations.label_studio.annotators import (
+        from zenml.integrations.prodigy.annotators import (
             ProdigyAnnotator,
         )
 
