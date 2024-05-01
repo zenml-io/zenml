@@ -30,7 +30,9 @@ DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
 DEFAULT_LOCAL_LABEL_STUDIO_PORT = 8093
 
 
-class LabelStudioAnnotatorConfig(BaseAnnotatorConfig, AuthenticationConfigMixin):
+class LabelStudioAnnotatorConfig(
+    BaseAnnotatorConfig, AuthenticationConfigMixin
+):
     """Config for the Label Studio annotator.
 
     Attributes:
