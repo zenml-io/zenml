@@ -128,6 +128,9 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
                 - command: The full recipe command without "prodigy".
                 - Any additional config parameters to overwrite the
                     project-specific, global, and recipe config.
+
+        Raises:
+            ValueError: If the 'command' keyword argument is not provided.
         """
         command = kwargs.get("command")
         if not command:
@@ -264,8 +267,8 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         Args:
             **kwargs: Additional keyword arguments to pass to the Prodigy client.
 
-        Returns:
-            The unlabeled data.
+        Raises:
+            NotImplementedError: Prodigy doesn't allow fetching unlabeled data.
         """
         raise NotImplementedError(
             "Prodigy doesn't allow fetching unlabeled data."
