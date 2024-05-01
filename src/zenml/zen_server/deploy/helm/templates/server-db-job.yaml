@@ -72,8 +72,6 @@ spec:
               value: "False"
             - name: ZENML_DEFAULT_PROJECT_NAME
               value: {{ .Values.zenml.defaultProject | quote }}
-            - name: ZENML_DEFAULT_USER_NAME
-              value: {{ .Values.zenml.defaultUsername | quote }}
             - name: ZENML_STORE_TYPE
               value: sql
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT

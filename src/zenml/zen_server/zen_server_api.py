@@ -73,7 +73,10 @@ from zenml.zen_server.utils import (
     server_config,
 )
 
-DASHBOARD_DIRECTORY = "dashboard"
+if server_config().use_legacy_dashboard:
+    DASHBOARD_DIRECTORY = "dashboard_legacy"
+else:
+    DASHBOARD_DIRECTORY = "dashboard"
 
 
 def relative_path(rel: str) -> str:
@@ -190,13 +193,26 @@ def initialize() -> None:
     initialize_secure_headers()
 
 
-app.mount(
-    "/static",
-    StaticFiles(
-        directory=relative_path(os.path.join(DASHBOARD_DIRECTORY, "static")),
-        check_dir=False,
-    ),
-)
+if server_config().use_legacy_dashboard:
+    app.mount(
+        "/static",
+        StaticFiles(
+            directory=relative_path(
+                os.path.join(DASHBOARD_DIRECTORY, "static")
+            ),
+            check_dir=False,
+        ),
+    )
+else:
+    app.mount(
+        "/assets",
+        StaticFiles(
+            directory=relative_path(
+                os.path.join(DASHBOARD_DIRECTORY, "assets")
+            ),
+            check_dir=False,
+        ),
+    )
 
 
 # Basic Health Endpoint
@@ -335,10 +351,6 @@ def catch_all(request: Request, file_path: str) -> Any:
 
     Returns:
         The ZenML dashboard.
-
-    Raises:
-        HTTPException: 404 error if requested a non-existent static file or if
-            the dashboard files are not included.
     """
     # some static files need to be served directly from the root dashboard
     # directory
@@ -346,16 +358,6 @@ def catch_all(request: Request, file_path: str) -> Any:
         logger.debug(f"Returning static file: {file_path}")
         full_path = os.path.join(relative_path(DASHBOARD_DIRECTORY), file_path)
         return FileResponse(full_path)
-
-    tokens = file_path.split("/")
-    if len(tokens) == 1 and not request.query_params:
-        logger.debug(f"Requested non-existent static file: {file_path}")
-        raise HTTPException(status_code=404)
-
-    if not os.path.isfile(
-        os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
-    ):
-        raise HTTPException(status_code=404)
 
     # everything else is directed to the index.html file that hosts the
     # single-page application
