@@ -2,6 +2,11 @@
 description: Add more resources to your pipeline configuration.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Configure your pipeline
 
 Now that we have our pipeline up and running in the cloud, you might be wondering how ZenML figured out what sort of dependencies to install

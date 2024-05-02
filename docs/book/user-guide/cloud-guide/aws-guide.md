@@ -2,6 +2,11 @@
 description: A simple guide to create an AWS stack to run your ZenML pipelines
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Connect your AWS account to ZenML
 
 This page aims to quickly set up a minimal production stack on AWS. With just a
