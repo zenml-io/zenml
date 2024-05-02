@@ -1,25 +1,10 @@
 <!-- markdown-link-check-disable -->
 
-# 0.57.0rc2
+# 0.57.0
 
+<THIS IS A PLACEHOLDER TO BE UPDATED BEFORE MERGING>
 This release candidate introduces support for the fully new ZenML Dashboard experience, 
-a number of improvement to documentation and a few bug fixes.
-
-## What's Changed
-* Fix CI by @strickvl in https://github.com/zenml-io/zenml/pull/2645
-* Misc/prepare release 0.57.0rc1 by @avishniakov in https://github.com/zenml-io/zenml/pull/2646
-* Add rate limiting to user password reset operations by @stefannica in https://github.com/zenml-io/zenml/pull/2643
-* Set zenml server name to default if not customized by @stefannica in https://github.com/zenml-io/zenml/pull/2647
-* Docker release fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2649
-* Fix dashboard urls by @schustmi in https://github.com/zenml-io/zenml/pull/2648
-
-
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.57.0rc1...0.57.0-rc2
-
-# 0.57.0rc1
-
-This release candidate introduces support for the fully new ZenML Dashboard experience, 
-a number of improvement to documentation and a few bug fixes.
+a number of improvement to documentation and a few bug fixes. 
 
 ## What's Changed
 * Add Comet to Experiment Trackers in TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2637
@@ -28,9 +13,25 @@ a number of improvement to documentation and a few bug fixes.
 * Slimmer and more secure Docker container images by @stefannica in https://github.com/zenml-io/zenml/pull/2617
 * Add dashboard v2 source context by @schustmi in https://github.com/zenml-io/zenml/pull/2642
 * Support New Dashboard release by @avishniakov in https://github.com/zenml-io/zenml/pull/2635
+* Fix CI by @strickvl in https://github.com/zenml-io/zenml/pull/2645
+* Misc/prepare release 0.57.0rc1 by @avishniakov in https://github.com/zenml-io/zenml/pull/2646
+* Add rate limiting to user password reset operations by @stefannica in https://github.com/zenml-io/zenml/pull/2643
+* Set zenml server name to default if not customized by @stefannica in https://github.com/zenml-io/zenml/pull/2647
+* Docker release fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2649
+* Fix dashboard urls by @schustmi in https://github.com/zenml-io/zenml/pull/2648
+* Enable analytics during db initialization if specified by @schustmi in https://github.com/zenml-io/zenml/pull/2652
+* Better checks for user account updates to avoid Mass Assignment attacks by @stefannica in https://github.com/zenml-io/zenml/pull/2622
+* Prepare 0.57.0-rc2 by @avishniakov in https://github.com/zenml-io/zenml/pull/2651
+* Fix frontend analytics calls by @schustmi in https://github.com/zenml-io/zenml/pull/2653
+* Label studio settings and optional port by @htahir1 in https://github.com/zenml-io/zenml/pull/2628
+* Introduce default value fro enable_analytics by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2654
+* Fix helm chart notes syntax by @wjayesh in https://github.com/zenml-io/zenml/pull/2656
+* Add server env variable to fix activation by @schustmi in https://github.com/zenml-io/zenml/pull/2657
+* Respect analytic ENV in local servers by @avishniakov in https://github.com/zenml-io/zenml/pull/2658
+* Small fixes in helm docs by @schustmi in https://github.com/zenml-io/zenml/pull/2659
 
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.4...0.57.0rc1
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.4...0.57.0
 
 # 0.56.4
 
