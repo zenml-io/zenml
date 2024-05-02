@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# TODO: remove me after release is stable
-TAG="v0.17.0-rc2"
-
-
 APP_NAME="zenml-dashboard"
 REPO_URL="https://github.com/zenml-io/zenml-dashboard"
 
