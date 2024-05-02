@@ -75,6 +75,9 @@ def my_step() -> CSVString:
     some_csv = "a,b,c\n1,2,3"
     return CSVString(some_csv)
 ```
+This would create the following visualization in the dashboard:
+
+![CSV Visualization Example](../../../.gitbook/assets/artifact_visualization_csv.png)
 
 ### Visualization via Materializers
 
