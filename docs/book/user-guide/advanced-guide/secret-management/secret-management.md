@@ -8,8 +8,6 @@ description: Registering and utilizing secrets.
 
 ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks.
 
-<figure><img src="../../../.gitbook/assets/SecretsInDashboard.png" alt=""><figcaption><p>List of Secrets managed through ZenML</p></figcaption></figure>
-
 ## Centralized secrets store
 
 ZenML provides a centralized secrets management system that allows you to register and manage secrets in a secure way. The metadata of the ZenML secrets (e.g. name, ID, owner, scope etc.) is always stored in the ZenML server database, while the actual secret values are stored and managed separately, through the ZenML Secrets Store. This allows for a flexible deployment strategy that meets the security and compliance requirements of your organization.

@@ -95,11 +95,6 @@ Successfully registered service connector `dockerhub` with access to the followi
 ```
 {% endcode %}
 
-Alternatively, you can configure a Docker Service Connector through the ZenML dashboard:
-
-![Docker Service Connector Type](../../../.gitbook/assets/docker-service-connector-type.png)
-![Docker Service Connector Configuration](../../../.gitbook/assets/docker-service-connector-configuration.png)
-
 If you already have one or more Docker Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the container registry you want to use for your Default Container Registry by running e.g.:
 
 ```sh
@@ -147,9 +142,6 @@ Successfully connected container registry `dockerhub` to the following resources
 ```
 {% endcode %}
 
-A similar experience is available when you configure the Default Container Registry through the ZenML dashboard:
-
-![Default Container Registry Configuration](../../../.gitbook/assets/default-container-registry-service-connector.png)
 
 As a final step, you can use the Default Container Registry in a ZenML Stack:
 
