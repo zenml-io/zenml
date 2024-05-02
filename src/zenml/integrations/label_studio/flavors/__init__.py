@@ -16,9 +16,11 @@
 from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
     LabelStudioAnnotatorConfig,
     LabelStudioAnnotatorFlavor,
+    LabelStudioAnnotatorSettings,
 )
 
 __all__ = [
     "LabelStudioAnnotatorFlavor",
     "LabelStudioAnnotatorConfig",
+    "LabelStudioAnnotatorSettings"
 ]

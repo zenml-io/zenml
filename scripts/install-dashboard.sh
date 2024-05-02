@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # TODO: remove me after release is stable
-TAG="v0.17.0-rc1"
+TAG="v0.17.0-rc2"
 
 
 APP_NAME="zenml-dashboard"
