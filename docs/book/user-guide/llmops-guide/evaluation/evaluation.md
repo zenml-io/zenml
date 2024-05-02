@@ -2,6 +2,11 @@
 description: Track how your RAG pipeline improves using evaluation and metrics.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Evaluation and metrics for LLMOps
 
 In this section, we'll explore how to evaluate the performance of your RAG

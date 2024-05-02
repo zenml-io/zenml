@@ -2,6 +2,11 @@
 description: All possible ways for our community to get in touch with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 💜 Community & content
 
 The ZenML team and community have put together a list of references that can be used to get in touch with the
