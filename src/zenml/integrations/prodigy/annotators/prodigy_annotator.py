@@ -207,16 +207,16 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
                 does not exist.
         """
         db = self._get_db()
-        if dataset_name := kwargs.get("dataset_name"):
-            try:
-                db.drop_dataset(name=dataset_name)
-            except ProdigyError as e:
-                breakpoint()
+        if not (dataset_name := kwargs.get("dataset_name")):
+            raise ValueError("`dataset_name` keyword argument is required.")
+        try:
+            db.drop_dataset(name=dataset_name)
+        except ProdigyError as e:
+            # see https://support.prodi.gy/t/how-to-import-datasetdoesnotexist-error/7205
+            if type(e).__name__ == "DatasetNotFound":
                 raise ValueError(
                     f"Dataset name '{dataset_name}' does not exist."
                 ) from e
-        else:
-            raise ValueError("`dataset_name` keyword argument is required.")
 
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset metadata for the given name.
