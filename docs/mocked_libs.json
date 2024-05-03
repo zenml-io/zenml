@@ -211,5 +211,6 @@
     "peewee",
     "prodigy",
     "prodigy.components",
-    "prodigy.components.db"
+    "prodigy.components.db",
+    "prodigy.errors"
 ]
