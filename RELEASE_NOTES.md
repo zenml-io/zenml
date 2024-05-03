@@ -1,9 +1,55 @@
 <!-- markdown-link-check-disable -->
 
-# 0.57.0rc1
+# 0.57.0
 
-This release candidate introduces support for the fully new ZenML Dashboard experience, 
-a number of improvement to documentation and a few bug fixes.
+We're excited to announce that we're open-sourcing our new and improved dashboard. This unifies the experience for OSS and cloud users, though OSS users will initially see some dashboard features unavailable in this launch release.
+
+We're open-sourcing our dashboard for a few reasons:
+
+- to ensure that the dashboard experience is consistent across all users, for both the open-source and cloud versions
+- to make it easier for us to maintain and develop the dashboard, as we can share components between the two versions
+- to allow OSS contributions (and self-hosting and modifications) to the new dashboard
+- to open up possibilities for future features, particularly for our OSS users
+
+New users of the ZenML in the dashboard will have a better experience thanks to a much-improved onboarding sequence:
+
+<div align="center">
+  <img width="80%" src="docs/book/.gitbook/assets/new_dashboard_rn_2.png" alt="Dashboard 2"/>
+</div>
+
+The dashboard will guide you through connecting to your server, setting up a stack, connecting to service connectors as well as running a pipeline.
+
+We’ve also improved the ‘Settings’ section of the dashboard and this is the new home for configuration of your repositories, secrets, and connectors, along with some other options.
+
+<div align="center">
+  <img width="80%" src="docs/book/.gitbook/assets/new_dashboard_rn_3.png" alt="Dashboard 3"/>
+</div>
+
+## What It Means for You
+
+If you're already a **cloud user**, not much will change for you. You're already using the new dashboard for pipelines, models and artifacts. Your experience won’t change and for the moment you’ll continue using the old dashboard for certain components (notably for stacks and components).
+
+If you're an **open-source user**, the new dashboard is now available to you as part of our latest release (0.57.0). You'll notice a completely refreshed design and a new DAG visualizer.
+
+<div align="center">
+  <img width="80%" src="docs/book/.gitbook/assets/new_dashboard_rn_4.png" alt="Dashboard 4"/>
+</div>
+
+Unfortunately, some dashboard features are not yet ready so you'll see instructions on how to access them via the CLI. We hope to have these features returned into the product soon. (If you have a strong opinion as to which you'd like to see first, please let us know!) Specifically, secrets, stacks, and service connectors are not yet implemented in the new dashboard.
+
+### How to use the legacy dashboard
+
+The old dashboard is still available to you. To run with the legacy dashboard pass the `--legacy` flag when spinning it up:
+
+```bash
+zenml up --legacy
+```
+
+Note that you can’t use both the new and old dashboard at the same time.
+
+If you’re self-hosting ZenML instead of using ZenML Cloud, you can specify which dashboard you want to use by setting the `ZEN_SERVER_USE_LEGACY_DASHBOARD` environment variable pre-deployment. Specifying a boolean value for this variable will determine which dashboard gets served for your deployment. (There’s no dynamic switching between dashboards allowed, so if you wish to change which dashboard is used for a deployed server, you’ll need to redeploy the server after updating the environment variable.)
+
+If you’re using [ZenML Cloud](https://cloud.zenml.io/), your experience won’t change with this release and your use of the dashboard remains the same.
 
 ## What's Changed
 * Add Comet to Experiment Trackers in TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2637
@@ -12,9 +58,25 @@ a number of improvement to documentation and a few bug fixes.
 * Slimmer and more secure Docker container images by @stefannica in https://github.com/zenml-io/zenml/pull/2617
 * Add dashboard v2 source context by @schustmi in https://github.com/zenml-io/zenml/pull/2642
 * Support New Dashboard release by @avishniakov in https://github.com/zenml-io/zenml/pull/2635
+* Fix CI by @strickvl in https://github.com/zenml-io/zenml/pull/2645
+* Misc/prepare release 0.57.0rc1 by @avishniakov in https://github.com/zenml-io/zenml/pull/2646
+* Add rate limiting to user password reset operations by @stefannica in https://github.com/zenml-io/zenml/pull/2643
+* Set zenml server name to default if not customized by @stefannica in https://github.com/zenml-io/zenml/pull/2647
+* Docker release fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2649
+* Fix dashboard urls by @schustmi in https://github.com/zenml-io/zenml/pull/2648
+* Enable analytics during db initialization if specified by @schustmi in https://github.com/zenml-io/zenml/pull/2652
+* Better checks for user account updates to avoid Mass Assignment attacks by @stefannica in https://github.com/zenml-io/zenml/pull/2622
+* Prepare 0.57.0-rc2 by @avishniakov in https://github.com/zenml-io/zenml/pull/2651
+* Fix frontend analytics calls by @schustmi in https://github.com/zenml-io/zenml/pull/2653
+* Label studio settings and optional port by @htahir1 in https://github.com/zenml-io/zenml/pull/2628
+* Introduce default value fro enable_analytics by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2654
+* Fix helm chart notes syntax by @wjayesh in https://github.com/zenml-io/zenml/pull/2656
+* Add server env variable to fix activation by @schustmi in https://github.com/zenml-io/zenml/pull/2657
+* Respect analytic ENV in local servers by @avishniakov in https://github.com/zenml-io/zenml/pull/2658
+* Small fixes in helm docs by @schustmi in https://github.com/zenml-io/zenml/pull/2659
 
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.4...0.57.0rc1
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.4...0.57.0
 
 # 0.56.4
 

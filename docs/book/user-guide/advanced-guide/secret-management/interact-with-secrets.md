@@ -7,12 +7,6 @@ description: Managing your secrets with ZenML.
 ## How to create a secret
 
 {% tabs %}
-{% tab title="Dashboard" %}
-Head to the Secrets section in the sidebar and click `Register Secret` in the bottom left and you should be guided through the rest of the process.
-
-<figure><img src="../../../.gitbook/assets/RegisterSecret.png" alt=""><figcaption><p>Registering a Secret in the Dashboard</p></figcaption></figure>
-{% endtab %}
-
 {% tab title="CLI" %}
 To create a secret with a name `<SECRET_NAME>` and a key-value pair, you can run the following CLI command:
 
@@ -99,11 +93,6 @@ Some of the components in your stack require you to configure them with sensitiv
 For example:
 
 {% tabs %}
-{% tab title="Dashboard" %}
-In the dashboard values that are considered `Secret` can be set using registered secrets with the Syntax mentioned above:  `{{<SECRET_NAME>.<SECRET_KEY>}}`. Alternatively, the values you enter at creation time will be saved as a secret.&#x20;
-
-<figure><img src="../../../.gitbook/assets/RegisterComponentWithSecret.png" alt=""><figcaption><p>Registering a stack component with secret values.</p></figcaption></figure>
-{% endtab %}
 
 {% tab title="CLI" %}
 ```shell
