@@ -27,6 +27,7 @@ class ProdigyIntegration(Integration):
     NAME = PRODIGY
     REQUIREMENTS = [
         "prodigy",
+        "urllib3<2",
     ]
 
     @classmethod
