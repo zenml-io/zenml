@@ -109,6 +109,8 @@ def random_str(length: int) -> str:
 
 
 class NameValidatedModel(BaseModel):
+    """Base model with name validation."""
+
     @validator("name", check_fields=False)
     def validate_name(cls, name: str) -> str:
         """Validator to ensure that the given name has only allowed characters.
