@@ -34,12 +34,11 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.component import ComponentResponse
-from zenml.utils.string_utils import NameValidatedModel
 
 # ------------------ Request Model ------------------
 
 
-class StackRequest(WorkspaceScopedRequest, NameValidatedModel):
+class StackRequest(WorkspaceScopedRequest):
     """Request model for stacks."""
 
     name: str = Field(

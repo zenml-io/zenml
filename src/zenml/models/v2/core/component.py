@@ -25,7 +25,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field, validator
+from pydantic import BaseModel, Field, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import LogicalOperators, StackComponentType
@@ -40,7 +40,6 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.base.update import update_model
 from zenml.utils import secret_utils
-from zenml.utils.string_utils import NameValidatedModel
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -53,7 +52,7 @@ if TYPE_CHECKING:
 # ------------------ Base Model ------------------
 
 
-class ComponentBase(NameValidatedModel):
+class ComponentBase(BaseModel):
     """Base model for components."""
 
     name: str = Field(

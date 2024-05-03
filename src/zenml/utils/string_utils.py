@@ -108,33 +108,33 @@ def random_str(length: int) -> str:
     return "".join(random.choices(string.ascii_letters, k=length))
 
 
-class NameValidatedModel(BaseModel):
-    """Base model with name validation."""
+def validate_name(model: BaseModel) -> None:
+    """Validator to ensure that the given name has only allowed characters.
 
-    def validate_name(self) -> None:
-        """Validator to ensure that the given name has only allowed characters.
+    Args:
+        model: The model to validate.
 
-        Raises:
-            ValueError: If the name has invalid characters.
-        """
-        cls_name = self.__class__.__name__
-        if cls_name.endswith("Base"):
-            type_ = cls_name[:-4]
-        elif cls_name.endswith("Request"):
-            type_ = cls_name[:-7]
-        else:
-            type_ = cls_name
+    Raises:
+        ValueError: If the name has invalid characters.
+    """
+    cls_name = model.__class__.__name__
+    if cls_name.endswith("Base"):
+        type_ = cls_name[:-4]
+    elif cls_name.endswith("Request"):
+        type_ = cls_name[:-7]
+    else:
+        type_ = cls_name
 
-        if name := getattr(self, "name", None):
-            diff = "".join(set(name).intersection(set(BANNED_NAME_CHARACTERS)))
-            if diff:
-                msg = (
-                    f"The name `{name}` of the `{type_}` contains "
-                    f"the following forbidden characters: `{diff}`."
-                )
-                raise ValueError(msg)
-        else:
-            raise ValueError(
-                f"The class `{cls_name}` has no attribute `name` "
-                "or it is set to `None`. Cannot validate the name."
+    if name := getattr(model, "name", None):
+        diff = "".join(set(name).intersection(set(BANNED_NAME_CHARACTERS)))
+        if diff:
+            msg = (
+                f"The name `{name}` of the `{type_}` contains "
+                f"the following forbidden characters: `{diff}`."
             )
+            raise ValueError(msg)
+    else:
+        raise ValueError(
+            f"The class `{cls_name}` has no attribute `name` "
+            "or it is set to `None`. Cannot validate the name."
+        )
