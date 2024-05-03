@@ -11,7 +11,7 @@ There are several reasons why you may want to scale your machine learning pipeli
 Some steps of your machine learning pipeline might be more resource-intensive and require special hardware to execute. In such cases, you can specify the required resources for steps as follows:
 
 ```python
-from zenml import ResourceSettings
+from zenml.config import ResourceSettings
 from zenml import step
 
 @step(settings={"resources": ResourceSettings(cpu_count=8, gpu_count=2, memory="8GB")})
