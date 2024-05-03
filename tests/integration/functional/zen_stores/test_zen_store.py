@@ -3004,7 +3004,9 @@ def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
     ar = ArtifactRequest(
         name="I should fail\n But hacky `validate_name` protects me from it"
     )
-    with patch.object(ArtifactRequest, "validate_name", return_value=None):
+    with patch(
+        "zenml.zen_stores.sql_zen_store.validate_name", return_value=None
+    ):
         response = store.create_artifact(ar)
 
     fetched = store.get_artifact(response.id)
