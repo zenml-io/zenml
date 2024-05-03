@@ -4128,7 +4128,7 @@ class TestModel:
         c = Client()
         zs = c.zen_store
         with pytest.raises(ValueError):
-            zs.create_model_version(
+            zs.create_model(
                 ModelRequest(
                     user=c.active_user.id,
                     workspace=c.active_workspace.id,
