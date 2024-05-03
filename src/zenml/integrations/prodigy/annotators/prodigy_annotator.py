@@ -22,6 +22,7 @@ from prodigy.components.db import (
     Database as ProdigyDatabase,
 )
 from prodigy.components.db import connect
+from prodigy.errors import ProdigyError
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.integrations.prodigy.flavors.prodigy_annotator_flavor import (
@@ -209,9 +210,8 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         if dataset_name := kwargs.get("dataset_name"):
             try:
                 db.drop_dataset(name=dataset_name)
-            # use this exception when we find out how to import it
-            # except DatasetDoesNotExist as e:
-            except Exception as e:
+            except ProdigyError as e:
+                breakpoint()
                 raise ValueError(
                     f"Dataset name '{dataset_name}' does not exist."
                 ) from e
