@@ -32,6 +32,7 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.utils.string_utils import NameValidatedModel
 
 if TYPE_CHECKING:
     from zenml.model.model import Model
@@ -49,7 +50,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ModelVersionRequest(WorkspaceScopedRequest):
+class ModelVersionRequest(WorkspaceScopedRequest, NameValidatedModel):
     """Request model for model versions."""
 
     name: Optional[str] = Field(

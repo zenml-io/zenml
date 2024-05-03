@@ -29,6 +29,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedTaggableFilter,
 )
 from zenml.utils.pagination_utils import depaginate
+from zenml.utils.string_utils import NameValidatedModel
 
 if TYPE_CHECKING:
     from zenml.model.model import Model
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ModelRequest(WorkspaceScopedRequest):
+class ModelRequest(WorkspaceScopedRequest, NameValidatedModel):
     """Request model for models."""
 
     name: str = Field(

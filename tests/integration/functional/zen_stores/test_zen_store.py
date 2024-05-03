@@ -121,7 +121,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
-from zenml.models.v2.core.model import ModelFilter, ModelUpdate
+from zenml.models.v2.core.model import ModelFilter, ModelRequest, ModelUpdate
 from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
@@ -2497,6 +2497,23 @@ def test_count_stack_components():
         assert store.count_stack_components(filter_model) == count_before + 1
 
 
+def test_stack_component_create_fails_with_invalid_name():
+    """Tests that creating a stack component with an invalid name fails."""
+    client = Client()
+    store = client.zen_store
+    with pytest.raises(ValueError):
+        store.create_stack_component(
+            ComponentRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                name="I will fail !",
+                type=StackComponentType.ORCHESTRATOR,
+                configuration={},
+                flavor="local",
+            )
+        )
+
+
 # .-------------------------.
 # | Stack component flavors |
 # '-------------------------'
@@ -2632,6 +2649,31 @@ def test_register_stack_fails_when_stack_exists():
                     store.create_stack(
                         stack=new_stack,
                     )
+
+
+def test_register_stack_fails_with_invalid_name():
+    """Tests registering stack fails with invalid name."""
+    client = Client()
+    store = client.zen_store
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with pytest.raises(ValueError):
+                store.create_stack(
+                    StackRequest(
+                        name="I will fail !",
+                        components=components,
+                        workspace=client.active_workspace.id,
+                        user=client.active_user.id,
+                    )
+                )
 
 
 def test_updating_nonexistent_stack_fails():
@@ -2942,6 +2984,13 @@ def test_artifacts_are_not_deleted_with_run(clean_client: "Client"):
 
         artifacts = store.list_artifact_versions(ArtifactVersionFilter())
         assert artifacts.total == num_artifact_versions_before + num_runs * 2
+
+
+def test_artifact_create_fails_with_invalid_name(clean_client: "Client"):
+    """Tests that artifact creation fails with an invalid name."""
+    store = clean_client.zen_store
+    with pytest.raises(Exception):
+        store.create_artifact(ArtifactRequest(name="I will fail !"))
 
 
 # .---------.
@@ -4051,6 +4100,19 @@ class TestModel:
             )
             assert len(ms) == 0
 
+    def test_create_fails_with_invalid_name(self):
+        """Test that creation fails with invalid name."""
+        c = Client()
+        zs = c.zen_store
+        with pytest.raises(ValueError):
+            zs.create_model_version(
+                ModelRequest(
+                    user=c.active_user.id,
+                    workspace=c.active_workspace.id,
+                    name="I will fail because I have !@# in my name",
+                )
+            )
+
 
 class TestModelVersion:
     def test_create_pass(self):
@@ -4065,6 +4127,20 @@ class TestModelVersion:
                     name="great one",
                 )
             )
+
+    def test_create_fail_with_invalid_name(self):
+        """Test that creation fails with invalid name."""
+        with ModelContext() as model:
+            zs = Client().zen_store
+            with pytest.raises(ValueError):
+                zs.create_model_version(
+                    ModelVersionRequest(
+                        user=model.user.id,
+                        workspace=model.workspace.id,
+                        model=model.id,
+                        name="I will fail because I have !@# in my name",
+                    )
+                )
 
     def test_create_duplicated(self):
         """Test that duplicated creation fails."""
@@ -5000,6 +5076,13 @@ class TestTag:
         """Tests that tag creation fails without a name."""
         with pytest.raises(ValueError):
             clean_client.create_tag(TagRequest(color="yellow"))
+
+    def test_create_fails_with_invalid_name(self, clean_client: "Client"):
+        """Tests that tag creation fails with invalid name."""
+        with pytest.raises(ValueError):
+            clean_client.create_tag(
+                TagRequest(name="I will fail because I have !@# in my name")
+            )
 
     def test_create_duplicate(self, clean_client: "Client"):
         """Tests that tag creation fails on duplicate."""

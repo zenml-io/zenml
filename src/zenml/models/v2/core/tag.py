@@ -28,11 +28,12 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
 )
 from zenml.models.v2.base.filter import BaseFilter
+from zenml.utils.string_utils import NameValidatedModel
 
 # ------------------ Request Model ------------------
 
 
-class TagRequest(BaseRequest):
+class TagRequest(BaseRequest, NameValidatedModel):
     """Request model for tags."""
 
     name: str = Field(

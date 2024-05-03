@@ -28,6 +28,7 @@ from zenml.models.v2.base.base import (
 )
 from zenml.models.v2.base.scoped import WorkspaceScopedTaggableFilter
 from zenml.models.v2.core.tag import TagResponse
+from zenml.utils.string_utils import NameValidatedModel
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ArtifactRequest(BaseRequest):
+class ArtifactRequest(BaseRequest, NameValidatedModel):
     """Artifact request model."""
 
     name: str = Field(

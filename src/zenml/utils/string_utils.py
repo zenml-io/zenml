@@ -17,6 +17,10 @@ import base64
 import random
 import string
 
+from pydantic import BaseModel, validator
+
+from zenml.constants import ALLOWED_NAME_CHARACTERS
+
 
 def get_human_readable_time(seconds: float) -> str:
     """Convert seconds into a human-readable string.
@@ -102,3 +106,33 @@ def random_str(length: int) -> str:
     """
     random.seed()
     return "".join(random.choices(string.ascii_letters, k=length))
+
+
+class NameValidatedModel(BaseModel):
+    @validator("name", check_fields=False)
+    def validate_name(cls, name: str) -> str:
+        """Validator to ensure that the given name has only allowed characters.
+
+        Args:
+            name: The name to validate.
+
+        Returns:
+            The name if it is valid one.
+
+        Raises:
+            ValueError: If the name has invalid characters.
+        """
+        diff = "".join(set(name) - set(ALLOWED_NAME_CHARACTERS))
+        if diff:
+            if cls.__name__.endswith("Base"):
+                type_ = cls.__name__[:-4]
+            elif cls.__name__.endswith("Request"):
+                type_ = cls.__name__[:-7]
+            else:
+                type_ = cls.__name__
+            msg = (
+                f"The name `{name}` of the `{type_}` contains "
+                f"the following forbidden characters: `{diff}`."
+            )
+            raise ValueError(msg)
+        return name
