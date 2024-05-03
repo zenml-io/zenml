@@ -12,7 +12,8 @@ systems to use in combination with your statistical models.
 ![Prodigy Annotator](../../../.gitbook/assets/prodigy-annotator.png)
 
 {% hint style="info" %} Prodigy is a paid annotation tool. You will need a
-Prodigy is a paid tool. A license is required to download and use it with ZenML. {% endhint %}
+Prodigy is a paid tool. A license is required to download and use it with ZenML.
+{% endhint %}
 
 
 The Prodigy Python library includes a range of pre-built workflows and
@@ -36,8 +37,13 @@ need to install it to be able to register it as an Annotator and add it to your
 stack:
 
 ```shell
-zenml integration install prodigy
+zenml integration export-requirements --output-file prodigy-requirements.txt prodigy
 ```
+
+Note that you'll need to install Prodigy separately since it requires a license.
+Please [visit the Prodigy docs](https://prodi.gy/docs/install) for information
+on how to install it. Currently Prodigy also requires the `urllib3<2`
+dependency, so make sure to install that.
 
 Then register your annotator with ZenML:
 
