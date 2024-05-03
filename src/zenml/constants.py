@@ -16,7 +16,6 @@
 import json
 import logging
 import os
-from string import ascii_letters, digits
 from typing import Any, List, Optional, Type, TypeVar
 
 from zenml.enums import AuthScheme
@@ -454,4 +453,4 @@ MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION = (
 FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"
 
 # Name validation
-ALLOWED_NAME_CHARACTERS = ascii_letters + digits + " _-"
+BANNED_NAME_CHARACTERS = "\t\n\r\v\f"

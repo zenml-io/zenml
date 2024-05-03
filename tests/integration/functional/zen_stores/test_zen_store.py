@@ -20,6 +20,7 @@ from datetime import datetime
 from string import ascii_lowercase
 from threading import Thread
 from typing import Dict, List, Optional, Tuple
+from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
@@ -2506,7 +2507,7 @@ def test_stack_component_create_fails_with_invalid_name():
             ComponentRequest(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                name="I will fail !",
+                name="I will fail\n",
                 type=StackComponentType.ORCHESTRATOR,
                 configuration={},
                 flavor="local",
@@ -2668,7 +2669,7 @@ def test_register_stack_fails_with_invalid_name():
             with pytest.raises(ValueError):
                 store.create_stack(
                     StackRequest(
-                        name="I will fail !",
+                        name="I will fail\n",
                         components=components,
                         workspace=client.active_workspace.id,
                         user=client.active_user.id,
@@ -2990,7 +2991,29 @@ def test_artifact_create_fails_with_invalid_name(clean_client: "Client"):
     """Tests that artifact creation fails with an invalid name."""
     store = clean_client.zen_store
     with pytest.raises(Exception):
-        store.create_artifact(ArtifactRequest(name="I will fail !"))
+        store.create_artifact(ArtifactRequest(name="I will fail\n"))
+
+
+def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
+    """Tests that artifact fetch works even with an invalid name.
+
+    This test is only needed to ensure that legacy entities with illegal names
+    would still work fine.
+    """
+    store = clean_client.zen_store
+    ar = ArtifactRequest(
+        name="I should fail\n But hacky `validate_name` protects me from it"
+    )
+    with patch.object(ArtifactRequest, "validate_name", return_value=None):
+        response = store.create_artifact(ar)
+
+    fetched = store.get_artifact(response.id)
+    assert (
+        fetched.name
+        == "I should fail\n But hacky `validate_name` protects me from it"
+    )
+
+    store.delete_artifact(response.id)
 
 
 # .---------.
@@ -4109,7 +4132,7 @@ class TestModel:
                 ModelRequest(
                     user=c.active_user.id,
                     workspace=c.active_workspace.id,
-                    name="I will fail because I have !@# in my name",
+                    name="I will fail\n",
                 )
             )
 
@@ -4138,7 +4161,7 @@ class TestModelVersion:
                         user=model.user.id,
                         workspace=model.workspace.id,
                         model=model.id,
-                        name="I will fail because I have !@# in my name",
+                        name="I will fail\n",
                     )
                 )
 
@@ -5080,9 +5103,7 @@ class TestTag:
     def test_create_fails_with_invalid_name(self, clean_client: "Client"):
         """Tests that tag creation fails with invalid name."""
         with pytest.raises(ValueError):
-            clean_client.create_tag(
-                TagRequest(name="I will fail because I have !@# in my name")
-            )
+            clean_client.create_tag(TagRequest(name="I will fail\n"))
 
     def test_create_duplicate(self, clean_client: "Client"):
         """Tests that tag creation fails on duplicate."""

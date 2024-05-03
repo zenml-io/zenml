@@ -17,9 +17,9 @@ import base64
 import random
 import string
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
-from zenml.constants import ALLOWED_NAME_CHARACTERS
+from zenml.constants import BANNED_NAME_CHARACTERS
 
 
 def get_human_readable_time(seconds: float) -> str:
@@ -111,30 +111,30 @@ def random_str(length: int) -> str:
 class NameValidatedModel(BaseModel):
     """Base model with name validation."""
 
-    @validator("name", check_fields=False)
-    def validate_name(cls, name: str) -> str:
+    def validate_name(self) -> None:
         """Validator to ensure that the given name has only allowed characters.
-
-        Args:
-            name: The name to validate.
-
-        Returns:
-            The name if it is valid one.
 
         Raises:
             ValueError: If the name has invalid characters.
         """
-        diff = "".join(set(name) - set(ALLOWED_NAME_CHARACTERS))
-        if diff:
-            if cls.__name__.endswith("Base"):
-                type_ = cls.__name__[:-4]
-            elif cls.__name__.endswith("Request"):
-                type_ = cls.__name__[:-7]
-            else:
-                type_ = cls.__name__
-            msg = (
-                f"The name `{name}` of the `{type_}` contains "
-                f"the following forbidden characters: `{diff}`."
+        cls_name = self.__class__.__name__
+        if cls_name.endswith("Base"):
+            type_ = cls_name[:-4]
+        elif cls_name.endswith("Request"):
+            type_ = cls_name[:-7]
+        else:
+            type_ = cls_name
+
+        if name := getattr(self, "name", None):
+            diff = "".join(set(name).intersection(set(BANNED_NAME_CHARACTERS)))
+            if diff:
+                msg = (
+                    f"The name `{name}` of the `{type_}` contains "
+                    f"the following forbidden characters: `{diff}`."
+                )
+                raise ValueError(msg)
+        else:
+            raise ValueError(
+                f"The class `{cls_name}` has no attribute `name` "
+                "or it is set to `None`. Cannot validate the name."
             )
-            raise ValueError(msg)
-        return name

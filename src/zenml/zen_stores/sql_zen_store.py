@@ -2154,6 +2154,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If an artifact with the same name already exists.
         """
+        artifact.validate_name()
         with Session(self.engine) as session:
             # Check if an artifact with the given name already exists
             existing_artifact = session.exec(
@@ -2794,6 +2795,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack component references a non-existent
                 connector.
         """
+        component.validate_name()
         with Session(self.engine) as session:
             self._fail_if_component_with_name_type_exists(
                 name=component.name,
@@ -6525,6 +6527,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
+        stack.validate_name()
         with Session(self.engine) as session:
             self._fail_if_stack_with_name_exists(stack=stack, session=session)
 
@@ -8689,6 +8692,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a workspace with the given name already exists.
         """
+        model.validate_name()
         with Session(self.engine) as session:
             existing_model = session.exec(
                 select(ModelSchema).where(ModelSchema.name == model.name)
@@ -8891,6 +8895,8 @@ class SqlZenStore(BaseZenStore):
 
             if model_version_.name is None:
                 model_version_.name = str(model_version_.number)
+            else:
+                model_version_.validate_name()
 
             model_version_schema = ModelVersionSchema.from_request(
                 model_version_
@@ -9445,6 +9451,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a tag with the given name already exists.
         """
+        tag.validate_name()
         with Session(self.engine) as session:
             existing_tag = session.exec(
                 select(TagSchema).where(TagSchema.name == tag.name)
