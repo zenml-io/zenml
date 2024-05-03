@@ -83,7 +83,10 @@ class ServerModel(BaseModel):
         title="The Base URL of the server.",
     )
 
-    analytics_enabled: bool = Field(title="Enable server-side analytics.")
+    analytics_enabled: bool = Field(
+        default=True,  # We set a default for migrations from < 0.57.0
+        title="Enable server-side analytics.",
+    )
 
     metadata: Dict[str, str] = Field(
         {},

@@ -5,7 +5,7 @@ description: Deploying models to Kubernetes with Seldon Core.
 # Seldon
 
 [Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade
-open source model serving platform. It packs a wide range of features built
+source-available model serving platform. It packs a wide range of features built
 around deploying models to REST/GRPC microservices that include monitoring and
 logging, model explainers, outlier detectors and various continuous deployment
 strategies such as A/B testing, canary deployments and more.
@@ -21,7 +21,7 @@ The Seldon Core model deployer integration is currently not supported under
 
 ## When to use it?
 
-[Seldon Core](https://github.com/SeldonIO/seldon-core) is a production-grade open-source model serving platform. It
+[Seldon Core](https://github.com/SeldonIO/seldon-core) is a production-grade source-available model serving platform. It
 packs a wide range of features built around deploying models to REST/GRPC microservices that include monitoring and
 logging, model explainers, outlier detectors, and various continuous deployment strategies such as A/B testing, canary
 deployments, and more.
@@ -83,7 +83,7 @@ section.
 {% hint style="info" %}
 Configuring Seldon Core in a Kubernetes cluster can be a complex and error-prone process, so we have provided a set of
 Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes
-can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlstacks).
+can be found in the [MLOps Stack Recipes](https://github.com/zenml-io/mlstacks).
 {% endhint %}
 
 ### Infrastructure Deployment

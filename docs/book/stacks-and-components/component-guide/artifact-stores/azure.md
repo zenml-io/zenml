@@ -146,10 +146,6 @@ Successfully registered service connector `azure-blob-demo` with access to the f
 ```
 {% endcode %}
 
-Alternatively, you can configure an Azure Service Connector through the ZenML dashboard:
-
-![Azure Service Connector Type](../../../.gitbook/assets/azure-service-connector-type.png)
-![Azure Blob Storage Service Connector Configuration](../../../.gitbook/assets/azure-blob-service-connector-configuration.png)
 
 > **Note**: Please remember to grant the Azure service principal permissions to read and write to your Azure Blob storage container as well as to list accessible storage accounts and Blob containers. For a full list of permissions required to use an AWS Service Connector to access one or more S3 buckets, please refer to the [Azure Service Connector Blob storage container resource type documentation](../../auth-management/azure-service-connector.md#azure-blob-storage-container) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](../../auth-management/azure-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
 
@@ -200,10 +196,6 @@ Successfully connected artifact store `azure-blob-demo` to the following resourc
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
-
-A similar experience is available when you configure the Azure Artifact Store through the ZenML dashboard:
-
-![Azure Artifact Store Configuration](../../../.gitbook/assets/azure-artifact-store-service-connector.png)
 
 As a final step, you can use the Azure Artifact Store in a ZenML Stack:
 

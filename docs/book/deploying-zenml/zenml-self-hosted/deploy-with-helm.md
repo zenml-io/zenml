@@ -85,7 +85,7 @@ To use the Helm chart with custom values that includes path to files like the da
 helm pull oci://public.ecr.aws/zenml/zenml --version <VERSION> --untar
 ```
 
-Next, to customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file that you can find at `./zenml-server/values.yaml`  (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
+Next, to customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file that you can find at `./zenml/values.yaml`  (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
 
 In most cases, you’ll need to change the following configuration values in `custom-values.yaml`:
 
@@ -97,14 +97,14 @@ In most cases, you’ll need to change the following configuration values in `cu
   * enabling self-signed certificates
   * configuring the hostname that will be used to access the ZenML server, if different from the IP address or hostname associated with the Ingress service installed in your cluster
 
-> **Note** All the file paths that you use in your helm chart (e.g. for certificates like `database.sslCa`) must be relative to the `./zenml-server` helm chart directory, meaning that you also have to copy these files there.
+> **Note** All the file paths that you use in your helm chart (e.g. for certificates like `database.sslCa`) must be relative to the `./zenml` helm chart directory, meaning that you also have to copy these files there.
 
 ### Install the Helm chart
 
-Once everything is configured, you can run the following command in the `./zenml-server` folder to install the Helm chart.
+Once everything is configured, you can run the following command in the `./zenml` folder to install the Helm chart.
 
 ```
-helm -n <namespace> --create-namespace install zenml-server . --values custom-values.yaml 
+helm -n <namespace> install zenml-server . --create-namespace --values custom-values.yaml 
 ```
 
 ### Connect to the deployed ZenML server

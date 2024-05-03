@@ -81,6 +81,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
@@ -1475,7 +1476,8 @@ class SqlZenStore(BaseZenStore):
         # the one fetched from the global configuration
         model.id = settings.server_id
         model.active = settings.active
-        model.analytics_enabled = settings.enable_analytics
+        if not handle_bool_env_var(ENV_ZENML_LOCAL_SERVER):
+            model.analytics_enabled = settings.enable_analytics
         return model
 
     def get_deployment_id(self) -> UUID:

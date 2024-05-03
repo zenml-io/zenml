@@ -64,6 +64,8 @@ spec:
               mountPath: /backups
           {{- end }}
           env:
+            - name: ZENML_SERVER
+              value: "True"
             {{- if .Values.zenml.debug }}
             - name: ZENML_LOGGING_VERBOSITY
               value: "DEBUG"
