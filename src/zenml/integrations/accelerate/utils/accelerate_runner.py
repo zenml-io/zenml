@@ -20,11 +20,12 @@ def run_with_accelerate(
     script_path = create_cli_wrapped_script(function)
 
     command = f"accelerate launch --num_processes {num_processes} "
-    command += script_path
+    command += script_path + " "
     for k, v in function_kwargs.items():
         k = _cli_arg_name(k)
-        if type(v) == bool and v:
-            command += f"--{k} "
+        if type(v) == bool:
+            if v:
+                command += f"--{k} "
         elif type(v) == str:
             command += f'--{k} "{v}" '
         else:
