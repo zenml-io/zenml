@@ -36,7 +36,7 @@ if __name__=="__main__":
     func()
 """
 _ALLOWED_TYPES = (str, int, float, bool)
-_ALLOWED_COLLECTIONS = ("list",)
+_ALLOWED_COLLECTIONS = (list,)
 
 
 def _cli_arg_name(arg_name: str) -> str:
@@ -44,16 +44,11 @@ def _cli_arg_name(arg_name: str) -> str:
 
 
 def _is_valid_collection_arg(arg_type: Any) -> bool:
-    try:
-        if arg_type.__getattribute__("__iter__"):
-            if arg_type.__args__[0] not in _ALLOWED_TYPES:
-                return False
-            str_v = str(arg_type).lower()
-            if sum(("." + c) in str_v for c in _ALLOWED_COLLECTIONS) == 0:
-                return False
-    except AttributeError:
-        return False
-    return True
+    if getattr(arg_type, "__origin__", None) in _ALLOWED_COLLECTIONS:
+        if arg_type.__args__[0] not in _ALLOWED_TYPES:
+            return False
+        return True
+    return False
 
 
 def _validate_function_arguments(func: F) -> None:
@@ -66,16 +61,18 @@ def _validate_function_arguments(func: F) -> None:
         ValueError: If the function is not valid.
     """
     fullargspec = inspect.getfullargspec(func)
+    invalid_types = {}
     for k, v in fullargspec.annotations.items():
         if k == "return":
             continue
-        print(k, v)
         if v in _ALLOWED_TYPES:
             continue
         if _is_valid_collection_arg(v):
             continue
+        invalid_types[k] = v
+    if invalid_types:
         raise ValueError(
-            f"Invalid argument type: {k} ({v}). CLI functions only "
+            f"Invalid argument types: {invalid_types}. CLI functions only "
             f"supports: {_ALLOWED_TYPES} types and {_ALLOWED_COLLECTIONS} "
             "collections."
         )
