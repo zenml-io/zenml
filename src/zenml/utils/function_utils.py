@@ -15,7 +15,7 @@
 
 import inspect
 from pathlib import Path
-from typing import Callable, TypeVar
+from typing import Any, Callable, TypeVar
 
 import click
 
@@ -35,10 +35,50 @@ func = _cli_wrapped_function(func_to_wrap)
 if __name__=="__main__":
     func()
 """
+_ALLOWED_TYPES = (str, int, float, bool)
+_ALLOWED_COLLECTIONS = ("list", "tuple", "set")
 
 
 def _cli_arg_name(arg_name: str) -> str:
     return arg_name.replace("_", "-")
+
+
+def _is_valid_collection_arg(arg_type: Any) -> bool:
+    try:
+        if arg_type.__getattribute__("__iter__"):
+            if arg_type.__args__[0] not in _ALLOWED_TYPES:
+                return False
+            str_v = str(arg_type).lower()
+            if sum(("." + c) in str_v for c in _ALLOWED_COLLECTIONS) == 0:
+                return False
+    except AttributeError:
+        return False
+    return True
+
+
+def _validate_function_arguments(func: F) -> None:
+    """Validate the arguments of a function.
+
+    Args:
+        func: The function to validate.
+
+    Raises:
+        ValueError: If the function is not valid.
+    """
+    fullargspec = inspect.getfullargspec(func)
+    for k, v in fullargspec.annotations.items():
+        if k == "return":
+            continue
+        print(k, v)
+        if v in _ALLOWED_TYPES:
+            continue
+        if _is_valid_collection_arg(v):
+            continue
+        raise ValueError(
+            f"Invalid argument type: {k} ({v}). CLI functions only "
+            f"supports: {_ALLOWED_TYPES} types and {_ALLOWED_COLLECTIONS} "
+            "collections."
+        )
 
 
 def _cli_wrapped_function(func: F) -> F:
@@ -50,11 +90,16 @@ def _cli_wrapped_function(func: F) -> F:
     Returns:
         The inner decorator.
     """
+    _validate_function_arguments(func)
+
     options = []
     fullargspec = inspect.getfullargspec(func)
-    defaults = [None] * (
-        len(fullargspec.args) - len(fullargspec.defaults)
-    ) + list(fullargspec.defaults)
+    if fullargspec.defaults is not None:
+        defaults = [None] * (
+            len(fullargspec.args) - len(fullargspec.defaults)
+        ) + list(fullargspec.defaults)
+    else:
+        defaults = [None] * len(fullargspec.args)
     input_args_dict = (
         (
             arg_name,
@@ -75,11 +120,23 @@ def _cli_wrapped_function(func: F) -> F:
                     required=False,
                 )
             )
+        elif _is_valid_collection_arg(arg_type):
+            member_type = arg_type.__args__[0]
+            options.append(
+                click.option(
+                    f"--{arg_name}",
+                    type=member_type,
+                    default=arg_default,
+                    required=False,
+                    multiple=True,
+                )
+            )
+
         else:
             options.append(
                 click.option(
                     f"--{arg_name}",
-                    type=arg_type,
+                    type=arg_type if arg_type else str,
                     default=arg_default,
                     required=False if arg_default is not None else True,
                 )
