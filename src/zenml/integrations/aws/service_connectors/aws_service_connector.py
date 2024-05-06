@@ -715,7 +715,7 @@ class AWSServiceConnector(ServiceConnector):
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
             # check if the token expires in the next 10 minutes
             if expires_at > now + datetime.timedelta(
-                minutes=10
+                minutes=5
             ):
                 return session, expires_at
 
