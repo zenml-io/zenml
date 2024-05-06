@@ -28,6 +28,9 @@ def run_with_accelerate(
                 command += f"--{k} "
         elif type(v) == str:
             command += f'--{k} "{v}" '
+        elif type(v) in (list, tuple, set):
+            for each in v:
+                command += f"--{k} {each} "
         else:
             command += f"--{k} {v} "
 
