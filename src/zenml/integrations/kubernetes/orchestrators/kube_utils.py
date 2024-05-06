@@ -35,7 +35,7 @@ import datetime
 import enum
 import re
 import time
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -47,6 +47,11 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
+        KubernetesOrchestrator,
+    )
 
 logger = get_logger(__name__)
 
@@ -169,10 +174,11 @@ def get_pod(
 
 
 def wait_pod(
-    core_api_fn: Callable[[], k8s_client.CoreV1Api],
+    orchestrator: "KubernetesOrchestrator",
     pod_name: str,
     namespace: str,
     exit_condition_lambda: Callable[[k8s_client.V1Pod], bool],
+    incluster: bool = False,
     timeout_sec: int = 0,
     exponential_backoff: bool = False,
     stream_logs: bool = False,
@@ -180,8 +186,9 @@ def wait_pod(
     """Wait for a pod to meet an exit condition.
 
     Args:
-        core_api_fn: Function called periodically to get a `CoreV1Api` client
-            for the Kubernetes API. It should cache the client to avoid
+        orchestrator: Orchestrator instance used to fetch the kube client
+            periodically which in turn is used to get a `CoreV1Api` client for 
+            the Kubernetes API. It should cache the client to avoid
             unnecessary overhead but should also instantiate a new client if
             the previous one is using credentials that are about to expire.
         pod_name: The name of the pod.
@@ -189,6 +196,7 @@ def wait_pod(
         exit_condition_lambda: A lambda
             which will be called periodically to wait for a pod to exit. The
             function returns True to exit.
+        incluster: Whether to load the in-cluster config. Defaults to False.
         timeout_sec: Timeout in seconds to wait for pod to reach exit
             condition, or 0 to wait for an unlimited duration.
             Defaults to unlimited.
@@ -213,7 +221,9 @@ def wait_pod(
     logged_lines = 0
 
     while True:
-        core_api = core_api_fn()
+        kube_client = orchestrator.get_kube_client(incluster=incluster)
+        core_api = k8s_client.CoreV1Api(kube_client)
+        
         resp = get_pod(core_api, pod_name, namespace)
 
         # Stream logs to `zenml.logger.info()`.
