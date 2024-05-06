@@ -613,7 +613,7 @@ def upgrade() -> None:
     identity = sa.Table("identity", meta)
 
     # Extract the ZenML deployment ID from the identity table
-    server_id = UUID(conn.execute(identity.select()).first()["id"])  # type: ignore[index]
+    server_id = UUID(conn.execute(sa.select(identity.c.id)).scalar_one())
 
     # Initialize the secrets store backend based on the backend client extracted
     # from the secrets store.
