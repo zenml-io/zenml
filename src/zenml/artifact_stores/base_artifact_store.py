@@ -40,6 +40,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
 
@@ -172,8 +173,10 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    @model_validator(mode="after")
-    def _ensure_artifact_store(self) -> Any:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _ensure_artifact_store(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validator function for the Artifact Stores.
 
         Checks whether supported schemes are defined and the given path is
@@ -186,7 +189,7 @@ class BaseArtifactStoreConfig(StackComponentConfig):
             ArtifactStoreInterfaceError: If the scheme is not supported.
         """
         try:
-            getattr(self, "SUPPORTED_SCHEMES")
+            getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:
             raise ArtifactStoreInterfaceError(
                 textwrap.dedent(
@@ -207,16 +210,20 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
-        path = self.path.strip("'\"`")
-        if not any(path.startswith(i) for i in self.SUPPORTED_SCHEMES):
-            raise ArtifactStoreInterfaceError(
-                f"The path: '{self.path}' you defined for your "
-                f"artifact store is not supported by the implementation of "
-                f"{self.schema()['title']}, because it does not start with "
-                f"one of its supported schemes: {self.SUPPORTED_SCHEMES}."
-            )
 
-        return self
+        if "path" in data:
+            data["path"] = data["path"].strip("'\"`")
+            if not any(
+                data["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
+            ):
+                raise ArtifactStoreInterfaceError(
+                    f"The path: '{data['path']}' you defined for your "
+                    f"artifact store is not supported by the implementation of "
+                    f"{cls.schema()['title']}, because it does not start with "
+                    f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
+                )
+
+        return data
 
 
 class BaseArtifactStore(StackComponent):
