@@ -713,7 +713,7 @@ class AWSServiceConnector(ServiceConnector):
             # Refresh expired sessions
             now = datetime.datetime.now(datetime.timezone.utc)
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
-            # check if the token expires in the next 10 minutes
+            # check if the token expires in the next 5 minutes
             if expires_at > now + datetime.timedelta(
                 minutes=5
             ):

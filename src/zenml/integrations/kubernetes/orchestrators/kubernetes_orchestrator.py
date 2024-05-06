@@ -447,7 +447,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if settings.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
-                orchestrator=self,
+                kube_client_fn=self.get_kube_client,
                 pod_name=pod_name,
                 namespace=self.config.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
