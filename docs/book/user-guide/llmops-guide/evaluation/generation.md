@@ -34,7 +34,7 @@ orchestrator in ZenML?' you would expect that the answer would include the word
 'local', so we can make a test case to confirm that.
 
 You can view our starter set of these tests
-[here](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/steps/eval_e2e.py#L28-L55).
+[here](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/steps/eval_e2e.py#L28-L55).
 It's better to start with something small and simple and then expand as is
 needed. There's no need for complicated harnesses or frameworks at this stage.
 
@@ -388,7 +388,7 @@ improves as we make changes to the retrieval and generation components.
 ## Code Example
 
 To explore the full code, visit the [Complete
-Guide](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/)
-repository and for this section, particularly [the `eval_e2e.py` file](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/steps/eval_e2e.py).
+Guide](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/)
+repository and for this section, particularly [the `eval_e2e.py` file](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/steps/eval_e2e.py).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

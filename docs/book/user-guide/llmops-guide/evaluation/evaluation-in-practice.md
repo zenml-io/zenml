@@ -60,7 +60,7 @@ practice and you can of course then play with and modify the evaluation code.
 To run the evaluation pipeline, first clone the project repository:
 
 ```bash
-git clone -b feature/evaluation-llm-complete-guide https://github.com/zenml-io/zenml-projects.git
+git clone https://github.com/zenml-io/zenml-projects.git
 ```
 
 Then navigate to the `llm-complete-guide` directory and follow the instructions
