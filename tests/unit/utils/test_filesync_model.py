@@ -14,6 +14,7 @@
 
 import pytest
 from pydantic import ValidationError
+
 from zenml.utils import filesync_model, yaml_utils
 
 SOFTCAT1 = "aria"
