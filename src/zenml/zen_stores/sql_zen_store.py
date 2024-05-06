@@ -897,16 +897,21 @@ class SqlZenStore(BaseZenStore):
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
         else:
-            total = session.scalar(
+            result = session.scalar(
                 select(func.count()).select_from(
                     query.options(noload("*")).subquery()
                 )
             )
 
+            if result:
+                total = result
+            else:
+                total = 0
+
         # Sorting
         column, operand = filter_model.sorting_params
         if operand == SorterOps.DESCENDING:
-            sort_clause = desc(getattr(table, column))
+            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
         else:
             sort_clause = asc(getattr(table, column))
 
@@ -7997,7 +8002,7 @@ class SqlZenStore(BaseZenStore):
             ):
                 # There must be at least one admin account configured
                 admin_accounts_count = session.scalar(
-                    select([func.count(UserSchema.id)]).where(
+                    select(func.count(UserSchema.id)).where(  # type: ignore[arg-type]
                         UserSchema.is_admin == True  # noqa: E712
                     )
                 )
@@ -8075,7 +8080,7 @@ class SqlZenStore(BaseZenStore):
             if user.is_admin:
                 # Don't allow the last admin to be deleted
                 admin_accounts_count = session.scalar(
-                    select([func.count(UserSchema.id)]).where(
+                    select(func.count(UserSchema.id)).where(  # type: ignore[arg-type]
                         UserSchema.is_admin == True  # noqa: E712
                     )
                 )

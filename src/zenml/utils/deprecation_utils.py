@@ -14,15 +14,12 @@
 """Deprecation utilities."""
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Set, Tuple, Type, Union
+from typing import Any, Dict, Set, Tuple, Type, Union
 
 from pydantic import BaseModel, model_validator
 
 from zenml.logger import get_logger
 from zenml.utils.pydantic_utils import before_validator_handler
-
-if TYPE_CHECKING:
-    AnyClassMethod = classmethod[Any]  # type: ignore[type-arg]
 
 logger = get_logger(__name__)
 
@@ -31,7 +28,7 @@ PREVIOUS_DEPRECATION_WARNINGS_ATTRIBUTE = "__previous_deprecation_warnings"
 
 def deprecate_pydantic_attributes(
     *attributes: Union[str, Tuple[str, str]],
-) -> "AnyClassMethod":
+) -> Any:
     """Utility function for deprecating and migrating pydantic attributes.
 
     **Usage**:
@@ -63,7 +60,7 @@ def deprecate_pydantic_attributes(
         to deprecate or migrate attributes.
     """
 
-    @model_validator(mode="before")
+    @model_validator(mode="before")  # type: ignore[misc]
     @classmethod
     @before_validator_handler
     def _deprecation_validator(
