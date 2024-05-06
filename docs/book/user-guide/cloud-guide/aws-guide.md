@@ -111,11 +111,6 @@ Replace `<ROLE_ARN>` with the ARN of the IAM role you created in the previous
 step, `<YOUR_REGION>` with the respective value and use your AWS access key ID and
 secret access key that we noted down earlier.
 {% endtab %}
-{% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/aws-service-connector-type.png" alt=""><figcaption><p>Create the service connector easily in the dashboard</p></figcaption></figure>
-
-You can use the "Connectors" section of the ZenML dashboard to [create an AWS service connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector) in a no-code manner. Make sure to select the "IAM Role" authentication method and provide the IAM role ARN.
-{% endtab %}
 {% endtabs %}
 
 ## 3) Create Stack Components

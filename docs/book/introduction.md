@@ -50,7 +50,6 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
     ```
 * Registering your environments as ZenML stacks also enables you to browse and explore them in a convenient user interface. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
 
-<figure><img src=".gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="80%"><figcaption></figcaption></figure>
 
 *   **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives you the freedom to switch to a different tooling stack whenever it suits you. By avoiding vendor lock-in, you have the flexibility to transition between cloud providers or services, ensuring that you receive the best performance and pricing available in the market at any time.
 
@@ -100,8 +99,6 @@ ZenML gives data scientists the freedom to fully focus on modeling and experimen
     my_pipeline()
     ```
 * **Automatic Metadata Tracking:** ZenML automatically tracks the metadata of all your runs and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can see detailed visualizations of all your experiments. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
-
-<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
 {% hint style="info" %}
 ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](stacks-and-components/component-guide/experiment-trackers/wandb.md), [MLflow](stacks-and-components/component-guide/experiment-trackers/mlflow.md), or [Neptune](stacks-and-components/component-guide/experiment-trackers/neptune.md) for even better reproducibility.

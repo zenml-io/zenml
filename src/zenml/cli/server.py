@@ -31,6 +31,7 @@ from zenml.cli.web_login import web_login
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.constants import ENV_ZENML_LOCAL_SERVER
 from zenml.enums import ServerProviderType, StoreType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
@@ -170,6 +171,8 @@ def up(
             pass
         provider = ServerProviderType.LOCAL
 
+    os.environ[ENV_ZENML_LOCAL_SERVER] = str(True)
+
     deployer = ServerDeployer()
 
     server = get_active_deployment(local=True)
@@ -268,6 +271,8 @@ def down() -> None:
         deployer = ServerDeployer()
         deployer.remove_server(server.config.name)
         cli_utils.declare("The local ZenML dashboard has been shut down.")
+
+        os.environ[ENV_ZENML_LOCAL_SERVER] = str(False)
 
         gc = GlobalConfiguration()
         gc.set_default_store()

@@ -74,14 +74,6 @@ zenml integration install gcp \
 --project_id=<GCP_PROJECT_ID>
 ```
 {% endtab %}
-
-{% tab title="Dashboard" %}
-<figure><img src="../../../../.gitbook/assets/GCP_Service_Connector.png" alt=""><figcaption><p>Choose the GCP Connector</p></figcaption></figure>
-
-<figure><img src="../../../../.gitbook/assets/GCP_Connector_Key.png" alt=""><figcaption><p>Paste the entire contents of the key.json here</p></figcaption></figure>
-
-<figure><img src="../../../../.gitbook/assets/GCP_Connector_Resources.png" alt=""><figcaption><p>Make sure GCR, GCS and Generic GCP Resources are all selected here.</p></figcaption></figure>
-{% endtab %}
 {% endtabs %}
 
 ### 6) Create Stack Components
@@ -106,12 +98,6 @@ zenml artifact-store connect ${ARTIFACT_STORE_NAME} -i
 {% hint style="info" %}
 Head on over to our [docs](../../../../stacks-and-components/component-guide/artifact-stores/gcp.md) to learn more about artifact stores and how to configure them.
 {% endhint %}
-{% endtab %}
-
-{% tab title="Dashboard" %}
-<figure><img src="../../../../.gitbook/assets/Create_Artifact_Store.png" alt=""><figcaption><p>Choose the GCP Artifact Store.</p></figcaption></figure>
-
-<figure><img src="../../../../.gitbook/assets/Register_Artifact_Store_Connector.png" alt=""><figcaption><p>Choose the name of your Artifact Store and the Connector you just created. This will allow you to pick the bucket of your choice.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -139,12 +125,6 @@ zenml orchestrator connect ${ORCHESTRATOR_NAME} -i
 Head on over to our [docs](../../../../stacks-and-components/component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
 {% endhint %}
 {% endtab %}
-
-{% tab title="Dashboard" %}
-<figure><img src="../../../../.gitbook/assets/Create_Orchestrator.png" alt=""><figcaption><p>Select the Vertex Orchestrator</p></figcaption></figure>
-
-<figure><img src="../../../../.gitbook/assets/Register_Orchestrator_Connector.png" alt=""><figcaption><p>Name it, Select the Connector and set an appropriate location. All other fields are optional.</p></figcaption></figure>
-{% endtab %}
 {% endtabs %}
 
 #### Container Registry
@@ -164,12 +144,6 @@ zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i
 Head on over to our [docs](../../../../stacks-and-components/component-guide/container-registries/gcp.md) to learn more about container registries and how to configure them.
 {% endhint %}
 {% endtab %}
-
-{% tab title="Dashboard" %}
-<figure><img src="../../../../.gitbook/assets/Create_Container_Registry.png" alt=""><figcaption><p>Choose the GCP Container Registry.</p></figcaption></figure>
-
-<figure><img src="../../../../.gitbook/assets/Create_Container_Registry_Connector.png" alt=""><figcaption><p>Name it and select the connector.</p></figcaption></figure>
-{% endtab %}
 {% endtabs %}
 
 ### 7) Create Stack
@@ -188,10 +162,6 @@ zenml stack register ${STACK_NAME} -o ${ORCHESTRATOR_NAME} \
 {% hint style="info" %}
 In case you want to also add any other stack components to this stack, feel free to do so.
 {% endhint %}
-{% endtab %}
-
-{% tab title="Dashboard" %}
-<figure><img src="../../../../.gitbook/assets/Create_Stack.png" alt=""><figcaption><p>Combine the three stack components and you have your minimal GCP stack. Feel free to add any other component of your choice as well.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 

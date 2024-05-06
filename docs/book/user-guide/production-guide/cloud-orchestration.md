@@ -172,9 +172,6 @@ Now that we have our orchestrator and container registry registered, we can [reg
 zenml stack register minimal_cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
 ```
 {% endtab %}
-{% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
-{% endtab %}
 {% endtabs %}
 
 Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), 
