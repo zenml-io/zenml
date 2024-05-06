@@ -43,15 +43,15 @@ def upgrade() -> None:
     )
 
     # Get metadata from current connection
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
 
     # Pass in tuple with tables we want to reflect, otherwise whole database
     # will get reflected
-    meta.reflect(only=("identity", "server_settings"))
+    meta.reflect(only=("identity", "server_settings"), bind=op.get_bind())
 
     # Fetch the deployment id from the identity table
     deployment_id = (
-        sa.select([meta.tables["identity"].c.id])
+        sa.select(meta.tables["identity"].c.id)
         .limit(1)
         .execute()
         .fetchone()[0]
@@ -94,15 +94,15 @@ def downgrade() -> None:
     )
 
     # Get metadata from current connection
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
 
     # Pass in tuple with tables we want to reflect, otherwise whole database
     # will get reflected
-    meta.reflect(only=("identity", "server_settings"))
+    meta.reflect(only=("identity", "server_settings"), bind=op.get_bind())
 
     # Fetch the deployment id from the settings table
     deployment_id = (
-        sa.select([meta.tables["server_settings"].c.id])
+        sa.select(meta.tables["server_settings"].c.id)
         .limit(1)
         .execute()
         .fetchone()[0]
