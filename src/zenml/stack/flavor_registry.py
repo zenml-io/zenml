@@ -155,7 +155,7 @@ class FlavorRegistry:
                             store.create_flavor(flavor_request_model)
                         else:
                             flavor_update_model = FlavorUpdate.model_validate(
-                                flavor_request_model
+                                dict(flavor_request_model)
                             )
                             store.update_flavor(
                                 existing_flavor[0].id, flavor_update_model
