@@ -364,7 +364,7 @@ class ServiceConnectorUpdate(BaseUpdate):
             secrets: The connector secrets.
         """
         _validate_and_configure_resources(
-            connector=self,
+            connector=self.convert_to_request(),
             connector_type=connector_type,
             resource_types=resource_types,
             resource_id=resource_id,
@@ -862,7 +862,6 @@ def _validate_and_configure_resources(
     connector: Union[
         ServiceConnectorRequest,
         ServiceConnectorResponse,
-        ServiceConnectorUpdate,
     ],
     connector_type: "ServiceConnectorTypeModel",
     resource_types: Optional[Union[str, List[str]]] = None,
@@ -894,22 +893,18 @@ def _validate_and_configure_resources(
     # metadata field.
     update_connector_metadata: Union[
         ServiceConnectorRequest,
-        ServiceConnectorUpdate,
         ServiceConnectorResponseMetadata,
     ]
     update_connector_body: Union[
         ServiceConnectorRequest,
-        ServiceConnectorUpdate,
         ServiceConnectorResponseBody,
     ]
-    if isinstance(connector, ServiceConnectorRequest) or isinstance(
-        connector, ServiceConnectorUpdate
-    ):
+    if isinstance(connector, ServiceConnectorRequest):
         update_connector_metadata = connector
         update_connector_body = connector
     else:
         # Updating service connector responses must only be done on hydrated
-        # instances, otherwise the metadata will be missing and we risk calling
+        # instances, otherwise the metadata will be missing, and we risk calling
         # the ZenML store to update the connector with additional information.
         # This is just a safety measure, but it will never happen because
         # this method will always be called on a hydrated response.
