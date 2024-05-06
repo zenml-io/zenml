@@ -736,6 +736,7 @@ updated_time = datetime(2024, 3, 14, 11, 45)
 
 @pytest.fixture
 def service_response(
+    sample_user_model: UserResponse,
     sample_workspace_model,
 ):
     body = ServiceResponseBody(
@@ -743,6 +744,7 @@ def service_response(
         labels=labels,
         created=created_time,
         updated=updated_time,
+        user=sample_user_model,
         state=admin_state,
     )
     metadata = ServiceResponseMetadata(

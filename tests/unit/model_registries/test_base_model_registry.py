@@ -31,7 +31,7 @@ class TestModelRegistryModelMetadata:
 
     def test_dict(self):
         metadata = ModelRegistryModelMetadata(
-            zenml_version=1.55,
+            zenml_version="1.55",
             custom_attr_1="foo",
             zenml_workspace="test_workspace",
             custom_attr_2=None,
@@ -46,7 +46,7 @@ class TestModelRegistryModelMetadata:
 
     def test_exclude_unset_none(self):
         metadata = ModelRegistryModelMetadata(
-            zenml_version=1.55,
+            zenml_version="1.55",
             custom_attr_1="foo",
             zenml_workspace="test_workspace",
             custom_attr_2=None,

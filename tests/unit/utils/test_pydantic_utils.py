@@ -38,7 +38,7 @@ def test_update_model_works_for_exclude_unset():
 
     class TestModel(BaseModel):
         a: int
-        b: Optional[int]
+        b: Optional[int] = None
 
     original = TestModel(a=1, b=2)
     update = TestModel(a=3)
@@ -80,7 +80,7 @@ def test_update_model_works_with_none_exclusion():
 
     class TestModel(BaseModel):
         a: int
-        b: Optional[int]
+        b: Optional[int] = None
 
     # Case: when exclude_none is True
     original = TestModel(a=1, b=2)

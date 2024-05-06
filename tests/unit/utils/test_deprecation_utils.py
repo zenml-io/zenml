@@ -70,5 +70,5 @@ def test_pydantic_model_attribute_deprecation():
             deprecation_utils.deprecate_pydantic_attributes("deprecated")
         )
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(TypeError):
         DeprecateRequiredAttributeModel(deprecated="")

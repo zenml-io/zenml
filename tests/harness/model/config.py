@@ -15,7 +15,14 @@
 
 from typing import TYPE_CHECKING, Any, List, Sequence, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationError,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    model_validator,
+)
 
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.deployment import DeploymentConfig
@@ -39,16 +46,62 @@ class Configuration(BaseTestConfigModel):
 
     _config_file: str
 
-    def __init__(self, config_file: str, **data: Any) -> None:
-        """Initializes the ZenML test configuration.
+    @model_validator(mode="wrap")
+    @classmethod
+    def config_validator(
+        cls,
+        data: Any,
+        handler: ValidatorFunctionWrapHandler,
+        info: ValidationInfo,
+    ) -> "Configuration":
+        """Wrap model validator to infer the config_file during initialization.
 
         Args:
-            config_file: The path to the configuration file from which this
-                configuration was loaded.
-            **data: configuration data keyword arguments.
+            data: The raw data that is provided before the validation.
+            handler: The actual validation function pydantic would use for the
+                built-in validation function.
+            info: The context information during the execution of this
+                validation function.
+
+        Returns:
+            the actual instance after the validation
+
+        Raises:
+            ValidationError: if you try to validate through a JSON string. You
+                need to provide a config_file path when you create a
+                FileSyncModel.
+            AssertionError: if the raw input does not include a config_file
+                path for the configuration file.
         """
-        self._config_file = config_file
-        super().__init__(**data)
+        # Disable json validation
+        if info.mode == "json":
+            raise ValidationError(
+                "You can not instantiate filesync models using the JSON mode."
+            )
+
+        if isinstance(data, dict):
+            # Assert that the config file is defined
+            assert (
+                "config_file" in data
+            ), "You have to provide a path for the configuration file."
+
+            config_file = data.pop("config_file")
+
+            # Execute the regular validation
+            model = handler(data)
+
+            assert isinstance(model, cls)
+
+            # Assign the private attribute and save the config
+            model._config_file = config_file
+
+        else:
+            # If the raw value is not a dict, apply proper validation.
+            model = handler(data)
+
+            assert isinstance(model, cls)
+
+        return model
 
     def merge(self, config: "Configuration") -> None:
         """Updates the configuration with the contents of another configuration.
