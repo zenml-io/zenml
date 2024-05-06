@@ -20,6 +20,7 @@ from typing import (
     Callable,
     Dict,
     NamedTuple,
+    NoReturn,
     Optional,
     Sequence,
     Type,
@@ -102,6 +103,20 @@ class StepArtifact:
         self.output_name = output_name
         self.annotation = annotation
         self.pipeline = pipeline
+
+    def __iter__(self) -> NoReturn:
+        """Raise a custom error if someone is trying to iterate this object.
+
+        Raises:
+            StepInterfaceError: If trying to iterate this object.
+        """
+        raise StepInterfaceError(
+            "Unable to unpack step artifact. This error is probably because "
+            "you're trying to unpack the return value of your step but the "
+            "step only returns a single artifact. For more information on how "
+            "to add type annotations to your step to indicate multiple "
+            "artifacts visit https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/managing-steps#type-annotations."
+        )
 
 
 def validate_reserved_arguments(
