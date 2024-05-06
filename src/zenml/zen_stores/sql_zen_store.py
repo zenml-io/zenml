@@ -31,6 +31,7 @@ from typing import (
     ForwardRef,
     List,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -857,7 +858,7 @@ class SqlZenStore(BaseZenStore):
                     Union[Select[Any], SelectOfScalar[Any]],
                     BaseFilter,
                 ],
-                List[Any],
+                Sequence[Any],
             ]
         ] = None,
         hydrate: bool = False,
@@ -892,7 +893,7 @@ class SqlZenStore(BaseZenStore):
         query = filter_model.apply_filter(query=query, table=table)
 
         # Get the total amount of items in the database for a given query
-        custom_fetch_result: Optional[List[Any]] = None
+        custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
@@ -935,7 +936,7 @@ class SqlZenStore(BaseZenStore):
             )
 
         # Get a page of the actual data
-        item_schemas: List[AnySchema]
+        item_schemas: Sequence[AnySchema]
         if custom_fetch:
             assert custom_fetch_result is not None
             item_schemas = custom_fetch_result
@@ -944,13 +945,9 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            item_schemas = (
-                session.exec(
-                    query.limit(filter_model.size).offset(filter_model.offset)
-                )
-                .unique()
-                .all()
-            )
+            item_schemas = session.exec(
+                query.limit(filter_model.size).offset(filter_model.offset)
+            ).all()
 
         # Convert this page of items from schemas to models.
         items: List[AnyResponse] = []
@@ -3689,8 +3686,8 @@ class SqlZenStore(BaseZenStore):
             session: Session,
             query: Union[Select[Any], SelectOfScalar[Any]],
             filter: BaseFilter,
-        ) -> List[Any]:
-            return session.exec(query).unique().all()
+        ) -> Sequence[Any]:
+            return session.exec(query).all()
 
         with Session(self.engine) as session:
             max_date_subquery = (
@@ -5870,7 +5867,7 @@ class SqlZenStore(BaseZenStore):
                 SelectOfScalar[ServiceConnectorSchema],
             ],
             filter_model: BaseFilter,
-        ) -> List[ServiceConnectorSchema]:
+        ) -> Sequence[ServiceConnectorSchema]:
             """Custom fetch function for connector filtering and pagination.
 
             Applies resource type and label filters to the query.
@@ -6224,7 +6221,7 @@ class SqlZenStore(BaseZenStore):
             SelectOfScalar[ServiceConnectorSchema],
         ],
         filter_model: ServiceConnectorFilter,
-    ) -> List[ServiceConnectorSchema]:
+    ) -> Sequence[ServiceConnectorSchema]:
         """Refine a service connector query.
 
         Applies resource type and label filters to the query.
@@ -6237,9 +6234,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The filtered list of service connectors.
         """
-        items: List[ServiceConnectorSchema] = (
-            session.exec(query).unique().all()
-        )
+        items: Sequence[ServiceConnectorSchema] = session.exec(query).all()
 
         # filter out items that don't match the resource type
         if filter_model.resource_type:
