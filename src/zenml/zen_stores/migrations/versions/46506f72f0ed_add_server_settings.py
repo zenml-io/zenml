@@ -51,9 +51,8 @@ def upgrade() -> None:
 
     # Fetch the deployment id from the identity table
     deployment_id = (
-        sa.select(meta.tables["identity"].c.id)
-        .limit(1)
-        .execute()
+        op.get_bind()
+        .execute(sa.select(meta.tables["identity"].c.id).limit(1))
         .fetchone()[0]
     )
 
@@ -102,9 +101,8 @@ def downgrade() -> None:
 
     # Fetch the deployment id from the settings table
     deployment_id = (
-        sa.select(meta.tables["server_settings"].c.id)
-        .limit(1)
-        .execute()
+        op.get_bind()
+        .execute(sa.select(meta.tables["server_settings"].c.id).limit(1))
         .fetchone()[0]
     )
 
