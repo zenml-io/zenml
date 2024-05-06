@@ -152,7 +152,7 @@ if __name__ == "__main__":
    
 ```
 
-**GIF of running a pipeline and exploring DAG**
+![Running a ZenML pipeline](/docs/book/.gitbook/assets/readme_basic_pipeline.gif)
 
 ## Deploy workloads easily on your production infrastructure
 
@@ -187,7 +187,7 @@ def trainer(training_df: pd.DataFrame) -> Annotated["model", torch.nn.Module]:
 	...
 ```
 
-**GIF of exploring model control plane with focus on where data lives and visualizations**
+![Exploring ZenML Models](/docs/book/.gitbook/assets/readme_mcp.gif)
 
 ## Purpose built for machine learning with integration to you favorite tools
 
