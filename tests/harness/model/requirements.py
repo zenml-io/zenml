@@ -46,6 +46,7 @@ class OSType(str, Enum):
 
 class StackRequirementConfiguration(BaseTestSecretConfigModel):
     """ZenML stack component configuration attributes."""
+
     model_config = ConfigDict(validate_assignment=True, extra="allow")
 
 
