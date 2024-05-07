@@ -78,8 +78,8 @@ def test_from_model(service_response):
     assert isinstance(service, TestService)
     assert service.uuid == service_response.id
     assert service.admin_state == service_response.admin_state
-    assert service.config == service_response.config
-    assert service.status == service_response.status
+    assert dict(service.config) == service_response.config
+    assert dict(service.status) == service_response.status
     assert service.SERVICE_TYPE["type"] == service_response.service_type.type
     assert (
         service.SERVICE_TYPE["flavor"] == service_response.service_type.flavor

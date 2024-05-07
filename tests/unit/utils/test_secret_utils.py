@@ -55,7 +55,10 @@ def test_secret_field():
     """Tests that the secret field inserts the correct property into the pydantic field info."""
     field_info = secret_utils.SecretField()
     assert (
-        field_info.extra[secret_utils.PYDANTIC_SENSITIVE_FIELD_MARKER] is True
+        field_info.json_schema_extra[
+            secret_utils.PYDANTIC_SENSITIVE_FIELD_MARKER
+        ]
+        is True
     )
 
 

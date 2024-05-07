@@ -73,8 +73,8 @@ def failing_stack_validator():
 @pytest.fixture
 def stub_component_config():
     class _StubComponentConfig(StackComponentConfig):
-        some_public_attribute_name = "Aria"
-        _some_private_attribute_name = "Also Aria"
+        some_public_attribute_name: str = "Aria"
+        _some_private_attribute_name: str = "Also Aria"
 
     return _StubComponentConfig()
 
@@ -82,8 +82,8 @@ def stub_component_config():
 @pytest.fixture
 def stub_component():
     class _StubComponentConfig(StackComponentConfig):
-        some_public_attribute_name = "Aria"
-        _some_private_attribute_name = "Also Aria"
+        some_public_attribute_name: str = "Aria"
+        _some_private_attribute_name: str = "Also Aria"
 
     class _StubComponent(StackComponent):
         @property

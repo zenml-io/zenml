@@ -221,16 +221,20 @@ def test_stack_component_settings_merging(
     )
 
     compiled_pipeline_settings = StubSettings.model_validate(
-        deployment.pipeline_configuration.settings["orchestrator.default"]
+        dict(
+            deployment.pipeline_configuration.settings["orchestrator.default"]
+        )
     )
     assert compiled_pipeline_settings.component_value == 1
     assert compiled_pipeline_settings.pipeline_value == 2
     assert compiled_pipeline_settings.step_value == 0
 
     compiled_step_settings = StubSettings.model_validate(
-        deployment.step_configurations["step_"].config.settings[
-            "orchestrator.default"
-        ]
+        dict(
+            deployment.step_configurations["step_"].config.settings[
+                "orchestrator.default"
+            ]
+        )
     )
     assert compiled_pipeline_settings.component_value == 1
     assert compiled_step_settings.pipeline_value == 2
@@ -267,7 +271,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
     )
 
     compiled_pipeline_settings = ResourceSettings.model_validate(
-        deployment.pipeline_configuration.settings["resources"]
+        dict(deployment.pipeline_configuration.settings["resources"])
     )
 
     assert compiled_pipeline_settings.cpu_count == 100
@@ -275,7 +279,11 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
     assert compiled_pipeline_settings.memory == "1KB"
 
     compiled_step_settings = ResourceSettings.model_validate(
-        deployment.step_configurations["step_"].config.settings["resources"]
+        dict(
+            deployment.step_configurations["step_"].config.settings[
+                "resources"
+            ]
+        )
     )
 
     assert compiled_step_settings.cpu_count == 100

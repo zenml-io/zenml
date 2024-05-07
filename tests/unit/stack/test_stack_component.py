@@ -16,7 +16,7 @@ from typing import Generator, Type
 from uuid import uuid4
 
 import pytest
-from pydantic import ValidationError, validator
+from pydantic import ValidationError, field_validator
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -65,7 +65,7 @@ def test_stack_component_public_attributes_are_immutable(
     stub_component_config,
 ):
     """Tests that stack component public attributes are immutable but private attribute can be modified."""
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         stub_component_config.some_public_attribute_name = "Not Aria"
 
     with does_not_raise():
@@ -87,7 +87,8 @@ class StubOrchestratorConfig(BaseOrchestratorConfig):
     attribute_without_validator: str = ""
     attribute_with_validator: str = ""
 
-    @validator("attribute_with_validator")
+    @field_validator("attribute_with_validator")
+    @classmethod
     def _ensure_something(cls, value):
         return value
 

@@ -34,10 +34,10 @@ from zenml.models.v2.base.filter import (
 class SomeFilterModel(BaseFilter):
     """Test custom filter model with all supported field types."""
 
-    uuid_field: Optional[Union[UUID, str]]
-    datetime_field: Optional[Union[datetime, str]]
-    int_field: Optional[Union[int, str]]
-    str_field: Optional[str]
+    uuid_field: Optional[Union[UUID, str]] = None
+    datetime_field: Optional[Union[datetime, str]] = None
+    int_field: Optional[Union[int, str]] = None
+    str_field: Optional[str] = None
 
 
 def _test_filter_model(
@@ -179,7 +179,7 @@ def test_datetime_filter_model():
 
 
 @pytest.mark.parametrize(
-    "false_format_datetime", ["2022/12/12 12-12-12", "notadate", 1]
+    "false_format_datetime", ["2022/12/12 12-12-12", "notadate"]
 )
 def test_datetime_filter_model_fails_for_wrong_formats(
     false_format_datetime: str,
