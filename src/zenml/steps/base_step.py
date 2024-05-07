@@ -34,7 +34,7 @@ from typing import (
     cast,
 )
 
-from pydantic import BaseModel, Extra, ValidationError
+from pydantic import BaseModel, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.source import Source
@@ -1270,8 +1270,12 @@ To avoid this consider setting step parameters only in one place (config or code
             )
 
         if (
-            self.entrypoint_definition.legacy_params.annotation.__config__.extra
-            == Extra.allow
+            getattr(
+                self.entrypoint_definition.legacy_params.annotation.model_config,
+                "extra",
+                None,
+            )
+            == "allow"
         ):
             # Add all parameters for the config class for backwards
             # compatibility if the config class allows extra attributes
