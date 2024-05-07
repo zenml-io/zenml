@@ -18,7 +18,7 @@ class ComplexObject(BaseModel):
     """This is a custom object to be materialized with ComplexObjectMaterializer."""
 
     name: str
-    pipeline_name: Optional[str]
+    pipeline_name: Optional[str] = None
 
 
 class ComplexObjectMaterializer(BaseMaterializer):

@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from uuid import UUID
 
 import pkg_resources
-from pydantic import Extra, Field
+from pydantic import ConfigDict, Field
 
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.secret import BaseTestSecretConfigModel
@@ -46,12 +46,7 @@ class OSType(str, Enum):
 
 class StackRequirementConfiguration(BaseTestSecretConfigModel):
     """ZenML stack component configuration attributes."""
-
-    class Config:
-        """Pydantic configuration class."""
-
-        validate_assignment = True
-        extra = Extra.allow
+    model_config = ConfigDict(validate_assignment=True, extra="allow")
 
 
 class StackRequirement(BaseTestConfigModel):

@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Extra
+from pydantic import ConfigDict, BaseModel
 
 if TYPE_CHECKING:
     from tests.harness.harness import TestHarness
@@ -30,10 +30,4 @@ class BaseTestConfigModel(BaseModel):
         Args:
             harness: The test harness to validate against.
         """
-
-    class Config:
-        """Pydantic configuration class."""
-
-        validate_assignment = True
-        extra = Extra.forbid
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
