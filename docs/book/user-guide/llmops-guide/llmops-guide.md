@@ -21,6 +21,9 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Generation evaluation](evaluation/generation.md)
   * [Evaluation in practice](evaluation/evaluation-in-practice.md)
 * [Reranking for better retrieval](reranking/reranking.md)
+  * [Understanding reranking](reranking/understanding-reranking.md)
+  * [Implementing reranking in ZenML](reranking/implementing-reranking.md)
+  * [Evaluating reranking performance](reranking/evaluating-reranking-performance.md)
 * [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
 * [Finetuning LLMs with ZenML](finetuning-llms/finetuning-llms.md)
 
