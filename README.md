@@ -203,7 +203,7 @@ def train_and_deploy(training_df: pd.DataFrame) -> bento.Bento
 	return bento
 ```
 
-**GIF of mlflow and bentoml and slack alerter?**
+![Exploring ZenML Integrations](/docs/book/.gitbook/assets/readme_integrations.gif)
 
 # 🖼️ Learning
 
