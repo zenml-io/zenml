@@ -81,6 +81,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
@@ -264,7 +265,7 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
-from zenml.utils.string_utils import random_str
+from zenml.utils.string_utils import random_str, validate_name
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
@@ -1475,7 +1476,8 @@ class SqlZenStore(BaseZenStore):
         # the one fetched from the global configuration
         model.id = settings.server_id
         model.active = settings.active
-        model.analytics_enabled = settings.enable_analytics
+        if not handle_bool_env_var(ENV_ZENML_LOCAL_SERVER):
+            model.analytics_enabled = settings.enable_analytics
         return model
 
     def get_deployment_id(self) -> UUID:
@@ -2152,6 +2154,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If an artifact with the same name already exists.
         """
+        validate_name(artifact)
         with Session(self.engine) as session:
             # Check if an artifact with the given name already exists
             existing_artifact = session.exec(
@@ -2792,6 +2795,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack component references a non-existent
                 connector.
         """
+        validate_name(component)
         with Session(self.engine) as session:
             self._fail_if_component_with_name_type_exists(
                 name=component.name,
@@ -6523,6 +6527,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
+        validate_name(stack)
         with Session(self.engine) as session:
             self._fail_if_stack_with_name_exists(stack=stack, session=session)
 
@@ -8687,6 +8692,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a workspace with the given name already exists.
         """
+        validate_name(model)
         with Session(self.engine) as session:
             existing_model = session.exec(
                 select(ModelSchema).where(ModelSchema.name == model.name)
@@ -8889,6 +8895,8 @@ class SqlZenStore(BaseZenStore):
 
             if model_version_.name is None:
                 model_version_.name = str(model_version_.number)
+            else:
+                validate_name(model_version_)
 
             model_version_schema = ModelVersionSchema.from_request(
                 model_version_
@@ -9443,6 +9451,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a tag with the given name already exists.
         """
+        validate_name(tag)
         with Session(self.engine) as session:
             existing_tag = session.exec(
                 select(TagSchema).where(TagSchema.name == tag.name)

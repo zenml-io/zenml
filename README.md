@@ -92,7 +92,7 @@
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.57.0rc1 is out. Check out the release notes
+    🎉 Version 0.57.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.

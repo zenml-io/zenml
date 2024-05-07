@@ -111,12 +111,6 @@ Successfully registered service connector `gcp-generic` with access to the follo
 ┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
-
-Alternatively, you can configure a GCP Service Connector through the ZenML dashboard, but you'll need to provide GCP credentials explicitly, such as [a GCP service account key](https://cloud.google.com/iam/docs/keys-create-delete#creating):
-
-![GCP Service Connector Type](../../../.gitbook/assets/gcp-service-connector-type.png)
-![GCP Generic Service Connector Configuration](../../../.gitbook/assets/gcp-generic-service-connector-configuration.png)
-
 > **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined_roles)). The GCP Service Connector supports [many different authentication methods](../../auth-management/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more GCP Service Connectors configured in your ZenML deployment, you can check which of them can be used to access generic GCP resources like the GCP Image Builder required for your GCP Image Builder by running e.g.:
