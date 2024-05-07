@@ -1049,10 +1049,9 @@ def install_packages(
 
     if not IS_DEBUG_ENV:
         quiet_flag = "-q" if use_uv else "-qqq"
-        command += [
-            quiet_flag,
-            "--no-warn-conflicts",
-        ]
+        command.append(quiet_flag)
+        if not use_uv:
+            command.append("--no-warn-conflicts")
 
     try:
         subprocess.check_call(command)
