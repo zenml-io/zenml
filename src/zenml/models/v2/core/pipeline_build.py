@@ -156,13 +156,13 @@ class PipelineBuildBase(BaseZenModel):
 class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
     """Request model for pipelines builds."""
 
-    checksum: Optional[str] = Field(title="The build checksum.")
+    checksum: Optional[str] = Field(title="The build checksum.", default=None)
 
     stack: Optional[UUID] = Field(
-        title="The stack that was used for this build."
+        title="The stack that was used for this build.", default=None
     )
     pipeline: Optional[UUID] = Field(
-        title="The pipeline that was used for this build."
+        title="The pipeline that was used for this build.", default=None
     )
     template_deployment_id: Optional[UUID] = None
 
