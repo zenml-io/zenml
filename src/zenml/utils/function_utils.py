@@ -36,7 +36,7 @@ if __name__=="__main__":
     func()
 """
 _ALLOWED_TYPES = (str, int, float, bool)
-_ALLOWED_COLLECTIONS = (list,)
+_ALLOWED_COLLECTIONS = (tuple,)
 
 
 def _cli_arg_name(arg_name: str) -> str:
