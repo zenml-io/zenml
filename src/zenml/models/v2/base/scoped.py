@@ -98,7 +98,7 @@ class UserScopedResponseBody(BaseDatedResponseBody):
     """Base user-owned body."""
 
     user: Optional["UserResponse"] = Field(
-        title="The user who created this resource."
+        title="The user who created this resource.", default=None
     )
 
 

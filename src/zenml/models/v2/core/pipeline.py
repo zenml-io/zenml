@@ -119,6 +119,7 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     docstring: Optional[str] = Field(
         title="The docstring of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
 
 

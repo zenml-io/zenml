@@ -52,10 +52,10 @@ class PipelineBuildBase(BaseZenModel):
         title="Whether any image of the build contains user code.",
     )
     zenml_version: Optional[str] = Field(
-        title="The version of ZenML used for this build."
+        title="The version of ZenML used for this build.", default=None
     )
     python_version: Optional[str] = Field(
-        title="The Python version used for this build."
+        title="The Python version used for this build.", default=None
     )
 
     # Helper methods

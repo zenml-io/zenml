@@ -152,7 +152,8 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="Tags associated with the model",
     )
     producer_pipeline_run_id: Optional[UUID] = Field(
-        title="The ID of the pipeline run that generated this artifact version."
+        title="The ID of the pipeline run that generated this artifact version.",
+        default=None,
     )
 
     @field_validator("version")

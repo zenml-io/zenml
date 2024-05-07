@@ -74,8 +74,8 @@ class ArtifactResponseBody(BaseDatedResponseBody):
     tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
-    latest_version_name: Optional[str]
-    latest_version_id: Optional[UUID]
+    latest_version_name: Optional[str] = None
+    latest_version_id: Optional[UUID] = None
 
 
 class ArtifactResponseMetadata(BaseResponseMetadata):
