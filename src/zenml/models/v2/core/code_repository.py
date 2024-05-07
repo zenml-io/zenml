@@ -46,11 +46,13 @@ class CodeRepositoryRequest(WorkspaceScopedRequest):
     source: Source = Field(description="The code repository source.")
     logo_url: Optional[str] = Field(
         description="Optional URL of a logo (png, jpg or svg) for the "
-        "code repository.", default=None,
+        "code repository.",
+        default=None,
     )
     description: Optional[str] = Field(
         description="Code repository description.",
-        max_length=TEXT_FIELD_MAX_LENGTH, default=None,
+        max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
 
 
