@@ -15,7 +15,7 @@
 
 import inspect
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, List, TypeVar
 
 import click
 
@@ -89,7 +89,7 @@ def _cli_wrapped_function(func: F) -> F:
     """
     _validate_function_arguments(func)
 
-    options = []
+    options: List[Any] = []
     fullargspec = inspect.getfullargspec(func)
     if fullargspec.defaults is not None:
         defaults = [None] * (

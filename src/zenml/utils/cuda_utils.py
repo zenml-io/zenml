@@ -13,7 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+"""Utility functions to improve CUDA experience."""
+
 import gc
 
 from zenml.logger import get_logger
@@ -22,7 +23,16 @@ logger = get_logger(__name__)
 
 
 def cleanup_gpu_memory(force: bool = False) -> None:
-    """Clean up GPU memory."""
+    """Clean up GPU memory.
+
+    This will clean up all GPU memory on current physical machine.
+    This action is considered to be dangerous by default, since
+    it might affect other processes running in the same environment.
+    If this is intended, please, explicitly pass `force=True`.
+
+    Args:
+        force: whether to force cleanup or not
+    """
     if not force:
         logger.warning(
             "This will clean up all GPU memory on current physical machine. "
