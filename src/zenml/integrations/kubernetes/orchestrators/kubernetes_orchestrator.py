@@ -200,11 +200,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            connector = self.get_connector()
             kubernetes_context = self.config.kubernetes_context
             msg = f"'{self.name}' Kubernetes orchestrator error: "
 
-            if not connector:
+            if not self.connector:
                 if not kubernetes_context:
                     return False, (
                         f"{msg}you must either link this stack component to a "
@@ -440,7 +439,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if settings.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
-                core_api=self._k8s_core_api,
+                core_api_fn=lambda: self._k8s_core_api,
                 pod_name=pod_name,
                 namespace=self.config.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,

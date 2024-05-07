@@ -22,10 +22,13 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import StoreType
@@ -62,6 +65,7 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     )
     blocking: bool = False
     store: Optional[StoreConfiguration] = None
+    use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
 
     class Config:
         """Pydantic configuration."""
@@ -156,6 +160,10 @@ class LocalZenServer(LocalDaemonService):
             GlobalConfiguration().local_stores_path
         )
         env[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "True"
+        env[ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD] = str(
+            self.config.server.use_legacy_dashboard
+        )
+        env[ENV_ZENML_SERVER_AUTO_ACTIVATE] = "True"
 
         return cmd, env
 
@@ -228,6 +236,7 @@ class LocalZenServer(LocalDaemonService):
                 host=self.endpoint.config.ip_address,
                 port=self.endpoint.config.port or 8000,
                 log_level="info",
+                server_header=False,
             )
         except KeyboardInterrupt:
             logger.info("ZenML Server stopped. Resuming normal execution.")

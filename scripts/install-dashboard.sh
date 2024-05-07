@@ -5,6 +5,7 @@ REPO_URL="https://github.com/zenml-io/zenml-dashboard"
 
 : "${INSTALL_PATH:=./src/zenml/zen_server}"
 : "${INSTALL_DIR:=dashboard}"
+: "${LEGACY_INSTALL_DIR:=dashboard_legacy}"
 : "${VERIFY_CHECKSUM:=true}"
 # : "${DESIRED_VERSION:=latest}"
 
@@ -28,8 +29,8 @@ verifySupported() {
 # checkGitIgnore checks if the dashboard directories are ignored by Git
 checkGitIgnore() {
   if [ -f ".gitignore" ]; then
-    if grep -q -E "(^|\/)dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard($|\/)" ".gitignore"; then
-      echo "Error: The '/dashboard' or 'src/zenml/zen_server/dashboard' directory is ignored by Git."
+    if grep -q -E "(^|\/)dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard($|\/)" ".gitignore" || grep -q -E "(^|\/)dashboard-legacy($|\/)" ".gitignore" || grep -q -E "(^|\/)src\/zenml\/zen_server\/dashboard-legacy($|\/)" ".gitignore"; then
+      echo "Error: The '/dashboard', '/dashboard-legacy', 'src/zenml/zen_server/dashboard-legacy' or 'src/zenml/zen_server/dashboard' directory is ignored by Git."
       echo "Please remove the corresponding entries from the .gitignore file to proceed with the installation."
       exit 1
     fi
@@ -57,10 +58,10 @@ checkLatestVersion() {
 
 # downloadFile downloads the latest release archive and checksum
 downloadFile() {
-  ZENML_DASHBOARD_ARCHIVE="zenml-dashboard.tar.gz"
-  DOWNLOAD_URL="$REPO_URL/releases/download/$TAG/$ZENML_DASHBOARD_ARCHIVE"
+  local archive_name=$1
+  DOWNLOAD_URL="$REPO_URL/releases/download/$TAG/$archive_name"
   TMP_ROOT="$(mktemp -dt zenml-dashboard-XXXXXX)"
-  TMP_FILE="$TMP_ROOT/$ZENML_DASHBOARD_ARCHIVE"
+  TMP_FILE="$TMP_ROOT/$archive_name"
   if type "curl" > /dev/null; then
     curl -SsL "$DOWNLOAD_URL" -o "$TMP_FILE"
     curl -SsL "$DOWNLOAD_URL.sha256" -o "$TMP_FILE.sha256"
@@ -73,29 +74,35 @@ downloadFile() {
 # verifyFile verifies the SHA256 checksum of the binary package
 # (depending on settings in environment).
 verifyFile() {
+  local archive_name=$1
   if [ "${VERIFY_CHECKSUM}" == "true" ]; then
-    verifyChecksum
+    verifyChecksum "$archive_name"
   fi
 }
 
 # installFile unpacks and installs the binary.
 installFile() {
-  echo "Preparing to install $APP_NAME into ${INSTALL_PATH}/${INSTALL_DIR}"
+  local local_install_dir=$1
+  local current_dir=$(pwd)
+  echo "Preparing to install $APP_NAME into ${INSTALL_PATH}/${local_install_dir}"
   cd "$INSTALL_PATH"
-  mkdir -p "$INSTALL_DIR"
-  tar xzf "$TMP_FILE" -C "$INSTALL_DIR"
-  echo "$APP_NAME installed into $INSTALL_PATH/$INSTALL_DIR"
+  rm -rf "$local_install_dir"
+  mkdir -p "$local_install_dir"
+  tar xzf "$TMP_FILE" -C "$local_install_dir"
+  echo "$APP_NAME installed into $INSTALL_PATH/$local_install_dir"
+  cd "$current_dir"
 }
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
 verifyChecksum() {
+  local archive_name=$1
   printf "Verifying checksum... "
   local sum
   local expected_sum
   sum=$(openssl sha1 -sha256 "${TMP_FILE}" | awk '{print $2}')
-  expected_sum=$(grep -i "${ZENML_DASHBOARD_ARCHIVE}" "${TMP_FILE}.sha256" | cut -f 1 -d " ")
+  expected_sum=$(grep -i "${archive_name}" "${TMP_FILE}.sha256" | cut -f 1 -d " ")
   if [ "$sum" != "$expected_sum" ]; then
-    echo "SHA sum of ${ZENML_DASHBOARD_ARCHIVE} does not match. Aborting."
+    echo "SHA sum of ${archive_name} does not match. Aborting."
     exit 1
   fi
   echo "Done."
@@ -156,9 +163,13 @@ set +u
 verifySupported
 checkGitIgnore
 checkTagProvided || checkLatestVersion
-if [[ ! -z "$TAG" ]]; then
-  downloadFile
-  verifyFile
-  installFile
+if [[ -n "$TAG" ]]; then
+  downloadFile "zenml-dashboard.tar.gz"
+  verifyFile "zenml-dashboard.tar.gz"
+  installFile "$INSTALL_DIR"
+
+  downloadFile "zenml-dashboard-legacy.tar.gz"
+  verifyFile "zenml-dashboard-legacy.tar.gz"
+  installFile "$LEGACY_INSTALL_DIR"
 fi
 cleanup

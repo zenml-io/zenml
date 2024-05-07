@@ -8,6 +8,7 @@ ZenML automatically saves visualizations of many common data types and allows yo
 
 ![ZenML Artifact Visualizations](<../../../.gitbook/assets/artifact_visualization_dashboard.png>)
 
+
 Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the `artifact.visualize()` method:
 
 ![output.visualize() Output](<../../../.gitbook/assets/artifact_visualization_evidently.png>)
@@ -29,7 +30,8 @@ Visualizations are usually stored alongside the artifact, in the [artifact store
 a user would like to see the visualization displayed on the ZenML dashboard, they must
 give access to the server to connect to the artifact store.
 
-The [service connector](../../../stacks-and-components/auth-management/) goes deeper
+The [service connector](../../../stacks-and-components/auth-management/)
+documentation goes deeper
 into the concept of service connectors and how they can configured to give the server
 permission to access the artifact store. For a concrete example, see the [AWS S3](../../../stacks-and-components/component-guide/artifact-stores/s3.md) artifact store
 documentation.
@@ -73,7 +75,6 @@ def my_step() -> CSVString:
     some_csv = "a,b,c\n1,2,3"
     return CSVString(some_csv)
 ```
-
 This would create the following visualization in the dashboard:
 
 ![CSV Visualization Example](../../../.gitbook/assets/artifact_visualization_csv.png)

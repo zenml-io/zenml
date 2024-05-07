@@ -276,6 +276,8 @@ class SlackAlerter(BaseAlerter):
 
         approved = False  # will be modified by handle()
 
+        # breakpoint()
+
         @RTMClient.run_on(event="hello")  # type: ignore
         def post_initial_message(**payload: Any) -> None:
             """Post an initial message in a channel and start listening.

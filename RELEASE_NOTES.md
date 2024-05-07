@@ -1,4 +1,176 @@
 <!-- markdown-link-check-disable -->
+
+# 0.57.0
+
+We're excited to announce that we're open-sourcing our new and improved dashboard. This unifies the experience for OSS and cloud users, though OSS users will initially see some dashboard features unavailable in this launch release.
+
+We're open-sourcing our dashboard for a few reasons:
+
+- to ensure that the dashboard experience is consistent across all users, for both the open-source and cloud versions
+- to make it easier for us to maintain and develop the dashboard, as we can share components between the two versions
+- to allow OSS contributions (and self-hosting and modifications) to the new dashboard
+- to open up possibilities for future features, particularly for our OSS users
+
+New users of the ZenML in the dashboard will have a better experience thanks to a much-improved onboarding sequence:
+
+<div align="center">
+  <img width="80%" src="docs/book/.gitbook/assets/new_dashboard_rn_2.png" alt="Dashboard 2"/>
+</div>
+
+The dashboard will guide you through connecting to your server, setting up a stack, connecting to service connectors as well as running a pipeline.
+
+We’ve also improved the ‘Settings’ section of the dashboard and this is the new home for configuration of your repositories, secrets, and connectors, along with some other options.
+
+<div align="center">
+  <img width="80%" src="docs/book/.gitbook/assets/new_dashboard_rn_3.png" alt="Dashboard 3"/>
+</div>
+
+## What It Means for You
+
+If you're already a **cloud user**, not much will change for you. You're already using the new dashboard for pipelines, models and artifacts. Your experience won’t change and for the moment you’ll continue using the old dashboard for certain components (notably for stacks and components).
+
+If you're an **open-source user**, the new dashboard is now available to you as part of our latest release (0.57.0). You'll notice a completely refreshed design and a new DAG visualizer.
+
+<div align="center">
+  <img width="80%" src="docs/book/.gitbook/assets/new_dashboard_rn_4.png" alt="Dashboard 4"/>
+</div>
+
+Unfortunately, some dashboard features are not yet ready so you'll see instructions on how to access them via the CLI. We hope to have these features returned into the product soon. (If you have a strong opinion as to which you'd like to see first, please let us know!) Specifically, secrets, stacks, and service connectors are not yet implemented in the new dashboard.
+
+### How to use the legacy dashboard
+
+The old dashboard is still available to you. To run with the legacy dashboard pass the `--legacy` flag when spinning it up:
+
+```bash
+zenml up --legacy
+```
+
+Note that you can’t use both the new and old dashboard at the same time.
+
+If you’re self-hosting ZenML instead of using ZenML Cloud, you can specify which dashboard you want to use by setting the `ZENML_SERVER_USE_LEGACY_DASHBOARD` environment variable pre-deployment. Specifying a boolean value for this variable will determine which dashboard gets served for your deployment. (There’s no dynamic switching between dashboards allowed, so if you wish to change which dashboard is used for a deployed server, you’ll need to redeploy the server after updating the environment variable.)
+
+If you’re using [ZenML Cloud](https://cloud.zenml.io/), your experience won’t change with this release and your use of the dashboard remains the same.
+
+## What's Changed
+* Add Comet to Experiment Trackers in TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2637
+* Fix Comet docs formatting by @strickvl in https://github.com/zenml-io/zenml/pull/2639
+* ZenML Server activation and user on-boarding by @stefannica in https://github.com/zenml-io/zenml/pull/2630
+* Slimmer and more secure Docker container images by @stefannica in https://github.com/zenml-io/zenml/pull/2617
+* Add dashboard v2 source context by @schustmi in https://github.com/zenml-io/zenml/pull/2642
+* Support New Dashboard release by @avishniakov in https://github.com/zenml-io/zenml/pull/2635
+* Fix CI by @strickvl in https://github.com/zenml-io/zenml/pull/2645
+* Misc/prepare release 0.57.0rc1 by @avishniakov in https://github.com/zenml-io/zenml/pull/2646
+* Add rate limiting to user password reset operations by @stefannica in https://github.com/zenml-io/zenml/pull/2643
+* Set zenml server name to default if not customized by @stefannica in https://github.com/zenml-io/zenml/pull/2647
+* Docker release fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2649
+* Fix dashboard urls by @schustmi in https://github.com/zenml-io/zenml/pull/2648
+* Enable analytics during db initialization if specified by @schustmi in https://github.com/zenml-io/zenml/pull/2652
+* Better checks for user account updates to avoid Mass Assignment attacks by @stefannica in https://github.com/zenml-io/zenml/pull/2622
+* Prepare 0.57.0-rc2 by @avishniakov in https://github.com/zenml-io/zenml/pull/2651
+* Fix frontend analytics calls by @schustmi in https://github.com/zenml-io/zenml/pull/2653
+* Label studio settings and optional port by @htahir1 in https://github.com/zenml-io/zenml/pull/2628
+* Introduce default value fro enable_analytics by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2654
+* Fix helm chart notes syntax by @wjayesh in https://github.com/zenml-io/zenml/pull/2656
+* Add server env variable to fix activation by @schustmi in https://github.com/zenml-io/zenml/pull/2657
+* Respect analytic ENV in local servers by @avishniakov in https://github.com/zenml-io/zenml/pull/2658
+* Small fixes in helm docs by @schustmi in https://github.com/zenml-io/zenml/pull/2659
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.4...0.57.0
+
+# 0.56.4
+
+This release brings a variety of bug fixes and enhancements, including a new
+Comet Experiment Tracker integration, additional support for the `uv` package
+installer for `zenml integration ...` commands which significantly improves
+the speed of integration installations and dependency management, and a new
+evaluation section in the LLMOps guide.
+
+In addition, it includes a number of bug fixes and documentation updates, such
+as a fix for cached artifacts produced via `save_artifact` inside steps linkage
+to the MCP.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot who contributed to this release by bumping the `mlflow` version to 2.12.1
+
+
+## What's Changed
+* Fix mariadb test script by @avishniakov in https://github.com/zenml-io/zenml/pull/2599
+* Disable CSP headers for the openAPI docs pages and fix API docs building by @stefannica in https://github.com/zenml-io/zenml/pull/2598
+* Add short motivating example for RAG pipeline by @strickvl in https://github.com/zenml-io/zenml/pull/2596
+* Fix DB backup and restore and add database upgrade testing improvements by @stefannica in https://github.com/zenml-io/zenml/pull/2607
+* Fix for #2556 by @avishniakov in https://github.com/zenml-io/zenml/pull/2603
+* Fix AWS service connector resource ID regexp by @stefannica in https://github.com/zenml-io/zenml/pull/2611
+* Add dry run for docs CI by @avishniakov in https://github.com/zenml-io/zenml/pull/2612
+* Completing and refining the CLI documentation by @bcdurak in https://github.com/zenml-io/zenml/pull/2605
+* Allow DB backup failures if the database version is 0.56.3 or earlier by @stefannica in https://github.com/zenml-io/zenml/pull/2613
+* Mixpanel grouping improvements by @schustmi in https://github.com/zenml-io/zenml/pull/2610
+* Add support for `uv` package installer for `zenml integration ...` commands by @strickvl in https://github.com/zenml-io/zenml/pull/2609
+* Add evaluation section to LLMOps guide by @strickvl in https://github.com/zenml-io/zenml/pull/2614
+* Fix GCP commands in docs for `project_id` by @strickvl in https://github.com/zenml-io/zenml/pull/2616
+* Minor fix for GitGuardian warnings. by @bcdurak in https://github.com/zenml-io/zenml/pull/2621
+* Bump mlflow to version 2.12.1 by @christianversloot in https://github.com/zenml-io/zenml/pull/2618
+* Updated security email by @htahir1 in https://github.com/zenml-io/zenml/pull/2625
+* Add Comet Experiment Tracker integration by @strickvl in https://github.com/zenml-io/zenml/pull/2620
+* Fix cached artifacts produced via `save_artifact` inside steps linkage to MCP by @avishniakov in https://github.com/zenml-io/zenml/pull/2619
+* Update MCP instructions by @avishniakov in https://github.com/zenml-io/zenml/pull/2632
+* Replace parse_obj by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2623
+* Fix imports in for `Model` in documentation by @strickvl in https://github.com/zenml-io/zenml/pull/2631
+* Return up-to-date `PipelineRunResponse` from pipeline run by @avishniakov in https://github.com/zenml-io/zenml/pull/2624
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.3...0.56.4
+
+# 0.56.3
+
+This release comes with a number of bug fixes and enhancements.
+
+With this release you can benefit from new Lambda Labs GPU orchestrator integration
+in your pipelines. [Lambda Labs](https://lambdalabs.com/service/gpu-cloud) is a 
+cloud provider that offers GPU instances for machine learning workloads.
+
+In this release we have also implemented a few important security improvements to 
+ZenML Server mostly around Content Security Policies. Also users are from now on
+mandated to provide previous password during the password change process.
+
+Also the documentation was significantly improved with [the new AWS Cloud guide](https://docs.zenml.io/user-guide/cloud-guide/aws-guide) and
+[the LLMOps guide](https://docs.zenml.io/user-guide/llmops-guide) covering various aspects of the LLM lifecycle.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot who contributed to this release
+by adding support for `Schedule.start_time` to the HyperAI orchestrator.
+
+## What's Changed
+* Really run migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2562
+* Interact with feature gate by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2492
+* Allow for logs to be unformatted / without colours by @strickvl in https://github.com/zenml-io/zenml/pull/2544
+* Add VS Code extension to README / docs by @strickvl in https://github.com/zenml-io/zenml/pull/2568
+* Allow loading of artifacts without needing to activate the artifact store (again) by @avishniakov in https://github.com/zenml-io/zenml/pull/2545
+* Minor fix by @htahir1 in https://github.com/zenml-io/zenml/pull/2578
+* [DOCS] Fix code block in Vertex docs by @wjayesh in https://github.com/zenml-io/zenml/pull/2580
+* Added an AWS cloud guide by @htahir1 in https://github.com/zenml-io/zenml/pull/2570
+* Update AWS cloud guide by @strickvl in https://github.com/zenml-io/zenml/pull/2581
+* More docs fixes by @htahir1 in https://github.com/zenml-io/zenml/pull/2585
+* Bugfix for the `pyyaml_include` version for `copier` by @bcdurak in https://github.com/zenml-io/zenml/pull/2586
+* Update fastapi and orjson to fix python-multipart and orjson vulnerabilities by @stefannica in https://github.com/zenml-io/zenml/pull/2582
+* Add security headers to the ZenML server by @stefannica in https://github.com/zenml-io/zenml/pull/2583
+* Fix and update AWS cloud guide by @strickvl in https://github.com/zenml-io/zenml/pull/2591
+* Add `start_time` support to HyperAI orchestrator scheduled pipelines by @christianversloot in https://github.com/zenml-io/zenml/pull/2572
+* Make `secure` an optional import by @stefannica in https://github.com/zenml-io/zenml/pull/2592
+* RAG guide for docs by @strickvl in https://github.com/zenml-io/zenml/pull/2525
+* Update test-migrations scripts with new versions `0.56.2` by @safoinme in https://github.com/zenml-io/zenml/pull/2565
+* Check old password during password change and add missing CLI commands by @stefannica in https://github.com/zenml-io/zenml/pull/2587
+* Add a note about the `f` prefix being needed for template strings by @strickvl in https://github.com/zenml-io/zenml/pull/2593
+* Skypilot: Lambda Edition by @safoinme in https://github.com/zenml-io/zenml/pull/2526
+* Use the correct validity for EKS API tokens and handle long-running Kubernetes pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/2589
+* Catch missing jupyter installation for `zenml go` by @strickvl in https://github.com/zenml-io/zenml/pull/2571
+* Allow resources required for the fastapi OpenAPI docs in the CSP header by @stefannica in https://github.com/zenml-io/zenml/pull/2595
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.56.2...0.56.3
+
 # 0.56.2
 
 This release replaces 0.56.0 and 0.56.1, and fixes the major migration bugs that were in
@@ -8,7 +180,7 @@ that yanked release. Please upgrade directly to 0.56.2 and avoid upgrading to
 Note that 0.56.0 and 0.56.1 were removed from PyPI due to an issue with the
 alembic versions + migration which could affect the database state. This release
 fixes that issue.
-This release introduces introduces a wide array of new features, enhancements, and bug fixes, with a strong emphasis on elevating the user experience and streamlining machine
+This release introduces a wide array of new features, enhancements, and bug fixes, with a strong emphasis on elevating the user experience and streamlining machine
 learning workflows. Most notably, you can now deploy models using Hugging Face inference endpoints thanks for an open-source community contribution of this model deployer stack component!
 
 This release also comes with a breaking change to the services

@@ -24,6 +24,7 @@ from zenml.integrations.aws import AWSIntegration  # noqa
 from zenml.integrations.azure import AzureIntegration  # noqa
 from zenml.integrations.bentoml import BentoMLIntegration  # noqa
 from zenml.integrations.bitbucket import BitbucketIntegration  # noqa
+from zenml.integrations.comet import CometIntegration  # noqa
 from zenml.integrations.deepchecks import DeepchecksIntegration  # noqa
 from zenml.integrations.discord import DiscordIntegration  # noqa
 from zenml.integrations.evidently import EvidentlyIntegration  # noqa
@@ -62,6 +63,7 @@ from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.skypilot_aws import SkypilotAWSIntegration  # noqa
 from zenml.integrations.skypilot_gcp import SkypilotGCPIntegration  # noqa
 from zenml.integrations.skypilot_azure import SkypilotAzureIntegration  # noqa
+from zenml.integrations.skypilot_lambda import SkypilotLambdaIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa

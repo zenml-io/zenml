@@ -90,7 +90,7 @@ is specified, while other fields remain optional for this task.
 
 ```python
 from zenml import pipeline
-from zenml.model import Model
+from zenml import Model
 
 @pipeline(
     enable_cache=False,
@@ -127,7 +127,7 @@ the `version` argument to the `Model` object. If you don't do this, ZenML
 will automatically generate a version number for you.
 
 ```python
-from zenml.model import Model
+from zenml import Model
 
 model= Model(
     name="my_model",
@@ -272,7 +272,7 @@ There are a few ways to link artifacts:
 The easiest way is to configure the `model` parameter on the `@pipeline` decorator or `@step` decorator:
 
 ```python
-from zenml.model import Model
+from zenml import Model
 
 model = Model(
     name="my_model",

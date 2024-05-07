@@ -55,6 +55,10 @@ class ServerModel(BaseModel):
         title="The ZenML version that the server is running.",
     )
 
+    active: bool = Field(
+        True, title="Flag to indicate whether the server is active."
+    )
+
     debug: bool = Field(
         False, title="Flag to indicate whether ZenML is running on debug mode."
     )
@@ -78,9 +82,19 @@ class ServerModel(BaseModel):
         "",
         title="The Base URL of the server.",
     )
+
+    analytics_enabled: bool = Field(
+        default=True,  # We set a default for migrations from < 0.57.0
+        title="Enable server-side analytics.",
+    )
+
     metadata: Dict[str, str] = Field(
         {},
         title="The metadata associated with the server.",
+    )
+    use_legacy_dashboard: bool = Field(
+        False,
+        title="Flag to indicate whether the server is using the legacy dashboard.",
     )
 
     def is_local(self) -> bool:

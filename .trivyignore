@@ -1,0 +1,30 @@
+# Instructions: add rules here to skip reporting vulnerabilities that are not
+# relevant to the runtime environment. The rules are based on the CVE ID.
+# The CVE IDs can be found in the Trivy scan output.
+#
+# For every vulnerability that you want to skip, please include the following
+# information:
+# - Package: the name of the package reported by Trivy
+# - Vulnerability: description of the vulnerability as reported by Trivy
+# - Reference: a URL that provides more information about the vulnerability
+# - Reason: why the vulnerability is not relevant to the runtime environment
+#
+# NOTE: vulnerabilities that haven't been fixed yet should not be ignored here
+# because they are filtered out globally by Trivy. This file is only for
+# vulnerabilities with available fixes.
+#
+# For more information, see https://aquasecurity.github.io/trivy/v0.50/docs/configuration/filtering/#trivyignore
+
+
+# Package: pip
+# Vulnerability: Mercurial configuration injectable in repo revision
+# when installing via pip
+# Reference: https://avd.aquasec.com/nvd/cve-2023-5752
+# Reason: pip is not used in the runtime environment
+CVE-2023-5752
+# Package: pypa-setuptools
+# Vulnerability: Regular Expression Denial of Service (ReDoS) in
+# package_index.py.
+# Reference: https://avd.aquasec.com/nvd/cve-2022-40897
+# Reason: setuptools is not used in the runtime environment
+CVE-2022-40897

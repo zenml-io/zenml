@@ -125,7 +125,7 @@ AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --typ
 {% tab title="GCP" %}
 There are [many ways to create a GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account).
 ```shell
-zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project-id=<PROJECT_ID> --generate_temporary_tokens=False
+zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project_id=<PROJECT_ID> --generate_temporary_tokens=False
 ```
 {% endtab %}
 {% tab title="Azure" %}
