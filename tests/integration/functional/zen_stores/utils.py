@@ -1028,7 +1028,7 @@ flavor_crud_test_config = CrudTestConfig(
         type=StackComponentType.ORCHESTRATOR,
         integration="",
         source="",
-        config_schema="",
+        config_schema={},
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
