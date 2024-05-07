@@ -79,11 +79,9 @@ class ModelRegistryModelMetadata(BaseModel):
         """
         # Return all attributes that are not explicitly defined as Pydantic
         # fields in this class
-        return {
-            k: str(v)
-            for k, v in self.__dict__.items()
-            if k not in self.model_fields.keys()
-        }
+        if self.model_extra:
+            return {k: str(v) for k, v in self.model_extra.items()}
+        return {}
 
     def dict(
         self,
