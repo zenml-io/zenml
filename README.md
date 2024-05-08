@@ -69,44 +69,13 @@
 
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h3 align="center">Create an MLOps workflow for your entire team.</h3>
-  <p align="center">
-    <div align="center">
-      Join our <a href="https://zenml.io/slack" target="_blank">
-      <img width="18" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
-    <b>Slack Community</b> </a> and be part of the ZenML family.
-    </div>
-    <br />
-    <a href="https://zenml.io/features">Features</a>
-    ·
-    <a href="https://zenml.io/roadmap">Roadmap</a>
-    ·
-    <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
-    ·
-    <a href="https://zenml.io/cloud">Sign up for Cloud</a>
-    ·
-    <a href="https://www.zenml.io/blog">Read Blog</a>
-    ·
-    <a href="https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22">Contribute to Open Source</a>
-    ·
-    <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
-    <br />
-    <br />
-    🎉 Version 0.57.0rc2 is out. Check out the release notes
-    <a href="https://github.com/zenml-io/zenml/releases">here</a>.
-    <br />
-    🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.
-    <br />
-  </p>
+  <h1 align="center">Create an internal MLOps platform for your entire machine learning team.
+</h1>
 </div>
 
 ---
 
-Create an internal MLOps platform for your entire machine learning team.
-
--- GIF of what? DAG & Model Control Plane?
-
-# 🤸 Quickstart
+## 🤸 Quickstart
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via [PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.11 is required:
 
 ```bash
@@ -119,9 +88,9 @@ Take a tour with the guided quickstart by running:
 zenml go
 ```
 
-# 🪄 Simple, integrated, End-to-end MLOps 
+## 🪄 Simple, integrated, End-to-end MLOps 
 
-## Create machine learning pipelines with minimal code changes
+### Create machine learning pipelines with minimal code changes
 
 ZenML is a MLOps framework intended for data scientists or ML engineers looking to standardize machine learning practices within their organizations. Just add `@step` and `@pipeline` to your existing Python functions to get going. Here is a toy example:
 
@@ -154,14 +123,19 @@ if __name__ == "__main__":
 
 ![Running a ZenML pipeline](/docs/book/.gitbook/assets/readme_basic_pipeline.gif)
 
-## Deploy workloads easily on your production infrastructure
+### Deploy workloads easily on your production infrastructure
 
 The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. You can run ZenML pipelines on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals.
 
 ```python
-from zenml.config import ResourceSettings
+from zenml.config import ResourceSettings, DockerSettings
 
-@step(ResourceSettings(memory="16Gb", gpu="1", cpu="8"))
+@step(
+  settings={
+    "resources": ResourceSettings(memory="16Gb", gpu="1", cpu="8"),
+    "docker": DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")
+  }
+)
 def training(...):
 	...
 ```
@@ -173,7 +147,7 @@ python run.py
 
 **GIF of running a pipeline and running on k8s (potentially showing other DAG renders as well?)**
 
-## Track models, pipeline, and artifacts
+### Track models, pipeline, and artifacts
 
 Create a complete lineage of who, where, and what data and models are produced
 
@@ -189,7 +163,7 @@ def trainer(training_df: pd.DataFrame) -> Annotated["model", torch.nn.Module]:
 
 ![Exploring ZenML Models](/docs/book/.gitbook/assets/readme_mcp.gif)
 
-## Purpose built for machine learning with integration to you favorite tools
+### Purpose built for machine learning with integration to you favorite tools
 
 While ZenML brings a lot of value of thee box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
 
@@ -205,7 +179,7 @@ def train_and_deploy(training_df: pd.DataFrame) -> bento.Bento
 
 ![Exploring ZenML Integrations](/docs/book/.gitbook/assets/readme_integrations.gif)
 
-# 🖼️ Learning
+## 🖼️ Learning
 
 The best way to learn about ZenML is the [docs](https://docs.zenml.io/). We recommend beginning with the [Starter Guide](https://docs.zenml.io/user-guide/starter-guide) to get up and running quickly.
 
@@ -217,7 +191,7 @@ For inspiration, here are some other examples and use cases:
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
 5. LLMOps ??
 
-# 🔋 Deploy ZenML
+## 🔋 Deploy ZenML
 
 For full functionality ZenML should be deployed on the cloud to
 enable collaborative features as the central MLOps interface for teams.
@@ -233,7 +207,7 @@ ZenML on your own self-hosted environment](https://docs.zenml.io/deploying-zenml
 This can be achieved through various methods, including using our CLI, Docker,
 Helm, or HuggingFace Spaces.
 
-# Use ZenML with VS Code
+## Use ZenML with VS Code
 
 ZenML has a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode) that allows you to inspect your stacks and pipeline runs directly from your editor. The extension also allows you to switch your stacks without needing to type any CLI commands.
 
@@ -242,7 +216,7 @@ ZenML has a [VS Code extension](https://marketplace.visualstudio.com/items?itemN
     ![/docs/book/.gitbook/assets/zenml-extension-shortened.gif](/docs/book/.gitbook/assets/zenml-extension-shortened.gif)
     
 
-# 🗺 Roadmap
+## 🗺 Roadmap
 
 ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a regularly updated source of truth for the ZenML community to understand where the product is going in the short, medium, and long term.
 
@@ -254,7 +228,7 @@ board](https://zenml.io/discussion).
 - Start a thread in our [Slack channel](https://zenml.io/slack).
 - [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our GitHub repo.
 
-# 🙌 Contributing and Community
+## 🙌 Contributing and Community
 
 We would love to develop ZenML together with our community! The best way to get
 started is to select any issue from the `[good-first-issue`
@@ -265,7 +239,7 @@ If you
 would like to contribute, please review our [Contributing
 Guide](CONTRIBUTING.md) for all relevant details.
 
-# 🆘 Getting Help
+## 🆘 Getting Help
 
 The first point of call should
 be [our Slack group](https://zenml.io/slack-invite/).
@@ -275,9 +249,40 @@ Or, if you
 prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
 our GitHub repo.
 
-# 📜 License
+## 📜 License
 
 ZenML is distributed under the terms of the Apache License Version 2.0.
 A complete version of the license is available in the [LICENSE](LICENSE) file in
 this repository. Any contribution made to this project will be licensed under
 the Apache License Version 2.0.
+
+<div>
+<p align="left">
+    <div align="left">
+      Join our <a href="https://zenml.io/slack" target="_blank">
+      <img width="18" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
+    <b>Slack Community</b> </a> and be part of the ZenML family.
+    </div>
+    <br />
+    <a href="https://zenml.io/features">Features</a>
+    ·
+    <a href="https://zenml.io/roadmap">Roadmap</a>
+    ·
+    <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
+    ·
+    <a href="https://zenml.io/cloud">Sign up for Cloud</a>
+    ·
+    <a href="https://www.zenml.io/blog">Read Blog</a>
+    ·
+    <a href="https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22">Contribute to Open Source</a>
+    ·
+    <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
+    <br />
+    <br />
+    🎉 Version 0.57.0rc2 is out. Check out the release notes
+    <a href="https://github.com/zenml-io/zenml/releases">here</a>.
+    <br />
+    🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.
+    <br />
+  </p>
+</div>
