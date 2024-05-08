@@ -92,7 +92,7 @@ zenml go
 
 ### Create machine learning pipelines with minimal code changes
 
-ZenML is a MLOps framework intended for data scientists or ML engineers looking to standardize machine learning practices within their organizations. Just add `@step` and `@pipeline` to your existing Python functions to get going. Here is a toy example:
+ZenML is a MLOps framework intended for data scientists or ML engineers looking to standardize machine learning practices. Just add `@step` and `@pipeline` to your existing Python functions to get going. Here is a toy example:
 
 ```python
 from zenml import pipeline, step
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
 ### Deploy workloads easily on your production infrastructure
 
-The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. You can run ZenML pipelines on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals.
+The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals.
 
 ```python
 from zenml.config import ResourceSettings, DockerSettings
@@ -149,7 +149,7 @@ python run.py
 
 ### Track models, pipeline, and artifacts
 
-Create a complete lineage of who, where, and what data and models are produced
+Create a complete lineage of who, where, and what data and models are produced.
 
 Get a complete lineage of your complete process. You’ll be able to find out who produced which model, at what time, with which data, and on which version of the code. This guarantees full reproducibility and auditability.
 
@@ -165,7 +165,7 @@ def trainer(training_df: pd.DataFrame) -> Annotated["model", torch.nn.Module]:
 
 ### Purpose built for machine learning with integration to you favorite tools
 
-While ZenML brings a lot of value of thee box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
+While ZenML brings a lot of value of the box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
 
 ```python
 from bentoml._internal.bento import bento
@@ -189,17 +189,17 @@ For inspiration, here are some other examples and use cases:
 2. [Basic NLP with BERT](examples/e2e_nlp/): Feature engineering, training, and inference focused on NLP.
 3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents): Using Langchain to create a simple RAG pipeline.
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
-5. LLMOps ??
+4. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
 
 ## 🔋 Deploy ZenML
 
 For full functionality ZenML should be deployed on the cloud to
 enable collaborative features as the central MLOps interface for teams.
 
-Currently, there are two main options to deploy ZenML:
+Currently, there are two main ways to deploy ZenML:
 
 - **ZenML Cloud**: With [ZenML Cloud](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link),
-you can utilize a control plane to create ZenML servers, also known as tenants.
+you can make use of a control plane to create ZenML servers, also known as tenants.
 These tenants are managed and maintained by ZenML’s dedicated team, alleviating
 the burden of server management from your end.
 - **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy
@@ -279,7 +279,7 @@ the Apache License Version 2.0.
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.57.0rc2 is out. Check out the release notes
+    🎉 Version 0.57.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.
