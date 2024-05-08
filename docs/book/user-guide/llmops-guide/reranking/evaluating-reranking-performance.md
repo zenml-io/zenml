@@ -135,9 +135,9 @@ impact of reranking on the performance.
 Our documentation explains how to set up your outputs so that they appear as
 visualizations in the ZenML dashboard. You can find more information
 [here](../../advanced-guide/data-management/visualize-artifacts.md). There are
-lots of options, but I've chosen to plot our failure rates as a bar chart and
-export them as a `PIL.Image` object. I've also plotted the other evaluation
-scores so we can get a quick global overview of our performance.
+lots of options, but we've chosen to plot our failure rates as a bar chart and
+export them as a `PIL.Image` object. We also plotted the other evaluation
+scores so as to get a quick global overview of our performance.
 
 ```python
 # passing the results from all our previous evaluation steps
