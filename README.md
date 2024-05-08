@@ -147,13 +147,11 @@ zenml stack set k8s  # Set a stack with kubernetes orchestrator
 python run.py
 ```
 
-**GIF of running a pipeline and running on k8s (potentially showing other DAG renders as well?)**
-
 ### Track models, pipeline, and artifacts
 
 Create a complete lineage of who, where, and what data and models are produced.
 
-Get a complete lineage of your complete process. You’ll be able to find out who produced which model, at what time, with which data, and on which version of the code. This guarantees full reproducibility and auditability.
+You’ll be able to find out who produced which model, at what time, with which data, and on which version of the code. This guarantees full reproducibility and auditability.
 
 ```python
 from zenml import Model
@@ -185,15 +183,17 @@ def train_and_deploy(training_df: pd.DataFrame) -> bento.Bento
 
 The best way to learn about ZenML is the [docs](https://docs.zenml.io/). We recommend beginning with the [Starter Guide](https://docs.zenml.io/user-guide/starter-guide) to get up and running quickly.
 
-For inspiration, here are some other examples and use cases:
+If you are a visual learner, this 11-minute video tutorial is also a great start:
+
+[![Introductory Youtube Video](docs/book/.gitbook/assets/readme_youtube_thumbnail.png)](https://www.youtube.com/watch?v=wEVwIkDvUPs)
+
+And finally, here are some other examples and use cases for inspiration:
 
 1. [E2E Batch Inference](examples/e2e/): Feature engineering, training, and inference pipelines for tabular machine learning.
 2. [Basic NLP with BERT](examples/e2e_nlp/): Feature engineering, training, and inference focused on NLP.
 3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents): Using Langchain to create a simple RAG pipeline.
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
 5. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
-
-[![Introductory Youtube Video](docs/book/.gitbook/assets/readme_youtube_thumbnail.jpg)](https://www.youtube.com/watch?v=wEVwIkDvUPs)
 
 
 ## 🔋 Deploy ZenML
