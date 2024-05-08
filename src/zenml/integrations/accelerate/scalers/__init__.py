@@ -11,10 +11,4 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Accelerate integration for ZenML."""
-
-from zenml.integrations.accelerate.scalers.accelerate_scaler import AccelerateScaler
-
-__all__ = [
-    "AccelerateScaler",
-]
+"""Accelerate scalers for ZenML."""

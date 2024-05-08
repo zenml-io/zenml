@@ -74,6 +74,7 @@ if TYPE_CHECKING:
     )
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.models.v2.misc.scaler_models import ScalerModel
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
@@ -140,6 +141,7 @@ class BaseStep(metaclass=BaseStepMeta):
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        scaler: Optional["ScalerModel"] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a step.
@@ -169,6 +171,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
+            scaler: The scaler to use for this step.
             **kwargs: Keyword arguments passed to the step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
@@ -242,6 +245,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_failure=on_failure,
             on_success=on_success,
             model=model,
+            scaler=scaler,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
 
@@ -647,8 +651,12 @@ class BaseStep(metaclass=BaseStepMeta):
             )
         except ValidationError as e:
             raise StepInterfaceError("Invalid entrypoint arguments.") from e
-
-        return self.entrypoint(**validated_args)
+        if self.configuration.scaler:
+            return self.configuration.scaler.run(
+                self.entrypoint, **validated_args
+            )
+        else:
+            return self.entrypoint(**validated_args)
 
     @property
     def name(self) -> str:
@@ -695,6 +703,7 @@ class BaseStep(metaclass=BaseStepMeta):
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        scaler: Optional["ScalerModel"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -733,6 +742,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
+            scaler: configuration of the scaler for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -807,6 +817,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
                 "model": model,
+                "scaler": scaler,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -830,6 +841,7 @@ class BaseStep(metaclass=BaseStepMeta):
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        scaler: Optional["ScalerModel"] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -857,6 +869,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
+            scaler: configuration of the scaler for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -882,6 +895,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success=on_success,
             model=model,
             merge=merge,
+            scaler=scaler,
         )
         return step_copy
 

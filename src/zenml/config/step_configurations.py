@@ -37,6 +37,7 @@ from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
+from zenml.models.v2.misc.scaler_models import ScalerModel
 from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
@@ -137,6 +138,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
     model: Optional[Model] = None
+    scaler: Optional[ScalerModel] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 

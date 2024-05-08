@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model import Model
+    from zenml.models.v2.misc.scaler_models import ScalerModel
     from zenml.steps import BaseStep
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
@@ -73,6 +74,7 @@ def step(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     model_version: Optional["Model"] = None,  # TODO: deprecate me
+    scaler: Optional["ScalerModel"] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -93,6 +95,7 @@ def step(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     model_version: Optional["Model"] = None,  # TODO: deprecate me
+    scaler: Optional["ScalerModel"] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -124,6 +127,7 @@ def step(
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
         model_version: DEPRECATED, please use `model` instead.
+        scaler: configuration of the scaler for this step.
 
     Returns:
         The step instance.
@@ -162,6 +166,7 @@ def step(
             on_failure=on_failure,
             on_success=on_success,
             model=model or model_version,
+            scaler=scaler,
         )
 
         return step_instance
