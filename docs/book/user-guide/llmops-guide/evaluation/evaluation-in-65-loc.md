@@ -7,14 +7,14 @@ implement a basic RAG pipeline in just 85 lines of code. In this section, we'll
 build on that example to show how you can evaluate the performance of your RAG
 pipeline in just 65 lines. For the full code, please visit the project
 repository
-[here](https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/most_basic_eval.py).
+[here](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/most_basic_eval.py).
 The code that follows requires the functions from the earlier RAG pipeline code
 to work.
 
 
 ```python
 # ...previous RAG pipeline code here...
-# see https://github.com/zenml-io/zenml-projects/blob/feature/evaluation-llm-complete-guide/llm-complete-guide/most_basic_rag_pipeline.py
+# see https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/most_basic_rag_pipeline.py
 
 eval_data = [
     {
