@@ -249,18 +249,26 @@ class StepLauncher:
                                 pipeline_run=pipeline_run,
                                 step_run=step_run_response,
                             )
-                            logger.info(f"Step '{self._step_name}' completed successfully.")
+                            logger.info(
+                                f"Step '{self._step_name}' completed successfully."
+                            )
                             break
                         except BaseException as e:  # noqa: E722
                             retries += 1
                             if retries < max_retries:
-                                logger.error(f"Failed to run step '{self._step_name}'. Retrying...")
+                                logger.error(
+                                    f"Failed to run step '{self._step_name}'. Retrying..."
+                                )
                                 logger.exception(e)
-                                logger.info(f"Sleeping for {delay} seconds before retrying.")
+                                logger.info(
+                                    f"Sleeping for {delay} seconds before retrying."
+                                )
                                 time.sleep(delay)
                                 delay *= backoff
                             else:
-                                logger.error(f"Failed to run step '{self._step_name}' after {max_retries} retries. Exiting.")
+                                logger.error(
+                                    f"Failed to run step '{self._step_name}' after {max_retries} retries. Exiting."
+                                )
                                 publish_utils.publish_failed_step_run(
                                     step_run_response.id
                                 )
