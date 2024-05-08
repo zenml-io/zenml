@@ -226,20 +226,44 @@ class StepLauncher:
 
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
-                    try:
-                        self._run_step(
-                            pipeline_run=pipeline_run,
-                            step_run=step_run_response,
-                        )
-                    except BaseException as e:  # noqa: E722
-                        logger.error(
-                            f"Failed to run step `{self._step_name}`."
-                        )
-                        logger.exception(e)
-                        publish_utils.publish_failed_step_run(
-                            step_run_response.id
-                        )
-                        raise
+                    retries = 0
+                    max_retries = (
+                        step_run_response.config.retry.max_retries
+                        if step_run_response.config.retry
+                        else 1
+                    )
+                    delay = (
+                        step_run_response.config.retry.delay
+                        if step_run_response.config.retry
+                        else 0
+                    )
+                    backoff = (
+                        step_run_response.config.retry.backoff
+                        if step_run_response.config.retry
+                        else 1
+                    )
+
+                    while retries < max_retries:
+                        try:
+                            self._run_step(
+                                pipeline_run=pipeline_run,
+                                step_run=step_run_response,
+                            )
+                            break
+                        except BaseException as e:  # noqa: E722
+                            retries += 1
+                            if retries < max_retries:
+                                logger.error(
+                                    f"Failed to run step `{self._step_name}`."
+                                )
+                                logger.exception(e)
+                                time.sleep(delay)
+                                delay *= backoff
+                            else:
+                                publish_utils.publish_failed_step_run(
+                                    step_run_response.id
+                                )
+                                raise
 
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
