@@ -304,7 +304,7 @@ If you do not want to store the logs in your artifact store, you can:
 
 ## Allow step retry in case of failure
 
-ZenML provides a built-in retry mechanism that allows you to configure automatic retries for your steps in case of failures. This can be useful when dealing with intermittent issues or transient errors. You can configure 3 parameter for step retry:
+ZenML provides a built-in retry mechanism that allows you to configure automatic retries for your steps in case of failures. This can be useful when dealing with intermittent issues or transient errors. A common pattern when trying to run a step on GPU-backed hardware is that the provider will not have enough resources available, so you can set ZenML to handle the retries until the resources free up. You can configure 3 parameter for step retry:
 
 * **max_retries:** The maximum number of times the step should be retried in case of failure.
 * **delay:** The initial delay in **seconds** before the first retry attempt.
