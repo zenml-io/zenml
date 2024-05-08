@@ -300,3 +300,44 @@ If you do not want to store the logs in your artifact store, you can:
 2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+
+
+## Allow step retry in case of failure
+
+ZenML provides a built-in retry mechanism that allows you to configure automatic retries for your steps in case of failures. This can be useful when dealing with intermittent issues or transient errors.
+
+You can configure the retry behavior for a step using the retry parameter in the @step decorator or through a configuration file:
+
+### Using the @step decorator:
+
+```python
+from zenml.config.retry_config import StepRetryConfig
+
+@step(
+    retry=StepRetryConfig(
+        max_retries=3, 
+        delay=10, 
+        backoff=2
+    )
+)
+def my_step() -> None:
+    raise Exception("This is a test exception")
+```
+
+* **max_retries:** The maximum number of times the step should be retried in case of failure.
+* **delay:** The initial delay in seconds before the first retry attempt.
+* **backoff:** The factor by which the delay should be multiplied after each retry attempt.
+
+### Using a configuration file (e.g., config.yaml):
+
+```yaml
+steps:
+  my_step:
+    retry:
+      max_retries: 3
+      delay: 10
+      backoff: 2
+```
+
+
+
