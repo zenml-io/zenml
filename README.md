@@ -191,7 +191,10 @@ For inspiration, here are some other examples and use cases:
 2. [Basic NLP with BERT](examples/e2e_nlp/): Feature engineering, training, and inference focused on NLP.
 3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents): Using Langchain to create a simple RAG pipeline.
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
-4. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
+5. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
+
+[![Introductory Youtube Video](docs/book/.gitbook/assets/readme_youtube_thumbnail.jpg)](https://www.youtube.com/watch?v=wEVwIkDvUPs)
+
 
 ## 🔋 Deploy ZenML
 
