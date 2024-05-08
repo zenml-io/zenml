@@ -1,3 +1,9 @@
+<div align="center">
+  <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
+  <h1 align="center">Create an internal MLOps platform for your entire machine learning team.
+</h1>
+</div>
+
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -66,12 +72,6 @@
 [build-shield]: https://img.shields.io/github/workflow/status/zenml-io/zenml/Build,%20Lint,%20Unit%20&%20Integration%20Test/develop?logo=github&style=for-the-badge
 
 [build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
-
-<div align="center">
-  <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">Create an internal MLOps platform for your entire machine learning team.
-</h1>
-</div>
 
 ---
 
