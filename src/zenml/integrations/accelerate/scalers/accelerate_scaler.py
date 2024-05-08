@@ -85,38 +85,37 @@ class AccelerateScaler(ScalerModel):
                 num_processes = device_count
             num_processes = self.num_processes
 
-        script_path = create_cli_wrapped_script(step_function)
+        with create_cli_wrapped_script(step_function) as script_path:
+            command = f"accelerate launch --num_processes {num_processes} "
+            command += script_path + " "
+            for k, v in function_kwargs.items():
+                k = _cli_arg_name(k)
+                if isinstance(v, bool):
+                    if v:
+                        command += f"--{k} "
+                elif isinstance(v, str):
+                    command += f'--{k} "{v}" '
+                elif type(v) in (list, tuple, set):
+                    for each in v:
+                        command += f"--{k} {each} "
+                else:
+                    command += f"--{k} {v} "
 
-        command = f"accelerate launch --num_processes {num_processes} "
-        command += script_path + " "
-        for k, v in function_kwargs.items():
-            k = _cli_arg_name(k)
-            if isinstance(v, bool):
-                if v:
-                    command += f"--{k} "
-            elif isinstance(v, str):
-                command += f'--{k} "{v}" '
-            elif type(v) in (list, tuple, set):
-                for each in v:
-                    command += f"--{k} {each} "
-            else:
-                command += f"--{k} {v} "
+            logger.info(command)
 
-        logger.info(command)
-
-        result = subprocess.run(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        for stdout_line in result.stdout.split("\n"):
-            logger.info(stdout_line)
-        if result.returncode == 0:
-            logger.info("Accelerate training job finished.")
-            return
-        else:
-            logger.error(
-                f"Accelerate training job failed. With return code {result.returncode}."
+            result = subprocess.run(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
             )
-            raise subprocess.CalledProcessError(result.returncode, command)
+            for stdout_line in result.stdout.split("\n"):
+                logger.info(stdout_line)
+            if result.returncode == 0:
+                logger.info("Accelerate training job finished.")
+                return
+            else:
+                logger.error(
+                    f"Accelerate training job failed. With return code {result.returncode}."
+                )
+                raise subprocess.CalledProcessError(result.returncode, command)

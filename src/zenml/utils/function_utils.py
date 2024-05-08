@@ -14,8 +14,9 @@
 """Utility functions for python functions."""
 
 import inspect
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, List, TypeVar
+from typing import Any, Callable, Iterator, List, TypeVar
 
 import click
 
@@ -156,7 +157,8 @@ def _cli_wrapped_function(func: F) -> F:
     return wrapper(func)
 
 
-def create_cli_wrapped_script(func: F) -> str:
+@contextmanager
+def create_cli_wrapped_script(func: F) -> Iterator[str]:
     """Create a script with the CLI-wrapped function.
 
     Args:
@@ -165,16 +167,19 @@ def create_cli_wrapped_script(func: F) -> str:
     Returns:
         The name of the script.
     """
-    func_path = str(Path(inspect.getabsfile(func)).parent)
-    script_name = random_str(20) + ".py"
+    try:
+        func_path = str(Path(inspect.getabsfile(func)).parent)
+        script_name = random_str(20) + ".py"
 
-    with open(script_name, "w") as f:
-        f.write(
-            _CLI_WRAPPED_SCRIPT_TEMPLATE.format(
-                func_path=func_path,
-                func_module=func.__module__,
-                func_name=func.__name__,
+        with open(script_name, "w") as f:
+            f.write(
+                _CLI_WRAPPED_SCRIPT_TEMPLATE.format(
+                    func_path=func_path,
+                    func_module=func.__module__,
+                    func_name=func.__name__,
+                )
             )
-        )
-
-    return str(Path(script_name).absolute())
+        path = Path(script_name)
+        yield str(path.absolute())
+    finally:
+        path.unlink()
