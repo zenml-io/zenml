@@ -216,10 +216,12 @@ Helm, or HuggingFace Spaces.
 
 ZenML has a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode) that allows you to inspect your stacks and pipeline runs directly from your editor. The extension also allows you to switch your stacks without needing to type any CLI commands.
 
-- 🖥️ VS Code Extension in Action!
-    
-    ![/docs/book/.gitbook/assets/zenml-extension-shortened.gif](/docs/book/.gitbook/assets/zenml-extension-shortened.gif)
-    
+<details>
+  <summary>🖥️ VS Code Extension in Action!</summary>
+  <div align="center">
+  <img width="60%" src="/docs/book/.gitbook/assets/zenml-extension-shortened.gif" alt="ZenML Extension">
+</div>
+</details>
 
 ## 🗺 Roadmap
 
