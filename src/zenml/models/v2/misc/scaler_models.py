@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML scalers."""
 
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Optional, Set, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 
 F = TypeVar("F", bound=Callable[..., None])
 
@@ -23,15 +23,42 @@ F = TypeVar("F", bound=Callable[..., None])
 class ScalerModel(BaseModel):
     """Domain model for scalers."""
 
+    scaler_flavor: Optional[str] = None
+
+    ALLOWED_SCALER_FLAVORS: ClassVar[Set[str]] = {
+        "AccelerateScaler",
+    }
+
+    @root_validator
+    def validate_scaler_flavor(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate the scaler flavor."""
+        if values.get("scaler_flavor", None) is None:
+            values["scaler_flavor"] = cls.__name__
+        if values["scaler_flavor"] not in cls.ALLOWED_SCALER_FLAVORS:
+            raise ValueError(
+                f"Invalid scaler flavor {values['scaler_flavor']}. "
+                f"Allowed values are {cls.ALLOWED_SCALER_FLAVORS}"
+            )
+        return values
+
     def run(self, step_function: F, **kwargs: Any) -> None:
         """Run the step using scaler.
 
         Args:
             step_function: The step function to run.
             **kwargs: Additional arguments to pass to the step function.
-
-        Raises:
-            NotImplementedError: If the scaler does not implement the
-                `run` method.
         """
-        raise NotImplementedError
+        if self.scaler_flavor == "AccelerateScaler":
+            from zenml.integrations.accelerate import AccelerateScaler
+
+            runner = AccelerateScaler(**self.dict())
+            print(runner, runner.__class__.__name__)
+        else:
+            raise NotImplementedError
+
+        return runner.run(step_function, **kwargs)
+
+    class Config:
+        """Pydantic model configuration."""
+
+        extra = "allow"
