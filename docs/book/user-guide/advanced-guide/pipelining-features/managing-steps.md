@@ -304,7 +304,7 @@ If you do not want to store the logs in your artifact store, you can:
 
 ## Allow step retry in case of failure
 
-ZenML provides a built-in retry mechanism that allows you to configure automatic retries for your steps in case of failures. This can be useful when dealing with intermittent issues or transient errors. A common pattern when trying to run a step on GPU-backed hardware is that the provider will not have enough resources available, so you can set ZenML to handle the retries until the resources free up. You can configure 3 parameter for step retry:
+ZenML provides a built-in retry mechanism that allows you to configure automatic retries for your steps in case of failures. This can be useful when dealing with intermittent issues or transient errors. A common pattern when trying to run a step on GPU-backed hardware is that the provider will not have enough resources available, so you can set ZenML to handle the retries until the resources free up. You can configure three parameters for step retries:
 
 * **max_retries:** The maximum number of times the step should be retried in case of failure.
 * **delay:** The initial delay in **seconds** before the first retry attempt.
@@ -326,8 +326,8 @@ def my_step() -> None:
     raise Exception("This is a test exception")
 ```
 
-You can also configure step retry using [Configuration YAML](https://docs.zenml.io/user-guide/production-guide/configure-pipeline#breaking-down-our-configuration-yaml)
-just like the pythonic version we set the retry config in a `steps` section where we specify the name of the step and the retry configuration.
+You can also configure step retry using the [Configuration YAML](https://docs.zenml.io/user-guide/production-guide/configure-pipeline#breaking-down-our-configuration-yaml).
+Just like the Pythonic version we set the retry config in a `steps` section where we specify the name of the step and the retry configuration.
 ### Using a configuration file (e.g., config.yaml):
 
 ```yaml
