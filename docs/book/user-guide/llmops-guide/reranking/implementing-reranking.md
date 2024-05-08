@@ -9,6 +9,8 @@ pipeline is relatively straightforward. The reranker will take the retrieved
 documents from the initial retrieval step and reorder them in terms of the query
 that was used to retrieve them.
 
+**INSERT / INCLUDE DIAGRAM OF INFERENCE PIPELINE**
+
 ## How and where to add reranking
 
 We'll use the [`rerankers`](https://github.com/AnswerDotAI/rerankers/) package
