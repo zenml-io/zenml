@@ -8,8 +8,8 @@ The GCP container registry is a [container registry](container-registries.md) fl
 uses the [Google Artifact Registry](https://cloud.google.com/artifact-registry).
 
 {% hint style="warning" %}
-**Important Notice: Google Container Registry is being replaced by Artifact Registry. Please start using Artifact Registry for your containers.**
-The terms `container registry` and `artifact registry` will be used interchangbly throughout this document.
+**Important Notice: Google Container Registry [is being replaced by Artifact Registry](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr). Please start using Artifact Registry for your containers. As per Google's documentation, "after May 15, 2024, Artifact Registry will host images for the gcr.io domain in Google Cloud projects without previous Container Registry usage. After March 18, 2025, Container Registry will be shut down."**
+The terms `container registry` and `artifact registry` will be used interchangeably throughout this document.
 {% endhint %}
 
 ### When to use it
