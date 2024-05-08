@@ -13,7 +13,7 @@ retrieval performance before and after reranking. You can use the same metrics
 we discussed in the [evaluation section](../evaluation/evaluation.md) to assess
 the performance of the reranking model.
 
-**RERANKING EVALUATION INFERENCE DIAGRAM**
+![](/docs/book/.gitbook/assets/reranking-evaluation.png)
 
 If you recall, we have a hand-crafted set of queries and relevant documents that
 we use to evaluate the performance of our retrieval system. We also have a set
