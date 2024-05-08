@@ -1415,7 +1415,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 *args,
                 **kwargs,
             )
-        except ValidationError as e:
+        except (ValidationError, TypeError) as e:
             raise ValueError(
                 "Invalid or missing inputs for pipeline entrypoint function. "
                 "Only JSON serializable inputs are allowed as pipeline inputs."
