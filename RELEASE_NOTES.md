@@ -1,5 +1,30 @@
 <!-- markdown-link-check-disable -->
 
+# 0.57.1
+
+This a minor release that brings a variety of bug fixes and enhancements for the new dashboard release,
+and new update to the LLMOps guide.
+
+We'd like to give a special thanks to @ruvilonix for their first contribution.
+
+## What's Changed
+* Add new versions to migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2663
+* Resource settings import fix by @htahir1 in https://github.com/zenml-io/zenml/pull/2664
+* Fix env variable for legacy dashboard by @schustmi in https://github.com/zenml-io/zenml/pull/2668
+* Fix broken links in code examples by @strickvl in https://github.com/zenml-io/zenml/pull/2672
+* Improve error message when trying to unpack a step artifact by @schustmi in https://github.com/zenml-io/zenml/pull/2674
+* Prevent special whitespaces in the names of entities by @avishniakov in https://github.com/zenml-io/zenml/pull/2665
+* Ensure extra flags aren't passed into `uv` integration install command by @strickvl in https://github.com/zenml-io/zenml/pull/2670
+* `enable_cache` option shouldn't be set to `False` for one of the steps by @ruvilonix in https://github.com/zenml-io/zenml/pull/2574
+* Add new dashboard links to create/deactivate CLI commands by @avishniakov in https://github.com/zenml-io/zenml/pull/2678
+* Add reranking section to LLMOps guide by @strickvl in https://github.com/zenml-io/zenml/pull/2679
+* Updated Readme by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2675
+
+## New Contributors
+* @ruvilonix made their first contribution in https://github.com/zenml-io/zenml/pull/2574
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.57.0...0.57.1
+
 # 0.57.0
 
 We're excited to announce that we're open-sourcing our new and improved dashboard. This unifies the experience for OSS and cloud users, though OSS users will initially see some dashboard features unavailable in this launch release.
