@@ -866,7 +866,7 @@ def get_or_create_pipeline_run(
 
     run, created = zen_store().get_or_create_run(
         pipeline_run=pipeline_run,
-        pre_creation_handler=lambda: check_entitlement(
+        pre_creation_hook=lambda: check_entitlement(
             resource_type=ResourceType.PIPELINE_RUN
         ),
     )
