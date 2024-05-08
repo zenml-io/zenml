@@ -19,9 +19,11 @@ from typing import List, Optional, cast
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
+from zenml.client import Client
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
+from zenml.integrations.aws import AWS_RESOURCE_TYPE
 from zenml.integrations.aws.flavors.aws_container_registry_flavor import (
     AWSContainerRegistryConfig,
 )
@@ -61,6 +63,32 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
         return match.group(1)
 
+    def _get_boto_session(self) -> boto3.Session:
+        """Get a boto3 session.
+
+        If this container registry is configured with an AWS service connector,
+        we use that connector to create an authenticated session. Otherwise
+        local AWS credentials will be used.
+
+        Returns:
+            A boto3 session.
+        """
+        if self.connector:
+            try:
+                # TODO: Improve this logic with stefans help
+                connector_client = Client().get_service_connector_client(
+                    name_id_or_prefix=self.connector,
+                    resource_type=AWS_RESOURCE_TYPE,
+                )
+            except Exception:
+                pass
+            else:
+                session = connector_client.connect()
+                assert isinstance(session, boto3.Session)
+                return session
+
+        return boto3.Session()
+
     def prepare_image_push(self, image_name: str) -> None:
         """Logs warning message if trying to push an image for which no repository exists.
 
@@ -76,8 +104,9 @@ class AWSContainerRegistry(BaseContainerRegistry):
             raise ValueError(f"Invalid docker image name '{image_name}'.")
         repo_name = match.group(1)
 
+        session = self._get_boto_session()
         try:
-            response = boto3.client(
+            response = session.client(
                 "ecr", region_name=self._get_region()
             ).describe_repositories()
         except (BotoCoreError, ClientError):
