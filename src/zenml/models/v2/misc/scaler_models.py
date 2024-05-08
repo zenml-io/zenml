@@ -26,10 +26,11 @@ class ScalerModel(BaseModel):
     scaler_flavor: Optional[str] = None
 
     ALLOWED_SCALER_FLAVORS: ClassVar[Set[str]] = {
+        # "ScalerModel",
         "AccelerateScaler",
     }
 
-    @root_validator
+    @root_validator(pre=True)
     def validate_scaler_flavor(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the scaler flavor."""
         if values.get("scaler_flavor", None) is None:
@@ -52,7 +53,6 @@ class ScalerModel(BaseModel):
             from zenml.integrations.accelerate import AccelerateScaler
 
             runner = AccelerateScaler(**self.dict())
-            print(runner, runner.__class__.__name__)
         else:
             raise NotImplementedError
 
