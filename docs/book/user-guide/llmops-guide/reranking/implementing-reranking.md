@@ -142,5 +142,11 @@ return.
 Now that we've added reranking to our pipeline, we can evaluate the performance
 of our reranker and see how it affects the quality of the retrieved documents.
 
+## Code Example
+
+To explore the full code, visit the [Complete
+Guide](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/)
+repository and for this section, particularly [the `eval_retrieval.py` file](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/steps/eval_retrieval.py).
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

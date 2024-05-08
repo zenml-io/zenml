@@ -235,5 +235,31 @@ look into the retrieval model itself (i.e. our embeddings) to see if we can
 improve its performance. This is what we'll turn to next as we explore
 finetuning our embeddings to improve retrieval performance.
 
+## Try it out!
+
+To see how this works in practice, you can run the evaluation pipeline using the
+project code. The reranking is included as part of the pipeline, so providing
+you've run the main `rag` pipeline, you can run the evaluation pipeline to see
+how the reranking model is performing.
+
+To run the evaluation pipeline, first clone the project repository:
+
+```bash
+git clone https://github.com/zenml-io/zenml-projects.git
+```
+
+Then navigate to the `llm-complete-guide` directory and follow the instructions
+in the `README.md` file to run the evaluation pipeline. (You'll have to have
+first run the main pipeline to generate the embeddings.)
+
+To run the evaluation pipeline, you can use the following command:
+
+```bash
+python run.py --evaluation
+```
+
+This will run the evaluation pipeline and output the results to the dashboard.
+As always, you can inspect the progress, logs, and results in the dashboard!
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
