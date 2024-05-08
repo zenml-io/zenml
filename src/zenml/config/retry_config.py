@@ -20,5 +20,5 @@ class StepRetryConfig(StrictBaseModel):
     """Retry configuration for a step."""
 
     max_retries: int = 1
-    delay: int = 0
+    delay: int = 0  # in seconds
     backoff: int = 0

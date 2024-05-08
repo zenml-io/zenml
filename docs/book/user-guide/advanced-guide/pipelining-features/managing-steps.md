@@ -304,9 +304,11 @@ If you do not want to store the logs in your artifact store, you can:
 
 ## Allow step retry in case of failure
 
-ZenML provides a built-in retry mechanism that allows you to configure automatic retries for your steps in case of failures. This can be useful when dealing with intermittent issues or transient errors.
+ZenML provides a built-in retry mechanism that allows you to configure automatic retries for your steps in case of failures. This can be useful when dealing with intermittent issues or transient errors. You can configure 3 parameter for step retry:
 
-You can configure the retry behavior for a step using the retry parameter in the @step decorator or through a configuration file:
+* **max_retries:** The maximum number of times the step should be retried in case of failure.
+* **delay:** The initial delay in **seconds** before the first retry attempt.
+* **backoff:** The factor by which the delay should be multiplied after each retry attempt.
 
 ### Using the @step decorator:
 
@@ -324,10 +326,8 @@ def my_step() -> None:
     raise Exception("This is a test exception")
 ```
 
-* **max_retries:** The maximum number of times the step should be retried in case of failure.
-* **delay:** The initial delay in seconds before the first retry attempt.
-* **backoff:** The factor by which the delay should be multiplied after each retry attempt.
-
+You can also configure step retry using [Configuration YAML](https://docs.zenml.io/user-guide/production-guide/configure-pipeline#breaking-down-our-configuration-yaml)
+just like the pythonic version we set the retry config in a `steps` section where we specify the name of the step and the retry configuration.
 ### Using a configuration file (e.g., config.yaml):
 
 ```yaml
