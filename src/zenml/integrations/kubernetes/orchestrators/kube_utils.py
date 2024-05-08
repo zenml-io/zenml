@@ -35,7 +35,7 @@ import datetime
 import enum
 import re
 import time
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
+from typing import Any, Callable, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -181,7 +181,7 @@ def wait_pod(
 
     Args:
         kube_client_fn: the kube client fn is a function that is called
-            periodically and is used to get a `CoreV1Api` client for 
+            periodically and is used to get a `CoreV1Api` client for
             the Kubernetes API. It should cache the client to avoid
             unnecessary overhead but should also instantiate a new client if
             the previous one is using credentials that are about to expire.
@@ -216,7 +216,7 @@ def wait_pod(
     while True:
         kube_client = kube_client_fn()
         core_api = k8s_client.CoreV1Api(kube_client)
-        
+
         resp = get_pod(core_api, pod_name, namespace)
 
         # Stream logs to `zenml.logger.info()`.

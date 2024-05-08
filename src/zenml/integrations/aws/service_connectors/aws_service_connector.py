@@ -714,9 +714,7 @@ class AWSServiceConnector(ServiceConnector):
             now = datetime.datetime.now(datetime.timezone.utc)
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
             # check if the token expires in the next 5 minutes
-            if expires_at > now + datetime.timedelta(
-                minutes=5
-            ):
+            if expires_at > now + datetime.timedelta(minutes=5):
                 return session, expires_at
 
         logger.debug(
@@ -1456,9 +1454,9 @@ class AWSServiceConnector(ServiceConnector):
             }
 
             if credentials.token:
-                all_profiles[aws_profile_name]["aws_session_token"] = (
-                    credentials.token
-                )
+                all_profiles[aws_profile_name][
+                    "aws_session_token"
+                ] = credentials.token
 
             aws_credentials_path = os.path.join(
                 users_home, ".aws", "credentials"
