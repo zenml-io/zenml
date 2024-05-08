@@ -4319,7 +4319,8 @@ class SqlZenStore(BaseZenStore):
             if not run_schema:
                 raise KeyError("No placeholder run found.")
 
-            pre_replacement_hook()
+            if pre_replacement_hook:
+                pre_replacement_hook()
             run_schema.update_placeholder(pipeline_run)
             session.add(run_schema)
             session.commit()
@@ -4427,7 +4428,8 @@ class SqlZenStore(BaseZenStore):
             #     orchestrator_run_id of the run that we're trying to create.
             #     -> The `self.create_run(...) call will fail due to the unique
             #     constraint on those columns.
-            pre_creation_hook()
+            if pre_creation_hook:
+                pre_creation_hook()
             return self.create_run(pipeline_run), True
         except (EntityExistsError, IntegrityError) as create_error:
             # Creating the run failed with an
