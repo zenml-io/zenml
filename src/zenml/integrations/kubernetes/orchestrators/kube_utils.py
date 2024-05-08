@@ -191,7 +191,6 @@ def wait_pod(
         exit_condition_lambda: A lambda
             which will be called periodically to wait for a pod to exit. The
             function returns True to exit.
-        incluster: Whether to load the in-cluster config. Defaults to False.
         timeout_sec: Timeout in seconds to wait for pod to reach exit
             condition, or 0 to wait for an unlimited duration.
             Defaults to unlimited.
