@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
 import argilla as rg
 from argilla.client.client import Argilla as ArgillaClient
-from argilla.client.sdk.commons.errors import BaseClientError
+from argilla.client.sdk.commons.errors import BaseClientError, NotFoundApiError
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.integrations.argilla.flavors import (
@@ -207,19 +207,20 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             A Argilla Project object.
 
         Raises:
-            ValueError: if 'dataset_name' and 'label_config' aren't provided.
+            ValueError: if 'dataset_name' and 'dataset' aren't provided.
         """
         dataset_name = kwargs.get("dataset_name")
-        label_config = kwargs.get("label_config")
+        dataset = kwargs.get("dataset")
+
         if not dataset_name:
             raise ValueError("`dataset_name` keyword argument is required.")
-        elif not label_config:
-            raise ValueError("`label_config` keyword argument is required.")
+        elif dataset is None:
+            raise ValueError("`dataset` keyword argument is required.")
 
-        return self._get_client().start_project(
-            title=dataset_name,
-            label_config=label_config,
-        )
+        try:
+            dataset.push_to_argilla(name=dataset_name)
+        except Exception as e:
+            raise ValueError(f"Failed to push dataset to Argilla: {e}") from e
 
     def delete_dataset(self, **kwargs: Any) -> None:
         """Deletes a dataset from the annotation interface.
@@ -244,14 +245,17 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             **kwargs: Additional keyword arguments to pass to the Argilla client.
 
         Returns:
-            The Argilla Dataset object (a 'Project') for the given name.
+            The Argilla DatasetModel object for the given name.
 
         Raises:
             ValueError: If the dataset name is not provided or if the dataset
                 does not exist.
         """
         if dataset_name := kwargs.get("dataset_name"):
-            return self._get_client().get_dataset(dataset_name)
+            try:
+                return self._get_client().get_dataset(name=dataset_name)
+            except NotFoundApiError as e:
+                raise ValueError(f"Dataset {dataset_name} not found.") from e
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
 
@@ -269,16 +273,10 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided or if the dataset
                 does not exist.
         """
-        dataset_name = kwargs.get("dataset_name")
-        if not dataset_name:
+        if dataset_name := kwargs.get("dataset_name"):
+            return self._get_client().get_project(dataset_name).get_labeled_tasks()
+        else:
             raise ValueError("`dataset_name` keyword argument is required.")
-
-        dataset_id = self.get_id_from_name(dataset_name)
-        if not dataset_id:
-            raise ValueError(
-                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Argilla."
-            )
-        return self._get_client().get_project(dataset_id).get_labeled_tasks()
 
     def get_unlabeled_data(self, **kwargs: str) -> Any:
         """Gets the unlabeled data for the given dataset.
@@ -292,13 +290,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             ValueError: If the dataset name is not provided.
         """
-        dataset_name = kwargs.get("dataset_name")
-        if not dataset_name:
+        if dataset_name := kwargs.get("dataset_name"):
+            return self._get_client().get_project(dataset_name).get_unlabeled_tasks()
+        else:
             raise ValueError("`dataset_name` keyword argument is required.")
-
-        dataset_id = self.get_id_from_name(dataset_name)
-        if not dataset_id:
-            raise ValueError(
-                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Argilla."
-            )
-        return self._get_client().get_project(dataset_id).get_unlabeled_tasks()
