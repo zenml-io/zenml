@@ -172,15 +172,13 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             IndexError: If the dataset does not exist.
         """
-        for project in self.get_datasets():
-            if dataset_name in project.get_params()["title"]:
-                labeled_task_count = len(project.get_labeled_tasks())
-                unlabeled_task_count = len(project.get_unlabeled_tasks())
-                return (labeled_task_count, unlabeled_task_count)
-        raise IndexError(
-            f"Dataset {dataset_name} not found. Please use "
-            f"`zenml annotator dataset list` to list all available datasets."
+        labeled_task_count = len(
+            self.get_labeled_data(dataset_name=dataset_name)
         )
+        unlabeled_task_count = len(
+            self.get_unlabeled_data(dataset_name=dataset_name)
+        )
+        return (labeled_task_count, unlabeled_task_count)
 
     def launch(self, **kwargs: Any) -> None:
         """Launches the annotation interface.
@@ -240,6 +238,10 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
 
+        Learn more about the two different generations of Argilla datasets
+            in the Argilla documentation:
+            https://docs.argilla.io/en/develop/practical_guides/choose_dataset.html
+
         Args:
             **kwargs: Additional keyword arguments to pass to the Argilla client.
 
@@ -250,13 +252,15 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided or if the dataset
                 does not exist.
         """
-        if dataset_name := kwargs.get("dataset_name"):
-            try:
-                return self._get_client().get_dataset(name=dataset_name)
-            except NotFoundApiError as e:
-                raise ValueError(f"Dataset {dataset_name} not found.") from e
-        else:
+        if not (dataset_name := kwargs.get("dataset_name")):
             raise ValueError("`dataset_name` keyword argument is required.")
+        try:
+            dataset = self._get_client().get_dataset(name=dataset_name)
+        except NotFoundApiError as e:
+            dataset = rg.FeedbackDataset.from_argilla(name=dataset_name)
+            if not dataset:
+                raise ValueError(f"Dataset {dataset_name} not found.") from e
+        return dataset
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
@@ -272,10 +276,8 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
                 does not exist.
         """
         if dataset_name := kwargs.get("dataset_name"):
-            return (
-                self._get_client()
-                .get_project(dataset_name)
-                .get_labeled_tasks()
+            return self.get_dataset(dataset_name=dataset_name).filter_by(
+                response_status="submitted"
             )
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
@@ -293,10 +295,8 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided.
         """
         if dataset_name := kwargs.get("dataset_name"):
-            return (
-                self._get_client()
-                .get_project(dataset_name)
-                .get_unlabeled_tasks()
+            return self.get_dataset(dataset_name=dataset_name).filter_by(
+                response_status="pending"
             )
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
