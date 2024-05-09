@@ -95,6 +95,11 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         #     raise ValueError("Unable to access Argilla API key from secret.")
 
         config = self.config
+        if config.api_key and config.authentication_secret:
+            raise ValueError(
+                "Both API key and authentication secret are provided. "
+                "Please provide only one."
+            )
         init_kwargs = {"api_url": self.get_url()}
 
         # set the API key from the secret or using settings
