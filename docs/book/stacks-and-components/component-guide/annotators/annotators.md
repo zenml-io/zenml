@@ -59,6 +59,7 @@ ZenML features an integration with `label_studio`.
 
 | Annotator                               | Flavor         | Integration    | Notes                                                                |
 |-----------------------------------------|----------------|----------------|----------------------------------------------------------------------|
+| [ArgillaAnnotator](argilla.md)           | `argilla`       | `argilla`       | Connect ZenML with Argilla                                             |
 | [LabelStudioAnnotator](label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio                                      |
 | [Custom Implementation](custom.md)      | _custom_       |                | Extend the annotator abstraction and provide your own implementation |
 
