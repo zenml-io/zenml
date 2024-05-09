@@ -140,28 +140,13 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         project_id = self.get_id_from_name(dataset_name)
         return f"{self.get_url()}/projects/{project_id}/"
 
-    def get_id_from_name(self, dataset_name: str) -> Optional[int]:
-        """Gets the ID of the given dataset.
-
-        Args:
-            dataset_name: The name of the dataset.
-
-        Returns:
-            The ID of the dataset.
-        """
-        projects = self.get_datasets()
-        for project in projects:
-            if project.get_params()["title"] == dataset_name:
-                return cast(int, project.get_params()["id"])
-        return None
-
     def get_datasets(self) -> List[Any]:
         """Gets the datasets currently available for annotation.
 
         Returns:
             A list of datasets.
         """
-        datasets = self._get_client().get_projects()
+        datasets = self._get_client().list_datasets()
         return cast(List[Any], datasets)
 
     def get_dataset_names(self) -> List[str]:
@@ -170,9 +155,10 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             A list of dataset names.
         """
-        return [
-            dataset.get_params()["title"] for dataset in self.get_datasets()
+        datasets = [
+            dataset.name for dataset in self._get_client().list_datasets()
         ]
+        return cast(List[Any], datasets)
 
     def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
         """Gets the statistics of the given dataset.
