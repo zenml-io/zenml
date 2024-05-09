@@ -251,13 +251,13 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError(f"Dataset {dataset_name} not found.") from e
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
-        """Gets the labeled data for the given dataset.
+        """Gets the dataset containing the labeled data.
 
         Args:
             **kwargs: Additional keyword arguments to pass to the Argilla client.
 
         Returns:
-            The labeled data.
+            The dataset containing the labeled data.
 
         Raises:
             ValueError: If the dataset name is not provided or if the dataset
@@ -271,13 +271,13 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError("`dataset_name` keyword argument is required.")
 
     def get_unlabeled_data(self, **kwargs: str) -> Any:
-        """Gets the unlabeled data for the given dataset.
+        """Gets the dataset containing the unlabeled data.
 
         Args:
             **kwargs: Additional keyword arguments to pass to the Argilla client.
 
         Returns:
-            The unlabeled data.
+            The dataset containing the unlabeled data.
 
         Raises:
             ValueError: If the dataset name is not provided.
