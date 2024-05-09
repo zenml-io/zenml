@@ -18,8 +18,8 @@ from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
 import argilla as rg
 from argilla.client.client import Argilla as ArgillaClient
+from argilla.client.sdk.commons.errors import BaseClientError
 
-from zenml import get_step_context
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.integrations.argilla.flavors import (
     ArgillaAnnotatorSettings,
@@ -75,33 +75,51 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             ValueError: when unable to access the Argilla API key.
         """
-        try:
-            settings = cast(
-                ArgillaAnnotatorSettings,
-                self.get_settings(get_step_context().step_run),
-            )
-            if settings.api_key is None:
-                raise RuntimeError
-            else:
-                api_key = settings.api_key
-        except RuntimeError as e:
-            if secret := self.get_authentication_secret():
-                api_key = secret.secret_values.get("api_key", "")
-            else:
-                raise ValueError(
-                    "Unable to access predefined secret to access Argilla API key."
-                ) from e
-        if not api_key:
-            raise ValueError("Unable to access Argilla API key from secret.")
+        # try:
+        #     settings = cast(
+        #         ArgillaAnnotatorSettings,
+        #         self.get_settings(get_step_context().step_run),
+        #     )
+        #     if settings.api_key is None:
+        #         raise RuntimeError
+        #     else:
+        #         api_key = settings.api_key
+        # except RuntimeError as e:
+        #     if secret := self.get_authentication_secret():
+        #         api_key = secret.secret_values.get("api_key", "")
+        #     else:
+        #         raise ValueError(
+        #             "Unable to access predefined secret to access Argilla API key."
+        #         ) from e
+        # if not api_key:
+        #     raise ValueError("Unable to access Argilla API key from secret.")
 
-        client = rg.active_client() or rg.init(
-            api_url=self.get_url(),
-            api_key=api_key,
-            workspace=settings.workspace,
-            extra_headers=settings.extra_headers,
-            httpx_extra_kwargs=settings.httpx_extra_kwargs,
-        )
-        return client.active_client()
+        config = self.config
+        init_kwargs = {"api_url": self.get_url()}
+
+        # set the API key from the secret or using settings
+        if self.get_authentication_secret():
+            api_key = self.get_authentication_secret().secret_values.get(
+                "api_key", ""
+            )
+            init_kwargs = {"api_key": api_key}
+        elif config.api_key is not None:
+            init_kwargs["api_key"] = config.api_key
+
+        if config.port is not None:
+            init_kwargs["port"] = config.port
+        if config.workspace is not None:
+            init_kwargs["workspace"] = config.workspace
+        if config.extra_headers is not None:
+            init_kwargs["extra_headers"] = config.extra_headers
+        if config.httpx_extra_kwargs is not None:
+            init_kwargs["httpx_extra_kwargs"] = config.httpx_extra_kwargs
+
+        try:
+            _ = rg.active_client()
+        except BaseClientError:
+            rg.init(**init_kwargs)
+        return rg.active_client()
 
     def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.

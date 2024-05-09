@@ -35,16 +35,22 @@ DEFAULT_LOCAL_ARGILLA_PORT = 6900
 class ArgillaAnnotatorSettings(BaseSettings):
     """Label studio annotator settings.
 
+    If you are using a private Hugging Face Spaces instance of Argilla you must
+    pass in https_extra_kwargs.
+
     Attributes:
         instance_url: URL of the Argilla instance.
-        port: The port to use for the annotation interface.
         api_key: The api_key for Argilla
+        workspace: The workspace to use for the annotation interface.
+        port: The port to use for the annotation interface.
+        extra_headers: Extra headers to include in the request.
+        httpx_extra_kwargs: Extra kwargs to pass to the client.
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
-    api_key: str = SecretField()
+    api_key: Optional[str] = SecretField()
+    workspace: Optional[str] = "admin"
     port: Optional[int]
-    workspace: Optional[str] = None
     extra_headers: Optional[Dict[str, str]] = None
     httpx_extra_kwargs: Optional[Dict[str, Any]] = None
 
