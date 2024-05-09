@@ -166,7 +166,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
                 client.
 
         Returns:
-            A Argilla Project object.
+            An Argilla dataset object.
 
         Raises:
             ValueError: if 'dataset_name' and 'dataset' aren't provided.
@@ -190,6 +190,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError(
                 f"Failed to push dataset to Argilla: {str(e)}"
             ) from e
+        return self.get_dataset(dataset_name=dataset_name)
 
     def delete_dataset(self, **kwargs: Any) -> None:
         """Deletes a dataset from the annotation interface.
