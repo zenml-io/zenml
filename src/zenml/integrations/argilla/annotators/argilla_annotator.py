@@ -184,9 +184,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
                 )
             api_key = secret.secret_values.get("api_key", "")
         if not api_key:
-            raise ValueError(
-                "Unable to access Argilla API key from secret."
-            )
+            raise ValueError("Unable to access Argilla API key from secret.")
         return Client(url=self.get_url(), api_key=api_key)
 
     def _connection_available(self) -> bool:
@@ -790,9 +788,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             # Set the environment variables required by Argilla
             # to allow local file serving (see https://labelstud.io/guide/storage.html#Prerequisites-2)
             os.environ["ARGILLA_LOCAL_FILES_SERVING_ENABLED"] = "true"
-            os.environ["ARGILLA_LOCAL_FILES_DOCUMENT_ROOT"] = str(
-                root_path
-            )
+            os.environ["ARGILLA_LOCAL_FILES_DOCUMENT_ROOT"] = str(root_path)
 
             storage = dataset.connect_local_import_storage(
                 local_store_path=prefix,
