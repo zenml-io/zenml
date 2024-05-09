@@ -162,7 +162,6 @@ def register_annotator_subcommands() -> None:
             f"Launching the annotation interface for dataset '{dataset_name}'."
         )
         try:
-            annotator.get_dataset(dataset_name=dataset_name)
             annotator.launch(url=annotator.get_url_for_dataset(dataset_name))
         except ValueError as e:
             raise ValueError("Dataset does not exist.") from e

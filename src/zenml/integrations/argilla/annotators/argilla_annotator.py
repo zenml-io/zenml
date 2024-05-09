@@ -135,8 +135,8 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             The URL of the annotation interface.
         """
-        project_id = self.get_id_from_name(dataset_name)
-        return f"{self.get_url()}/projects/{project_id}/"
+        dataset_id = self.get_dataset(dataset_name=dataset_name).id
+        return f"{self.get_url()}/dataset/{dataset_id}/annotation-mode"
 
     def get_datasets(self) -> List[Any]:
         """Gets the datasets currently available for annotation.
@@ -144,9 +144,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             A list of datasets.
         """
-        new_datasets = self._get_client().list_datasets()
+        old_datasets = self._get_client().list_datasets()
         # TODO: update once Argilla updates to their 2.0 SDK
-        old_datasets = rg.FeedbackDataset.list()
+        new_datasets = rg.FeedbackDataset.list()
         return cast(List[Any], new_datasets + old_datasets)
 
     def get_dataset_names(self) -> List[str]:
@@ -183,12 +183,13 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
     def launch(self, **kwargs: Any) -> None:
         """Launches the annotation interface.
         Args:
-            **kwargs: Additional keyword arguments to pass to the annotation client.
+            **kwargs: Additional keyword arguments to pass to the
+                annotation client.
         """
         url = kwargs.get("url") or self.get_url()
-        if self._connection_available():
+        try:
             webbrowser.open(url, new=1, autoraise=True)
-        else:
+        except Exception:
             logger.warning(
                 "Could not launch annotation interface"
                 "because the connection could not be established."
