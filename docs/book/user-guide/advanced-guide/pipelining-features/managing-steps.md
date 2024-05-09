@@ -336,5 +336,5 @@ steps:
 
 
 {% hint style="info" %}
-Note that infinite retries are not supported at the moment. If you set max_retries to a very large value or do not specify it at all, ZenML will still enforce an internal maximum number of retries to prevent infinite loops. We recommend setting a reasonable max_retries value based on your use case and the expected frequency of transient failures.
+Note that infinite retries are not supported at the moment. If you set `max_retries` to a very large value or do not specify it at all, ZenML will still enforce an internal maximum number of retries to prevent infinite loops. We recommend setting a reasonable `max_retries` value based on your use case and the expected frequency of transient failures.
 {% endhint %}
