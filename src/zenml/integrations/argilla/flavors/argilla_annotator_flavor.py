@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Argilla annotator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
-DEFAULT_LOCAL_ARGILLA_PORT = 8093
+DEFAULT_LOCAL_ARGILLA_PORT = 6900
 
 
 class ArgillaAnnotatorSettings(BaseSettings):
@@ -44,6 +44,9 @@ class ArgillaAnnotatorSettings(BaseSettings):
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
     port: Optional[int] = DEFAULT_LOCAL_ARGILLA_PORT
     api_key: Optional[str] = SecretField()
+    workspace: Optional[str] = None
+    extra_headers: Optional[Dict[str, str]] = None
+    httpx_extra_kwargs: Optional[Dict[str, Any]] = None
 
 
 class ArgillaAnnotatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
