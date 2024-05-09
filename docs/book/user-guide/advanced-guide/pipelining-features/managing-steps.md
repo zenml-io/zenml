@@ -312,6 +312,8 @@ ZenML provides a built-in retry mechanism that allows you to configure automatic
 
 ### Using the @step decorator:
 
+You can specify the retry configuration directly in the definition of your step as follows:
+
 ```python
 from zenml.config.retry_config import StepRetryConfig
 
@@ -324,13 +326,6 @@ from zenml.config.retry_config import StepRetryConfig
 )
 def my_step() -> None:
     raise Exception("This is a test exception")
-```
-
-You can also configure step retry using the [Configuration YAML](https://docs.zenml.io/user-guide/production-guide/configure-pipeline#breaking-down-our-configuration-yaml).
-Just like the Pythonic version we set the retry config in a `steps` section where we specify the name of the step and the retry configuration.
-### Using a configuration file (e.g., config.yaml):
-
-```yaml
 steps:
   my_step:
     retry:
