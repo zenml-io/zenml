@@ -145,6 +145,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             A list of datasets.
         """
         new_datasets = self._get_client().list_datasets()
+        # TODO: update once Argilla updates to their 2.0 SDK
         old_datasets = rg.FeedbackDataset.list()
         return cast(List[Any], new_datasets + old_datasets)
 
