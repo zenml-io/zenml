@@ -43,7 +43,7 @@ class ArgillaAnnotatorSettings(BaseSettings):
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
     api_key: str = SecretField()
-    port: Optional[int] = DEFAULT_LOCAL_ARGILLA_PORT
+    port: Optional[int]
     workspace: Optional[str] = None
     extra_headers: Optional[Dict[str, str]] = None
     httpx_extra_kwargs: Optional[Dict[str, Any]] = None
