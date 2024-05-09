@@ -17,7 +17,10 @@ from zenml.config.strict_base_model import StrictBaseModel
 
 
 class StepRetryConfig(StrictBaseModel):
-    """Retry configuration for a step."""
+    """Retry configuration for a step.
+    
+    Delay is an integer (specified in seconds).
+    """
 
     max_retries: int = 1
     delay: int = 0  # in seconds
