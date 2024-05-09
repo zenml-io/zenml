@@ -232,17 +232,10 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided or if the dataset
                 does not exist.
         """
-        ls = self._get_client()
-        dataset_name = kwargs.get("dataset_name")
-        if not dataset_name:
+        if dataset_name := kwargs.get("dataset_name"):
+            self._get_client().delete(name=dataset_name)
+        else:
             raise ValueError("`dataset_name` keyword argument is required.")
-
-        dataset_id = self.get_id_from_name(dataset_name)
-        if not dataset_id:
-            raise ValueError(
-                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Argilla."
-            )
-        ls.delete_project(dataset_id)
 
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
@@ -257,32 +250,11 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided or if the dataset
                 does not exist.
         """
-        # TODO: check for and raise error if client unavailable
-        dataset_name = kwargs.get("dataset_name")
-        if not dataset_name:
+        if dataset_name := kwargs.get("dataset_name"):
+            return self._get_client().get_dataset(dataset_name)
+        else:
             raise ValueError("`dataset_name` keyword argument is required.")
 
-        dataset_id = self.get_id_from_name(dataset_name)
-        if not dataset_id:
-            raise ValueError(
-                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Argilla."
-            )
-        return self._get_client().get_project(dataset_id)
-
-    def get_converted_dataset(
-        self, dataset_name: str, output_format: str
-    ) -> Dict[Any, Any]:
-        """Extract annotated tasks in a specific converted format.
-
-        Args:
-            dataset_name: Id of the dataset.
-            output_format: Output format.
-
-        Returns:
-            A dictionary containing the converted dataset.
-        """
-        project = self.get_dataset(dataset_name=dataset_name)
-        return project.export_tasks(export_type=output_format)  # type: ignore[no-any-return]
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
@@ -330,28 +302,3 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
                 f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Argilla."
             )
         return self._get_client().get_project(dataset_id).get_unlabeled_tasks()
-
-    def register_dataset_for_annotation(
-        self,
-        label_config: str,
-        dataset_name: str,
-    ) -> Any:
-        """Registers a dataset for annotation.
-
-        Args:
-            label_config: The label config to use for the annotation interface.
-            dataset_name: Name of the dataset to register.
-
-        Returns:
-            A Argilla Project object.
-        """
-        project_id = self.get_id_from_name(dataset_name)
-        if project_id:
-            dataset = self._get_client().get_project(project_id)
-        else:
-            dataset = self.add_dataset(
-                dataset_name=dataset_name,
-                label_config=label_config,
-            )
-
-        return dataset
