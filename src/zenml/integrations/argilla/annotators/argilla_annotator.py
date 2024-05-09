@@ -14,7 +14,7 @@
 """Implementation of the Argilla annotation integration."""
 
 import webbrowser
-from typing import Any, Dict, List, Optional, Tuple, Type, cast
+from typing import Any, List, Tuple, Type, cast
 
 import argilla as rg
 from argilla.client.client import Argilla as ArgillaClient
@@ -113,8 +113,6 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             init_kwargs["api_key"] = config.api_key
             logger.debug("Using API key from settings.")
 
-        if config.port is not None:
-            init_kwargs["port"] = config.port
         if config.workspace is not None:
             init_kwargs["workspace"] = config.workspace
         if config.extra_headers is not None:
@@ -146,19 +144,19 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             A list of datasets.
         """
-        datasets = self._get_client().list_datasets()
-        return cast(List[Any], datasets)
+        new_datasets = self._get_client().list_datasets()
+        old_datasets = rg.FeedbackDataset.list()
+        return cast(List[Any], new_datasets + old_datasets)
 
     def get_dataset_names(self) -> List[str]:
-        """Gets the names of the datasets.
+        """Gets the names of the datasets sorted alphabetically.
 
         Returns:
-            A list of dataset names.
+            A list of dataset names sorted alphabetically.
         """
-        datasets = [
-            dataset.name for dataset in self._get_client().list_datasets()
-        ]
-        return cast(List[Any], datasets)
+        datasets = [dataset.name for dataset in self.get_datasets()]
+        datasets.sort()
+        return cast(List[str], datasets)
 
     def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
         """Gets the statistics of the given dataset.
@@ -259,7 +257,6 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
 
-
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
 
@@ -274,7 +271,11 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
                 does not exist.
         """
         if dataset_name := kwargs.get("dataset_name"):
-            return self._get_client().get_project(dataset_name).get_labeled_tasks()
+            return (
+                self._get_client()
+                .get_project(dataset_name)
+                .get_labeled_tasks()
+            )
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
 
@@ -291,6 +292,10 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided.
         """
         if dataset_name := kwargs.get("dataset_name"):
-            return self._get_client().get_project(dataset_name).get_unlabeled_tasks()
+            return (
+                self._get_client()
+                .get_project(dataset_name)
+                .get_unlabeled_tasks()
+            )
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
