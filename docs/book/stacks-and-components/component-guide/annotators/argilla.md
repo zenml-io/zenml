@@ -4,160 +4,139 @@ description: Annotating data using Argilla.
 
 # Argilla
 
-Argilla is one of the leading open-source annotation platforms available to data scientists and ML practitioners.
-It is used to create or edit datasets that you can then use as part of training or validation workflows. It supports a
-broad range of annotation types, including:
+[Argilla](https://github.com/argilla-io/argilla) is an open-source data curation
+platform designed to enhance the development of both small and large language
+models (LLMs). It enables users to build robust language models through faster
+data curation using both human and machine feedback, providing support for each
+step in the MLOps cycle, from data labeling to model monitoring.
 
-* Computer Vision (image classification, object detection, semantic segmentation)
-* Audio & Speech (classification, speaker diarization, emotion recognition, audio transcription)
-* Text / NLP (classification, NER, question answering, sentiment analysis)
-* Time Series (classification, segmentation, event recognition)
-* Multi-Modal / Domain (dialogue processing, OCR, time series with reference)
+Argilla distinguishes itself for its focus on specific use cases and
+human-in-the-loop approaches. While it does offer programmatic features,
+Argilla's core value lies in actively involving human experts in the
+tool-building process, setting it apart from other competitors.
 
 ### When would you want to use it?
 
-If you need to label data as part of your ML workflow, that is the point at which you could consider adding the optional
-annotator stack component as part of your ZenML stack.
+If you need to label data as part of your ML workflow, that is the point at
+which you could consider adding the optional annotator stack component as part
+of your ZenML stack.
 
-We currently support the use of annotation at the various stages described
-in [the main annotators docs page](annotators.md), and also offer custom utility functions to generate Argilla
-label config files for image classification and object detection. (More will follow in due course.)
-
-The Argilla integration currently is built to support workflows using the following three cloud artifact stores:
-AWS S3, GCP/GCS, and Azure Blob Storage. Purely local stacks will currently _not_ work if you want to do add the
-annotation stack component as part of your stack.
+We currently support the use of annotation at the various stages described in
+[the main annotators docs page](annotators.md). The Argilla integration
+currently is built to support annotation using a local (Docker-backed) instance
+of Argilla as well as a deployed instance of Argilla. There is an easy way to
+deploy Argilla as a [Hugging Face
+Space](https://huggingface.co/docs/hub/spaces-sdks-docker-argilla), for
+instance, which is documented in the [Argilla
+documentation](https://docs.argilla.io/en/latest/getting_started/installation/deployments/huggingface-spaces.html).
 
 ### How to deploy it?
 
-The Argilla Annotator flavor is provided by the Argilla ZenML integration, you need to install it, to be able
-to register it as an Annotator and add it to your stack:
+The Argilla Annotator flavor is provided by the Argilla ZenML integration. You
+need to install it to be able to register it as an Annotator and add it to your
+stack:
 
 ```shell
-zenml integration install label_studio
+zenml integration install argilla
 ```
 
-{% hint style="warning" %}
-There is a known issue with Argilla installations via `zenml integration install...`. You might find that the Label
-Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the
-issue or [message us on Slack](https://zenml.io/slack-invite) if you need more help with this. We are working on a more
-definitive fix.
-{% endhint %}
-
-Before registering a `label_studio` flavor stack component as part of your stack, you'll need to have registered a cloud
-artifact store. (See the docs on how to register and set
-up[ a cloud artifact store](/docs/book/stacks-and-components/component-guide/artifact-stores/artifact-stores.md).)
-
-Be sure to register a secret for whichever artifact store you choose, and then you should make sure to pass the name of
-that secret into the artifact store as the `--authentication_secret`
-as [described in this guide](/docs/book/stacks-and-components/component-guide/artifact-stores/s3.md#advanced-configuration), 
-for example in the case of AWS.
-
-You will next need to obtain your Argilla API key. This will give you access to the web annotation interface. (The
-following steps apply to a local instance of Argilla, but feel free to obtain your API key directly from your
-deployed instance if that's what you are using.)
+You can either pass the `api_key` directly into the `zenml annotator register`
+command or you can register it as a secret and pass the secret name into the
+command. We recommend the latter approach for security reasons. If you want to
+take the latter approach, be sure to register a secret for whichever artifact
+store you choose, and then you should make sure to pass the name of that secret
+into the annotator as the `--authentication_secret`. For example, you'd run:
 
 ```shell
-# choose a username and password for your label-studio account
-label-studio reset_password --username <USERNAME> --password <PASSWORD>
-# start a local label-studio instance
-label-studio start -p 8093
+zenml secret create argilla_secrets --api_key="<your_argilla_api_key>"
 ```
 
-Then visit [http://localhost:8093/](http://localhost:8093/) to log in, and then
-visit [http://localhost:8093/user/account](http://localhost:8093/user/account) and get your Argilla API key (from
-the upper right-hand corner). You will need it for the next step. Keep the Argilla server running, because the
-ZenML Argilla annotator will use it as the backend.
-
-At this point you should register the API key under a custom secret name, making sure to replace the two parts in `<>`
-with whatever you choose:
-
-```shell
-zenml secret create label_studio_secrets --api_key="<your_label_studio_api_key>"
-```
+(Visit the Argilla documentation and interface to obtain your API key.)
 
 Then register your annotator with ZenML:
 
 ```shell
-zenml annotator register label_studio --flavor label_studio --api_key={{label_studio_secrets.api_key}}
-
-# for deployed instances of Argilla, you can also pass in the URL as follows, for example:
-# zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>" --instance_url="<your_label_studio_url>" --port=80
+zenml annotator register argilla --flavor argilla --authentication_secret=argilla_secrets
 ```
 
-When using a deployed instance of Argilla, the instance URL must be specified without any trailing `/` at the end.
-You should specify the port, for example, port 80 for a standard HTTP connection.
-
-Finally, add all these components to a stack and set it as your active stack. For example:
+When using a deployed instance of Argilla, the instance URL must be specified
+without any trailing `/` at the end. If you are using a Hugging Face Spaces
+instance and its visibility is set to private, you must also set the
+`extra_headers` parameter which would include a Hugging Face token. For example:
 
 ```shell
-zenml stack copy annotation
-zenml stack update annotation -a <YOUR_CLOUD_ARTIFACT_STORE>
+zenml annotator register argilla --flavor argilla --authentication_secret=argilla_secrets --instance_url="https://[your-owner-name]-[your_space_name].hf.space" --extra_headers="{"Authorization": f"Bearer {<your_hugging_face_token>}"}"
+```
+
+Finally, add all these components to a stack and set it as your active stack.
+For example:
+
+```shell
+zenml stack copy default annotation
 # this must be done separately so that the other required stack components are first registered
-zenml stack update annotation -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+zenml stack update annotation -an <YOUR_ARGILLA_ANNOTATOR>
 zenml stack set annotation
 # optionally also
 zenml stack describe
 ```
 
-Now if you run a simple CLI command like `zenml annotator dataset list` this should work without any errors. You're
-ready to use your annotator in your ML workflow!
+Now if you run a simple CLI command like `zenml annotator dataset list` this
+should work without any errors. You're ready to use your annotator in your ML
+workflow!
 
 ### How do you use it?
 
-ZenML assumes that users have registered a cloud artifact store and an annotator as described above. ZenML currently
-only supports this setup, but we will add in the fully local stack option in the future.
+ZenML supports access to your data and annotations via the `zenml annotator ...`
+CLI command. We have also implemented an interface to some of the common Argilla
+functionality via the ZenML SDK.
 
-ZenML supports access to your data and annotations via the `zenml annotator ...` CLI command.
-
-You can access information about the datasets you're using with the `zenml annotator dataset list`. To work on
-annotation for a particular dataset, you can run `zenml annotator dataset annotate <dataset_name>`.
-
-[Our computer vision end to end example](https://github.com/zenml-io/zenml-projects/tree/main/cv-webinar/end-to-end-computer-vision)
-is the best place to see how all the pieces of making this integration work fit together. What follows is an overview of
-some key components to the Argilla integration and how it can be used.
+You can access information about the datasets you're using with the `zenml
+annotator dataset list`. To work on annotation for a particular dataset, you can
+run `zenml annotator dataset annotate <dataset_name>`. What follows is an
+overview of some key components to the Argilla integration and how it can be
+used.
 
 #### Argilla Annotator Stack Component
 
-Our Argilla annotator component inherits from the `BaseAnnotator` class. There are some methods that are core
-methods that must be defined, like being able to register or get a dataset. Most annotators handle things like the
-storage of state and have their own custom features, so there are quite a few extra methods specific to Argilla.
+Our Argilla annotator component inherits from the `BaseAnnotator` class. There
+are some methods that are core methods that must be defined, like being able to
+register or get a dataset. Most annotators handle things like the storage of
+state and have their own custom features, so there are quite a few extra methods
+specific to Argilla.
 
-The core Argilla functionality that's currently enabled includes a way to register your datasets, export any
-annotations for use in separate steps as well as start the annotator daemon process. (Argilla requires a server to
-be running in order to use the web interface, and ZenML handles the provisioning of this server locally using the
-details you passed in when registering the component unless you've specified that you want to use a deployed instance.)
+The core Argilla functionality that's currently enabled includes a way to
+register your datasets, export any annotations for use in separate steps as well
+as start the annotator daemon process. (Argilla requires a server to be running
+in order to use the web interface, and ZenML handles the connection to this
+server using the details you passed in when registering the component.)
 
-#### Standard Steps
+#### Argilla Annotator SDK
 
-ZenML offers some standard steps (and their associated config objects) which will get you up and running with the Label
-Studio integration quickly. These include:
+Visit [the SDK
+docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-argilla/)
+to learn more about the methods that ZenML exposes for the Argilla annotator. To
+access the SDK through Python, you would first get the client object and then
+call the methods you need. For example:
 
-* `LabelStudioDatasetRegistrationConfig` - a step config object to be used when registering a dataset with Label studio
-  using the `get_or_create_dataset` step
-* `LabelStudioDatasetSyncConfig` - a step config object to be used when registering a dataset with Label studio using
-  the `sync_new_data_to_label_studio` step. Note that this requires a ZenML secret to have been pre-registered with your
-  artifact store as being the one that holds authentication secrets specific to your particular cloud provider. (Label
-  Studio provides some documentation on what permissions these secrets
-  require [here](https://labelstud.io/guide/tasks.html).)
-* `get_or_create_dataset` step - This takes a `LabelStudioDatasetRegistrationConfig` config object which includes the
-  name of the dataset. If it exists, this step will return the name, but if it doesn't exist then ZenML will register
-  the dataset along with the appropriate label config with Argilla.
-* `get_labeled_data` step - This step will get all labeled data available for a particular dataset. Note that these are
-  output in a Argilla annotation format, which will subsequently be converted into a format appropriate for your
-  specific use case.
-* `sync_new_data_to_label_studio` step - This step is for ensuring that ZenML is handling the annotations and that the
-  files being used are stored and synced with the ZenML cloud artifact store. This is an important step as part of a
-  continuous annotation workflow since you want all the subsequent steps of your workflow to remain in sync with
-  whatever new annotations are being made or have been created.
+```python
+from zenml.client import Client
 
-#### Helper Functions
+client = Client()
+annotator = client.active_stack.annotator
 
-Argilla requires the use of what it calls 'label config' when you are creating/registering your dataset. These are
-strings containing HTML-like syntax that allow you to define a custom interface for your annotation. ZenML provides
-three helper functions that will construct these label config strings in the case of object detection, image
-classification, and OCR. See the
-[`integrations.label_studio.label_config_generators`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/label_studio/label_config_generators/label_config_generators.py)
-module for those three functions.
+# list dataset names
+dataset_names = annotator.get_dataset_names()
+
+# get a specific dataset
+dataset = annotator.get_dataset("dataset_name")
+
+# get the annotations for a dataset
+annotations = annotator.get_labeled_data(dataset_name="dataset_name")
+```
+
+For more detailed information on how to use the Argilla annotator and the
+functionality it provides, visit the [Argilla
+documentation](https://docs.argilla.io/en/latest/).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
