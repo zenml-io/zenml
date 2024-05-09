@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the Argilla annotation integration."""
 
-import webbrowser
 from typing import Any, List, Tuple, Type, cast
 
 import argilla as rg
@@ -126,19 +125,17 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             A list of datasets.
         """
         old_datasets = self._get_client().list_datasets()
-        # TODO: update once Argilla updates to their 2.0 SDK
         new_datasets = rg.FeedbackDataset.list()
-        return cast(List[Any], new_datasets + old_datasets)
 
-    def get_dataset_names(self) -> List[str]:
-        """Gets the names of the datasets sorted alphabetically.
+        # Deduplicate datasets based on their names
+        dataset_names = set()
+        deduplicated_datasets = []
+        for dataset in new_datasets + old_datasets:
+            if dataset.name not in dataset_names:
+                dataset_names.add(dataset.name)
+                deduplicated_datasets.append(dataset)
 
-        Returns:
-            A list of dataset names sorted alphabetically.
-        """
-        datasets = [dataset.name for dataset in self.get_datasets()]
-        datasets.sort()
-        return cast(List[str], datasets)
+        return deduplicated_datasets
 
     def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
         """Gets the statistics of the given dataset.
@@ -149,32 +146,15 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             A tuple containing (labeled_task_count, unlabeled_task_count) for
                 the dataset.
-
-        Raises:
-            IndexError: If the dataset does not exist.
         """
+        dataset = self.get_dataset(dataset_name=dataset_name)
         labeled_task_count = len(
-            self.get_labeled_data(dataset_name=dataset_name)
+            dataset.filter_by(response_status="submitted")
         )
         unlabeled_task_count = len(
-            self.get_unlabeled_data(dataset_name=dataset_name)
+            dataset.filter_by(response_status="pending")
         )
         return (labeled_task_count, unlabeled_task_count)
-
-    def launch(self, **kwargs: Any) -> None:
-        """Launches the annotation interface.
-        Args:
-            **kwargs: Additional keyword arguments to pass to the
-                annotation client.
-        """
-        url = kwargs.get("url") or self.get_url()
-        try:
-            webbrowser.open(url, new=1, autoraise=True)
-        except Exception:
-            logger.warning(
-                "Could not launch annotation interface"
-                "because the connection could not be established."
-            )
 
     def add_dataset(self, **kwargs: Any) -> Any:
         """Registers a dataset for annotation.
@@ -182,7 +162,8 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         You must pass a `dataset_name` and a `dataset` object to this method.
 
         Args:
-            **kwargs: Additional keyword arguments to pass to the Argilla client.
+            **kwargs: Additional keyword arguments to pass to the Argilla
+                client.
 
         Returns:
             A Argilla Project object.
@@ -199,9 +180,16 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError("`dataset` keyword argument is required.")
 
         try:
+            logger.info(f"Pushing dataset '{dataset_name}' to Argilla...")
             dataset.push_to_argilla(name=dataset_name)
+            logger.info(f"Dataset '{dataset_name}' pushed successfully.")
         except Exception as e:
-            raise ValueError(f"Failed to push dataset to Argilla: {e}") from e
+            logger.error(
+                f"Failed to push dataset '{dataset_name}' to Argilla: {str(e)}"
+            )
+            raise ValueError(
+                f"Failed to push dataset to Argilla: {str(e)}"
+            ) from e
 
     def delete_dataset(self, **kwargs: Any) -> None:
         """Deletes a dataset from the annotation interface.
@@ -211,21 +199,23 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
                 client.
 
         Raises:
-            ValueError: If the dataset name is not provided or if the dataset
-                does not exist.
+            ValueError: If the dataset name is not provided.
         """
-        if dataset_name := kwargs.get("dataset_name"):
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError("`dataset_name` keyword argument is required.")
+
+        try:
             self._get_client().delete(name=dataset_name)
             self.get_dataset(dataset_name=dataset_name).delete()
-        else:
-            raise ValueError("`dataset_name` keyword argument is required.")
+            logger.info(f"Dataset '{dataset_name}' deleted successfully.")
+        except ValueError:
+            logger.warning(
+                f"Dataset '{dataset_name}' not found. Skipping deletion."
+            )
 
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
-
-        Learn more about the two different generations of Argilla datasets
-            in the Argilla documentation:
-            https://docs.argilla.io/en/develop/practical_guides/choose_dataset.html
 
         Args:
             **kwargs: Additional keyword arguments to pass to the Argilla client.
@@ -242,13 +232,34 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError("`dataset_name` keyword argument is required.")
 
         try:
-            # Attempt to retrieve the dataset from the new or old API
             if rg.FeedbackDataset.from_argilla(name=dataset_name) is not None:
                 return rg.FeedbackDataset.from_argilla(name=dataset_name)
             else:
                 return self._get_client().get_dataset(name=dataset_name)
         except (NotFoundApiError, ValueError) as e:
-            raise ValueError(f"Dataset {dataset_name} not found.") from e
+            logger.error(f"Dataset '{dataset_name}' not found.")
+            raise ValueError(f"Dataset '{dataset_name}' not found.") from e
+
+    def get_data_by_status(self, dataset_name: str, status: str) -> Any:
+        """Gets the dataset containing the data with the specified status.
+
+        Args:
+            dataset_name: The name of the dataset.
+            status: The response status to filter by ('submitted' for labeled,
+                'pending' for unlabeled).
+
+        Returns:
+            The dataset containing the data with the specified status.
+
+        Raises:
+            ValueError: If the dataset name is not provided.
+        """
+        if not dataset_name:
+            raise ValueError("`dataset_name` argument is required.")
+
+        return self.get_dataset(dataset_name=dataset_name).filter_by(
+            response_status=status
+        )
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the dataset containing the labeled data.
@@ -260,13 +271,10 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             The dataset containing the labeled data.
 
         Raises:
-            ValueError: If the dataset name is not provided or if the dataset
-                does not exist.
+            ValueError: If the dataset name is not provided.
         """
         if dataset_name := kwargs.get("dataset_name"):
-            return self.get_dataset(dataset_name=dataset_name).filter_by(
-                response_status="submitted"
-            )
+            return self.get_data_by_status(dataset_name, status="submitted")
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
 
@@ -283,8 +291,6 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided.
         """
         if dataset_name := kwargs.get("dataset_name"):
-            return self.get_dataset(dataset_name=dataset_name).filter_by(
-                response_status="pending"
-            )
+            return self.get_data_by_status(dataset_name, status="pending")
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
