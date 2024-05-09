@@ -130,7 +130,9 @@ def main() -> None:
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to start...")
         kube_utils.wait_pod(
-            core_api_fn=lambda: core_api,
+            kube_client_fn=lambda: orchestrator.get_kube_client(
+                incluster=True
+            ),
             pod_name=pod_name,
             namespace=args.kubernetes_namespace,
             exit_condition_lambda=kube_utils.pod_is_done,

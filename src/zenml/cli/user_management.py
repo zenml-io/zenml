@@ -177,10 +177,14 @@ def create_user(
         cli_utils.error(str(err))
     else:
         if not new_user.active and new_user.activation_token is not None:
+            user_info = f"?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token}"
             cli_utils.declare(
                 f"The created user account is currently inactive. You can "
                 f"activate it by visiting the dashboard at the following URL:\n"
-                f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token}\n"
+                # TODO: keep only `activate-user` once legacy dashboard is gone
+                f"{client.zen_store.url}/activate-user{user_info}\n\n"
+                "If you are using Legacy dashboard visit the following URL:\n"
+                f"{client.zen_store.url}/signup{user_info}\n"
             )
 
 
@@ -410,11 +414,15 @@ def deactivate_user(
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
 
+    user_info = f"?user={str(user.id)}&username={user.name}&token={user.activation_token}"
     cli_utils.declare(
         f"Successfully deactivated user account '{user.name}'."
         f"To reactivate the account, please visit the dashboard at the "
         "following URL:\n"
-        f"{client.zen_store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token}\n"
+        # TODO: keep only `activate-user` once legacy dashboard is gone
+        f"{client.zen_store.url}/activate-user{user_info}\n\n"
+        "If you are using Legacy dashboard visit the following URL:\n"
+        f"{client.zen_store.url}/signup{user_info}\n"
     )
 
 
