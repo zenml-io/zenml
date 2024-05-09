@@ -459,6 +459,7 @@ module = [
     "matplotlib.*",
     "IPython.*",
     "huggingface_hub.*",
-    "label_studio_sdk.*"
+    "label_studio_sdk.*",
+    "argilla.*"
 ]
 ignore_missing_imports = true

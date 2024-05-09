@@ -26,7 +26,7 @@ class ArgillaIntegration(Integration):
 
     NAME = ARGILLA
     REQUIREMENTS = [
-        "argilla>=1.20.0",
+        "argilla>=1.20.0,<2",
     ]
 
     @classmethod

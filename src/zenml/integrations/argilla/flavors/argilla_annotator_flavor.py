@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Argilla annotator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
@@ -35,8 +35,8 @@ DEFAULT_LOCAL_ARGILLA_PORT = 6900
 class ArgillaAnnotatorSettings(BaseSettings):
     """Label studio annotator settings.
 
-    If you are using a private Hugging Face Spaces instance of Argilla you must
-    pass in https_extra_kwargs.
+    If you are using a private Hugging Face Spaces instance of Argilla you
+        must pass in https_extra_kwargs.
 
     Attributes:
         instance_url: URL of the Argilla instance.
@@ -51,8 +51,8 @@ class ArgillaAnnotatorSettings(BaseSettings):
     api_key: Optional[str] = SecretField()
     workspace: Optional[str] = "admin"
     port: Optional[int]
-    extra_headers: Optional[Dict[str, str]] = None
-    httpx_extra_kwargs: Optional[Dict[str, Any]] = None
+    extra_headers: Optional[str] = None
+    httpx_extra_kwargs: Optional[str] = None
 
 
 class ArgillaAnnotatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

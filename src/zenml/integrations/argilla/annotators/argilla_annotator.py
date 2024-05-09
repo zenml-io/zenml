@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Argilla annotation integration."""
 
+import json
 from typing import Any, List, Tuple, Type, cast
 
 import argilla as rg
@@ -83,10 +84,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         init_kwargs = {"api_url": self.get_url()}
 
         # set the API key from the secret or using settings
-        if self.get_authentication_secret():
-            api_key = self.get_authentication_secret().secret_values.get(
-                "api_key", ""
-            )
+        authentication_secret = self.get_authentication_secret()
+        if authentication_secret:
+            api_key = authentication_secret.secret_values.get("api_key", "")
             init_kwargs["api_key"] = api_key
             logger.debug("Using API key from secret.")
         elif config.api_key is not None:
@@ -96,9 +96,11 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         if config.workspace is not None:
             init_kwargs["workspace"] = config.workspace
         if config.extra_headers is not None:
-            init_kwargs["extra_headers"] = config.extra_headers
+            init_kwargs["extra_headers"] = json.loads(config.extra_headers)
         if config.httpx_extra_kwargs is not None:
-            init_kwargs["httpx_extra_kwargs"] = config.httpx_extra_kwargs
+            init_kwargs["httpx_extra_kwargs"] = json.loads(
+                config.httpx_extra_kwargs
+            )
 
         try:
             _ = rg.active_client()
