@@ -38,12 +38,12 @@ class ArgillaAnnotatorSettings(BaseSettings):
     Attributes:
         instance_url: URL of the Argilla instance.
         port: The port to use for the annotation interface.
-        api_key: The api_key for label studio.
+        api_key: The api_key for Argilla
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
+    api_key: str = SecretField()
     port: Optional[int] = DEFAULT_LOCAL_ARGILLA_PORT
-    api_key: Optional[str] = SecretField()
     workspace: Optional[str] = None
     extra_headers: Optional[Dict[str, str]] = None
     httpx_extra_kwargs: Optional[Dict[str, Any]] = None
