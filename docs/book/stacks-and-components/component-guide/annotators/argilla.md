@@ -6,9 +6,12 @@ description: Annotating data using Argilla.
 
 [Argilla](https://github.com/argilla-io/argilla) is an open-source data curation
 platform designed to enhance the development of both small and large language
-models (LLMs). It enables users to build robust language models through faster
-data curation using both human and machine feedback, providing support for each
-step in the MLOps cycle, from data labeling to model monitoring.
+models (LLMs) and NLP tasks in general. It enables users to build robust
+language models through faster data curation using both human and machine
+feedback, providing support for each step in the MLOps cycle, from data labeling
+to model monitoring.
+
+![Argilla Annotator](../../../.gitbook/assets/argilla_annotator.png)
 
 Argilla distinguishes itself for its focus on specific use cases and
 human-in-the-loop approaches. While it does offer programmatic features,
@@ -17,8 +20,8 @@ tool-building process, setting it apart from other competitors.
 
 ### When would you want to use it?
 
-If you need to label data as part of your ML workflow, that is the point at
-which you could consider adding the optional annotator stack component as part
+If you need to label textual data as part of your ML workflow, that is the point
+at which you could consider adding the Argilla annotator stack component as part
 of your ZenML stack.
 
 We currently support the use of annotation at the various stages described in
