@@ -75,25 +75,6 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             ValueError: when unable to access the Argilla API key.
         """
-        # try:
-        #     settings = cast(
-        #         ArgillaAnnotatorSettings,
-        #         self.get_settings(get_step_context().step_run),
-        #     )
-        #     if settings.api_key is None:
-        #         raise RuntimeError
-        #     else:
-        #         api_key = settings.api_key
-        # except RuntimeError as e:
-        #     if secret := self.get_authentication_secret():
-        #         api_key = secret.secret_values.get("api_key", "")
-        #     else:
-        #         raise ValueError(
-        #             "Unable to access predefined secret to access Argilla API key."
-        #         ) from e
-        # if not api_key:
-        #     raise ValueError("Unable to access Argilla API key from secret.")
-
         config = self.config
         if config.api_key and config.authentication_secret:
             raise ValueError(
@@ -198,6 +179,8 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
     def add_dataset(self, **kwargs: Any) -> Any:
         """Registers a dataset for annotation.
 
+        You must pass a `dataset_name` and a `dataset` object to this method.
+
         Args:
             **kwargs: Additional keyword arguments to pass to the Argilla client.
 
@@ -233,6 +216,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         if dataset_name := kwargs.get("dataset_name"):
             self._get_client().delete(name=dataset_name)
+            self.get_dataset(dataset_name=dataset_name).delete()
         else:
             raise ValueError("`dataset_name` keyword argument is required.")
 
@@ -253,15 +237,18 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             ValueError: If the dataset name is not provided or if the dataset
                 does not exist.
         """
-        if not (dataset_name := kwargs.get("dataset_name")):
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
             raise ValueError("`dataset_name` keyword argument is required.")
+
         try:
-            dataset = self._get_client().get_dataset(name=dataset_name)
-        except NotFoundApiError as e:
-            dataset = rg.FeedbackDataset.from_argilla(name=dataset_name)
-            if not dataset:
-                raise ValueError(f"Dataset {dataset_name} not found.") from e
-        return dataset
+            # Attempt to retrieve the dataset from the new or old API
+            if rg.FeedbackDataset.from_argilla(name=dataset_name) is not None:
+                return rg.FeedbackDataset.from_argilla(name=dataset_name)
+            else:
+                return self._get_client().get_dataset(name=dataset_name)
+        except (NotFoundApiError, ValueError) as e:
+            raise ValueError(f"Dataset {dataset_name} not found.") from e
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
