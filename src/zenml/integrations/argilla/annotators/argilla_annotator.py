@@ -102,7 +102,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             api_key = self.get_authentication_secret().secret_values.get(
                 "api_key", ""
             )
-            init_kwargs = {"api_key": api_key}
+            init_kwargs["api_key"] = api_key
         elif config.api_key is not None:
             init_kwargs["api_key"] = config.api_key
 
