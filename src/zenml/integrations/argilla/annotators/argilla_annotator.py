@@ -103,8 +103,10 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
                 "api_key", ""
             )
             init_kwargs["api_key"] = api_key
+            logger.debug("Using API key from secret.")
         elif config.api_key is not None:
             init_kwargs["api_key"] = config.api_key
+            logger.debug("Using API key from settings.")
 
         if config.port is not None:
             init_kwargs["port"] = config.port
