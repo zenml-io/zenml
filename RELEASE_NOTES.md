@@ -2,8 +2,8 @@
 
 # 0.57.1
 
-This a minor release that brings a variety of bug fixes and enhancements for the new dashboard release,
-and new update to the LLMOps guide.
+This a minor release that brings a variety of bug fixes and enhancements for
+the new dashboard release, new update to the LLMOps guide and updated Readme.
 
 We'd like to give a special thanks to @ruvilonix for their first contribution.
 
@@ -19,6 +19,8 @@ We'd like to give a special thanks to @ruvilonix for their first contribution.
 * Add new dashboard links to create/deactivate CLI commands by @avishniakov in https://github.com/zenml-io/zenml/pull/2678
 * Add reranking section to LLMOps guide by @strickvl in https://github.com/zenml-io/zenml/pull/2679
 * Updated Readme by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2675
+* Added Thumbnail by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2684
+* [k8s orchestrator] Fix credentials refresh and don't use service connector for incluster auth by @wjayesh in https://github.com/zenml-io/zenml/pull/2671
 
 ## New Contributors
 * @ruvilonix made their first contribution in https://github.com/zenml-io/zenml/pull/2574
