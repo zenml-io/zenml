@@ -89,7 +89,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
                 return connector.get_ecr_client()
             except Exception as e:
                 logger.error(
-                    "Unable to get boto session from service connector: %s",
+                    "Unable to get ECR client from service connector: %s",
                     str(e),
                 )
 
