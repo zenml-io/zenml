@@ -38,7 +38,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
             asynchronously. Defaults to `True`.
         timeout: How many seconds to wait for synchronous runs. `0` means
             to wait for an unlimited duration.
-        orchestrator_service_account_name: Name of the service account to use for the
+        service_account_name: Name of the service account to use for the
             orchestrator pod. If not provided, a new service account with "edit"
             permissions will be created.
         step_pod_service_account_name: Name of the service account to use for the
@@ -48,7 +48,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
 
     synchronous: bool = True
     timeout: int = 0
-    orchestrator_service_account_name: Optional[str] = None
+    service_account_name: Optional[str] = None
     step_pod_service_account_name: Optional[str] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 

@@ -476,8 +476,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Returns:
             The service account name.
         """
-        if settings.orchestrator_service_account_name:
-            return settings.orchestrator_service_account_name
+        if settings.service_account_name:
+            return settings.service_account_name
         else:
             service_account_name = "zenml-service-account"
             kube_utils.create_edit_service_account(
