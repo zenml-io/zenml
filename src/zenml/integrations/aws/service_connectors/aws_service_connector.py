@@ -730,10 +730,6 @@ class AWSServiceConnector(ServiceConnector):
     def get_ecr_client(self) -> BaseClient:
         """Get an ECR client.
 
-        If this container registry is configured with an AWS service connector,
-        we use that connector to create an authenticated client. Otherwise
-        local AWS credentials will be used.
-
         Raises:
             ValueError: If the service connector is not able to instantiate an
                 ECR client.
