@@ -118,50 +118,64 @@ function run_tests_for_version() {
     zenml version
 
     # Confirm DB works and is accessible
-    pipelines=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
-    echo "$pipelines"
+    ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list
 
     # The database backup and restore feature is available since 0.55.1.
     # However, it has been broken for various reasons up to and including
-    # 0.56.3, so we skip this test for those versions.
-    if [ "$VERSION" == "current" ] || [ "$(version_compare "$VERSION" "0.56.3")" == ">" ]; then
-        echo "===== Testing database backup and restore ====="
+    # 0.57.0, so we skip this test for those versions.
+    if [ "$VERSION" == "current" ] || [ "$(version_compare "$VERSION" "0.57.0")" == ">" ]; then
+        echo "===== Testing database backup and restore (file dump) ====="
+
+        pipelines_before_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
 
         # Perform a DB backup and restore using a dump file
         rm -f /tmp/zenml-backup.sql
-        zenml backup-database -s dump-file --location /tmp/zenml-backup.sql
+        zenml backup-database -s dump-file --location /tmp/zenml-backup.sql --overwrite
         zenml restore-database -s dump-file --location /tmp/zenml-backup.sql
 
         # Check that DB still works after restore and the content is the same
-        pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
-        if [ "$pipelines" != "$pipelines_after_restore" ]; then
+        pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
+        if [ "$pipelines_before_restore" != "$pipelines_after_restore" ]; then
             echo "----- Before restore -----"
-            echo "$pipelines"
+            echo "$pipelines_before_restore"
             echo "----- After restore -----"
             echo "$pipelines_after_restore"
-            echo "ERROR: database backup and restore test failed!"
+            echo "ERROR: database backup and restore (file dump) test failed!"
             exit 1
         fi
+
+        # Run the pipeline again to check if the restored database is working
+        echo "===== Running starter template pipeline after DB restore (file dump) ====="
+        python3 run.py --feature-pipeline --training-pipeline --no-cache
 
         # For a mysql compatible database, perform a DB backup and restore using
         # the backup database
         if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
+            echo "===== Testing database backup and restore (backup database) ====="
+
+            pipelines_before_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
+
             # Perform a DB backup and restore
-            zenml backup-database -s database --location zenml-backup
+            zenml backup-database -s database --location zenml-backup --overwrite
             zenml restore-database -s database --location zenml-backup
 
             # Check that DB still works after restore and the content is the
             # same
-            pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
-            if [ "$pipelines" != "$pipelines_after_restore" ]; then
+            pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
+            if [ "$pipelines_before_restore" != "$pipelines_after_restore" ]; then
                 echo "----- Before restore -----"
-                echo "$pipelines"
+                echo "$pipelines_before_restore"
                 echo "----- After restore -----"
                 echo "$pipelines_after_restore"
-                echo "ERROR: database backup and restore test failed!"
+                echo "ERROR: database backup and restore (backup database) test failed!"
                 exit 1
             fi
+
+            # Run the pipeline again to check if the restored database is working
+            echo "===== Running starter template pipeline after DB restore (backup database) ====="
+            python3 run.py --feature-pipeline --training-pipeline --no-cache
         fi
+
     else
         echo "Skipping database backup and restore test for version $VERSION"
     fi
@@ -205,10 +219,12 @@ function test_upgrade_to_version() {
     fi
 
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
-                zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
     fi
 
     # Run the tests for this version
+    run_tests_for_version "$VERSION"
+
     run_tests_for_version "$VERSION"
 
     deactivate
