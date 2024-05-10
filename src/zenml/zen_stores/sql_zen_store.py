@@ -8020,7 +8020,9 @@ class SqlZenStore(BaseZenStore):
             if not survey_finished_before and survey_finished_after:
                 analytics_metadata = {
                     **updated_user.user_metadata,
-                    "email": updated_user.email,
+                    # We need to get the email from the DB model as it is not
+                    # included in the model that's returned from this metod
+                    "email": existing_user.email,
                     "name": updated_user.name,
                     "full_name": updated_user.full_name,
                 }
