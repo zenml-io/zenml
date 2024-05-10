@@ -4276,12 +4276,16 @@ class SqlZenStore(BaseZenStore):
             ).to_model(include_metadata=hydrate)
 
     def _replace_placeholder_run(
-        self, pipeline_run: PipelineRunRequest
+        self,
+        pipeline_run: PipelineRunRequest,
+        pre_replacement_hook: Optional[Callable[[], None]] = None,
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
         Args:
             pipeline_run: Pipeline run request.
+            pre_replacement_hook: Optional function to run before replacing the
+                pipeline run.
 
         Raises:
             KeyError: If no placeholder run exists.
@@ -4315,6 +4319,8 @@ class SqlZenStore(BaseZenStore):
             if not run_schema:
                 raise KeyError("No placeholder run found.")
 
+            if pre_replacement_hook:
+                pre_replacement_hook()
             run_schema.update_placeholder(pipeline_run)
             session.add(run_schema)
             session.commit()
@@ -4356,7 +4362,9 @@ class SqlZenStore(BaseZenStore):
             return run_schema.to_model(include_metadata=True)
 
     def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
+        self,
+        pipeline_run: PipelineRunRequest,
+        pre_creation_hook: Optional[Callable[[], None]] = None,
     ) -> Tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
@@ -4365,6 +4373,8 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             pipeline_run: The pipeline run to get or create.
+            pre_creation_hook: Optional function to run before creating the
+                pipeline run.
 
         # noqa: DAR401
         Raises:
@@ -4384,7 +4394,10 @@ class SqlZenStore(BaseZenStore):
 
         try:
             return (
-                self._replace_placeholder_run(pipeline_run=pipeline_run),
+                self._replace_placeholder_run(
+                    pipeline_run=pipeline_run,
+                    pre_replacement_hook=pre_creation_hook,
+                ),
                 True,
             )
         except KeyError:
@@ -4415,6 +4428,8 @@ class SqlZenStore(BaseZenStore):
             #     orchestrator_run_id of the run that we're trying to create.
             #     -> The `self.create_run(...) call will fail due to the unique
             #     constraint on those columns.
+            if pre_creation_hook:
+                pre_creation_hook()
             return self.create_run(pipeline_run), True
         except (EntityExistsError, IntegrityError) as create_error:
             # Creating the run failed with an
