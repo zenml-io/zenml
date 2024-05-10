@@ -290,7 +290,7 @@ do
 done
 
 # Test the most recent migration with MySQL
-# test_upgrade_to_version "current"
+test_upgrade_to_version "current"
 
 
 # Start fresh again for this part
