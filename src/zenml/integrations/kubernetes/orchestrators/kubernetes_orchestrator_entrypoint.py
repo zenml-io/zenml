@@ -117,7 +117,8 @@ def main() -> None:
             args=step_args,
             env=env,
             settings=settings,
-            service_account_name=settings.step_pod_service_account_name,
+            service_account_name=settings.step_pod_service_account_name
+            or settings.service_account_name,
             mount_local_stores=mount_local_stores,
         )
 
@@ -130,9 +131,7 @@ def main() -> None:
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to start...")
         kube_utils.wait_pod(
-            kube_client_fn=lambda: orchestrator.get_kube_client(
-                incluster=True
-            ),
+            kube_client_fn=lambda: orchestrator.get_kube_client(incluster=True),
             pod_name=pod_name,
             namespace=args.kubernetes_namespace,
             exit_condition_lambda=kube_utils.pod_is_done,
