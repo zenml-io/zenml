@@ -17,17 +17,23 @@ import re
 from typing import List, Optional, cast
 
 import boto3
+from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 
 from zenml.client import Client
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
-from zenml.integrations.aws import AWS_RESOURCE_TYPE
 from zenml.integrations.aws.flavors.aws_container_registry_flavor import (
     AWSContainerRegistryConfig,
 )
+from zenml.integrations.aws.service_connectors import (
+    AWSServiceConnector,
+)
 from zenml.logger import get_logger
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
+)
 
 logger = get_logger(__name__)
 
@@ -63,31 +69,34 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
         return match.group(1)
 
-    def _get_boto_session(self) -> boto3.Session:
-        """Get a boto3 session.
+    def _get_ecr_client(self) -> BaseClient:
+        """Get an ECR client.
 
         If this container registry is configured with an AWS service connector,
-        we use that connector to create an authenticated session. Otherwise
+        we use that connector to create an authenticated client. Otherwise
         local AWS credentials will be used.
 
         Returns:
-            A boto3 session.
+            An ECR client.
         """
         if self.connector:
             try:
-                # TODO: Improve this logic with stefans help
-                connector_client = Client().get_service_connector_client(
-                    name_id_or_prefix=self.connector,
-                    resource_type=AWS_RESOURCE_TYPE,
+                model = Client().get_service_connector(self.connector)
+                connector = service_connector_registry.instantiate_connector(
+                    model=model
                 )
-            except Exception:
-                pass
-            else:
-                session = connector_client.connect()
-                assert isinstance(session, boto3.Session)
-                return session
+                assert isinstance(connector, AWSServiceConnector)
+                return connector.get_ecr_client()
+            except Exception as e:
+                logger.error(
+                    "Unable to get boto session from service connector: %s",
+                    str(e),
+                )
 
-        return boto3.Session()
+        return boto3.Session().client(
+            "ecr",
+            region_name=self._get_region(),
+        )
 
     def prepare_image_push(self, image_name: str) -> None:
         """Logs warning message if trying to push an image for which no repository exists.
@@ -104,11 +113,9 @@ class AWSContainerRegistry(BaseContainerRegistry):
             raise ValueError(f"Invalid docker image name '{image_name}'.")
         repo_name = match.group(1)
 
-        session = self._get_boto_session()
+        client = self._get_ecr_client()
         try:
-            response = session.client(
-                "ecr", region_name=self._get_region()
-            ).describe_repositories()
+            response = client.describe_repositories()
         except (BotoCoreError, ClientError):
             logger.warning(
                 "Amazon ECR requires you to create a repository before you can "
