@@ -14,7 +14,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  sqlite-db-migration-testing:
+  mysql-db-migration-testing:
     runs-on: arc-runner-set
     env:
       ZENML_ANALYTICS_OPT_IN: false
