@@ -159,9 +159,9 @@ class AWSContainerRegistry(BaseContainerRegistry):
         """
         return (
             "Amazon ECR requires you to create a repository before you can "
-            "push an image to it. If you want to for example run a pipeline "
-            "using our Kubeflow orchestrator, ZenML will automatically build a "
-            f"docker image called `{self.config.uri}/zenml-kubeflow:<PIPELINE_NAME>` "
-            f"and try to push it. This will fail unless you create the "
-            f"repository `zenml-kubeflow` inside your amazon registry."
+            "push an image to it. If you want to for run a pipeline "
+            "using a remote orchestrator, ZenML will automatically build a "
+            f"docker image called `{self.config.uri}/zenml:<PIPELINE_NAME>` "
+            f"and try to push it. This will fail unless you create a "
+            f"repository called `zenml` inside your Amazon ECR."
         )
