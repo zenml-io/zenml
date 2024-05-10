@@ -8023,6 +8023,7 @@ class SqlZenStore(BaseZenStore):
                     # We need to get the email from the DB model as it is not
                     # included in the model that's returned from this method
                     "email": existing_user.email,
+                    "newsletter": existing_user.email_opted_in,
                     "name": updated_user.name,
                     "full_name": updated_user.full_name,
                 }
