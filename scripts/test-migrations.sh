@@ -225,8 +225,6 @@ function test_upgrade_to_version() {
     # Run the tests for this version
     run_tests_for_version "$VERSION"
 
-    run_tests_for_version "$VERSION"
-
     deactivate
     rm -rf ".venv-upgrade"
 
