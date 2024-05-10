@@ -16,7 +16,7 @@ else
 fi
 
 # List of versions to test
-VERSIONS=("0.55.2" "0.56.4")
+VERSIONS=("0.56.4" "0.57.0")
 
 # Function to compare semantic versions
 function version_compare() {
