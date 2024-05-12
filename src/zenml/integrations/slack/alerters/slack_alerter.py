@@ -274,7 +274,7 @@ class SlackAlerter(BaseAlerter):
         rtm = RTMClient(token=self.config.slack_token)
         slack_channel_id = self._get_channel_id(params=params)
 
-        approved = False  # will be modified by handle())
+        approved = False  # will be modified by handle()
 
         @RTMClient.run_on(event="hello")  # type: ignore
         def post_initial_message(**payload: Any) -> None:
