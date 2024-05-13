@@ -100,8 +100,16 @@ class PigeonAnnotator(BaseAnnotator):
             A tuple containing (num_labeled_examples, num_unlabeled_examples).
         """
         dataset_path = os.path.join(self.config.output_dir, dataset_name)
-        num_labeled_examples = sum(1 for _ in open(dataset_path))
-        num_unlabeled_examples = 0  # Assuming all examples are labeled
+        num_labeled_examples = 0
+        # Placeholder as logic to determine this is not implemented
+        num_unlabeled_examples = 0
+
+        try:
+            with open(dataset_path, "r") as file:
+                num_labeled_examples = sum(1 for _ in file)
+        except FileNotFoundError:
+            logger.error(f"File not found: {dataset_path}")
+
         return num_labeled_examples, num_unlabeled_examples
 
     def _annotate(
