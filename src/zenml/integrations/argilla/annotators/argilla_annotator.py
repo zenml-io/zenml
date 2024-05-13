@@ -71,27 +71,26 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
 
         Returns:
             Argilla client.
-
-        Raises:
-            ValueError: when unable to access the Argilla API key.
         """
         config = self.config
-        if config.api_key and config.authentication_secret:
-            raise ValueError(
-                "Both API key and authentication secret are provided. "
-                "Please provide only one."
-            )
         init_kwargs = {"api_url": self.get_url()}
 
         # set the API key from the secret or using settings
         authentication_secret = self.get_authentication_secret()
-        if authentication_secret:
+        if config.api_key and authentication_secret:
+            api_key = config.api_key
+            logger.debug(
+                "Both API key and authentication secret are provided. Using API key from settings as priority."
+            )
+        elif authentication_secret:
             api_key = authentication_secret.secret_values.get("api_key", "")
-            init_kwargs["api_key"] = api_key
             logger.debug("Using API key from secret.")
         elif config.api_key is not None:
-            init_kwargs["api_key"] = config.api_key
+            api_key = config.api_key
             logger.debug("Using API key from settings.")
+
+        if api_key:
+            init_kwargs["api_key"] = api_key
 
         if config.workspace is not None:
             init_kwargs["workspace"] = config.workspace
