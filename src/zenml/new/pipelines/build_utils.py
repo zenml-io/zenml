@@ -141,6 +141,20 @@ def reuse_or_create_pipeline_build(
                     Client().active_stack.name,
                 )
                 return existing_build
+            else:
+                logger.info(
+                    "Unable to find a build to reuse. When using a code, "
+                    "repository, a previous build can be reused when the "
+                    "following conditions are met:"
+                    " * The existing build was created for the same stack, "
+                    "   ZenML version and Python version"
+                    " * The stack contains a container registry"
+                    " * The Docker settings of the pipeline and all its steps "
+                    "   are the same as for the existing build"
+                    " * The build does not include code. This will only be the "
+                    "   case if the existing build was created with a clean "
+                    "   code repository."
+                )
 
         return create_pipeline_build(
             deployment=deployment,
@@ -443,11 +457,22 @@ def verify_local_repository_context(
 
     code_repository = None
 
-    if local_repo_context and not local_repo_context.has_local_changes:
-        model = Client().get_code_repository(
-            local_repo_context.code_repository_id
-        )
-        code_repository = BaseCodeRepository.from_model(model)
+    if local_repo_context:
+        if local_repo_context.is_dirty:
+            logger.warning(
+                "Unable to use code repository for this run as there are "
+                "uncommitted changes."
+            )
+        elif local_repo_context.has_local_changes:
+            logger.warning(
+                "Unable to use code repository for this run as there are "
+                "unpushed changes."
+            )
+        else:        
+            model = Client().get_code_repository(
+                local_repo_context.code_repository_id
+            )
+            code_repository = BaseCodeRepository.from_model(model)
 
     return code_repository
 
