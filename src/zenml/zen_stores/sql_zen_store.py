@@ -831,6 +831,7 @@ class SqlZenStore(BaseZenStore):
         if not self._should_send_user_enriched_events:
             return
 
+        logger.debug("Sending user enriched events for legacy users.")
         self._should_send_user_enriched_events = False
 
         server_config = ServerConfiguration.get_server_config()
@@ -873,7 +874,7 @@ class SqlZenStore(BaseZenStore):
 
                     context.track(
                         event=AnalyticsEvent.USER_ENRICHED,
-                        metadata=analytics_metadata,
+                        properties=analytics_metadata,
                     )
 
     @classmethod
@@ -8115,7 +8116,7 @@ class SqlZenStore(BaseZenStore):
 
                     context.track(
                         event=AnalyticsEvent.USER_ENRICHED,
-                        metadata=analytics_metadata,
+                        properties=analytics_metadata,
                     )
 
             return updated_user
