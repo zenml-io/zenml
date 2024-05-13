@@ -68,7 +68,8 @@ def _is_valid_optional_arg(arg_type: Any) -> bool:
                 and not _is_valid_collection_arg(args[0])
             ) or args[1] != type(None):
                 return False
-    return True
+        return True
+    return False
 
 
 def _cli_wrapped_function(func: F) -> F:
