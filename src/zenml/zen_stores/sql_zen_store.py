@@ -823,6 +823,44 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
+    def _send_user_enriched_events(self) -> None:
+        """Send user enriched event for all existing users."""
+        from zenml.models import ServerDeploymentType
+
+        if self.get_store_info().deployment_type == ServerDeploymentType.CLOUD:
+            # Do not send events for cloud tenants where the event comes from
+            # the cloud API
+            return
+
+        query = select(UserSchema).where(
+            UserSchema.is_service_account.is_(False)
+        )
+
+        with Session(self.engine) as session:
+            users = session.exec(query).unique().all()
+
+            for user_orm in users:
+                user_model = user_orm.to_model(
+                    include_metadata=True, include_private=True
+                )
+
+                if not user_model.email:
+                    continue
+
+                analytics_metadata = {
+                    **user_model.user_model,
+                    # We need to get the email from the DB model as it is not
+                    # included in the model that's returned from this method
+                    "email": user_model.email,
+                    "newsletter": user_model.email_opted_in,
+                    "name": user_model.name,
+                    "full_name": user_model.full_name,
+                }
+                track(
+                    event=AnalyticsEvent.USER_ENRICHED,
+                    metadata=analytics_metadata,
+                )
+
     @classmethod
     def filter_and_paginate(
         cls,
@@ -1005,6 +1043,9 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+            # IMPORTANT: This should only happens once to send data that was
+            # missed before, and must be removed before the next release
+            self._send_user_enriched_events()
 
         secrets_store_config = self.config.secrets_store
 
