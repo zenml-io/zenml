@@ -54,6 +54,8 @@ def report_decrement(resource_type: ResourceType, resource_id: UUID) -> None:
         resource_type: The type of resource to report a decrement in count for.
         resource_id: ID of the resource that was deleted.
     """
+    if not server_config().feature_gate_enabled:
+        return
     feature_gate().report_event(
         resource=resource_type, resource_id=resource_id, is_decrement=True
     )
