@@ -29,9 +29,6 @@ logger = get_logger(__name__)
 
 _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER = """
 from zenml.utils.function_utils import _cli_wrapped_function
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
 
 import sys
 sys.path.append("{func_path}")
@@ -48,8 +45,8 @@ if __name__=="__main__":
     from accelerate import Accelerator
     import cloudpickle as pickle
     accelerator = Accelerator()
-    ret = func()
-    logger.info(f"Accelerate function returned: {{ret}}")
+    ret = func(standalone_mode=False)
+    print(f"Accelerate function returned: {{ret}}")
     if accelerator.is_main_process:
         pickle.dump(ret, open("{output_file}", "wb"))
 """
