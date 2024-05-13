@@ -849,8 +849,6 @@ class SqlZenStore(BaseZenStore):
 
                 analytics_metadata = {
                     **user_model.user_model,
-                    # We need to get the email from the DB model as it is not
-                    # included in the model that's returned from this method
                     "email": user_model.email,
                     "newsletter": user_model.email_opted_in,
                     "name": user_model.name,
