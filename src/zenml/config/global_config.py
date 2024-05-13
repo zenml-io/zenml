@@ -369,11 +369,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if not skip_default_registrations:
             store._initialize_database()
 
-        from zenml.zen_stores.sql_zen_store import SqlZenStore
-
-        if isinstance(store, SqlZenStore):
-            store._send_user_enriched_events_if_necessary()
-
         # Sanitize the global configuration to reflect the new store
         self._sanitize_config()
         self._write_config()

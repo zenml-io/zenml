@@ -1105,6 +1105,9 @@ class SqlZenStore(BaseZenStore):
         # applicable
         self._auto_activate_server()
 
+        # Send user enriched events that we missed due to a bug in 0.57.0
+        self._send_user_enriched_events_if_necessary()
+
     def _get_db_backup_file_path(self) -> str:
         """Get the path to the database backup file.
 
