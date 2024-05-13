@@ -841,7 +841,7 @@ class SqlZenStore(BaseZenStore):
             return
 
         query = select(UserSchema).where(
-            UserSchema.is_service_account.is_(False)
+            UserSchema.is_service_account.is_(False)  # type: ignore[attr-defined]
         )
 
         with Session(self.engine) as session:
