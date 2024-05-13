@@ -827,7 +827,6 @@ class SqlZenStore(BaseZenStore):
 
     def _send_user_enriched_events_if_necessary(self) -> None:
         """Send user enriched event for all existing users."""
-
         if not self._should_send_user_enriched_events:
             return
 
