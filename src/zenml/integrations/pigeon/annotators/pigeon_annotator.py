@@ -138,7 +138,7 @@ class PigeonAnnotator(BaseAnnotator):
             if current_index >= len(examples):
                 with out:
                     clear_output(wait=True)
-                    print("Annotation done.")
+                    logger.info("Annotation done.")
                 return
             with out:
                 clear_output(wait=True)
@@ -168,7 +168,7 @@ class PigeonAnnotator(BaseAnnotator):
             self._save_annotations(annotations)
             with out:
                 clear_output(wait=True)
-                print("Annotations saved.")
+                logger.info("Annotations saved.")
 
         count_label = widgets.Label()
         display(count_label)
