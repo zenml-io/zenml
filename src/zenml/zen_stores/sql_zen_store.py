@@ -1513,7 +1513,9 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
-            if version.parse(current_revisions[0]) < version.parse("0.57.1"):
+            if current_revisions and version.parse(
+                current_revisions[0]
+            ) < version.parse("0.57.1"):
                 # We want to send the missing user enriched events for users
                 # which were created pre 0.57.1 and only on one upgrade
                 self._should_send_user_enriched_events = True
