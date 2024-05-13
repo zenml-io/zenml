@@ -24,7 +24,7 @@ from zenml.utils.string_utils import random_str
 
 F = TypeVar("F", bound=Callable[..., None])
 
-_CLI_WRAPPED_SCRIPT_TEMPLATE = """
+_CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER = """
 from zenml.utils.function_utils import _cli_wrapped_function
 
 import sys
@@ -36,8 +36,15 @@ if entrypoint:=getattr(func_to_wrap, "entrypoint", None):
 else:
     func = _cli_wrapped_function(func_to_wrap)
 
+"""
+_CLI_WRAPPED_ACCELERATE_MAIN = """
 if __name__=="__main__":
-    func()
+    from accelerate import Accelerator
+    import cloudpickle as pickle
+    accelerator = Accelerator()
+    ret = func()
+    if accelerator.is_main_process:
+        pickle.dump(ret, open("{output_file}", "wb"))
 """
 _ALLOWED_TYPES = (str, int, float, bool)
 _ALLOWED_COLLECTIONS = (tuple,)
@@ -162,28 +169,42 @@ def _cli_wrapped_function(func: F) -> F:
 
 
 @contextmanager
-def create_cli_wrapped_script(func: F) -> Iterator[str]:
+def create_cli_wrapped_script(
+    func: F, flavour: str = "accelerate"
+) -> Iterator[str]:
     """Create a script with the CLI-wrapped function.
 
     Args:
         func: The function to use.
+        flavour: The flavour to use.
 
     Returns:
-        The name of the script.
+        The name of the script and the name of the output.
     """
     try:
         func_path = str(Path(inspect.getabsfile(func)).parent)
-        script_name = random_str(20) + ".py"
+        random_name = random_str(20)
+        script_name = random_name + ".py"
+        output_name = random_name + ".out"
 
         with open(script_name, "w") as f:
             f.write(
-                _CLI_WRAPPED_SCRIPT_TEMPLATE.format(
+                _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER.format(
                     func_path=func_path,
                     func_module=func.__module__,
                     func_name=func.__name__,
                 )
             )
+            if flavour == "accelerate":
+                f.write(
+                    _CLI_WRAPPED_ACCELERATE_MAIN.format(
+                        output_file=output_name
+                    )
+                )
         path = Path(script_name)
-        yield str(path.absolute())
+        output_path = Path(output_name)
+        yield str(path.absolute()), str(output_path.absolute())
     finally:
-        path.unlink()
+        pass
+        # path.unlink()
+        # output_path.unlink()

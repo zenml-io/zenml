@@ -16,6 +16,8 @@
 import subprocess
 from typing import Any, Callable, Optional, TypeVar
 
+import cloudpickle as pickle
+
 from zenml.logger import get_logger
 from zenml.models.v2.misc.scaler_models import ScalerModel
 from zenml.utils.function_utils import _cli_arg_name, create_cli_wrapped_script
@@ -85,7 +87,10 @@ class AccelerateScaler(ScalerModel):
                 num_processes = device_count
             num_processes = self.num_processes
 
-        with create_cli_wrapped_script(step_function) as script_path:
+        with create_cli_wrapped_script(step_function) as (
+            script_path,
+            output_path,
+        ):
             command = f"accelerate launch --num_processes {num_processes} "
             command += script_path + " "
             for k, v in function_kwargs.items():
@@ -113,7 +118,7 @@ class AccelerateScaler(ScalerModel):
                 logger.info(stdout_line)
             if result.returncode == 0:
                 logger.info("Accelerate training job finished.")
-                return
+                return pickle.load(open(output_path, "rb"))
             else:
                 logger.error(
                     f"Accelerate training job failed. With return code {result.returncode}."
