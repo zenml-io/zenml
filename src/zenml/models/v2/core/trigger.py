@@ -13,14 +13,13 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
 
-import copy
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field, root_validator
 
+from zenml.config.schedule import Schedule
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
@@ -31,139 +30,132 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.action import (
+    ActionResponse,
+)
 from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
 from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+
     from zenml.models.v2.core.event_source import EventSourceResponse
 
-# ------------------ Base Model ------------------
+
+# ------------------ Request Model ------------------
 
 
-class TriggerBase(BaseModel):
-    """Base model for triggers."""
+class TriggerRequest(WorkspaceScopedRequest):
+    """Model for creating a new trigger."""
 
     name: str = Field(
-        title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
+        title="The name of the trigger.", max_length=STR_FIELD_MAX_LENGTH
     )
     description: str = Field(
         default="",
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_source_id: UUID = Field(
-        title="The event source that activates this trigger.",
+    action_id: UUID = Field(
+        title="The action that is executed by this trigger.",
     )
-    event_filter: Dict[str, Any] = Field(
-        title="Filter applied to events that activate this trigger.",
-    )
-
-    action: Dict[str, Any] = Field(
-        title="The configuration for the action that is executed by this "
-        "trigger.",
-    )
-    action_flavor: str = Field(
-        title="The flavor of the action that is executed by this trigger.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    action_subtype: PluginSubType = Field(
-        title="The subtype of the action that is executed by this trigger.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    service_account_id: UUID = Field(
-        title="The service account that is used to execute the action.",
-    )
-    auth_window: Optional[int] = Field(
+    schedule: Optional[Schedule] = Field(
         default=None,
-        title="The time window in minutes for which the service account is "
-        "authorized to execute the action. Set this to 0 to authorize the "
-        "service account indefinitely (not recommended). If not set, a "
-        "default value defined for each individual action type is used.",
+        title="The schedule for the trigger. Either a schedule or an event "
+        "source is required.",
+    )
+    event_source_id: Optional[UUID] = Field(
+        default=None,
+        title="The event source that activates this trigger. Either a schedule "
+        "or an event source is required.",
+    )
+    event_filter: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Filter applied to events that activate this trigger. Only "
+        "set if the trigger is activated by an event source.",
     )
 
+    @root_validator
+    def _validate_schedule_or_event_source(cls, values: Dict[str, Any]) -> Any:
+        """Validate that either a schedule or an event source is provided.
 
-# ------------------ Request Model ------------------
-class TriggerRequest(TriggerBase, WorkspaceScopedRequest):
-    """Model for creating a new Trigger."""
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+
+        Raises:
+            ValueError: If neither a schedule nor an event source is provided,
+                or if both are provided.
+        """
+        if not values.get("schedule") and not values.get("event_source_id"):
+            raise ValueError(
+                "Either a schedule or an event source is required."
+            )
+        if values.get("schedule") and values.get("event_source_id"):
+            raise ValueError("Only a schedule or an event source is allowed.")
+        return values
 
 
 # ------------------ Update Model ------------------
 
 
+# TODO: why can the schedule be updated but not the event source?
 class TriggerUpdate(BaseZenModel):
     """Update model for triggers."""
 
     name: Optional[str] = Field(
         default=None,
-        title="The new name for the Trigger.",
+        title="The new name for the trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
         default=None,
-        title="The new description for the trigger",
+        title="The new description for the trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     event_filter: Optional[Dict[str, Any]] = Field(
         default=None,
-        title="New filter applied to events that activate this trigger.",
+        title="New filter applied to events that activate this trigger. Only "
+        "valid if the trigger is already configured to be activated by an "
+        "event source.",
     )
-    action: Optional[Dict[str, Any]] = Field(
+    schedule: Optional[Schedule] = Field(
         default=None,
-        title="The new configuration for the action that is executed by this "
-        "trigger.",
+        title="The updated schedule for the trigger. Only valid if the trigger "
+        "is already configured to be activated by a schedule.",
     )
     is_active: Optional[bool] = Field(
         default=None,
         title="The new status of the trigger.",
     )
-    service_account_id: Optional[UUID] = Field(
-        default=None,
-        title="The service account that is used to execute the action.",
-    )
-    auth_window: Optional[int] = Field(
-        default=None,
-        title="The time window in minutes for which the service account is "
-        "authorized to execute the action. Set this to 0 to authorize the "
-        "service account indefinitely (not recommended). If not set, a "
-        "default value defined for each individual action type is used.",
-    )
-
-    @classmethod
-    def from_response(cls, response: "TriggerResponse") -> "TriggerUpdate":
-        """Create an update model from a response model.
-
-        Args:
-            response: The response model to create the update model from.
-
-        Returns:
-            The update model.
-        """
-        return TriggerUpdate(
-            name=response.name,
-            description=response.description,
-            action=copy.deepcopy(response.action),
-            event_filter=copy.deepcopy(response.event_filter),
-            is_active=response.is_active,
-            service_account_id=response.get_resources().service_account.id,
-        )
 
 
 # ------------------ Response Model ------------------
 
 
 class TriggerResponseBody(WorkspaceScopedResponseBody):
-    """ResponseBody for triggers."""
+    """Response body for triggers."""
 
-    event_source_flavor: str = Field(
-        title="The flavor of the event source that activates this trigger.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     action_flavor: str = Field(
         title="The flavor of the action that is executed by this trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    action_subtype: PluginSubType = Field(
+    action_subtype: str = Field(
         title="The subtype of the action that is executed by this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    event_source_flavor: Optional[str] = Field(
+        default=None,
+        title="The flavor of the event source that activates this trigger. Not "
+        "set if the trigger is activated by a schedule.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    event_source_subtype: Optional[str] = Field(
+        default=None,
+        title="The subtype of the event source that activates this trigger. "
+        "Not set if the trigger is activated by a schedule.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     is_active: bool = Field(
@@ -174,16 +166,20 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for triggers."""
 
-    event_filter: Dict[str, Any] = Field(
-        title="The event that activates this trigger.",
-    )
-    action: Dict[str, Any] = Field(
-        title="The action that is executed by this trigger.",
-    )
     description: str = Field(
         default="",
-        title="The description of the trigger",
+        title="The description of the trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    event_filter: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The event that activates this trigger. Not set if the trigger "
+        "is activated by a schedule.",
+    )
+    schedule: Optional[Schedule] = Field(
+        default=None,
+        title="The schedule that activates this trigger. Not set if the "
+        "trigger is activated by an event source.",
     )
     auth_window: int = Field(
         title="The time window in minutes for which the service account is "
@@ -196,8 +192,13 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
 class TriggerResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
-    event_source: "EventSourceResponse" = Field(
-        title="The event source that activates this trigger.",
+    action: ActionResponse = Field(
+        title="The action that is executed by this trigger.",
+    )
+    event_source: Optional["EventSourceResponse"] = Field(
+        default=None,
+        title="The event source that activates this trigger. Not set if the "
+        "trigger is activated by a schedule.",
     )
     service_account: UserResponse = Field(
         title="The service account that is used to execute the action.",
@@ -215,7 +216,7 @@ class TriggerResponse(
     """Response model for models."""
 
     name: str = Field(
-        title="The name of the model",
+        title="The name of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
@@ -230,15 +231,6 @@ class TriggerResponse(
         return Client().zen_store.get_trigger(self.id)
 
     @property
-    def event_source_flavor(self) -> str:
-        """The `event_source_flavor` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().event_source_flavor
-
-    @property
     def action_flavor(self) -> str:
         """The `action_flavor` property.
 
@@ -248,13 +240,31 @@ class TriggerResponse(
         return self.get_body().action_flavor
 
     @property
-    def action_subtype(self) -> PluginSubType:
+    def action_subtype(self) -> str:
         """The `action_subtype` property.
 
         Returns:
             the value of the property.
         """
         return self.get_body().action_subtype
+
+    @property
+    def event_source_flavor(self) -> Optional[str]:
+        """The `event_source_flavor` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().event_source_flavor
+
+    @property
+    def event_source_subtype(self) -> Optional[str]:
+        """The `event_source_subtype` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().event_source_subtype
 
     @property
     def is_active(self) -> bool:
@@ -266,39 +276,13 @@ class TriggerResponse(
         return self.get_body().is_active
 
     @property
-    def event_filter(self) -> Dict[str, Any]:
+    def event_filter(self) -> Optional[Dict[str, Any]]:
         """The `event_filter` property.
 
         Returns:
             the value of the property.
         """
         return self.get_metadata().event_filter
-
-    @property
-    def action(self) -> Dict[str, Any]:
-        """The `action` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().action
-
-    def set_action(self, action: Dict[str, Any]) -> None:
-        """Set the `action` property.
-
-        Args:
-            action: The value to set.
-        """
-        self.get_metadata().action = action
-
-    @property
-    def event_source(self) -> "EventSourceResponse":
-        """The `event_source` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().event_source
 
     @property
     def description(self) -> str:
@@ -327,16 +311,42 @@ class TriggerResponse(
         """
         return self.get_metadata().auth_window
 
+    @property
+    def action(self) -> Dict[str, Any]:
+        """The `action` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().action
+
+    @property
+    def event_source(self) -> Optional["EventSourceResponse"]:
+        """The `event_source` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().event_source
+
 
 # ------------------ Filter Model ------------------
 
 
 class TriggerFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all TriggerModels."""
+    """Model to enable advanced filtering of all triggers."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "action_flavor",
+        "action_subtype",
+        "event_source_flavor",
+        "event_source_subtype",
+    ]
 
     name: Optional[str] = Field(
         default=None,
-        description="Name of the trigger",
+        description="Name of the trigger.",
     )
     event_source_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -354,6 +364,14 @@ class TriggerFilter(WorkspaceScopedFilter):
         default=None,
         title="The subtype of the action that is executed by this trigger.",
     )
+    event_source_flavor: Optional[str] = Field(
+        default=None,
+        title="The flavor of the event source that activates this trigger.",
+    )
+    event_source_subtype: Optional[str] = Field(
+        default=None,
+        title="The subtype of the event source that activates this trigger.",
+    )
     # TODO: Ignore these in normal filter and handle in sqlzenstore
     resource_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -363,3 +381,17 @@ class TriggerFilter(WorkspaceScopedFilter):
         default=None,
         description="By the resource type this trigger references.",
     )
+
+    def get_custom_filters(
+        self,
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters.
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        # TODO: Implement custom filters for action_flavor, action_subtype,
+        #  event_source_flavor, event_source_subtype
+
+        return custom_filters

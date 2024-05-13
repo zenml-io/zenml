@@ -37,6 +37,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        ActionSchema,
         APIKeySchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
@@ -87,6 +88,10 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     flavors: List["FlavorSchema"] = Relationship(back_populates="user")
+    actions: List["ActionSchema"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     event_sources: List["EventSourceSchema"] = Relationship(
         back_populates="user"
     )

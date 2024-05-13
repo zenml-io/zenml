@@ -49,6 +49,15 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
+from zenml.models.v2.core.action import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionResponseBody,
+    ActionResponseMetadata,
+    ActionResponseResources,
+    ActionUpdate,
+)
 from zenml.models.v2.core.action_flavor import (
     ActionFlavorResponse,
     ActionFlavorResponseBody,
@@ -375,6 +384,15 @@ from zenml.models.v2.core.server_settings import (
 # ----------------------------- Forward References -----------------------------
 
 # V2
+ActionResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ActionResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ActionResponseResources.update_forward_refs(
+    TriggerResponse=TriggerResponse,
+)
 APIKeyResponseBody.update_forward_refs(
     ServiceAccountResponse=ServiceAccountResponse,
 )
@@ -563,10 +581,6 @@ TriggerResponseMetadata.update_forward_refs(
 TriggerResponseResources.update_forward_refs(
     EventSourceResponse=EventSourceResponse,
 )
-TriggerResponseResources.update_forward_refs(
-    EventSourceResponse=EventSourceResponse,
-    TriggerExecutionResponse=TriggerExecutionResponse,
-)
 
 __all__ = [
     # V2 Base
@@ -597,6 +611,13 @@ __all__ = [
     "UUIDFilter",
     "Page",
     # V2 Core
+    "ActionFilter",
+    "ActionRequest",
+    "ActionResponse",
+    "ActionResponseBody",
+    "ActionResponseMetadata",
+    "ActionResponseResources",
+    "ActionUpdate",
     "ActionFlavorResponse",
     "ActionFlavorResponseBody",
     "ActionFlavorResponseMetadata",

@@ -300,6 +300,7 @@ REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline", "pipeline_run"]
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
+ACTIONS = "/actions"
 ACTIONS = "/action-flavors"
 API = "/api"
 API_KEYS = "/api_keys"
