@@ -49,7 +49,7 @@ if __name__=="__main__":
     import cloudpickle as pickle
     accelerator = Accelerator()
     ret = func()
-    logger.info(f"Accelerate function returned: {ret}")
+    logger.info(f"Accelerate function returned: {{ret}}")
     if accelerator.is_main_process:
         pickle.dump(ret, open("{output_file}", "wb"))
 """
