@@ -20,12 +20,18 @@ from typing import Any, Callable, Iterator, List, TypeVar, Union
 
 import click
 
+from zenml.logger import get_logger
 from zenml.utils.string_utils import random_str
 
 F = TypeVar("F", bound=Callable[..., None])
 
+logger = get_logger(__name__)
+
 _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER = """
 from zenml.utils.function_utils import _cli_wrapped_function
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 import sys
 sys.path.append("{func_path}")
@@ -43,6 +49,7 @@ if __name__=="__main__":
     import cloudpickle as pickle
     accelerator = Accelerator()
     ret = func()
+    logger.info(f"Accelerate function returned: {ret}")
     if accelerator.is_main_process:
         pickle.dump(ret, open("{output_file}", "wb"))
 """
@@ -198,19 +205,18 @@ def create_cli_wrapped_script(
         output_path = Path(output_name)
 
         with open(script_name, "w") as f:
-            f.write(
-                _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER.format(
-                    func_path=func_path,
-                    func_module=func.__module__,
-                    func_name=func.__name__,
-                )
+            script = _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER.format(
+                func_path=func_path,
+                func_module=func.__module__,
+                func_name=func.__name__,
             )
             if flavour == "accelerate":
-                f.write(
-                    _CLI_WRAPPED_ACCELERATE_MAIN.format(
-                        output_file=str(output_path.absolute())
-                    )
+                script += _CLI_WRAPPED_ACCELERATE_MAIN.format(
+                    output_file=str(output_path.absolute())
                 )
+            f.write(script)
+
+        logger.info(f"Created script:\n\n{script}")
 
         yield str(script_path.absolute()), str(output_path.absolute())
     finally:

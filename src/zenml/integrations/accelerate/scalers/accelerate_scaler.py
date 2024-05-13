@@ -87,7 +87,9 @@ class AccelerateScaler(ScalerModel):
                 num_processes = device_count
             num_processes = self.num_processes
 
-        with create_cli_wrapped_script(step_function) as (
+        with create_cli_wrapped_script(
+            step_function, flavour="accelerate"
+        ) as (
             script_path,
             output_path,
         ):
