@@ -753,6 +753,7 @@ class SqlZenStore(BaseZenStore):
     _alembic: Optional[Alembic] = None
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
+    _did_migrate: bool = False
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -827,7 +828,9 @@ class SqlZenStore(BaseZenStore):
         """Send user enriched event for all existing users."""
         from zenml.models import ServerDeploymentType
 
-        if self.get_store_info().deployment_type == ServerDeploymentType.CLOUD:
+        server_config = ServerConfiguration.get_server_config()
+
+        if server_config.deployment_type == ServerDeploymentType.CLOUD:
             # Do not send events for cloud tenants where the event comes from
             # the cloud API
             return
@@ -848,7 +851,7 @@ class SqlZenStore(BaseZenStore):
                     continue
 
                 analytics_metadata = {
-                    **user_model.user_model,
+                    **user_model.user_metadata,
                     "email": user_model.email,
                     "newsletter": user_model.email_opted_in,
                     "name": user_model.name,
@@ -1041,9 +1044,6 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
-            # IMPORTANT: This should only happens once to send data that was
-            # missed before, and must be removed before the next release
-            self._send_user_enriched_events()
 
         secrets_store_config = self.config.secrets_store
 
@@ -1495,6 +1495,7 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
+            self._did_migrate = True
             self._sync_flavors()
 
     def _sync_flavors(self) -> None:
