@@ -46,8 +46,16 @@ if __name__=="__main__":
     if accelerator.is_main_process:
         pickle.dump(ret, open("{output_file}", "wb"))
 """
-_ALLOWED_TYPES = (str, int, float, bool)
+_ALLOWED_TYPES = (str, int, float, bool, Path)
 _ALLOWED_COLLECTIONS = (tuple,)
+__TYPES_MAPPER = {
+    str: click.STRING,
+    int: click.INT,
+    float: click.FLOAT,
+    bool: click.BOOL,
+    Path: click.STRING,
+    None: click.STRING,
+}
 
 
 def _cli_arg_name(arg_name: str) -> str:
@@ -137,7 +145,7 @@ def _cli_wrapped_function(func: F) -> F:
             options.append(
                 click.option(
                     f"--{arg_name}",
-                    type=arg_type if arg_type else str,
+                    type=__TYPES_MAPPER[arg_type],
                     default=arg_default,
                     required=False if arg_default is not None else True,
                 )
