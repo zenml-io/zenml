@@ -117,7 +117,8 @@ def main() -> None:
             args=step_args,
             env=env,
             settings=settings,
-            service_account_name=settings.service_account_name,
+            service_account_name=settings.step_pod_service_account_name
+            or settings.service_account_name,
             mount_local_stores=mount_local_stores,
         )
 
