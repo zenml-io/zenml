@@ -71,6 +71,7 @@ logger = get_logger(__name__)
 EKS_KUBE_API_TOKEN_EXPIRATION = 15  # 15 minutes
 DEFAULT_IAM_ROLE_TOKEN_EXPIRATION = 3600  # 1 hour
 DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours
+BOTO3_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
 
 
 class AWSSecretKey(AuthenticationConfig):
@@ -713,7 +714,10 @@ class AWSServiceConnector(ServiceConnector):
             # Refresh expired sessions
             now = datetime.datetime.now(datetime.timezone.utc)
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
-            if expires_at > now:
+            # check if the token expires in the near future
+            if expires_at > now + datetime.timedelta(
+                minutes=BOTO3_SESSION_EXPIRATION_BUFFER
+            ):
                 return session, expires_at
 
         logger.debug(

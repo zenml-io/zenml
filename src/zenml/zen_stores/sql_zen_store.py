@@ -81,6 +81,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
@@ -264,7 +265,7 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
-from zenml.utils.string_utils import random_str
+from zenml.utils.string_utils import random_str, validate_name
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
@@ -1475,7 +1476,8 @@ class SqlZenStore(BaseZenStore):
         # the one fetched from the global configuration
         model.id = settings.server_id
         model.active = settings.active
-        model.analytics_enabled = settings.enable_analytics
+        if not handle_bool_env_var(ENV_ZENML_LOCAL_SERVER):
+            model.analytics_enabled = settings.enable_analytics
         return model
 
     def get_deployment_id(self) -> UUID:
@@ -2152,6 +2154,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If an artifact with the same name already exists.
         """
+        validate_name(artifact)
         with Session(self.engine) as session:
             # Check if an artifact with the given name already exists
             existing_artifact = session.exec(
@@ -2792,6 +2795,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack component references a non-existent
                 connector.
         """
+        validate_name(component)
         with Session(self.engine) as session:
             self._fail_if_component_with_name_type_exists(
                 name=component.name,
@@ -4272,12 +4276,16 @@ class SqlZenStore(BaseZenStore):
             ).to_model(include_metadata=hydrate)
 
     def _replace_placeholder_run(
-        self, pipeline_run: PipelineRunRequest
+        self,
+        pipeline_run: PipelineRunRequest,
+        pre_replacement_hook: Optional[Callable[[], None]] = None,
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
         Args:
             pipeline_run: Pipeline run request.
+            pre_replacement_hook: Optional function to run before replacing the
+                pipeline run.
 
         Raises:
             KeyError: If no placeholder run exists.
@@ -4311,6 +4319,8 @@ class SqlZenStore(BaseZenStore):
             if not run_schema:
                 raise KeyError("No placeholder run found.")
 
+            if pre_replacement_hook:
+                pre_replacement_hook()
             run_schema.update_placeholder(pipeline_run)
             session.add(run_schema)
             session.commit()
@@ -4352,7 +4362,9 @@ class SqlZenStore(BaseZenStore):
             return run_schema.to_model(include_metadata=True)
 
     def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
+        self,
+        pipeline_run: PipelineRunRequest,
+        pre_creation_hook: Optional[Callable[[], None]] = None,
     ) -> Tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
@@ -4361,6 +4373,8 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             pipeline_run: The pipeline run to get or create.
+            pre_creation_hook: Optional function to run before creating the
+                pipeline run.
 
         # noqa: DAR401
         Raises:
@@ -4380,7 +4394,10 @@ class SqlZenStore(BaseZenStore):
 
         try:
             return (
-                self._replace_placeholder_run(pipeline_run=pipeline_run),
+                self._replace_placeholder_run(
+                    pipeline_run=pipeline_run,
+                    pre_replacement_hook=pre_creation_hook,
+                ),
                 True,
             )
         except KeyError:
@@ -4411,6 +4428,8 @@ class SqlZenStore(BaseZenStore):
             #     orchestrator_run_id of the run that we're trying to create.
             #     -> The `self.create_run(...) call will fail due to the unique
             #     constraint on those columns.
+            if pre_creation_hook:
+                pre_creation_hook()
             return self.create_run(pipeline_run), True
         except (EntityExistsError, IntegrityError) as create_error:
             # Creating the run failed with an
@@ -6523,6 +6542,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
+        validate_name(stack)
         with Session(self.engine) as session:
             self._fail_if_stack_with_name_exists(stack=stack, session=session)
 
@@ -8015,7 +8035,10 @@ class SqlZenStore(BaseZenStore):
             if not survey_finished_before and survey_finished_after:
                 analytics_metadata = {
                     **updated_user.user_metadata,
-                    "email": updated_user.email,
+                    # We need to get the email from the DB model as it is not
+                    # included in the model that's returned from this method
+                    "email": existing_user.email,
+                    "newsletter": existing_user.email_opted_in,
                     "name": updated_user.name,
                     "full_name": updated_user.full_name,
                 }
@@ -8687,6 +8710,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a workspace with the given name already exists.
         """
+        validate_name(model)
         with Session(self.engine) as session:
             existing_model = session.exec(
                 select(ModelSchema).where(ModelSchema.name == model.name)
@@ -8889,6 +8913,8 @@ class SqlZenStore(BaseZenStore):
 
             if model_version_.name is None:
                 model_version_.name = str(model_version_.number)
+            else:
+                validate_name(model_version_)
 
             model_version_schema = ModelVersionSchema.from_request(
                 model_version_
@@ -9443,6 +9469,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a tag with the given name already exists.
         """
+        validate_name(tag)
         with Session(self.engine) as session:
             existing_tag = session.exec(
                 select(TagSchema).where(TagSchema.name == tag.name)

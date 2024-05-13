@@ -79,6 +79,9 @@
     * [Generation evaluation](user-guide/llmops-guide/evaluation/generation.md)
     * [Evaluation in practice](user-guide/llmops-guide/evaluation/evaluation-in-practice.md)
   * [Reranking for better retrieval](user-guide/llmops-guide/reranking/reranking.md)
+    * [Understanding reranking](user-guide/llmops-guide/reranking/understanding-reranking.md)
+    * [Implementing reranking in ZenML](user-guide/llmops-guide/reranking/implementing-reranking.md)
+    * [Evaluating reranking performance](user-guide/llmops-guide/reranking/evaluating-reranking-performance.md)
   * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
   * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
 
