@@ -194,6 +194,8 @@ def create_cli_wrapped_script(
         random_name = random_str(20)
         script_name = random_name + ".py"
         output_name = random_name + ".out"
+        script_path = Path(script_name)
+        output_path = Path(output_name)
 
         with open(script_name, "w") as f:
             f.write(
@@ -206,12 +208,11 @@ def create_cli_wrapped_script(
             if flavour == "accelerate":
                 f.write(
                     _CLI_WRAPPED_ACCELERATE_MAIN.format(
-                        output_file=output_name
+                        output_file=str(output_path.absolute())
                     )
                 )
-        path = Path(script_name)
-        output_path = Path(output_name)
-        yield str(path.absolute()), str(output_path.absolute())
+
+        yield str(script_path.absolute()), str(output_path.absolute())
     finally:
         pass
         # path.unlink()
