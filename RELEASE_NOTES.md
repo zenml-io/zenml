@@ -3,8 +3,7 @@
 # 0.57.1
 
 This a minor release that brings a variety of enhancements for
-the new dashboard release, new update to the LLMOps guide and updated Readme,
-it also introduce some new improvement to the service connectors.
+the new dashboard release, a new update to the LLMOps guide (covering the use of rerankers in RAG pipelines) and [an updated README](README.md). It also introduces some new improvement to the service connectors.
 
 We'd like to give a special thanks to @ruvilonix for their first contribution.
 
