@@ -206,6 +206,7 @@ from zenml.models import (
     SecretUpdate,
     ServerActivationRequest,
     ServerDatabaseType,
+    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -753,7 +754,7 @@ class SqlZenStore(BaseZenStore):
     _alembic: Optional[Alembic] = None
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
-    _did_migrate: bool = False
+    _should_send_user_enriched_events: bool = False
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -824,9 +825,13 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
-    def _send_user_enriched_events(self) -> None:
+    def _send_user_enriched_events_if_necessary(self) -> None:
         """Send user enriched event for all existing users."""
-        from zenml.models import ServerDeploymentType
+
+        if not self._should_send_user_enriched_events:
+            return
+
+        self._should_send_user_enriched_events = False
 
         server_config = ServerConfiguration.get_server_config()
 
@@ -850,6 +855,12 @@ class SqlZenStore(BaseZenStore):
                 if not user_model.email:
                     continue
 
+                if (
+                    FINISHED_ONBOARDING_SURVEY_KEY
+                    not in user_model.user_metadata
+                ):
+                    continue
+
                 analytics_metadata = {
                     **user_model.user_metadata,
                     "email": user_model.email,
@@ -857,10 +868,13 @@ class SqlZenStore(BaseZenStore):
                     "name": user_model.name,
                     "full_name": user_model.full_name,
                 }
-                track(
-                    event=AnalyticsEvent.USER_ENRICHED,
-                    metadata=analytics_metadata,
-                )
+                with AnalyticsContext() as context:
+                    context.user_id = user_model.id
+
+                    context.track(
+                        event=AnalyticsEvent.USER_ENRICHED,
+                        metadata=analytics_metadata,
+                    )
 
     @classmethod
     def filter_and_paginate(
@@ -1495,7 +1509,13 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
-            self._did_migrate = True
+            from packaging import version
+
+            if version.parse(current_revisions[0]) < version.parse("0.57.1"):
+                # We want to send the missing user enriched events for users
+                # which were created pre 0.57.1 and only on one upgrade
+                self._should_send_user_enriched_events = True
+
             self._sync_flavors()
 
     def _sync_flavors(self) -> None:

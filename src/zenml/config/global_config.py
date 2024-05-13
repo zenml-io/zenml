@@ -372,8 +372,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         from zenml.zen_stores.sql_zen_store import SqlZenStore
 
         if isinstance(store, SqlZenStore):
-            if store._did_migrate:
-                store._send_user_enriched_events()
+            store._send_user_enriched_events_if_necessary()
 
         # Sanitize the global configuration to reflect the new store
         self._sanitize_config()
