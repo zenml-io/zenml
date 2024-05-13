@@ -16,7 +16,7 @@
 import inspect
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Iterator, List, TypeVar
+from typing import Any, Callable, Iterator, List, TypeVar, Union
 
 import click
 
@@ -31,7 +31,10 @@ import sys
 sys.path.append("{func_path}")
 from {func_module} import {func_name} as func_to_wrap
 
-func = _cli_wrapped_function(func_to_wrap)
+if entrypoint:=getattr(func_to_wrap, "entrypoint", None):
+    func = _cli_wrapped_function(entrypoint)
+else:
+    func = _cli_wrapped_function(func_to_wrap)
 
 if __name__=="__main__":
     func()
@@ -52,31 +55,20 @@ def _is_valid_collection_arg(arg_type: Any) -> bool:
     return False
 
 
-def _validate_function_arguments(func: F) -> None:
-    """Validate the arguments of a function.
-
-    Args:
-        func: The function to validate.
-
-    Raises:
-        ValueError: If the function is not valid.
-    """
-    fullargspec = inspect.getfullargspec(func)
-    invalid_types = {}
-    for k, v in fullargspec.annotations.items():
-        if k == "return":
-            continue
-        if v in _ALLOWED_TYPES:
-            continue
-        if _is_valid_collection_arg(v):
-            continue
-        invalid_types[k] = v
-    if invalid_types:
-        raise ValueError(
-            f"Invalid argument types: {invalid_types}. CLI functions only "
-            f"supports: {_ALLOWED_TYPES} types and {_ALLOWED_COLLECTIONS} "
-            "collections."
-        )
+def _is_valid_optional_arg(arg_type: Any) -> bool:
+    if (
+        getattr(arg_type, "_name", None) == "Optional"
+        and getattr(arg_type, "__origin__", None) == Union
+    ):
+        if args := getattr(arg_type, "__args__", None):
+            if len(args) != 2:
+                return False
+            if (
+                args[0] not in _ALLOWED_TYPES
+                and not _is_valid_collection_arg(args[0])
+            ) or args[1] != type(None):
+                return False
+    return True
 
 
 def _cli_wrapped_function(func: F) -> F:
@@ -87,9 +79,10 @@ def _cli_wrapped_function(func: F) -> F:
 
     Returns:
         The inner decorator.
-    """
-    _validate_function_arguments(func)
 
+    Raises:
+        ValueError: If the function arguments are not valid.
+    """
     options: List[Any] = []
     fullargspec = inspect.getfullargspec(func)
     if fullargspec.defaults is not None:
@@ -106,7 +99,10 @@ def _cli_wrapped_function(func: F) -> F:
         )
         for i, arg_name in enumerate(fullargspec.args)
     )
+    invalid_types = {}
     for arg_name, arg_type, arg_default in input_args_dict:
+        if _is_valid_optional_arg(arg_type):
+            arg_type = arg_type.__args__[0]
         arg_name = _cli_arg_name(arg_name)
         if arg_type == bool:
             options.append(
@@ -129,8 +125,7 @@ def _cli_wrapped_function(func: F) -> F:
                     multiple=True,
                 )
             )
-
-        else:
+        elif arg_type in _ALLOWED_TYPES:
             options.append(
                 click.option(
                     f"--{arg_name}",
@@ -139,6 +134,14 @@ def _cli_wrapped_function(func: F) -> F:
                     required=False if arg_default is not None else True,
                 )
             )
+        else:
+            invalid_types[arg_name] = arg_type
+    if invalid_types:
+        raise ValueError(
+            f"Invalid argument types: {invalid_types}. CLI functions only "
+            f"supports: {_ALLOWED_TYPES} types (including Optional) and "
+            f"{_ALLOWED_COLLECTIONS} collections."
+        )
     options.append(
         click.command(
             help="Technical wrapper to pass into the `accelerate launch` command."
