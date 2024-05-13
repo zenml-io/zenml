@@ -48,7 +48,7 @@ if __name__=="__main__":
 """
 _ALLOWED_TYPES = (str, int, float, bool, Path)
 _ALLOWED_COLLECTIONS = (tuple,)
-__TYPES_MAPPER = {
+_TYPES_MAPPER = {
     str: click.STRING,
     int: click.INT,
     float: click.FLOAT,
@@ -145,7 +145,7 @@ def _cli_wrapped_function(func: F) -> F:
             options.append(
                 click.option(
                     f"--{arg_name}",
-                    type=__TYPES_MAPPER[arg_type],
+                    type=_TYPES_MAPPER[arg_type],
                     default=arg_default,
                     required=False if arg_default is not None else True,
                 )
