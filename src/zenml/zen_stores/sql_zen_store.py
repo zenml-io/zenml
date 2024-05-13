@@ -8082,10 +8082,18 @@ class SqlZenStore(BaseZenStore):
                     "name": updated_user.name,
                     "full_name": updated_user.full_name,
                 }
-                track(
-                    event=AnalyticsEvent.USER_ENRICHED,
-                    metadata=analytics_metadata,
-                )
+                with AnalyticsContext() as context:
+                    # This method can be called from the `/users/activate`
+                    # endpoint in which the auth context is not set
+                    # -> We need to manually set the user ID in that case,
+                    # otherwise the event will not be sent
+                    if context.user_id is None:
+                        context.user_id = updated_user.id
+
+                    context.track(
+                        event=AnalyticsEvent.USER_ENRICHED,
+                        metadata=analytics_metadata,
+                    )
 
             return updated_user
 
