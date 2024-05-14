@@ -92,10 +92,12 @@
   * [How to control caching behavior](how-to/overview/how-to-control-caching-behavior.md)
   * [Trigger a pipeline from within another](how-to/overview/trigger-a-pipeline-from-within-another.md)
 * [Use configuration files](how-to/use-configuration-files/README.md)
-  * [Autogenerate a yaml file](how-to/use-configuration-files/autogenerate-a-yaml-file.md)
-* [Handle requirements](how-to/handle-requirements.md)
-* [Use and customize Docker](how-to/use-and-customize-docker.md)
-* [Use compute](how-to/use-compute.md)
+  * [Autogenerate a template yaml file](how-to/use-configuration-files/autogenerate-a-template-yaml-file.md)
+* [Handle requirements and Docker settings](how-to/handle-requirements-and-docker-settings.md)
+* [Use compute](how-to/use-compute/README.md)
+  * [Schedule a pipeline](how-to/use-compute/schedule-a-pipeline.md)
+* [Handle Data/Artifacts](how-to/handle-data-artifacts.md)
+* [Use metadata and tags](how-to/use-metadata-and-tags.md)
 
 ## Deploying ZenML
 

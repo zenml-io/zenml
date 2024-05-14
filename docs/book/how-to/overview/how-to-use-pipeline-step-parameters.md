@@ -34,11 +34,17 @@ def simple_ml_pipeline(parameter: int):
 ```
 
 {% hint style="info" %}
-We recommend strict Typing of all parameters across your pipelines and steps
+We recommend strict typing of all parameters across your pipelines and steps.
 {% endhint %}
+
+### Run with a parameter
 
 ```python
 # For parameters on the pipeline level, simply choose a 
 # parameter when running the pipeline
 simple_ml_pipeline(parameter=42)
 ```
+
+{% hint style="info" %}
+You can also use a configuration file to set the parameters. Read more [here](../use-configuration-files/)
+{% endhint %}
