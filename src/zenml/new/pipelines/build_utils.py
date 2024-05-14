@@ -143,17 +143,17 @@ def reuse_or_create_pipeline_build(
                 return existing_build
             else:
                 logger.info(
-                    "Unable to find a build to reuse. When using a code, "
+                    "Unable to find a build to reuse. When using a code "
                     "repository, a previous build can be reused when the "
-                    "following conditions are met:"
-                    " * The existing build was created for the same stack, "
-                    "   ZenML version and Python version"
-                    " * The stack contains a container registry"
-                    " * The Docker settings of the pipeline and all its steps "
-                    "   are the same as for the existing build"
-                    " * The build does not include code. This will only be the "
-                    "   case if the existing build was created with a clean "
-                    "   code repository."
+                    "following conditions are met:\n"
+                    "  * The existing build was created for the same stack, "
+                    "ZenML version and Python version\n"
+                    "  * The stack contains a container registry\n"
+                    "  * The Docker settings of the pipeline and all its steps "
+                    "are the same as for the existing build\n"
+                    "  * The build does not include code. This will only be "
+                    "the case if the existing build was created with a clean "
+                    "code repository."
                 )
 
         return create_pipeline_build(
@@ -468,7 +468,7 @@ def verify_local_repository_context(
                 "Unable to use code repository to download code for this run "
                 "as there are unpushed changes."
             )
-        else:        
+        else:
             model = Client().get_code_repository(
                 local_repo_context.code_repository_id
             )
