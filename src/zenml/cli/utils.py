@@ -1672,7 +1672,7 @@ def expires_in(
         expires_at -= datetime.timedelta(seconds=skew_tolerance)
     if expires_at < now:
         return expired_str
-    return seconds_to_human_readable((expires_at - now).seconds)
+    return seconds_to_human_readable(int((expires_at - now).total_seconds()))
 
 
 def print_service_connectors_table(
