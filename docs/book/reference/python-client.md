@@ -2,7 +2,7 @@
 description: Interacting with your ZenML instance through the ZenML Client.
 ---
 
-# Use the Python Client
+# 🐍 Python Client
 
 Pipelines, runs, stacks, and many other ZenML resources are stored and versioned in a database within your ZenML instance behind the scenes. The ZenML Python `Client` allows you to fetch, update, or even create any of these resources programmatically in Python.
 
@@ -36,7 +36,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 
 #### Pipelines, Runs, Artifacts
 
-* **Pipelines**: The pipeline (versions)  that were implicitly tracked when running ZenML pipelines.
+* **Pipelines**: The pipeline (versions) that were implicitly tracked when running ZenML pipelines.
 * **Pipeline Runs**: Information about all pipeline runs that were executed on your ZenML instance.
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.

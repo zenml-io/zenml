@@ -6,12 +6,11 @@ description: Configuring ZenML to display data visualizations in the dashboard.
 
 ZenML automatically saves visualizations of many common data types and allows you to view these visualizations in the ZenML dashboard:
 
-![ZenML Artifact Visualizations](<../../../.gitbook/assets/artifact_visualization_dashboard.png>)
-
+![ZenML Artifact Visualizations](<../../../.gitbook/assets/artifact\_visualization\_dashboard (1).png>)
 
 Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the `artifact.visualize()` method:
 
-![output.visualize() Output](<../../../.gitbook/assets/artifact_visualization_evidently.png>)
+![output.visualize() Output](../../../.gitbook/assets/artifact\_visualization\_evidently.png)
 
 Currently, the following visualization types are supported:
 
@@ -26,24 +25,15 @@ In order for the visualizations to show up on the dashboard, the following must 
 
 ### Configuring a Service Connector
 
-Visualizations are usually stored alongside the artifact, in the [artifact store](../../../stacks-and-components/component-guide/artifact-stores/). Therefore, if
-a user would like to see the visualization displayed on the ZenML dashboard, they must
-give access to the server to connect to the artifact store.
+Visualizations are usually stored alongside the artifact, in the [artifact store](../../../stacks-and-components/component-guide/artifact-stores/). Therefore, if a user would like to see the visualization displayed on the ZenML dashboard, they must give access to the server to connect to the artifact store.
 
-The [service connector](../../../stacks-and-components/auth-management/)
-documentation goes deeper
-into the concept of service connectors and how they can configured to give the server
-permission to access the artifact store. For a concrete example, see the [AWS S3](../../../stacks-and-components/component-guide/artifact-stores/s3.md) artifact store
-documentation.
+The [service connector](../../../stacks-and-components/auth-management/) documentation goes deeper into the concept of service connectors and how they can configured to give the server permission to access the artifact store. For a concrete example, see the [AWS S3](../../../stacks-and-components/component-guide/artifact-stores/s3.md) artifact store documentation.
 
 {% hint style="info" %}
-When using the default/local artifact store with a deployed ZenML, the server naturally
-does not have access to your local files. In this case, the visualizations are also not
-displayed on the dashboard.
+When using the default/local artifact store with a deployed ZenML, the server naturally does not have access to your local files. In this case, the visualizations are also not displayed on the dashboard.
 
 Please use a service connector enabled and remote artifact store alongside a deployed ZenML to view visualizations.
 {% endhint %}
-
 
 ### Configuring Artifact Stores
 
@@ -75,9 +65,10 @@ def my_step() -> CSVString:
     some_csv = "a,b,c\n1,2,3"
     return CSVString(some_csv)
 ```
+
 This would create the following visualization in the dashboard:
 
-![CSV Visualization Example](../../../.gitbook/assets/artifact_visualization_csv.png)
+![CSV Visualization Example](../../../.gitbook/assets/artifact\_visualization\_csv.png)
 
 ### Visualization via Materializers
 

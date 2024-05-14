@@ -27,7 +27,7 @@
 * [☁️ Cloud Guide](user-guide/cloud-guide/cloud-guide.md)
   * [AWS](user-guide/cloud-guide/aws-guide.md)
   * [GCP](user-guide/cloud-guide/gcp-guide.md)
-* [🍗 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
+* [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
     * [Understanding configuration](user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md)
     * [Managing steps](user-guide/advanced-guide/pipelining-features/managing-steps.md)
@@ -85,25 +85,20 @@
   * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
   * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
 
-## How-To ...
+## 🛠️ How-To
 
-* [... build your pipeline](how-to/pipeline/overview.md)
-  * [How to configure pipeline/step parameters]()
-  * [How to control the caching behavior]()
-  * []()
-*  [... deal with pipeline configurations]()
-*  [... deal with code requirements]()
-  * []()
-*  [... use and customize docker]()
-  * []()
-*  [... change compute that my pipeline runs on]()
-  * []()
-*  [... ]
+* [Build a pipeline?](how-to/overview/README.md)
+  * [How to configure pipeline/step parameters](how-to/overview/how-to-configure-pipeline-step-parameters.md)
+  * [How to control caching behavior](how-to/overview/how-to-control-caching-behavior.md)
+* [Use configuration files](how-to/use-configuration-files.md)
+* [Handle requirements](how-to/handle-requirements.md)
+* [Use and customize Docker](how-to/use-and-customize-docker.md)
+* [Use compute](how-to/use-compute.md)
 
 ## Deploying ZenML
 
 * [🤔 Why deploy ZenML?](deploying-zenml/why-deploy-zenml.md)
-* [☁ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
+* [☁️ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
   * [User Management](deploying-zenml/zenml-cloud/user-management.md)
   * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
 * [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/zenml-self-hosted.md)
@@ -196,7 +191,7 @@
   * [AWS Service Connector](stacks-and-components/auth-management/aws-service-connector.md)
   * [GCP Service Connector](stacks-and-components/auth-management/gcp-service-connector.md)
   * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
-* [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
+* [⚒️ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
   * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
   * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
@@ -208,8 +203,8 @@
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
 * [🔏 End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
-* [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)
-* [📖 LLM Finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)
+* [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e\_nlp)
+* [📖 LLM Finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm\_finetuning)
 * [🧩 More Projects...](https://github.com/zenml-io/zenml-projects)
 
 ## Reference
@@ -217,7 +212,7 @@
 * [🐍 Python Client](reference/python-client.md)
 * [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [📚 How do I...?](reference/how-do-i.md)
-* [♻ Migration guide](reference/migration-guide/migration-guide.md)
+* [♻️ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
   * [Migration guide 0.23.0 → 0.30.0](reference/migration-guide/migration-zero-thirty.md)
   * [Migration guide 0.39.1 → 0.41.0](reference/migration-guide/migration-zero-forty.md)

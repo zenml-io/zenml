@@ -301,8 +301,8 @@ if __name__ == "__main__":
     visualize_results("validation_pipeline", "test_validator")
 ```
 
-![Expectations Suite Visualization](<../../../.gitbook/assets/expectation_suite.png>)
+![Expectations Suite Visualization](<../../../.gitbook/assets/expectation\_suite (1).png>)
 
-![Validation Results Visualization](<../../../.gitbook/assets/validation_result.png>)
+![Validation Results Visualization](<../../../.gitbook/assets/validation\_result (1).png>)
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

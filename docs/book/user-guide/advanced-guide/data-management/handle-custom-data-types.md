@@ -112,9 +112,7 @@ Check out [this page](../../starter-guide/manage-artifacts.md) for information o
 
 #### Defining a materializer globally
 
-Sometimes, you would like to configure ZenML to use a custom materializer globally for all pipelines, and override the default materializers that
-come built-in with ZenML. A good example of this would be to build a materializer for a `pandas.DataFrame` to handle the reading and writing of
-that dataframe in a different way than the default mechanism.
+Sometimes, you would like to configure ZenML to use a custom materializer globally for all pipelines, and override the default materializers that come built-in with ZenML. A good example of this would be to build a materializer for a `pandas.DataFrame` to handle the reading and writing of that dataframe in a different way than the default mechanism.
 
 An easy way to do that is to use the internal materializer registry of ZenML and override its behavior:
 
@@ -264,7 +262,7 @@ You will need to override these methods according to how you plan to serialize y
 
 Optionally, you can override the `save_visualizations()` method to automatically save visualizations for all artifacts saved by your materializer. These visualizations are then shown next to your artifacts in the dashboard:
 
-![Evidently Artifact Visualization Example](<../../../.gitbook/assets/artifact_visualization_dashboard.png>)
+![Evidently Artifact Visualization Example](<../../../.gitbook/assets/artifact\_visualization\_dashboard (1).png>)
 
 Currently, artifacts can be visualized either as CSV table, embedded HTML, image or Markdown. For more information, see [zenml.enums.VisualizationType](https://github.com/zenml-io/zenml/blob/main/src/zenml/enums.py).
 
@@ -687,5 +685,4 @@ if __name__ == "__main__":
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
