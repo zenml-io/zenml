@@ -101,7 +101,7 @@ class Model(BaseModel):
             except RuntimeError:
                 logger.info(
                     f"Version `{self.version}` of `{self.name}` model doesn't "
-                    "exist nd cannot be fetched from the Model Control Plane."
+                    "exist and cannot be fetched from the Model Control Plane."
                 )
         return self._id
 

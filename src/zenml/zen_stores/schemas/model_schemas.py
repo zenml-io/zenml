@@ -289,7 +289,7 @@ class ModelVersionSchema(NamedSchema, table=True):
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
-    #  It is possible to supress this warning message with the following
+    #  It is possible to suppress this warning message with the following
     #  configuration, however the ultimate solution is to rename these fields.
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
@@ -509,7 +509,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
-    #  It is possible to supress this warning message with the following
+    #  It is possible to suppress this warning message with the following
     #  configuration, however the ultimate solution is to rename these fields.
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
@@ -633,7 +633,7 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
-    #  It is possible to supress this warning message with the following
+    #  It is possible to suppress this warning message with the following
     #  configuration, however the ultimate solution is to rename these fields.
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
