@@ -100,6 +100,19 @@ def _create_deployment(
     )
 
 
+def build_required(deployment: "PipelineDeploymentBase") -> bool:
+    """Checks whether a build is required for the deployment and active stack.
+
+    Args:
+        deployment: The deployment for which to check.
+
+    Returns:
+        If a build is required.
+    """
+    stack = Client().active_stack
+    return bool(stack.get_docker_builds(deployment=deployment))
+
+
 def reuse_or_create_pipeline_build(
     deployment: "PipelineDeploymentBase",
     allow_build_reuse: bool,
@@ -129,6 +142,7 @@ def reuse_or_create_pipeline_build(
             allow_build_reuse
             and code_repository
             and not deployment.requires_included_files
+            and build_required(deployment=deployment)
         ):
             existing_build = find_existing_build(
                 deployment=deployment, code_repository=code_repository
@@ -427,52 +441,53 @@ def verify_local_repository_context(
         The code repository from which to download files for the runs of the
         deployment, or None if code download is not possible.
     """
-    if deployment.requires_code_download:
-        if not local_repo_context:
-            raise RuntimeError(
-                "The `DockerSettings` of the pipeline or one of its "
-                "steps specify that code should be included in the "
-                "Docker image (`source_files='download'`), but there is no "
-                "code repository active at your current source root "
-                f"`{source_utils.get_source_root()}`."
-            )
-        elif local_repo_context.is_dirty:
-            raise RuntimeError(
-                "The `DockerSettings` of the pipeline or one of its "
-                "steps specify that code should be included in the "
-                "Docker image (`source_files='download'`), but the code "
-                "repository active at your current source root "
-                f"`{source_utils.get_source_root()}` has uncommitted "
-                "changes."
-            )
-        elif local_repo_context.has_local_changes:
-            raise RuntimeError(
-                "The `DockerSettings` of the pipeline or one of its "
-                "steps specify that code should be included in the "
-                "Docker image (`source_files='download'`), but the code "
-                "repository active at your current source root "
-                f"`{source_utils.get_source_root()}` has unpushed "
-                "changes."
-            )
+    if build_required(deployment=deployment):
+        if deployment.requires_code_download:
+            if not local_repo_context:
+                raise RuntimeError(
+                    "The `DockerSettings` of the pipeline or one of its "
+                    "steps specify that code should be included in the "
+                    "Docker image (`source_files='download'`), but there is no "
+                    "code repository active at your current source root "
+                    f"`{source_utils.get_source_root()}`."
+                )
+            elif local_repo_context.is_dirty:
+                raise RuntimeError(
+                    "The `DockerSettings` of the pipeline or one of its "
+                    "steps specify that code should be included in the "
+                    "Docker image (`source_files='download'`), but the code "
+                    "repository active at your current source root "
+                    f"`{source_utils.get_source_root()}` has uncommitted "
+                    "changes."
+                )
+            elif local_repo_context.has_local_changes:
+                raise RuntimeError(
+                    "The `DockerSettings` of the pipeline or one of its "
+                    "steps specify that code should be included in the "
+                    "Docker image (`source_files='download'`), but the code "
+                    "repository active at your current source root "
+                    f"`{source_utils.get_source_root()}` has unpushed "
+                    "changes."
+                )
+
+        if local_repo_context:
+            if local_repo_context.is_dirty:
+                logger.warning(
+                    "Unable to use code repository to download code for this run "
+                    "as there are uncommitted changes."
+                )
+            elif local_repo_context.has_local_changes:
+                logger.warning(
+                    "Unable to use code repository to download code for this run "
+                    "as there are unpushed changes."
+                )
 
     code_repository = None
-
-    if local_repo_context:
-        if local_repo_context.is_dirty:
-            logger.warning(
-                "Unable to use code repository to download code for this run "
-                "as there are uncommitted changes."
-            )
-        elif local_repo_context.has_local_changes:
-            logger.warning(
-                "Unable to use code repository to download code for this run "
-                "as there are unpushed changes."
-            )
-        else:
-            model = Client().get_code_repository(
-                local_repo_context.code_repository_id
-            )
-            code_repository = BaseCodeRepository.from_model(model)
+    if local_repo_context and not local_repo_context.has_local_changes:
+        model = Client().get_code_repository(
+            local_repo_context.code_repository_id
+        )
+        code_repository = BaseCodeRepository.from_model(model)
 
     return code_repository
 
