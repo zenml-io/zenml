@@ -460,13 +460,13 @@ def verify_local_repository_context(
     if local_repo_context:
         if local_repo_context.is_dirty:
             logger.warning(
-                "Unable to use code repository for this run as there are "
-                "uncommitted changes."
+                "Unable to use code repository to download code for this run "
+                "as there are uncommitted changes."
             )
         elif local_repo_context.has_local_changes:
             logger.warning(
-                "Unable to use code repository for this run as there are "
-                "unpushed changes."
+                "Unable to use code repository to download code for this run "
+                "as there are unpushed changes."
             )
         else:        
             model = Client().get_code_repository(
