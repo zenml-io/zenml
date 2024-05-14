@@ -44,8 +44,7 @@ class TensorBoardIntegration(Integration):
             tf_version = "2.11"
 
         requirements = [
-            f"tensorboard=={tf_version}",
-            "protobuf>=3.6.0,<4.0.0",
+            f"tensorboard>={tf_version}",
         ]
         return requirements
 

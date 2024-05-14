@@ -31,7 +31,7 @@ class TektonIntegration(Integration):
     """Definition of Tekton Integration for ZenML."""
 
     NAME = TEKTON
-    REQUIREMENTS = ["kfp-tekton==1.7.1"]
+    REQUIREMENTS = ["kfp>=2.6.0", "kfp-kubernetes>=1.1.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
