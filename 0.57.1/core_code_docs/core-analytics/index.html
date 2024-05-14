@@ -3729,18 +3729,18 @@ AnalyticsContext        </code>
         <span class="c1"># Fetch the analytics opt-in setting</span>
         <span class="kn">from</span> <span class="nn">zenml.config.global_config</span> <span class="kn">import</span> <span class="n">GlobalConfiguration</span>
 
-        <span class="n">gc</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span>
-        <span class="n">store_info</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">get_store_info</span><span class="p">()</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_server</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="o">=</span> <span class="n">store_info</span><span class="o">.</span><span class="n">analytics_enabled</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">analytics_opt_in</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span>
-
         <span class="k">try</span><span class="p">:</span>
+            <span class="n">gc</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span>
+            <span class="n">store_info</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">get_store_info</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_server</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="o">=</span> <span class="n">store_info</span><span class="o">.</span><span class="n">analytics_enabled</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">analytics_opt_in</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span>
+
             <span class="c1"># Fetch the `user_id`</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_server</span><span class="p">:</span>
                 <span class="kn">from</span> <span class="nn">zenml.zen_server.auth</span> <span class="kn">import</span> <span class="n">get_auth_context</span>
@@ -4058,18 +4058,18 @@ AnalyticsContext        </code>
     <span class="c1"># Fetch the analytics opt-in setting</span>
     <span class="kn">from</span> <span class="nn">zenml.config.global_config</span> <span class="kn">import</span> <span class="n">GlobalConfiguration</span>
 
-    <span class="n">gc</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span>
-    <span class="n">store_info</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">get_store_info</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_server</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="o">=</span> <span class="n">store_info</span><span class="o">.</span><span class="n">analytics_enabled</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">analytics_opt_in</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
     <span class="k">try</span><span class="p">:</span>
+        <span class="n">gc</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span>
+        <span class="n">store_info</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">get_store_info</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_server</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="o">=</span> <span class="n">store_info</span><span class="o">.</span><span class="n">analytics_enabled</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">analytics_opt_in</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+
         <span class="c1"># Fetch the `user_id`</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_server</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">zenml.zen_server.auth</span> <span class="kn">import</span> <span class="n">get_auth_context</span>

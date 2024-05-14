@@ -20914,6 +20914,8 @@ resource. Otherwise, simply returns.</p>
 <span class="sd">        resource_type: The type of resource to report a decrement in count for.</span>
 <span class="sd">        resource_id: ID of the resource that was deleted.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server_config</span><span class="p">()</span><span class="o">.</span><span class="n">feature_gate_enabled</span><span class="p">:</span>
+        <span class="k">return</span>
     <span class="n">feature_gate</span><span class="p">()</span><span class="o">.</span><span class="n">report_event</span><span class="p">(</span>
         <span class="n">resource</span><span class="o">=</span><span class="n">resource_type</span><span class="p">,</span> <span class="n">resource_id</span><span class="o">=</span><span class="n">resource_id</span><span class="p">,</span> <span class="n">is_decrement</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
@@ -47289,7 +47291,19 @@ user.</p></td>
     <span class="n">verify_permission</span><span class="p">(</span>
         <span class="n">resource_type</span><span class="o">=</span><span class="n">ResourceType</span><span class="o">.</span><span class="n">PIPELINE_RUN</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">Action</span><span class="o">.</span><span class="n">CREATE</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">zen_store</span><span class="p">()</span><span class="o">.</span><span class="n">get_or_create_run</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">)</span>
+
+    <span class="n">run</span><span class="p">,</span> <span class="n">created</span> <span class="o">=</span> <span class="n">zen_store</span><span class="p">()</span><span class="o">.</span><span class="n">get_or_create_run</span><span class="p">(</span>
+        <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
+        <span class="n">pre_creation_hook</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">check_entitlement</span><span class="p">(</span>
+            <span class="n">resource_type</span><span class="o">=</span><span class="n">ResourceType</span><span class="o">.</span><span class="n">PIPELINE_RUN</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">created</span><span class="p">:</span>
+        <span class="n">report_usage</span><span class="p">(</span>
+            <span class="n">resource_type</span><span class="o">=</span><span class="n">ResourceType</span><span class="o">.</span><span class="n">PIPELINE_RUN</span><span class="p">,</span> <span class="n">resource_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">run</span><span class="p">,</span> <span class="n">created</span>
 </code></pre></div>
         </details>
     </div>

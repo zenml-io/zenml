@@ -1690,6 +1690,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.aws.service_connectors.aws_service_connector.AWSServiceConnector.get_ecr_client" class="md-nav__link">
+    get_ecr_client()
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3249,6 +3256,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#zenml.integrations.aws.service_connectors.aws_service_connector.AWSServiceConnector.get_ecr_client" class="md-nav__link">
+    get_ecr_client()
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3768,6 +3782,35 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
 
         <span class="k">return</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">_get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get an ECR client.</span>
+
+<span class="sd">        If this container registry is configured with an AWS service connector,</span>
+<span class="sd">        we use that connector to create an authenticated client. Otherwise</span>
+<span class="sd">        local AWS credentials will be used.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An ECR client.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">connector</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_service_connector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connector</span><span class="p">)</span>
+                <span class="n">connector</span> <span class="o">=</span> <span class="n">service_connector_registry</span><span class="o">.</span><span class="n">instantiate_connector</span><span class="p">(</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">model</span>
+                <span class="p">)</span>
+                <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">connector</span><span class="p">,</span> <span class="n">AWSServiceConnector</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">connector</span><span class="o">.</span><span class="n">get_ecr_client</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Unable to get ECR client from service connector: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">boto3</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span><span class="o">.</span><span class="n">client</span><span class="p">(</span>
+            <span class="s2">&quot;ecr&quot;</span><span class="p">,</span>
+            <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_region</span><span class="p">(),</span>
+        <span class="p">)</span>
+
     <span class="k">def</span> <span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Logs warning message if trying to push an image for which no repository exists.</span>
 
@@ -3783,10 +3826,9 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid docker image name &#39;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
         <span class="n">repo_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_ecr_client</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">response</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">client</span><span class="p">(</span>
-                <span class="s2">&quot;ecr&quot;</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_region</span><span class="p">()</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">describe_repositories</span><span class="p">()</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">describe_repositories</span><span class="p">()</span>
         <span class="k">except</span> <span class="p">(</span><span class="n">BotoCoreError</span><span class="p">,</span> <span class="n">ClientError</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;Amazon ECR requires you to create a repository before you can &quot;</span>
@@ -3830,11 +3872,11 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="s2">&quot;Amazon ECR requires you to create a repository before you can &quot;</span>
-            <span class="s2">&quot;push an image to it. If you want to for example run a pipeline &quot;</span>
-            <span class="s2">&quot;using our Kubeflow orchestrator, ZenML will automatically build a &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;docker image called `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">uri</span><span class="si">}</span><span class="s2">/zenml-kubeflow:&lt;PIPELINE_NAME&gt;` &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;and try to push it. This will fail unless you create the &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;repository `zenml-kubeflow` inside your amazon registry.&quot;</span>
+            <span class="s2">&quot;push an image to it. If you want to for run a pipeline &quot;</span>
+            <span class="s2">&quot;using a remote orchestrator, ZenML will automatically build a &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;docker image called `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">uri</span><span class="si">}</span><span class="s2">/zenml:&lt;PIPELINE_NAME&gt;` &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;and try to push it. This will fail unless you create a &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;repository called `zenml` inside your Amazon ECR.&quot;</span>
         <span class="p">)</span>
 </code></pre></div>
         </details>
@@ -3992,10 +4034,9 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid docker image name &#39;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
     <span class="n">repo_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
+    <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_ecr_client</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">client</span><span class="p">(</span>
-            <span class="s2">&quot;ecr&quot;</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_region</span><span class="p">()</span>
-        <span class="p">)</span><span class="o">.</span><span class="n">describe_repositories</span><span class="p">()</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">describe_repositories</span><span class="p">()</span>
     <span class="k">except</span> <span class="p">(</span><span class="n">BotoCoreError</span><span class="p">,</span> <span class="n">ClientError</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
             <span class="s2">&quot;Amazon ECR requires you to create a repository before you can &quot;</span>
@@ -7599,6 +7640,7 @@ IAM role)</li>
 
 
 
+
   <div class="doc doc-object doc-class">
 
 
@@ -8012,8 +8054,10 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="c1"># Refresh expired sessions</span>
             <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
             <span class="n">expires_at</span> <span class="o">=</span> <span class="n">expires_at</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
-            <span class="c1"># check if the token expires in the next 5 minutes</span>
-            <span class="k">if</span> <span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+            <span class="c1"># check if the token expires in the near future</span>
+            <span class="k">if</span> <span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span>
+                <span class="n">minutes</span><span class="o">=</span><span class="n">BOTO3_SESSION_EXPIRATION_BUFFER</span>
+            <span class="p">):</span>
                 <span class="k">return</span> <span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
@@ -8026,6 +8070,37 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_session_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span>
+
+    <span class="k">def</span> <span class="nf">get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get an ECR client.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the service connector is not able to instantiate an</span>
+<span class="sd">                ECR client.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An ECR client.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span>
+            <span class="n">AWS_RESOURCE_TYPE</span><span class="p">,</span>
+            <span class="n">DOCKER_REGISTRY_RESOURCE_TYPE</span><span class="p">,</span>
+        <span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to instantiate ECR client for a connector that is &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;configured to provide access to a &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+                <span class="s2">&quot;resource type.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">session</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_boto3_session</span><span class="p">(</span>
+            <span class="n">auth_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">auth_method</span><span class="p">,</span>
+            <span class="n">resource_type</span><span class="o">=</span><span class="n">DOCKER_REGISTRY_RESOURCE_TYPE</span><span class="p">,</span>
+            <span class="n">resource_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">client</span><span class="p">(</span>
+            <span class="s2">&quot;ecr&quot;</span><span class="p">,</span>
+            <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region</span><span class="p">,</span>
+            <span class="n">endpoint_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">endpoint_url</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_iam_policy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -9595,8 +9670,10 @@ timestamp, if applicable.</p></td>
         <span class="c1"># Refresh expired sessions</span>
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
         <span class="n">expires_at</span> <span class="o">=</span> <span class="n">expires_at</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
-        <span class="c1"># check if the token expires in the next 5 minutes</span>
-        <span class="k">if</span> <span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+        <span class="c1"># check if the token expires in the near future</span>
+        <span class="k">if</span> <span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span>
+            <span class="n">minutes</span><span class="o">=</span><span class="n">BOTO3_SESSION_EXPIRATION_BUFFER</span>
+        <span class="p">):</span>
             <span class="k">return</span> <span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
@@ -9609,6 +9686,91 @@ timestamp, if applicable.</p></td>
     <span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_session_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h6 id="zenml.integrations.aws.service_connectors.aws_service_connector.AWSServiceConnector.get_ecr_client" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>Get an ECR client.</p>
+
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>ValueError</code></td>
+        <td><p>If the service connector is not able to instantiate an
+ECR client.</p></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>botocore.client.BaseClient</code></td>
+      <td><p>An ECR client.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get an ECR client.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the service connector is not able to instantiate an</span>
+<span class="sd">            ECR client.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        An ECR client.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span>
+        <span class="n">AWS_RESOURCE_TYPE</span><span class="p">,</span>
+        <span class="n">DOCKER_REGISTRY_RESOURCE_TYPE</span><span class="p">,</span>
+    <span class="p">}:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unable to instantiate ECR client for a connector that is &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;configured to provide access to a &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+            <span class="s2">&quot;resource type.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">session</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_boto3_session</span><span class="p">(</span>
+        <span class="n">auth_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">auth_method</span><span class="p">,</span>
+        <span class="n">resource_type</span><span class="o">=</span><span class="n">DOCKER_REGISTRY_RESOURCE_TYPE</span><span class="p">,</span>
+        <span class="n">resource_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">client</span><span class="p">(</span>
+        <span class="s2">&quot;ecr&quot;</span><span class="p">,</span>
+        <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region</span><span class="p">,</span>
+        <span class="n">endpoint_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">endpoint_url</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div>
         </details>
     </div>

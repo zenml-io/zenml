@@ -4056,6 +4056,12 @@ orchestrator pod. If not provided, a new service account with "edit"
 permissions will be created.</p></td>
       </tr>
       <tr>
+        <td><code>step_pod_service_account_name</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Name of the service account to use for the
+step pods. If not provided, the default service account will be used.</p></td>
+      </tr>
+      <tr>
         <td><code>pod_settings</code></td>
         <td><code>Optional[zenml.integrations.kubernetes.pod_settings.KubernetesPodSettings]</code></td>
         <td><p>Pod settings to apply.</p></td>
@@ -4077,12 +4083,15 @@ permissions will be created.</p></td>
 <span class="sd">        service_account_name: Name of the service account to use for the</span>
 <span class="sd">            orchestrator pod. If not provided, a new service account with &quot;edit&quot;</span>
 <span class="sd">            permissions will be created.</span>
+<span class="sd">        step_pod_service_account_name: Name of the service account to use for the</span>
+<span class="sd">            step pods. If not provided, the default service account will be used.</span>
 <span class="sd">        pod_settings: Pod settings to apply.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">synchronous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">service_account_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">step_pod_service_account_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">pod_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">KubernetesPodSettings</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div>
         </details>
@@ -4090,6 +4099,7 @@ permissions will be created.</p></td>
 
 
   <div class="doc doc-children">
+
 
 
 
@@ -6352,7 +6362,8 @@ environment.</p></td>
             <span class="n">args</span><span class="o">=</span><span class="n">step_args</span><span class="p">,</span>
             <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
             <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">,</span>
-            <span class="n">service_account_name</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">service_account_name</span><span class="p">,</span>
+            <span class="n">service_account_name</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">step_pod_service_account_name</span>
+            <span class="ow">or</span> <span class="n">settings</span><span class="o">.</span><span class="n">service_account_name</span><span class="p">,</span>
             <span class="n">mount_local_stores</span><span class="o">=</span><span class="n">mount_local_stores</span><span class="p">,</span>
         <span class="p">)</span>
 

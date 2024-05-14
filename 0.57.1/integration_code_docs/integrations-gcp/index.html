@@ -10932,6 +10932,7 @@ services:</p>
 
 
 
+
   <div class="doc doc-object doc-class">
 
 
@@ -12123,7 +12124,10 @@ GCPServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="c1"># Refresh expired sessions</span>
             <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
             <span class="n">expires_at</span> <span class="o">=</span> <span class="n">expires_at</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">now</span><span class="p">:</span>
+            <span class="c1"># check if the token expires in the near future</span>
+            <span class="k">if</span> <span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span>
+                <span class="n">minutes</span><span class="o">=</span><span class="n">GCP_SESSION_EXPIRATION_BUFFER</span>
+            <span class="p">):</span>
                 <span class="k">return</span> <span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
@@ -13290,7 +13294,10 @@ expiration timestamp, if applicable.</p></td>
         <span class="c1"># Refresh expired sessions</span>
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
         <span class="n">expires_at</span> <span class="o">=</span> <span class="n">expires_at</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">now</span><span class="p">:</span>
+        <span class="c1"># check if the token expires in the near future</span>
+        <span class="k">if</span> <span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span>
+            <span class="n">minutes</span><span class="o">=</span><span class="n">GCP_SESSION_EXPIRATION_BUFFER</span>
+        <span class="p">):</span>
             <span class="k">return</span> <span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
