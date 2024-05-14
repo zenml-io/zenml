@@ -69,6 +69,22 @@ class ActionSchema(NamedSchema, table=True):
 
     triggers: List["TriggerSchema"] = Relationship(back_populates="action")
 
+    service_account_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="service_account_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    service_account: UserSchema = Relationship(
+        back_populates="auth_triggers",
+        sa_relationship_kwargs={
+            "foreign_keys": "[ActionSchema.service_account_id]"
+        },
+    )
+    auth_window: int
+
     flavor: str = Field(nullable=False)
     plugin_subtype: str = Field(nullable=False)
     description: str = Field(sa_column=Column(TEXT, nullable=True))
@@ -95,6 +111,8 @@ class ActionSchema(NamedSchema, table=True):
             flavor=request.flavor,
             plugin_subtype=request.plugin_subtype,
             description=request.description,
+            service_account_id=request.service_account_id,
+            auth_window=request.auth_window,
         )
 
     def update(self, action_update: "ActionUpdate") -> "ActionSchema":
@@ -151,6 +169,7 @@ class ActionSchema(NamedSchema, table=True):
                     base64.b64decode(self.configuration).decode()
                 ),
                 description=self.description,
+                auth_window=self.auth_window,
             )
         resources = None
         if include_resources:
@@ -160,7 +179,8 @@ class ActionSchema(NamedSchema, table=True):
                     response_model=TriggerResponse,
                     include_resources=include_resources,
                     include_metadata=include_metadata,
-                ).items
+                ).items,
+                service_account=self.service_account.to_model(),
             )
         return ActionResponse(
             id=self.id,

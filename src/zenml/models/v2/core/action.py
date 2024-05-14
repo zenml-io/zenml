@@ -30,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.trigger import TriggerResponse
@@ -147,6 +148,10 @@ class ActionResponseMetadata(WorkspaceScopedResponseMetadata):
     configuration: Dict[str, Any] = Field(
         title="The configuration for the action.",
     )
+    auth_window: int = Field(
+        title="The time window in minutes for which the service account is "
+        "authorized to execute the action."
+    )
 
 
 class ActionResponseResources(WorkspaceScopedResponseResources):
@@ -155,6 +160,9 @@ class ActionResponseResources(WorkspaceScopedResponseResources):
     # TODO: convert this to a Page when it no longer breaks the OpenAPI docs
     triggers: List["TriggerResponse"] = Field(
         title="The trigger associated with the action.",
+    )
+    service_account: UserResponse = Field(
+        title="The service account that is used to execute the action.",
     )
 
 
@@ -205,6 +213,15 @@ class ActionResponse(
         return self.get_metadata().description
 
     @property
+    def auth_window(self) -> int:
+        """The `auth_window` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().auth_window
+
+    @property
     def configuration(self) -> Dict[str, Any]:
         """The `configuration` property.
         Returns:
@@ -223,10 +240,20 @@ class ActionResponse(
     @property
     def triggers(self) -> List["TriggerResponse"]:
         """The `triggers` property.
+
         Returns:
             the value of the property.
         """
         return self.get_resources().triggers
+
+    @property
+    def service_account(self) -> "UserResponse":
+        """The `service_account` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().service_account
 
 
 # ------------------ Filter Model ------------------
