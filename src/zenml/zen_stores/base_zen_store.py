@@ -419,8 +419,8 @@ class BaseZenStore(
         base_url = server_config.base_url
         metadata = server_config.metadata
         secrets_store_type = SecretsStoreType.NONE
-        if isinstance(self, SqlZenStore):
-            secrets_store_type = self.secrets_store.type
+        if isinstance(self, SqlZenStore) and self.config.secrets_store:
+            secrets_store_type = self.config.secrets_store.type
         use_legacy_dashboard = server_config.use_legacy_dashboard
         return ServerModel(
             id=GlobalConfiguration().user_id,

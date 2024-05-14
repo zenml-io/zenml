@@ -241,6 +241,38 @@ class MigrationUtils(BaseModel):
                     create_table_stmt,
                 )
 
+                # In SQLAlchemy, the CreateTable statement may not always
+                # include unique constraints explicitly if they are implemented
+                # as unique indexes instead. To make sure we get all unique
+                # constraints, including those implemented as indexes, we
+                # extract the unique constraints from the table schema and add
+                # them to the create table statement.
+
+                # Extract the unique constraints from the table schema
+                unique_constraints = []
+                for index in table.indexes:
+                    if index.unique:
+                        unique_columns = [
+                            f"`{column.name}`" for column in index.columns
+                        ]
+                        unique_constraints.append(
+                            f"UNIQUE KEY `{index.name}` ({', '.join(unique_columns)})"
+                        )
+
+                # Add the unique constraints to the create table statement
+                if unique_constraints:
+                    # Remove the closing parenthesis, semicolon and any
+                    # whitespaces at the end of the create table statement
+                    create_table_stmt = re.sub(
+                        r"\s*\)\s*;\s*$", "", create_table_stmt
+                    )
+                    create_table_stmt = (
+                        create_table_stmt
+                        + ", \n\t"
+                        + ", \n\t".join(unique_constraints)
+                        + "\n);"
+                    )
+
                 # Store the table schema
                 store_db_info(
                     dict(table=table.name, create_stmt=create_table_stmt)

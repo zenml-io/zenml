@@ -1,5 +1,43 @@
 <!-- markdown-link-check-disable -->
 
+# 0.57.1
+
+This a minor release that brings a variety of enhancements for
+the new dashboard release, a new update to the LLMOps guide (covering the use of rerankers in RAG pipelines) and [an updated README](README.md). It also introduces some new improvement to the service connectors.
+
+We'd like to give a special thanks to @ruvilonix for their first contribution.
+
+## What's Changed
+* Add new versions to migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2663
+* Resource settings import fix by @htahir1 in https://github.com/zenml-io/zenml/pull/2664
+* Fix env variable for legacy dashboard by @schustmi in https://github.com/zenml-io/zenml/pull/2668
+* Fix broken links in code examples by @strickvl in https://github.com/zenml-io/zenml/pull/2672
+* Improve error message when trying to unpack a step artifact by @schustmi in https://github.com/zenml-io/zenml/pull/2674
+* Prevent special whitespaces in the names of entities by @avishniakov in https://github.com/zenml-io/zenml/pull/2665
+* Ensure extra flags aren't passed into `uv` integration install command by @strickvl in https://github.com/zenml-io/zenml/pull/2670
+* `enable_cache` option shouldn't be set to `False` for one of the steps by @ruvilonix in https://github.com/zenml-io/zenml/pull/2574
+* Add new dashboard links to create/deactivate CLI commands by @avishniakov in https://github.com/zenml-io/zenml/pull/2678
+* Add reranking section to LLMOps guide by @strickvl in https://github.com/zenml-io/zenml/pull/2679
+* Updated Readme by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2675
+* Added Thumbnail by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2684
+* [k8s orchestrator] Fix credentials refresh and don't use service connector for incluster auth by @wjayesh in https://github.com/zenml-io/zenml/pull/2671
+* Prepare Release 0.57.1 by @safoinme in https://github.com/zenml-io/zenml/pull/2683
+* Include email in event by @schustmi in https://github.com/zenml-io/zenml/pull/2692
+* Set newsletter flag from email opted in by @schustmi in https://github.com/zenml-io/zenml/pull/2694
+* Only report usage once pipeline run starts by @schustmi in https://github.com/zenml-io/zenml/pull/2680
+* Reduced thumbnail size by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2689
+* Fix intermittent timeout issues with service connector sessions by @stefannica in https://github.com/zenml-io/zenml/pull/2690
+* Include unique constraints in the database backup by @stefannica in https://github.com/zenml-io/zenml/pull/2695
+* [k8s orch] Add option to specify separate service account for step pods by @wjayesh in https://github.com/zenml-io/zenml/pull/2688
+* Update GCP registry docs by @safoinme in https://github.com/zenml-io/zenml/pull/2676
+* Use service connector for boto session if possible by @schustmi in https://github.com/zenml-io/zenml/pull/2682
+* Send missing user enriched events by @schustmi in https://github.com/zenml-io/zenml/pull/2696
+
+## New Contributors
+* @ruvilonix made their first contribution in https://github.com/zenml-io/zenml/pull/2574
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.57.0...0.57.1
+
 # 0.57.0
 
 We're excited to announce that we're open-sourcing our new and improved dashboard. This unifies the experience for OSS and cloud users, though OSS users will initially see some dashboard features unavailable in this launch release.
