@@ -85,6 +85,21 @@
   * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
   * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
 
+## How-To ...
+
+* [... build your pipeline](how-to/pipeline/overview.md)
+  * [How to configure pipeline/step parameters]()
+  * [How to control the caching behavior]()
+  * []()
+*  [... deal with pipeline configurations]()
+*  [... deal with code requirements]()
+  * []()
+*  [... use and customize docker]()
+  * []()
+*  [... change compute that my pipeline runs on]()
+  * []()
+*  [... ]
+
 ## Deploying ZenML
 
 * [🤔 Why deploy ZenML?](deploying-zenml/why-deploy-zenml.md)
