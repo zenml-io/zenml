@@ -4,7 +4,7 @@ description: >-
   decorators to your code.
 ---
 
-# Build a pipeline?
+# ⛓️ Build a pipeline?
 
 ```python
 @step  # Just add this decorator

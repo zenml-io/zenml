@@ -85,10 +85,11 @@
   * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings.md)
   * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms.md)
 
-## 🛠️ How-To
+## How-To
 
-* [Build a pipeline?](how-to/overview/README.md)
+* [⛓️ Build a pipeline?](how-to/overview/README.md)
   * [How to use pipeline/step parameters](how-to/overview/how-to-use-pipeline-step-parameters.md)
+  * [How to annotate step outputs](how-to/overview/how-to-annotate-step-outputs.md)
   * [How to control caching behavior](how-to/overview/how-to-control-caching-behavior.md)
   * [Trigger a pipeline from within another](how-to/overview/trigger-a-pipeline-from-within-another.md)
 * [Use configuration files](how-to/use-configuration-files/README.md)
@@ -100,7 +101,10 @@
   * [Configure resources](how-to/use-compute/configure-resources.md)
   * [Schedule a pipeline](how-to/use-compute/schedule-a-pipeline.md)
 * [Handle Data/Artifacts](how-to/handle-data-artifacts.md)
-* [Use metadata and tags](how-to/use-metadata-and-tags.md)
+* [Attach metadata and tags](how-to/attach-metadata-and-tags/README.md)
+  * [Attach metrics to a step output/ artifact](how-to/attach-metadata-and-tags/attach-metrics-to-a-step-output-artifact.md)
+* [Use the Model Control Plane](how-to/use-the-model-control-plane/README.md)
+  * [Load a Model within a Step](how-to/use-the-model-control-plane/load-a-model-within-a-step.md)
 
 ## Deploying ZenML
 
