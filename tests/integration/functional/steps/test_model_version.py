@@ -17,6 +17,7 @@ from unittest import mock
 from uuid import uuid4
 
 import pytest
+from tests.integration.functional.cli.utils import random_resource_name
 from typing_extensions import Annotated
 
 from zenml import get_pipeline_context, get_step_context, pipeline, step
@@ -823,3 +824,40 @@ def test_pipeline_context_pass_artifact_from_model_and_link_run(
 
     assert len(mv.pipeline_run_ids) == 2
     assert {run_name for run_name in mv.pipeline_run_ids} == {"run_1", "run_3"}
+
+
+@step
+def model_version_asserter(mv_id):
+    assert mv_id == str(get_step_context().model.id)
+
+
+@step
+def model_version_promoter(mv: Model):
+    mv.set_stage(ModelStages.STAGING, force=True)
+
+
+def test_pipeline_use_same_model_version_even_if_it_was_promoted_during_run(
+    clean_client: "Client",
+):
+    """Test the following case:
+    - Pipeline starts with Model `foo` stage `staging`
+    - Do some steps
+    - Some step moves another model version to `staging`
+    - Validate that subsequent steps can still work with initial model version
+    """
+    random_name = random_resource_name()
+    mv1 = Model(name=random_name)
+    mv1._get_or_create_model_version()
+    mv1.set_stage(ModelStages.STAGING, force=True)
+    mv2 = Model(name=random_name)
+    mv2._get_or_create_model_version()
+
+    @pipeline(
+        model=Model(name=random_name, version="staging"), enable_cache=False
+    )
+    def _inner_pipeline():
+        model_version_asserter(mv_id=mv1.id, id="mva1")
+        model_version_promoter(mv=mv2, after=["mva1"])
+        model_version_asserter(mv_id=mv1.id, after=["model_version_promoter"])
+
+    _inner_pipeline()
