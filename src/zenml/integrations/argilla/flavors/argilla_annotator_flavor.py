@@ -33,7 +33,7 @@ DEFAULT_LOCAL_ARGILLA_PORT = 6900
 
 
 class ArgillaAnnotatorSettings(BaseSettings):
-    """Label studio annotator settings.
+    """Argilla annotator settings.
 
     If you are using a private Hugging Face Spaces instance of Argilla you
         must pass in https_extra_kwargs.
