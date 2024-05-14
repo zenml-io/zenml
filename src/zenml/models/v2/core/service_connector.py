@@ -384,7 +384,7 @@ class ServiceConnectorUpdate(BaseUpdate):
             The equivalent request model
 
         Raises:
-            RuntimeError, if the model can not be converted to a request model.
+            RuntimeError: if the model can not be converted to a request model.
         """
         try:
             return ServiceConnectorRequest.model_validate(self.model_dump())

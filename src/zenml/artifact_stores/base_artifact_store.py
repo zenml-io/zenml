@@ -182,6 +182,9 @@ class BaseArtifactStoreConfig(StackComponentConfig):
         Checks whether supported schemes are defined and the given path is
         supported.
 
+        Args:
+            data: the input data to construct the artifact store.
+
         Returns:
             The validated values.
 

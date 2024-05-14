@@ -593,8 +593,8 @@ class BaseFilter(BaseModel):
             True if the field is a datetime field, False otherwise.
 
         Raises:
-            KeyError, if the key does not exist in model fields.
-            ValueError, if the pydantic field info does not have an annotation.
+            KeyError: if the key does not exist in model fields.
+            ValueError: if the pydantic field info does not have an annotation.
         """
         try:
             if k not in cls.model_fields:
@@ -628,8 +628,8 @@ class BaseFilter(BaseModel):
             True if the field is a UUID field, False otherwise.
 
         Raises:
-            KeyError, if the key does not exist in model fields.
-            ValueError, if the pydantic field info does not have an annotation.
+            KeyError: if the key does not exist in model fields.
+            ValueError: if the pydantic field info does not have an annotation.
         """
         try:
             if k not in cls.model_fields:
@@ -663,8 +663,8 @@ class BaseFilter(BaseModel):
             True if the field is an int field, False otherwise.
 
         Raises:
-            KeyError, if the key does not exist in model fields.
-            ValueError, if the pydantic field info does not have an annotation.
+            KeyError: if the key does not exist in model fields.
+            ValueError: if the pydantic field info does not have an annotation.
         """
         try:
             if k not in cls.model_fields:
@@ -698,8 +698,8 @@ class BaseFilter(BaseModel):
             True if the field is a bool field, False otherwise.
 
         Raises:
-            KeyError, if the key does not exist in model fields.
-            ValueError, if the pydantic field info does not have an annotation.
+            KeyError: if the key does not exist in model fields.
+            ValueError: if the pydantic field info does not have an annotation.
         """
         try:
             if k not in cls.model_fields:
@@ -733,8 +733,8 @@ class BaseFilter(BaseModel):
             True if the field is a string field, False otherwise.
 
         Raises:
-            KeyError, if the key does not exist in model fields.
-            ValueError, if the pydantic field info does not have an annotation.
+            KeyError: if the key does not exist in model fields.
+            ValueError: if the pydantic field info does not have an annotation.
         """
         try:
             if k not in cls.model_fields:
@@ -768,8 +768,8 @@ class BaseFilter(BaseModel):
             True if the field is a sort by field, False otherwise.
 
         Raises:
-            KeyError, if the key does not exist in model fields.
-            ValueError, if the pydantic field info does not have an annotation.
+            KeyError: if the key does not exist in model fields.
+            ValueError: if the pydantic field info does not have an annotation.
         """
         try:
             if k not in cls.model_fields:
