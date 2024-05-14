@@ -4,7 +4,7 @@ description: >-
   that you are familiar with.
 ---
 
-# How to use pipeline/step parameters
+# Use pipeline/step parameters
 
 ```python
 @step
@@ -37,7 +37,7 @@ def simple_ml_pipeline(parameter: int):
 We recommend strict typing of all parameters across your pipelines and steps.
 {% endhint %}
 
-### Run with a parameter
+### Set the parameter at runtime
 
 ```python
 # For parameters on the pipeline level, simply choose a 

@@ -88,16 +88,18 @@
 ## How-To
 
 * [⛓️ Build a pipeline?](how-to/overview/README.md)
-  * [How to use pipeline/step parameters](how-to/overview/how-to-use-pipeline-step-parameters.md)
-  * [How to annotate step outputs](how-to/overview/how-to-annotate-step-outputs.md)
-  * [How to control caching behavior](how-to/overview/how-to-control-caching-behavior.md)
+  * [Use pipeline/step parameters](how-to/overview/use-pipeline-step-parameters.md)
+  * [Name your step outputs](how-to/overview/name-your-step-outputs.md)
+  * [Control caching behavior](how-to/overview/control-caching-behavior.md)
   * [Trigger a pipeline from within another](how-to/overview/trigger-a-pipeline-from-within-another.md)
   * [Control execution order of steps](how-to/overview/control-execution-order-of-steps.md)
+  * [Name your pipeline (and runs)](how-to/overview/name-your-pipeline-and-runs.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
   * [Autogenerate a template yaml file](how-to/use-configuration-files/autogenerate-a-template-yaml-file.md)
 * [🐳 Handle requirements and Docker settings](how-to/handle-requirements-and-docker-settings/README.md)
   * [Docker settings on a step](how-to/handle-requirements-and-docker-settings/docker-settings-on-a-step.md)
   * [Build the pipeline without running](how-to/handle-requirements-and-docker-settings/build-the-pipeline-without-running.md)
+  * [Use code repositories to speed up docker build times](how-to/handle-requirements-and-docker-settings/use-code-repositories-to-speed-up-docker-build-times.md)
 * [🖥️ Use remote compute](how-to/use-remote-compute/README.md)
   * [Configure resources](how-to/use-remote-compute/configure-resources.md)
   * [Schedule a pipeline](how-to/use-remote-compute/schedule-a-pipeline.md)
@@ -105,9 +107,11 @@
   * [Return multiple outputs from a step](how-to/handle-data-artifacts/return-multiple-outputs-from-a-step.md)
   * [Create a custom materializer](how-to/handle-data-artifacts/create-a-custom-materializer.md)
 * [Attach metadata and tags](how-to/attach-metadata-and-tags/README.md)
-  * [Attach metrics to a step output/ artifact](how-to/attach-metadata-and-tags/attach-metrics-to-a-step-output-artifact.md)
+  * [Attach metadata to a step output/ artifact](how-to/attach-metadata-and-tags/attach-metadata-to-a-step-output-artifact.md)
+  * [Attach metadata to a model](how-to/attach-metadata-and-tags/attach-metadata-to-a-model.md)
 * [Use the Model Control Plane](how-to/use-the-model-control-plane/README.md)
   * [Load a Model within a Step](how-to/use-the-model-control-plane/load-a-model-within-a-step.md)
+  * [Associate a pipeline with a model](how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model.md)
 
 ## Deploying ZenML
 
