@@ -61,6 +61,7 @@ ZenML features an integration with `label_studio`.
 |-----------------------------------------|----------------|----------------|----------------------------------------------------------------------|
 | [ArgillaAnnotator](argilla.md)           | `argilla`       | `argilla`       | Connect ZenML with Argilla                                             |
 | [LabelStudioAnnotator](label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio                                      |
+| [ProdigyAnnotator](prodigy.md)           | `prodigy`       | `prodigy`       | Connect ZenML with [Prodigy](https://prodi.gy/)                                             |
 | [Custom Implementation](custom.md)      | _custom_       |                | Extend the annotator abstraction and provide your own implementation |
 
 If you would like to see the available flavors for annotators, you can use the command:

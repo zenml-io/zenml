@@ -213,5 +213,10 @@
     "argilla.client.client",
     "argilla.client.sdk",
     "argilla.client.sdk.commons",
-    "argilla.client.sdk.commons.errors"
+    "argilla.client.sdk.commons.errors",
+    "peewee",
+    "prodigy",
+    "prodigy.components",
+    "prodigy.components.db",
+    "prodigy.errors"
 ]

@@ -460,6 +460,10 @@ module = [
     "IPython.*",
     "huggingface_hub.*",
     "label_studio_sdk.*",
-    "argilla.*"
+    "argilla.*",
+    "peewee.*",
+    "prodigy.*",
+    "prodigy.components.*",
+    "prodigy.components.db.*",
 ]
 ignore_missing_imports = true
