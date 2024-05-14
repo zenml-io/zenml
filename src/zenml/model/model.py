@@ -73,12 +73,12 @@ class Model(BaseModel):
     tags: Optional[List[str]] = None
     version: Optional[Union[ModelStages, int, str]] = None
     save_models_to_registry: bool = True
+    id_: Optional[UUID] = None
 
     suppress_class_validation_warnings: bool = False
     was_created_in_this_run: bool = False
 
     _model_id: UUID = PrivateAttr(None)
-    _id: UUID = PrivateAttr(None)
     _number: int = PrivateAttr(None)
 
     #########################
@@ -93,16 +93,21 @@ class Model(BaseModel):
                 doesn't exist and can only be read given current
                 config (you used stage name or number as
                 a version name).
+
+        Raises:
+            RuntimeError: if model version doesn't exist and
+                cannot be fetched from the Model Control Plane.
         """
-        if self._id is None:
+        if self.id_ is None:
             try:
-                self._get_or_create_model_version()
-            except RuntimeError:
-                logger.info(
+                mv = self._get_or_create_model_version()
+                self.id_ = mv.id
+            except RuntimeError as e:
+                raise RuntimeError(
                     f"Version `{self.version}` of `{self.name}` model doesn't exist "
                     "and cannot be fetched from the Model Control Plane."
-                )
-        return self._id
+                ) from e
+        return self.id_
 
     @property
     def model_id(self) -> UUID:
@@ -523,35 +528,43 @@ class Model(BaseModel):
         from zenml.models import ModelRequest
 
         zenml_client = Client()
-        try:
-            model = zenml_client.zen_store.get_model(
-                model_name_or_id=self.name
+        if self.id_:
+            mv = zenml_client.get_model_version(
+                model_version_name_or_number_or_id=self.id_,
             )
-        except KeyError:
-            model_request = ModelRequest(
-                name=self.name,
-                license=self.license,
-                description=self.description,
-                audience=self.audience,
-                use_cases=self.use_cases,
-                limitations=self.limitations,
-                trade_offs=self.trade_offs,
-                ethics=self.ethics,
-                tags=self.tags,
-                user=zenml_client.active_user.id,
-                workspace=zenml_client.active_workspace.id,
-                save_models_to_registry=self.save_models_to_registry,
-            )
-            model_request = ModelRequest.parse_obj(model_request)
+            model = mv.model
+        else:
             try:
-                model = zenml_client.zen_store.create_model(
-                    model=model_request
-                )
-                logger.info(f"New model `{self.name}` was created implicitly.")
-            except EntityExistsError:
                 model = zenml_client.zen_store.get_model(
                     model_name_or_id=self.name
                 )
+            except KeyError:
+                model_request = ModelRequest(
+                    name=self.name,
+                    license=self.license,
+                    description=self.description,
+                    audience=self.audience,
+                    use_cases=self.use_cases,
+                    limitations=self.limitations,
+                    trade_offs=self.trade_offs,
+                    ethics=self.ethics,
+                    tags=self.tags,
+                    user=zenml_client.active_user.id,
+                    workspace=zenml_client.active_workspace.id,
+                    save_models_to_registry=self.save_models_to_registry,
+                )
+                model_request = ModelRequest.parse_obj(model_request)
+                try:
+                    model = zenml_client.zen_store.create_model(
+                        model=model_request
+                    )
+                    logger.info(
+                        f"New model `{self.name}` was created implicitly."
+                    )
+                except EntityExistsError:
+                    model = zenml_client.zen_store.get_model(
+                        model_name_or_id=self.name
+                    )
 
         self._model_id = model.id
         return model
@@ -565,12 +578,16 @@ class Model(BaseModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        mv = zenml_client.get_model_version(
-            model_name_or_id=self.name,
-            model_version_name_or_number_or_id=self.version,
-        )
-        if not self._id:
-            self._id = mv.id
+        if self.id_:
+            mv = zenml_client.get_model_version(
+                model_version_name_or_number_or_id=self.id_,
+            )
+        else:
+            mv = zenml_client.get_model_version(
+                model_name_or_id=self.name,
+                model_version_name_or_number_or_id=self.version,
+            )
+            self.id_ = mv.id
 
         difference: Dict[str, Any] = {}
         if self.description and mv.description != self.description:
@@ -656,6 +673,7 @@ class Model(BaseModel):
                         and pipeline_mv.version is not None
                     ):
                         self.version = pipeline_mv.version
+                        self.id_ = pipeline_mv.id_
                     else:
                         for step in context.pipeline_run.steps.values():
                             step_mv = step.config.model
@@ -666,8 +684,9 @@ class Model(BaseModel):
                                 and step_mv.version is not None
                             ):
                                 self.version = step_mv.version
+                                self.id_ = step_mv.id_
                                 break
-            if self.version:
+            if self.version or self.id_:
                 model_version = self._get_model_version()
             else:
                 raise KeyError
@@ -727,7 +746,7 @@ class Model(BaseModel):
 
             logger.info(f"New model version `{self.version}` was created.")
 
-        self._id = model_version.id
+        self.id_ = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number
         return model_version
