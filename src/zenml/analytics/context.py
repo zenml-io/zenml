@@ -76,18 +76,18 @@ class AnalyticsContext:
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
 
-        gc = GlobalConfiguration()
-        store_info = gc.zen_store.get_store_info()
-
-        if self.in_server:
-            self.analytics_opt_in = store_info.analytics_enabled
-        else:
-            self.analytics_opt_in = gc.analytics_opt_in
-
-        if not self.analytics_opt_in:
-            return self
-
         try:
+            gc = GlobalConfiguration()
+            store_info = gc.zen_store.get_store_info()
+
+            if self.in_server:
+                self.analytics_opt_in = store_info.analytics_enabled
+            else:
+                self.analytics_opt_in = gc.analytics_opt_in
+
+            if not self.analytics_opt_in:
+                return self
+
             # Fetch the `user_id`
             if self.in_server:
                 from zenml.zen_server.auth import get_auth_context
