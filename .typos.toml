@@ -32,6 +32,7 @@ prev = "prev"
 creat = "creat"
 ret = "ret"
 daa = "daa"
+cll = "cll"
 
 [default]
 locale = "en-us"

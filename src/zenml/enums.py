@@ -384,3 +384,13 @@ class PluginSubType(StrEnum):
     WEBHOOK = "webhook"
     # Action Subtypes
     PIPELINE_RUN = "pipeline_run"
+
+
+class AggregateFunction(StrEnum):
+    """All possible aggregation functions."""
+
+    COUNT = "count"
+    SUM = "sum"
+    MEAN = "mean"
+    MIN = "min"
+    MAX = "max"

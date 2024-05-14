@@ -48,7 +48,7 @@ class AccelerateScaler(ScalerModel):
 
     num_processes: Optional[int] = None
 
-    def run(self, step_function: F, **function_kwargs: Any) -> None:
+    def run(self, step_function: F, **function_kwargs: Any) -> Any:
         """Run a function with accelerate.
 
         Accelerate package: https://huggingface.co/docs/accelerate/en/index
@@ -67,6 +67,9 @@ class AccelerateScaler(ScalerModel):
         Args:
             step_function: The function to run.
             **function_kwargs: The keyword arguments to pass to the function.
+
+        Returns:
+            The return value of the function in the main process.
 
         Raises:
             CalledProcessError: If the function fails.
@@ -94,7 +97,7 @@ class AccelerateScaler(ScalerModel):
             output_path,
         ):
             command = f"accelerate launch --num_processes {num_processes} "
-            command += script_path + " "
+            command += str(script_path.absolute()) + " "
             for k, v in function_kwargs.items():
                 k = _cli_arg_name(k)
                 if isinstance(v, bool):

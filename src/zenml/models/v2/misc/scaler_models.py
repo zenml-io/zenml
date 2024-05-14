@@ -26,15 +26,25 @@ class ScalerModel(BaseModel):
     scaler_flavor: Optional[str] = None
 
     ALLOWED_SCALER_FLAVORS: ClassVar[Set[str]] = {
-        # "ScalerModel",
+        "AggregateScaler",
         "AccelerateScaler",
     }
 
     @root_validator(pre=True)
     def validate_scaler_flavor(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate the scaler flavor."""
+        """Validate the scaler flavor.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+
+        Raises:
+            ValueError: If the scaler flavor is not supported.
+        """
         if values.get("scaler_flavor", None) is None:
-            values["scaler_flavor"] = cls.__name__
+            values["scaler_flavor"] = cls.__name__  # type: ignore[attr-defined]
         if values["scaler_flavor"] not in cls.ALLOWED_SCALER_FLAVORS:
             raise ValueError(
                 f"Invalid scaler flavor {values['scaler_flavor']}. "
@@ -42,17 +52,27 @@ class ScalerModel(BaseModel):
             )
         return values
 
-    def run(self, step_function: F, **kwargs: Any) -> None:
+    def run(self, step_function: F, **kwargs: Any) -> Any:
         """Run the step using scaler.
 
         Args:
             step_function: The step function to run.
             **kwargs: Additional arguments to pass to the step function.
+
+        Returns:
+            The result of the step function as per scaler config.
+
+        Raises:
+            NotImplementedError: If the scaler flavor is not supported.
         """
         if self.scaler_flavor == "AccelerateScaler":
             from zenml.integrations.accelerate import AccelerateScaler
 
             runner = AccelerateScaler(**self.dict())
+        elif self.scaler_flavor == "AggregateScaler":
+            from zenml.scalers import AggregateScaler
+
+            runner = AggregateScaler(**self.dict())  # type: ignore[assignment]
         else:
             raise NotImplementedError
 

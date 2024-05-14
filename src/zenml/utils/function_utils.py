@@ -16,7 +16,7 @@
 import inspect
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Iterator, List, TypeVar, Union
+from typing import Any, Callable, Iterator, List, Tuple, TypeVar, Union
 
 import click
 
@@ -44,9 +44,11 @@ _CLI_WRAPPED_ACCELERATE_MAIN = """
 if __name__=="__main__":
     from accelerate import Accelerator
     import cloudpickle as pickle
+
     accelerator = Accelerator()
+
     ret = func(standalone_mode=False)
-    print(f"Accelerate function returned: {{ret}}")
+
     if accelerator.is_main_process:
         pickle.dump(ret, open("{output_file}", "wb"))
 """
@@ -183,25 +185,23 @@ def _cli_wrapped_function(func: F) -> F:
 @contextmanager
 def create_cli_wrapped_script(
     func: F, flavour: str = "accelerate"
-) -> Iterator[str]:
+) -> Iterator[Tuple[Path, Path]]:
     """Create a script with the CLI-wrapped function.
 
     Args:
         func: The function to use.
         flavour: The flavour to use.
 
-    Returns:
-        The name of the script and the name of the output.
+    Yields:
+        The paths of the script and the output.
     """
     try:
         func_path = str(Path(inspect.getabsfile(func)).parent)
         random_name = random_str(20)
-        script_name = random_name + ".py"
-        output_name = random_name + ".out"
-        script_path = Path(script_name)
-        output_path = Path(output_name)
+        script_path = Path(random_name + ".py")
+        output_path = Path(random_name + ".out")
 
-        with open(script_name, "w") as f:
+        with open(script_path, "w") as f:
             script = _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER.format(
                 func_path=func_path,
                 func_module=func.__module__,
@@ -215,8 +215,7 @@ def create_cli_wrapped_script(
 
         logger.info(f"Created script:\n\n{script}")
 
-        yield str(script_path.absolute()), str(output_path.absolute())
+        yield script_path, output_path
     finally:
-        pass
-        # path.unlink()
-        # output_path.unlink()
+        script_path.unlink()
+        output_path.unlink()
