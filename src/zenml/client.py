@@ -2761,11 +2761,7 @@ class Client(metaclass=ClientMetaClass):
         description: str,
         event_source_id: UUID,
         event_filter: Dict[str, Any],
-        action: Dict[str, Any],
-        action_flavor: str,
-        action_subtype: PluginSubType,
-        service_account: Union[str, UUID],
-        auth_window: Optional[int] = None,
+        action_id: UUID,
     ) -> TriggerResponse:
         """Registers a trigger.
 
@@ -2774,30 +2770,17 @@ class Client(metaclass=ClientMetaClass):
             description: The description of the trigger
             event_source_id: The id of the event source id
             event_filter: The event filter
-            action: The action
-            action_flavor: The action flavor
-            action_subtype: The action subtype
-            service_account: The service account
-            auth_window: The auth window
+            action_id: The ID of the action that should be triggered.
 
         Returns:
             The model of the registered event source.
         """
-        # Fetch the service account
-        service_account_model = self.get_service_account(
-            name_id_or_prefix=service_account, allow_name_prefix_match=False
-        )
-
         trigger = TriggerRequest(
             name=name,
             description=description,
             event_source_id=event_source_id,
             event_filter=event_filter,
-            action=action,
-            action_flavor=action_flavor,
-            action_subtype=action_subtype,
-            service_account_id=service_account_model.id,
-            auth_window=auth_window,
+            action_id=action_id,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
@@ -2842,6 +2825,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[datetime] = None,
         name: Optional[str] = None,
         event_source_id: Optional[UUID] = None,
+        action_id: Optional[UUID] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -2860,6 +2844,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             name: The name of the trigger to filter by.
             event_source_id: The event source associated with the Trigger
+            action_id: The action associated with the Trigger
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2875,6 +2860,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             name=name,
             event_source_id=event_source_id,
+            action_id=action_id,
             id=id,
             created=created,
             updated=updated,
@@ -2891,10 +2877,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         description: Optional[str] = None,
         event_filter: Optional[Dict[str, Any]] = None,
-        action: Optional[Dict[str, Any]] = None,
         is_active: Optional[bool] = None,
-        service_account: Optional[Union[str, UUID]] = None,
-        auth_window: Optional[int] = None,
     ) -> TriggerResponse:
         """Updates a trigger.
 
@@ -2903,11 +2886,7 @@ class Client(metaclass=ClientMetaClass):
             name: the new name of the trigger.
             description: the new description of the trigger.
             event_filter: The event filter configuration.
-            action: The action configuration.
-            is_active: Optional[bool] = Allows for activation/deactivating the
-                event source
-            service_account: The service account
-            auth_window: The auth window
+            is_active: Whether the trigger is active or not.
 
         Returns:
             The model of the updated trigger.
@@ -2925,17 +2904,8 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             description=description,
             event_filter=event_filter,
-            action=action,
             is_active=is_active,
-            auth_window=auth_window,
         )
-        if service_account:
-            # Fetch the service account
-            service_account_model = self.get_service_account(
-                name_id_or_prefix=service_account,
-                allow_name_prefix_match=False,
-            )
-            update_model.service_account_id = service_account_model.id
 
         if name:
             if self.list_triggers(name=name):

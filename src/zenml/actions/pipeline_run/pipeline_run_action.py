@@ -135,8 +135,8 @@ class PipelineRunActionHandler(BaseActionHandler):
         self._validate_configuration(config)
 
         # If an expiration window is not set, we set it to the default value
-        if trigger.auth_window is None:
-            trigger.auth_window = server_config().pipeline_run_auth_window
+        if action.auth_window is None:
+            action.auth_window = server_config().pipeline_run_auth_window
 
     def _validate_action_update(
         self,

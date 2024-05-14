@@ -1718,29 +1718,30 @@ class SqlZenStore(BaseZenStore):
     # -------------------- Actions  --------------------
 
     def _fail_if_action_with_name_exists(
-        self, action: ActionRequest, session: Session
+        self, action_name: str, workspace_id: UUID, session: Session
     ) -> None:
         """Raise an exception if an action with same name exists.
 
         Args:
-            action: The action to create.
-            session: The Session
+            action_name: The name of the action.
+            workspace_id: Workspace ID of the action.
+            session: DB Session.
 
         Raises:
             ActionExistsError: If an action with the given name already exists.
         """
         existing_domain_action = session.exec(
             select(ActionSchema)
-            .where(ActionSchema.name == action.name)
-            .where(ActionSchema.workspace_id == action.workspace)
+            .where(ActionSchema.name == action_name)
+            .where(ActionSchema.workspace_id == workspace_id)
         ).first()
         if existing_domain_action is not None:
             workspace = self._get_workspace_schema(
-                workspace_name_or_id=action.workspace, session=session
+                workspace_name_or_id=workspace_id, session=session
             )
             raise ActionExistsError(
                 f"Unable to register action with name "
-                f"'{action.name}': Found an existing action with "
+                f"'{action_name}': Found an existing action with "
                 f"the same name in the active workspace, '{workspace.name}'."
             )
 
@@ -1755,9 +1756,18 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._fail_if_action_with_name_exists(
-                action=action,
+                action_name=action.name,
+                workspace_id=action.workspace,
                 session=session,
             )
+
+            # Verify that the given service account exists
+            self._get_account_schema(
+                account_name_or_id=action.service_account_id,
+                session=session,
+                service_account=True,
+            )
+
             new_action = ActionSchema.from_request(action)
             session.add(new_action)
             session.commit()
@@ -1859,6 +1869,25 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             action = self._get_action(session=session, action_id=action_id)
+
+            if action_update.service_account_id:
+                # Verify that the given service account exists
+                self._get_account_schema(
+                    account_name_or_id=action_update.service_account_id,
+                    session=session,
+                    service_account=True,
+                )
+
+            # In case of a renaming update, make sure no action already exists
+            # with that name
+            if action_update.name:
+                if action.name != action_update.name:
+                    self._fail_if_action_with_name_exists(
+                        action_name=action_update.name,
+                        workspace_id=action.workspace.id,
+                        session=session,
+                    )
+
             action.update(action_update=action_update)
             session.add(action)
             session.commit()
@@ -7602,12 +7631,8 @@ class SqlZenStore(BaseZenStore):
                     event_source_id=trigger.event_source_id, session=session
                 )
 
-            # Verify that the given service account exists
-            self._get_account_schema(
-                account_name_or_id=trigger.service_account_id,
-                session=session,
-                service_account=True,
-            )
+            # Verify that the action exists
+            self._get_action(action_id=trigger.action_id, session=session)
 
             # Verify that the trigger name is unique
             self._fail_if_trigger_with_name_exists(
@@ -7713,14 +7738,6 @@ class SqlZenStore(BaseZenStore):
                 raise ValueError(
                     "Unable to update trigger: A trigger cannot have both a "
                     "schedule and an event source."
-                )
-
-            if trigger_update.service_account_id:
-                # Verify that the given service account exists
-                self._get_account_schema(
-                    account_name_or_id=trigger_update.service_account_id,
-                    session=session,
-                    service_account=True,
                 )
 
             # In case of a renaming update, make sure no trigger already exists

@@ -63,6 +63,16 @@ class ActionRequest(WorkspaceScopedRequest):
     configuration: Dict[str, Any] = Field(
         title="The configuration for the action.",
     )
+    service_account_id: UUID = Field(
+        title="The service account that is used to execute the action.",
+    )
+    auth_window: Optional[int] = Field(
+        default=None,
+        title="The time window in minutes for which the service account is "
+        "authorized to execute the action. Set this to 0 to authorize the "
+        "service account indefinitely (not recommended). If not set, a "
+        "default value defined for each individual action type is used.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -84,6 +94,17 @@ class ActionUpdate(BaseZenModel):
     configuration: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The configuration for the action.",
+    )
+    service_account_id: Optional[UUID] = Field(
+        default=None,
+        title="The service account that is used to execute the action.",
+    )
+    auth_window: Optional[int] = Field(
+        default=None,
+        title="The time window in minutes for which the service account is "
+        "authorized to execute the action. Set this to 0 to authorize the "
+        "service account indefinitely (not recommended). If not set, a "
+        "default value defined for each individual action type is used.",
     )
 
     @classmethod

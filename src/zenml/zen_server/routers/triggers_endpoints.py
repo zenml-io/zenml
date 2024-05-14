@@ -231,10 +231,11 @@ def create_trigger(
         trigger.event_filter
     )
 
+    action = zen_store().get_action(action_id=trigger.action_id)
     action_handler = plugin_flavor_registry().get_plugin(
-        name=trigger.action_flavor,
+        name=action.flavor,
         _type=PluginType.ACTION,
-        subtype=trigger.action_subtype,
+        subtype=action.plugin_subtype,
     )
 
     # Validate that the flavor and plugin_type correspond to an action

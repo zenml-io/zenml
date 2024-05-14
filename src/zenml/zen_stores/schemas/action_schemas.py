@@ -30,6 +30,7 @@ from zenml.models import (
     ActionResponseMetadata,
     ActionResponseResources,
     ActionUpdate,
+    TriggerResponse,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -156,6 +157,7 @@ class ActionSchema(NamedSchema, table=True):
             resources = ActionResponseResources(
                 triggers=get_page_from_list(
                     items_list=self.triggers,
+                    response_model=TriggerResponse,
                     include_resources=include_resources,
                     include_metadata=include_metadata,
                 ).items

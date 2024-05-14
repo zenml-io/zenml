@@ -34,7 +34,6 @@ from zenml.models.v2.core.action import (
     ActionResponse,
 )
 from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
-from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -181,12 +180,6 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The schedule that activates this trigger. Not set if the "
         "trigger is activated by an event source.",
     )
-    auth_window: int = Field(
-        title="The time window in minutes for which the service account is "
-        "authorized to execute the action. Set this to 0 to authorize the "
-        "service account indefinitely (not recommended). If not set, a "
-        "default value defined for each individual action type is used.",
-    )
 
 
 class TriggerResponseResources(WorkspaceScopedResponseResources):
@@ -199,9 +192,6 @@ class TriggerResponseResources(WorkspaceScopedResponseResources):
         default=None,
         title="The event source that activates this trigger. Not set if the "
         "trigger is activated by a schedule.",
-    )
-    service_account: UserResponse = Field(
-        title="The service account that is used to execute the action.",
     )
     executions: Page[TriggerExecutionResponse] = Field(
         title="The executions of this trigger.",
@@ -294,25 +284,7 @@ class TriggerResponse(
         return self.get_metadata().description
 
     @property
-    def service_account(self) -> UserResponse:
-        """The `service_account` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().service_account
-
-    @property
-    def auth_window(self) -> int:
-        """The `auth_window` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().auth_window
-
-    @property
-    def action(self) -> Dict[str, Any]:
+    def action(self) -> "ActionResponse":
         """The `action` property.
 
         Returns:
@@ -350,7 +322,11 @@ class TriggerFilter(WorkspaceScopedFilter):
     )
     event_source_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="By the event source this trigger is attached to.",
+        description="The event source this trigger is attached to.",
+    )
+    action_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="The action this trigger is attached to.",
     )
     is_active: Optional[bool] = Field(
         default=None,

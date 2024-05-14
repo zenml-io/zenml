@@ -31,7 +31,6 @@ from zenml.models import (
     ActionUpdate,
     Page,
 )
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -46,6 +45,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    plugin_flavor_registry,
     zen_store,
 )
 
@@ -98,7 +98,7 @@ def list_actions(
 
         # Process the actions through their associated plugins
         for idx, action in enumerate(actions.items):
-            action_handler = plugin_flavor_registry.get_plugin(
+            action_handler = plugin_flavor_registry().get_plugin(
                 name=action.flavor,
                 _type=PluginType.ACTION,
                 subtype=action.plugin_subtype,
@@ -152,7 +152,7 @@ def get_action(
 
     verify_permission_for_model(action, action=Action.READ)
 
-    action_handler = plugin_flavor_registry.get_plugin(
+    action_handler = plugin_flavor_registry().get_plugin(
         name=action.flavor,
         _type=PluginType.ACTION,
         subtype=action.plugin_subtype,
@@ -194,7 +194,7 @@ def create_action(
         IllegalOperationError: If the workspace specified in the stack
             component does not match the current workspace.
     """
-    action_handler = plugin_flavor_registry.get_plugin(
+    action_handler = plugin_flavor_registry().get_plugin(
         name=action.flavor,
         _type=PluginType.ACTION,
         subtype=action.plugin_subtype,
@@ -241,7 +241,7 @@ def update_action(
 
     verify_permission_for_model(action, action=Action.UPDATE)
 
-    action_handler = plugin_flavor_registry.get_plugin(
+    action_handler = plugin_flavor_registry().get_plugin(
         name=action.flavor,
         _type=PluginType.ACTION,
         subtype=action.plugin_subtype,
@@ -284,7 +284,7 @@ def delete_action(
 
     verify_permission_for_model(action, action=Action.DELETE)
 
-    action_handler = plugin_flavor_registry.get_plugin(
+    action_handler = plugin_flavor_registry().get_plugin(
         name=action.flavor,
         _type=PluginType.ACTION,
         subtype=action.plugin_subtype,

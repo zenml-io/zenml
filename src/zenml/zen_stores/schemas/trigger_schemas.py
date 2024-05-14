@@ -105,22 +105,6 @@ class TriggerSchema(NamedSchema, table=True):
         back_populates="trigger"
     )
 
-    service_account_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="service_account_id",
-        target_column="id",
-        ondelete="CASCADE",  # TODO: this should be set null and the trigger should be deactivated
-        nullable=False,
-    )
-    service_account: UserSchema = Relationship(
-        back_populates="auth_triggers",
-        sa_relationship_kwargs={
-            "foreign_keys": "[TriggerSchema.service_account_id]"
-        },
-    )
-    auth_window: int
-
     event_filter: bytes
     schedule: Optional[bytes] = Field(nullable=True)
 
@@ -161,20 +145,13 @@ class TriggerSchema(NamedSchema, table=True):
 
         Returns:
             The converted schema.
-
-        Raises:
-            ValueError: If `auth_window` is not set.
         """
-        if request.auth_window is None:
-            raise ValueError("auth_window must be set")
         return cls(
             name=request.name,
             workspace_id=request.workspace,
             user_id=request.user,
             action_id=request.action_id,
             event_source_id=request.event_source_id,
-            service_account_id=request.service_account_id,
-            auth_window=request.auth_window,
             event_filter=base64.b64encode(
                 json.dumps(
                     request.event_filter, default=pydantic_encoder
@@ -233,9 +210,7 @@ class TriggerSchema(NamedSchema, table=True):
                 )
                 if self.schedule
                 else None,
-                action=json.loads(base64.b64decode(self.action).decode()),
                 description=self.description,
-                auth_window=self.auth_window,
             )
         resources = None
         if include_resources:
@@ -253,7 +228,6 @@ class TriggerSchema(NamedSchema, table=True):
                 event_source=self.event_source.to_model()
                 if self.event_source
                 else None,
-                service_account=self.service_account.to_model(),
                 executions=executions,
             )
         return TriggerResponse(
