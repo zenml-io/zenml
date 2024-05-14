@@ -4,7 +4,7 @@ description: >-
   execution.
 ---
 
-# Handle requirements and Docker settings
+# 🐳 Handle requirements and Docker settings
 
 ```python
 docker_settings = DockerSettings(
