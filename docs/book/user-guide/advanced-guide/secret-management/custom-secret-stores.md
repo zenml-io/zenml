@@ -2,6 +2,11 @@
 description: Learning how to develop a custom secret store.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Create a custom secret store
 
 The secrets store acts as the one-stop shop for all the secrets to which your pipeline or stack components might need

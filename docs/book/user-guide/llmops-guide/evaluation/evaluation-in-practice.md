@@ -2,6 +2,11 @@
 description: Learn how to evaluate the performance of your RAG system in practice.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Assessing performance
 
 Now that we've seen individually how to evaluate the retrieval and generation
