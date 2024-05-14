@@ -6,8 +6,7 @@ description: Accessing meta information in real-time within your pipeline.
 
 ## Using the `StepContext`
 
-To find information about the pipeline or step that is currently running, you
-can use the `zenml.get_step_context()` function to access the `StepContext` of your step:
+To find information about the pipeline or step that is currently running, you can use the `zenml.get_step_context()` function to access the `StepContext` of your step:
 
 ```python
 from zenml import step, pipeline, get_step_context
@@ -20,9 +19,7 @@ def my_step():
     step_name = step_context.step_run.name
 ```
 
-Furthermore, you can also use the `StepContext` to find out where the outputs
-of your current step will be stored and which 
-[Materializer](../data-management/handle-custom-data-types.md) class will be used to save them:
+Furthermore, you can also use the `StepContext` to find out where the outputs of your current step will be stored and which [Materializer](../data-management/handle-custom-data-types.md) class will be used to save them:
 
 ```python
 @step
@@ -36,13 +33,12 @@ def my_step():
 ```
 
 {% hint style="info" %}
-See the [API Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-new/#zenml.new.steps.step_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
+See the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-new/#zenml.new.steps.step\_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
 {% endhint %}
 
 ## Getting artifact and model metadata
 
-As described in [the metadata guide](../data-management/logging-metadata.md), the metadata
-can be fetched with the client, and this is how you would use it to fetch it within a step.
+As described in [the metadata guide](../data-management/logging-metadata.md), the metadata can be fetched with the client, and this is how you would use it to fetch it within a step.
 
 ```python
 from zenml.client import Client
@@ -56,9 +52,7 @@ def my_step():
     output.run_metadata["accuracy"].value
 ```
 
-You can also use the [active model](../../starter-guide/track-ml-models.md) to get the 
-model metadata, or the associated artifacts directly as described in the
-[starter guide](../../starter-guide/track-ml-models.md):
+You can also use the [active model](../../starter-guide/track-ml-models.md) to get the model metadata, or the associated artifacts directly as described in the [starter guide](../../starter-guide/track-ml-models.md):
 
 ```python
 from zenml import step, pipeline, get_step_context
@@ -78,7 +72,7 @@ def my_step():
 
 ## Fetching secret values in a step
 
-ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks. In order to learn more about how to configure and create secrets, please refer to the [platform guide on secrets](../secret-management/secret-management.md).
+ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks. In order to learn more about how to configure and create secrets, please refer to the [platform guide on secrets](../secret-management/).
 
 You can access secrets directly from within your steps through the ZenML `Client` API. This allows you to use your secrets for querying APIs from within your step without hard-coding your access keys:
 
@@ -102,5 +96,4 @@ def secret_loader() -> None:
     ...
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -6,7 +6,7 @@ description: >-
 
 # Evidently
 
-The Evidently [Data Validator](data-validators.md) flavor provided with the ZenML integration uses [Evidently](https://evidentlyai.com/) to perform data quality, data drift, model drift and model performance analyses, to generate reports and run checks. The reports and check results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
+The Evidently [Data Validator](./) flavor provided with the ZenML integration uses [Evidently](https://evidentlyai.com/) to perform data quality, data drift, model drift and model performance analyses, to generate reports and run checks. The reports and check results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -21,7 +21,7 @@ You should use the Evidently Data Validator when you need the following data and
 * [Target Drift](https://docs.evidentlyai.com/presets/target-drift) reports and tests: helps detect and explore changes in the target function and/or model predictions by comparing two datasets where the target and/or prediction columns are available.
 * [Regression Performance](https://docs.evidentlyai.com/presets/reg-performance) or [Classification Performance](https://docs.evidentlyai.com/presets/class-performance) reports and tests: evaluate the performance of a model by analyzing a single dataset where both the target and prediction columns are available. It can also compare it to the past performance of the same model, or the performance of an alternative model by providing a second dataset.
 
-You should consider one of the other [Data Validator flavors](data-validators.md#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](./#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 

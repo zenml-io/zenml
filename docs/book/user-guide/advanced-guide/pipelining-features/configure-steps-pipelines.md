@@ -2,7 +2,7 @@
 description: Understanding how to configure a ZenML pipeline
 ---
 
-# Configuring a step and a pipeline
+# Understanding configuration
 
 The configuration of a step and/or a pipeline determines various details of how a run is executed. It is an important aspect of running workloads in production, and as such deserves a dedicated section in these docs.
 
@@ -10,7 +10,7 @@ We have already learned about some basics of [configuration in the production gu
 
 ## How to apply configuration
 
-Before we learn about all the different configuration options, let's briefly look at *how* configuration can be applied to a step or a pipeline. We start with the simplest configuration, a boolean flag called `enable_cache`, that specifies whether caching should be enabled or disabled. There are essentially three ways you could configure this:
+Before we learn about all the different configuration options, let's briefly look at _how_ configuration can be applied to a step or a pipeline. We start with the simplest configuration, a boolean flag called `enable_cache`, that specifies whether caching should be enabled or disabled. There are essentially three ways you could configure this:
 
 ### Method 1: Directly on the decorator
 
@@ -93,7 +93,7 @@ It is best practice to put all config files in a `configs` directory at the root
 
 ## Breaking configuration down
 
-Now that we understand how to apply configuration, let's see all the various ways we can configure a ZenML pipeline. We will use the YAML configuration for this, but as [seen in the section above](#how-to-apply-configuration), you can use the information here to configure your steps and pipelines any way you choose.
+Now that we understand how to apply configuration, let's see all the various ways we can configure a ZenML pipeline. We will use the YAML configuration for this, but as [seen in the section above](configure-steps-pipelines.md#how-to-apply-configuration), you can use the information here to configure your steps and pipelines any way you choose.
 
 First, let's create a simple pipeline:
 
@@ -320,7 +320,7 @@ steps:
 
 </details>
 
-The generated config contains most of the available configuration options for this pipeline. Let's walk through it section by section: 
+The generated config contains most of the available configuration options for this pipeline. Let's walk through it section by section:
 
 ### `enable_XXX` parameters
 
@@ -337,7 +337,7 @@ The UUID of the [`build`](../infrastructure-management/containerize-your-pipelin
 
 ### `extra` dict
 
-This is a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](#fetching-configuration).
+This is a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](configure-steps-pipelines.md#fetching-configuration).
 
 ### Configuring the `model`
 
@@ -372,12 +372,12 @@ def my_pipeline(gamma: float)
     trainer(gamma=gamma)
 ```
 
-Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](#hierarchy-and-precedence).
+Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
 
 Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined.
 
 {% hint style="info" %}
-Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../data-management/handle-custom-data-types.md) handle their persistence in the [artifact store](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md)).
+Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../data-management/handle-custom-data-types.md) handle their persistence in the [artifact store](../../../stacks-and-components/component-guide/artifact-stores/)).
 {% endhint %}
 
 ### Setting the `run_name`
@@ -390,21 +390,21 @@ Settings are special runtime configurations of a pipeline or a step that require
 
 ### `failure_hook_source` and `success_hook_source`
 
-The `source` of the [failure and success hooks](../pipelining-features/use-failure-success-hooks.md).
+The `source` of the [failure and success hooks](use-failure-success-hooks.md).
 
 ### Step-specific configuration
 
 A lot of pipeline-level configuration can also be applied at a step level (as we already seen with the `enable_cache` flag). However, there is some configuration that is step-specific, meaning it cannot be applied at a pipeline level, but only at a step level.
 
-* `experiment_tracker`: Name of the [experiment_tracker](../../../stacks-and-components/component-guide/experiment-trackers/experiment-trackers.md) to enable for this step. This experiment_tracker should be defined in the active stack with the same name. 
-* `step_operator`: Name of the [step_operator](../../../stacks-and-components/component-guide/step-operators/step-operators.md) to enable for this step. This step_operator should be defined in the active stack with the same name. 
+* `experiment_tracker`: Name of the [experiment\_tracker](../../../stacks-and-components/component-guide/experiment-trackers/) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
+* `step_operator`: Name of the [step\_operator](../../../stacks-and-components/component-guide/step-operators/) to enable for this step. This step\_operator should be defined in the active stack with the same name.
 * `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](managing-steps.md#step-output-names)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../data-management/handle-custom-data-types.md).
 
 Learn more about step configuration in the [dedicated section on managing steps](managing-steps.md).
 
 ## Hierarchy and precedence
 
-Some things can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. 
+Some things can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence.
 
 When an object is configured, ZenML merges the values with previously-configured keys. E.g.:
 
@@ -426,7 +426,6 @@ my_step.configuration.settings["resources"]
 ```
 
 In the above example, the two settings configurations were automatically merged.
-
 
 ## Fetching configuration
 

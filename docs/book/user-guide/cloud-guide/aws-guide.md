@@ -2,27 +2,21 @@
 description: A simple guide to create an AWS stack to run your ZenML pipelines
 ---
 
-# Connect your AWS account to ZenML
+# AWS
 
-This page aims to quickly set up a minimal production stack on AWS. With just a
-few simple steps, you will set up an IAM role with specifically-scoped
-permissions that ZenML can use to authenticate with the relevant AWS resources.
+This page aims to quickly set up a minimal production stack on AWS. With just a few simple steps, you will set up an IAM role with specifically-scoped permissions that ZenML can use to authenticate with the relevant AWS resources.
 
 ## 1) Set up credentials and local environment
 
 To follow this guide, you need:
 
-- An active AWS account with necessary permissions for AWS S3, SageMaker, ECR, and ECS.
-- ZenML [installed](../../getting-started/installation.md)
-- AWS CLI installed and configured with your AWS credentials. You can follow the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+* An active AWS account with necessary permissions for AWS S3, SageMaker, ECR, and ECS.
+* ZenML [installed](../../getting-started/installation.md)
+* AWS CLI installed and configured with your AWS credentials. You can follow the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
 Once ready, navigate to the AWS console:
 
-1. Choose an AWS region
-In the AWS console, choose the region where you want to deploy your ZenML stack
-resources. Make note of the region name (e.g., `us-east-1`, `eu-west-2`, etc) as
-you will need it in subsequent steps.
-
+1. Choose an AWS region In the AWS console, choose the region where you want to deploy your ZenML stack resources. Make note of the region name (e.g., `us-east-1`, `eu-west-2`, etc) as you will need it in subsequent steps.
 2. Create an IAM role
 
 For this, you'll need to find out your AWS account ID. You can find this by running:
@@ -31,13 +25,9 @@ For this, you'll need to find out your AWS account ID. You can find this by runn
 aws sts get-caller-identity --query Account --output text
 ```
 
-This will output your AWS account ID. Make a note of this as you will need it in
-the next steps. (If you're doing anything more esoteric with your AWS account
-and IAM roles, this might not work for you. The account ID here that we're
-trying to get is the root account ID that you use to log in to the AWS console.)
+This will output your AWS account ID. Make a note of this as you will need it in the next steps. (If you're doing anything more esoteric with your AWS account and IAM roles, this might not work for you. The account ID here that we're trying to get is the root account ID that you use to log in to the AWS console.)
 
-Then create a file named `assume-role-policy.json` with the
-following content:
+Then create a file named `assume-role-policy.json` with the following content:
 
 ```json
 {
@@ -55,28 +45,23 @@ following content:
 }
 ```
 
-Make sure to replace the placeholder `<YOUR_ACCOUNT_ID>` with your actual AWS
-account ID that we found earlier.
+Make sure to replace the placeholder `<YOUR_ACCOUNT_ID>` with your actual AWS account ID that we found earlier.
 
-Now create a new IAM role that ZenML will use to access AWS resources. We'll use
-`zenml-role` as a role name in this example, but you can feel free to choose
-something else if you prefer. Run the following command to create the role:
+Now create a new IAM role that ZenML will use to access AWS resources. We'll use `zenml-role` as a role name in this example, but you can feel free to choose something else if you prefer. Run the following command to create the role:
 
 ```shell
 aws iam create-role --role-name zenml-role --assume-role-policy-document file://assume-role-policy.json
 ```
 
-Be sure to take note of the information that is output to the terminal, as you
-will need it in the next steps, especially the Role ARN.
+Be sure to take note of the information that is output to the terminal, as you will need it in the next steps, especially the Role ARN.
 
 3. Attach policies to the role
 
-Attach the following policies to the role to grant access to the necessary AWS
-services:
+Attach the following policies to the role to grant access to the necessary AWS services:
 
-- `AmazonS3FullAccess`
-- `AmazonEC2ContainerRegistryFullAccess`
-- `AmazonSageMakerFullAccess`
+* `AmazonS3FullAccess`
+* `AmazonEC2ContainerRegistryFullAccess`
+* `AmazonSageMakerFullAccess`
 
 ```shell
 aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
@@ -92,8 +77,7 @@ zenml integration install aws s3 -y
 
 ## 2) Create a Service Connector within ZenML
 
-Create an AWS Service Connector within ZenML. The service connector will allow
-ZenML and other ZenML components to authenticate themselves with AWS using the IAM role.
+Create an AWS Service Connector within ZenML. The service connector will allow ZenML and other ZenML components to authenticate themselves with AWS using the IAM role.
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -107,9 +91,7 @@ zenml service-connector register aws_connector \
   --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY>
 ```
 
-Replace `<ROLE_ARN>` with the ARN of the IAM role you created in the previous
-step, `<YOUR_REGION>` with the respective value and use your AWS access key ID and
-secret access key that we noted down earlier.
+Replace `<ROLE_ARN>` with the ARN of the IAM role you created in the previous step, `<YOUR_REGION>` with the respective value and use your AWS access key ID and secret access key that we noted down earlier.
 {% endtab %}
 {% endtabs %}
 
@@ -119,9 +101,7 @@ secret access key that we noted down earlier.
 
 An [artifact store](../production-guide/remote-storage.md) is used for storing and versioning data flowing through your pipelines.
 
-1. Before you run anything within the ZenML CLI, create an AWS S3 bucket. If you
-   already have one, you can skip this step. (Note: the bucket name should be
-   unique, so you might need to try a few times to find a unique name.)
+1. Before you run anything within the ZenML CLI, create an AWS S3 bucket. If you already have one, you can skip this step. (Note: the bucket name should be unique, so you might need to try a few times to find a unique name.)
 
 ```shell
 aws s3api create-bucket --bucket your-bucket-name
@@ -141,9 +121,7 @@ More details [here](../../stacks-and-components/component-guide/artifact-stores/
 
 An [orchestrator](../production-guide/cloud-orchestration.md) is the compute backend to run your pipelines.
 
-1. Before you run anything within the ZenML CLI, head on over to AWS and create
-   a SageMaker domain (Skip this if you already have one). The instructions for
-   creating a domain can be found [in the AWS core documentation](https://docs.aws.amazon.com/sagemaker/latest/dg/onboard-quick-start.html).
+1. Before you run anything within the ZenML CLI, head on over to AWS and create a SageMaker domain (Skip this if you already have one). The instructions for creating a domain can be found [in the AWS core documentation](https://docs.aws.amazon.com/sagemaker/latest/dg/onboard-quick-start.html).
 
 A SageMaker domain is a central management unit for all SageMaker users and resources within a region. It provides a single sign-on (SSO) experience and enables users to create and manage SageMaker resources, such as notebooks, training jobs, and endpoints, within a collaborative environment.
 
@@ -165,14 +143,11 @@ zenml orchestrator register sagemaker-orchestrator --flavor=sagemaker --region=<
 
 **Note**: The SageMaker orchestrator utilizes the AWS configuration for operation and does not require direct connection via a service connector for authentication, as it relies on your AWS CLI configurations or environment variables.
 
-More details
-[here](../../stacks-and-components/component-guide/orchestrators/sagemaker.md).
+More details [here](../../stacks-and-components/component-guide/orchestrators/sagemaker.md).
 
 ### Container Registry (ECR)
 
-A [container
-registry](../../stacks-and-components/component-guide/container-registries/container-registries.md)
-is used to store Docker images for your pipelines.
+A [container registry](../../stacks-and-components/component-guide/container-registries/) is used to store Docker images for your pipelines.
 
 1. You'll need to create a repository in ECR. If you already have one, you can skip this step.
 
@@ -188,8 +163,7 @@ Once this is done, you can create the ZenML stack component as follows:
 zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com --connector aws-connector
 ```
 
-More details
-[here](../../stacks-and-components/component-guide/container-registries/aws.md).
+More details [here](../../stacks-and-components/component-guide/container-registries/aws.md).
 
 ## 4) Create stack
 
@@ -241,17 +215,15 @@ python run.py
 
 <figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
 
-Read more in the [production guide](../production-guide/production-guide.md).
+Read more in the [production guide](../production-guide/).
 
 ## Cleanup
 
 {% hint style="warning" %}
-Make sure you no longer need the resources before
-deleting them. The instructions and commands that follow are DESTRUCTIVE.
+Make sure you no longer need the resources before deleting them. The instructions and commands that follow are DESTRUCTIVE.
 {% endhint %}
 
-Delete any AWS resources you no longer use to avoid additional charges. You'll
-want to do the following:
+Delete any AWS resources you no longer use to avoid additional charges. You'll want to do the following:
 
 ```shell
 # delete the S3 bucket
@@ -277,8 +249,7 @@ Make sure to run these commands in the same AWS region where you created the res
 
 By running these cleanup commands, you will delete the S3 bucket, SageMaker domain, ECR repository, and IAM role, along with their associated policies. This will help you avoid any unnecessary charges for resources you no longer need.
 
-Remember to be cautious when deleting resources and ensure that you no longer
-require them before running the deletion commands.
+Remember to be cautious when deleting resources and ensure that you no longer require them before running the deletion commands.
 
 ## Conclusion
 
@@ -293,18 +264,17 @@ By following these steps, you can leverage the power of AWS services, such as S3
 
 The benefits of using an AWS stack with ZenML include:
 
-- Scalability: Leverage the scalability of AWS services to handle large-scale machine learning workloads.
-- Reproducibility: Ensure reproducibility of your pipelines with versioned artifacts and containerized environments.
-- Collaboration: Enable collaboration among team members by using a centralized stack and shared resources.
-- Flexibility: Customize and extend your stack components based on your specific needs and preferences.
+* Scalability: Leverage the scalability of AWS services to handle large-scale machine learning workloads.
+* Reproducibility: Ensure reproducibility of your pipelines with versioned artifacts and containerized environments.
+* Collaboration: Enable collaboration among team members by using a centralized stack and shared resources.
+* Flexibility: Customize and extend your stack components based on your specific needs and preferences.
 
 Now that you have a functional AWS stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
 
-- Dive deeper into ZenML's [production guide](../production-guide/production-guide.md) to learn best practices for deploying and managing production-ready pipelines.
-- Explore ZenML's [integrations](../../stacks-and-components/component-guide/integration-overview.md) with other popular tools and frameworks in the machine learning ecosystem.
-- Join the [ZenML community](https://zenml.io/slack-invite) to connect with other users, ask questions, and get support.
+* Dive deeper into ZenML's [production guide](../production-guide/) to learn best practices for deploying and managing production-ready pipelines.
+* Explore ZenML's [integrations](../../stacks-and-components/component-guide/integration-overview.md) with other popular tools and frameworks in the machine learning ecosystem.
+* Join the [ZenML community](https://zenml.io/slack-invite) to connect with other users, ask questions, and get support.
 
 By leveraging the power of AWS and ZenML, you can streamline your machine learning workflows, improve collaboration, and deploy production-ready pipelines with ease. Happy experimenting and building!
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

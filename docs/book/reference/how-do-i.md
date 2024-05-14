@@ -14,7 +14,7 @@ Please read [our Contribution guide](https://github.com/zenml-io/zenml/blob/main
 
 * **custom components**: adding them to ZenML?
 
-Please start by [reading the general documentation page](../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md) on implementing a custom stack component which offers some general advice on what you'll need to do.
+Please start by [reading the general documentation page](../stacks-and-components/custom-stack-solutions/implement-a-custom-stack-component.md) on implementing a custom stack component which offers some general advice on what you'll need to do.
 
 From there, each of the custom stack component types has a dedicated section about adding your own custom components. For example, for adding custom orchestrators you would [visit this page](../stacks-and-components/component-guide/orchestrators/custom.md).
 
@@ -54,8 +54,6 @@ Upgrading your ZenML client package is as simple as running `pip install --upgra
 
 * use a \<YOUR\_COMPONENT\_GOES\_HERE> stack component?
 
-For information on how to use a specific stack component, please refer to [the component guide](../stacks-and-components/component-guide/component-guide.md) which contains all our tips and advice on how to use each integration and component with ZenML.
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+For information on how to use a specific stack component, please refer to [the component guide](../stacks-and-components/component-guide/) which contains all our tips and advice on how to use each integration and component with ZenML.
 
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

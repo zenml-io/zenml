@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with Comet.
 
 # Comet
 
-The Comet Experiment Tracker is an [Experiment Tracker](experiment-trackers.md) flavor provided with the Comet ZenML integration that uses [the Comet experiment tracking platform](https://www.comet.com/site/products/ml-experiment-tracking/) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
+The Comet Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Comet ZenML integration that uses [the Comet experiment tracking platform](https://www.comet.com/site/products/ml-experiment-tracking/) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
 
 ### When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the Comet Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g., models, metrics, datasets)
 * if you would like to connect ZenML to Comet to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](experiment-trackers.md#experiment-tracker-flavors) if you have never worked with Comet before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with Comet before and would rather use another experiment tracking tool that you are more familiar with.
 
 ### How do you deploy it?
 
@@ -52,11 +52,10 @@ zenml experiment-tracker register comet_experiment_tracker --flavor=comet \
 # Register and set a stack with the new experiment tracker
 zenml stack register custom_stack -e comet_experiment_tracker ... --set
 ```
-
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](/docs/book/user-guide/advanced-guide/secret-management/secret-management.md) to store the Comet tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../../user-guide/advanced-guide/secret-management/) to store the Comet tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -80,12 +79,12 @@ zenml experiment-tracker register comet_tracker \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](/docs/book/user-guide/advanced-guide/secret-management/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](../../../user-guide/advanced-guide/secret-management/) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
 
-For more up-to-date information on the Comet Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-comet/#zenml.integrations.comet.experiment_trackers.comet_experiment_tracker).
+For more up-to-date information on the Comet Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-comet/#zenml.integrations.comet.experiment\_trackers.comet\_experiment\_tracker).
 
 ### How do you use it?
 
@@ -152,7 +151,6 @@ def my_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-comet/#zenml.integrations.comet.flavors.comet_experiment_tracker_flavor.CometExperimentTrackerSettings) for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-comet/#zenml.integrations.comet.flavors.comet\_experiment\_tracker\_flavor.CometExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for more information on how to specify settings.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

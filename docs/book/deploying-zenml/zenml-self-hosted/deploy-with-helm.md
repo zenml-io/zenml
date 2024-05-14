@@ -85,7 +85,7 @@ To use the Helm chart with custom values that includes path to files like the da
 helm pull oci://public.ecr.aws/zenml/zenml --version <VERSION> --untar
 ```
 
-Next, to customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file that you can find at `./zenml/values.yaml`  (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
+Next, to customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file that you can find at `./zenml/values.yaml` (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
 
 In most cases, you’ll need to change the following configuration values in `custom-values.yaml`:
 
@@ -287,13 +287,13 @@ This method requires you to configure a DNS service like AWS Route 53 or Google 
 
 ### Secret Store configuration
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../user-guide/advanced-guide/secret-management/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../user-guide/advanced-guide/secret-management/) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
 
-> **Important:** If you are updating the configuration of your ZenML Server deployment to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
+> **Important:** If you are updating the configuration of your ZenML Server deployment to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../user-guide/advanced-guide/secret-management/#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 {% tabs %}
 {% tab title="AWS" %}
-#### Using the SQL database as a secrets store backend (default)
+**Using the SQL database as a secrets store backend (default)**
 
 The SQL database is used as the default location where the ZenML secrets store keeps the secret values. You only need to configure these options if you want to change the default behavior.
 
@@ -331,13 +331,12 @@ openssl rand -hex 32
 ```
 
 > **Important:** If you configure encryption for your SQL database secrets store, you should keep the `encryptionKey` value somewhere safe and secure, as it will always be required by the ZenML Server to decrypt the secrets in the database. If you lose the encryption key, you will not be able to decrypt the secrets anymore and will have to reset them.
-
 {% endtab %}
 
 {% tab title="AWS" %}
-#### Using the AWS Secrets Manager as a secrets store backend
+**Using the AWS Secrets Manager as a secrets store backend**
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../stacks-and-components/auth-management/aws-service-connector/#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -394,14 +393,12 @@ Example configuration for the AWS Secrets Store:
         aws_access_key_id: <your AWS access key ID>
         aws_secret_access_key: <your AWS secret access key>
 ```
-
-
 {% endtab %}
 
 {% tab title="GCP" %}
-#### Using the GCP Secrets Manager as a secrets store backend
+**Using the GCP Secrets Manager as a secrets store backend**
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API.
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../stacks-and-components/auth-management/gcp-service-connector/#authentication-methods) to authenticate with the GCP Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -490,14 +487,12 @@ Example configuration for the GCP Secrets Store:
      iam.gke.io/gcp-service-account: <SERVICE_ACCOUNT_NAME>@<PROJECT_NAME>.iam.gserviceaccount.com
 
 ```
-
-
 {% endtab %}
 
 {% tab title="Azure" %}
-#### Using the Azure Key Vault as a secrets store backend
+**Using the Azure Key Vault as a secrets store backend**
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API.
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../stacks-and-components/auth-management/azure-service-connector/#authentication-methods) to authenticate with the Azure Key Vault API.
 
 Example configuration for the Azure Key Vault Secrets Store:
 
@@ -537,7 +532,7 @@ Example configuration for the Azure Key Vault Secrets Store:
 {% endtab %}
 
 {% tab title="Hashicorp" %}
-#### Using the HashiCorp Vault as a secrets store backend
+**Using the HashiCorp Vault as a secrets store backend**
 
 To use the HashiCorp Vault service as a Secrets Store back-end, it must be configured in the Helm values:
 
@@ -568,9 +563,9 @@ To use the HashiCorp Vault service as a Secrets Store back-end, it must be confi
 {% endtab %}
 
 {% tab title="Custom" %}
-#### Using a custom secrets store backend implementation
+**Using a custom secrets store backend implementation**
 
-You have the option of using [a custom implementation of the secrets store API](../../user-guide/advanced-guide/secret-management/secret-management.md) as your secrets store back-end. This must come in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to build a custom container image that contains the class. Then, you can configure the Helm values to use your custom secrets store as follows:
+You have the option of using [a custom implementation of the secrets store API](../../user-guide/advanced-guide/secret-management/) as your secrets store back-end. This must come in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to build a custom container image that contains the class. Then, you can configure the Helm values to use your custom secrets store as follows:
 
 ```yaml
  zenml:
@@ -612,7 +607,7 @@ You have the option of using [a custom implementation of the secrets store API](
 
 #### Backup secrets store
 
-[A backup secrets store](../../user-guide/advanced-guide/secret-management/secret-management.md#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy).
+[A backup secrets store](../../user-guide/advanced-guide/secret-management/#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../user-guide/advanced-guide/secret-management/#secrets-migration-strategy).
 
 To configure a backup secrets store in the Helm chart, use the same approach and instructions documented for the primary secrets store, but using the `backupSecretsStore` configuration section instead of `secretsStore`, e.g.:
 
@@ -690,5 +685,4 @@ podSecurityContext:
   fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -2,27 +2,20 @@
 description: A simple guide to quickly set up a minimal stack on GCP.
 ---
 
-# Set up a minimal GCP stack
+# GCP
 
 {% hint style="warning" %}
-The GCP integration currently only works
-for Python versions <3.11. The ZenML team is aware of this dependency
-clash/issue and is working on a fix. For now, please use Python <3.11 together
-with the GCP integration.
+The GCP integration currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
 {% endhint %}
 
-This page aims to quickly set up a minimal production stack on GCP. With just a 
-few simple steps you will set up a service account with specifically-scoped 
-permissions that ZenML can use to authenticate with the relevant GCP resources.
+This page aims to quickly set up a minimal production stack on GCP. With just a few simple steps you will set up a service account with specifically-scoped permissions that ZenML can use to authenticate with the relevant GCP resources.
 
-### 1) Choose a GCP project&#x20;
+### 1) Choose a GCP project
 
-In the Google Cloud console, on the project selector page, select or 
-[create a Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
-Make sure a billing account is attached to this project to allow the use of 
-some APIs.
+In the Google Cloud console, on the project selector page, select or [create a Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects). Make sure a billing account is attached to this project to allow the use of some APIs.
 
 This is how you would do it from the CLI if this is preferred.
+
 ```bash
 gcloud projects create <PROJECT_ID> --billing-project=<BILLING_PROJECT>
 ```
@@ -35,11 +28,11 @@ If you don't plan to keep the resources that you create in this procedure, creat
 
 The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\\\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\\\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\\\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\\\_wcB) will need to be enabled within your chosen GCP project.
 
-* Cloud Functions API  # For the vertex orchestrator
-* Cloud Run Admin API  # For the vertex orchestrator
-* Cloud Build API  # For the container registry
-* Artifact Registry API  # For the container registry
-* Cloud Logging API  # Generally needed
+* Cloud Functions API # For the vertex orchestrator
+* Cloud Run Admin API # For the vertex orchestrator
+* Cloud Build API # For the container registry
+* Artifact Registry API # For the container registry
+* Cloud Logging API # Generally needed
 
 ### 3) Create a dedicated service account
 
@@ -60,8 +53,7 @@ export JSON_KEY_FILE_PATH=<JSON_KEY_FILE_PATH>
 
 ### 5) Create a Service Connector within ZenML
 
-The service connector will allow ZenML and other ZenML components to 
-authenticate themselves with GCP.
+The service connector will allow ZenML and other ZenML components to authenticate themselves with GCP.
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -103,10 +95,7 @@ Head on over to our [docs](../../../../stacks-and-components/component-guide/art
 
 #### Orchestrator
 
-This guide will use Vertex AI as the orchestrator to run the pipelines. As a 
-serverless service Vertex is a great choice for quick prototyping of your MLOps 
-stack. The orchestrator can be switched out at any point in the future for a 
-more use-case- and budget-appropriate solution.
+This guide will use Vertex AI as the orchestrator to run the pipelines. As a serverless service Vertex is a great choice for quick prototyping of your MLOps stack. The orchestrator can be switched out at any point in the future for a more use-case- and budget-appropriate solution.
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -147,8 +136,6 @@ Head on over to our [docs](../../../../stacks-and-components/component-guide/con
 {% endtabs %}
 
 ### 7) Create Stack
-
-
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -194,16 +181,14 @@ python run.py
 
 <figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
 
-Read more in the [production guide](../production-guide/production-guide.md).
+Read more in the [production guide](../production-guide/).
 
 ## Cleanup
 
-If you do not want to use any of the created resources in the future, simply 
-delete the project you created.
+If you do not want to use any of the created resources in the future, simply delete the project you created.
 
 ```bash
 gcloud project delete <PROJECT_ID_OR_NUMBER>
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

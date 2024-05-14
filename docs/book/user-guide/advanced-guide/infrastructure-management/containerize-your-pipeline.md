@@ -4,7 +4,7 @@ description: Using Docker images to run your pipeline.
 
 # Containerize your pipeline
 
-ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../../stacks-and-components/component-guide/orchestrators/orchestrators.md) or [step operators](../../../stacks-and-components/component-guide/step-operators/step-operators.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
+ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../../stacks-and-components/component-guide/orchestrators/) or [step operators](../../../stacks-and-components/component-guide/step-operators/), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
 
 There are three ways to control this containerization process:
 
@@ -14,7 +14,7 @@ There are three ways to control this containerization process:
 
 ## Define where an image is built
 
-[Image builders](../../../stacks-and-components/component-guide/image-builders/image-builders.md) determine how and where an image is built. Learn more [here](understanding-environments.md#image-builder-environment).
+[Image builders](../../../stacks-and-components/component-guide/image-builders/) determine how and where an image is built. Learn more [here](understanding-environments.md#image-builder-environment).
 
 ## Reuse Docker image builds from previous runs
 
@@ -210,7 +210,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../../stacks-and-components/component-guide/component-guide.md) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../../stacks-and-components/component-guide/) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY
@@ -261,7 +261,6 @@ Depending on the options specified in your Docker settings, ZenML installs the r
 * The packages installed in your local Python environment
 * The packages specified via the `requirements` attribute (step level overwrites pipeline level)
 * The packages specified via the `required_integrations` and potentially stack requirements
-
 * **Experimental**: If you want to use [`uv`](https://github.com/astral-sh/uv) for faster resolving and installation of your Python packages, you can use by it as follows:
 
 ```python
@@ -271,9 +270,9 @@ docker_settings = DockerSettings(python_package_installer="uv")
 def my_pipeline(...):
     ...
 ```
+
 {% hint style="info" %}
-`uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation.
-If this happens, try switching the installer back to `pip` and see if that solves the issue.
+`uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation. If this happens, try switching the installer back to `pip` and see if that solves the issue.
 {% endhint %}
 
 ### Using a custom parent image

@@ -2,13 +2,12 @@
 description: Orchestrating your pipelines to run on HyperAI.ai instances.
 ---
 
-# HyperAI orchestrator
-[HyperAI](https://www.hyperai.ai) is a cutting-edge cloud compute platform designed to make AI accessible for everyone. The HyperAI orchestrator is an [orchestrator](orchestrators.md) flavor that allows you to easily deploy your pipelines on HyperAI instances. 
+# HyperAI Orchestrator
+
+[HyperAI](https://www.hyperai.ai) is a cutting-edge cloud compute platform designed to make AI accessible for everyone. The HyperAI orchestrator is an [orchestrator](./) flavor that allows you to easily deploy your pipelines on HyperAI instances.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of
-a [remote ZenML deployment scenario](/docs/book/deploying-zenml/zenml-self-hosted/zenml-self-hosted.md).
-Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -19,6 +18,7 @@ You should use the HyperAI orchestrator if:
 * you're a HyperAI customer.
 
 ### Prerequisites
+
 You will need to do the following to start using the HyperAI orchestrator:
 
 * Have a running HyperAI instance. It must be accessible from the internet (or at least from the IP addresses of your ZenML users) and allow SSH key based access (passwords are not supported).
@@ -29,13 +29,10 @@ You will need to do the following to start using the HyperAI orchestrator:
 Note that it is possible to omit installing the NVIDIA Driver and NVIDIA Container Toolkit. However, you will then be unable to use the GPU from within your ZenML pipeline. Additionally, you will then need to disable GPU access within the container when configuring the Orchestrator component, or the pipeline will not start correctly.
 
 ## How it works
-The HyperAI orchestrator works with Docker Compose, which can be used to construct machine learning pipelines.
-Under the hood, it creates a Docker Compose file which it then deploys and executes on the configured HyperAI instance.
-For each ZenML pipeline step, it creates a service in this file. It uses the `service_completed_successfully` condition
-to ensure that pipeline steps will only run if their connected upstream steps have successfully finished.
 
-If configured for it, the HyperAI orchestrator will connect the HyperAI instance to the stack's container registry to ensure
-a smooth transfer of Docker images.
+The HyperAI orchestrator works with Docker Compose, which can be used to construct machine learning pipelines. Under the hood, it creates a Docker Compose file which it then deploys and executes on the configured HyperAI instance. For each ZenML pipeline step, it creates a service in this file. It uses the `service_completed_successfully` condition to ensure that pipeline steps will only run if their connected upstream steps have successfully finished.
+
+If configured for it, the HyperAI orchestrator will connect the HyperAI instance to the stack's container registry to ensure a smooth transfer of Docker images.
 
 ### Scheduled pipelines
 
@@ -45,15 +42,14 @@ a smooth transfer of Docker images.
 * Scheduled runs via `run_once_start_time`. When pipeline runs are scheduled this way, they are added as an `at` entry on the HyperAI instance. Use this when you want pipelines to run just once and at a specified time. This assumes that `at` is available on your instance.
 
 ### How to deploy it
-To use the HyperAI orchestrator, you must configure a HyperAI Service Connector in ZenML and link it to the HyperAI orchestrator
-component. The service connector contains credentials with which ZenML connects to the HyperAI instance. 
+
+To use the HyperAI orchestrator, you must configure a HyperAI Service Connector in ZenML and link it to the HyperAI orchestrator component. The service connector contains credentials with which ZenML connects to the HyperAI instance.
 
 Additionally, the HyperAI orchestrator must be used in a stack that contains a container registry and an image builder.
 
 ### How to use it
 
-To use the HyperAI orchestrator, we must configure a HyperAI Service Connector first using one of its supported authentication
-methods. For example, for authentication with an RSA-based key, create the service connector as follows:
+To use the HyperAI orchestrator, we must configure a HyperAI Service Connector first using one of its supported authentication methods. For example, for authentication with an RSA-based key, create the service connector as follows:
 
 ```shell
 zenml service-connector register <SERVICE_CONNECTOR_NAME> --type=hyperai --auth-method=rsa-key --base64_ssh_key=<BASE64_SSH_KEY> --hostnames=<INSTANCE_1>,<INSTANCE_2>,..,<INSTANCE_N> --username=<INSTANCE_USERNAME>
@@ -82,11 +78,6 @@ python file_that_runs_a_zenml_pipeline.py
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure 
-that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
-give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -6,7 +6,7 @@ description: >-
 
 # Deepchecks
 
-The Deepchecks [Data Validator](data-validators.md) flavor provided with the ZenML integration uses [Deepchecks](https://deepchecks.com/) to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
+The Deepchecks [Data Validator](./) flavor provided with the ZenML integration uses [Deepchecks](https://deepchecks.com/) to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -20,7 +20,7 @@ You should use the Deepchecks Data Validator when you need the following data an
 * Data Drift Checks [for tabular](https://docs.deepchecks.com/en/stable/checks\_gallery/tabular.html#train-test-validation) or [computer vision](https://docs.deepchecks.com/en/stable/checks\_gallery/vision.html#train-test-validation) data: detect data skew and data drift problems by comparing a target dataset against a reference dataset (e.g. feature drift, label drift, new labels etc.).
 * Model Performance Checks [for tabular](https://docs.deepchecks.com/en/stable/checks\_gallery/tabular.html#model-evaluation) or [computer vision](https://docs.deepchecks.com/en/stable/checks\_gallery/vision.html#model-evaluation) data: evaluate a model and detect problems with its performance (e.g. confusion matrix, boosting overfit, model error analysis)
 
-You should consider one of the other [Data Validator flavors](data-validators.md#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](./#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 

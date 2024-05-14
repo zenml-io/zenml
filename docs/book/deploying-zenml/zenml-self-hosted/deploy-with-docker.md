@@ -24,7 +24,7 @@ If you're planning on deploying a custom containerized ZenML server yourself, yo
 
 The following environment variables can be passed to the container:
 
-* **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
+*   **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
 
     ```
     sqlite:////path/to/zenml.db
@@ -40,7 +40,7 @@ The following environment variables can be passed to the container:
 * **ZENML\_STORE\_SSL\_KEY**: This can be set to a client SSL private key required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_CERT` to be set.
 * **ZENML\_STORE\_SSL\_VERIFY\_SERVER\_CERT**: This boolean variable controls whether the SSL certificate in use by the MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections. Defaults to `False`.
 * **ZENML\_LOGGING\_VERBOSITY**: Use this variable to control the verbosity of logs inside the container. It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`, `INFO` (default), `DEBUG` or `CRITICAL`.
-* **ZENML\_STORE\_BACKUP\_STRATEGY**: This variable controls the database backup strategy used by the ZenML server. See the [Database backup and recovery](#database-backup-and-recovery) section for more details about this feature and other related environment variables. Defaults to `in-memory`.
+* **ZENML\_STORE\_BACKUP\_STRATEGY**: This variable controls the database backup strategy used by the ZenML server. See the [Database backup and recovery](deploy-with-docker.md#database-backup-and-recovery) section for more details about this feature and other related environment variables. Defaults to `in-memory`.
 * **ZENML\_SERVER\_RATE\_LIMIT\_ENABLED**: This variable controls the rate limiting for ZenML API (currently only for the `LOGIN` endpoint). It is disabled by default, so set it to `1` only if you need to enable rate limiting. To determine unique users a `X_FORWARDED_FOR` header or `request.client.host` is used, so before enabling this make sure that your network configuration is associating proper information with your clients in order to avoid disruptions for legitimate requests.
 * **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_MINUTE**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in a one minute interval. Set it to a desired integer value; defaults to `5`.
 * **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_DAY**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in an interval of day interval. Set it to a desired integer value; defaults to `1000`.
@@ -49,12 +49,12 @@ If none of the `ZENML_STORE_*` variables are set, the container will default to 
 
 ### Secret store environment variables
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../user-guide/advanced-guide/secret-management/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it explicitly using docker environment variables. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../user-guide/advanced-guide/secret-management/) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it explicitly using docker environment variables. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
 
-> **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
+> **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../user-guide/advanced-guide/secret-management/#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 {% tabs %}
-{% tab title=SQL database" %}
+{% tab title="undefined" %}
 The SQL database is used as the default secret store location. You only need to configure these options if you want to change the default behavior.
 
 It is particularly recommended to enable encryption at rest for the SQL database if you plan on using it as a secrets store backend. You'll have to configure the secret key used to encrypt the secret values. If not set, encryption will not be used and passwords will be stored unencrypted in the database.
@@ -81,7 +81,7 @@ These configuration options are only relevant if you're using the AWS Secrets Ma
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `aws` in order to set this type of secret store.
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../stacks-and-components/auth-management/aws-service-connector/#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -123,7 +123,7 @@ These configuration options are only relevant if you're using the GCP Secrets Ma
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `gcp` in order to set this type of secret store.
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API. 
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../stacks-and-components/auth-management/gcp-service-connector/#authentication-methods) to authenticate with the GCP Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -176,7 +176,7 @@ These configuration options are only relevant if you're using Azure Key Vault as
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `azure` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_KEY\_VAULT\_NAME**: The name of the Azure Key Vault. This must be set to point to the Azure Key Vault instance that you want to use.
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../stacks-and-components/auth-management/azure-service-connector/#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The Azure Service Connector authentication method to use (e.g. `service-account`).
 * **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The Azure Service Connector configuration, in JSON format (e.g. `{"tenant_id":"my-tenant-id","client_id":"my-client-id","client_secret": "my-client-secret"}`).
@@ -218,7 +218,7 @@ If your custom secrets store implementation requires additional configuration op
 
 #### Backup secrets store
 
-[A backup secrets store](../../user-guide/advanced-guide/secret-management/secret-management.md#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy).
+[A backup secrets store](../../user-guide/advanced-guide/secret-management/#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../user-guide/advanced-guide/secret-management/#secrets-migration-strategy).
 
 To configure a backup secrets store in the docker container, use the same approach and instructions documented for the primary secrets store, but set the `**ZENML\_BACKUP\_SECRETS\_STORE\***` environment variables instead of `**ZENML\_SECRETS\_STORE\***`, e.g.:
 
@@ -245,15 +245,15 @@ These configuration options are not required for most use cases, but can be usef
     openssl rand -hex 32
     ```
 
-The environment variables starting with **ZENML\_SERVER\_SECURE*\_HEADERS\_** can be used to enable, disable or set custom values for security headers in the ZenML server's HTTP responses. The following values can be set for any of the supported secure headers configuration options:
+The environment variables starting with _ZENML\_SERVER\_SECURE\_HEADERS\__\* can be used to enable, disable or set custom values for security headers in the ZenML server's HTTP responses. The following values can be set for any of the supported secure headers configuration options:
 
 * `enabled`, `on`, `true` or `yes` - enables the secure header with the default value.
 * `disabled`, `off`, `false`, `none` or `no` - disables the secure header entirely, so that it is not set in the ZenML server's HTTP responses.
-* any other value - sets the secure header to the specified value.  
+* any other value - sets the secure header to the specified value.
 
 The following secure headers environment variables are supported:
 
-* **ZENML\_SERVER\_SECURE*\_HEADERS\_SERVER**: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
+* _ZENML\_SERVER\_SECURE\_HEADERS\_SERVER_\*: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XXP**: The `X-XSS-Protection` HTTP header value. The default value is `0`. NOTE: this header is deprecated and should not be customized anymore. The `Content-Security-Policy` header should be used instead.
@@ -269,7 +269,6 @@ If you prefer to activate the server automatically during the initial deployment
 * **ZENML\_DEFAULT\_USER\_NAME**: The name of the initial admin user account created by the server on the first deployment, during database initialization. Defaults to `default`.
 * **ZENML\_DEFAULT\_USER\_PASSWORD**: The password to use for the initial admin user account. Defaults to an empty password value, if not set.
 
-
 ## Run the ZenML server with Docker
 
 As previously mentioned, the ZenML server container image uses sensible defaults for most configuration options. This means that you can simply run the container with Docker without any additional configuration and it will work out of the box for most use cases:
@@ -283,7 +282,6 @@ docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs, etc.) will be lost when the container is removed with `docker rm`.
 
 You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
-
 
 ```shell
 $ zenml connect --url http://localhost:8080
@@ -449,7 +447,6 @@ Tearing down the installation is as simple as running:
 docker-compose -p zenml down
 ```
 
-
 ## Database backup and recovery
 
 An automated database backup and recovery feature is enabled by default for all Docker deployments. The ZenML server will automatically back up the database in-memory before every database schema migration and restore it if the migration fails.
@@ -516,5 +513,4 @@ If you used the `docker compose` command to manually deploy the Docker ZenML ser
 docker compose -p zenml logs -f
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -19,7 +19,7 @@ def training_step(...) -> ...:
     # train a model
 ```
 
-If the underlying [orchestrator](../../../stacks-and-components/component-guide/orchestrators/orchestrators.md) in your stack then supports specifying resources, this setting will attempt to secure these resources.  Some orchestrators (like the [Skypilot orchestrator](../../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
+If the underlying [orchestrator](../../../stacks-and-components/component-guide/orchestrators/) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
 
 ```python
 from zenml import step
@@ -40,7 +40,7 @@ def training_step(...) -> ...:
 Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources in what way.
 
 {% hint style="info" %}
-If you're using an orchestrator which does not support this feature or its underlying infrastructure doesn't cover your requirements, you can also take a look at [step operators](../../../stacks-and-components/component-guide/step-operators/step-operators.md) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
+If you're using an orchestrator which does not support this feature or its underlying infrastructure doesn't cover your requirements, you can also take a look at [step operators](../../../stacks-and-components/component-guide/step-operators/) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
 {% endhint %}
 
 ### Ensure your container is CUDA-enabled
@@ -95,5 +95,4 @@ The core cloud operators offer prebuilt Docker images that fit with their hardwa
 
 Not all of these images are available on DockerHub, so ensure that the orchestrator environment your pipeline runs in has sufficient permissions to pull images from registries if you are using one of those.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
