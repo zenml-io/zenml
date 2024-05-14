@@ -32,7 +32,7 @@ class SkypilotAWSIntegration(Integration):
 
     NAME = SKYPILOT_AWS
     REQUIREMENTS = ["skypilot[aws]<=0.5.0"]
-    APT_PACKAGES = ["openssh-client","rsync"]
+    APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
