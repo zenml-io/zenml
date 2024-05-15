@@ -1028,6 +1028,18 @@ def install_packages(
         )
         uninstall_package("neptune-client")
 
+    if "prodigy" in packages:
+        packages.remove("prodigy")
+        declare(
+            "The `prodigy` package should be installed manually using your "
+            "license key. Please visit https://prodi.gy/docs/install for more "
+            "information."
+        )
+    if not packages:
+        # if user only tried to install prodigy, we can
+        # just return without doing anything
+        return
+
     pip_command = ["uv", "pip"] if use_uv else ["pip"]
     if upgrade:
         command = (
