@@ -991,11 +991,26 @@ class GCPServiceConnector(ServiceConnector):
                 # service account authentication)
 
                 assert isinstance(cfg, GCPServiceAccountConfig)
+
+                service_account_info = json.loads(
+                    cfg.service_account_json.get_secret_value()
+                )
+
+                credentials_project_id = service_account_info.get("project_id")
+                if (
+                    credentials_project_id
+                    and credentials_project_id != cfg.project_id
+                ):
+                    raise AuthorizationException(
+                        f"The GCP project for which the service account "
+                        f"credentials were issued ('{credentials_project_id}') "
+                        f"does not match the project configured in the "
+                        f"connector configuration: '{cfg.project_id}'."
+                    )
+
                 credentials = (
                     gcp_service_account.Credentials.from_service_account_info(
-                        json.loads(
-                            cfg.service_account_json.get_secret_value()
-                        ),
+                        service_account_info,
                         scopes=scopes,
                     )
                 )
