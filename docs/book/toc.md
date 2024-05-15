@@ -33,7 +33,6 @@
     * [Managing steps](user-guide/advanced-guide/pipelining-features/managing-steps.md)
     * [Real-time settings](user-guide/advanced-guide/pipelining-features/pipeline-settings.md)
     * [Version pipelines](user-guide/advanced-guide/pipelining-features/version-pipelines.md)
-    * [Compose pipelines](user-guide/advanced-guide/pipelining-features/compose-pipelines.md)
     * [Schedule pipeline runs](user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
     * [Fetch metadata within steps](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps.md)
     * [Fetch metadata during pipeline composition](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md)
@@ -91,10 +90,12 @@
   * [Use pipeline/step parameters](how-to/overview/use-pipeline-step-parameters.md)
   * [Name your step outputs](how-to/overview/name-your-step-outputs.md)
   * [Control caching behavior](how-to/overview/control-caching-behavior.md)
-  * [Trigger a pipeline from within another](how-to/overview/trigger-a-pipeline-from-within-another.md)
+  * [Trigger a pipeline from another](how-to/overview/trigger-a-pipeline-from-another.md)
   * [Control execution order of steps](how-to/overview/control-execution-order-of-steps.md)
   * [Name your pipeline (and runs)](how-to/overview/name-your-pipeline-and-runs.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
+  * [What can be configured](how-to/use-configuration-files/what-can-be-configured.md)
+  * [Configuration hierarchy](how-to/use-configuration-files/configuration-hierarchy.md)
   * [Autogenerate a template yaml file](how-to/use-configuration-files/autogenerate-a-template-yaml-file.md)
 * [🐳 Handle requirements and Docker settings](how-to/handle-requirements-and-docker-settings/README.md)
   * [Docker settings on a step](how-to/handle-requirements-and-docker-settings/docker-settings-on-a-step.md)
@@ -112,6 +113,8 @@
 * [Use the Model Control Plane](how-to/use-the-model-control-plane/README.md)
   * [Load a Model within a Step](how-to/use-the-model-control-plane/load-a-model-within-a-step.md)
   * [Associate a pipeline with a model](how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model.md)
+* [Access pipelines, models, artifacts](how-to/access-pipelines-models-artifacts/README.md)
+  * [Find out what configuration was used](how-to/access-pipelines-models-artifacts/find-out-what-configuration-was-used.md)
 
 ## Deploying ZenML
 

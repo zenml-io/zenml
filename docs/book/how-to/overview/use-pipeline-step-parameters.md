@@ -7,6 +7,8 @@ description: >-
 # Use pipeline/step parameters
 
 ```python
+from zenml import pipeline, step
+
 @step
 def load_data(parameter: int) -> dict:
 

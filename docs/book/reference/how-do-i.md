@@ -42,7 +42,7 @@ To reset your ZenML client, you can run `zenml clean` which will wipe your local
 
 * **steps that create other steps AKA dynamic pipelines and steps**?
 
-Please read our [general information on how to compose steps + pipelines together](../user-guide/advanced-guide/pipelining-features/compose-pipelines.md) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md) which is related to this topic.
+Please read our [general information on how to compose steps + pipelines together](broken-reference) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md) which is related to this topic.
 
 * **templates**: using starter code with ZenML?
 
