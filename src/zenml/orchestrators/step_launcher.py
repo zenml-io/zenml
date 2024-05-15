@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
+import os
 import time
 from contextlib import nullcontext
 from datetime import datetime
@@ -23,6 +24,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_IGNORE_FAILURE_HOOK,
     STEP_SOURCE_PARAMETER_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -227,6 +229,7 @@ class StepLauncher:
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
                     retries = 0
+                    last_retry = True
                     max_retries = (
                         step_run_response.config.retry.max_retries
                         if step_run_response.config.retry
@@ -244,10 +247,12 @@ class StepLauncher:
                     )
 
                     while retries < max_retries:
+                        last_retry = retries == max_retries - 1
                         try:
                             self._run_step(
                                 pipeline_run=pipeline_run,
                                 step_run=step_run_response,
+                                last_retry=last_retry,
                             )
                             logger.info(
                                 f"Step '{self._step_name}' completed successfully."
@@ -278,8 +283,6 @@ class StepLauncher:
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
-
-    def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
         """Gets the docstring and source code of the step.
 
         If any of the two is longer than 1000 characters, it will be truncated.
@@ -442,12 +445,14 @@ class StepLauncher:
         self,
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,
+        last_retry: bool = True,
     ) -> None:
         """Runs the current step.
 
         Args:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
+            last_retry: Whether this is the last retry of the step.
         """
         # Prepare step run information.
         step_run_info = StepRunInfo(
@@ -470,6 +475,7 @@ class StepLauncher:
                 self._run_step_with_step_operator(
                     step_operator_name=self._step.config.step_operator,
                     step_run_info=step_run_info,
+                    last_retry=last_retry,
                 )
             else:
                 self._run_step_without_step_operator(
@@ -478,6 +484,7 @@ class StepLauncher:
                     step_run_info=step_run_info,
                     input_artifacts=step_run.inputs,
                     output_artifact_uris=output_artifact_uris,
+                    last_retry=last_retry,
                 )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
@@ -495,12 +502,14 @@ class StepLauncher:
         self,
         step_operator_name: str,
         step_run_info: StepRunInfo,
+        last_retry: bool,
     ) -> None:
         """Runs the current step with a step operator.
 
         Args:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
+            last_retry: Whether this is the last retry of the step.
         """
         step_operator = _get_step_operator(
             stack=self._stack,
@@ -518,6 +527,8 @@ class StepLauncher:
         environment = orchestrator_utils.get_config_environment_vars(
             deployment=self._deployment
         )
+        if last_retry:
+            environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(True)
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
@@ -536,6 +547,7 @@ class StepLauncher:
         step_run_info: StepRunInfo,
         input_artifacts: Dict[str, ArtifactVersionResponse],
         output_artifact_uris: Dict[str, str],
+        last_retry: bool,
     ) -> None:
         """Runs the current step without a step operator.
 
@@ -545,7 +557,10 @@ class StepLauncher:
             step_run_info: Additional information needed to run the step.
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
+            last_retry: Whether this is the last retry of the step.
         """
+        if last_retry:
+            os.environ[ENV_ZENML_IGNORE_FAILURE_HOOK] = "true"
         runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
             pipeline_run=pipeline_run,
