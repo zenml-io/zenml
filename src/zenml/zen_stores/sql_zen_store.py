@@ -206,6 +206,7 @@ from zenml.models import (
     SecretUpdate,
     ServerActivationRequest,
     ServerDatabaseType,
+    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -753,6 +754,7 @@ class SqlZenStore(BaseZenStore):
     _alembic: Optional[Alembic] = None
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
+    _should_send_user_enriched_events: bool = False
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -822,6 +824,57 @@ class SqlZenStore(BaseZenStore):
         if not self._alembic:
             raise ValueError("Store not initialized")
         return self._alembic
+
+    def _send_user_enriched_events_if_necessary(self) -> None:
+        """Send user enriched event for all existing users."""
+        if not self._should_send_user_enriched_events:
+            return
+
+        logger.debug("Sending user enriched events for legacy users.")
+        self._should_send_user_enriched_events = False
+
+        server_config = ServerConfiguration.get_server_config()
+
+        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+            # Do not send events for cloud tenants where the event comes from
+            # the cloud API
+            return
+
+        query = select(UserSchema).where(
+            UserSchema.is_service_account.is_(False)  # type: ignore[attr-defined]
+        )
+
+        with Session(self.engine) as session:
+            users = session.exec(query).unique().all()
+
+            for user_orm in users:
+                user_model = user_orm.to_model(
+                    include_metadata=True, include_private=True
+                )
+
+                if not user_model.email:
+                    continue
+
+                if (
+                    FINISHED_ONBOARDING_SURVEY_KEY
+                    not in user_model.user_metadata
+                ):
+                    continue
+
+                analytics_metadata = {
+                    **user_model.user_metadata,
+                    "email": user_model.email,
+                    "newsletter": user_model.email_opted_in,
+                    "name": user_model.name,
+                    "full_name": user_model.full_name,
+                }
+                with AnalyticsContext() as context:
+                    context.user_id = user_model.id
+
+                    context.track(
+                        event=AnalyticsEvent.USER_ENRICHED,
+                        properties=analytics_metadata,
+                    )
 
     @classmethod
     def filter_and_paginate(
@@ -1051,6 +1104,9 @@ class SqlZenStore(BaseZenStore):
         # Make sure the server is activated and the default user exists, if
         # applicable
         self._auto_activate_server()
+
+        # Send user enriched events that we missed due to a bug in 0.57.0
+        self._send_user_enriched_events_if_necessary()
 
     def _get_db_backup_file_path(self) -> str:
         """Get the path to the database backup file.
@@ -1456,6 +1512,13 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
+            if current_revisions and version.parse(
+                current_revisions[0]
+            ) < version.parse("0.57.1"):
+                # We want to send the missing user enriched events for users
+                # which were created pre 0.57.1 and only on one upgrade
+                self._should_send_user_enriched_events = True
+
             self._sync_flavors()
 
     def _sync_flavors(self) -> None:
@@ -8042,10 +8105,18 @@ class SqlZenStore(BaseZenStore):
                     "name": updated_user.name,
                     "full_name": updated_user.full_name,
                 }
-                track(
-                    event=AnalyticsEvent.USER_ENRICHED,
-                    metadata=analytics_metadata,
-                )
+                with AnalyticsContext() as context:
+                    # This method can be called from the `/users/activate`
+                    # endpoint in which the auth context is not set
+                    # -> We need to manually set the user ID in that case,
+                    # otherwise the event will not be sent
+                    if context.user_id is None:
+                        context.user_id = updated_user.id
+
+                    context.track(
+                        event=AnalyticsEvent.USER_ENRICHED,
+                        properties=analytics_metadata,
+                    )
 
             return updated_user
 

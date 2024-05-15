@@ -164,6 +164,7 @@
     * [Develop a Custom Feature Store](stacks-and-components/component-guide/feature-stores/custom.md)
   * [Annotators](stacks-and-components/component-guide/annotators/annotators.md)
     * [Label Studio](stacks-and-components/component-guide/annotators/label-studio.md)
+    * [Prodigy](stacks-and-components/component-guide/annotators/prodigy.md)
     * [Develop a Custom Annotator](stacks-and-components/component-guide/annotators/custom.md)
   * [Image Builders](stacks-and-components/component-guide/image-builders/image-builders.md)
     * [Local Image Builder](stacks-and-components/component-guide/image-builders/local.md)
