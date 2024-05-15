@@ -32,7 +32,7 @@ You can configure the SkyPilot VM Orchestrator to use a specific VM type, and re
 {% endhint %}
 
 {% hint style="warning" %}
-The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](../../../user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
+The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](broken-reference)
 {% endhint %}
 
 {% hint style="info" %}

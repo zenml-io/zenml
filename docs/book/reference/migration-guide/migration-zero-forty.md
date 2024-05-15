@@ -316,7 +316,7 @@ my_pipeline()
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md) for more information on how to schedule your pipelines.
+Check out [this page](broken-reference) for more information on how to schedule your pipelines.
 
 ## Fetching pipelines after execution
 
