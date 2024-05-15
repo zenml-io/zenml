@@ -131,7 +131,7 @@ class ActionResponseBody(WorkspaceScopedResponseBody):
         title="The flavor of the action.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    plugin_subtype: str = Field(
+    plugin_subtype: PluginSubType = Field(
         title="The subtype of the action.",
         max_length=STR_FIELD_MAX_LENGTH,
     )

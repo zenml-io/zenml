@@ -80,6 +80,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -2578,11 +2582,11 @@ class Client(metaclass=ClientMetaClass):
         """Registers a event_source.
 
         Args:
-            name: The name of the event_source to create.
-            configuration: Configuration for this event source
-            description: The description of the event_source
-            flavor: The flavor of event source
-            event_source_subtype: str
+            name: The name of the event source to create.
+            configuration: Configuration for this event source.
+            description: The description of the event source.
+            flavor: The flavor of event source.
+            event_source_subtype: The event source subtype.
 
         Returns:
             The model of the registered event source.
@@ -2752,6 +2756,190 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_event_source(event_source_id=event_source.id)
         logger.info("Deleted event_source with name '%s'.", event_source.name)
 
+    # --------------------------------- Actions -------------------------
+
+    @_fail_for_sql_zen_store
+    def create_action(
+        self,
+        name: str,
+        flavor: str,
+        action_type: PluginSubType,
+        configuration: Dict[str, Any],
+        service_account_id: UUID,
+        auth_window: Optional[int] = None,
+        description: Optional[str] = None,
+    ) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            name: The name of the action.
+            flavor: The flavor of the action,
+            action_type: The action subtype.
+            configuration: The action configuration.
+            service_account_id: The service account that is used to execute the
+                action.
+            auth_window: The time window in minutes for which the service
+                account is authorized to execute the action. Set this to 0 to
+                authorize the service account indefinitely (not recommended).
+            description: The description of the action.
+
+        Returns:
+            The created action
+        """
+
+        action = ActionRequest(
+            name=name,
+            description=description,
+            flavor=flavor,
+            plugin_subtype=action_type,
+            configuration=configuration,
+            service_account_id=service_account_id,
+            auth_window=auth_window,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+
+        return self.zen_store.create_action(action=action)
+
+    @_fail_for_sql_zen_store
+    def get_action(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by name, ID or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the action.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_action,
+            list_method=self.list_actions,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
+
+    @_fail_for_sql_zen_store
+    def list_actions(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        flavor: Optional[str] = None,
+        action_type: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List actions.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of the action to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
+            name: The name of the action to filter by.
+            flavor: The flavor of the action to filter by.
+            action_type: The type of the action to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of actions.
+        """
+        filter_model = ActionFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            name=name,
+            id=id,
+            flavor=flavor,
+            plugin_subtype=action_type,
+            created=created,
+            updated=updated,
+        )
+        filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_actions(filter_model, hydrate=hydrate)
+
+    @_fail_for_sql_zen_store
+    def update_action(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        service_account_id: Optional[UUID] = None,
+        auth_window: Optional[int] = None,
+    ) -> ActionResponse:
+        """Update an action.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the action to update.
+            name: The new name of the action.
+            description: The new description of the action.
+            configuration: The new configuration of the action.
+            service_account_id: The new service account that is used to execute
+                the action.
+            auth_window: The new time window in minutes for which the service
+                account is authorized to execute the action. Set this to 0 to
+                authorize the service account indefinitely (not recommended).
+
+        Returns:
+            The updated action.
+        """
+        action = self.get_action(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        update_model = ActionUpdate(
+            name=name,
+            description=description,
+            configuration=configuration,
+            service_account_id=service_account_id,
+            auth_window=auth_window,
+        )
+
+        return self.zen_store.update_action(
+            action_id=action.id,
+            action_update=update_model,
+        )
+
+    @_fail_for_sql_zen_store
+    def delete_action(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Delete an action.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the action
+                to delete.
+        """
+        action = self.get_action(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        self.zen_store.delete_action(action_id=action.id)
+        logger.info("Deleted action with name '%s'.", action.name)
+
     # --------------------------------- Triggers -------------------------
 
     @_fail_for_sql_zen_store
@@ -2773,7 +2961,7 @@ class Client(metaclass=ClientMetaClass):
             action_id: The ID of the action that should be triggered.
 
         Returns:
-            The model of the registered event source.
+            The created trigger.
         """
         trigger = TriggerRequest(
             name=name,
@@ -2794,10 +2982,10 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> TriggerResponse:
-        """Get a event source by name, ID or prefix.
+        """Get a trigger by name, ID or prefix.
 
         Args:
-            name_id_or_prefix: The name, ID or prefix of the stack.
+            name_id_or_prefix: The name, ID or prefix of the trigger.
             allow_name_prefix_match: If True, allow matching by name prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.

@@ -160,9 +160,14 @@ class InternalEventHub(BaseEventHub):
 
             # Get the filter class from the plugin flavor class
             event_filter_config_class = plugin_flavor.EVENT_FILTER_CONFIG_CLASS
-            event_filter = event_filter_config_class(**trigger.event_filter)
-            if event_filter.event_matches_filter(event=event):
-                trigger_list.append(trigger)
+            if trigger.event_filter:
+                # TODO: What happens if a trigger is configured with an event
+                # source but no filter? Will it always be triggered or never?
+                event_filter = event_filter_config_class(
+                    **trigger.event_filter
+                )
+                if event_filter.event_matches_filter(event=event):
+                    trigger_list.append(trigger)
 
         logger.debug(
             f"For event {event} and event source {event_source}, "

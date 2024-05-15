@@ -109,7 +109,7 @@ class ActionSchema(NamedSchema, table=True):
                 ).encode("utf-8"),
             ),
             flavor=request.flavor,
-            plugin_subtype=request.plugin_subtype,
+            plugin_subtype=request.plugin_subtype.value,
             description=request.description,
             service_account_id=request.service_account_id,
             auth_window=request.auth_window,
