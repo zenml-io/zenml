@@ -530,7 +530,7 @@ class StepLauncher:
             deployment=self._deployment
         )
         if last_retry:
-            environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(True)
+            environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(False)
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
@@ -562,7 +562,7 @@ class StepLauncher:
             last_retry: Whether this is the last retry of the step.
         """
         if last_retry:
-            os.environ[ENV_ZENML_IGNORE_FAILURE_HOOK] = "true"
+            os.environ[ENV_ZENML_IGNORE_FAILURE_HOOK] = "false"
         runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
             pipeline_run=pipeline_run,
