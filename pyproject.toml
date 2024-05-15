@@ -459,6 +459,10 @@ module = [
     "matplotlib.*",
     "IPython.*",
     "huggingface_hub.*",
-    "label_studio_sdk.*"
+    "label_studio_sdk.*",
+    "peewee.*",
+    "prodigy.*",
+    "prodigy.components.*",
+    "prodigy.components.db.*",
 ]
 ignore_missing_imports = true
