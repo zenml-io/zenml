@@ -283,6 +283,8 @@ class StepLauncher:
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
+
+    def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
         """Gets the docstring and source code of the step.
 
         If any of the two is longer than 1000 characters, it will be truncated.
