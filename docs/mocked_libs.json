@@ -207,5 +207,10 @@
     "whylogs.api.writer.whylabs",
     "whylogs.core",
     "whylogs.viz",
-    "xgboost"
+    "xgboost",
+    "peewee",
+    "prodigy",
+    "prodigy.components",
+    "prodigy.components.db",
+    "prodigy.errors"
 ]

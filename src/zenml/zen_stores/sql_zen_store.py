@@ -206,6 +206,7 @@ from zenml.models import (
     SecretUpdate,
     ServerActivationRequest,
     ServerDatabaseType,
+    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -753,6 +754,7 @@ class SqlZenStore(BaseZenStore):
     _alembic: Optional[Alembic] = None
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
+    _should_send_user_enriched_events: bool = False
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -822,6 +824,57 @@ class SqlZenStore(BaseZenStore):
         if not self._alembic:
             raise ValueError("Store not initialized")
         return self._alembic
+
+    def _send_user_enriched_events_if_necessary(self) -> None:
+        """Send user enriched event for all existing users."""
+        if not self._should_send_user_enriched_events:
+            return
+
+        logger.debug("Sending user enriched events for legacy users.")
+        self._should_send_user_enriched_events = False
+
+        server_config = ServerConfiguration.get_server_config()
+
+        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+            # Do not send events for cloud tenants where the event comes from
+            # the cloud API
+            return
+
+        query = select(UserSchema).where(
+            UserSchema.is_service_account.is_(False)  # type: ignore[attr-defined]
+        )
+
+        with Session(self.engine) as session:
+            users = session.exec(query).unique().all()
+
+            for user_orm in users:
+                user_model = user_orm.to_model(
+                    include_metadata=True, include_private=True
+                )
+
+                if not user_model.email:
+                    continue
+
+                if (
+                    FINISHED_ONBOARDING_SURVEY_KEY
+                    not in user_model.user_metadata
+                ):
+                    continue
+
+                analytics_metadata = {
+                    **user_model.user_metadata,
+                    "email": user_model.email,
+                    "newsletter": user_model.email_opted_in,
+                    "name": user_model.name,
+                    "full_name": user_model.full_name,
+                }
+                with AnalyticsContext() as context:
+                    context.user_id = user_model.id
+
+                    context.track(
+                        event=AnalyticsEvent.USER_ENRICHED,
+                        properties=analytics_metadata,
+                    )
 
     @classmethod
     def filter_and_paginate(
@@ -1051,6 +1104,9 @@ class SqlZenStore(BaseZenStore):
         # Make sure the server is activated and the default user exists, if
         # applicable
         self._auto_activate_server()
+
+        # Send user enriched events that we missed due to a bug in 0.57.0
+        self._send_user_enriched_events_if_necessary()
 
     def _get_db_backup_file_path(self) -> str:
         """Get the path to the database backup file.
@@ -1456,6 +1512,13 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
+            if current_revisions and version.parse(
+                current_revisions[0]
+            ) < version.parse("0.57.1"):
+                # We want to send the missing user enriched events for users
+                # which were created pre 0.57.1 and only on one upgrade
+                self._should_send_user_enriched_events = True
+
             self._sync_flavors()
 
     def _sync_flavors(self) -> None:
@@ -4276,12 +4339,16 @@ class SqlZenStore(BaseZenStore):
             ).to_model(include_metadata=hydrate)
 
     def _replace_placeholder_run(
-        self, pipeline_run: PipelineRunRequest
+        self,
+        pipeline_run: PipelineRunRequest,
+        pre_replacement_hook: Optional[Callable[[], None]] = None,
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
         Args:
             pipeline_run: Pipeline run request.
+            pre_replacement_hook: Optional function to run before replacing the
+                pipeline run.
 
         Raises:
             KeyError: If no placeholder run exists.
@@ -4315,6 +4382,8 @@ class SqlZenStore(BaseZenStore):
             if not run_schema:
                 raise KeyError("No placeholder run found.")
 
+            if pre_replacement_hook:
+                pre_replacement_hook()
             run_schema.update_placeholder(pipeline_run)
             session.add(run_schema)
             session.commit()
@@ -4356,7 +4425,9 @@ class SqlZenStore(BaseZenStore):
             return run_schema.to_model(include_metadata=True)
 
     def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
+        self,
+        pipeline_run: PipelineRunRequest,
+        pre_creation_hook: Optional[Callable[[], None]] = None,
     ) -> Tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
@@ -4365,6 +4436,8 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             pipeline_run: The pipeline run to get or create.
+            pre_creation_hook: Optional function to run before creating the
+                pipeline run.
 
         # noqa: DAR401
         Raises:
@@ -4384,7 +4457,10 @@ class SqlZenStore(BaseZenStore):
 
         try:
             return (
-                self._replace_placeholder_run(pipeline_run=pipeline_run),
+                self._replace_placeholder_run(
+                    pipeline_run=pipeline_run,
+                    pre_replacement_hook=pre_creation_hook,
+                ),
                 True,
             )
         except KeyError:
@@ -4415,6 +4491,8 @@ class SqlZenStore(BaseZenStore):
             #     orchestrator_run_id of the run that we're trying to create.
             #     -> The `self.create_run(...) call will fail due to the unique
             #     constraint on those columns.
+            if pre_creation_hook:
+                pre_creation_hook()
             return self.create_run(pipeline_run), True
         except (EntityExistsError, IntegrityError) as create_error:
             # Creating the run failed with an
@@ -8020,14 +8098,25 @@ class SqlZenStore(BaseZenStore):
             if not survey_finished_before and survey_finished_after:
                 analytics_metadata = {
                     **updated_user.user_metadata,
-                    "email": updated_user.email,
+                    # We need to get the email from the DB model as it is not
+                    # included in the model that's returned from this method
+                    "email": existing_user.email,
+                    "newsletter": existing_user.email_opted_in,
                     "name": updated_user.name,
                     "full_name": updated_user.full_name,
                 }
-                track(
-                    event=AnalyticsEvent.USER_ENRICHED,
-                    metadata=analytics_metadata,
-                )
+                with AnalyticsContext() as context:
+                    # This method can be called from the `/users/activate`
+                    # endpoint in which the auth context is not set
+                    # -> We need to manually set the user ID in that case,
+                    # otherwise the event will not be sent
+                    if context.user_id is None:
+                        context.user_id = updated_user.id
+
+                    context.track(
+                        event=AnalyticsEvent.USER_ENRICHED,
+                        properties=analytics_metadata,
+                    )
 
             return updated_user
 
