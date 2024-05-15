@@ -121,7 +121,7 @@ class BaseEventHub(ABC):
             trigger=trigger.id, event_metadata=event.dict()
         )
 
-        action_config = trigger.get_metadata().action
+        action_config = trigger.action.configuration
 
         trigger_execution = self.zen_store.create_trigger_execution(request)
 

@@ -13,18 +13,7 @@
 #  permissions and limitations under the License.
 """Base implementation for events."""
 
-from typing import (
-    TYPE_CHECKING,
-)
-
 from pydantic import BaseModel
-
-from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    pass
-
-logger = get_logger(__name__)
 
 # -------------------- Event Models -----------------------------------
 

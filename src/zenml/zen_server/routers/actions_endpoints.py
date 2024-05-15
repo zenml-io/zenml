@@ -194,6 +194,11 @@ def create_action(
         IllegalOperationError: If the workspace specified in the stack
             component does not match the current workspace.
     """
+    service_account = zen_store().get_service_account(
+        service_account_name_or_id=action.service_account_id
+    )
+    verify_permission_for_model(service_account, action=Action.READ)
+
     action_handler = plugin_flavor_registry().get_plugin(
         name=action.flavor,
         _type=PluginType.ACTION,
@@ -240,6 +245,12 @@ def update_action(
     action = zen_store().get_action(action_id=action_id)
 
     verify_permission_for_model(action, action=Action.UPDATE)
+
+    if action_update.service_account_id:
+        service_account = zen_store().get_service_account(
+            service_account_name_or_id=action_update.service_account_id
+        )
+        verify_permission_for_model(service_account, action=Action.READ)
 
     action_handler = plugin_flavor_registry().get_plugin(
         name=action.flavor,

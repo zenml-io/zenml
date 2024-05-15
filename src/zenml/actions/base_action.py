@@ -459,7 +459,7 @@ class BaseActionHandler(BasePlugin, ABC):
         # before it is sent to the database
         self._validate_action_request(action=action, config=config)
         # Serialize the configuration back into the request
-        action.action = config.dict(exclude_none=True)
+        action.configuration = config.dict(exclude_none=True)
         # Create the action in the database
         action_response = self.zen_store.create_action(action=action)
         try:
@@ -521,7 +521,7 @@ class BaseActionHandler(BasePlugin, ABC):
             config_update=config_update,
         )
         # Serialize the configuration update back into the update request
-        action_update.action = config_update.dict(exclude_none=True)
+        action_update.configuration = config_update.dict(exclude_none=True)
 
         # Update the action in the database
         action_response = self.zen_store.update_action(
