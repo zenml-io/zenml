@@ -33,15 +33,8 @@ def train_model(data: dict) -> None:
 def simple_ml_pipeline(parameter: int):
     dataset = load_data(parameter=parameter)
     train_model(dataset)
-```
 
-{% hint style="info" %}
-We recommend strict typing of all parameters across your pipelines and steps.
-{% endhint %}
 
-### Set the parameter at runtime
-
-```python
 # For parameters on the pipeline level, simply choose a 
 # parameter when running the pipeline
 simple_ml_pipeline(parameter=42)

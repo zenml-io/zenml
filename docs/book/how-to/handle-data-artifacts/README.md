@@ -4,7 +4,7 @@ description: >-
   lineage and auditability.
 ---
 
-# 🪅 Handle Data/Artifacts
+# 🗄️ Handle Data/Artifacts
 
 For best results, use type annotations for your outputs.
 

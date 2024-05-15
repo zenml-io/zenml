@@ -1,2 +1,0 @@
-# 🗂️ Attach metadata and tags
-
