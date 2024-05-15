@@ -96,7 +96,7 @@ class TriggerSchema(NamedSchema, table=True):
         target_column="id",
         # This won't happen because the SQL zen store prevents an action
         # from being deleted if it has associated triggers
-        ondelete="SET NULL",
+        ondelete="CASCADE",
         nullable=False,
     )
     action: "ActionSchema" = Relationship(back_populates="triggers")

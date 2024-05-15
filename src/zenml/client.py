@@ -2575,18 +2575,18 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         configuration: Dict[str, Any],
-        description: str,
         flavor: str,
         event_source_subtype: PluginSubType,
+        description: str = "",
     ) -> EventSourceResponse:
-        """Registers a event_source.
+        """Registers an event source.
 
         Args:
             name: The name of the event source to create.
             configuration: Configuration for this event source.
-            description: The description of the event source.
             flavor: The flavor of event source.
             event_source_subtype: The event source subtype.
+            description: The description of the event source.
 
         Returns:
             The model of the registered event source.
@@ -2767,7 +2767,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Dict[str, Any],
         service_account_id: UUID,
         auth_window: Optional[int] = None,
-        description: Optional[str] = None,
+        description: str = "",
     ) -> ActionResponse:
         """Create an action.
 
@@ -2946,19 +2946,19 @@ class Client(metaclass=ClientMetaClass):
     def create_trigger(
         self,
         name: str,
-        description: str,
         event_source_id: UUID,
         event_filter: Dict[str, Any],
         action_id: UUID,
+        description: str = "",
     ) -> TriggerResponse:
         """Registers a trigger.
 
         Args:
             name: The name of the trigger to create.
-            description: The description of the trigger
             event_source_id: The id of the event source id
             event_filter: The event filter
             action_id: The ID of the action that should be triggered.
+            description: The description of the trigger
 
         Returns:
             The created trigger.

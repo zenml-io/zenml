@@ -65,7 +65,10 @@ class ActionSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: Optional["UserSchema"] = Relationship(back_populates="actions")
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="actions",
+        sa_relationship_kwargs={"foreign_keys": "[ActionSchema.user_id]"},
+    )
 
     triggers: List["TriggerSchema"] = Relationship(back_populates="action")
 
@@ -78,7 +81,7 @@ class ActionSchema(NamedSchema, table=True):
         nullable=False,
     )
     service_account: UserSchema = Relationship(
-        back_populates="auth_triggers",
+        back_populates="auth_actions",
         sa_relationship_kwargs={
             "foreign_keys": "[ActionSchema.service_account_id]"
         },
@@ -109,7 +112,7 @@ class ActionSchema(NamedSchema, table=True):
                 ).encode("utf-8"),
             ),
             flavor=request.flavor,
-            plugin_subtype=request.plugin_subtype.value,
+            plugin_subtype=request.plugin_subtype,
             description=request.description,
             service_account_id=request.service_account_id,
             auth_window=request.auth_window,

@@ -90,7 +90,10 @@ class UserSchema(NamedSchema, table=True):
     flavors: List["FlavorSchema"] = Relationship(back_populates="user")
     actions: List["ActionSchema"] = Relationship(
         back_populates="user",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "UserSchema.id==ActionSchema.user_id",
+        },
     )
     event_sources: List["EventSourceSchema"] = Relationship(
         back_populates="user"
