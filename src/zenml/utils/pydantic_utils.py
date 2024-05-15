@@ -23,14 +23,13 @@ from pydantic import (
     AfterValidator,
     BaseModel,
     BeforeValidator,
+    ConfigDict,
     PlainValidator,
     ValidationInfo,
     WrapValidator,
+    validate_call,
 )
 from pydantic._internal import _repr as pydantic_repr
-
-# TODO: Investigate if we can solve this import a different way.
-from pydantic.deprecated.decorator import ValidatedFunction
 from pydantic.json import pydantic_encoder
 from pydantic.v1.utils import sequence_like
 
@@ -257,43 +256,23 @@ def validate_function_args(
     Returns:
         The validated arguments.
     """
-    parameter_prefix = "zenml__"
-
     signature = inspect.signature(__func)
-    parameters = [
-        param.replace(name=f"{parameter_prefix}{param.name}")
-        for param in signature.parameters.values()
-    ]
-    signature = signature.replace(parameters=parameters)
 
-    def f() -> None:
+    def f(*args, **kwargs) -> None:
         pass
 
-    # We create a dummy function with the original function signature, but
-    # add a prefix to all arguments to avoid potential clashes with pydantic
-    # BaseModel attributes
+    # We create a dummy function with the original function signature to run
+    # pydantic validation without actually running the function code
     f.__signature__ = signature  # type: ignore[attr-defined]
-    f.__annotations__ = {
-        f"{parameter_prefix}{key}": annotation
-        for key, annotation in __func.__annotations__.items()
-    }
+    f.__annotations__ = __func.__annotations__
 
-    validation_func = ValidatedFunction(f, config=__config)
+    validated_function = validate_call(
+        f, config=ConfigDict(**__config), validate_return=False
+    )
+    # This raises a pydantic.ValidatonError in case the arguments are not valid
+    validated_function(*args, **kwargs)
 
-    kwargs = {
-        f"{parameter_prefix}{key}": value for key, value in kwargs.items()
-    }
-    model = validation_func.init_model_instance(*args, **kwargs)
-
-    validated_args = {
-        k[len(parameter_prefix) :]: v
-        for k, v in dict(model).items()
-        if k in model.model_fields_set
-        or model.model_fields[k].default_factory
-        or model.model_fields[k].default
-    }
-
-    return validated_args
+    return signature.bind(*args, **kwargs).arguments
 
 
 def model_validator_data_handler(

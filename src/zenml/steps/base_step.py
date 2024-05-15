@@ -646,8 +646,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 *args,
                 **kwargs,
             )
-        except (ValidationError, TypeError) as e:
-            raise StepInterfaceError("Invalid entrypoint arguments.") from e
+        except ValidationError as e:
+            raise StepInterfaceError(
+                "Invalid step function entrypoint arguments. Check out the "
+                "pydantic error above for more details."
+            ) from e
 
         return self.entrypoint(**validated_args)
 
