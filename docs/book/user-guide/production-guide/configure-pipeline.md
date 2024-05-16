@@ -122,7 +122,7 @@ steps:
 Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_config.SkypilotBaseOrchestratorSettings) class in the Python SDK. You can adapt it to `vm_gcp` or `vm_azure` depending on which flavor of skypilot you have configured.
 
 {% hint style="info" %}
-Read more about settings in ZenML [here](pipeline-settings.md).
+Read more about settings in ZenML [here](../advanced-guide/pipelining-features/pipeline-settings.md).
 {% endhint %}
 
 Now let's run the pipeline again:
@@ -133,6 +133,6 @@ python run.py --training-pipeline
 
 Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
 
-Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../../how-to/use-remote-compute/scale-compute-to-the-cloud.md), including the ability to [attach a GPU](../../how-to/use-remote-compute/scale-compute-to-the-cloud.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
+Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md), including the ability to [attach a GPU](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

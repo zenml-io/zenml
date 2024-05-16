@@ -49,9 +49,9 @@ If none of the `ZENML_STORE_*` variables are set, the container will default to 
 
 ### Secret store environment variables
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../how-to/configuring-zenml/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it explicitly using docker environment variables. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../user-guide/advanced-guide/configuring-zenml/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it explicitly using docker environment variables. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
 
-> **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../how-to/configuring-zenml/secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
+> **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../user-guide/advanced-guide/configuring-zenml/secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 {% tabs %}
 {% tab title="undefined" %}
@@ -199,7 +199,7 @@ These configuration options are only relevant if you're using Hashicorp Vault as
 {% endtab %}
 
 {% tab title="Custom" %}
-These configuration options are only relevant if you're using a custom secrets store backend implementation. For this to work, you must have [a custom implementation of the secrets store API](../../how-to/configuring-zenml/custom-secret-stores.md) in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to mount the directory containing the class into the container or build a custom container image that contains the class.
+These configuration options are only relevant if you're using a custom secrets store backend implementation. For this to work, you must have [a custom implementation of the secrets store API](../../user-guide/advanced-guide/configuring-zenml/custom-secret-stores.md) in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to mount the directory containing the class into the container or build a custom container image that contains the class.
 
 The following configuration option is required:
 
@@ -218,7 +218,7 @@ If your custom secrets store implementation requires additional configuration op
 
 #### Backup secrets store
 
-[A backup secrets store](../../how-to/configuring-zenml/secret-management.md#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../how-to/configuring-zenml/secret-management.md#secrets-migration-strategy).
+[A backup secrets store](../../user-guide/advanced-guide/configuring-zenml/secret-management.md#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../user-guide/advanced-guide/configuring-zenml/secret-management.md#secrets-migration-strategy).
 
 To configure a backup secrets store in the docker container, use the same approach and instructions documented for the primary secrets store, but set the `**ZENML\_BACKUP\_SECRETS\_STORE\***` environment variables instead of `**ZENML\_SECRETS\_STORE\***`, e.g.:
 

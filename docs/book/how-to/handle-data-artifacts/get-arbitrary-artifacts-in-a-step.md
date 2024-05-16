@@ -6,7 +6,7 @@ description: >-
 
 # Get arbitrary artifacts in a step
 
-As described in [the metadata guide](../overview/logging-metadata.md), the metadata can be fetched with the client, and this is how you would use it to fetch it within a step. This allows you to fetch artifacts from other upstream steps or even completely different pipelines.
+As described in [the metadata guide](../metadata/logging-metadata.md), the metadata can be fetched with the client, and this is how you would use it to fetch it within a step. This allows you to fetch artifacts from other upstream steps or even completely different pipelines.
 
 ```python
 from zenml.client import Client

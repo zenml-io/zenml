@@ -202,7 +202,7 @@ model = client.get_model_version("my_model", "my_version")
 print(model.run_metadata["metadata_key"].value)
 ```
 
-For further depth, there is an [advanced metadata logging guide](../../how-to/overview/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](../../how-to/metadata/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
 
 ## Using the stages of a model
 

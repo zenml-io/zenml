@@ -7,7 +7,7 @@ description: Orchestrating the execution of ML pipelines.
 The orchestrator is an essential component in any MLOps stack as it is responsible for running your machine learning pipelines. To do so, the orchestrator provides an environment that is set up to execute the steps of your pipeline. It also makes sure that the steps of your pipeline only get executed once all their inputs (which are outputs of previous steps of your pipeline) are available.
 
 {% hint style="info" %}
-Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute your pipeline code. If you want to learn more about how Docker images are built by ZenML, check out [this guide](../../../how-to/containerize-your-pipeline/).
+Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute your pipeline code. If you want to learn more about how Docker images are built by ZenML, check out [this guide](../../../user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md).
 {% endhint %}
 
 ### When to use it
@@ -61,7 +61,7 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 
 #### Specifying per-step resources
 
-If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](../../../user-guide/production-guide/pipeline-settings.md).
+If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](../../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look at [step operators](../step-operators/).
 

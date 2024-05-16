@@ -203,7 +203,7 @@ We can then register the orchestrator and use it in our active stack. This can b
 {% endtabs %}
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubeflow. Check out [this page](../../../how-to/containerize-your-pipeline/) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubeflow. Check out [this page](../../../user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Kubeflow orchestrator:
@@ -278,11 +278,11 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow\_orchestrator\_flavor.KubeflowOrchestratorSettings) for a full list of available attributes and [this docs page](../../../user-guide/production-guide/pipeline-settings.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow\_orchestrator\_flavor.KubeflowOrchestratorSettings) for a full list of available attributes and [this docs page](../../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../how-to/use-remote-compute/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 ### Important Note for Multi-Tenancy Deployments
 
@@ -368,7 +368,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
 ```
 
-See full documentation of using ZenML secrets [here](../../../how-to/configuring-zenml/secret-management.md).
+See full documentation of using ZenML secrets [here](../../../user-guide/advanced-guide/configuring-zenml/secret-management.md).
 
 For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow\_orchestrator.KubeflowOrchestrator) .
 

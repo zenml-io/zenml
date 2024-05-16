@@ -40,7 +40,7 @@ zenml secret create <SECRET_NAME> \
 
 The CLI also includes commands that can be used to list, update and delete secrets. A full guide on using the CLI to create, access, update and delete secrets is available [here](https://sdkdocs.zenml.io/latest/cli/#zenml.cli--secrets-management).
 
-#### Interactively register missing secrets for your stack
+**Interactively register missing secrets for your stack**
 
 If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that all the referenced secrets exist. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
 
@@ -93,7 +93,6 @@ Some of the components in your stack require you to configure them with sensitiv
 For example:
 
 {% tabs %}
-
 {% tab title="CLI" %}
 ```shell
 # Register a secret called `mlflow_secret` with key-value pairs for the
@@ -149,5 +148,4 @@ def secret_loader() -> None:
     ...
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

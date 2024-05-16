@@ -118,7 +118,7 @@ In the remote case, the Airflow orchestrator works differently than other ZenML 
 {% endtabs %}
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Airflow. Check out [this page](../../../how-to/containerize-your-pipeline/) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Airflow. Check out [this page](../../../user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Scheduling
@@ -163,11 +163,11 @@ The username will always be `admin`.
 
 #### Additional configuration
 
-For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings) for a full list of available attributes and [this docs page](../../../user-guide/production-guide/pipeline-settings.md) for more information on how to specify settings.
+For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings) for a full list of available attributes and [this docs page](../../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../how-to/use-remote-compute/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 #### Using different Airflow operators
 
@@ -224,7 +224,7 @@ To run a pipeline in Airflow, ZenML creates a Zip archive that contains two file
 
 If you need more control over how the Airflow DAG is generated, you can provide a custom DAG generator file using the setting `custom_dag_generator`. This setting will need to reference a Python module that can be imported into your active Python environment. It will additionally need to contain the same classes (`DagConfiguration` and `TaskConfiguration`) and constants (`ENV_ZENML_AIRFLOW_RUN_ID`, `ENV_ZENML_LOCAL_STORES_PATH` and `CONFIG_FILENAME`) as the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag\_generator.py) . For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
-Check out our docs on how to apply settings to your pipelines [here](../../../user-guide/production-guide/pipeline-settings.md).
+Check out our docs on how to apply settings to your pipelines [here](../../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
 
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator) .
 

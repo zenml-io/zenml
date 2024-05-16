@@ -4,7 +4,7 @@ description: Various means of connecting to ZenML.
 
 # Methods to connect to ZenML
 
-Once [ZenML is deployed](../../user-guide/production-guide/deploying-zenml.md), there are various ways to connect to it:
+Once [ZenML is deployed](../../production-guide/deploying-zenml.md), there are various ways to connect to it:
 
 ## Using the ZenML CLI to connect to a deployed ZenML Server
 

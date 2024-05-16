@@ -19,7 +19,7 @@ def training_step(...) -> ...:
     # train a model
 ```
 
-If the underlying [orchestrator](../../stacks-and-components/component-guide/orchestrators/) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
+If the underlying [orchestrator](../../../stacks-and-components/component-guide/orchestrators/) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
 
 ```python
 from zenml import step
@@ -40,7 +40,7 @@ def training_step(...) -> ...:
 Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources in what way.
 
 {% hint style="info" %}
-If you're using an orchestrator which does not support this feature or its underlying infrastructure doesn't cover your requirements, you can also take a look at [step operators](../../stacks-and-components/component-guide/step-operators/) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
+If you're using an orchestrator which does not support this feature or its underlying infrastructure doesn't cover your requirements, you can also take a look at [step operators](../../../stacks-and-components/component-guide/step-operators/) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
 {% endhint %}
 
 ### Ensure your container is CUDA-enabled
@@ -55,7 +55,7 @@ All steps running on GPU-backed hardware will be executed within a containerized
 
 #### 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
 
-For complete details, refer to the [containerization page](../containerize-your-pipeline/) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
+For complete details, refer to the [containerization page](containerize-your-pipeline.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
 
 ```python
 from zenml import pipeline
