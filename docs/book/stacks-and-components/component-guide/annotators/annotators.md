@@ -55,11 +55,12 @@ The core parts of the annotation workflow include:
 ### List of available annotators
 
 For production use cases, some more flavors can be found in specific `integrations` modules. In terms of annotators,
-ZenML features an integration with `label_studio`.
+ZenML features integrations with `label_studio` and `pigeon`.
 
 | Annotator                               | Flavor         | Integration    | Notes                                                                |
 |-----------------------------------------|----------------|----------------|----------------------------------------------------------------------|
 | [LabelStudioAnnotator](label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio                                      |
+| [PigeonAnnotator](pigeon.md) | `pigeon` | `pigeon` | Connect ZenML with Pigeon. Notebook only & for image and text classification tasks.      |
 | [ProdigyAnnotator](prodigy.md)           | `prodigy`       | `prodigy`       | Connect ZenML with [Prodigy](https://prodi.gy/)                                             |
 | [Custom Implementation](custom.md)      | _custom_       |                | Extend the annotator abstraction and provide your own implementation |
 
@@ -71,9 +72,11 @@ zenml annotator flavor list
 
 ### How to use it
 
-The available implementation of the annotator is built on top of the Label Studio integration, which means that using an
-annotator currently is no different from what's described on
-the [Label Studio page: How to use it?](label-studio.md#how-do-you-use-it).
+The available implementation of the annotator is built on top of the Label
+Studio integration, which means that using an annotator currently is no
+different from what's described on the [Label Studio page: How to use
+it?](label-studio.md#how-do-you-use-it). ([Pigeon](pigeon.md) is also supported, but has a
+very limited functionality and only works within Jupyter notebooks.)
 
 ### A note on names
 
