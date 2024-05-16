@@ -24,6 +24,7 @@ from zenml.actions.base_action import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
+from zenml.logger import get_logger
 from zenml.models import (
     ActionRequest,
     ActionResponse,
@@ -37,6 +38,8 @@ from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a c
     ResourceType,
 )
 from zenml.zen_server.utils import server_config
+
+logger = get_logger(__name__)
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -95,7 +98,7 @@ class PipelineRunActionHandler(BaseActionHandler):
         assert isinstance(config, PipelineRunActionConfiguration)
 
         deployment = zen_store().get_deployment(config.pipeline_deployment_id)
-        print("Running deployment:", deployment)
+        logger.debug("Running deployment:", deployment)
         run_pipeline(
             deployment=deployment,
             run_config=config.run_config,
