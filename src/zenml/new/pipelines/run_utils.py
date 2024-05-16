@@ -167,7 +167,7 @@ def _update_new_requesters(
             model._get_model_version()
             version_existed = key not in new_versions_requested
         except KeyError as e:
-            if model.version in ModelStages:
+            if model.version in ModelStages.values():
                 raise KeyError(
                     f"Unable to get model `{model.name}` using stage "
                     f"`{model.version}`, please check that the model "
