@@ -8,18 +8,18 @@ description: >-
 
 A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](containerize-your-pipeline.md#automate-build-reuse-by-connecting-a-code-repository) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../../user-guide/advanced-guide/configuring-zenml/containerize-your-pipeline.md#automate-build-reuse-by-connecting-a-code-repository) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
-<figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
 #### Speeding up Docker builds for containerized components
 
-As [discussed before](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs), when using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](understanding-environments.md#execution-environments). If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a [local code repository checkout](connect-your-code-repository/#detecting-local-code-repository-checkouts), ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
+As [discussed before](../../user-guide/advanced-guide/configuring-zenml/containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs), when using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](../../user-guide/advanced-guide/configuring-zenml/understanding-environments.md#execution-environments). If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a [local code repository checkout](../../user-guide/advanced-guide/configuring-zenml/connect-your-code-repository/#detecting-local-code-repository-checkouts), ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
 It is also important to take some additional points into consideration:
 
 * The file download is only possible if the local checkout is clean (i.e. it does not contain any untracked or uncommitted files) and the latest commit has been pushed to the remote repository. This is necessary as otherwise, the file download inside the Docker container will fail.
-* If you want to disable or enforce the downloading of files, check out [this docs page](containerize-your-pipeline.md) for the available options.
+* If you want to disable or enforce the downloading of files, check out [this docs page](../../user-guide/advanced-guide/configuring-zenml/containerize-your-pipeline.md) for the available options.
 
 {% hint style="warning" %}
 In order to benefit from the advantages of having a code repository in a project, you need to make sure that **the relevant integrations are installed for your ZenML installation.**
@@ -51,7 +51,7 @@ For concrete options, check out the section on the [`GitHubCodeRepository`](conn
 
 Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
 
-* First, the [source root](../) is computed
+* First, the [source root](broken-reference) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
 #### Tracking code version for pipeline runs
@@ -92,15 +92,15 @@ After registering the GitHub code repository, ZenML will automatically detect if
 2. Select "Personal access tokens" and click on "Generate new token".
 3.  Give your token a name and a description.
 
-    ![](../../../.gitbook/assets/github-fine-grained-token-name.png)
+    ![](../../.gitbook/assets/github-fine-grained-token-name.png)
 4.  We recommend selecting the specific repository and then giving `contents` read-only access.
 
-    ![](../../../.gitbook/assets/github-token-set-permissions.png)
+    ![](../../.gitbook/assets/github-token-set-permissions.png)
 
-    ![](../../../.gitbook/assets/github-token-permissions-overview.png)
+    ![](../../.gitbook/assets/github-token-permissions-overview.png)
 5.  Click on "Generate token" and copy the token to a safe place.
 
-    ![](../../../.gitbook/assets/copy-github-fine-grained-token.png)
+    ![](../../.gitbook/assets/copy-github-fine-grained-token.png)
 
 </details>
 
@@ -133,10 +133,10 @@ After registering the GitLab code repository, ZenML will automatically detect if
 1. Go to your GitLab account settings and click on [Access Tokens](https://gitlab.com/-/profile/personal\_access\_tokens).
 2.  Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
 
-    ![](../../../.gitbook/assets/gitlab-generate-access-token.png)
+    ![](../../.gitbook/assets/gitlab-generate-access-token.png)
 3.  Click on "Create personal access token" and copy the token to a safe place.
 
-    ![](../../../.gitbook/assets/gitlab-copy-access-token.png)
+    ![](../../.gitbook/assets/gitlab-copy-access-token.png)
 
 </details>
 

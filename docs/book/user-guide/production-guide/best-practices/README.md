@@ -2,7 +2,7 @@
 description: Recommended repository structure and best practices.
 ---
 
-# Follow best practices
+# Best practices
 
 Until now, you probably have kept all your code in one single file. In production, it is recommended to split up your steps and pipelines into separate files.
 
@@ -34,7 +34,7 @@ Until now, you probably have kept all your code in one single file. In productio
 └── run.py
 ```
 
-Check out how to initialize your project from a template following best practices in the [Project templates](../best-practices/using-project-templates.md#generating-project-from-a-project-template) section.
+Check out how to initialize your project from a template following best practices in the [Project templates](using-project-templates.md#generating-project-from-a-project-template) section.
 
 #### Steps
 
@@ -77,7 +77,7 @@ Containerized orchestrators and step operators load your complete project files 
 
 #### Dockerfile (optional)
 
-By default, ZenML uses the official [zenml docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own `Dockerfile` to overwrite this behavior. Learn more [here](../infrastructure-management/containerize-your-pipeline.md).
+By default, ZenML uses the official [zenml docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own `Dockerfile` to overwrite this behavior. Learn more [here](../../../how-to/containerize-your-pipeline/).
 
 #### Notebooks
 

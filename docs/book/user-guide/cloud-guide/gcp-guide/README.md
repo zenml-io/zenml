@@ -88,7 +88,7 @@ zenml artifact-store connect ${ARTIFACT_STORE_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../../../stacks-and-components/component-guide/artifact-stores/gcp.md) to learn more about artifact stores and how to configure them.
+Head on over to our [docs](../../../../../stacks-and-components/component-guide/artifact-stores/gcp.md) to learn more about artifact stores and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -111,7 +111,7 @@ zenml orchestrator connect ${ORCHESTRATOR_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../../../stacks-and-components/component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
+Head on over to our [docs](../../../../../stacks-and-components/component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -130,7 +130,7 @@ zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../../../stacks-and-components/component-guide/container-registries/gcp.md) to learn more about container registries and how to configure them.
+Head on over to our [docs](../../../../../stacks-and-components/component-guide/container-registries/gcp.md) to learn more about container registries and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -179,9 +179,9 @@ Save this code to `run.py` and execute it. The pipeline will use GCS for artifac
 python run.py
 ```
 
-<figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
 
-Read more in the [production guide](../production-guide/).
+Read more in the [production guide](../../production-guide/).
 
 ## Cleanup
 

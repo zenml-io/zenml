@@ -20,8 +20,7 @@ While there are many options on how to [deploy ZenML](../../deploying-zenml/), t
 
 ### Option 1: Sign up for a free ZenML Cloud Trial
 
-[ZenML Cloud](https://zenml.io/cloud) is a managed SaaS solution that offers a one-click deployment for your ZenML server.
-Click [here](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link) to start a free trial.
+[ZenML Cloud](https://zenml.io/cloud) is a managed SaaS solution that offers a one-click deployment for your ZenML server. Click [here](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) to start a free trial.
 
 On top of the one-click experience, ZenML Cloud also comes built-in with additional features and a new dashboard that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
 
@@ -49,17 +48,16 @@ To learn more about different options for [deploying ZenML, visit the deployment
 
 ## Connecting to a deployed ZenML
 
-You can connect your local ZenML client with the ZenML Server using the ZenML CLI and the web-based login. This
-can be executed with the command:
+You can connect your local ZenML client with the ZenML Server using the ZenML CLI and the web-based login. This can be executed with the command:
 
 ```bash
 zenml connect --url <SERVER_URL>
 ```
 
-where SERVER_URL is the host address of your ZenML deployment (e.g. `https://mydeployment.zenml.com`)
+where SERVER\_URL is the host address of your ZenML deployment (e.g. `https://mydeployment.zenml.com`)
 
 {% hint style="info" %}
-Having trouble connecting with a browser? There are other ways to connect. Read [here](../advanced-guide/configuring-zenml/connecting-to-zenml.md) for more details.
+Having trouble connecting with a browser? There are other ways to connect. Read [here](../../how-to/configuring-zenml/connecting-to-zenml.md) for more details.
 {% endhint %}
 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. After that, you're now locally connected to a remote ZenML. Nothing of your experience changes, except that all metadata that you produce will be tracked centrally in one place from now on.
@@ -68,5 +66,4 @@ This command will start a series of steps to validate the device from where you 
 You can always go back to the local zenml experience by using `zenml disconnect`
 {% endhint %}
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

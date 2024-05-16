@@ -11,7 +11,7 @@ These are boolean flags for various configurations:
 
 ### `build` ID
 
-The UUID of the [`build`](../../user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
+The UUID of the [`build`](../containerize-your-pipeline/) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
 
 ### `extra` dict
 
@@ -64,7 +64,7 @@ To change the name for a run, pass `run_name` as a parameter. This can be a dyna
 
 ### Real-time `settings`
 
-Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md). In short, they define a whole bunch of execution configuration such as Docker building and resource settings.
+Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](../../user-guide/production-guide/pipeline-settings.md). In short, they define a whole bunch of execution configuration such as Docker building and resource settings.
 
 ### `failure_hook_source` and `success_hook_source`
 
