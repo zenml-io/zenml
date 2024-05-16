@@ -111,8 +111,10 @@ class ActionUpdate(BaseZenModel):
     @classmethod
     def from_response(cls, response: "ActionResponse") -> "ActionUpdate":
         """Create an update model from a response model.
+
         Args:
             response: The response model to create the update model from.
+
         Returns:
             The update model.
         """
@@ -180,6 +182,7 @@ class ActionResponse(
 
     def get_hydrated_version(self) -> "ActionResponse":
         """Get the hydrated version of this action.
+
         Returns:
             An instance of the same entity with the metadata field attached.
         """
@@ -191,6 +194,7 @@ class ActionResponse(
     @property
     def flavor(self) -> str:
         """The `flavor` property.
+
         Returns:
             the value of the property.
         """
@@ -199,6 +203,7 @@ class ActionResponse(
     @property
     def plugin_subtype(self) -> PluginSubType:
         """The `plugin_subtype` property.
+
         Returns:
             the value of the property.
         """
@@ -207,6 +212,7 @@ class ActionResponse(
     @property
     def description(self) -> str:
         """The `description` property.
+
         Returns:
             the value of the property.
         """
@@ -224,6 +230,7 @@ class ActionResponse(
     @property
     def configuration(self) -> Dict[str, Any]:
         """The `configuration` property.
+
         Returns:
             the value of the property.
         """
@@ -231,6 +238,7 @@ class ActionResponse(
 
     def set_configuration(self, configuration: Dict[str, Any]) -> None:
         """Set the `configuration` property.
+
         Args:
             configuration: The value to set.
         """

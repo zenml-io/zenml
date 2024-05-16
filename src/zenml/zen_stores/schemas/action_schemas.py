@@ -97,8 +97,10 @@ class ActionSchema(NamedSchema, table=True):
     @classmethod
     def from_request(cls, request: "ActionRequest") -> "ActionSchema":
         """Convert a `ActionRequest` to a `ActionSchema`.
+
         Args:
             request: The request model to convert.
+
         Returns:
             The converted schema.
         """
@@ -120,8 +122,10 @@ class ActionSchema(NamedSchema, table=True):
 
     def update(self, action_update: "ActionUpdate") -> "ActionSchema":
         """Updates a action schema with a action update model.
+
         Args:
             action_update: `ActionUpdate` to update the action with.
+
         Returns:
             The updated ActionSchema.
         """
@@ -148,12 +152,14 @@ class ActionSchema(NamedSchema, table=True):
         **kwargs: Any,
     ) -> "ActionResponse":
         """Converts the action schema to a model.
+
         Args:
             include_metadata: Flag deciding whether to include the output model(s)
                 metadata fields in the response.
             include_resources: Flag deciding whether to include the output model(s)
                 metadata fields in the response.
             **kwargs: Keyword arguments to allow schema specific logic
+
         Returns:
             The converted model.
         """

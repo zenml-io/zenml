@@ -237,20 +237,14 @@ def update_trigger(
 @handle_exceptions
 def delete_trigger(
     trigger_id: UUID,
-    force: bool = False,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a trigger.
 
     Args:
         trigger_id: Name of the trigger.
-        force: Flag deciding whether to force delete the trigger.
-
-    Raises:
-        ValueError: If the action flavor/subtype combination is not actually a webhook event source
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id)
-
     verify_permission_for_model(trigger, action=Action.DELETE)
     zen_store().delete_trigger(trigger_id=trigger_id)
 

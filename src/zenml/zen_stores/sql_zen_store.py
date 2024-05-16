@@ -1790,9 +1790,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The action schema.
-
-        Raises:
-            KeyError: If the action doesn't exist.
         """
         return self._get_schema_by_name_or_id(
             object_name_or_id=action_id,
@@ -1815,9 +1812,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The action.
-
-        Raises:
-            KeyError: If the action doesn't exist.
         """
         with Session(self.engine) as session:
             return self._get_action(
@@ -1863,9 +1857,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated action.
-
-        Raises:
-            KeyError: If the action doesn't exist.
         """
         with Session(self.engine) as session:
             action = self._get_action(session=session, action_id=action_id)
@@ -1906,6 +1897,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If the action doesn't exist.
+            IllegalOperationError: If the action can't be deleted
+                because it's used by triggers.
         """
         with Session(self.engine) as session:
             action = self._get_action(action_id=action_id, session=session)
@@ -4483,6 +4476,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the event_source doesn't exist.
+            IllegalOperationError: If the event source can't be deleted
+                because it's used by triggers.
         """
         with Session(self.engine) as session:
             event_source = self._get_event_source(

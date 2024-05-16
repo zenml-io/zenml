@@ -362,6 +362,7 @@ class TriggerFilter(WorkspaceScopedFilter):
         self,
     ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         """Get custom filters.
+
         Returns:
             A list of custom filters.
         """

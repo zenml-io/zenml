@@ -243,213 +243,16 @@ class BaseActionHandler(BasePlugin, ABC):
                 trigger's authentication window.
         """
 
-    # def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
-    #     """Process a trigger request and create the trigger in the database.
-
-    #     Args:
-    #         trigger: Trigger request.
-
-    #     Returns:
-    #         The created trigger.
-
-    #     # noqa: DAR401
-    #     """
-    #     # Validate and instantiate the configuration from the request
-    #     config = self.validate_action_configuration(trigger.action)
-    #     # Call the implementation specific method to validate the request
-    #     # before it is sent to the database
-    #     self._validate_trigger_request(trigger=trigger, config=config)
-    #     # Serialize the configuration back into the request
-    #     trigger.action = config.dict(exclude_none=True)
-    #     # Create the trigger in the database
-    #     trigger_response = self.zen_store.create_trigger(trigger=trigger)
-    #     try:
-    #         # Instantiate the configuration from the response
-    #         config = self.validate_action_configuration(trigger.action)
-    #         # Call the implementation specific method to process the created
-    #         # trigger
-    #         self._process_trigger_request(
-    #             trigger=trigger_response, config=config
-    #         )
-    #         # Add any implementation specific related resources to the trigger
-    #         # response
-    #         self._populate_trigger_response_resources(
-    #             trigger=trigger_response, config=config
-    #         )
-    #         # Activate the trigger in the event hub to effectively start
-    #         # dispatching events to the action handler
-    #         self.event_hub.activate_trigger(trigger=trigger_response)
-    #     except Exception:
-    #         # If the trigger creation fails, delete the trigger from
-    #         # the database
-    #         logger.exception(
-    #             f"Failed to create trigger {trigger_response}. "
-    #             f"Deleting the trigger."
-    #         )
-    #         self.zen_store.delete_trigger(trigger_id=trigger_response.id)
-    #         raise
-
-    #     # Serialize the configuration back into the response
-    #     trigger_response.set_action(config.dict(exclude_none=True))
-    #     # Return the response to the user
-    #     return trigger_response
-
-    # def update_trigger(
-    #     self,
-    #     trigger: TriggerResponse,
-    #     trigger_update: TriggerUpdate,
-    # ) -> TriggerResponse:
-    #     """Process a trigger update request and update the trigger in the database.
-
-    #     Args:
-    #         trigger: The trigger to update.
-    #         trigger_update: The update to be applied to the trigger.
-
-    #     Returns:
-    #         The updated trigger.
-
-    #     # noqa: DAR401
-    #     """
-    #     # Validate and instantiate the configuration from the original event
-    #     # source
-    #     config = self.validate_action_configuration(trigger.action)
-    #     # Validate and instantiate the configuration from the update request
-    #     # NOTE: if supplied, the configuration update is a full replacement
-    #     # of the original configuration
-    #     config_update = config
-    #     if trigger_update.action is not None:
-    #         config_update = self.validate_action_configuration(
-    #             trigger_update.action
-    #         )
-    #     # Call the implementation specific method to validate the update request
-    #     # before it is sent to the database
-    #     self._validate_trigger_update(
-    #         trigger=trigger,
-    #         config=config,
-    #         trigger_update=trigger_update,
-    #         config_update=config_update,
-    #     )
-    #     # Serialize the configuration update back into the update request
-    #     trigger_update.action = config_update.dict(exclude_none=True)
-
-    #     # Update the trigger in the database
-    #     trigger_response = self.zen_store.update_trigger(
-    #         trigger_id=trigger.id,
-    #         trigger_update=trigger_update,
-    #     )
-    #     try:
-    #         # Instantiate the configuration from the response
-    #         response_config = self.validate_action_configuration(
-    #             trigger_response.action
-    #         )
-    #         # Call the implementation specific method to process the update
-    #         # request before it is sent to the database
-    #         self._process_trigger_update(
-    #             trigger=trigger_response,
-    #             config=response_config,
-    #             previous_trigger=trigger,
-    #             previous_config=config,
-    #         )
-    #         # Add any implementation specific related resources to the trigger
-    #         # response
-    #         self._populate_trigger_response_resources(
-    #             trigger=trigger_response, config=response_config
-    #         )
-    #         # Deactivate the previous trigger and activate the updated trigger
-    #         # in the event hub
-    #         self.event_hub.deactivate_trigger(trigger=trigger)
-    #         self.event_hub.activate_trigger(trigger=trigger_response)
-    #     except Exception:
-    #         # If the trigger update fails, roll back the trigger in
-    #         # the database to the original state
-    #         logger.exception(
-    #             f"Failed to update trigger {trigger}. "
-    #             f"Rolling back the trigger to the previous state."
-    #         )
-    #         self.zen_store.update_trigger(
-    #             trigger_id=trigger.id,
-    #             trigger_update=TriggerUpdate.from_response(trigger),
-    #         )
-    #         raise
-
-    #     # Serialize the configuration back into the response
-    #     trigger_response.set_action(response_config.dict(exclude_none=True))
-    #     # Return the response to the user
-    #     return trigger_response
-
-    # def delete_trigger(
-    #     self,
-    #     trigger: TriggerResponse,
-    #     force: bool = False,
-    # ) -> None:
-    #     """Process a trigger delete request and delete the trigger in the database.
-
-    #     Args:
-    #         trigger: The trigger to delete.
-    #         force: Whether to force delete the trigger from the database
-    #             even if the trigger handler fails to delete the event
-    #             source.
-
-    #     # noqa: DAR401
-    #     """
-    #     # Validate and instantiate the configuration from the original event
-    #     # source
-    #     config = self.validate_action_configuration(trigger.action)
-    #     try:
-    #         # Call the implementation specific method to process the deleted
-    #         # trigger before it is deleted from the database
-    #         self._process_trigger_delete(
-    #             trigger=trigger,
-    #             config=config,
-    #             force=force,
-    #         )
-    #     except Exception:
-    #         logger.exception(f"Failed to delete trigger {trigger}. ")
-    #         if not force:
-    #             raise
-
-    #         logger.warning(f"Force deleting trigger {trigger}.")
-
-    #     # Deactivate the trigger in the event hub
-    #     self.event_hub.deactivate_trigger(trigger=trigger)
-
-    #     # Delete the trigger from the database
-    #     self.zen_store.delete_trigger(
-    #         trigger_id=trigger.id,
-    #     )
-
-    # def get_trigger(
-    #     self, trigger: TriggerResponse, hydrate: bool = False
-    # ) -> TriggerResponse:
-    #     """Process a trigger response before it is returned to the user.
-
-    #     Args:
-    #         trigger: The trigger fetched from the database.
-    #         hydrate: Whether to hydrate the trigger.
-
-    #     Returns:
-    #         The trigger.
-    #     """
-    #     if hydrate:
-    #         # Instantiate the configuration from the response
-    #         config = self.validate_action_configuration(trigger.action)
-    #         # Call the implementation specific method to process the response
-    #         self._process_trigger_response(trigger=trigger, config=config)
-    #         # Serialize the configuration back into the response
-    #         trigger.set_action(config.dict(exclude_none=True))
-    #         # Add any implementation specific related resources to the trigger
-    #         # response
-    #         self._populate_trigger_response_resources(
-    #             trigger=trigger, config=config
-    #         )
-
-    #     # Return the response to the user
-    #     return trigger
-
     def create_action(self, action: ActionRequest) -> ActionResponse:
         """Process a action request and create the action in the database.
+
         Args:
             action: Action request.
+
+        Raises:
+            Exception: If the implementation specific processing before creating
+                the action fails.
+
         Returns:
             The created action.
         """
@@ -494,10 +297,16 @@ class BaseActionHandler(BasePlugin, ABC):
         action: ActionResponse,
         action_update: ActionUpdate,
     ) -> ActionResponse:
-        """Process a action update request and update the action in the database.
+        """Process action update and update the action in the database.
+
         Args:
             action: The action to update.
             action_update: The update to be applied to the action.
+
+        Raises:
+            Exception: If the implementation specific processing before updating
+                the action fails.
+
         Returns:
             The updated action.
         """
@@ -571,12 +380,17 @@ class BaseActionHandler(BasePlugin, ABC):
         action: ActionResponse,
         force: bool = False,
     ) -> None:
-        """Process a action delete request and delete the action in the database.
+        """Process action delete request and delete the action in the database.
+
         Args:
             action: The action to delete.
             force: Whether to force delete the action from the database
                 even if the action handler fails to delete the event
                 source.
+
+        Raises:
+            Exception: If the implementation specific processing before deleting
+                the action fails.
         """
         # Validate and instantiate the configuration from the original event
         # source
@@ -605,9 +419,11 @@ class BaseActionHandler(BasePlugin, ABC):
         self, action: ActionResponse, hydrate: bool = False
     ) -> ActionResponse:
         """Process a action response before it is returned to the user.
+
         Args:
             action: The action fetched from the database.
             hydrate: Whether to hydrate the action.
+
         Returns:
             The action.
         """

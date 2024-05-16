@@ -83,14 +83,16 @@ def list_actions(
         filter_model: ActionFilter,
     ) -> Page[ActionResponse]:
         """List actions through their associated plugins.
+
         Args:
             filter_model: Filter model used for pagination, sorting,
                 filtering.
+
+        Raises:
+            ValueError: If the action handler for flavor/type is not valid.
+
         Returns:
             All actions.
-        Raises:
-            ValueError: If the plugin for a action action is not a valid action
-                plugin.
         """
         actions = zen_store().list_actions(
             action_filter_model=filter_model, hydrate=hydrate
@@ -145,6 +147,9 @@ def get_action(
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
+    Raises:
+        ValueError: If the action handler for flavor/type is not valid.
+
     Returns:
         The requested action.
     """
@@ -187,12 +192,11 @@ def create_action(
     Args:
         action: Action to create.
 
+    Raises:
+        ValueError: If the action handler for flavor/type is not valid.
+
     Returns:
         The created action.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            component does not match the current workspace.
     """
     service_account = zen_store().get_service_account(
         service_account_name_or_id=action.service_account_id
@@ -238,6 +242,9 @@ def update_action(
     Args:
         action_id: ID of the action to update.
         action_update: The action update.
+
+    Raises:
+        ValueError: If the action handler for flavor/type is not valid.
 
     Returns:
         The updated action.
@@ -290,6 +297,9 @@ def delete_action(
     Args:
         action_id: ID of the action.
         force: Flag deciding whether to force delete the action.
+
+    Raises:
+        ValueError: If the action handler for flavor/type is not valid.
     """
     action = zen_store().get_action(action_id=action_id)
 

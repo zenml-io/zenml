@@ -2786,7 +2786,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created action
         """
-
         action = ActionRequest(
             name=name,
             description=description,
