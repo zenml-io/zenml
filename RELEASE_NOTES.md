@@ -2,8 +2,8 @@
 
 # 0.57.1
 
-This a minor release that brings a variety of bug fixes and enhancements for
-the new dashboard release, new update to the LLMOps guide and updated Readme.
+This a minor release that brings a variety of enhancements for
+the new dashboard release, a new update to the LLMOps guide (covering the use of rerankers in RAG pipelines) and [an updated README](README.md). It also introduces some new improvement to the service connectors.
 
 We'd like to give a special thanks to @ruvilonix for their first contribution.
 
@@ -21,6 +21,17 @@ We'd like to give a special thanks to @ruvilonix for their first contribution.
 * Updated Readme by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2675
 * Added Thumbnail by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2684
 * [k8s orchestrator] Fix credentials refresh and don't use service connector for incluster auth by @wjayesh in https://github.com/zenml-io/zenml/pull/2671
+* Prepare Release 0.57.1 by @safoinme in https://github.com/zenml-io/zenml/pull/2683
+* Include email in event by @schustmi in https://github.com/zenml-io/zenml/pull/2692
+* Set newsletter flag from email opted in by @schustmi in https://github.com/zenml-io/zenml/pull/2694
+* Only report usage once pipeline run starts by @schustmi in https://github.com/zenml-io/zenml/pull/2680
+* Reduced thumbnail size by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2689
+* Fix intermittent timeout issues with service connector sessions by @stefannica in https://github.com/zenml-io/zenml/pull/2690
+* Include unique constraints in the database backup by @stefannica in https://github.com/zenml-io/zenml/pull/2695
+* [k8s orch] Add option to specify separate service account for step pods by @wjayesh in https://github.com/zenml-io/zenml/pull/2688
+* Update GCP registry docs by @safoinme in https://github.com/zenml-io/zenml/pull/2676
+* Use service connector for boto session if possible by @schustmi in https://github.com/zenml-io/zenml/pull/2682
+* Send missing user enriched events by @schustmi in https://github.com/zenml-io/zenml/pull/2696
 
 ## New Contributors
 * @ruvilonix made their first contribution in https://github.com/zenml-io/zenml/pull/2574

@@ -50,6 +50,7 @@ from zenml.integrations.openai import OpenAIIntegration  # noqa
 from zenml.integrations.pigeon import PigeonIntegration # noqa
 from zenml.integrations.pillow import PillowIntegration  # noqa
 from zenml.integrations.polars import PolarsIntegration  # noqa
+from zenml.integrations.prodigy import ProdigyIntegration  # noqa
 from zenml.integrations.pycaret import PyCaretIntegration  # noqa
 from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa

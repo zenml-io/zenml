@@ -731,6 +731,37 @@ class AWSServiceConnector(ServiceConnector):
         self._session_cache[key] = (session, expires_at)
         return session, expires_at
 
+    def get_ecr_client(self) -> BaseClient:
+        """Get an ECR client.
+
+        Raises:
+            ValueError: If the service connector is not able to instantiate an
+                ECR client.
+
+        Returns:
+            An ECR client.
+        """
+        if self.resource_type and self.resource_type not in {
+            AWS_RESOURCE_TYPE,
+            DOCKER_REGISTRY_RESOURCE_TYPE,
+        }:
+            raise ValueError(
+                f"Unable to instantiate ECR client for a connector that is "
+                f"configured to provide access to a '{self.resource_type}' "
+                "resource type."
+            )
+
+        session, _ = self.get_boto3_session(
+            auth_method=self.auth_method,
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
+            resource_id=self.config.region,
+        )
+        return session.client(
+            "ecr",
+            region_name=self.config.region,
+            endpoint_url=self.config.endpoint_url,
+        )
+
     def _get_iam_policy(
         self,
         region_id: str,

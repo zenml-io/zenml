@@ -61,6 +61,7 @@ ZenML features integrations with `label_studio` and `pigeon`.
 |-----------------------------------------|----------------|----------------|----------------------------------------------------------------------|
 | [LabelStudioAnnotator](label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio                                      |
 | [PigeonAnnotator](pigeon.md) | `pigeon` | `pigeon` | Connect ZenML with Pigeon. Notebook only & for image and text classification tasks.      |
+| [ProdigyAnnotator](prodigy.md)           | `prodigy`       | `prodigy`       | Connect ZenML with [Prodigy](https://prodi.gy/)                                             |
 | [Custom Implementation](custom.md)      | _custom_       |                | Extend the annotator abstraction and provide your own implementation |
 
 If you would like to see the available flavors for annotators, you can use the command:
