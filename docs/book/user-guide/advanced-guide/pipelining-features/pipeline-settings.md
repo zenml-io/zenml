@@ -2,13 +2,13 @@
 description: Using settings to configure runtime configuration.
 ---
 
-# Controlling settings of your pipeline
+# Real-time settings
 
 {% embed url="https://www.youtube.com/embed/AdwW6DlCWFE" %}
 Stack Component Config vs Settings in ZenML
 {% endembed %}
 
-As we [saw before](configure-steps-pipelines.md#real-time-settings), one special type of configuration is called `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
+As we [saw before](broken-reference), one special type of configuration is called `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
 * The [resources](../infrastructure-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
 * Configuring the [containerization](../infrastructure-management/containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
@@ -72,7 +72,7 @@ settings:
 
 When specifying stack-component-specific settings, a key needs to be passed. This key should always correspond to the pattern: \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>
 
-For example, the [SagemakerStepOperator](../../../stacks-and-components/component-guide/step-operators/sagemaker.md) supports passing in [`estimator_args`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator.sagemaker`
+For example, the [SagemakerStepOperator](../../../stacks-and-components/component-guide/step-operators/sagemaker.md) supports passing in [`estimator_args`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator.sagemaker`
 
 ```python
 @step(step_operator="nameofstepoperator", settings= {"step_operator.sagemaker": {"estimator_args": {"instance_type": "m7g.medium"}}})
@@ -96,83 +96,5 @@ steps:
         estimator_args:
           instance_type: m7g.medium
 ```
-
-## Utilizing the settings
-
-Settings can be configured in the same way as any [other configuration](configure-steps-pipelines.md). For example, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
-
-To use a YAML file, you must pass it to the `with_options(...)` method of a pipeline:
-
-```python
-@step
-def my_step() -> None:
-    print("my step")
-
-
-@pipeline
-def my_pipeline():
-    my_step()
-
-
-# Pass in a config file
-my_pipeline = my_pipeline.with_options(config_path='/local/path/to/config.yaml')
-```
-
-The format of a YAML config file is exactly the same as the configurations you would pass in Python in the above two sections. Step-specific configurations can be passed by using the [step invocation ID](configure-steps-pipelines.md#using-a-custom-step-invocation-id) inside the `steps` dictionary. Here is a rough skeleton of a valid YAML config. All keys are optional.
-
-```yaml
-# Pipeline level settings
-settings: 
-  docker:
-    build_context_root: .
-    build_options: Mapping[str, Any]
-    source_files: str
-    copy_global_config: bool
-    dockerfile: Optional[str]
-    dockerignore: Optional[str]
-    environment: Mapping[str, Any]
-    install_stack_requirements: bool
-    parent_image: Optional[str]
-    replicate_local_python_environment: Optional
-    required_integrations: List[str]
-    requirements:
-      - pandas
-  resources:
-    cpu_count: 1
-    gpu_count: 1
-    memory: "1GB"
-    
-steps:
-  step_invocation_id:
-    settings: { }  # overrides pipeline settings
-  other_step_invocation_id:
-    settings: { }
-  ...
-```
-
-## Hierarchy and precedence
-
-Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence.
-
-When a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
-
-```python
-from zenml.config import ResourceSettings
-
-
-@step(settings={"resources": ResourceSettings(cpu_count=2, memory="1GB")})
-def my_step() -> None:
-    ...
-
-
-my_step.configure(
-    settings={"resources": ResourceSettings(gpu_count=1, memory="2GB")}
-)
-
-my_step.configuration.settings["resources"]
-# cpu_count: 2, gpu_count=1, memory="2GB"
-```
-
-In the above example, the two settings were automatically merged.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -94,7 +94,7 @@ def my_first_step() -> Tuple[Annotated[MyObj1, "1"], Annotated[MyObj2, "2"]]:
     return 1
 ```
 
-Also, as briefly outlined in the [configuration docs](../pipelining-features/configure-steps-pipelines.md) section, which materializer to use for the output of what step can also be configured within YAML config files.
+Also, as briefly outlined in the [configuration docs](broken-reference) section, which materializer to use for the output of what step can also be configured within YAML config files.
 
 For each output of your steps, you can define custom materializers to handle the loading and saving. You can configure them like this in the config:
 

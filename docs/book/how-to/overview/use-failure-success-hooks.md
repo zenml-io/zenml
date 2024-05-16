@@ -46,7 +46,7 @@ def my_successful_step() -> int:
 
 In this example, we define two hooks: `on_failure` and `on_success`, which print a message when the step fails or succeeds, respectively. We then use these hooks with two steps, `my_failing_step` and `my_successful_step`. When `my_failing_step` is executed, it raises a `ValueError`, which triggers the `on_failure` hook. Similarly, when `my_successful_step` is executed, it returns an integer successfully, which triggers the on\_success hook.
 
-A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](configure-steps-pipelines.md).
+A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](broken-reference).
 
 ## Defining hooks on a pipeline level
 
@@ -66,13 +66,13 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../best-practices/using-project-templates.md#advanced-guide)_._
+_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md#advanced-guide)_._
 
-In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/) from the active stack.
+In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
-In [`pipelines/training.py`](../../../../../examples/e2e/pipelines/training.py), you can find the usage of a notification step and a function. We will attach a `notify_on_failure` function directly to the pipeline definition like this:
+In [`pipelines/training.py`](../../../../examples/e2e/pipelines/training.py), you can find the usage of a notification step and a function. We will attach a `notify_on_failure` function directly to the pipeline definition like this:
 
 ```python
 @pipeline(
@@ -118,9 +118,9 @@ def my_step(some_parameter: int = 1)
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../best-practices/using-project-templates.md#advanced-guide)_._
+_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md#advanced-guide)_._
 
-In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/) from the active stack.
+In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
@@ -157,7 +157,7 @@ def notify_on_success() -> None:
 
 ## Linking to the `Alerter` Stack component
 
-A common use case is to use the [Alerter](../../../stacks-and-components/component-guide/alerters/) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
+A common use case is to use the [Alerter](../../stacks-and-components/component-guide/alerters/) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
 
 ```python
 from zenml import get_step_context
@@ -183,9 +183,9 @@ def my_step(...):
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../best-practices/using-project-templates.md#advanced-guide)_._
+_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md#advanced-guide)_._
 
-In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/) from the active stack.
+In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
@@ -252,7 +252,7 @@ def my_step(...):
 
 If you had set up a Slack alerter as your alerter, for example, then you would see a message like this:
 
-![OpenAI ChatGPT Failure Hook](../../../.gitbook/assets/failure\_alerter.png)
+![OpenAI ChatGPT Failure Hook](../../.gitbook/assets/failure\_alerter.png)
 
 You can use the suggestions as input that can help you fix whatever is going wrong in your code. If you have GPT-4 enabled for your account, you can use the `openai_gpt4_alerter_failure_hook` hook instead (imported from the same module).
 

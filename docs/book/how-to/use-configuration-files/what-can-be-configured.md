@@ -68,7 +68,7 @@ Settings are special runtime configurations of a pipeline or a step that require
 
 ### `failure_hook_source` and `success_hook_source`
 
-The `source` of the [failure and success hooks](../../user-guide/advanced-guide/pipelining-features/use-failure-success-hooks.md).
+The `source` of the [failure and success hooks](../overview/use-failure-success-hooks.md).
 
 ### Step-specific configuration
 

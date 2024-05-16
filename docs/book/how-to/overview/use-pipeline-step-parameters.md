@@ -11,22 +11,11 @@ from zenml import pipeline, step
 
 @step
 def load_data(parameter: int) -> dict:
-
-    # do something with the parameter here
-
-    training_data = [[1, 2], [3, 4], [5, 6]]
-    labels = [0, 1, 0]
-    return {'features': training_data, 'labels': labels}
+    # use the parameter here
 
 @step
 def train_model(data: dict) -> None:
-    total_features = sum(map(sum, data['features']))
-    total_labels = sum(data['labels'])
-    
     # Train some model here
-    
-    print(f"Trained model using {len(data['features'])} data points. "
-          f"Feature sum is {total_features}, label sum is {total_labels}")
 
 
 @pipeline  
@@ -35,11 +24,33 @@ def simple_ml_pipeline(parameter: int):
     train_model(dataset)
 
 
-# For parameters on the pipeline level, simply choose a 
+# You can set the parameter on the step at a later point
+load_data.configure(parameters={"parameter": 42})
+
+# For parameters on the pipeline level, you can also choose a 
 # parameter when running the pipeline
 simple_ml_pipeline(parameter=42)
 ```
 
 {% hint style="info" %}
-You can also use a configuration file to set the parameters. Read more [here](../use-configuration-files/)
+You can also use a configuration file to set the parameters. The configuration file would look like this.
 {% endhint %}
+
+```python
+# config.yaml
+
+# these are parameters of the pipeline
+parameters:
+  parameter: 42
+
+steps:
+  load_data:
+    # these are parameters of the step `my_step`
+    parameters:
+      parameter: 42
+```
+
+```python
+# Run the pipeline with the 
+simple_ml_pipeline.with_options(config_path=<INSERT_PATH_TO_CONFIG_YAML>)
+```

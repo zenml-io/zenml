@@ -115,7 +115,7 @@ my_step = my_step.with_options(
 )
 ```
 
-* Using a YAML configuration file as described [here](../pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml):
+* Using a YAML configuration file as described [here](broken-reference):
 
 ```yaml
 settings:

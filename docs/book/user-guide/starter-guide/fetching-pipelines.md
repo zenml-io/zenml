@@ -150,7 +150,7 @@ pipeline_settings = run.config.settings
 
 Depending on the stack components you use, you might have additional component-specific metadata associated with your run, such as the URL to the UI of a remote orchestrator. You can access this component-specific metadata via the `run_metadata` attribute:
 
-```python
+````python
 run_metadata = run.run_metadata
 # The following only works for runs on certain remote orchestrators
 orchestrator_url = run_metadata["orchestrator_url"].value
@@ -165,7 +165,7 @@ steps = run.steps
 
 # get a specific step by its invocation ID
 step = run.steps["first_step"]
-```
+````
 
 {% hint style="info" %}
 If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../advanced-guide/pipelining-features/managing-steps.md#using-a-custom-step-invocation-id) to learn more about the invocation ID.
@@ -173,14 +173,9 @@ If you're only calling each step once inside your pipeline, the **invocation ID*
 
 ### Inspect pipeline runs with our VS Code extension
 
-![GIF of our VS code extension, showing some of the uses of the sidebar](/docs/book/.gitbook/assets/zenml-extension-shortened.gif)
+![GIF of our VS code extension, showing some of the uses of the sidebar](../../.gitbook/assets/zenml-extension-shortened.gif)
 
-If you are using [our VS Code
-extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode),
-you can easily view your pipeline runs by opening the sidebar (click on the
-ZenML icon). You can then click on any particular pipeline run to see its status
-and some other metadata. If you want to delete a run, you can also do so from
-the same sidebar view.
+If you are using [our VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode), you can easily view your pipeline runs by opening the sidebar (click on the ZenML icon). You can then click on any particular pipeline run to see its status and some other metadata. If you want to delete a run, you can also do so from the same sidebar view.
 
 ### Step information
 
@@ -262,7 +257,7 @@ ZenML automatically saves visualizations for many common data types. Using the `
 output.visualize()
 ```
 
-![output.visualize() Output](<../../.gitbook/assets/artifact_visualization_evidently.png>)
+![output.visualize() Output](../../.gitbook/assets/artifact\_visualization\_evidently.png)
 
 {% hint style="info" %}
 If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml up` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](../advanced-guide/data-management/visualize-artifacts.md) to learn more about how to build and view artifact visualizations in ZenML!
@@ -293,7 +288,7 @@ def my_step():
 ```
 
 {% hint style="info" %}
-As shown in the example, we can get additional information about the current run using the `StepContext`, which is explained in more detail in the [advanced docs](../advanced-guide/pipelining-features/fetch-metadata-within-steps.md).
+As shown in the example, we can get additional information about the current run using the `StepContext`, which is explained in more detail in the [advanced docs](../../how-to/overview/fetch-metadata-within-steps.md).
 {% endhint %}
 
 ## Code example

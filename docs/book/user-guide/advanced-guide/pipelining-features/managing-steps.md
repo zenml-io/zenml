@@ -2,9 +2,9 @@
 description: Managing steps in ZenML.
 ---
 
-# Managing steps in ZenML
+# Managing steps
 
-We have learned a lot about [step configurations](configure-steps-pipelines.md) in the last section. Here we go into even further detail on how to manage steps and their configuration in ZenML.
+We have learned a lot about [step configurations](broken-reference) in the last section. Here we go into even further detail on how to manage steps and their configuration in ZenML.
 
 ## Type annotations
 
@@ -77,33 +77,6 @@ def my_step() -> Tuple[int, ...]:
 
 If you want to make sure you get all the benefits of type annotating your steps, you can set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`. ZenML will then raise an exception in case one of the steps you're trying to run is missing a type annotation.
 
-## Step output names
-
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](../../starter-guide/fetching-pipelines.md).
-
-If you want to use custom output names for your steps, use the `Annotated` type annotation:
-
-```python
-from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
-from typing import Tuple
-from zenml import step
-
-@step
-def square_root(number: int) -> Annotated[float, "custom_output_name"]:
-    return number ** 0.5
-
-@step
-def divide(a: int, b: int) -> Tuple[
-    Annotated[int, "quotient"],
-    Annotated[int, "remainder"]
-]:
-    return a // b, a % b
-```
-
-{% hint style="info" %}
-If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](../../starter-guide/manage-artifacts.md) for more information.
-{% endhint %}
-
 ## Parameters for your steps
 
 When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
@@ -131,6 +104,7 @@ def my_pipeline():
 ```
 
 Parameters of steps and pipelines can also be passed in using YAML configuration files. The following configuration file and Python code can work together and give you the flexibility to update configuration only in YAML file, once needed:
+
 ```yaml
 # config.yaml
 
@@ -163,9 +137,10 @@ def my_pipeline(environment: str):
 if __name__=="__main__":
     my_pipeline.with_options(config_paths="config.yaml")()
 ```
+
 {% hint style="warning" %}
-There might be conflicting settings for step or pipeline inputs, while working with YAML configuration files. Such situations happen when you define a step or a pipeline parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instructions how to fix.
-Example of such a conflict:
+There might be conflicting settings for step or pipeline inputs, while working with YAML configuration files. Such situations happen when you define a step or a pipeline parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instructions how to fix. Example of such a conflict:
+
 ```yaml
 # config.yaml
 parameters:
@@ -176,6 +151,7 @@ steps:
     parameters:
       input_2: 42
 ```
+
 ```python
 # run.py
 @step
@@ -205,7 +181,7 @@ When an artifact is used as a step function input, the step will only be cached 
 
 ## Using a custom step invocation ID
 
-When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](../../starter-guide/fetching-pipelines.md) about the invocation after the pipeline has finished running.
+When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](broken-reference) of your pipeline steps or use it to [fetch information](../../starter-guide/fetching-pipelines.md) about the invocation after the pipeline has finished running.
 
 ```python
 from zenml import pipeline, step
@@ -229,39 +205,7 @@ def example_pipeline():
     my_step(id="my_custom_invocation_id")
 ```
 
-## Control the execution order
-
-By default, ZenML uses the data flowing between steps of your pipeline to determine the order in which steps get executed.
-
-The following example shows a pipeline in which `step_3` depends on the outputs of `step_1` and `step_2`. This means that ZenML can execute both `step_1` and `step_2` in parallel but needs to wait until both are finished before `step_3` can be started.
-
-```python
-from zenml import pipeline
-
-@pipeline
-def example_pipeline():
-    step_1_output = step_1()
-    step_2_output = step_2()
-    step_3(step_1_output, step_2_output)
-```
-
-If you have additional constraints on the order in which steps get executed, you can specify non-data dependencies by passing the invocation IDs of steps that should run before your step like this: `my_step(after="other_step")`. If you want to define multiple upstream steps, you can also pass a list for the `after` argument when calling your step: `my_step(after=["other_step", "other_step_2"])`.
-
-{% hint style="info" %}
-Check out the [previous section](configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn about the invocation ID and how to use a custom one for your steps.
-{% endhint %}
-
-```python
-from zenml import pipeline
-
-@pipeline
-def example_pipeline():
-    step_1_output = step_1(after="step_2")
-    step_2_output = step_2()
-    step_3(step_1_output, step_2_output)
-```
-
-This pipeline is similar to the one explained above, but this time ZenML will make sure to only start `step_1` after `step_2` has finished.
+##
 
 ## Enable or disable logs storing
 

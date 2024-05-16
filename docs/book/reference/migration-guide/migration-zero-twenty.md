@@ -322,7 +322,7 @@ Alongside the architectural shift, Pipeline configuration has been completely re
 Configuring pipelines, steps, and stack components in ZenML
 {% endembed %}
 
-If you don't want to watch the video, you can read all about the changes here and we have a [dedicated page](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) in the docs describing the new ways to configure objects in ZenML.
+If you don't want to watch the video, you can read all about the changes here and we have a [dedicated page](broken-reference) in the docs describing the new ways to configure objects in ZenML.
 
 **What changed?**
 
@@ -339,7 +339,7 @@ With ZenML 0.20.0, we introduce the `BaseSettings` class, a broad class that ser
 
 Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using the `@enable_xxx` decorators). The same configurations can also be defined in a YAML file.
 
-Read more about this paradigm in the [new docs section about settings](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+Read more about this paradigm in the [new docs section about settings](broken-reference).
 
 Here is a list of changes that are the most obvious in consequence of the above code. Please note that this list is not exhaustive, and if we have missed something let us know via [Slack](https://zenml.io/slack-invite).
 
@@ -363,7 +363,7 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 **Deprecating `pipeline.with_config(...)`**
 
-**How to migrate**: Replaced with the new `pipeline.run(config_path=...)`. Check out the new YAML config file structure [here](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+**How to migrate**: Replaced with the new `pipeline.run(config_path=...)`. Check out the new YAML config file structure [here](broken-reference).
 
 **Deprecating `step.with_return_materializer(...)`**
 
