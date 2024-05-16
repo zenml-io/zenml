@@ -390,9 +390,6 @@ ActionResponseBody.update_forward_refs(
 ActionResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
-ActionResponseResources.update_forward_refs(
-    TriggerResponse=TriggerResponse,
-)
 APIKeyResponseBody.update_forward_refs(
     ServiceAccountResponse=ServiceAccountResponse,
 )
@@ -580,6 +577,7 @@ TriggerResponseMetadata.update_forward_refs(
 )
 TriggerResponseResources.update_forward_refs(
     EventSourceResponse=EventSourceResponse,
+    ActionResponse=ActionResponse
 )
 
 __all__ = [

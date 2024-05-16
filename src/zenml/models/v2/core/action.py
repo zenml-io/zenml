@@ -18,7 +18,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    List,
     Optional,
     TypeVar,
 )
@@ -29,6 +28,7 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -37,10 +37,10 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.trigger import TriggerResponse
 from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.trigger import TriggerResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -166,9 +166,8 @@ class ActionResponseMetadata(WorkspaceScopedResponseMetadata):
 class ActionResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the action entity."""
 
-    # TODO: convert this to a Page when it no longer breaks the OpenAPI docs
-    triggers: List["TriggerResponse"] = Field(
-        title="The trigger associated with the action.",
+    triggers: Page[TriggerResponse] = Field(
+        title="The triggers associated with the action.",
     )
     service_account: UserResponse = Field(
         title="The service account that is used to execute the action.",
@@ -253,7 +252,7 @@ class ActionResponse(
 
     # Resource properties
     @property
-    def triggers(self) -> List["TriggerResponse"]:
+    def triggers(self) -> Page[TriggerResponse]:
         """The `triggers` property.
 
         Returns:

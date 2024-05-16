@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -30,6 +30,7 @@ from zenml.models import (
     ActionResponseMetadata,
     ActionResponseResources,
     ActionUpdate,
+    Page,
     TriggerResponse,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -183,12 +184,17 @@ class ActionSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = ActionResponseResources(
-                triggers=get_page_from_list(
-                    items_list=self.triggers,
-                    response_model=TriggerResponse,
-                    include_resources=include_resources,
-                    include_metadata=include_metadata,
-                ).items,
+                triggers=cast(
+                    Page[TriggerResponse],
+                    get_page_from_list(
+                        items_list=self.triggers,
+                        response_model=TriggerResponse,
+                        # TODO: Shouldn't this always be False to avoid any
+                        # recursion issues
+                        include_resources=include_resources,
+                        include_metadata=include_metadata,
+                    ),
+                ),
                 service_account=self.service_account.to_model(),
             )
         return ActionResponse(

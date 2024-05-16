@@ -30,14 +30,14 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.core.action import (
-    ActionResponse,
-)
 from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
+    from zenml.models.v2.core.action import (
+        ActionResponse,
+    )
     from zenml.models.v2.core.event_source import EventSourceResponse
 
 
@@ -185,7 +185,7 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
 class TriggerResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
-    action: ActionResponse = Field(
+    action: "ActionResponse" = Field(
         title="The action that is executed by this trigger.",
     )
     event_source: Optional["EventSourceResponse"] = Field(
