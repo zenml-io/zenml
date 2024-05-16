@@ -3013,6 +3013,10 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         event_source_id: Optional[UUID] = None,
         action_id: Optional[UUID] = None,
+        event_source_flavor: Optional[str] = None,
+        event_source_subtype: Optional[str] = None,
+        action_flavor: Optional[str] = None,
+        action_subtype: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -3030,8 +3034,14 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             name: The name of the trigger to filter by.
-            event_source_id: The event source associated with the Trigger
-            action_id: The action associated with the Trigger
+            event_source_id: The event source associated with the trigger.
+            action_id: The action associated with the trigger.
+            event_source_flavor: Flavor of the event source associated with the
+                trigger.
+            event_source_subtype: Type of the event source associated with the
+                trigger.
+            action_flavor: Flavor of the action associated with the trigger.
+            action_subtype: Type of the action associated with the trigger.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3048,6 +3058,10 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             event_source_id=event_source_id,
             action_id=action_id,
+            event_source_flavor=event_source_flavor,
+            event_source_subtype=event_source_subtype,
+            action_flavor=action_flavor,
+            action_subtype=action_subtype,
             id=id,
             created=created,
             updated=updated,
