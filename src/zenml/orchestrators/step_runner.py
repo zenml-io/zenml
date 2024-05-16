@@ -23,7 +23,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Tuple,
     Type,
 )
@@ -33,7 +32,6 @@ from pydantic.typing import get_origin, is_union
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.artifacts.utils import save_artifact
-from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
@@ -52,7 +50,11 @@ from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
     publish_successful_step_run,
 )
-from zenml.orchestrators.utils import is_setting_enabled
+from zenml.orchestrators.utils import (
+    _link_pipeline_run_to_model_from_artifacts,
+    _link_pipeline_run_to_model_from_context,
+    is_setting_enabled,
+)
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
     OutputSignature,
@@ -62,9 +64,6 @@ from zenml.steps.utils import (
 from zenml.utils import materializer_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.artifacts.external_artifact_config import (
-        ExternalArtifactConfiguration,
-    )
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
@@ -192,8 +191,8 @@ class StepRunner:
                     input_artifacts=input_artifacts,
                 )
 
-                self._link_pipeline_run_to_model_from_context(
-                    pipeline_run=pipeline_run
+                _link_pipeline_run_to_model_from_context(
+                    pipeline_run_id=pipeline_run.id
                 )
 
                 step_failed = False
@@ -258,8 +257,8 @@ class StepRunner:
                         link_step_artifacts_to_model(
                             artifact_version_ids=output_artifact_ids
                         )
-                        self._link_pipeline_run_to_model_from_artifacts(
-                            pipeline_run=pipeline_run,
+                        _link_pipeline_run_to_model_from_artifacts(
+                            pipeline_run_id=pipeline_run.id,
                             artifact_names=list(output_artifact_ids.keys()),
                             external_artifacts=list(
                                 step_run.config.external_input_artifacts.values()
@@ -644,115 +643,6 @@ class StepRunner:
             model._get_or_create_model_version()
         except StepContextError:
             return
-
-    def _get_model_versions_from_artifacts(
-        self,
-        artifact_names: List[str],
-    ) -> Set[Tuple[UUID, UUID]]:
-        """Gets the model versions from the artifacts.
-
-        Args:
-            artifact_names: The names of the published output artifacts.
-
-        Returns:
-            Set of tuples of (model_id, model_version_id).
-        """
-        models = set()
-        for artifact_name in artifact_names:
-            artifact_config = (
-                get_step_context()._get_output(artifact_name).artifact_config
-            )
-            if artifact_config is not None:
-                if (model := artifact_config._model) is not None:
-                    model_version_response = (
-                        model._get_or_create_model_version()
-                    )
-                    models.add(
-                        (
-                            model_version_response.model.id,
-                            model_version_response.id,
-                        )
-                    )
-                else:
-                    break
-        return models
-
-    def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:
-        """Gets the model versions from the step model version.
-
-        Returns:
-            Set of tuples of (model_id, model_version_id).
-        """
-        try:
-            mc = get_step_context().model
-            model_version = mc._get_or_create_model_version()
-            return {(model_version.model.id, model_version.id)}
-        except StepContextError:
-            return set()
-
-    def _link_pipeline_run_to_model_from_context(
-        self,
-        pipeline_run: "PipelineRunResponse",
-    ) -> None:
-        """Links the pipeline run to the model version using artifacts data.
-
-        Args:
-            pipeline_run: The response model of current pipeline run.
-        """
-        from zenml.models import ModelVersionPipelineRunRequest
-
-        models = self._get_model_versions_from_config()
-
-        client = Client()
-        for model in models:
-            client.zen_store.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequest(
-                    user=Client().active_user.id,
-                    workspace=Client().active_workspace.id,
-                    pipeline_run=pipeline_run.id,
-                    model=model[0],
-                    model_version=model[1],
-                )
-            )
-
-    def _link_pipeline_run_to_model_from_artifacts(
-        self,
-        pipeline_run: "PipelineRunResponse",
-        artifact_names: List[str],
-        external_artifacts: List["ExternalArtifactConfiguration"],
-    ) -> None:
-        """Links the pipeline run to the model version using artifacts data.
-
-        Args:
-            pipeline_run: The response model of current pipeline run.
-            artifact_names: The name of the published output artifacts.
-            external_artifacts: The external artifacts of the step.
-        """
-        from zenml.models import ModelVersionPipelineRunRequest
-
-        models = self._get_model_versions_from_artifacts(artifact_names)
-        client = Client()
-
-        # Add models from external artifacts
-        for external_artifact in external_artifacts:
-            if external_artifact.model:
-                models.add(
-                    (
-                        external_artifact.model.model_id,
-                        external_artifact.model.id,
-                    )
-                )
-
-        for model in models:
-            client.zen_store.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequest(
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
-                    pipeline_run=pipeline_run.id,
-                    model=model[0],
-                    model_version=model[1],
-                )
-            )
 
     def load_and_run_hook(
         self,

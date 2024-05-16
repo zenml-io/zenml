@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Tuple
+from typing import Optional, Tuple
 from unittest import mock
 from uuid import uuid4
 
@@ -198,7 +198,7 @@ def test_create_new_version_only_in_pipeline(clean_client: "Client"):
 
 
 @step
-def _this_step_produces_output() -> Annotated[int, "data"]:
+def _this_step_produces_output(dummy: Optional[int]) -> Annotated[int, "data"]:
     return 1
 
 
@@ -645,32 +645,39 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
     @pipeline(model=Model(name="step", version=ModelStages.LATEST))
     def _inner_pipeline():
         # this step requests a new version, but can be cached
-        _this_step_produces_output.with_options(model=Model(name="step"))()
+        _this_step_produces_output.with_options(model=Model(name="step"))(
+            dummy=42, id="cacheable_step"
+        )
         # this is an always run step
-        _this_step_produces_output.with_options(enable_cache=False)()
+        _this_step_produces_output.with_options(enable_cache=False)(
+            dummy=-1, id="non_cacheable_step"
+        )
 
     # this will run all steps, including one requesting new version
     run_1 = f"run_{uuid4()}"
+    # model is configured with latest stage, so a warm-up needed
+    with pytest.raises(KeyError):
+        _inner_pipeline.with_options(run_name=run_1)()
+    Model(name="step")._get_or_create_model_version()
     _inner_pipeline.with_options(run_name=run_1)()
+
     # here the step requesting new version is cached
     run_2 = f"run_{uuid4()}"
     _inner_pipeline.with_options(run_name=run_2)()
 
     model = clean_client.get_model(model_name_or_id="step")
     mvs = model.versions
-    assert len(mvs) == 2
-    for mv, run_name in zip(mvs, (run_1, run_2)):
-        assert (
-            len(
-                clean_client.zen_store.get_model_version(
-                    mv.id
-                ).pipeline_run_ids
-            )
-            == 1
-        )
-        assert clean_client.zen_store.get_model_version(
+    assert len(mvs) == 3
+    # here we check which pipelines were attached to the model versions:
+    # - MV #1 was created before the first run and was used as LATEST in first run -> run 1
+    # - MV #2 was created during first run in a step and was used as LATEST in second run -> runs 1&2
+    # - MV #3 was created during the second run and was not used in other pipelines -> run 2
+    for mv, run_names in zip(mvs, ({run_1}, {run_1, run_2}, {run_2})):
+        pr_ids = clean_client.zen_store.get_model_version(
             mv.id
-        ).pipeline_run_ids[run_name]
+        ).pipeline_run_ids
+        assert len(pr_ids) == len(run_names)
+        assert {name for name in pr_ids} == run_names
 
 
 def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run(
