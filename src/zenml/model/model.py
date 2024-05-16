@@ -60,6 +60,8 @@ class Model(BaseModel):
         to a specific version/stage. If skipped new version will be created.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
+    model_version_id: The ID of a specific Model Version, if given - it will override
+        `name` and `version` settings. Used mostly internally.
     """
 
     name: str
@@ -73,7 +75,7 @@ class Model(BaseModel):
     tags: Optional[List[str]] = None
     version: Optional[Union[ModelStages, int, str]] = None
     save_models_to_registry: bool = True
-    id_: Optional[UUID] = None
+    model_version_id: Optional[UUID] = None
 
     suppress_class_validation_warnings: bool = False
     was_created_in_this_run: bool = False
@@ -98,16 +100,16 @@ class Model(BaseModel):
             RuntimeError: if model version doesn't exist and
                 cannot be fetched from the Model Control Plane.
         """
-        if self.id_ is None:
+        if self.model_version_id is None:
             try:
                 mv = self._get_or_create_model_version()
-                self.id_ = mv.id
+                self.model_version_id = mv.id
             except RuntimeError as e:
                 raise RuntimeError(
                     f"Version `{self.version}` of `{self.name}` model doesn't exist "
                     "and cannot be fetched from the Model Control Plane."
                 ) from e
-        return self.id_
+        return self.model_version_id
 
     @property
     def model_id(self) -> UUID:
@@ -528,9 +530,9 @@ class Model(BaseModel):
         from zenml.models import ModelRequest
 
         zenml_client = Client()
-        if self.id_:
+        if self.model_version_id:
             mv = zenml_client.get_model_version(
-                model_version_name_or_number_or_id=self.id_,
+                model_version_name_or_number_or_id=self.model_version_id,
             )
             model = mv.model
         else:
@@ -578,16 +580,16 @@ class Model(BaseModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        if self.id_:
+        if self.model_version_id:
             mv = zenml_client.get_model_version(
-                model_version_name_or_number_or_id=self.id_,
+                model_version_name_or_number_or_id=self.model_version_id,
             )
         else:
             mv = zenml_client.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_number_or_id=self.version,
             )
-            self.id_ = mv.id
+            self.model_version_id = mv.id
 
         difference: Dict[str, Any] = {}
         if self.description and mv.description != self.description:
@@ -673,7 +675,7 @@ class Model(BaseModel):
                         and pipeline_mv.version is not None
                     ):
                         self.version = pipeline_mv.version
-                        self.id_ = pipeline_mv.id_
+                        self.model_version_id = pipeline_mv.model_version_id
                     else:
                         for step in context.pipeline_run.steps.values():
                             step_mv = step.config.model
@@ -684,9 +686,11 @@ class Model(BaseModel):
                                 and step_mv.version is not None
                             ):
                                 self.version = step_mv.version
-                                self.id_ = step_mv.id_
+                                self.model_version_id = (
+                                    step_mv.model_version_id
+                                )
                                 break
-            if self.version or self.id_:
+            if self.version or self.model_version_id:
                 model_version = self._get_model_version()
             else:
                 raise KeyError
@@ -746,7 +750,7 @@ class Model(BaseModel):
 
             logger.info(f"New model version `{self.version}` was created.")
 
-        self.id_ = model_version.id
+        self.model_version_id = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number
         return model_version
