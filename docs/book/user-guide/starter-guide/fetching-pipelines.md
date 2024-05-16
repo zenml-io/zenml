@@ -207,7 +207,7 @@ my_pytorch_model = output.load()
 Similarly, you can use the `inputs` and `input` properties to get the input artifacts of a step instead.
 
 {% hint style="info" %}
-Check out [this page](broken-reference) to see what the output names of your steps are and how to customize them.
+Check out [this page](manage-artifacts.md#giving-names-to-your-artifacts) to see what the output names of your steps are and how to customize them.
 {% endhint %}
 
 Note that the output of a step corresponds to a specific artifact version.
