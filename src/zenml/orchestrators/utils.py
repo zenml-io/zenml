@@ -30,6 +30,7 @@ from zenml.constants import (
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
 from zenml.enums import StoreType
+from zenml.exceptions import StepContextError
 from zenml.model.utils import link_artifact_config_to_model
 from zenml.models.v2.core.step_run import StepRunRequest
 from zenml.new.steps.step_context import get_step_context
@@ -195,7 +196,7 @@ def _get_model_versions_from_config() -> Tuple[Optional[UUID], Optional[UUID]]:
     try:
         mc = get_step_context().model
         return mc.model_id, mc.id
-    except RuntimeError:
+    except StepContextError:
         return None, None
 
 
