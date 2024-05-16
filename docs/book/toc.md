@@ -163,6 +163,7 @@
     * [Feast](stacks-and-components/component-guide/feature-stores/feast.md)
     * [Develop a Custom Feature Store](stacks-and-components/component-guide/feature-stores/custom.md)
   * [Annotators](stacks-and-components/component-guide/annotators/annotators.md)
+    * [Argilla](stacks-and-components/component-guide/annotators/argilla.md)
     * [Label Studio](stacks-and-components/component-guide/annotators/label-studio.md)
     * [Pigeon](stacks-and-components/component-guide/annotators/pigeon.md)
     * [Prodigy](stacks-and-components/component-guide/annotators/prodigy.md)
