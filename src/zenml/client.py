@@ -4965,6 +4965,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, str]] = None,
         resource_id: Optional[str] = None,
         description: Optional[str] = None,
+        expires_at: Optional[datetime] = None,
         expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
@@ -5008,6 +5009,7 @@ class Client(metaclass=ClientMetaClass):
                 If set to the empty string, the existing resource ID will be
                 removed.
             description: The description of the service connector.
+            expires_at: The new UTC expiration time of the service connector.
             expires_skew_tolerance: The allowed expiration skew for the service
                 connector credentials.
             expiration_seconds: The expiration time of the service connector.
@@ -5074,11 +5076,13 @@ class Client(metaclass=ClientMetaClass):
             connector_type=connector.connector_type,
             description=description or connector_model.description,
             auth_method=auth_method or connector_model.auth_method,
+            expires_at=expires_at,
             expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
+
         # Validate and configure the resources
         if configuration is not None:
             # The supplied configuration is a drop-in replacement for the
