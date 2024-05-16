@@ -1814,9 +1814,11 @@ class SqlZenStore(BaseZenStore):
             The action.
         """
         with Session(self.engine) as session:
-            return self._get_action(
-                action_id=action_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+            action = self._get_action(action_id=action_id, session=session)
+
+            return action.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
 
     def list_actions(
         self,
@@ -1883,8 +1885,8 @@ class SqlZenStore(BaseZenStore):
             session.add(action)
             session.commit()
 
-            # Refresh the action that was just created
             session.refresh(action)
+
             return action.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -1896,17 +1898,11 @@ class SqlZenStore(BaseZenStore):
             action_id: The ID of the action to delete.
 
         Raises:
-            KeyError: If the action doesn't exist.
             IllegalOperationError: If the action can't be deleted
                 because it's used by triggers.
         """
         with Session(self.engine) as session:
             action = self._get_action(action_id=action_id, session=session)
-            if action is None:
-                raise KeyError(
-                    f"Unable to delete action with ID `{action_id}`: "
-                    f"No action with this ID found."
-                )
 
             # Prevent deletion of action if it is used by a trigger
             if action.triggers:
