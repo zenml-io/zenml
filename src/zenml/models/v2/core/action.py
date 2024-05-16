@@ -14,7 +14,14 @@
 """Collection of all models concerning actions."""
 
 import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    TypeVar,
+)
 from uuid import UUID
 
 from pydantic import Field
@@ -281,13 +288,4 @@ class ActionFilter(WorkspaceScopedFilter):
     plugin_subtype: Optional[str] = Field(
         default=None,
         title="The subtype of the action.",
-    )
-    # TODO: Ignore these in normal filter and handle in sqlzenstore
-    resource_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="By the resource this action references.",
-    )
-    resource_type: Optional[str] = Field(
-        default=None,
-        description="By the resource type this action references.",
     )

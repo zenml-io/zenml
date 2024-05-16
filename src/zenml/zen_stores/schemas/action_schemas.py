@@ -90,7 +90,7 @@ class ActionSchema(NamedSchema, table=True):
 
     flavor: str = Field(nullable=False)
     plugin_subtype: str = Field(nullable=False)
-    description: str = Field(sa_column=Column(TEXT, nullable=True))
+    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     configuration: bytes
 

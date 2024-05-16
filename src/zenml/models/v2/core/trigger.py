@@ -348,15 +348,6 @@ class TriggerFilter(WorkspaceScopedFilter):
         default=None,
         title="The subtype of the event source that activates this trigger.",
     )
-    # TODO: Ignore these in normal filter and handle in sqlzenstore
-    resource_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="By the resource this trigger references.",
-    )
-    resource_type: Optional[str] = Field(
-        default=None,
-        description="By the resource type this trigger references.",
-    )
 
     def get_custom_filters(
         self,
@@ -366,9 +357,40 @@ class TriggerFilter(WorkspaceScopedFilter):
         Returns:
             A list of custom filters.
         """
+        from zenml.zen_stores.schemas import (
+            ActionSchema,
+            EventSourceSchema,
+            TriggerSchema,
+        )
+
         custom_filters = super().get_custom_filters()
 
-        # TODO: Implement custom filters for action_flavor, action_subtype,
-        #  event_source_flavor, event_source_subtype
+        if self.event_source_flavor:
+            event_source_flavor_filter = and_(  # type: ignore[type-var]
+                EventSourceSchema.id == TriggerSchema.event_source_id,
+                EventSourceSchema.flavor == self.event_source_flavor,
+            )
+            custom_filters.append(event_source_flavor_filter)
+
+        if self.event_source_subtype:
+            event_source_subtype_filter = and_(  # type: ignore[type-var]
+                EventSourceSchema.id == TriggerSchema.event_source_id,
+                EventSourceSchema.plugin_subtype == self.event_source_subtype,
+            )
+            custom_filters.append(event_source_subtype_filter)
+
+        if self.action_flavor:
+            action_flavor_filter = and_(  # type: ignore[type-var]
+                ActionSchema.id == TriggerSchema.action_id,
+                ActionSchema.flavor == self.action_flavor,
+            )
+            custom_filters.append(action_flavor_filter)
+
+        if self.action_subtype:
+            action_subtype_filter = and_(  # type: ignore[type-var]
+                ActionSchema.id == TriggerSchema.action_id,
+                ActionSchema.plugin_subtype == self.action_subtype,
+            )
+            custom_filters.append(action_subtype_filter)
 
         return custom_filters
