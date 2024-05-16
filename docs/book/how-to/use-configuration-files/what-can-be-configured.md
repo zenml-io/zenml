@@ -4,10 +4,10 @@
 
 These are boolean flags for various configurations:
 
-* `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](../../user-guide/advanced-guide/data-management/handle-custom-data-types.md#optional-which-metadata-to-extract-for-the-artifact).
-* `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../../user-guide/advanced-guide/data-management/visualize-artifacts.md).
+* `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](../handle-data-artifacts/handle-custom-data-types.md#optional-which-metadata-to-extract-for-the-artifact).
+* `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../handle-data-artifacts/visualize-artifacts.md).
 * `enable_cache`: Utilize [caching](../../user-guide/starter-guide/cache-previous-executions.md) or not.
-* `enable_step_logs`: Enable tracking [step logs](../../user-guide/advanced-guide/pipelining-features/managing-steps.md#enable-or-disable-logs-storing).
+* `enable_step_logs`: Enable tracking [step logs](broken-reference).
 
 ### `build` ID
 
@@ -23,7 +23,7 @@ Specifies the ZenML [Model](../../user-guide/starter-guide/track-ml-models.md) t
 
 ### Pipeline and step `parameters`
 
-A dictionary of JSON-serializable [parameters](../../user-guide/advanced-guide/pipelining-features/managing-steps.md#parameters-for-your-steps) specified at the pipeline or step level. For example:
+A dictionary of JSON-serializable [parameters](broken-reference) specified at the pipeline or step level. For example:
 
 ```yaml
 parameters:
@@ -55,7 +55,7 @@ Important note, in the above case, the value of the step would be the one define
 Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined.
 
 {% hint style="info" %}
-Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../../user-guide/advanced-guide/data-management/handle-custom-data-types.md) handle their persistence in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/)).
+Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../handle-data-artifacts/handle-custom-data-types.md) handle their persistence in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/)).
 {% endhint %}
 
 ### Setting the `run_name`
@@ -76,4 +76,4 @@ A lot of pipeline-level configuration can also be applied at a step level (as we
 
 * `experiment_tracker`: Name of the [experiment\_tracker](../../stacks-and-components/component-guide/experiment-trackers/) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
 * `step_operator`: Name of the [step\_operator](../../stacks-and-components/component-guide/step-operators/) to enable for this step. This step\_operator should be defined in the active stack with the same name.
-* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](../../user-guide/advanced-guide/pipelining-features/managing-steps.md#step-output-names)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../../user-guide/advanced-guide/data-management/handle-custom-data-types.md).
+* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](broken-reference)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../handle-data-artifacts/handle-custom-data-types.md).

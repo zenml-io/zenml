@@ -368,7 +368,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
 ```
 
-See full documentation of using ZenML secrets [here](../../../user-guide/advanced-guide/secret-management/).
+See full documentation of using ZenML secrets [here](../../../user-guide/advanced-guide/configuring-zenml/secret-management.md).
 
 For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow\_orchestrator.KubeflowOrchestrator) .
 

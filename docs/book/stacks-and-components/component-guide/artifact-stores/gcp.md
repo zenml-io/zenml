@@ -167,7 +167,7 @@ zenml stack register <STACK_NAME> -a <GCS_STORE_NAME> ... --set
 {% endtab %}
 
 {% tab title="GCP Credentials" %}
-When you register the GCS Artifact Store, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa) , store it in a [ZenML Secret](../../../user-guide/advanced-guide/secret-management/) and then reference it in the Artifact Store configuration.
+When you register the GCS Artifact Store, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa) , store it in a [ZenML Secret](../../../user-guide/advanced-guide/configuring-zenml/secret-management.md) and then reference it in the Artifact Store configuration.
 
 This method has some advantages over the implicit authentication method:
 

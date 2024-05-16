@@ -6,11 +6,11 @@ description: Configuring ZenML to display data visualizations in the dashboard.
 
 ZenML automatically saves visualizations of many common data types and allows you to view these visualizations in the ZenML dashboard:
 
-![ZenML Artifact Visualizations](<../../../.gitbook/assets/artifact\_visualization\_dashboard (1).png>)
+![ZenML Artifact Visualizations](<../../.gitbook/assets/artifact\_visualization\_dashboard (1).png>)
 
 Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the `artifact.visualize()` method:
 
-![output.visualize() Output](../../../.gitbook/assets/artifact\_visualization\_evidently.png)
+![output.visualize() Output](../../.gitbook/assets/artifact\_visualization\_evidently.png)
 
 Currently, the following visualization types are supported:
 
@@ -25,9 +25,9 @@ In order for the visualizations to show up on the dashboard, the following must 
 
 ### Configuring a Service Connector
 
-Visualizations are usually stored alongside the artifact, in the [artifact store](../../../stacks-and-components/component-guide/artifact-stores/). Therefore, if a user would like to see the visualization displayed on the ZenML dashboard, they must give access to the server to connect to the artifact store.
+Visualizations are usually stored alongside the artifact, in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/). Therefore, if a user would like to see the visualization displayed on the ZenML dashboard, they must give access to the server to connect to the artifact store.
 
-The [service connector](../../../stacks-and-components/auth-management/) documentation goes deeper into the concept of service connectors and how they can configured to give the server permission to access the artifact store. For a concrete example, see the [AWS S3](../../../stacks-and-components/component-guide/artifact-stores/s3.md) artifact store documentation.
+The [service connector](../../stacks-and-components/auth-management/) documentation goes deeper into the concept of service connectors and how they can configured to give the server permission to access the artifact store. For a concrete example, see the [AWS S3](../../stacks-and-components/component-guide/artifact-stores/s3.md) artifact store documentation.
 
 {% hint style="info" %}
 When using the default/local artifact store with a deployed ZenML, the server naturally does not have access to your local files. In this case, the visualizations are also not displayed on the dashboard.
@@ -37,7 +37,7 @@ Please use a service connector enabled and remote artifact store alongside a dep
 
 ### Configuring Artifact Stores
 
-If all visualizations of a certain pipeline run are not showing up in the dashboard, it might be that your ZenML server does not have the required dependencies or permissions to access that artifact store. See the [custom artifact store docs page](../../../stacks-and-components/component-guide/artifact-stores/custom.md#enabling-artifact-visualizations-with-custom-artifact-stores) for more information.
+If all visualizations of a certain pipeline run are not showing up in the dashboard, it might be that your ZenML server does not have the required dependencies or permissions to access that artifact store. See the [custom artifact store docs page](../../stacks-and-components/component-guide/artifact-stores/custom.md#enabling-artifact-visualizations-with-custom-artifact-stores) for more information.
 
 ## Creating Custom Visualizations
 
@@ -68,7 +68,7 @@ def my_step() -> CSVString:
 
 This would create the following visualization in the dashboard:
 
-![CSV Visualization Example](../../../.gitbook/assets/artifact\_visualization\_csv.png)
+![CSV Visualization Example](../../.gitbook/assets/artifact\_visualization\_csv.png)
 
 ### Visualization via Materializers
 
@@ -86,7 +86,7 @@ By combining the ideas behind the above two visualization approaches, you can vi
 
 As an example, have a look at the models, materializers, and steps of the [Facets Integration](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-facets), which can be used to visualize the data skew between multiple Pandas DataFrames:
 
-![Facets Visualization](../../../.gitbook/assets/facets-visualization.png)
+![Facets Visualization](../../.gitbook/assets/facets-visualization.png)
 
 **1. Custom Class** The [FacetsComparison](https://sdkdocs.zenml.io/0.42.0/integration\_code\_docs/integrations-facets/#zenml.integrations.facets.models.FacetsComparison) is the custom class that holds the data required for the visualization.
 
