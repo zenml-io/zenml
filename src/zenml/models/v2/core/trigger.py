@@ -301,6 +301,15 @@ class TriggerResponse(
         """
         return self.get_resources().event_source
 
+    @property
+    def executions(self) -> Page[TriggerExecutionResponse]:
+        """The `event_source` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().executions
+
 
 # ------------------ Filter Model ------------------
 
