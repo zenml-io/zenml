@@ -14,7 +14,7 @@
 """Base class for all the Event Hub."""
 
 from functools import partial
-from typing import TYPE_CHECKING, List
+from typing import List
 
 from zenml import EventSourceResponse
 from zenml.enums import PluginType
@@ -34,9 +34,6 @@ from zenml.utils.pagination_utils import depaginate
 from zenml.zen_server.utils import plugin_flavor_registry
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    pass
 
 
 class InternalEventHub(BaseEventHub):

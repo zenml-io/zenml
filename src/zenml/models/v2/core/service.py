@@ -15,7 +15,6 @@
 
 from datetime import datetime
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -42,9 +41,6 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
-
-if TYPE_CHECKING:
-    pass
 
 # ------------------ Request Model ------------------
 
