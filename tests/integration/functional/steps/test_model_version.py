@@ -198,7 +198,9 @@ def test_create_new_version_only_in_pipeline(clean_client: "Client"):
 
 
 @step
-def _this_step_produces_output(dummy: Optional[int]) -> Annotated[int, "data"]:
+def _this_step_produces_output(
+    dummy: Optional[int] = None,
+) -> Annotated[int, "data"]:
     return 1
 
 
