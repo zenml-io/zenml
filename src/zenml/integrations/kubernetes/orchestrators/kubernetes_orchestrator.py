@@ -395,10 +395,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # Remove all settings that specify on which pod to run for the
             # orchestrator pod. These settings should only be used
             # for the pods executing the actual steps.
-            settings.pod_settings.resources = {}
-            settings.pod_settings.node_selectors = {}
-            settings.pod_settings.affinity = {}
-            settings.pod_settings.tolerations = []
+            pod_settings = settings.pod_settings.copy(
+                exclude={
+                    "resources",
+                    "node_selectors",
+                    "affinity",
+                    "tolerations",
+                }
+            )
+            settings = settings.copy(update={"pod_settings": pod_settings})
 
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
