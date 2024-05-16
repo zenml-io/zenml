@@ -203,7 +203,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
-T = TypeVar("T")
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 class ClientConfiguration(FileSyncModel):
@@ -313,11 +313,11 @@ class ClientMetaClass(ABCMeta):
         return cls._global_client
 
 
-def _fail_for_sql_zen_store(method: Callable[..., T]) -> Callable[..., T]:
-    """Decorator for all methods, that are disallowed when the client is not connected through REST API.
+def _fail_for_sql_zen_store(method: F) -> F:
+    """Decorator for methods that are not allowed with a SQLZenStore.
 
     Args:
-        method: The method
+        method: The method to decorate.
 
     Returns:
         The decorated method.
