@@ -169,7 +169,7 @@ def get_pod(
 
 
 def wait_pod(
-    core_api_fn: Callable[[], k8s_client.CoreV1Api],
+    kube_client_fn: Callable[[], k8s_client.ApiClient],
     pod_name: str,
     namespace: str,
     exit_condition_lambda: Callable[[k8s_client.V1Pod], bool],
@@ -180,8 +180,9 @@ def wait_pod(
     """Wait for a pod to meet an exit condition.
 
     Args:
-        core_api_fn: Function called periodically to get a `CoreV1Api` client
-            for the Kubernetes API. It should cache the client to avoid
+        kube_client_fn: the kube client fn is a function that is called
+            periodically and is used to get a `CoreV1Api` client for
+            the Kubernetes API. It should cache the client to avoid
             unnecessary overhead but should also instantiate a new client if
             the previous one is using credentials that are about to expire.
         pod_name: The name of the pod.
@@ -213,7 +214,9 @@ def wait_pod(
     logged_lines = 0
 
     while True:
-        core_api = core_api_fn()
+        kube_client = kube_client_fn()
+        core_api = k8s_client.CoreV1Api(kube_client)
+
         resp = get_pod(core_api, pod_name, namespace)
 
         # Stream logs to `zenml.logger.info()`.

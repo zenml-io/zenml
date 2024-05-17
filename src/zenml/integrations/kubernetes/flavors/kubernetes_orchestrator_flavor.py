@@ -41,12 +41,15 @@ class KubernetesOrchestratorSettings(BaseSettings):
         service_account_name: Name of the service account to use for the
             orchestrator pod. If not provided, a new service account with "edit"
             permissions will be created.
+        step_pod_service_account_name: Name of the service account to use for the
+            step pods. If not provided, the default service account will be used.
         pod_settings: Pod settings to apply.
     """
 
     synchronous: bool = True
     timeout: int = 0
     service_account_name: Optional[str] = None
+    step_pod_service_account_name: Optional[str] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
 

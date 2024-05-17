@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality for annotator CLI subcommands."""
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Tuple, cast
 
 import click
 
@@ -104,9 +104,11 @@ def register_annotator_subcommands() -> None:
         )
         cli_utils.declare(f"Total annotation tasks: {total_task_count}")
         cli_utils.declare(f"Labeled annotation tasks: {labeled_task_count}")
-        cli_utils.declare(
-            f"Unlabeled annotation tasks: {unlabeled_task_count}"
-        )
+        if annotator.flavor != "prodigy":
+            # Prodigy doesn't allow you to get the unlabeled task count
+            cli_utils.declare(
+                f"Unlabeled annotation tasks: {unlabeled_task_count}"
+            )
 
     @dataset.command("delete")
     @click.argument("dataset_name", type=click.STRING)
@@ -131,29 +133,43 @@ def register_annotator_subcommands() -> None:
             dataset_name: Name of the dataset to delete.
             all_: Whether to delete all datasets.
         """
+        if not cli_utils.confirmation(
+            f"Are you sure you want to delete dataset '{dataset_name}'?"
+        ):
+            return
         cli_utils.declare(f"Deleting your dataset '{dataset_name}'")
         dataset_names = (
             annotator.get_dataset_names() if all_ else [dataset_name]
         )
         for dataset_name in dataset_names:
-            annotator.delete_dataset(dataset_name=dataset_name)
-            cli_utils.declare(
-                f"Dataset '{dataset_name}' has now been deleted."
-            )
+            try:
+                annotator.delete_dataset(dataset_name=dataset_name)
+                cli_utils.declare(
+                    f"Dataset '{dataset_name}' has now been deleted."
+                )
+            except ValueError as e:
+                cli_utils.error(
+                    f"Failed to delete dataset '{dataset_name}': {e}"
+                )
 
     @dataset.command(
         "annotate", context_settings={"ignore_unknown_options": True}
     )
     @click.argument("dataset_name", type=click.STRING)
+    @click.argument("kwargs", nargs=-1, type=click.UNPROCESSED)
     @click.pass_obj
     def dataset_annotate(
-        annotator: "BaseAnnotator", dataset_name: str
+        annotator: "BaseAnnotator",
+        dataset_name: str,
+        kwargs: Tuple[str, ...],
     ) -> None:
         """Command to launch the annotation interface for a dataset.
 
         Args:
             annotator: The annotator stack component.
             dataset_name: Name of the dataset
+            kwargs: Additional keyword arguments to pass to the
+                annotation client.
 
         Raises:
             ValueError: If the dataset does not exist.
@@ -161,8 +177,26 @@ def register_annotator_subcommands() -> None:
         cli_utils.declare(
             f"Launching the annotation interface for dataset '{dataset_name}'."
         )
-        try:
-            annotator.get_dataset(dataset_name=dataset_name)
-            annotator.launch(url=annotator.get_url_for_dataset(dataset_name))
-        except ValueError as e:
-            raise ValueError("Dataset does not exist.") from e
+
+        # Process the arbitrary keyword arguments
+        kwargs_dict = {}
+        for arg in kwargs:
+            if arg.startswith("--"):
+                key, value = arg.lstrip("--").split("=", 1)
+                kwargs_dict[key] = value
+
+        if annotator.flavor == "prodigy":
+            command = kwargs_dict.get("command")
+            if not command:
+                raise ValueError(
+                    "The 'command' keyword argument is required for launching the Prodigy interface."
+                )
+            annotator.launch(**kwargs_dict)
+        else:
+            try:
+                annotator.get_dataset(dataset_name=dataset_name)
+                annotator.launch(
+                    url=annotator.get_url_for_dataset(dataset_name)
+                )
+            except ValueError as e:
+                raise ValueError("Dataset does not exist.") from e
