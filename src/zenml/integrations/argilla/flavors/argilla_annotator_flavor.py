@@ -69,7 +69,7 @@ class ArgillaAnnotatorSettings(BaseSettings):
         return instance_url.rstrip("/")
 
 
-class ArgillaAnnotatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class ArgillaAnnotatorConfig(
     BaseAnnotatorConfig,
     ArgillaAnnotatorSettings,
     AuthenticationConfigMixin,
