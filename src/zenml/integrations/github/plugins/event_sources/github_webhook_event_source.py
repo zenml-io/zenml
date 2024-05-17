@@ -157,9 +157,9 @@ class GithubEvent(BaseEvent):
 class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
     """Configuration for github event filters."""
 
-    repo: Optional[str]
-    branch: Optional[str]
-    event_type: Optional[GithubEventType]
+    repo: Optional[str] = None
+    branch: Optional[str] = None
+    event_type: Optional[GithubEventType] = None
 
     def event_matches_filter(self, event: BaseEvent) -> bool:
         """Checks the filter against the inbound event.

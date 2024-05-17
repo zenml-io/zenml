@@ -219,10 +219,8 @@ class TriggerSchema(NamedSchema, table=True):
                 get_page_from_list(
                     items_list=self.executions,
                     response_model=TriggerExecutionResponse,
-                    # TODO: Shouldn't this always be False to avoid any
-                    # recursion issues
-                    include_resources=include_resources,
-                    include_metadata=include_metadata,
+                    include_resources=False,
+                    include_metadata=False,
                 ),
             )
             resources = TriggerResponseResources(

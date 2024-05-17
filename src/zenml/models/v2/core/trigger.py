@@ -100,7 +100,6 @@ class TriggerRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-# TODO: why can the schedule be updated but not the event source?
 class TriggerUpdate(BaseZenModel):
     """Update model for triggers."""
 

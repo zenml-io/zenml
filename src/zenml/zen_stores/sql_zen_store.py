@@ -4406,9 +4406,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_event_source(
                 event_source_id=event_source_id, session=session
-            ).to_model(
-                include_metadata=hydrate, include_resources=True
-            )  # TODO: why are resources always included? In actions above this is different
+            ).to_model(include_metadata=hydrate, include_resources=hydrate)
 
     def list_event_sources(
         self,
@@ -7719,8 +7717,8 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_trigger is None:
                 raise KeyError(
-                    f"Unable to update trigger with id '{trigger_id}': Found no"
-                    f"existing trigger with this id."
+                    f"Unable to update trigger with id '{trigger_id}': No "
+                    f"existing trigger with this id exists."
                 )
 
             # Verify that either a schedule or an event source is provided, not

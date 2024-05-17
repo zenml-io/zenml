@@ -189,10 +189,8 @@ class ActionSchema(NamedSchema, table=True):
                     get_page_from_list(
                         items_list=self.triggers,
                         response_model=TriggerResponse,
-                        # TODO: Shouldn't this always be False to avoid any
-                        # recursion issues
-                        include_resources=include_resources,
-                        include_metadata=include_metadata,
+                        include_resources=False,
+                        include_metadata=False,
                     ),
                 ),
                 service_account=self.service_account.to_model(),
