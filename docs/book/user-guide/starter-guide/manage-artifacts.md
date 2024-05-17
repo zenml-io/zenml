@@ -240,7 +240,7 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](broken-reference) behind the scenes.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../../how-to/access-pipelines-models-artifacts/load-artifacts-into-memory.md) behind the scenes.
 {% endhint %}
 
 If you would like to bypass materialization entirely and just download the data or files associated with a particular artifact version, you can use the `.download_files` method:
@@ -368,7 +368,7 @@ def model_finetuner_step(
 
 For further depth, there is an [advanced metadata logging guide](../../how-to/metadata/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
 
-Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](broken-reference) for more information.
+Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](../../how-to/handle-data-artifacts/) for more information.
 
 ## Code example
 
