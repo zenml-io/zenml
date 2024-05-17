@@ -258,7 +258,7 @@ def validate_function_args(
     """
     signature = inspect.signature(__func)
 
-    def f(*args, **kwargs) -> None:
+    def f(*args: Any, **kwargs: Dict[Any, Any]) -> None:
         pass
 
     # We create a dummy function with the original function signature to run
