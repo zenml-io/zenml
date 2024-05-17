@@ -7273,7 +7273,7 @@ class SqlZenStore(BaseZenStore):
             step_id=run_step_id,
             artifact_id=artifact_version_id,
             name=name,
-            type=input_type,
+            type=input_type.value,
         )
         session.add(assignment)
 
@@ -7335,7 +7335,7 @@ class SqlZenStore(BaseZenStore):
             step_id=step_run_id,
             artifact_id=artifact_version_id,
             name=name,
-            type=output_type,
+            type=output_type.value,
         )
         session.add(assignment)
 

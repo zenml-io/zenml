@@ -6,16 +6,13 @@ Create Date: 2022-11-17 08:00:24.936750
 
 """
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import Any, Dict
 
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
 from sqlalchemy import select
 from sqlalchemy.sql.expression import false, true
-
-if TYPE_CHECKING:
-    pass
 
 # revision identifiers, used by Alembic.
 revision = "26b776ad583e"
