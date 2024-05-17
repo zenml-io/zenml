@@ -235,7 +235,7 @@ class YAMLSerializationMixin(BaseModel):
 
 def validate_function_args(
     __func: Callable[..., Any],
-    __config: Dict[str, Any],
+    __config: Optional[ConfigDict],
     *args: Any,
     **kwargs: Any,
 ) -> Dict[str, Any]:
@@ -266,9 +266,10 @@ def validate_function_args(
     f.__signature__ = signature  # type: ignore[attr-defined]
     f.__annotations__ = __func.__annotations__
 
-    validated_function = validate_call(
-        f, config=ConfigDict(**__config), validate_return=False
+    validated_function = validate_call(config=__config, validate_return=False)(
+        f
     )
+
     # This raises a pydantic.ValidatonError in case the arguments are not valid
     validated_function(*args, **kwargs)
 

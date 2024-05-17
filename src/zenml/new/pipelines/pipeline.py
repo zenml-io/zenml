@@ -38,7 +38,7 @@ from typing import (
 from uuid import UUID
 
 import yaml
-from pydantic import ValidationError
+from pydantic import ConfigDict, ValidationError
 
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
@@ -1411,7 +1411,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         try:
             validated_args = pydantic_utils.validate_function_args(
                 self.entrypoint,
-                {"arbitrary_types_allowed": False},
+                ConfigDict(arbitrary_types_allowed=False),
                 *args,
                 **kwargs,
             )

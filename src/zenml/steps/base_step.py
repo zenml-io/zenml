@@ -34,7 +34,7 @@ from typing import (
     cast,
 )
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.source import Source
@@ -642,7 +642,7 @@ class BaseStep(metaclass=BaseStepMeta):
         try:
             validated_args = pydantic_utils.validate_function_args(
                 self.entrypoint,
-                {"arbitrary_types_allowed": True},
+                ConfigDict(arbitrary_types_allowed=True),
                 *args,
                 **kwargs,
             )
