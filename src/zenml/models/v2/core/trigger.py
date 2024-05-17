@@ -365,6 +365,8 @@ class TriggerFilter(WorkspaceScopedFilter):
         Returns:
             A list of custom filters.
         """
+        from sqlmodel import and_
+
         from zenml.zen_stores.schemas import (
             ActionSchema,
             EventSourceSchema,

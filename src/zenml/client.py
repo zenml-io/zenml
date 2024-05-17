@@ -333,7 +333,7 @@ def _fail_for_sql_zen_store(method: F) -> F:
             )
         return method(self, *args, **kwargs)
 
-    return wrapper
+    return cast(F, wrapper)
 
 
 @evaluate_all_lazy_load_args_in_client_methods
