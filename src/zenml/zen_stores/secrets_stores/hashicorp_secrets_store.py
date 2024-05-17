@@ -33,7 +33,7 @@ from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.logger import get_logger
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -64,7 +64,7 @@ class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
     type: SecretsStoreType = SecretsStoreType.HASHICORP
 
     vault_addr: str
-    vault_token: Optional[ZenSecretStr] = None
+    vault_token: Optional[PlainSerializedSecretStr] = None
     vault_namespace: Optional[str] = None
     mount_point: Optional[str] = None
     max_versions: int = 1

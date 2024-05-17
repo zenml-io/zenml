@@ -97,7 +97,7 @@ from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.steps import step
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.rest_zen_store import RestZenStore
@@ -767,10 +767,10 @@ class ModelContext:
 class CatClawMarks(AuthenticationConfig):
     """Cat claw marks authentication credentials."""
 
-    paw: ZenSecretStr = Field(
+    paw: PlainSerializedSecretStr = Field(
         title="Paw",
     )
-    hiding_spot: Optional[ZenSecretStr] = Field(
+    hiding_spot: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Hiding spot",
     )
@@ -786,10 +786,10 @@ class CatClawMarks(AuthenticationConfig):
 class CatVoicePrint(AuthenticationConfig):
     """Cat voice-print authentication credentials."""
 
-    secret_word: ZenSecretStr = Field(
+    secret_word: PlainSerializedSecretStr = Field(
         title="Secret word",
     )
-    hiding_spot: Optional[ZenSecretStr] = Field(
+    hiding_spot: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Hiding spot",
     )

@@ -35,7 +35,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 # ------------------ Request Model ------------------
 
@@ -52,7 +52,7 @@ class SecretRequest(WorkspaceScopedRequest):
     scope: SecretScope = Field(
         SecretScope.WORKSPACE, title="The scope of the secret."
     )
-    values: Dict[str, Optional[ZenSecretStr]] = Field(
+    values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 
@@ -91,7 +91,7 @@ class SecretUpdate(BaseUpdate):
     scope: Optional[SecretScope] = Field(
         default=None, title="The scope of the secret."
     )
-    values: Optional[Dict[str, Optional[ZenSecretStr]]] = Field(
+    values: Optional[Dict[str, Optional[PlainSerializedSecretStr]]] = Field(
         title="The values stored in this secret.",
         default=None,
     )
@@ -120,7 +120,7 @@ class SecretResponseBody(WorkspaceScopedResponseBody):
     scope: SecretScope = Field(
         SecretScope.WORKSPACE, title="The scope of the secret."
     )
-    values: Dict[str, Optional[ZenSecretStr]] = Field(
+    values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 

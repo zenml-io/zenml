@@ -75,7 +75,7 @@ from zenml.service_connectors.service_connector import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.pydantic_utils import before_validator_handler
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -87,7 +87,7 @@ GCP_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
 class GCPUserAccountCredentials(AuthenticationConfig):
     """GCP user account credentials."""
 
-    user_account_json: ZenSecretStr = Field(
+    user_account_json: PlainSerializedSecretStr = Field(
         title="GCP User Account Credentials JSON",
     )
 
@@ -166,7 +166,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 class GCPServiceAccountCredentials(AuthenticationConfig):
     """GCP service account credentials."""
 
-    service_account_json: ZenSecretStr = Field(
+    service_account_json: PlainSerializedSecretStr = Field(
         title="GCP Service Account Key JSON",
     )
 
@@ -255,7 +255,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
 class GCPExternalAccountCredentials(AuthenticationConfig):
     """GCP external account credentials."""
 
-    external_account_json: ZenSecretStr = Field(
+    external_account_json: PlainSerializedSecretStr = Field(
         title="GCP External Account JSON",
     )
 
@@ -337,7 +337,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
 class GCPOAuth2Token(AuthenticationConfig):
     """GCP OAuth 2.0 token credentials."""
 
-    token: ZenSecretStr = Field(
+    token: PlainSerializedSecretStr = Field(
         title="GCP OAuth 2.0 Token",
     )
 

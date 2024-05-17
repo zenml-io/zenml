@@ -39,7 +39,7 @@ from zenml.service_connectors.service_connector import (
 )
 from zenml.utils import docker_utils
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -47,10 +47,10 @@ logger = get_logger(__name__)
 class DockerCredentials(AuthenticationConfig):
     """Docker client authentication credentials."""
 
-    username: ZenSecretStr = Field(
+    username: PlainSerializedSecretStr = Field(
         title="Username",
     )
-    password: ZenSecretStr = Field(
+    password: PlainSerializedSecretStr = Field(
         title="Password",
     )
 

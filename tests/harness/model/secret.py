@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from pydantic import Field
 
 from tests.harness.model.base import BaseTestConfigModel
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 if TYPE_CHECKING:
     from tests.harness.harness import TestHarness
@@ -30,7 +30,7 @@ class Secret(BaseTestConfigModel):
     """Configuration secret."""
 
     name: str = Field(pattern="^[A-Z][A-Z0-9_]+$")
-    value: ZenSecretStr
+    value: PlainSerializedSecretStr
 
 
 class BaseTestSecretConfigModel(BaseTestConfigModel):

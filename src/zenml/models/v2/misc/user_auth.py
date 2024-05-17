@@ -22,7 +22,7 @@ from pydantic import Field, SecretStr
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseZenModel
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
@@ -48,10 +48,12 @@ class UserAuthModel(BaseZenModel):
         "account."
     )
 
-    activation_token: Optional[ZenSecretStr] = Field(
+    activation_token: Optional[PlainSerializedSecretStr] = Field(
         default=None, exclude=True
     )
-    password: Optional[ZenSecretStr] = Field(default=None, exclude=True)
+    password: Optional[PlainSerializedSecretStr] = Field(
+        default=None, exclude=True
+    )
     name: str = Field(
         title="The unique username for the account.",
         max_length=STR_FIELD_MAX_LENGTH,

@@ -26,7 +26,7 @@ _secret_reference_expression = re.compile(r"\{\{\s*\S+?\.\S+\s*\}\}")
 PYDANTIC_SENSITIVE_FIELD_MARKER = "sensitive"
 PYDANTIC_CLEAR_TEXT_FIELD_MARKER = "prevent_secret_reference"
 
-ZenSecretStr = Annotated[
+PlainSerializedSecretStr = Annotated[
     SecretStr,
     PlainSerializer(
         lambda v: v.get_secret_value() if v else None, when_used="json"

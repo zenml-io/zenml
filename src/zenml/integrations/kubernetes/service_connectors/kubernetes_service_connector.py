@@ -40,7 +40,7 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -48,7 +48,7 @@ logger = get_logger(__name__)
 class KubernetesServerCredentials(AuthenticationConfig):
     """Kubernetes server authentication config."""
 
-    certificate_authority: Optional[ZenSecretStr] = Field(
+    certificate_authority: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Kubernetes CA Certificate (base64 encoded)",
     )
@@ -69,10 +69,10 @@ class KubernetesServerConfig(KubernetesServerCredentials):
 class KubernetesUserPasswordCredentials(AuthenticationConfig):
     """Kubernetes user/pass authentication config."""
 
-    username: ZenSecretStr = Field(
+    username: PlainSerializedSecretStr = Field(
         title="Kubernetes Username",
     )
-    password: ZenSecretStr = Field(
+    password: PlainSerializedSecretStr = Field(
         title="Kubernetes Password",
     )
 
@@ -95,15 +95,15 @@ class KubernetesUserPasswordConfig(
 class KubernetesTokenCredentials(AuthenticationConfig):
     """Kubernetes token authentication config."""
 
-    client_certificate: Optional[ZenSecretStr] = Field(
+    client_certificate: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Kubernetes Client Certificate (base64 encoded)",
     )
-    client_key: Optional[ZenSecretStr] = Field(
+    client_key: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Kubernetes Client Key (base64 encoded)",
     )
-    token: Optional[ZenSecretStr] = Field(
+    token: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Kubernetes Token",
     )

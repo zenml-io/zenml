@@ -65,7 +65,7 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.secret_utils import ZenSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -78,11 +78,11 @@ BOTO3_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
 class AWSSecretKey(AuthenticationConfig):
     """AWS secret key credentials."""
 
-    aws_access_key_id: ZenSecretStr = Field(
+    aws_access_key_id: PlainSerializedSecretStr = Field(
         title="AWS Access Key ID",
         description="An AWS access key ID associated with an AWS account or IAM user.",
     )
-    aws_secret_access_key: ZenSecretStr = Field(
+    aws_secret_access_key: PlainSerializedSecretStr = Field(
         title="AWS Secret Access Key",
     )
 
@@ -90,7 +90,7 @@ class AWSSecretKey(AuthenticationConfig):
 class STSToken(AWSSecretKey):
     """AWS STS token."""
 
-    aws_session_token: ZenSecretStr = Field(
+    aws_session_token: PlainSerializedSecretStr = Field(
         title="AWS Session Token",
     )
 
