@@ -571,8 +571,14 @@ class Model(BaseModel):
         self._model_id = model.id
         return model
 
-    def _get_model_version(self) -> "ModelVersionResponse":
+    def _get_model_version(
+        self, hydrate: bool = True
+    ) -> "ModelVersionResponse":
         """This method gets a model version from Model Control Plane.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model version based on configuration.
@@ -583,20 +589,23 @@ class Model(BaseModel):
         if self.model_version_id:
             mv = zenml_client.get_model_version(
                 model_version_name_or_number_or_id=self.model_version_id,
+                hydrate=hydrate,
             )
         else:
             mv = zenml_client.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_number_or_id=self.version,
+                hydrate=hydrate,
             )
             self.model_version_id = mv.id
 
         difference: Dict[str, Any] = {}
-        if self.description and mv.description != self.description:
-            difference["description"] = {
-                "config": self.description,
-                "db": mv.description,
-            }
+        if mv.metadata:
+            if self.description and mv.description != self.description:
+                difference["description"] = {
+                    "config": self.description,
+                    "db": mv.description,
+                }
         if self.tags:
             configured_tags = set(self.tags)
             db_tags = {t.name for t in mv.tags}

@@ -39,6 +39,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.model_version import ModelVersionResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -196,6 +197,8 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class PipelineRunResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
+
+    model_version: Optional[ModelVersionResponse]
 
 
 class PipelineRunResponse(
@@ -393,6 +396,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_metadata().orchestrator_run_id
+
+    @property
+    def model_version(self) -> Optional[ModelVersionResponse]:
+        """The `model_version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().model_version
 
 
 # ------------------ Filter Model ------------------
