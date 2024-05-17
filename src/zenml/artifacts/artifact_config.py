@@ -92,10 +92,10 @@ class ArtifactConfig(BaseModel):
         """
         if self.model_name is not None and self.model_version is None:
             raise ValueError(
-                "Creation of new model version from is not allowed. "
-                "Please either keep `model_name` and `model_version` both "
-                "`None` to get the model version from the step context or "
-                "specify both at the same time. You can use "
+                f"Creation of new model version from {self.__class__.__name__} "
+                "is not allowed. Please either keep `model_name` and "
+                "`model_version` both `None` to get the model version from the "
+                "step context or specify both at the same time. You can use "
                 "`ModelStages.LATEST` as `model_version` when latest model "
                 "version is desired."
             )

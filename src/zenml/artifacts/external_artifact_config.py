@@ -41,7 +41,7 @@ class ExternalArtifactConfiguration(BaseModel):
         """Model validator for the external artifact configuration.
 
         Raises:
-            ValueError: if the version and model fields are set incorrectly.
+            ValueError: if both version and model fields are set.
 
         Returns:
             the validated instance.
