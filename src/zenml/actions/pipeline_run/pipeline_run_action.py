@@ -34,9 +34,7 @@ from zenml.models import (
 from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.pipeline_deployment.utils import run_pipeline
-from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a common place?
-    ResourceType,
-)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import server_config
 
 logger = get_logger(__name__)

@@ -123,8 +123,7 @@ def list_actions(
 
     return verify_permissions_and_list_entities(
         filter_model=action_filter_model,
-        # TODO: do we need a separate resource type for actions?
-        resource_type=ResourceType.TRIGGER,
+        resource_type=ResourceType.ACTION,
         list_method=list_actions_fn,
     )
 
@@ -220,8 +219,7 @@ def create_action(
 
     return verify_permissions_and_create_entity(
         request_model=action,
-        # TODO: do we need a separate resource type for actions?
-        resource_type=ResourceType.TRIGGER,
+        resource_type=ResourceType.ACTION,
         create_method=action_handler.create_action,
     )
 
