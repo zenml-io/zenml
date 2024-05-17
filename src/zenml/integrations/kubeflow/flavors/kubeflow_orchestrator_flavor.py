@@ -170,6 +170,8 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             Kubeflow Pipelines deployment (i.e. when `kubeflow_hostname` is
             set) or if the stack component is linked to a Kubernetes service
             connector.
+        incluster: If `True`, the orchestrator will use a different method of
+            obtaining credentials to configure the kfp client.
         local: If `True`, the orchestrator will assume it is connected to a
             local kubernetes cluster and will perform additional validations and
             operations to allow using the orchestrator in combination with other
@@ -183,6 +185,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
     kubernetes_context: Optional[str]  # TODO: Potential setting
+    incluster: bool = False
     local: bool = False
     skip_local_validations: bool = False
 
@@ -245,6 +248,15 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             Whether the orchestrator runs synchronous or not.
         """
         return self.synchronous
+
+    @property
+    def is_incluster(self) -> bool:
+        """Whether the orchestrator runs inside a Kubernetes cluster.
+
+        Returns:
+            Whether the orchestrator runs inside a Kubernetes cluster.
+        """
+        return self.incluster
 
 
 class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):

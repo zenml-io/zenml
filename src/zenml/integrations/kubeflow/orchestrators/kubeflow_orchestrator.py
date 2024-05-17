@@ -836,6 +836,12 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     )
 
                     client_args["cookies"] = session_cookie
+            
+            elif self.config.is_incluster:
+                # the KF_PIPELINES_SA_TOKEN_PATH environment variable is used when no `path` is set
+                # the default KF_PIPELINES_SA_TOKEN_PATH is /var/run/secrets/kubeflow/pipelines/token
+                credentials = kfp.auth.ServiceAccountTokenVolumeCredentials(path=None)
+                client_args["credentials"] = credentials
 
         return kfp.Client(**client_args)
 
