@@ -143,11 +143,6 @@ class AWSSecretKeyConfig(AWSBaseConfig, AWSSecretKey):
 class STSTokenConfig(AWSBaseConfig, STSToken):
     """AWS STS token authentication configuration."""
 
-    expires_at: Optional[datetime.datetime] = Field(
-        default=None,
-        title="AWS STS Token Expiration",
-    )
-
 
 class IAMRoleAuthenticationConfig(AWSSecretKeyConfig, AWSSessionPolicy):
     """AWS IAM authentication config."""
@@ -984,7 +979,7 @@ class AWSServiceConnector(ServiceConnector):
                 aws_session_token=cfg.aws_session_token.get_secret_value(),
                 region_name=cfg.region,
             )
-            return session, cfg.expires_at
+            return session, self.expires_at
         elif auth_method in [
             AWSAuthenticationMethods.IAM_ROLE,
             AWSAuthenticationMethods.SESSION_TOKEN,

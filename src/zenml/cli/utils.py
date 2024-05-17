@@ -1030,6 +1030,18 @@ def install_packages(
         )
         uninstall_package("neptune-client")
 
+    if "prodigy" in packages:
+        packages.remove("prodigy")
+        declare(
+            "The `prodigy` package should be installed manually using your "
+            "license key. Please visit https://prodi.gy/docs/install for more "
+            "information."
+        )
+    if not packages:
+        # if user only tried to install prodigy, we can
+        # just return without doing anything
+        return
+
     pip_command = ["uv", "pip"] if use_uv else ["pip"]
     if upgrade:
         command = (
@@ -1674,7 +1686,7 @@ def expires_in(
         expires_at -= datetime.timedelta(seconds=skew_tolerance)
     if expires_at < now:
         return expired_str
-    return seconds_to_human_readable((expires_at - now).seconds)
+    return seconds_to_human_readable(int((expires_at - now).total_seconds()))
 
 
 def print_service_connectors_table(
