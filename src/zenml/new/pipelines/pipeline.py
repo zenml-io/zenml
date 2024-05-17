@@ -1415,10 +1415,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 *args,
                 **kwargs,
             )
-        except (ValidationError, TypeError) as e:
+        except ValidationError as e:
             raise ValueError(
-                "Invalid or missing inputs for pipeline entrypoint function. "
+                "Invalid or missing pipeline function entrypoint arguments. "
                 "Only JSON serializable inputs are allowed as pipeline inputs."
+                "Check out the pydantic error above for more details."
             ) from e
 
         self._parameters = validated_args
