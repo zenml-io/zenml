@@ -105,9 +105,9 @@ class MLFlowExperimentTrackerConfig(
     """
 
     tracking_uri: Optional[str] = None
-    tracking_username: Optional[str] = SecretField()
-    tracking_password: Optional[str] = SecretField()
-    tracking_token: Optional[str] = SecretField()
+    tracking_username: Optional[str] = SecretField(default=None)
+    tracking_password: Optional[str] = SecretField(default=None)
+    tracking_token: Optional[str] = SecretField(default=None)
     tracking_insecure_tls: bool = False
     databricks_host: Optional[str] = None
 
