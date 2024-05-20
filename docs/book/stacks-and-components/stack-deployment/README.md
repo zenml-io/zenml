@@ -26,7 +26,7 @@ Thus, to make even this process easier for our users, we have created the `deplo
 ## What is `mlstacks`?
 
 [MLStacks](https://mlstacks.zenml.io) is a
-[Python package](https://pypi.org/project/mlstacks/) that allows you to quickly
+[Python package](https://pypi.org/project/mlstacks/README.md) that allows you to quickly
 spin up MLOps infrastructure using Terraform. It is designed to be used with
 [ZenML](https://zenml.io), but can be used with any MLOps tool or platform.
 

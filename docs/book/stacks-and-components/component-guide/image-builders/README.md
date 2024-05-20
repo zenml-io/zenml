@@ -8,7 +8,7 @@ The image builder is an essential part of most remote MLOps stacks. It is used t
 
 ### When to use it
 
-The image builder is needed whenever other components of your stack need to build container images. Currently, this is the case for most of ZenML's remote [orchestrators](../orchestrators/) , [step operators](../step-operators/), and some [model deployers](../model-deployers/). These containerize your pipeline code and therefore require an image builder to build [Docker](https://www.docker.com/) images.
+The image builder is needed whenever other components of your stack need to build container images. Currently, this is the case for most of ZenML's remote [orchestrators](../orchestrators/README.md) , [step operators](../step-operators/README.md), and some [model deployers](../model-deployers/README.md). These containerize your pipeline code and therefore require an image builder to build [Docker](https://www.docker.com/) images.
 
 ### Image Builder Flavors
 

@@ -181,7 +181,7 @@ python run.py
 
 <figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
 
-Read more in the [production guide](../production-guide/).
+Read more in the [production guide](../production-guide/README.md).
 
 ## Cleanup
 

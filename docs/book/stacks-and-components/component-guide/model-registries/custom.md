@@ -166,7 +166,7 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 If you want to create your own custom flavor for a model registry, you can follow the following steps:
 
-1. Learn more about the core concepts for the model registry [here](./#model-registry-concepts-and-terminology). Your custom model registry will be built on top of these concepts so it helps to be aware of them.
+1. Learn more about the core concepts for the model registry [here](./README.md#model-registry-concepts-and-terminology). Your custom model registry will be built on top of these concepts so it helps to be aware of them.
 2. Create a class that inherits from `BaseModelRegistry` and implements the abstract methods.
 3. Create a `ModelRegistryConfig` class that inherits from `BaseModelRegistryConfig` and adds any additional configuration parameters that you need.
 4. Bring the implementation and the configuration together by inheriting from the `BaseModelRegistryFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.

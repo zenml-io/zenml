@@ -94,7 +94,7 @@ def training_pipeline(model_type: str):
     ...
 ```
 
-So you can see that the YAML config is fairly easy to use and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [advanced guide](broken-reference), but for now, we can move on to scaling our pipeline.
+So you can see that the YAML config is fairly easy to use and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [how to section](../../how-to/use-configuration-files/what-can-be-configured.md), but for now, we can move on to scaling our pipeline.
 
 ## Scaling compute on the cloud
 
@@ -133,6 +133,6 @@ python run.py --training-pipeline
 
 Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
 
-Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md), including the ability to [attach a GPU](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
+Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../../how-to/use-remote-compute/scale-compute-to-the-cloud.md), including the ability to [attach a GPU](../../how-to/use-remote-compute/scale-compute-to-the-cloud.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -8,8 +8,8 @@ Until now, we've only run pipelines locally. The next step is to get free from o
 
 In order to do this, we need to get familiar with two more stack components:
 
-* The [orchestrator](../../stacks-and-components/component-guide/orchestrators/) manages the workflow and execution of your pipelines.
-* The [container registry](../../stacks-and-components/component-guide/container-registries/) is a storage and content delivery system that holds your Docker container images.
+* The [orchestrator](../../stacks-and-components/component-guide/orchestrators/README.md) manages the workflow and execution of your pipelines.
+* The [container registry](../../stacks-and-components/component-guide/container-registries/README.md) is a storage and content delivery system that holds your Docker container images.
 
 These, along with [remote storage](remote-storage.md), complete a basic cloud stack where our pipeline is entirely running on the cloud.
 
@@ -17,7 +17,7 @@ These, along with [remote storage](remote-storage.md), complete a basic cloud st
 
 The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The advantage of Skypilot is that it simply provisions a VM to execute the pipeline on your cloud provider.
 
-Coupled with Skypilot, we need a mechanism to package your code and ship it to the cloud for Skypilot to do its thing. ZenML uses [Docker](https://www.docker.com/) to achieve this. Every time you run a pipeline with a remote orchestrator, [ZenML builds an image](../advanced-guide/configuring-zenml/connect-your-git-repository.md) for the entire pipeline (and optionally each step of a pipeline depending on your [configuration](../advanced-guide/infrastructure-management/containerize-your-pipeline.md)). This image contains the code, requirements, and everything else needed to run the steps of the pipeline in any environment. ZenML then pushes this image to the container registry configured in your stack, and the orchestrator pulls the image when it's ready to execute a step.
+Coupled with Skypilot, we need a mechanism to package your code and ship it to the cloud for Skypilot to do its thing. ZenML uses [Docker](https://www.docker.com/) to achieve this. Every time you run a pipeline with a remote orchestrator, [ZenML builds an image](../advanced-guide/configuring-zenml/connect-your-git-repository.md) for the entire pipeline (and optionally each step of a pipeline depending on your [configuration](../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md)). This image contains the code, requirements, and everything else needed to run the steps of the pipeline in any environment. ZenML then pushes this image to the container registry configured in your stack, and the orchestrator pulls the image when it's ready to execute a step.
 
 To summarize, here is the broad sequence of events that happen when you run a pipeline with such a cloud stack:
 
@@ -33,7 +33,7 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 
 ## Provisioning and registering a Skypilot orchestrator alongside a container registry
 
-While there are detailed docs on [how to set up a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../stacks-and-components/component-guide/container-registries/) on each public cloud, we have put the most relevant details here for convenience:
+While there are detailed docs on [how to set up a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../stacks-and-components/component-guide/container-registries/README.md) on each public cloud, we have put the most relevant details here for convenience:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -43,7 +43,7 @@ In order to launch a pipeline on AWS with the SkyPilot orchestrator, the first t
 zenml integration install aws skypilot_aws -y
 ```
 
-Before we start registering any components, there is another step that we have to execute. As we [explained in the previous section](remote-storage.md#configuring-permissions-with-your-first-service-connector), components such as orchestrators and container registries often require you to set up the right permissions. In ZenML, this process is simplified with the use of [Service Connectors](../../stacks-and-components/auth-managemen/auth-management.md). For this example, we need to use the [IAM role authentication method of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#aws-iam-role):
+Before we start registering any components, there is another step that we have to execute. As we [explained in the previous section](remote-storage.md#configuring-permissions-with-your-first-service-connector), components such as orchestrators and container registries often require you to set up the right permissions. In ZenML, this process is simplified with the use of [Service Connectors](../../stacks-and-components/auth-management/auth-management.md). For this example, we need to use the [IAM role authentication method of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#aws-iam-role):
 
 ```shell
 AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
@@ -75,7 +75,7 @@ In order to launch a pipeline on GCP with the SkyPilot orchestrator, the first t
 zenml integration install gcp skypilot_gcp -y
 ```
 
-Before we start registering any components, there is another step that we have to execute. As we [explained in the previous section](remote-storage.md#configuring-permissions-with-your-first-service-connector), components such as orchestrators and container registries often require you to set up the right permissions. In ZenML, this process is simplified with the use of [Service Connectors](../../stacks-and-components/auth-management/). For this example, we need to use the [Service Account authentication feature of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account):
+Before we start registering any components, there is another step that we have to execute. As we [explained in the previous section](remote-storage.md#configuring-permissions-with-your-first-service-connector), components such as orchestrators and container registries often require you to set up the right permissions. In ZenML, this process is simplified with the use of [Service Connectors](../../stacks-and-components/auth-management/README.md). For this example, we need to use the [Service Account authentication feature of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account):
 
 ```shell
 zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project_id=<PROJECT_ID> --generate_temporary_tokens=False
@@ -107,7 +107,7 @@ In order to launch a pipeline on Azure with the SkyPilot orchestrator, the first
 zenml integration install azure skypilot_azure -y
 ```
 
-Before we start registering any components, there is another step that we have to execute. As we [explained in the previous section](remote-storage.md#configuring-permissions-with-your-first-service-connector), components such as orchestrators and container registries often require you to set up the right permissions. In ZenML, this process is simplified with the use of [Service Connectors](../../stacks-and-components/auth-management/). For this example, we will need to use the [Service Principal authentication feature of our Azure service connector](../../stacks-and-components/auth-management/azure-service-connector.md#azure-service-principal):
+Before we start registering any components, there is another step that we have to execute. As we [explained in the previous section](remote-storage.md#configuring-permissions-with-your-first-service-connector), components such as orchestrators and container registries often require you to set up the right permissions. In ZenML, this process is simplified with the use of [Service Connectors](../../stacks-and-components/auth-management/README.md). For this example, we will need to use the [Service Principal authentication feature of our Azure service connector](../../stacks-and-components/auth-management/azure-service-connector.md#azure-service-principal):
 
 ```shell
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>
@@ -134,7 +134,7 @@ For more information, you can always check the [dedicated Skypilot orchestrator 
 {% endtabs %}
 
 {% hint style="info" %}
-Having trouble with setting up infrastructure? Try reading the [stack deployment](../../stacks-and-components/stack-deployment/) section of the docs to gain more insight. If that still doesn't work, join the [ZenML community](https://zenml.io/slack) and ask!
+Having trouble with setting up infrastructure? Try reading the [stack deployment](../../stacks-and-components/stack-deployment/README.md) section of the docs to gain more insight. If that still doesn't work, join the [ZenML community](https://zenml.io/slack) and ask!
 {% endhint %}
 
 ## Running a pipeline on a cloud stack
@@ -163,6 +163,6 @@ python run.py --training-pipeline
 
 You will notice this time your pipeline behaves differently. After it has built the Docker image with all your code, it will push that image, and run a VM on the cloud. Here is where your pipeline will execute, and the logs will be streamed back to you. So with a few commands, we were able to ship our entire code to the cloud!
 
-Curious to see what other stacks you can create? The [Component Guide](../../stacks-and-components/component-guide/) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
+Curious to see what other stacks you can create? The [Component Guide](../../stacks-and-components/component-guide/README.md) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

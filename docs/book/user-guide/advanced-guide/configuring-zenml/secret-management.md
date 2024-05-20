@@ -33,7 +33,7 @@ The ZenML secrets store reuses the [ZenML Service Connector](../../../stacks-and
 
 The ZenML secrets store configured for the ZenML Server can be updated at any time by updating the ZenML Server configuration and redeploying the server. This allows you to easily switch between different secrets store back-ends and authentication mechanisms. However, it is recommended to follow [the documented secret store migration strategy](secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated, in case the location where secrets are stored in the back-end changes.
 
-For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../../../deploying-zenml/zenml-self-hosted/).
+For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../../../deploying-zenml/zenml-self-hosted/README.md).
 
 ## Backup secrets store
 

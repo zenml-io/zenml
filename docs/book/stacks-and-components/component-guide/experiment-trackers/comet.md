@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with Comet.
 
 # Comet
 
-The Comet Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Comet ZenML integration that uses [the Comet experiment tracking platform](https://www.comet.com/site/products/ml-experiment-tracking/) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
+The Comet Experiment Tracker is an [Experiment Tracker](./README.md) flavor provided with the Comet ZenML integration that uses [the Comet experiment tracking platform](https://www.comet.com/site/products/ml-experiment-tracking/) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
 
 ### When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the Comet Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g., models, metrics, datasets)
 * if you would like to connect ZenML to Comet to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with Comet before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](./README.md#experiment-tracker-flavors) if you have never worked with Comet before and would rather use another experiment tracking tool that you are more familiar with.
 
 ### How do you deploy it?
 

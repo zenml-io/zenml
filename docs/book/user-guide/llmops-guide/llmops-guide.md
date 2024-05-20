@@ -29,7 +29,7 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
 * [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
 * [Finetuning LLMs with ZenML](finetuning-llms/finetuning-llms.md)
 
-To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](../starter-guide/) and [Production Guide](../production-guide/) is recommended.
+To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](../starter-guide/README.md) and [Production Guide](../production-guide/README.md) is recommended.
 
 We'll showcase a specific application over the course of this LLM guide, showing how you can work from a simple RAG pipeline to a more complex setup that involves finetuning embeddings, reranking retrieved documents, and even finetuning the LLM itself. We'll do this all for a use case relevant to ZenML: a question answering system that can provide answers to common questions about ZenML. This will help you understand how to apply the concepts covered in this guide to your own projects.
 

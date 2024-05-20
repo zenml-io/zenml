@@ -8,7 +8,7 @@ The container registry is an essential part of most remote MLOps stacks. It is u
 
 ### When to use it
 
-The container registry is needed whenever other components of your stack need to push or pull container images. Currently, this is the case for most of ZenML's remote [orchestrators](../orchestrators/) , [step operators](../step-operators/), and some [model deployers](../model-deployers/). These containerize your pipeline code and therefore require a container registry to store the resulting [Docker](https://www.docker.com/) images. Take a look at the documentation page of the component you want to use in your stack to see if it requires a container registry or even a specific container registry flavor.
+The container registry is needed whenever other components of your stack need to push or pull container images. Currently, this is the case for most of ZenML's remote [orchestrators](../orchestrators/README.md) , [step operators](../step-operators/README.md), and some [model deployers](../model-deployers/README.md). These containerize your pipeline code and therefore require a container registry to store the resulting [Docker](https://www.docker.com/) images. Take a look at the documentation page of the component you want to use in your stack to see if it requires a container registry or even a specific container registry flavor.
 
 ### Container Registry Flavors
 

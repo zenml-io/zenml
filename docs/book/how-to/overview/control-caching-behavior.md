@@ -34,4 +34,4 @@ my_step.configure(enable_cache=...)
 my_pipeline.configure(enable_cache=...)
 ```
 
-For configuring this in a separate yaml file, check out the relevant documentation [here](../use-configuration-files/).
+For configuring this in a separate yaml file, check out the relevant documentation [here](../../how-to/use-configuration-files/README.md).

@@ -113,7 +113,7 @@ zenml service-connector list-types
 Service Connector Types are also displayed in the dashboard during the configuration of a new Service Connector:
 
 
-The cloud provider of choice for our example is AWS and we're looking to hook up an S3 bucket to an S3 Artifact Store Stack Component. We'll use the AWS Service Connector Type.
+The cloud provider of choice for our example is AWS, and we're looking to hook up an S3 bucket to an S3 Artifact Store Stack Component. We'll use the AWS Service Connector Type.
 
 <details>
 

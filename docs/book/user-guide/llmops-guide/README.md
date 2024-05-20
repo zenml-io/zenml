@@ -10,26 +10,26 @@ Welcome to the ZenML LLMOps Guide, where we dive into the exciting world of Larg
 
 In this guide, we'll explore various aspects of working with LLMs in ZenML, including:
 
-* [RAG with ZenML](rag-with-zenml/)
+* [RAG with ZenML](rag-with-zenml/README.md)
   * [RAG in 85 lines of code](rag-with-zenml/rag-85-loc.md)
   * [Understanding Retrieval-Augmented Generation (RAG)](rag-with-zenml/understanding-rag.md)
   * [Data ingestion and preprocessing](rag-with-zenml/data-ingestion.md)
   * [Embeddings generation](rag-with-zenml/embeddings-generation.md)
   * [Storing embeddings in a vector database](rag-with-zenml/storing-embeddings-in-a-vector-database.md)
   * [Basic RAG inference pipeline](rag-with-zenml/basic-rag-inference-pipeline.md)
-* [Evaluation and metrics](evaluation/)
+* [Evaluation and metrics](evaluation/README.md)
   * [Evaluation in 65 lines of code](evaluation/evaluation-in-65-loc.md)
   * [Retrieval evaluation](evaluation/retrieval.md)
   * [Generation evaluation](evaluation/generation.md)
   * [Evaluation in practice](evaluation/evaluation-in-practice.md)
-* [Reranking for better retrieval](reranking/)
+* [Reranking for better retrieval](reranking/README.md)
   * [Understanding reranking](reranking/understanding-reranking.md)
   * [Implementing reranking in ZenML](reranking/implementing-reranking.md)
   * [Evaluating reranking performance](reranking/evaluating-reranking-performance.md)
 * [Improve retrieval by finetuning embeddings](finetuning-embeddings.md)
 * [Finetuning LLMs with ZenML](finetuning-llms.md)
 
-To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](../starter-guide/) and [Production Guide](../production-guide/) is recommended.
+To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](../starter-guide/README.md) and [Production Guide](../production-guide/README.md) is recommended.
 
 We'll showcase a specific application over the course of this LLM guide, showing how you can work from a simple RAG pipeline to a more complex setup that involves finetuning embeddings, reranking retrieved documents, and even finetuning the LLM itself. We'll do this all for a use case relevant to ZenML: a question answering system that can provide answers to common questions about ZenML. This will help you understand how to apply the concepts covered in this guide to your own projects.
 

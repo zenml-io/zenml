@@ -4,7 +4,7 @@ description: Storing container images in GitHub.
 
 # GitHub Container Registry
 
-The GitHub container registry is a [container registry](./) flavor that comes built-in with ZenML and uses the [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) to store container images.
+The GitHub container registry is a [container registry](./README.md) flavor that comes built-in with ZenML and uses the [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) to store container images.
 
 ### When to use it
 

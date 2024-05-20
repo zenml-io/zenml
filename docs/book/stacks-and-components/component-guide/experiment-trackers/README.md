@@ -9,11 +9,11 @@ Experiment trackers let you track your ML experiments by logging extended inform
 Related concepts:
 
 * the Experiment Tracker is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](../../../user-guide/production-guide/understand-stacks.md).
-* ZenML already provides versioning and tracking for the pipeline artifacts by storing artifacts in the [Artifact Store](../artifact-stores/).
+* ZenML already provides versioning and tracking for the pipeline artifacts by storing artifacts in the [Artifact Store](../artifact-stores/README.md).
 
 ### When to use it
 
-ZenML already records information about the artifacts circulated through your pipelines by means of the mandatory [Artifact Store](../artifact-stores/).
+ZenML already records information about the artifacts circulated through your pipelines by means of the mandatory [Artifact Store](../artifact-stores/README.md).
 
 However, these ZenML mechanisms are meant to be used programmatically and can be more difficult to work with without a visual interface.
 

@@ -4,7 +4,7 @@ description: Storing container images in DockerHub.
 
 # DockerHub
 
-The DockerHub container registry is a [container registry](./) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
+The DockerHub container registry is a [container registry](./README.md) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
 
 ### When to use it
 
@@ -17,7 +17,7 @@ You should use the DockerHub container registry if:
 
 To use the DockerHub container registry, all you need to do is create a [DockerHub](https://hub.docker.com/) account.
 
-When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](../orchestrators/) or [step operator](../step-operators/) that you're using in your stack.
+When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](../orchestrators/README.md) or [step operator](../step-operators/README.md) that you're using in your stack.
 
 ### How to find the registry URI
 

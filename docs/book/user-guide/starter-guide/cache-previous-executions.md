@@ -18,7 +18,7 @@ Step svc_trainer has finished in 0.932s.
 
 ![DAG of a cached pipeline run](../../.gitbook/assets/CachedDag.png)
 
-ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/)). This behavior is known as **caching**.
+ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/README.md)). This behavior is known as **caching**.
 
 In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters, or code of a step.
 

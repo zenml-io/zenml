@@ -4,7 +4,7 @@ description: Storing artifacts using GCP Cloud Storage.
 
 # Google Cloud Storage (GCS)
 
-The GCS Artifact Store is an [Artifact Store](./) flavor provided with the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction) to store ZenML artifacts in a GCP Cloud Storage bucket.
+The GCS Artifact Store is an [Artifact Store](./README.md) flavor provided with the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction) to store ZenML artifacts in a GCP Cloud Storage bucket.
 
 ### When would you want to use it?
 
@@ -53,7 +53,7 @@ A GCS Artifact Store can be deployed directly from the ZenML CLI:
 zenml artifact-store deploy gcs_artifact_store --flavor=gcp --provider=gcp ...
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../stack-deployment/).
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../stack-deployment/README.md).
 
 #### Authentication Methods
 
@@ -68,9 +68,9 @@ Certain dashboard functionality, such as visualizing or deleting artifacts, is n
 
 The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to the function. If these components are not running on your machine, they do not have access to the local Google Cloud CLI configuration and will encounter authentication failures while trying to access the GCS Artifact Store:
 
-* [Orchestrators](../orchestrators/) need to access the Artifact Store to manage pipeline artifacts
-* [Step Operators](../step-operators/) need to access the Artifact Store to manage step-level artifacts
-* [Model Deployers](../model-deployers/) need to access the Artifact Store to load served models
+* [Orchestrators](../orchestrators/README.md) need to access the Artifact Store to manage pipeline artifacts
+* [Step Operators](../step-operators/README.md) need to access the Artifact Store to manage step-level artifacts
+* [Model Deployers](../model-deployers/README.md) need to access the Artifact Store to load served models
 
 To enable these use cases, it is recommended to use [a GCP Service Connector](../../auth-management/gcp-service-connector.md) to link your GCS Artifact Store to the remote GCS bucket.
 {% endhint %}

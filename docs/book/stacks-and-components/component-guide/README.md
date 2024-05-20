@@ -12,18 +12,18 @@ Here is a full list of all stack components currently supported in ZenML, with a
 
 | **Type of Stack Component**                 | **Description**                                                   |
 | ------------------------------------------- | ----------------------------------------------------------------- |
-| [Orchestrator](orchestrators/)              | Orchestrating the runs of your pipeline                           |
-| [Artifact Store](artifact-stores/)          | Storage for the artifacts created by your pipelines               |
-| [Container Registry](container-registries/) | Store for your containers                                         |
-| [Step Operator](step-operators/)            | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](model-deployers/)          | Services/platforms responsible for online model serving           |
-| [Feature Store](feature-stores/)            | Management of your data/features                                  |
-| [Experiment Tracker](experiment-trackers/)  | Tracking your ML experiments                                      |
-| [Alerter](alerters/)                        | Sending alerts through specified channels                         |
-| [Annotator](annotators/)                    | Labeling and annotating data                                      |
-| [Data Validator](data-validators/)          | Data and model validation                                         |
-| [Image Builder](image-builders/)            | Builds container images.                                          |
-| [Model Registry](model-registries/)         | Manage and interact with ML Models                                |
+| [Orchestrator](orchestrators/README.md)              | Orchestrating the runs of your pipeline                           |
+| [Artifact Store](artifact-stores/README.md)          | Storage for the artifacts created by your pipelines               |
+| [Container Registry](container-registries/README.md) | Store for your containers                                         |
+| [Step Operator](step-operators/README.md)            | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](model-deployers/README.md)          | Services/platforms responsible for online model serving           |
+| [Feature Store](feature-stores/README.md)            | Management of your data/features                                  |
+| [Experiment Tracker](experiment-trackers/README.md)  | Tracking your ML experiments                                      |
+| [Alerter](alerters/README.md)                        | Sending alerts through specified channels                         |
+| [Annotator](annotators/README.md)                    | Labeling and annotating data                                      |
+| [Data Validator](data-validators/README.md)          | Data and model validation                                         |
+| [Image Builder](image-builders/README.md)            | Builds container images.                                          |
+| [Model Registry](model-registries/README.md)         | Manage and interact with ML Models                                |
 
 Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator and an artifact store. Apart from these two, the other components are optional and to be added as your pipeline evolves in MLOps maturity.
 

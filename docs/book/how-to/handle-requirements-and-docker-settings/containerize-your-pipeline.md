@@ -4,7 +4,7 @@ description: Using Docker images to run your pipeline.
 
 # 🐳 Containerize your Pipelines
 
-ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../../stacks-and-components/component-guide/orchestrators/) or [step operators](../../../stacks-and-components/component-guide/step-operators/), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
+ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../../stacks-and-components/component-guide/orchestrators/README.md) or [step operators](../../../stacks-and-components/component-guide/step-operators/README.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
 
 There are three ways to control this containerization process:
 
@@ -14,11 +14,11 @@ There are three ways to control this containerization process:
 
 ## Define where an image is built
 
-[Image builders](../../../stacks-and-components/component-guide/image-builders/) determine how and where an image is built. Learn more [here](understanding-environments.md#image-builder-environment).
+[Image builders](../../../stacks-and-components/component-guide/image-builders/README.md) determine how and where an image is built. Learn more [here](../../user-guide/advanced-guide/infrastructure-management/understanding-environments.md#image-builder-environment).
 
 ## Reuse Docker image builds from previous runs
 
-ZenML automatically [builds and pushes Docker images](understanding-environments.md#execution-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
+ZenML automatically [builds and pushes Docker images](../../user-guide/advanced-guide/infrastructure-management/understanding-environments.md#execution-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
 
 ```python
 my_pipeline.build(...)
@@ -56,13 +56,13 @@ zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
 
 ### Automate build reuse by connecting a code repository
 
-Building Docker images without [connecting a git repository](../../production-guide/connect-code-repository.md) includes your step code. This means specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. This allows you to make local code changes, but reusing a build from before will _always_ execute the code bundled in the Docker image, rather than the local code. This is why you also have to explicitly specify the `build_id` when running a pipeline.
+Building Docker images without [connecting a git repository](../../user-guide/production-guide/connect-code-repository.md) includes your step code. This means specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. This allows you to make local code changes, but reusing a build from before will _always_ execute the code bundled in the Docker image, rather than the local code. This is why you also have to explicitly specify the `build_id` when running a pipeline.
 
-To avoid this, disconnect your code from the build by [connecting a git repository](../configuring-zenml/connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline and quickly iterate on your code. Also, ZenML will automatically figure out which builds match your pipeline and reuse the appropriate execution environment. This approach is highly recommended. Read more [here](../../production-guide/connect-code-repository.md).
+To avoid this, disconnect your code from the build by [connecting a git repository](../../user-guide/advanced-guide/configuring-zenml/connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline and quickly iterate on your code. Also, ZenML will automatically figure out which builds match your pipeline and reuse the appropriate execution environment. This approach is highly recommended. Read more [here](../../user-guide/production-guide/connect-code-repository.md).
 
 ## Customize the Docker building
 
-When a [pipeline is run with a remote orchestrator](understanding-environments.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](understanding-environments.md#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
+When a [pipeline is run with a remote orchestrator](../../user-guide/advanced-guide/infrastructure-management/understanding-environments.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](../../user-guide/advanced-guide/infrastructure-management/understanding-environments.md#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
 
 * **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](containerize-your-pipeline.md#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](containerize-your-pipeline.md#installing-additional-pip-dependencies-or-apt-packages).
@@ -129,7 +129,7 @@ steps:
             ...
 ```
 
-Check out [this page](../pipelining-features/pipeline-settings.md#hierarchy-and-precedence) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
+Check out [this page](../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md#hierarchy-and-precedence) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
 
 ### Handling source files
 
@@ -210,7 +210,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../../stacks-and-components/component-guide/) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../../stacks-and-components/component-guide/README.md) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY

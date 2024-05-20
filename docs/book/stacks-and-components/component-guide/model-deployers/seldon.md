@@ -40,7 +40,7 @@ To deploy and make use of the Seldon Core integration we need to have the follow
 
 1. access to a Kubernetes cluster. This can be configured using the `kubernetes_context` configuration attribute to point to a local `kubectl` context or an in-cluster configuration, but the recommended approach is to [use a Service Connector](seldon.md#using-a-service-connector) to link the Seldon Deployer Stack Component to a Kubernetes cluster.
 2. Seldon Core needs to be preinstalled and running in the target Kubernetes cluster. Check out the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup) or the [EKS installation example below](seldon.md#installing-seldon-core-eg-in-an-eks-cluster).
-3. models deployed with Seldon Core need to be stored in some form of persistent shared storage that is accessible from the Kubernetes cluster where Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.). You can use one of the supported [remote artifact store flavors](../artifact-stores/) to store your models as part of your stack. For a smoother experience running Seldon Core with a cloud artifact store, we also recommend configuring explicit credentials for the artifact store. The Seldon Core model deployer knows how to automatically convert those credentials in the format needed by Seldon Core model servers to authenticate to the storage back-end where models are stored.
+3. models deployed with Seldon Core need to be stored in some form of persistent shared storage that is accessible from the Kubernetes cluster where Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.). You can use one of the supported [remote artifact store flavors](../artifact-stores/README.md) to store your models as part of your stack. For a smoother experience running Seldon Core with a cloud artifact store, we also recommend configuring explicit credentials for the artifact store. The Seldon Core model deployer knows how to automatically convert those credentials in the format needed by Seldon Core model servers to authenticate to the storage back-end where models are stored.
 
 Since the Seldon Model Deployer is interacting with the Seldon Core model server deployed on a Kubernetes cluster, you need to provide a set of configuration parameters. These parameters are:
 
@@ -62,7 +62,7 @@ The Seldon Model Deployer can be deployed directly from the ZenML CLI:
 zenml model-deployer deploy seldon_deployer --flavor=seldon --provider=<YOUR_PROVIDER> ...
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../stack-deployment/).
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../stack-deployment/README.md).
 
 ### Seldon Core Installation Example
 
@@ -139,7 +139,7 @@ curl -X POST http://$INGRESS_HOST/seldon/default/iris-model/api/v1.0/predictions
 
 ### Using a Service Connector
 
-To set up the Seldon Core Model Deployer to authenticate to a remote Kubernetes cluster, it is recommended to leverage the many features provided by [the Service Connectors](../../auth-management/) such as auto-configuration, local client login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
+To set up the Seldon Core Model Deployer to authenticate to a remote Kubernetes cluster, it is recommended to leverage the many features provided by [the Service Connectors](../../auth-management/README.md) such as auto-configuration, local client login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
 
 Depending on where your target Kubernetes cluster is running, you can use one of the following Service Connectors:
 
@@ -177,7 +177,7 @@ Alternatively, you can configure a Service Connector through the ZenML dashboard
 
 ![AWS Service Connector Type](../../../.gitbook/assets/aws-service-connector-type.png) ![AWS EKS Service Connector Configuration](../../../.gitbook/assets/aws-eks-service-connector-configuration.png)
 
-> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](../../auth-management/) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](../../auth-management/README.md) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
 
 If you already have one or more Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the Kubernetes cluster that you want to use for your Seldon Core Model Deployer by running e.g.:
 
@@ -239,7 +239,7 @@ A similar experience is available when you configure the Seldon Core Model Deplo
 
 The Seldon Core Model Deployer requires access to the persistent storage where models are located. In most cases, you will use the Seldon Core model deployer to serve models that are trained through ZenML pipelines and stored in the ZenML Artifact Store, which implies that the Seldon Core model deployer needs to access the Artifact Store.
 
-If Seldon Core is already running in the same cloud as the Artifact Store (e.g. S3 and an EKS cluster for AWS, or GCS and a GKE cluster for GCP), there are ways of configuring cloud workloads to have implicit access to other cloud resources like persistent storage without requiring explicit credentials. However, if Seldon Core is running in a different cloud, or on-prem, or if implicit in-cloud workload authentication is not enabled, then you need to configure explicit credentials for the Artifact Store to allow other components like the Seldon Core model deployer to authenticate to it. Every cloud Artifact Store flavor supports some way of configuring explicit credentials and this is documented for each individual flavor in the [Artifact Store documentation](../artifact-stores/).
+If Seldon Core is already running in the same cloud as the Artifact Store (e.g. S3 and an EKS cluster for AWS, or GCS and a GKE cluster for GCP), there are ways of configuring cloud workloads to have implicit access to other cloud resources like persistent storage without requiring explicit credentials. However, if Seldon Core is running in a different cloud, or on-prem, or if implicit in-cloud workload authentication is not enabled, then you need to configure explicit credentials for the Artifact Store to allow other components like the Seldon Core model deployer to authenticate to it. Every cloud Artifact Store flavor supports some way of configuring explicit credentials and this is documented for each individual flavor in the [Artifact Store documentation](../artifact-stores/README.md).
 
 When explicit credentials are configured in the Artifact Store, the Seldon Core Model Deployer doesn't need any additional configuration and will use those credentials automatically to authenticate to the same persistent storage service used by the Artifact Store. If the Artifact Store doesn't have explicit credentials configured, then Seldon Core will default to using whatever implicit authentication method is available in the Kubernetes cluster where it is running. For example, in AWS this means using the IAM role attached to the EC2 or EKS worker nodes, and in GCP this means using the service account attached to the GKE worker nodes.
 

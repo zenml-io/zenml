@@ -5,6 +5,20 @@
 * [⭐ Introduction](introduction.md)
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
+* [🤔 Deploying ZenML](deploying-zenml/why-deploy-zenml.md)
+  * [☁️ ZenML Cloud](deploying-zenml/zenml-cloud/README.md)
+    * [User Management](deploying-zenml/zenml-cloud/user-management.md)
+    * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
+  * [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/README.md)
+    * [Deploy with ZenML CLI](deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md)
+    * [Deploy with Docker](deploying-zenml/zenml-self-hosted/deploy-with-docker.md)
+    * [Deploy with Helm](deploying-zenml/zenml-self-hosted/deploy-with-helm.md)
+    * [Deploy using HuggingFace Spaces](deploying-zenml/zenml-self-hosted/deploy-using-huggingface-spaces.md)
+    * [Deploy with custom images](deploying-zenml/zenml-self-hosted/deploy-with-custom-image.md)
+    * [Manage deployed services](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/README.md)
+      * [Upgrade the version of the ZenML server](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md)
+      * [Troubleshoot the deployed server](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/troubleshoot-your-deployed-server.md)
+      * [Troubleshoot stack components](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/troubleshoot-stack-components.md)
 
 ## User Guide
 
@@ -77,14 +91,14 @@
   * [What can be configured](how-to/use-configuration-files/what-can-be-configured.md)
   * [Configuration hierarchy](how-to/use-configuration-files/configuration-hierarchy.md)
   * [Autogenerate a template yaml file](how-to/use-configuration-files/autogenerate-a-template-yaml-file.md)
-* [🐳 Containerize your Pipelines](user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md)
+* [🐳 Containerize your Pipelines](how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md)
   * [Docker settings on a step](how-to/handle-requirements-and-docker-settings/docker-settings-on-a-step.md)
   * [Build the pipeline without running](how-to/handle-requirements-and-docker-settings/build-the-pipeline-without-running.md)
   * [Use code repositories to speed up docker build times](how-to/handle-requirements-and-docker-settings/use-code-repositories-to-speed-up-docker-build-times.md)
 * [🖥️ Use remote compute](how-to/use-remote-compute/README.md)
   * [Configure resources](how-to/use-remote-compute/configure-resources.md)
   * [Schedule a pipeline](how-to/use-remote-compute/schedule-a-pipeline.md)
-  * [Scale compute to the cloud](user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md)
+  * [Scale compute to the cloud](how-to/use-remote-compute/scale-compute-to-the-cloud.md)
 * [🗄️ Handle Data/Artifacts](how-to/handle-data-artifacts/README.md)
   * [How ZenML stores data](how-to/handle-data-artifacts/artifact-versioning.md)
   * [Return multiple outputs from a step](how-to/handle-data-artifacts/return-multiple-outputs-from-a-step.md)
@@ -115,22 +129,6 @@
   * [Secret management](user-guide/advanced-guide/configuring-zenml/secret-management.md)
   * [Interact with secrets](how-to/manage-secrets/interact-with-secrets.md)
 
-## Deploying ZenML
-
-* [🤔 Why deploy ZenML?](deploying-zenml/why-deploy-zenml.md)
-* [☁️ ZenML Cloud](deploying-zenml/zenml-cloud/README.md)
-  * [User Management](deploying-zenml/zenml-cloud/user-management.md)
-  * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
-* [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/README.md)
-  * [Deploy with ZenML CLI](deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md)
-  * [Deploy with Docker](deploying-zenml/zenml-self-hosted/deploy-with-docker.md)
-  * [Deploy with Helm](deploying-zenml/zenml-self-hosted/deploy-with-helm.md)
-  * [Deploy using HuggingFace Spaces](deploying-zenml/zenml-self-hosted/deploy-using-huggingface-spaces.md)
-  * [Deploy with custom images](deploying-zenml/zenml-self-hosted/deploy-with-custom-image.md)
-  * [Manage deployed services](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/README.md)
-    * [Upgrade the version of the ZenML server](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md)
-    * [Troubleshoot the deployed server](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/troubleshoot-your-deployed-server.md)
-    * [Troubleshoot stack components](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/troubleshoot-stack-components.md)
 
 ## Stacks & Components
 

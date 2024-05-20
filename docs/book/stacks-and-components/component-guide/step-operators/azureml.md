@@ -4,7 +4,7 @@ description: Executing individual steps in AzureML.
 
 # AzureML
 
-[AzureML](https://azure.microsoft.com/en-us/services/machine-learning/) offers specialized compute instances to run your training jobs and has a comprehensive UI to track and manage your models and logs. ZenML's AzureML step operator allows you to submit individual steps to be run on AzureML compute instances.
+[AzureML](https://azure.microsoft.com/en-us/services/machine-learning/README.md) offers specialized compute instances to run your training jobs and has a comprehensive UI to track and manage your models and logs. ZenML's AzureML step operator allows you to submit individual steps to be run on AzureML compute instances.
 
 ### When to use it
 
@@ -30,7 +30,7 @@ To use the AzureML step operator, we need:
     zenml integration install azure
     ```
 * An AzureML compute cluster and environment. See the [deployment section](azureml.md#how-to-deploy-it) for detailed instructions.
-* A [remote artifact store](../artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 We can then register the step operator and use it in our active stack:
 
@@ -64,7 +64,7 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in AzureML. Check out [this page](../../../user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in AzureML. Check out [this page](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Additional configuration
@@ -75,6 +75,6 @@ For more information and a full list of configurable attributes of the AzureML s
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../../user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../../how-to/use-remote-compute/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

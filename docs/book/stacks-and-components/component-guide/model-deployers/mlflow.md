@@ -4,7 +4,7 @@ description: Deploying your models locally with MLflow.
 
 # MLflow
 
-The MLflow Model Deployer is one of the available flavors of the [Model Deployer](./) stack component. Provided with the MLflow integration it can be used to deploy and manage [MLflow models](https://www.mlflow.org/docs/latest/python\_api/mlflow.deployments.html) on a local running MLflow server.
+The MLflow Model Deployer is one of the available flavors of the [Model Deployer](./README.md) stack component. Provided with the MLflow integration it can be used to deploy and manage [MLflow models](https://www.mlflow.org/docs/latest/python\_api/mlflow.deployments.html) on a local running MLflow server.
 
 {% hint style="warning" %}
 The MLflow Model Deployer is not yet available for use in production. This is a work in progress and will be available soon. At the moment it is only available for use in a local development environment.

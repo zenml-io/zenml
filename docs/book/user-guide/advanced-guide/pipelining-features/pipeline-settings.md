@@ -10,8 +10,8 @@ Stack Component Config vs Settings in ZenML
 
 As we [saw before](broken-reference), one special type of configuration is called `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](../infrastructure-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
-* Configuring the [containerization](../infrastructure-management/containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* The [resources](../../../how-to/use-remote-compute/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
+* Configuring the [containerization](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept called `BaseSettings`. (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
@@ -21,8 +21,8 @@ You will learn about all of the above in more detail later, but for now, let's t
 Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  * [`DockerSettings`](../infrastructure-management/containerize-your-pipeline.md) to specify docker settings.
-  * [`ResourceSettings`](../infrastructure-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
+  * [`DockerSettings`](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) to specify docker settings.
+  * [`ResourceSettings`](../../../how-to/use-remote-compute/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`SkypilotAWSOrchestratorSettings`](../../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
   * [`KubeflowOrchestratorSettings`](../../../stacks-and-components/component-guide/orchestrators/kubeflow.md) to specify Kubeflow settings.

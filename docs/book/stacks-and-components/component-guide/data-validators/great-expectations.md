@@ -6,7 +6,7 @@ description: >-
 
 # Great Expectations
 
-The Great Expectations [Data Validator](./) flavor provided with the ZenML integration uses [Great Expectations](https://greatexpectations.io/) to run data profiling and data quality tests on the data circulated through your pipelines. The test results can be used to implement automated corrective actions in your pipelines. They are also automatically rendered into documentation for further visual interpretation and evaluation.
+The Great Expectations [Data Validator](./README.md) flavor provided with the ZenML integration uses [Great Expectations](https://greatexpectations.io/) to run data profiling and data quality tests on the data circulated through your pipelines. The test results can be used to implement automated corrective actions in your pipelines. They are also automatically rendered into documentation for further visual interpretation and evaluation.
 
 ### When would you want to use it?
 
@@ -50,7 +50,7 @@ Some Great Expectations CLI commands will not work well with the deployment meth
 
 {% tabs %}
 {% tab title="Let ZenML Manage The Configuration" %}
-The default Data Validator setup plugs Great Expectations directly into the [Artifact Store](../artifact-stores/) component that is part of the same stack. As a result, the Expectation Suites, Validation Results and Data Docs are stored in the ZenML Artifact Store and you don't have to configure Great Expectations at all, ZenML takes care of that for you:
+The default Data Validator setup plugs Great Expectations directly into the [Artifact Store](../artifact-stores/README.md) component that is part of the same stack. As a result, the Expectation Suites, Validation Results and Data Docs are stored in the ZenML Artifact Store and you don't have to configure Great Expectations at all, ZenML takes care of that for you:
 
 ```shell
 # Register the Great Expectations data validator

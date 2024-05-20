@@ -4,14 +4,14 @@ description: Storing container images in Azure.
 
 # Azure Container Registry
 
-The Azure container registry is a [container registry](./) flavor that comes built-in with ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/) to store container images.
+The Azure container registry is a [container registry](./README.md) flavor that comes built-in with ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/) to store container images.
 
 ### When to use it
 
 You should use the Azure container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you have access to Azure. If you're not using Azure, take a look at the other [container registry flavors](./#container-registry-flavors).
+* you have access to Azure. If you're not using Azure, take a look at the other [container registry flavors](./README.md#container-registry-flavors).
 
 ### How to deploy it
 

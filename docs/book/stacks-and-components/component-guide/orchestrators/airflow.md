@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Airflow.
 ZenML pipelines can be executed natively as [Airflow](https://airflow.apache.org/) DAGs. This brings together the power of the Airflow orchestration with the ML-specific benefits of ZenML pipelines. Each ZenML step runs in a separate Docker container which is scheduled and started using Airflow.
 
 {% hint style="warning" %}
-If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](../../../deploying-zenml/zenml-self-hosted/).
+If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](../../../deploying-zenml/zenml-self-hosted/README.md).
 {% endhint %}
 
 ### When to use it
@@ -108,22 +108,22 @@ The ability to provision resources using the `zenml stack up` command is depreca
 {% tab title="Remote" %}
 When using the Airflow orchestrator with a remote deployment, you'll additionally need:
 
-* A remote ZenML server deployed to the cloud. See the [deployment guide](../../../deploying-zenml/zenml-self-hosted/) for more information.
+* A remote ZenML server deployed to the cloud. See the [deployment guide](../../../deploying-zenml/zenml-self-hosted/README.md) for more information.
 * A deployed Airflow server. See the [deployment section](airflow.md#how-to-deploy-it) for more information.
-* A [remote artifact store](../artifact-stores/) as part of your stack.
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
+* A [remote container registry](../container-registries/README.md) as part of your stack.
 
 In the remote case, the Airflow orchestrator works differently than other ZenML orchestrators. Executing a python file which runs a pipeline by calling `pipeline.run()` will not actually run the pipeline, but instead will create a `.zip` file containing an Airflow representation of your ZenML pipeline. In one additional step, you need to make sure this zip file ends up in the [DAGs directory](https://airflow.apache.org/docs/apache-airflow/stable/concepts/overview.html#architecture-overview) of your Airflow deployment.
 {% endtab %}
 {% endtabs %}
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Airflow. Check out [this page](../../../user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Airflow. Check out [this page](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Scheduling
 
-You can [schedule pipeline runs](../../advanced-guide/pipelining-features/schedule-pipeline-runs.md) on Airflow similarly to other orchestrators. However, note that **Airflow schedules always need to be set in the past**, e.g.,:
+You can [schedule pipeline runs](../../../how-to/use-remote-compute/schedule-a-pipeline.md) on Airflow similarly to other orchestrators. However, note that **Airflow schedules always need to be set in the past**, e.g.:
 
 ```python
 from datetime import datetime, timedelta
@@ -167,7 +167,7 @@ For additional configuration of the Airflow orchestrator, you can pass `AirflowO
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../how-to/use-remote-compute/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 #### Using different Airflow operators
 

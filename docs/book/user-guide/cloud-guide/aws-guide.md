@@ -16,7 +16,7 @@ To follow this guide, you need:
 
 Once ready, navigate to the AWS console:
 
-1. Choose an AWS region In the AWS console, choose the region where you want to deploy your ZenML stack resources. Make note of the region name (e.g., `us-east-1`, `eu-west-2`, etc) as you will need it in subsequent steps.
+1. Choose an AWS region In the AWS console, choose the region where you want to deploy your ZenML stack resources. Make note of the region name (e.g., `us-east-1`, `eu-west-2`, etc.) as you will need it in subsequent steps.
 2. Create an IAM role
 
 For this, you'll need to find out your AWS account ID. You can find this by running:
@@ -55,7 +55,7 @@ aws iam create-role --role-name zenml-role --assume-role-policy-document file://
 
 Be sure to take note of the information that is output to the terminal, as you will need it in the next steps, especially the Role ARN.
 
-3. Attach policies to the role
+1. Attach policies to the role
 
 Attach the following policies to the role to grant access to the necessary AWS services:
 
@@ -69,7 +69,7 @@ aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:
 aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
 ```
 
-4. If you have not already, install the AWS and S3 ZenML integrations:
+1. If you have not already, install the AWS and S3 ZenML integrations:
 
 ```shell
 zenml integration install aws s3 -y
@@ -109,7 +109,7 @@ aws s3api create-bucket --bucket your-bucket-name
 
 Once this is done, you can create the ZenML stack component as follows:
 
-2. Register an S3 Artifact Store with the connector
+1. Register an S3 Artifact Store with the connector
 
 ```shell
 zenml artifact-store register cloud_artifact_store -f s3 --path=s3://bucket-name --connector aws_connector
@@ -133,7 +133,7 @@ By creating a SageMaker domain, you establish the necessary environment and perm
 
 Once this is done, you can create the ZenML stack component as follows:
 
-2. Register a SageMaker Pipelines orchestrator stack component:
+1. Register a SageMaker Pipelines orchestrator stack component:
 
 You'll need the IAM role ARN that we noted down earlier to register the orchestrator. This is the 'execution role' ARN you need to pass to the orchestrator.
 
@@ -147,7 +147,7 @@ More details [here](../../stacks-and-components/component-guide/orchestrators/sa
 
 ### Container Registry (ECR)
 
-A [container registry](../../stacks-and-components/component-guide/container-registries/) is used to store Docker images for your pipelines.
+A [container registry](../../stacks-and-components/component-guide/container-registries/README.md) is used to store Docker images for your pipelines.
 
 1. You'll need to create a repository in ECR. If you already have one, you can skip this step.
 
@@ -157,7 +157,7 @@ aws ecr create-repository --repository-name zenml --region <YOUR_REGION>
 
 Once this is done, you can create the ZenML stack component as follows:
 
-2. Register an ECR container registry stack component:
+1. Register an ECR container registry stack component:
 
 ```shell
 zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com --connector aws-connector
@@ -215,7 +215,7 @@ python run.py
 
 <figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
 
-Read more in the [production guide](../production-guide/).
+Read more in the [production guide](../production-guide/README.md).
 
 ## Cleanup
 
@@ -271,7 +271,7 @@ The benefits of using an AWS stack with ZenML include:
 
 Now that you have a functional AWS stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
 
-* Dive deeper into ZenML's [production guide](../production-guide/) to learn best practices for deploying and managing production-ready pipelines.
+* Dive deeper into ZenML's [production guide](../production-guide/README.md) to learn best practices for deploying and managing production-ready pipelines.
 * Explore ZenML's [integrations](../../stacks-and-components/component-guide/integration-overview.md) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack-invite) to connect with other users, ask questions, and get support.
 

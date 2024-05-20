@@ -4,10 +4,10 @@ description: Orchestrating your pipelines to run on Kubeflow.
 
 # Kubeflow Orchestrator
 
-The Kubeflow orchestrator is an [orchestrator](./) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
+The Kubeflow orchestrator is an [orchestrator](./README.md) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -147,11 +147,11 @@ The local Kubeflow Pipelines deployment requires more than 4 GB of RAM, and 30 G
 {% tab title="Remote" %}
 When using the Kubeflow orchestrator with a remote cluster, you'll additionally need:
 
-* A remote ZenML server deployed to the cloud. See the [deployment guide](../../../deploying-zenml/zenml-self-hosted/) for more information.
+* A remote ZenML server deployed to the cloud. See the [deployment guide](../../../deploying-zenml/zenml-self-hosted/README.md) for more information.
 * Kubeflow pipelines deployed on a remote cluster. See the [deployment section](kubeflow.md#how-to-deploy-it) for more information.
 * The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector ](../../auth-management/service-connectors-guide.md)to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
-* A [remote artifact store](../artifact-stores/) as part of your stack.
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
+* A [remote container registry](../container-registries/README.md) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
@@ -203,7 +203,7 @@ We can then register the orchestrator and use it in our active stack. This can b
 {% endtabs %}
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubeflow. Check out [this page](../../../user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubeflow. Check out [this page](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Kubeflow orchestrator:
@@ -282,7 +282,7 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../how-to/use-remote-compute/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 ### Important Note for Multi-Tenancy Deployments
 
