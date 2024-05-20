@@ -460,6 +460,7 @@ module = [
     "IPython.*",
     "huggingface_hub.*",
     "label_studio_sdk.*",
+    "argilla.*",
     "peewee.*",
     "prodigy.*",
     "prodigy.components.*",
