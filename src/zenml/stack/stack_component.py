@@ -438,7 +438,7 @@ class StackComponent:
         )
 
         if key in all_settings:
-            return self.settings_class.model_validate(all_settings[key])
+            return self.settings_class.model_validate(dict(all_settings[key]))
         else:
             return self.settings_class()
 
