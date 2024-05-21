@@ -16,4 +16,5 @@ def clean_data(
     Annotated[pd.Series, "y_train"],
     Annotated[pd.Series, "y_test"],
 ]:
+    ...
 ```

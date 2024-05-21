@@ -1,8 +1,8 @@
 # Load artifacts from Model
 
-The ZenML Model is an entity introduced together with [the Model Control Plane](broken-reference). The Model Control Plane is how you manage your models through a unified interface. It allows you to combine the logic of your pipelines, artifacts and crucial business data along with the actual 'technical model'.
+The ZenML Model is an entity introduced together with [the Model Control Plane](../use-the-model-control-plane/README.md). The Model Control Plane is how you manage your models through a unified interface. It allows you to combine the logic of your pipelines, artifacts and crucial business data along with the actual 'technical model'.
 
-Documentation for [ZenML Models](broken-reference) describes in great detail how you can link various artifacts produced within pipelines to the model. Here we will focus more on the part that relates to consumption.
+Documentation for [ZenML Models](../use-the-model-control-plane/README.md) describes in great detail how you can link various artifacts produced within pipelines to the model. Here we will focus more on the part that relates to consumption.
 
 First, let's have a look at a two-pipeline project, where the first pipeline is running training logic and the second runs batch inference leveraging trained model artifact(s):
 

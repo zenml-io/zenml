@@ -11,7 +11,7 @@ can use the `zenml.get_pipeline_context()` function to access the `PipelineConte
 your pipeline:
 
 ```python
-from zenml import get_pipeline_context
+from zenml import get_pipeline_context, pipeline
 
 ...
 

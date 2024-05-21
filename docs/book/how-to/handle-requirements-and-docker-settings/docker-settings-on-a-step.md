@@ -6,7 +6,7 @@ description: You have the option to customize the docker settings at a step leve
 
 ```python
 from zenml import step
-from zenml.config import ResourceSettings, DockerSettings
+from zenml.config import DockerSettings
 
 @step(
   settings={

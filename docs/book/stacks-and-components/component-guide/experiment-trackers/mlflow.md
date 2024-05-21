@@ -93,7 +93,7 @@ zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../../user-guide/advanced-guide/configuring-zenml/secret-management.md) to store the MLflow tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../../how-to/configuring-zenml/secret-management.md) to store the MLflow tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -117,7 +117,7 @@ zenml experiment-tracker register mlflow \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../../user-guide/advanced-guide/configuring-zenml/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](../../../how-to/configuring-zenml/secret-management.md) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}

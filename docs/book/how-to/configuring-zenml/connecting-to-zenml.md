@@ -4,7 +4,7 @@ description: Various means of connecting to ZenML.
 
 # Methods to connect to ZenML
 
-Once [ZenML is deployed](../../production-guide/deploying-zenml.md), there are various ways to connect to it:
+Once [ZenML is deployed](../../user-guide/production-guide/deploying-zenml.md), there are various ways to connect to it:
 
 ## Using the ZenML CLI to connect to a deployed ZenML Server
 
@@ -49,7 +49,7 @@ Don't forget to manage your device trust levels regularly for optimal security. 
 
 ## Using Service Accounts to connect to a deployed ZenML Server
 
-Sometimes you may need to authenticate to a ZenML server from an non-interactive environment where the web login is not possible, like a CI/CD workload or a serverless function. In these cases, you can configure a service account and an API key and use the API key to authenticate to the ZenML server:
+Sometimes you may need to authenticate to a ZenML server from a non-interactive environment where the web login is not possible, like a CI/CD workload or a serverless function. In these cases, you can configure a service account and an API key and use the API key to authenticate to the ZenML server:
 
 ```bash
 zenml service-account create <SERVICE_ACCOUNT_NAME>

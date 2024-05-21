@@ -8,6 +8,7 @@ ZenML supports several special metadata types to capture specific kinds of infor
 
 ```python
 from zenml.metadata.metadata_types import StorageSize, DType
+from zenml import log_artifact_metadata
 
 log_artifact_metadata(
     metadata={

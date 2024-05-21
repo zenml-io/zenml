@@ -29,18 +29,18 @@ Currently, the ZenML server can be configured to use one of the following suppor
 
 Configuring the specific secrets store back-end that the ZenML server uses is done at deployment time. This involves deciding on one of the supported back-ends and authentication mechanisms and configuring the ZenML server with the necessary credentials to authenticate with the back-end.
 
-The ZenML secrets store reuses the [ZenML Service Connector](../../../stacks-and-components/auth-management/service-connectors-guide.md) authentication mechanisms to authenticate with the secrets store back-end. This means that the same authentication methods and configuration parameters that are supported by the available Service Connectors are also reflected in the ZenML secrets store configuration. It is recommended to practice the principle of least privilege when configuring the ZenML secrets store and to use credentials with the documented minimum required permissions to access the secrets store back-end.
+The ZenML secrets store reuses the [ZenML Service Connector](../../stacks-and-components/auth-management/service-connectors-guide.md) authentication mechanisms to authenticate with the secrets store back-end. This means that the same authentication methods and configuration parameters that are supported by the available Service Connectors are also reflected in the ZenML secrets store configuration. It is recommended to practice the principle of least privilege when configuring the ZenML secrets store and to use credentials with the documented minimum required permissions to access the secrets store back-end.
 
 The ZenML secrets store configured for the ZenML Server can be updated at any time by updating the ZenML Server configuration and redeploying the server. This allows you to easily switch between different secrets store back-ends and authentication mechanisms. However, it is recommended to follow [the documented secret store migration strategy](secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated, in case the location where secrets are stored in the back-end changes.
 
-For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../../../deploying-zenml/zenml-self-hosted/README.md).
+For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../../deploying-zenml/zenml-self-hosted/README.md).
 
 ## Backup secrets store
 
 The ZenML Server deployment may be configured to optionally connect to _a second Secrets Store_ to provide additional features such as high-availability, backup and disaster recovery as well as an intermediate step in the process of migrating [secrets from one secrets store location to another](secret-management.md#secrets-migration-strategy). For example, the primary Secrets Store may be configured to use the internal database, while the backup Secrets Store may be configured to use the AWS Secrets Manager. Or two different AWS Secrets Manager accounts or regions may be used.
 
 {% hint style="warning" %}
-Always make sure that the backup Secrets Store is configured to use a different location than the primary Secrets Store. The location can be different in terms of the Secrets Store back-end type (e.g. internal database vs. AWS Secrets Manager) or the actual location of the Secrets Store back-end (e.g. different AWS Secrets Manager account or region, GCP Secret Manager project or Azure Key Vault vault).
+Always make sure that the backup Secrets Store is configured to use a different location than the primary Secrets Store. The location can be different in terms of the Secrets Store back-end type (e.g. internal database vs. AWS Secrets Manager) or the actual location of the Secrets Store back-end (e.g. different AWS Secrets Manager account or region, GCP Secret Manager project or Azure Key Vault's vault).
 
 Using the same location for both the primary and backup Secrets Store will not provide any additional benefits and may even result in unexpected behavior.
 {% endhint %}
@@ -54,7 +54,7 @@ In addition to the hidden backup operations, users can also explicitly trigger a
 Sometimes you may need to change the external provider or location where secrets values are stored by the Secrets Store. The immediate implication of this is that the ZenML server will no longer be able to access existing secrets with the new configuration until they are also manually copied to the new location. Some examples of such changes include:
 
 * switching Secrets Store back-end types (e.g. from internal SQL database to AWS Secrets Manager or Azure Key Vault)
-* switching back-end locations (e.g. changing the AWS Secrets Manager account or region, GCP Secret Manager project or Azure Key Vault vault).
+* switching back-end locations (e.g. changing the AWS Secrets Manager account or region, GCP Secret Manager project or Azure Key Vault's vault).
 
 In such cases, it is not sufficient to simply reconfigure and redeploy the ZenML server with the new Secrets Store configuration. This is because the ZenML server will not automatically migrate existing secrets to the new location. Instead, you should follow a specific migration strategy to ensure that existing secrets are also properly migrated to the new location with minimal, even zero downtime.
 
@@ -62,7 +62,7 @@ The secrets migration process makes use of the fact that [a secondary Secrets St
 
 1. Re-configure the ZenML server to use _Secrets Store B_ as the secondary Secrets Store.
 2. Re-deploy the ZenML server.
-3. Use the `zenml secret backup` CLI command to backup all secrets from _Secrets Store A_ to _Secrets Store B_. You don't have to worry about secrets that are created or updated by users during or after this process, as they will be automatically backed up to _Secrets Store B_. If you also wish to delete secrets from _Secrets Store A_ after they are successfully backed up to _Secrets Store B_, you should run `zenml secret backup --delete-secrets` instead.
+3. Use the `zenml secret backup` CLI command to back up all secrets from _Secrets Store A_ to _Secrets Store B_. You don't have to worry about secrets that are created or updated by users during or after this process, as they will be automatically backed up to _Secrets Store B_. If you also wish to delete secrets from _Secrets Store A_ after they are successfully backed up to _Secrets Store B_, you should run `zenml secret backup --delete-secrets` instead.
 4. Re-configure the ZenML server to use _Secrets Store B_ as the primary Secrets Store and remove _Secrets Store A_ as the secondary Secrets Store.
 5. Re-deploy the ZenML server.
 
@@ -71,6 +71,6 @@ This migration strategy is not necessary if the actual location of the secrets v
 * updating the credentials used to authenticate with the Secrets Store back-end before or after they expire
 * switching to a different authentication method to authenticate with the same Secrets Store back-end (e.g. switching from an IAM account secret key to an IAM role in the AWS Secrets Manager)
 
-If you are a [ZenML Cloud](https://zenml.io/cloud) user, you can configure your cloud backend based on your [deployment scenario](../../../deploying-zenml/zenml-cloud/cloud-system-architecture.md).
+If you are a [ZenML Cloud](https://zenml.io/cloud) user, you can configure your cloud backend based on your [deployment scenario](../../deploying-zenml/zenml-cloud/cloud-system-architecture.md).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -89,7 +89,7 @@ In addition to the above, you may also find the following files and folders unde
 
 ## Usage analytics
 
-In order to help us better understand how the community uses ZenML, the pip package reports **anonymized** usage statistics. You can always opt-out by using the CLI command:
+In order to help us better understand how the community uses ZenML, the pip package reports **anonymized** usage statistics. You can always opt out by using the CLI command:
 
 ```bash
 zenml config analytics opt-out

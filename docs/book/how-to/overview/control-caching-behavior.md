@@ -24,7 +24,7 @@ def simple_ml_pipeline(parameter: int):
 Caching only happens when code and parameters stay the same.
 {% endhint %}
 
-Like many other step and pipeline settings, you can also change this afterwards:
+Like many other step and pipeline settings, you can also change this afterward:
 
 ```python
 # Same as passing it in the step decorator

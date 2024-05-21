@@ -27,32 +27,32 @@ This is an implementation of a basic grid search (across a single dimension) tha
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md#advanced-guide)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
 
 In [`pipelines/training.py`](../../../../examples/e2e/pipelines/training.py), you will find a training pipeline with a `Hyperparameter tuning stage` section. It contains a `for` loop that runs the `hp_tuning_single_search` over the configured model search spaces, followed by the `hp_tuning_select_best_model` being executed after all search steps are completed. As a result, we are getting `best_model_config` to be used to train the best possible model later on.
 
 ```python
 ...
-    ########## Hyperparameter tuning stage ##########
-    after = []
-    search_steps_prefix = "hp_tuning_search_"
-    for i, model_search_configuration in enumerate(
-        MetaConfig.model_search_space
-    ):
-        step_name = f"{search_steps_prefix}{i}"
-        hp_tuning_single_search(
-            model_metadata=ExternalArtifact(
-                value=model_search_configuration,
-            ),
-            id=step_name,
-            dataset_trn=dataset_trn,
-            dataset_tst=dataset_tst,
-            target=target,
-        )
-        after.append(step_name)
-    best_model_config = hp_tuning_select_best_model(
-        search_steps_prefix=search_steps_prefix, after=after
+########## Hyperparameter tuning stage ##########
+after = []
+search_steps_prefix = "hp_tuning_search_"
+for i, model_search_configuration in enumerate(
+    MetaConfig.model_search_space
+):
+    step_name = f"{search_steps_prefix}{i}"
+    hp_tuning_single_search(
+        model_metadata=ExternalArtifact(
+            value=model_search_configuration,
+        ),
+        id=step_name,
+        dataset_trn=dataset_trn,
+        dataset_tst=dataset_tst,
+        target=target,
     )
+    after.append(step_name)
+best_model_config = hp_tuning_select_best_model(
+    search_steps_prefix=search_steps_prefix, after=after
+)
 ...
 ```
 
@@ -88,7 +88,7 @@ def select_model_step():
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
 
 In the `steps/hp_tuning` folder, you will find two step files, which can be used as a starting point for building your own hyperparameter search tailored specifically to your use case:
 

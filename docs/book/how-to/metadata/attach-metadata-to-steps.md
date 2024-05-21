@@ -51,7 +51,7 @@ log_step_metadata(
 
 ## Fetching logged metadata
 
-Once metadata has been logged in an [artifact](attach-metadata-to-steps.md#logging-metadata-for-artifacts), [model](attach-metadata-to-steps.md#logging-metadata-for-models), or [step](attach-metadata-to-steps.md#logging-metadata-for-steps), we can easily fetch the metadata with the ZenML Client:
+Once metadata has been logged in an [artifact](attach-metadata-to-a-artifact.md), [model](attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
 
 ```python
 from zenml.client import Client

@@ -10,7 +10,7 @@ As described in [the metadata guide](../metadata/logging-metadata.md), the metad
 
 ```python
 from zenml.client import Client
-from zenml import step, pipeline
+from zenml import step
 
 @step
 def my_step():

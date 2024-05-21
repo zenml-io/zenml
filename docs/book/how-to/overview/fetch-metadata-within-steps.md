@@ -9,7 +9,7 @@ description: Accessing meta information in real-time within your pipeline.
 To find information about the pipeline or step that is currently running, you can use the `zenml.get_step_context()` function to access the `StepContext` of your step:
 
 ```python
-from zenml import step, pipeline, get_step_context
+from zenml import step, get_step_context
 
 @step
 def my_step():

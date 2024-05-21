@@ -88,7 +88,7 @@ Scopes also act as individual namespaces. When you are referencing a secret by n
 
 ### Reference secrets in stack component attributes and settings
 
-Some of the components in your stack require you to configure them with sensitive information like passwords or tokens so they can connect to the underlying infrastructure. Secret references allow you to configure these components in a secure way by not specifying the value directly but instead referencing a secret by providing the secret name and key. Referencing a secret for the value of any string attribute of your stack components, simply specify the attribute using the following syntax: `{{<SECRET_NAME>.<SECRET_KEY>}}`
+Some of the components in your stack require you to configure them with sensitive information like passwords or tokens, so they can connect to the underlying infrastructure. Secret references allow you to configure these components in a secure way by not specifying the value directly but instead referencing a secret by providing the secret name and key. Referencing a secret for the value of any string attribute of your stack components, simply specify the attribute using the following syntax: `{{<SECRET_NAME>.<SECRET_KEY>}}`
 
 For example:
 
