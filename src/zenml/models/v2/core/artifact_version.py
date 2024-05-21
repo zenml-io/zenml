@@ -142,6 +142,13 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="The ID of the pipeline run that generated this artifact version."
     )
 
+    pipeline_run_id: Optional[UUID] = Field(
+        title="The ID of the pipeline run in current context. "
+        "For non-cached artifact versions should be equal to "
+        "`producer_pipeline_run_id`, but for cached artifact "
+        "versions it can differ from `producer_pipeline_run_id`"
+    )
+
     _convert_source = convert_source_validator("materializer", "data_type")
 
 
@@ -166,6 +173,11 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ArtifactVersionResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the artifact version entity."""
+
+    pipeline_runs: Optional[List[UUID]] = Field(
+        title="List of all pipeline run IDs, which attached "
+        "this artifact version to its' outputs."
+    )
 
 
 class ArtifactVersionResponse(
@@ -243,6 +255,15 @@ class ArtifactVersionResponse(
         return self.get_body().producer_pipeline_run_id
 
     @property
+    def pipeline_run_id(self) -> Optional[UUID]:
+        """The `pipeline_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().pipeline_run_id
+
+    @property
     def artifact_store_id(self) -> Optional[UUID]:
         """The `artifact_store_id` property.
 
@@ -297,6 +318,15 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().data_type
+
+    @property
+    def pipeline_runs(self) -> Optional[List[UUID]]:
+        """The `all_pipeline_run_ids` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().pipeline_runs
 
     # Helper methods
     @property

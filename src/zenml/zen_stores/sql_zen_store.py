@@ -2462,7 +2462,9 @@ class SqlZenStore(BaseZenStore):
                     f"{artifact_version_id}: No artifact version with this ID "
                     f"found."
                 )
-            return artifact_version.to_model(include_metadata=hydrate)
+            return artifact_version.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
 
     def list_artifact_versions(
         self,

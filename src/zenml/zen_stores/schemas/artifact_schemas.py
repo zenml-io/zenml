@@ -40,6 +40,9 @@ from zenml.models import (
     ArtifactVersionUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
+from zenml.models.v2.core.artifact_version import (
+    ArtifactVersionResponseResources,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -287,6 +290,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        pipeline_run_id_in_context: Optional[UUID] = None,
         **kwargs: Any,
     ) -> ArtifactVersionResponse:
         """Convert an `ArtifactVersionSchema` to an `ArtifactVersionResponse`.
@@ -294,6 +298,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            pipeline_run_id_in_context: The pipeline run id in context (e.g. StepRun context).
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -335,6 +340,8 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
             producer_pipeline_run_id=producer_pipeline_run_id,
+            pipeline_run_id=pipeline_run_id_in_context
+            or producer_pipeline_run_id,
         )
 
         # Create the metadata of the model
@@ -348,10 +355,20 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},
             )
 
+        resources = None
+        if include_resources:
+            resources = ArtifactVersionResponseResources(
+                pipeline_runs=[
+                    output_.step_run.pipeline_run_id
+                    for output_ in self.output_of_step_runs
+                ]
+            )
+
         return ArtifactVersionResponse(
             id=self.id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(
