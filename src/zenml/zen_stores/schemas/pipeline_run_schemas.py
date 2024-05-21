@@ -315,7 +315,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             model_version = None
-            if config.model:
+            if config.model and config.model.model_version_id:
                 model_version = config.model._get_model_version(hydrate=False)
             resources = PipelineRunResponseResources(
                 model_version=model_version
