@@ -20,6 +20,8 @@ from typing_extensions import Annotated
 
 from zenml import pipeline, step
 from zenml.client import Client
+from zenml.enums import ModelStages
+from zenml.model.model import Model
 
 
 @step(enable_cache=True)
@@ -80,6 +82,7 @@ def _validate_artifacts_state(
     assert artifact.pipeline_run_id == producer_pr_id
     # but should be listed in all runs
     assert pr_id in artifact.pipeline_run_ids
+    assert producer_pr_id in artifact.pipeline_run_ids
 
 
 # TODO: remove clean client, ones clean env for REST is available
@@ -150,4 +153,39 @@ def test_that_cached_artifact_versions_are_created_properly_for_second_step(
         producer_pr_id=pr_orig.id,
         step_name="simple_producer_step_2",
         expected_version=1,  # cached artifact doesn't produce new version
+    )
+
+
+def test_that_cached_artifact_versions_are_created_properly_for_model_version(
+    clean_client: Client,
+):
+    pr_orig = cacheable_pipeline_which_always_run.with_options(
+        model=Model(name="foo")
+    )()
+
+    mv = clean_client.get_model_version("foo", ModelStages.LATEST)
+    assert (
+        mv.data_artifacts["trackable_artifact"]["1"].producer_pipeline_run_id
+        == pr_orig.id
+    )
+    assert (
+        pr_orig.id
+        in mv.data_artifacts["trackable_artifact"]["1"].pipeline_run_ids
+    )
+
+    pr = cacheable_pipeline_which_always_run.with_options(
+        model=Model(name="foo")
+    )()
+
+    mv = clean_client.get_model_version("foo", ModelStages.LATEST)
+    assert (
+        mv.data_artifacts["trackable_artifact"]["1"].producer_pipeline_run_id
+        == pr_orig.id
+    )
+    assert (
+        pr_orig.id
+        in mv.data_artifacts["trackable_artifact"]["1"].pipeline_run_ids
+    )
+    assert (
+        pr.id in mv.data_artifacts["trackable_artifact"]["1"].pipeline_run_ids
     )
