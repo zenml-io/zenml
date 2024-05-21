@@ -113,6 +113,7 @@ class TensorboardVisualizer:
                     service = TensorboardService(
                         TensorboardServiceConfig(
                             logdir=logdir,
+                            name=f"zenml-tensorboard-{logdir}",
                         )
                     )
                     service.start(timeout=60)

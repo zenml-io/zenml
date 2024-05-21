@@ -82,8 +82,14 @@ external_server_id: {{ .ZenML.auth.externalServerID | quote }}
 {{- if .ZenML.rootUrlPath }}
 root_url_path: {{ .ZenML.rootUrlPath | quote }}
 {{- end }}
+{{- if .ZenML.baseURL }}
+base_url: {{ .ZenML.baseURL | quote }}
+{{- end }}
 {{- if .ZenML.auth.rbacImplementationSource }}
 rbac_implementation_source: {{ .ZenML.auth.rbacImplementationSource | quote }}
+{{- end }}
+{{- range $key, $value := .ZenML.secure_headers }}
+secure_headers_{{ $key }}: {{ $value | quote }}
 {{- end }}
 {{- end }}
 

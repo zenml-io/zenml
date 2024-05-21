@@ -20,9 +20,8 @@ from tests.integration.functional.cli.utils import (
     user_delete_command,
     user_update_command,
 )
-from zenml.constants import (
-    DEFAULT_USERNAME,
-)
+from zenml.client import Client
+from zenml.enums import StoreType
 
 # ----- #
 # USERS #
@@ -72,50 +71,18 @@ def test_update_user_with_new_full_name_succeeds() -> None:
     assert result.exit_code == 0
 
 
-def test_update_user_with_new_email_succeeds() -> None:
-    """Test that creating a new user succeeds."""
+def test_update_user_with_new_email() -> None:
+    """Test that updating the personal details for an account only works locally."""
     u = create_sample_user()
     runner = CliRunner()
     result = runner.invoke(
         user_update_command,
         [u.name, "--email='aria@catnip.io'"],
     )
-    assert result.exit_code == 0
-
-
-def test_update_default_user_name_fails() -> None:
-    """Test that updating the name of the default user fails."""
-    runner = CliRunner()
-    result = runner.invoke(
-        user_update_command,
-        [DEFAULT_USERNAME, f"--name={sample_name()}"],
-    )
-    assert result.exit_code == 1
-
-
-def test_update_default_user_metadata_succeeds() -> None:
-    """Test that updating the metadata of the default user succeeds."""
-    runner = CliRunner()
-    result = runner.invoke(
-        user_update_command,
-        [
-            DEFAULT_USERNAME,
-            "--full_name='De Fault'",
-            "--email=default@zenml.io",
-        ],
-    )
-    assert result.exit_code == 0
-
-
-def test_delete_default_user_fails() -> None:
-    """Test that the default user can't be deleted."""
-    runner = CliRunner()
-    result = runner.invoke(
-        user_delete_command,
-        [DEFAULT_USERNAME],
-    )
-
-    assert result.exit_code == 1
+    if Client().zen_store.type == StoreType.SQL:
+        assert result.exit_code == 0
+    else:
+        assert result.exit_code == 1
 
 
 def test_delete_user_succeeds() -> None:

@@ -48,6 +48,7 @@ class ScheduleRequest(WorkspaceScopedRequest):
     end_time: Optional[datetime.datetime] = None
     interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
+    run_once_start_time: Optional[datetime.datetime] = None
 
     orchestrator_id: Optional[UUID]
     pipeline_id: Optional[UUID]
@@ -72,6 +73,7 @@ class ScheduleRequest(WorkspaceScopedRequest):
         periodic_schedule = values.get("start_time") and values.get(
             "interval_second"
         )
+        run_once_starts_at = values.get("run_once_start_time")
 
         if cron_expression and periodic_schedule:
             logger.warning(
@@ -82,11 +84,20 @@ class ScheduleRequest(WorkspaceScopedRequest):
                 "expression."
             )
             return values
-        elif cron_expression or periodic_schedule:
+        elif cron_expression and run_once_starts_at:
+            logger.warning(
+                "This schedule was created with a cron expression as well as "
+                "a value for `run_once_start_time`. The resulting behavior "
+                "depends on the concrete orchestrator implementation but will "
+                "usually ignore the `run_once_start_time`."
+            )
+            return values
+        elif cron_expression or periodic_schedule or run_once_starts_at:
             return values
         else:
             raise ValueError(
-                "Either a cron expression or start time and interval seconds "
+                "Either a cron expression, a start time and interval seconds "
+                "or a run once start time "
                 "need to be set for a valid schedule."
             )
 
@@ -111,6 +122,7 @@ class ScheduleResponseBody(WorkspaceScopedResponseBody):
     end_time: Optional[datetime.datetime] = None
     interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
+    run_once_start_time: Optional[datetime.datetime] = None
 
 
 class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -211,6 +223,15 @@ class ScheduleResponse(
         return self.get_body().end_time
 
     @property
+    def run_once_start_time(self) -> Optional[datetime.datetime]:
+        """The `run_once_start_time` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().run_once_start_time
+
+    @property
     def interval_second(self) -> Optional[datetime.timedelta]:
         """The `interval_second` property.
 
@@ -292,4 +313,8 @@ class ScheduleFilter(WorkspaceScopedFilter):
     name: Optional[str] = Field(
         default=None,
         description="Name of the schedule",
+    )
+    run_once_start_time: Optional[Union[datetime.datetime, str]] = Field(
+        default=None,
+        description="The time at which the schedule should run once",
     )

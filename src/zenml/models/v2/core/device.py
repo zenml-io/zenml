@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing devices."""
+
 from datetime import datetime
 from typing import Optional, Union
 from uuid import UUID

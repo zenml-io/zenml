@@ -51,8 +51,9 @@ rm docs/mkdocs/index.md || true
 
 ################################################ Install Requirements ##################################################
 if [ -z "$SKIP_INSTALL" ]; then
-  pip3 install -e ".[server,dev]"
-  pip3 install "Jinja2==3.0.3"
+  pip3 install uv
+  uv pip install --system -e ".[server,dev]"
+  uv pip install --system "Jinja2==3.0.3"
 fi
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################
@@ -71,6 +72,7 @@ python3 docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
 ############################################## Build the API docs ####################################################
 if [ -n "$ONLY_CHECK" ]; then
   python3 docs/sys_modules_mock.py
+  mkdocs build --config-file docs/mkdocs.yml
 else
   if [ -n "$PUSH" ]; then
     if [ -n "$LATEST" ]; then

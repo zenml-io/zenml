@@ -42,7 +42,7 @@ class BentoMLIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for KServe.
+        """Declare the stack component flavors for BentoML.
 
         Returns:
             List of stack component flavors for this integration.

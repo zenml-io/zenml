@@ -12,11 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of analytics events for ZenML."""
+
 from enum import Enum
 
 
 class AnalyticsEvent(str, Enum):
     """Enum of events to track in segment."""
+
+    # Login
+    DEVICE_VERIFIED = "Device verified"
+
+    # Onboarding
+    USER_ENRICHED = "User Enriched"
 
     # Pipelines
     RUN_PIPELINE = "Pipeline run"
@@ -90,3 +97,6 @@ class AnalyticsEvent(str, Enum):
     ZENML_HUB_PLUGIN_UNINSTALL = "ZenML Hub plugin uninstalled"
     ZENML_HUB_PLUGIN_CLONE = "ZenML Hub plugin pulled"
     ZENML_HUB_PLUGIN_SUBMIT = "ZenML Hub plugin pushed"
+
+    # Server Settings
+    SERVER_SETTINGS_UPDATED = "Server Settings Updated"

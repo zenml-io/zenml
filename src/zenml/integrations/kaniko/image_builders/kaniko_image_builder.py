@@ -201,9 +201,9 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         optional_container_args: Dict[str, Any] = {}
         if self.config.service_account_name:
-            optional_container_args[
-                "serviceAccountName"
-            ] = self.config.service_account_name
+            optional_container_args["serviceAccountName"] = (
+                self.config.service_account_name
+            )
 
         return {
             "apiVersion": "v1",
@@ -257,6 +257,8 @@ class KanikoImageBuilder(BaseImageBuilder):
             self.config.executor_image,
             "--overrides",
             json.dumps(spec_overrides),
+            "--pod-running-timeout",
+            f"{self.config.pod_running_timeout}s",
         ]
         logger.debug("Running Kaniko build with command: %s", command)
         with subprocess.Popen(

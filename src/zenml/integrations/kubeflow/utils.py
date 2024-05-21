@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """KFP utilities."""
 
-
 from typing import TYPE_CHECKING
 
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings

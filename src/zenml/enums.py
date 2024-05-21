@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML enums."""
+
 import logging
 from enum import Enum
 
@@ -51,6 +52,13 @@ class VisualizationType(StrEnum):
     HTML = "html"
     IMAGE = "image"
     MARKDOWN = "markdown"
+
+
+class ZenMLServiceType(StrEnum):
+    """All possible types a service can have."""
+
+    ZEN_SERVER = "zen_server"
+    MODEL_SERVING = "model-serving"
 
 
 class ExecutionStatus(StrEnum):
@@ -274,6 +282,7 @@ class SourceContextTypes(StrEnum):
     CLI = "cli"
     PYTHON = "python"
     DASHBOARD = "dashboard"
+    DASHBOARD_V2 = "dashboard-v2"
     API = "api"
     UNKNOWN = "unknown"
 

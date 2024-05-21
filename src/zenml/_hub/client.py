@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client for the ZenML Hub."""
+
 import os
 from json import JSONDecodeError
 from typing import Any, Dict, List, Optional

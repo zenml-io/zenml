@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for event sources."""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security

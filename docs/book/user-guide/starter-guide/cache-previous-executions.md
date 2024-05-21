@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # This will disable cache for all steps
     logger.info("\n\nFirst step cached, second not due to settings")
     svc_trainer = svc_trainer.with_options(enable_cache=False)
-    training_pipeline.with_options(enable_cache=False)()
+    training_pipeline()
 
     # This will disable cache for all steps
     logger.info("\n\nCaching disabled for the entire pipeline")

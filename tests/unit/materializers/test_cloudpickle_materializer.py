@@ -60,7 +60,9 @@ def test_cloudpickle_materializer_is_not_registered(clean_client):
 def test_cloudpickle_materializer_can_load_pickle(clean_client):
     """Test that the cloudpickle materializer can load regular pickle."""
     my_object = Unmaterializable()
-    with TemporaryDirectory() as artifact_uri:
+    with TemporaryDirectory(
+        dir=clean_client.active_stack.artifact_store.path
+    ) as artifact_uri:
         artifact_filepath = os.path.join(artifact_uri, DEFAULT_FILENAME)
         with open(artifact_filepath, "wb") as f:
             pickle.dump(my_object, f)

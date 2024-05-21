@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of Docker image builds to run ZenML pipelines."""
+
 import itertools
 import os
 import subprocess
@@ -29,11 +30,16 @@ from typing import (
 
 import zenml
 from zenml.config import DockerSettings
-from zenml.config.docker_settings import PythonEnvironmentExportMethod
+from zenml.config.docker_settings import (
+    PythonEnvironmentExportMethod,
+    PythonPackageInstaller,
+)
 from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
+    ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
+    handle_bool_env_var,
 )
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
@@ -602,11 +608,19 @@ class PipelineDockerImageBuilder:
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
 
+        Raises:
+            ValueError: If an unsupported python package installer was
+                configured.
+
         Returns:
             The generated Dockerfile.
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
+        # Set color logging to whatever is locally configured
+        lines.append(
+            f"ENV {ENV_ZENML_LOGGING_COLORS_DISABLED}={str(handle_bool_env_var(ENV_ZENML_LOGGING_COLORS_DISABLED, False))}"
+        )
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
@@ -618,12 +632,26 @@ class PipelineDockerImageBuilder:
                 f"--no-install-recommends {apt_packages}"
             )
 
+        if (
+            docker_settings.python_package_installer
+            == PythonPackageInstaller.PIP
+        ):
+            install_command = "pip install --default-timeout=60"
+        elif (
+            docker_settings.python_package_installer
+            == PythonPackageInstaller.UV
+        ):
+            lines.append("RUN pip install uv")
+            install_command = "uv pip install --system"
+        else:
+            raise ValueError("Unsupported python package installer.")
+
         for file, _, options in requirements_files:
             lines.append(f"COPY {file} .")
-
             option_string = " ".join(options)
+
             lines.append(
-                f"RUN pip install --default-timeout=60 --no-cache-dir "
+                f"RUN {install_command} --no-cache-dir "
                 f"{option_string} -r {file}"
             )
 

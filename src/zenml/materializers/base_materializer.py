@@ -14,8 +14,9 @@
 """Metaclass implementation for registering ZenML BaseMaterializer subclasses."""
 
 import inspect
-from typing import Any, ClassVar, Dict, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.exceptions import MaterializerInterfaceError
 from zenml.io import fileio
@@ -114,13 +115,34 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 
     _DOCS_BUILDING_MODE: ClassVar[bool] = False
 
-    def __init__(self, uri: str):
+    def __init__(
+        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+    ):
         """Initializes a materializer with the given URI.
 
         Args:
             uri: The URI where the artifact data will be stored.
+            artifact_store: The artifact store used to store this artifact.
         """
         self.uri = uri
+        self._artifact_store = artifact_store
+
+    @property
+    def artifact_store(self) -> BaseArtifactStore:
+        """Returns the artifact store used to store this artifact.
+
+        It either comes from the configuration of the materializer or from the
+        active stack.
+
+        Returns:
+            The artifact store used to store this artifact.
+        """
+        if self._artifact_store:
+            return self._artifact_store
+        else:
+            from zenml.client import Client
+
+            return Client().active_stack.artifact_store
 
     # ================
     # Public Interface
@@ -157,7 +179,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Example:
         ```
         visualization_uri = os.path.join(self.uri, "visualization.html")
-        with fileio.open(visualization_uri, "w") as f:
+        with self.artifact_store.open(visualization_uri, "w") as f:
             f.write("<html><body>data</body></html>")
 
         visualization_uri_2 = os.path.join(self.uri, "visualization.png")

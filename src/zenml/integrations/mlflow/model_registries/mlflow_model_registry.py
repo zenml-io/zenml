@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model registry for ZenML."""
 
-
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, cast
 

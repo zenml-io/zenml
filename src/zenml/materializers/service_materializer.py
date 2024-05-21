@@ -14,13 +14,13 @@
 """Implementation of a materializer to read and write ZenML service instances."""
 
 import os
+import uuid
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
+from zenml.client import Client
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.services.service import BaseService
-from zenml.services.service_registry import ServiceRegistry
+from zenml.services.service import BaseDeploymentService, BaseService
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -47,9 +47,11 @@ class ServiceMaterializer(BaseMaterializer):
             A ZenML service instance.
         """
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
-        with fileio.open(filepath, "r") as f:
-            service = ServiceRegistry().load_service_from_json(f.read())
-        return service
+        with self.artifact_store.open(filepath, "r") as f:
+            service_id = f.read().strip()
+
+        service = Client().get_service(name_id_or_prefix=uuid.UUID(service_id))
+        return BaseDeploymentService.from_model(service)
 
     def save(self, service: BaseService) -> None:
         """Writes a ZenML service.
@@ -61,8 +63,8 @@ class ServiceMaterializer(BaseMaterializer):
             service: A ZenML service instance.
         """
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
-        with fileio.open(filepath, "w") as f:
-            f.write(service.json(indent=4))
+        with self.artifact_store.open(filepath, "w") as f:
+            f.write(str(service.uuid))
 
     def extract_metadata(
         self, service: BaseService
@@ -77,6 +79,6 @@ class ServiceMaterializer(BaseMaterializer):
         """
         from zenml.metadata.metadata_types import Uri
 
-        if service.endpoint and service.endpoint.status.uri:
-            return {"uri": Uri(service.endpoint.status.uri)}
+        if prediction_url := service.get_prediction_url() or None:
+            return {"uri": Uri(prediction_url)}
         return {}

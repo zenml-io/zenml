@@ -21,13 +21,14 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Optional,
     Tuple,
     Type,
     Union,
 )
 
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
@@ -55,13 +56,16 @@ class BuiltInMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = BASIC_TYPES
 
-    def __init__(self, uri: str):
+    def __init__(
+        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+    ):
         """Define `self.data_path`.
 
         Args:
             uri: The URI where the artifact data is stored.
+            artifact_store: The artifact store where the artifact data is stored.
         """
-        super().__init__(uri)
+        super().__init__(uri, artifact_store)
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
 
     def load(
@@ -117,13 +121,16 @@ class BytesMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (bytes,)
 
-    def __init__(self, uri: str):
+    def __init__(
+        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+    ):
         """Define `self.data_path`.
 
         Args:
             uri: The URI where the artifact data is stored.
+            artifact_store: The artifact store where the artifact data is stored.
         """
-        super().__init__(uri)
+        super().__init__(uri, artifact_store)
         self.data_path = os.path.join(self.uri, DEFAULT_BYTES_FILENAME)
 
     def load(self, data_type: Type[Any]) -> Any:
@@ -135,7 +142,7 @@ class BytesMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        with fileio.open(self.data_path, "rb") as file_:
+        with self.artifact_store.open(self.data_path, "rb") as file_:
             return file_.read()
 
     def save(self, data: Any) -> None:
@@ -144,7 +151,7 @@ class BytesMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        with fileio.open(self.data_path, "wb") as file_:
+        with self.artifact_store.open(self.data_path, "wb") as file_:
             file_.write(data)
 
 
@@ -252,13 +259,16 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         tuple,
     )
 
-    def __init__(self, uri: str):
+    def __init__(
+        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+    ):
         """Define `self.data_path` and `self.metadata_path`.
 
         Args:
             uri: The URI where the artifact data is stored.
+            artifact_store: The artifact store where the artifact data is stored.
         """
-        super().__init__(uri)
+        super().__init__(uri, artifact_store)
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         self.metadata_path = os.path.join(self.uri, DEFAULT_METADATA_FILENAME)
 
@@ -283,16 +293,16 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             RuntimeError: If the data was not found.
         """
         # If the data was not serialized, there must be metadata present.
-        if not fileio.exists(self.data_path) and not fileio.exists(
-            self.metadata_path
-        ):
+        if not self.artifact_store.exists(
+            self.data_path
+        ) and not self.artifact_store.exists(self.metadata_path):
             raise RuntimeError(
                 f"Materialization of type {data_type} failed. Expected either"
                 f"{self.data_path} or {self.metadata_path} to exist."
             )
 
         # If the data was serialized as JSON, deserialize it.
-        if fileio.exists(self.data_path):
+        if self.artifact_store.exists(self.data_path):
             outputs = yaml_utils.read_json(self.data_path)
 
         # Otherwise, use the metadata to reconstruct the data as a list.
@@ -375,7 +385,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         try:
             for i, element in enumerate(data):
                 element_path = os.path.join(self.uri, str(i))
-                fileio.mkdir(element_path)
+                self.artifact_store.mkdir(element_path)
                 type_ = type(element)
                 materializer_class = materializer_registry[type_]
                 materializer = materializer_class(uri=element_path)
@@ -398,11 +408,11 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # If an error occurs, delete all created files.
         except Exception as e:
             # Delete metadata
-            if fileio.exists(self.metadata_path):
-                fileio.remove(self.metadata_path)
+            if self.artifact_store.exists(self.metadata_path):
+                self.artifact_store.remove(self.metadata_path)
             # Delete all elements that were already saved.
             for entry in metadata:
-                fileio.rmtree(entry["path"])
+                self.artifact_store.rmtree(entry["path"])
             raise e
 
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:

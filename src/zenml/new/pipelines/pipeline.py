@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Definition of a ZenML pipeline."""
+
 import copy
 import hashlib
 import inspect
@@ -674,6 +675,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     end_time=schedule.end_time,
                     interval_second=schedule.interval_second,
                     catchup=schedule.catchup,
+                    run_once_start_time=schedule.run_once_start_time,
                 )
                 schedule_id = (
                     Client().zen_store.create_schedule(schedule_model).id
@@ -742,10 +744,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 run_id=run.id if run else None,
             )
 
-            deploy_pipeline(
-                deployment=deployment_model, stack=stack, placeholder_run=run
-            )
-
             if run:
                 run_url = dashboard_utils.get_run_url(run)
                 if run_url:
@@ -757,7 +755,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         "`zenml up`."
                     )
 
-            return run
+            deploy_pipeline(
+                deployment=deployment_model, stack=stack, placeholder_run=run
+            )
+            if run:
+                return Client().get_pipeline_run(run.id)
+            return None
 
     @staticmethod
     def log_pipeline_deployment_metadata(

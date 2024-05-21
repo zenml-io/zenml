@@ -21,8 +21,6 @@ ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 # information on how to configure these environment variables.
 
 # ENV ZENML_DEFAULT_PROJECT_NAME=""
-# ENV ZENML_DEFAULT_USER_NAME=""
-# ENV ZENML_DEFAULT_USER_PASSWORD=""
 # ENV ZENML_STORE_URL=""
 # ENV ZENML_STORE_SSL_CA=""
 # ENV ZENML_STORE_SSL_CERT=""
@@ -59,5 +57,5 @@ ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 # ENV ZENML_SECRETS_STORE_VAULT_NAMESPACE=""
 # ENV ZENML_SECRETS_STORE_MAX_VERSIONS=""
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
-CMD ["--proxy-headers", "--port", "8080", "--host",  "0.0.0.0"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header"]
+CMD ["--port", "8080", "--host",  "0.0.0.0"]

@@ -45,13 +45,20 @@ def test_get_global_config_directory_works():
 )
 def test_get_global_config_directory_works_with_env_var():
     """Tests global config directory."""
-    os.environ[ENV_ZENML_CONFIG_PATH] = "/"
-    gc_dir = io_utils.get_global_config_directory()
-    assert gc_dir is not None
-    assert isinstance(gc_dir, str)
-    assert os.path.exists(gc_dir)
-    assert os.path.isdir(gc_dir)
-    assert gc_dir == "/"
+    orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
+    try:
+        os.environ[ENV_ZENML_CONFIG_PATH] = "/"
+        gc_dir = io_utils.get_global_config_directory()
+        assert gc_dir is not None
+        assert isinstance(gc_dir, str)
+        assert os.path.exists(gc_dir)
+        assert os.path.isdir(gc_dir)
+        assert gc_dir == "/"
+    finally:
+        if orig_config_path is not None:
+            os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
+        else:
+            del os.environ[ENV_ZENML_CONFIG_PATH]
 
 
 def test_write_file_contents_as_string_works(tmp_path):

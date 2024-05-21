@@ -31,7 +31,7 @@ from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
-from zenml.zen_stores.schemas.identity_schemas import IdentitySchema
+from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
 )
@@ -41,6 +41,7 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
+from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.service_connector_schemas import (
     ServiceConnectorSchema,
 )
@@ -67,6 +68,7 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
 )
+from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 
 __all__ = [
     "APIKeySchema",
@@ -78,7 +80,6 @@ __all__ = [
     "CodeRepositorySchema",
     "EventSourceSchema",
     "FlavorSchema",
-    "IdentitySchema",
     "LogsSchema",
     "NamedSchema",
     "OAuthDeviceSchema",
@@ -89,7 +90,9 @@ __all__ = [
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
+    "ServerSettingsSchema",
     "ServiceConnectorSchema",
+    "ServiceSchema",
     "StackComponentSchema",
     "StackCompositionSchema",
     "StackSchema",

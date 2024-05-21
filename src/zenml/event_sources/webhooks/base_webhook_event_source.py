@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Abstract BaseEvent class that all Event implementations must implement."""
+
 import hashlib
 import hmac
 import json
@@ -153,10 +154,12 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         Raises:
             AuthorizationException: If the signature validation fails.
         """
-        signature_header = headers.get("x-hub-signature-256")
+        signature_header = headers.get("x-hub-signature-256") or headers.get(
+            "x-hub-signature"
+        )
         if not signature_header:
             raise AuthorizationException(
-                "x-hub-signature-256 header is missing!"
+                "x-hub-signature-256 or x-hub-signature header is missing!"
             )
 
         if not self.is_valid_signature(

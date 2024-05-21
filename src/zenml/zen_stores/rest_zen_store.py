@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
+
 import os
 import re
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     Any,
     ClassVar,
@@ -49,6 +50,7 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CURRENT_USER,
+    DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -73,12 +75,14 @@ from zenml.constants import (
     SECRETS_BACKUP,
     SECRETS_OPERATIONS,
     SECRETS_RESTORE,
+    SERVER_SETTINGS,
     SERVICE_ACCOUNTS,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTOR_TYPES,
     SERVICE_CONNECTOR_VERIFY,
     SERVICE_CONNECTORS,
+    SERVICES,
     STACK_COMPONENTS,
     STACKS,
     STEPS,
@@ -178,6 +182,8 @@ from zenml.models import (
     SecretResponse,
     SecretUpdate,
     ServerModel,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -188,6 +194,10 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponse,
+    ServiceUpdate,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -348,9 +358,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         fileio.makedirs(str(secret_folder))
         file_path = Path(secret_folder, "ca_bundle.pem")
-        with open(file_path, "w") as f:
+        with os.fdopen(
+            os.open(file_path, flags=os.O_RDWR | os.O_CREAT, mode=0o600), "w"
+        ) as f:
             f.write(verify_ssl)
-        file_path.chmod(0o600)
         verify_ssl = str(file_path)
 
         return verify_ssl
@@ -375,45 +386,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
         ):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
-
-    @classmethod
-    def copy_configuration(
-        cls,
-        config: "StoreConfiguration",
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> "StoreConfiguration":
-        """Create a copy of the store config using a different path.
-
-        This method is used to create a copy of the store configuration that can
-        be loaded using a different configuration path or in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.).
-
-        Args:
-            config: The store configuration to copy.
-            config_path: new path where the configuration copy will be loaded
-                from.
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-
-        Returns:
-            A new store configuration object that reflects the new configuration
-            path.
-        """
-        assert isinstance(config, RestZenStoreConfiguration)
-        assert config.api_token is not None or config.api_key is not None
-        config = config.copy(exclude={"username", "password"}, deep=True)
-        # Load the certificate values back into the configuration
-        config.expand_certificates()
-        return config
 
     class Config:
         """Pydantic configuration class."""
@@ -478,6 +450,37 @@ class RestZenStore(BaseZenStore):
         """
         return self.get_store_info().id
 
+    # -------------------- Server Settings --------------------
+
+    def get_server_settings(
+        self, hydrate: bool = True
+    ) -> ServerSettingsResponse:
+        """Get the server settings.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The server settings.
+        """
+        response_body = self.get(SERVER_SETTINGS, params={"hydrate": hydrate})
+        return ServerSettingsResponse.parse_obj(response_body)
+
+    def update_server_settings(
+        self, settings_update: ServerSettingsUpdate
+    ) -> ServerSettingsResponse:
+        """Update the server settings.
+
+        Args:
+            settings_update: The server settings update.
+
+        Returns:
+            The updated server settings.
+        """
+        response_body = self.put(SERVER_SETTINGS, body=settings_update)
+        return ServerSettingsResponse.parse_obj(response_body)
+
     # ----------------------------- API Keys -----------------------------
 
     def create_api_key(
@@ -532,6 +535,10 @@ class RestZenStore(BaseZenStore):
         """
         self.config.api_key = api_key
         self.clear_session()
+        # TODO: find a way to persist the API key in the configuration file
+        #  without calling _write_config() here.
+        # This is the only place where we need to explicitly call
+        # _write_config() to persist the global configuration.
         GlobalConfiguration()._write_config()
 
     def list_api_keys(
@@ -623,6 +630,93 @@ class RestZenStore(BaseZenStore):
             resource_id=api_key_name_or_id,
             route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
         )
+
+    # ----------------------------- Services -----------------------------
+
+    def create_service(
+        self, service_request: ServiceRequest
+    ) -> ServiceResponse:
+        """Create a new service.
+
+        Args:
+            service_request: The service to create.
+
+        Returns:
+            The created service.
+        """
+        return self._create_resource(
+            resource=service_request,
+            response_model=ServiceResponse,
+            route=SERVICES,
+        )
+
+    def get_service(
+        self, service_id: UUID, hydrate: bool = True
+    ) -> ServiceResponse:
+        """Get a service.
+
+        Args:
+            service_id: The ID of the service to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The service.
+        """
+        return self._get_resource(
+            resource_id=service_id,
+            route=SERVICES,
+            response_model=ServiceResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_services(
+        self, filter_model: ServiceFilter, hydrate: bool = False
+    ) -> Page[ServiceResponse]:
+        """List all services matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all services matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=SERVICES,
+            response_model=ServiceResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_service(
+        self, service_id: UUID, update: ServiceUpdate
+    ) -> ServiceResponse:
+        """Update a service.
+
+        Args:
+            service_id: The ID of the service to update.
+            update: The update to be applied to the service.
+
+        Returns:
+            The updated service.
+        """
+        return self._update_resource(
+            resource_id=service_id,
+            resource_update=update,
+            response_model=ServiceResponse,
+            route=SERVICES,
+        )
+
+    def delete_service(self, service_id: UUID) -> None:
+        """Delete a service.
+
+        Args:
+            service_id: The ID of the service to delete.
+        """
+        self._delete_resource(resource_id=service_id, route=SERVICES)
 
     # ----------------------------- Artifacts -----------------------------
 
@@ -2885,6 +2979,23 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponse,
         )
 
+    def deactivate_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserResponse:
+        """Deactivates a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+
+        Returns:
+            The deactivated user containing the activation token.
+        """
+        response_body = self.put(
+            f"{USERS}/{str(user_name_or_id)}{DEACTIVATE}",
+        )
+
+        return UserResponse.parse_obj(response_body)
+
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
 
@@ -3850,6 +3961,7 @@ class RestZenStore(BaseZenStore):
             The created resource.
         """
         response_body = self.post(f"{route}", body=resource, params=params)
+
         return response_model.parse_obj(response_body)
 
     def _create_workspace_scoped_resource(

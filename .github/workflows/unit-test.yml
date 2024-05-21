@@ -31,11 +31,7 @@ on:
       os:
         description: OS
         type: choice
-        options:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-          - ubuntu-dind-runners
+        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
         required: false
         default: ubuntu-latest
       python-version:
@@ -63,6 +59,7 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
 
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
@@ -79,6 +76,9 @@ jobs:
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install libomp
+        if: ${{ inputs.os == 'macos-latest' || inputs.os == 'macos-13' }}
+        run: brew install libomp
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
@@ -106,7 +106,7 @@ jobs:
 
       # - name: Upload coverage
       #  # only do it for python 3.8, we don't need to do it for every version
-      #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
+      #   if: ${{ inputs.os == 'arc-runner-set' && inputs.python-version == '3.8' }}
       #   uses: codecov/codecov-action@v2
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
@@ -114,5 +114,5 @@ jobs:
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list
-          pip list
-          pip check || true
+          uv pip list
+          uv pip check || true

@@ -180,9 +180,9 @@ def main(
             "configs",
             "train_config.yaml",
         )
-        pipeline_args[
-            "run_name"
-        ] = f"e2e_use_case_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        pipeline_args["run_name"] = (
+            f"e2e_use_case_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        )
         e2e_use_case_training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline finished successfully!")
 
@@ -193,9 +193,9 @@ def main(
         "configs",
         "deployer_config.yaml",
     )
-    pipeline_args[
-        "run_name"
-    ] = f"e2e_use_case_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    pipeline_args["run_name"] = (
+        f"e2e_use_case_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    )
     e2e_use_case_deployment.with_options(**pipeline_args)(**run_args_inference)
 
     # Execute Batch Inference Pipeline
@@ -205,9 +205,9 @@ def main(
         "configs",
         "inference_config.yaml",
     )
-    pipeline_args[
-        "run_name"
-    ] = f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    pipeline_args["run_name"] = (
+        f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    )
     e2e_use_case_batch_inference.with_options(**pipeline_args)(
         **run_args_inference
     )

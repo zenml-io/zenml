@@ -20,7 +20,6 @@ import cloudpickle
 
 from zenml.enums import ArtifactType
 from zenml.environment import Environment
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils.io_utils import (
@@ -72,7 +71,7 @@ class CloudpickleMaterializer(BaseMaterializer):
 
         # load data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "rb") as fid:
+        with self.artifact_store.open(filepath, "rb") as fid:
             data = cloudpickle.load(fid)
         return data
 
@@ -111,7 +110,7 @@ class CloudpickleMaterializer(BaseMaterializer):
 
         # save data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "wb") as fid:
+        with self.artifact_store.open(filepath, "wb") as fid:
             cloudpickle.dump(data, fid)
 
     def _save_python_version(self) -> None:

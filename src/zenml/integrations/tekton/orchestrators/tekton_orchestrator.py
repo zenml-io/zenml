@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Tekton orchestrator."""
+
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
@@ -135,10 +136,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             assert container_registry is not None
 
             kubernetes_context = self.config.kubernetes_context
-            connector = self.get_connector()
             msg = f"'{self.name}' Tekton orchestrator error: "
 
-            if not connector:
+            if not self.connector:
                 if not kubernetes_context:
                     return False, (
                         f"{msg}you must either link this stack component to a "

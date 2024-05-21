@@ -12,15 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import random
 import time
 import uuid
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from string import ascii_lowercase
+from threading import Thread
 from typing import Dict, List, Optional, Tuple
+from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
 from pydantic import SecretStr
+from sqlalchemy.exc import IntegrityError
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
@@ -117,13 +122,15 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
-from zenml.models.v2.core.model import ModelFilter, ModelUpdate
+from zenml.models.v2.core.model import ModelFilter, ModelRequest, ModelUpdate
 from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest
+from zenml.models.v2.core.user import UserFilter
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
+from zenml.zen_stores.rest_zen_store import RestZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"
@@ -374,6 +381,248 @@ def test_deleting_default_workspace_fails():
 # '-------'
 
 
+class TestAdminUser:
+    default_pwd = "".join(random.choices(ascii_lowercase, k=10))
+
+    def test_creation_as_admin_and_non_admin(self):
+        """Tests creating a user as an admin and as a non-admin."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        with UserContext(login=True, is_admin=False):
+            zen_store: RestZenStore = Client().zen_store
+            # this is not allowed for non-admin users
+            with pytest.raises(IllegalOperationError):
+                zen_store.create_user(
+                    UserRequest(
+                        name=sample_name("test_user"),
+                        password=self.default_pwd,
+                        is_admin=False,
+                    )
+                )
+
+    def test_listing_users(self):
+        """Tests listing users as an admin and as a non-admin."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        with UserContext(
+            password=self.default_pwd, is_admin=False
+        ) as test_user:
+            zen_store: RestZenStore = Client().zen_store
+            users = zen_store.list_users(UserFilter())
+            assert users.total >= 2
+
+            # this is limited to self only for non-admin users
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                zen_store = Client().zen_store
+                users = zen_store.list_users(UserFilter())
+                assert users.total == 1
+
+    def test_get_users(self):
+        """Tests getting users as an admin and as a non-admin."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        with UserContext(
+            password=self.default_pwd, is_admin=False
+        ) as test_user:
+            zen_store: RestZenStore = Client().zen_store
+
+            user = zen_store.get_user(test_user.name)
+            assert user.id == test_user.id
+
+            # this is not allowed for non-admin users
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                zen_store = Client().zen_store
+                with pytest.raises(IllegalOperationError):
+                    zen_store.get_user(DEFAULT_USERNAME)
+
+    def test_update_users(self):
+        """Tests updating users as an admin and as a non-admin."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        with UserContext(
+            password=self.default_pwd, is_admin=False
+        ) as test_user:
+            zen_store: RestZenStore = Client().zen_store
+
+            user = zen_store.update_user(
+                test_user.id,
+                UserUpdate(full_name="foo@bar.ai"),
+            )
+            assert user.full_name == "foo@bar.ai"
+
+            with UserContext(login=True, is_admin=False):
+                zen_store = Client().zen_store
+
+                # this is not allowed for non-admin users
+                with pytest.raises(IllegalOperationError):
+                    zen_store.update_user(
+                        test_user.id,
+                        UserUpdate(full_name="bar@foo.io"),
+                    )
+
+            # user is allowed to update itself
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                zen_store = Client().zen_store
+                user = zen_store.update_user(
+                    test_user.id,
+                    UserUpdate(full_name="bar@foo.io"),
+                )
+
+                assert user.full_name == "bar@foo.io"
+
+    def test_deactivate_users(self):
+        """Tests deactivating users as an admin and as a non-admin."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        zen_store: RestZenStore = Client().zen_store
+        with UserContext(
+            password=self.default_pwd, is_admin=False
+        ) as test_user:
+            with UserContext(is_admin=False) as test_user2:
+                # this is not allowed for non-admin users
+                with LoginContext(
+                    user_name=test_user.name, password=self.default_pwd
+                ):
+                    new_zen_store: RestZenStore = Client().zen_store
+                    with pytest.raises(IllegalOperationError):
+                        new_zen_store.put(
+                            f"{USERS}/{str(test_user2.id)}{DEACTIVATE}"
+                        )
+
+                response_body = zen_store.put(
+                    f"{USERS}/{str(test_user2.id)}{DEACTIVATE}",
+                )
+                deactivated_user = UserResponse.parse_obj(response_body)
+                assert deactivated_user.name == test_user2.name
+
+    def test_delete_users(self):
+        """Tests deleting users as an admin and as a non-admin."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        zen_store: RestZenStore = Client().zen_store
+        with UserContext(
+            password=self.default_pwd, is_admin=False
+        ) as test_user:
+            with UserContext(is_admin=False) as test_user2:
+                # this is not allowed for non-admin users
+                with LoginContext(
+                    user_name=test_user.name, password=self.default_pwd
+                ):
+                    new_zen_store: RestZenStore = Client().zen_store
+                    with pytest.raises(IllegalOperationError):
+                        new_zen_store.delete_user(test_user2.id)
+
+            zen_store.delete_user(test_user.id)
+
+    def test_update_self_via_normal_endpoint(self):
+        """Tests updating self in admin and non-admin setting."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        zen_store: RestZenStore = Client().zen_store
+        default_user = zen_store.get_user(DEFAULT_USERNAME)
+        with pytest.raises(IllegalOperationError):
+            # cannot update admin status for default user
+            zen_store.update_user(
+                default_user.id,
+                UserUpdate(name=default_user.name, is_admin=False),
+            )
+        with UserContext(
+            password=self.default_pwd, is_admin=False
+        ) as test_user:
+            # this is not allowed for non-admin users
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                new_zen_store: RestZenStore = Client().zen_store
+                with pytest.raises(IllegalOperationError):
+                    new_zen_store.update_user(
+                        test_user.id,
+                        UserUpdate(
+                            name=test_user.name,
+                            is_admin=True,
+                        ),
+                    )
+
+        with UserContext(
+            password=self.default_pwd, is_admin=False
+        ) as test_user:
+            zen_store.update_user(
+                test_user.id,
+                UserUpdate(name=test_user.name, is_admin=True),
+            )
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                new_zen_store: RestZenStore = Client().zen_store
+                with pytest.raises(IllegalOperationError):
+                    new_zen_store.update_user(
+                        test_user.id,
+                        UserUpdate(
+                            name=test_user.name,
+                            is_admin=False,
+                        ),
+                    )
+
+    def test_update_self_via_current_user_endpoint(self):
+        """Tests updating self in admin and non-admin setting."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        zen_store: RestZenStore = Client().zen_store
+        default_user = zen_store.get_user(DEFAULT_USERNAME)
+        assert default_user.is_admin
+        zen_store.put(
+            "/current-user",
+            body=UserUpdate(name=default_user.name, full_name="Axl"),
+        )
+        default_user = zen_store.get_user(DEFAULT_USERNAME)
+        assert default_user.full_name == "Axl"
+        assert default_user.is_admin  # admin status is not changed
+
+        with UserContext(
+            password=self.default_pwd, is_admin=False
+        ) as test_user:
+            with LoginContext(
+                user_name=test_user.name, password=self.default_pwd
+            ):
+                new_zen_store: RestZenStore = Client().zen_store
+                assert not test_user.is_admin
+                new_zen_store.put(
+                    "/current-user",
+                    body=UserUpdate(
+                        name=test_user.name,
+                        full_name="Axl",
+                    ),
+                )
+                user = zen_store.get_user(test_user.id)
+                assert not user.is_admin
+                assert user.full_name == "Axl"
+
+                # self update does not change admin status
+                new_zen_store.put(
+                    "/current-user",
+                    body=UserUpdate(
+                        name=test_user.name,
+                        is_admin=True,
+                    ),
+                )
+                user = zen_store.get_user(test_user.id)
+                assert not user.is_admin
+
+
 def test_active_user():
     """Tests the active user can be queried with .get_user()."""
     zen_store = Client().zen_store
@@ -394,18 +643,103 @@ def test_creating_user_with_existing_name_fails():
     with UserContext() as existing_user:
         with pytest.raises(EntityExistsError):
             zen_store.create_user(
-                UserRequest(name=existing_user.name, password="password")
+                UserRequest(
+                    name=existing_user.name,
+                    password="password",
+                    is_admin=False,
+                )
             )
 
     with ServiceAccountContext() as existing_service_account:
         with does_not_raise():
             user = zen_store.create_user(
                 UserRequest(
-                    name=existing_service_account.name, password="password"
+                    name=existing_service_account.name,
+                    password="password",
+                    is_admin=False,
                 )
             )
             # clean up
             zen_store.delete_user(user.id)
+
+
+def test_creating_users_in_parallel_do_not_duplicate_fails(
+    clean_client: "Client",
+):
+    """Tests creating a user with an existing username fails in parallel mode."""
+
+    def silent_create_user(user_request: UserRequest):
+        """This function attempts to create a user and silently passes
+        if a duplicate user exists. This is used to simulate race
+        conditions in parallel user creation.
+        """
+        try:
+            clean_client.zen_store.create_user(user_request)
+        except (EntityExistsError, IntegrityError):
+            pass
+
+    user_name = "test_user"
+    password = "P@ssw0rd"
+    count = 100
+
+    threads: List[Thread] = []
+    for _ in range(count):
+        t = Thread(
+            target=silent_create_user,
+            args=(
+                UserRequest(name=user_name, password=password, is_admin=False),
+            ),
+        )
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    users = clean_client.zen_store.list_users(
+        user_filter_model=UserFilter(name=user_name)
+    )
+    assert users.total == 1
+
+
+def test_creating_service_accounts_in_parallel_do_not_duplicate_fails(
+    clean_client: "Client",
+):
+    """Tests creating a user with an existing username fails in parallel mode."""
+
+    def silent_create_service_account(
+        service_account_request: ServiceAccountRequest,
+    ):
+        """This function attempts to create a service account and silently
+        passes if a duplicate user exists. This is used to simulate race
+        conditions in parallel user creation.
+        """
+        try:
+            clean_client.zen_store.create_service_account(
+                service_account_request
+            )
+        except (EntityExistsError, IntegrityError):
+            pass
+
+    user_name = "test_user"
+    count = 100
+
+    threads: List[Thread] = []
+    for _ in range(count):
+        t = Thread(
+            target=silent_create_service_account,
+            args=(ServiceAccountRequest(name=user_name, active=True),),
+        )
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    service_accounts = clean_client.zen_store.list_service_accounts(
+        filter_model=ServiceAccountFilter(name=user_name)
+    )
+    assert service_accounts.total == 1
 
 
 def test_get_user():
@@ -618,25 +952,6 @@ def test_updating_user_with_existing_name_fails():
                 )
 
 
-def test_updating_default_user_fails():
-    """Tests that updating the default user is prohibited."""
-    client = Client()
-    default_user = client.zen_store.get_user(DEFAULT_USERNAME)
-    assert default_user
-    user_update = UserUpdate(name="axl")
-    with pytest.raises(IllegalOperationError):
-        client.zen_store.update_user(
-            user_id=default_user.id, user_update=user_update
-        )
-
-
-def test_deleting_default_user_fails():
-    """Tests that deleting the default user is prohibited."""
-    zen_store = Client().zen_store
-    with pytest.raises(IllegalOperationError):
-        zen_store.delete_user("default")
-
-
 def test_create_user_no_password():
     """Tests that creating a user without a password needs to be activated."""
     client = Client()
@@ -660,7 +975,7 @@ def test_create_user_no_password():
         with pytest.raises(AuthorizationException):
             response_body = store.put(
                 f"{USERS}/{str(user.id)}{ACTIVATE}",
-                body=UserUpdate(password="password"),
+                body=UserUpdate(password="password", is_admin=user.is_admin),
             )
 
         with pytest.raises(AuthorizationException):
@@ -670,7 +985,9 @@ def test_create_user_no_password():
         response_body = store.put(
             f"{USERS}/{str(user.id)}{ACTIVATE}",
             body=UserUpdate(
-                password="password", activation_token=user.activation_token
+                password="password",
+                activation_token=user.activation_token,
+                is_admin=user.is_admin,
             ),
         )
         activated_user = UserResponse.parse_obj(response_body)
@@ -713,7 +1030,9 @@ def test_reactivate_user():
         with pytest.raises(AuthorizationException):
             response_body = store.put(
                 f"{USERS}/{str(user.id)}{ACTIVATE}",
-                body=UserUpdate(password="newpassword"),
+                body=UserUpdate(
+                    password="newpassword", is_admin=user.is_admin
+                ),
             )
 
         with pytest.raises(AuthorizationException):
@@ -729,6 +1048,7 @@ def test_reactivate_user():
             body=UserUpdate(
                 password="newpassword",
                 activation_token=deactivated_user.activation_token,
+                is_admin=user.is_admin,
             ),
         )
         activated_user = UserResponse.parse_obj(response_body)
@@ -2178,6 +2498,23 @@ def test_count_stack_components():
         assert store.count_stack_components(filter_model) == count_before + 1
 
 
+def test_stack_component_create_fails_with_invalid_name():
+    """Tests that creating a stack component with an invalid name fails."""
+    client = Client()
+    store = client.zen_store
+    with pytest.raises(ValueError):
+        store.create_stack_component(
+            ComponentRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                name="I will fail\n",
+                type=StackComponentType.ORCHESTRATOR,
+                configuration={},
+                flavor="local",
+            )
+        )
+
+
 # .-------------------------.
 # | Stack component flavors |
 # '-------------------------'
@@ -2313,6 +2650,31 @@ def test_register_stack_fails_when_stack_exists():
                     store.create_stack(
                         stack=new_stack,
                     )
+
+
+def test_register_stack_fails_with_invalid_name():
+    """Tests registering stack fails with invalid name."""
+    client = Client()
+    store = client.zen_store
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with pytest.raises(ValueError):
+                store.create_stack(
+                    StackRequest(
+                        name="I will fail\n",
+                        components=components,
+                        workspace=client.active_workspace.id,
+                        user=client.active_user.id,
+                    )
+                )
 
 
 def test_updating_nonexistent_stack_fails():
@@ -2623,6 +2985,37 @@ def test_artifacts_are_not_deleted_with_run(clean_client: "Client"):
 
         artifacts = store.list_artifact_versions(ArtifactVersionFilter())
         assert artifacts.total == num_artifact_versions_before + num_runs * 2
+
+
+def test_artifact_create_fails_with_invalid_name(clean_client: "Client"):
+    """Tests that artifact creation fails with an invalid name."""
+    store = clean_client.zen_store
+    with pytest.raises(Exception):
+        store.create_artifact(ArtifactRequest(name="I will fail\n"))
+
+
+def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
+    """Tests that artifact fetch works even with an invalid name.
+
+    This test is only needed to ensure that legacy entities with illegal names
+    would still work fine.
+    """
+    store = clean_client.zen_store
+    ar = ArtifactRequest(
+        name="I should fail\n But hacky `validate_name` protects me from it"
+    )
+    with patch(
+        "zenml.zen_stores.sql_zen_store.validate_name", return_value=None
+    ):
+        response = store.create_artifact(ar)
+
+    fetched = store.get_artifact(response.id)
+    assert (
+        fetched.name
+        == "I should fail\n But hacky `validate_name` protects me from it"
+    )
+
+    store.delete_artifact(response.id)
 
 
 # .---------.
@@ -3732,6 +4125,19 @@ class TestModel:
             )
             assert len(ms) == 0
 
+    def test_create_fails_with_invalid_name(self):
+        """Test that creation fails with invalid name."""
+        c = Client()
+        zs = c.zen_store
+        with pytest.raises(ValueError):
+            zs.create_model(
+                ModelRequest(
+                    user=c.active_user.id,
+                    workspace=c.active_workspace.id,
+                    name="I will fail\n",
+                )
+            )
+
 
 class TestModelVersion:
     def test_create_pass(self):
@@ -3746,6 +4152,20 @@ class TestModelVersion:
                     name="great one",
                 )
             )
+
+    def test_create_fail_with_invalid_name(self):
+        """Test that creation fails with invalid name."""
+        with ModelContext() as model:
+            zs = Client().zen_store
+            with pytest.raises(ValueError):
+                zs.create_model_version(
+                    ModelVersionRequest(
+                        user=model.user.id,
+                        workspace=model.workspace.id,
+                        model=model.id,
+                        name="I will fail\n",
+                    )
+                )
 
     def test_create_duplicated(self):
         """Test that duplicated creation fails."""
@@ -4681,6 +5101,11 @@ class TestTag:
         """Tests that tag creation fails without a name."""
         with pytest.raises(ValueError):
             clean_client.create_tag(TagRequest(color="yellow"))
+
+    def test_create_fails_with_invalid_name(self, clean_client: "Client"):
+        """Tests that tag creation fails with invalid name."""
+        with pytest.raises(ValueError):
+            clean_client.create_tag(TagRequest(name="I will fail\n"))
 
     def test_create_duplicate(self, clean_client: "Client"):
         """Tests that tag creation fails on duplicate."""

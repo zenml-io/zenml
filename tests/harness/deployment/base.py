@@ -30,6 +30,7 @@ from tests.harness.model import (
     DeploymentStoreConfig,
     ServerType,
 )
+from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.enums import StoreType
 
 if TYPE_CHECKING:
@@ -224,6 +225,10 @@ class BaseTestDeployment(ABC):
             dockerfile=str(docker_file_path),
             build_context_root=str(context_root),
             platform="linux/amd64",
+            # Use the same Python version as the current environment
+            buildargs={
+                "PYTHON_VERSION": f"{sys.version_info.major}.{sys.version_info.minor}"
+            },
         )
 
     @classmethod
@@ -303,12 +308,12 @@ class BaseTestDeployment(ABC):
         # to restore them later, then reset them
         original_config = GlobalConfiguration.get_instance()
         original_client = Client.get_instance()
-        orig_config_path = os.getenv("ZENML_CONFIG_PATH")
+        orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
 
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
 
-        os.environ["ZENML_CONFIG_PATH"] = str(config_path)
+        os.environ[ENV_ZENML_CONFIG_PATH] = str(config_path)
         os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
         os.environ["ZENML_ENABLE_REPO_INIT_WARNINGS"] = "false"
         os.environ["ZENML_DISABLE_WORKSPACE_WARNINGS"] = "true"
@@ -337,9 +342,9 @@ class BaseTestDeployment(ABC):
 
         # restore the global configuration path
         if orig_config_path:
-            os.environ["ZENML_CONFIG_PATH"] = orig_config_path
+            os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
         else:
-            del os.environ["ZENML_CONFIG_PATH"]
+            del os.environ[ENV_ZENML_CONFIG_PATH]
 
         # restore the global configuration and the client
         GlobalConfiguration._reset_instance(original_config)

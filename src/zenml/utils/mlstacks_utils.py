@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Functionality to handle interaction with the mlstacks package."""
+
 import json
 import os
 from pathlib import Path
@@ -192,7 +193,6 @@ def _add_extra_config_to_components(
             "mlflow-password",
         ],
         ("model_deployer", "seldon", "k3d"): ["seldon-secret-name"],
-        ("model_deployer", "kserve", "k3d"): ["kserve-secret-name"],
     }
 
     def _add_config(

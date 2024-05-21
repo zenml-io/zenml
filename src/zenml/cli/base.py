@@ -28,7 +28,13 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import email_opt_int, track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.cli.utils import (
+    confirmation,
+    declare,
+    error,
+    is_jupyter_installed,
+    warning,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
@@ -73,15 +79,19 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2024.01.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.04.05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.01.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.04.03",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
-        github_tag="2024.01.12",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.04.05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+    ),
+    llm_finetuning=ZenMLProjectTemplateLocation(
+        github_url="zenml-io/template-llm-finetuning",
+        github_tag="2024.04.05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -98,9 +108,9 @@ ZENML_PROJECT_TEMPLATES = dict(
     type=str,
     required=False,
     help="Name or URL of the ZenML project template to use to initialize the "
-    "repository, Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a "
-    "copier URL like gh:owner/repo_name. If not specified, no template is "
-    "used.",
+    "repository, Can be a string like `e2e_batch`, `nlp`, `llm_finetuning`, "
+    "`starter` etc. or a copier URL like gh:owner/repo_name. If not specified, "
+    "no template is used.",
 )
 @click.option(
     "--template-tag",
@@ -378,6 +388,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
                     )
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
+            GlobalConfiguration._reset_instance()
             fresh_gc = GlobalConfiguration(
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
@@ -396,6 +407,7 @@ def go() -> None:
 
     Raises:
         GitNotFoundError: If git is not installed.
+        e: when Jupyter Notebook fails to launch.
     """
     from zenml.cli.text_utils import (
         zenml_cli_privacy_message,
@@ -470,7 +482,24 @@ def go() -> None:
             zenml_go_notebook_tutorial_message(ipynb_files), width=80
         )
         input("Press ENTER to continue...")
-    subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+
+    if is_jupyter_installed():
+        try:
+            subprocess.check_call(
+                ["jupyter", "notebook"], cwd=zenml_tutorial_path
+            )
+        except subprocess.CalledProcessError as e:
+            cli_utils.error(
+                "An error occurred while launching Jupyter Notebook. "
+                "Please make sure Jupyter is properly installed and try again."
+            )
+            raise e
+    else:
+        cli_utils.error(
+            "Jupyter Notebook or JupyterLab is not installed. "
+            "Please install the 'notebook' package with `pip` "
+            "to run the tutorial notebooks."
+        )
 
 
 def _prompt_email(event_source: AnalyticsEventSource) -> bool:
@@ -502,6 +531,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
             email_opt_int(opted_in=True, email=email, source=event_source)
 
             GlobalConfiguration().user_email_opt_in = True
+            GlobalConfiguration().user_email = email
 
             # Add consent and email to user model
             client.update_user(
@@ -576,7 +606,7 @@ def info(
     client = Client()
     store_info = client.zen_store.get_store_info()
 
-    store_cfg = gc.store
+    store_cfg = gc.store_configuration
 
     user_info = {
         "zenml_local_version": zenml_version,
@@ -585,7 +615,7 @@ def info(
         "zenml_server_deployment_type": str(store_info.deployment_type),
         "zenml_config_dir": gc.config_directory,
         "zenml_local_store_dir": gc.local_stores_path,
-        "zenml_server_url": "" if store_cfg is None else store_cfg.url,
+        "zenml_server_url": store_cfg.url,
         "zenml_active_repository_root": str(client.root),
         "python_version": environment.python_version(),
         "environment": get_environment(),
@@ -646,10 +676,7 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     """
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    store_config = (
-        GlobalConfiguration().store
-        or GlobalConfiguration().get_default_store()
-    )
+    store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
         BaseZenStore.create_store(
             store_config, skip_default_registrations=skip_default_registrations
@@ -705,10 +732,7 @@ def backup_database(
     from zenml.zen_stores.base_zen_store import BaseZenStore
     from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-    store_config = (
-        GlobalConfiguration().store
-        or GlobalConfiguration().get_default_store()
-    )
+    store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
         store = BaseZenStore.create_store(
             store_config, skip_default_registrations=True, skip_migrations=True
@@ -772,10 +796,7 @@ def restore_database(
     from zenml.zen_stores.base_zen_store import BaseZenStore
     from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-    store_config = (
-        GlobalConfiguration().store
-        or GlobalConfiguration().get_default_store()
-    )
+    store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
         store = BaseZenStore.create_store(
             store_config, skip_default_registrations=True, skip_migrations=True

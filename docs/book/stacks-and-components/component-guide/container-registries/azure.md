@@ -111,10 +111,6 @@ Successfully registered service connector `azure-demo` with access to the follow
 ```
 {% endcode %}
 
-Alternatively, you can configure an Azure Service Connector through the ZenML dashboard:
-
-![Azure Service Connector Type](../../../.gitbook/assets/azure-service-connector-type.png)
-![Azure ACR Service Connector Configuration](../../../.gitbook/assets/azure-acr-service-connector-configuration.png)
 
 > **Note**: Please remember to grant the entity associated with your Azure credentials permissions to read and write to your ACR registry as well as to list accessible ACR registries. For a full list of permissions required to use an Azure Service Connector to access a ACR registry, please refer to the [Azure Service Connector ACR registry resource type documentation](../../auth-management/azure-service-connector.md#acr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](../../auth-management/azure-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
@@ -164,9 +160,6 @@ Successfully connected container registry `azure-demo` to the following resource
 ```
 {% endcode %}
 
-A similar experience is available when you configure the Azure Container Registry through the ZenML dashboard:
-
-![Azure Container Registry Configuration](../../../.gitbook/assets/azure-container-registry-service-connector.png)
 
 As a final step, you can use the Azure Container Registry in a ZenML Stack:
 

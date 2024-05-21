@@ -16,6 +16,7 @@
 from secrets import token_hex
 from typing import (
     TYPE_CHECKING,
+    AbstractSet,
     Any,
     ClassVar,
     Dict,
@@ -26,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field, root_validator
+from pydantic import BaseModel, Field, root_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
@@ -35,40 +36,23 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
+    BaseZenModel,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
-from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
 
     from zenml.models.v2.base.filter import AnySchema
 
-# ------------------ Request Model ------------------
+# ------------------ Base Model ------------------
 
 
-class UserRequest(BaseRequest):
-    """Request model for users."""
-
-    # Analytics fields for user request models
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "name",
-        "full_name",
-        "active",
-        "email_opted_in",
-    ]
+class UserBase(BaseModel):
+    """Base model for users."""
 
     # Fields
-    name: str = Field(
-        title="The unique username for the account.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    full_name: str = Field(
-        default="",
-        title="The full name for the account owner. Only relevant for user "
-        "accounts.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+
     email: Optional[str] = Field(
         default=None,
         title="The email address associated with the account.",
@@ -99,17 +83,10 @@ class UserRequest(BaseRequest):
         default=None,
         title="The external user ID associated with the account.",
     )
-    active: bool = Field(default=False, title="Whether the account is active.")
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them
-        validate_assignment = True
-
-        # Forbid extra attributes to prevent unexpected behavior
-        extra = "forbid"
-        underscore_attrs_are_private = True
+    user_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The metadata associated with the user.",
+    )
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -165,12 +142,76 @@ class UserRequest(BaseRequest):
         return self.activation_token
 
 
+# ------------------ Request Model ------------------
+
+
+class UserRequest(UserBase, BaseRequest):
+    """Request model for users."""
+
+    # Analytics fields for user request models
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "name",
+        "full_name",
+        "active",
+        "email_opted_in",
+    ]
+
+    name: str = Field(
+        title="The unique username for the account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    full_name: str = Field(
+        default="",
+        title="The full name for the account owner. Only relevant for user "
+        "accounts.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    is_admin: bool = Field(
+        title="Whether the account is an administrator.",
+    )
+    active: bool = Field(default=False, title="Whether the account is active.")
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them
+        validate_assignment = True
+
+        # Forbid extra attributes to prevent unexpected behavior
+        extra = "forbid"
+        underscore_attrs_are_private = True
+
+
 # ------------------ Update Model ------------------
 
 
-@update_model
-class UserUpdate(UserRequest):
+class UserUpdate(UserBase, BaseZenModel):
     """Update model for users."""
+
+    name: Optional[str] = Field(
+        title="The unique username for the account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        title="The full name for the account owner. Only relevant for user "
+        "accounts.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    is_admin: Optional[bool] = Field(
+        default=None,
+        title="Whether the account is an administrator.",
+    )
+    active: Optional[bool] = Field(
+        default=None, title="Whether the account is active."
+    )
+    old_password: Optional[str] = Field(
+        default=None,
+        title="The previous password for the user. Only relevant for user "
+        "accounts. Required when updating the password.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
     @root_validator
     def user_email_updates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -200,6 +241,22 @@ class UserUpdate(UserRequest):
                     "your email."
                 )
         return values
+
+    def create_copy(self, exclude: AbstractSet[str]) -> "UserUpdate":
+        """Create a copy of the current instance.
+
+        Args:
+            exclude: Fields to exclude from the copy.
+
+        Returns:
+            A copy of the current instance.
+        """
+        return UserUpdate(
+            **self.dict(
+                exclude_unset=True,
+                exclude=exclude,
+            )
+        )
 
 
 # ------------------ Response Model ------------------
@@ -231,6 +288,9 @@ class UserResponseBody(BaseDatedResponseBody):
     is_service_account: bool = Field(
         title="Indicates whether this is a service account or a user account."
     )
+    is_admin: bool = Field(
+        title="Whether the account is an administrator.",
+    )
 
 
 class UserResponseMetadata(BaseResponseMetadata):
@@ -252,6 +312,10 @@ class UserResponseMetadata(BaseResponseMetadata):
         default=None,
         title="The external user ID associated with the account. Only relevant "
         "for user accounts.",
+    )
+    user_metadata: Dict[str, Any] = Field(
+        default={},
+        title="The metadata associated with the user.",
     )
 
 
@@ -341,6 +405,15 @@ class UserResponse(
         return self.get_body().is_service_account
 
     @property
+    def is_admin(self) -> bool:
+        """The `is_admin` property.
+
+        Returns:
+            Whether the user is an admin.
+        """
+        return self.get_body().is_admin
+
+    @property
     def email(self) -> Optional[str]:
         """The `email` property.
 
@@ -366,6 +439,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_metadata().external_user_id
+
+    @property
+    def user_metadata(self) -> Dict[str, Any]:
+        """The `user_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().user_metadata
 
     # Helper methods
     @classmethod

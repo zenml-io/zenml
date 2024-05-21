@@ -14,7 +14,6 @@
 """Utility functions for handling artifacts."""
 
 import base64
-import contextlib
 import os
 import tempfile
 import time
@@ -152,7 +151,7 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
 
-    if manual_save and fileio.exists(uri):
+    if manual_save and artifact_store.exists(uri):
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
         other_artifacts = client.list_artifact_versions(uri=uri, size=1)
@@ -162,7 +161,7 @@ def save_artifact(
                 f"{uri} because the URI is already used by artifact "
                 f"{other_artifact.name} (version {other_artifact.version})."
             )
-    fileio.makedirs(uri)
+    artifact_store.makedirs(uri)
 
     # Find and initialize the right materializer class
     if isinstance(materializer, type):
@@ -460,30 +459,15 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     Returns:
         The artifact loaded into memory.
     """
-    artifact_store_loaded = False
-    if artifact.artifact_store_id:
-        try:
-            artifact_store_model = Client().get_stack_component(
-                component_type=StackComponentType.ARTIFACT_STORE,
-                name_id_or_prefix=artifact.artifact_store_id,
-            )
-            _ = StackComponent.from_model(artifact_store_model)
-            artifact_store_loaded = True
-        except (KeyError, ImportError):
-            pass
-
-    if not artifact_store_loaded:
-        logger.warning(
-            "Unable to restore artifact store while trying to load artifact "
-            "`%s`. If this artifact is stored in a remote artifact store, "
-            "this might lead to issues when trying to load the artifact.",
-            artifact.id,
-        )
+    artifact_store = _get_artifact_store_from_response_or_from_active_stack(
+        artifact=artifact
+    )
 
     return _load_artifact_from_uri(
         materializer=artifact.materializer,
         data_type=artifact.data_type,
         uri=artifact.uri,
+        artifact_store=artifact_store,
     )
 
 
@@ -507,24 +491,11 @@ def download_artifact_files_from_response(
         raise FileExistsError(
             f"File '{path}' already exists and `overwrite` is set to `False`."
         )
-    artifact_store_loaded = False
-    if artifact.artifact_store_id:
-        with contextlib.suppress(KeyError, ImportError):
-            _ = Client().get_stack_component(
-                component_type=StackComponentType.ARTIFACT_STORE,
-                name_id_or_prefix=artifact.artifact_store_id,
-            )
-            artifact_store_loaded = True
 
-    if not artifact_store_loaded:
-        logger.warning(
-            "Unable to restore artifact store while trying to load artifact "
-            "`%s`. If this artifact is stored in a remote artifact store, "
-            "this might lead to issues when trying to load the artifact.",
-            artifact.id,
-        )
+    artifact_store = _get_artifact_store_from_response_or_from_active_stack(
+        artifact=artifact
+    )
 
-    artifact_store = Client().active_stack.artifact_store
     if filepaths := artifact_store.listdir(artifact.uri):
         # save a zipfile to 'path' containing all the files
         # in 'filepaths' with compression
@@ -607,6 +578,7 @@ def _load_artifact_from_uri(
     materializer: Union["Source", str],
     data_type: Union["Source", str],
     uri: str,
+    artifact_store: Optional["BaseArtifactStore"] = None,
 ) -> Any:
     """Load an artifact using the given materializer.
 
@@ -614,6 +586,7 @@ def _load_artifact_from_uri(
         materializer: The source of the materializer class to use.
         data_type: The source of the artifact data type.
         uri: The uri of the artifact.
+        artifact_store: The artifact store used to store this artifact.
 
     Returns:
         The artifact loaded into memory.
@@ -622,6 +595,15 @@ def _load_artifact_from_uri(
         ModuleNotFoundError: If the materializer or data type cannot be found.
     """
     from zenml.materializers.base_materializer import BaseMaterializer
+
+    if not artifact_store:
+        artifact_versions_by_uri = Client().list_artifact_versions(uri=uri)
+        if artifact_versions_by_uri.total == 1:
+            artifact_store = (
+                _get_artifact_store_from_response_or_from_active_stack(
+                    artifact_versions_by_uri.items[0]
+                )
+            )
 
     # Resolve the materializer class
     try:
@@ -650,7 +632,9 @@ def _load_artifact_from_uri(
         artifact_class.__qualname__,
         uri,
     )
-    materializer_object: BaseMaterializer = materializer_class(uri)
+    materializer_object: BaseMaterializer = materializer_class(
+        uri, artifact_store
+    )
     artifact = materializer_object.load(artifact_class)
     logger.debug("Artifact loaded successfully.")
 
@@ -710,6 +694,29 @@ def _load_artifact_store(
     return artifact_store
 
 
+def _get_artifact_store_from_response_or_from_active_stack(
+    artifact: ArtifactVersionResponse,
+) -> "BaseArtifactStore":
+    if artifact.artifact_store_id:
+        try:
+            artifact_store_model = Client().get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            return cast(
+                "BaseArtifactStore",
+                StackComponent.from_model(artifact_store_model),
+            )
+        except (KeyError, ImportError):
+            logger.warning(
+                "Unable to restore artifact store while trying to load artifact "
+                "`%s`. If this artifact is stored in a remote artifact store, "
+                "this might lead to issues when trying to load the artifact.",
+                artifact.id,
+            )
+    return Client().active_stack.artifact_store
+
+
 def _get_new_artifact_version(artifact_name: str) -> int:
     """Get the next auto-incremented version for an artifact name.
 
@@ -752,6 +759,7 @@ def _load_file_from_artifact_store(
     Raises:
         DoesNotExistException: If the file does not exist in the artifact store.
         NotImplementedError: If the artifact store cannot open the file.
+        IOError: If the artifact store rejects the request.
     """
     try:
         with artifact_store.open(uri, mode) as text_file:
@@ -761,6 +769,8 @@ def _load_file_from_artifact_store(
             f"File '{uri}' does not exist in artifact store "
             f"'{artifact_store.name}'."
         )
+    except IOError as e:
+        raise e
     except Exception as e:
         logger.exception(e)
         link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
@@ -819,14 +829,27 @@ def load_model_from_metadata(model_uri: str) -> Any:
         The ML model object loaded into memory.
     """
     # Load the model from its metadata
-    with fileio.open(
+    artifact_versions_by_uri = Client().list_artifact_versions(uri=model_uri)
+    if artifact_versions_by_uri.total == 1:
+        artifact_store = (
+            _get_artifact_store_from_response_or_from_active_stack(
+                artifact_versions_by_uri.items[0]
+            )
+        )
+    else:
+        artifact_store = Client().active_stack.artifact_store
+
+    with artifact_store.open(
         os.path.join(model_uri, MODEL_METADATA_YAML_FILE_NAME), "r"
     ) as f:
         metadata = read_yaml(f.name)
     data_type = metadata["datatype"]
     materializer = metadata["materializer"]
     model = _load_artifact_from_uri(
-        materializer=materializer, data_type=data_type, uri=model_uri
+        materializer=materializer,
+        data_type=data_type,
+        uri=model_uri,
+        artifact_store=artifact_store,
     )
 
     # Switch to eval mode if the model is a torch model

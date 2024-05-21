@@ -24,9 +24,6 @@ If you're planning on deploying a custom containerized ZenML server yourself, yo
 
 The following environment variables can be passed to the container:
 
-* **ZENML\_DEFAULT\_PROJECT\_NAME**: The name of the default project created by the server on the first deployment, during database initialization. Defaults to `default`.
-* **ZENML\_DEFAULT\_USER\_NAME**: The name of the default admin user account created by the server on the first deployment, during database initialization. Defaults to `default`.
-* **ZENML\_DEFAULT\_USER\_PASSWORD**: The password to use for the default admin user account. Defaults to an empty password value, if not set.
 * **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
 
     ```
@@ -44,6 +41,9 @@ The following environment variables can be passed to the container:
 * **ZENML\_STORE\_SSL\_VERIFY\_SERVER\_CERT**: This boolean variable controls whether the SSL certificate in use by the MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections. Defaults to `False`.
 * **ZENML\_LOGGING\_VERBOSITY**: Use this variable to control the verbosity of logs inside the container. It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`, `INFO` (default), `DEBUG` or `CRITICAL`.
 * **ZENML\_STORE\_BACKUP\_STRATEGY**: This variable controls the database backup strategy used by the ZenML server. See the [Database backup and recovery](#database-backup-and-recovery) section for more details about this feature and other related environment variables. Defaults to `in-memory`.
+* **ZENML\_SERVER\_RATE\_LIMIT\_ENABLED**: This variable controls the rate limiting for ZenML API (currently only for the `LOGIN` endpoint). It is disabled by default, so set it to `1` only if you need to enable rate limiting. To determine unique users a `X_FORWARDED_FOR` header or `request.client.host` is used, so before enabling this make sure that your network configuration is associating proper information with your clients in order to avoid disruptions for legitimate requests.
+* **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_MINUTE**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in a one minute interval. Set it to a desired integer value; defaults to `5`.
+* **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_DAY**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in an interval of day interval. Set it to a desired integer value; defaults to `1000`.
 
 If none of the `ZENML_STORE_*` variables are set, the container will default to creating and using an SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db` inside the container. The `/zenml/.zenconfig/local_stores` base path where the default SQLite database is located can optionally be overridden by setting the `ZENML_LOCAL_STORES_PATH` environment variable to point to a different path (e.g. a persistent volume or directory that is mounted from the host).
 
@@ -245,6 +245,31 @@ These configuration options are not required for most use cases, but can be usef
     openssl rand -hex 32
     ```
 
+The environment variables starting with **ZENML\_SERVER\_SECURE*\_HEADERS\_** can be used to enable, disable or set custom values for security headers in the ZenML server's HTTP responses. The following values can be set for any of the supported secure headers configuration options:
+
+* `enabled`, `on`, `true` or `yes` - enables the secure header with the default value.
+* `disabled`, `off`, `false`, `none` or `no` - disables the secure header entirely, so that it is not set in the ZenML server's HTTP responses.
+* any other value - sets the secure header to the specified value.  
+
+The following secure headers environment variables are supported:
+
+* **ZENML\_SERVER\_SECURE*\_HEADERS\_SERVER**: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_XXP**: The `X-XSS-Protection` HTTP header value. The default value is `0`. NOTE: this header is deprecated and should not be customized anymore. The `Content-Security-Policy` header should be used instead.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_CONTENT**: The `X-Content-Type-Options` HTTP header value. The default value is `nosniff`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_CSP**: The `Content-Security-Policy` HTTP header value. This is by default set to a strict CSP policy that only allows content from the origins required by the ZenML dashboard. NOTE: customizing this header is discouraged, as it may cause the ZenML dashboard to malfunction.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_REFERRER**: The `Referrer-Policy` HTTP header value. The default value is `no-referrer-when-downgrade`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_CACHE**: The `Cache-Control` HTTP header value. The default value is `no-store, no-cache, must-revalidate`.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_PERMISSIONS**: The `Permissions-Policy` HTTP header value. The default value is `accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()`.
+
+If you prefer to activate the server automatically during the initial deployment and also automate the creation of the initial admin user account, this legacy behavior can be brought back by setting the following environment variables:
+
+* **ZENML\_SERVER\_AUTO\_ACTIVATE**: Set this to `1` to automatically activate the server and create the initial admin user account when the server is first deployed. Defaults to `0`.
+* **ZENML\_DEFAULT\_USER\_NAME**: The name of the initial admin user account created by the server on the first deployment, during database initialization. Defaults to `default`.
+* **ZENML\_DEFAULT\_USER\_PASSWORD**: The password to use for the initial admin user account. Defaults to an empty password value, if not set.
+
+
 ## Run the ZenML server with Docker
 
 As previously mentioned, the ZenML server container image uses sensible defaults for most configuration options. This means that you can simply run the container with Docker without any additional configuration and it will work out of the box for most use cases:
@@ -257,7 +282,8 @@ docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 
 The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs, etc.) will be lost when the container is removed with `docker rm`.
 
-You can visit the ZenML dashboard at `http://localhost:8080` and login with the `default` username and empty password or connect your client to the server with the web login flow:
+You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
+
 
 ```shell
 $ zenml connect --url http://localhost:8080
@@ -337,7 +363,7 @@ docker run -it -d -p 8080:8080 --name zenml \
     zenmldocker/zenml-server
 ```
 
-Connecting your client to the ZenML server is the same as before:
+You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
 zenml connect --url http://localhost:8080
@@ -385,8 +411,6 @@ services:
       - "8080:8080"
     environment:
       - ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml
-      - ZENML_DEFAULT_USER_NAME=admin
-      - ZENML_DEFAULT_USER_PASSWORD=zenml
     links:
       - mysql
     depends_on:
@@ -400,7 +424,6 @@ Note the following:
 
 * `ZENML_STORE_URL` is set to the special Docker `host.docker.internal` hostname to instruct the server to connect to the database over the Docker network.
 * The `extra_hosts` section is needed on Linux to make the `host.docker.internal` hostname resolvable from the ZenML server container.
-* This example also uses the `ZENML_DEFAULT_USER_NAME` and `ZENML_DEFAULT_USER_PASSWORD` environment variables to customize the default account credentials.
 
 To start the containers, run the following command from the directory where the `docker-compose.yml` file is located:
 
@@ -414,10 +437,10 @@ or, if you need to use a different filename or path:
 docker-compose -f /path/to/docker-compose.yml -p zenml up -d
 ```
 
-Connecting your client to the ZenML server is the same as before:
+You need to visit the ZenML dashboard at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
 
 ```shell
-zenml connect --url http://localhost:8080 --username admin --password zenml
+zenml connect --url http://localhost:8080
 ```
 
 Tearing down the installation is as simple as running:

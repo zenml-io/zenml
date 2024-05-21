@@ -23,7 +23,10 @@ from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.model.model import Model
-from zenml.models import ModelVersionArtifactRequest
+from zenml.models import (
+    ModelVersionArtifactRequest,
+    ServiceUpdate,
+)
 from zenml.new.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
@@ -98,14 +101,12 @@ def link_artifact_config_to_model(
         )
 
     if model:
-        model._get_or_create_model_version()
-        model_version_response = model._get_model_version()
         request = ModelVersionArtifactRequest(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             artifact_version=artifact_version_id,
-            model=model_version_response.model.id,
-            model_version=model_version_response.id,
+            model=model.model_id,
+            model_version=model.id,
             is_model_artifact=artifact_config.is_model_artifact,
             is_deployment_artifact=artifact_config.is_deployment_artifact,
         )
@@ -218,4 +219,50 @@ def link_artifact_to_model(
         ),
         artifact_version_id=artifact_version_id,
         model=model,
+    )
+
+
+def link_service_to_model(
+    service_id: UUID,
+    model: Optional["Model"] = None,
+    model_version_id: Optional[UUID] = None,
+) -> None:
+    """Links a service to a model.
+
+    Args:
+        service_id: The ID of the service to link to the model.
+        model: The model to link the service to.
+        model_version_id: The ID of the model version to link the service to.
+
+    Raises:
+        RuntimeError: If no model is provided and the model context cannot be
+            identified.
+    """
+    client = Client()
+
+    # If no model is provided, try to get it from the context
+    if not model and not model_version_id:
+        is_issue = False
+        try:
+            step_context = get_step_context()
+            model = step_context.model
+        except StepContextError:
+            is_issue = True
+
+        if model is None or is_issue:
+            raise RuntimeError(
+                "`link_service_to_model` called without `model` parameter "
+                "and configured model context cannot be identified. Consider "
+                "passing the `model` explicitly or configuring it in "
+                "@step or @pipeline decorator."
+            )
+
+    model_version_id = (
+        model_version_id or model._get_or_create_model_version().id
+        if model
+        else None
+    )
+    update_service = ServiceUpdate(model_version_id=model_version_id)
+    client.zen_store.update_service(
+        service_id=service_id, update=update_service
     )

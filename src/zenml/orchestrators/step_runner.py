@@ -44,7 +44,9 @@ from zenml.exceptions import StepContextError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.model.utils import link_step_artifacts_to_model
+from zenml.model.utils import (
+    link_step_artifacts_to_model,
+)
 from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
@@ -297,10 +299,10 @@ class StepRunner:
             output_materializers = []
 
             for source in output.materializer_source:
-                materializer_class: Type[
-                    BaseMaterializer
-                ] = source_utils.load_and_validate_class(
-                    source, expected_class=BaseMaterializer
+                materializer_class: Type[BaseMaterializer] = (
+                    source_utils.load_and_validate_class(
+                        source, expected_class=BaseMaterializer
+                    )
                 )
                 output_materializers.append(materializer_class)
 
@@ -434,17 +436,19 @@ class StepRunner:
         """
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
-            return UnmaterializedArtifact.parse_obj(artifact)
+            return UnmaterializedArtifact(
+                **artifact.get_hydrated_version().dict()
+            )
 
         if data_type is Any or is_union(get_origin(data_type)):
             # Entrypoint function does not define a specific type for the input,
             # we use the datatype of the stored artifact
             data_type = source_utils.load(artifact.data_type)
 
-        materializer_class: Type[
-            BaseMaterializer
-        ] = source_utils.load_and_validate_class(
-            artifact.materializer, expected_class=BaseMaterializer
+        materializer_class: Type[BaseMaterializer] = (
+            source_utils.load_and_validate_class(
+                artifact.materializer, expected_class=BaseMaterializer
+            )
         )
         materializer: BaseMaterializer = materializer_class(artifact.uri)
         materializer.validate_type_compatibility(data_type)
@@ -579,11 +583,11 @@ class StepRunner:
                 ].default_materializer_source
 
                 if default_materializer_source:
-                    default_materializer_class: Type[
-                        BaseMaterializer
-                    ] = source_utils.load_and_validate_class(
-                        default_materializer_source,
-                        expected_class=BaseMaterializer,
+                    default_materializer_class: Type[BaseMaterializer] = (
+                        source_utils.load_and_validate_class(
+                            default_materializer_source,
+                            expected_class=BaseMaterializer,
+                        )
                     )
                     materializer_registry.default_materializer = (
                         default_materializer_class

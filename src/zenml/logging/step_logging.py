@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML logging handler."""
+
 import os
 import re
 import sys
@@ -22,7 +23,7 @@ from typing import Any, Callable, List, Optional, Type
 from uuid import uuid4
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.io import fileio
+from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
@@ -73,16 +74,16 @@ def prepare_logs_uri(
     )
 
     # Create the dir
-    if not fileio.exists(logs_base_uri):
-        fileio.makedirs(logs_base_uri)
+    if not artifact_store.exists(logs_base_uri):
+        artifact_store.makedirs(logs_base_uri)
 
     # Delete the file if it already exists
     logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
-    if fileio.exists(logs_uri):
+    if artifact_store.exists(logs_uri):
         logger.warning(
             f"Logs file {logs_uri} already exists! Removing old log file..."
         )
-        fileio.remove(logs_uri)
+        artifact_store.remove(logs_uri)
     return logs_uri
 
 
@@ -135,11 +136,15 @@ class StepLogsStorage:
     def save_to_file(self) -> None:
         """Method to save the buffer to the given URI."""
         if not self.disabled:
-            try:
-                self.disabled = True
+            # IMPORTANT: keep this as the first code line in this method! The
+            # code that follows might still emit logging messages, which will
+            # end up triggering this method again, causing an infinite loop.
+            self.disabled = True
 
+            artifact_store = Client().active_stack.artifact_store
+            try:
                 if self.buffer:
-                    with fileio.open(self.logs_uri, "a") as file:
+                    with artifact_store.open(self.logs_uri, "a") as file:
                         for message in self.buffer:
                             file.write(
                                 remove_ansi_escape_codes(message) + "\n"

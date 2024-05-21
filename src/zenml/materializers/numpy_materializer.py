@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 import numpy as np
 
 from zenml.enums import ArtifactType, VisualizationType
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import DType, MetadataType
@@ -59,10 +58,10 @@ class NumpyMaterializer(BaseMaterializer):
         """
         numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
-        if fileio.exists(numpy_file):
-            with fileio.open(numpy_file, "rb") as f:
+        if self.artifact_store.exists(numpy_file):
+            with self.artifact_store.open(numpy_file, "rb") as f:
                 return np.load(f, allow_pickle=True)
-        elif fileio.exists(os.path.join(self.uri, DATA_FILENAME)):
+        elif self.artifact_store.exists(os.path.join(self.uri, DATA_FILENAME)):
             logger.warning(
                 "A legacy artifact was found. "
                 "This artifact was created with an older version of "
@@ -81,7 +80,7 @@ class NumpyMaterializer(BaseMaterializer):
                     os.path.join(self.uri, SHAPE_FILENAME)
                 )
                 shape_tuple = tuple(shape_dict.values())
-                with fileio.open(
+                with self.artifact_store.open(
                     os.path.join(self.uri, DATA_FILENAME), "rb"
                 ) as f:
                     input_stream = pa.input_stream(f)
@@ -102,7 +101,9 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             arr: The numpy array to write.
         """
-        with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
+        with self.artifact_store.open(
+            os.path.join(self.uri, NUMPY_FILENAME), "wb"
+        ) as f:
             np.save(f, arr)
 
     def save_visualizations(
@@ -156,7 +157,7 @@ class NumpyMaterializer(BaseMaterializer):
         import matplotlib.pyplot as plt
 
         plt.hist(arr)
-        with fileio.open(output_path, "wb") as f:
+        with self.artifact_store.open(output_path, "wb") as f:
             plt.savefig(f)
         plt.close()
 
@@ -169,7 +170,7 @@ class NumpyMaterializer(BaseMaterializer):
         """
         from matplotlib.image import imsave
 
-        with fileio.open(output_path, "wb") as f:
+        with self.artifact_store.open(output_path, "wb") as f:
             imsave(f, arr)
 
     def extract_metadata(

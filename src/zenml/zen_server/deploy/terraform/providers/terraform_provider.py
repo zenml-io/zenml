@@ -15,6 +15,7 @@
 
 import os
 from typing import ClassVar, List, Optional, Tuple, Type, cast
+from uuid import uuid4
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.logger import get_logger
@@ -51,9 +52,9 @@ logger = get_logger(__name__)
 class TerraformServerProvider(BaseServerProvider):
     """Terraform ZenML server provider."""
 
-    CONFIG_TYPE: ClassVar[
-        Type[ServerDeploymentConfig]
-    ] = TerraformServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
+        TerraformServerDeploymentConfig
+    )
 
     @staticmethod
     def _get_server_recipe_root_path() -> str:
@@ -153,7 +154,7 @@ class TerraformServerProvider(BaseServerProvider):
             monitor_cfg,
         ) = self._get_service_configuration(config)
 
-        service = TerraformZenServer(config=service_config)
+        service = TerraformZenServer(uuid=uuid4(), config=service_config)
 
         service.start(timeout=timeout)
         return service
@@ -319,9 +320,7 @@ class TerraformServerProvider(BaseServerProvider):
         if service.is_running:
             url = service.get_server_url()
             ca_crt = service.get_certificate()
-        connected = (
-            url is not None and gc.store is not None and gc.store.url == url
-        )
+        connected = url is not None and gc.store_configuration.url == url
 
         return ServerDeploymentStatus(
             url=url,

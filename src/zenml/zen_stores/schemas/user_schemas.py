@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of user tables."""
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -54,6 +55,7 @@ if TYPE_CHECKING:
         ScheduleSchema,
         SecretSchema,
         ServiceConnectorSchema,
+        ServiceSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -65,6 +67,7 @@ class UserSchema(NamedSchema, table=True):
     """SQL Model for users."""
 
     __tablename__ = "user"
+    __table_args__ = (UniqueConstraint("name", "is_service_account"),)
 
     is_service_account: bool = Field(default=False)
     full_name: str
@@ -76,6 +79,8 @@ class UserSchema(NamedSchema, table=True):
     hub_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
     external_user_id: Optional[UUID] = Field(nullable=True)
+    is_admin: bool = Field(default=False)
+    user_metadata: Optional[str] = Field(nullable=True)
 
     stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
@@ -122,6 +127,7 @@ class UserSchema(NamedSchema, table=True):
     code_repositories: List["CodeRepositorySchema"] = Relationship(
         back_populates="user",
     )
+    services: List["ServiceSchema"] = Relationship(back_populates="user")
     service_connectors: List["ServiceConnectorSchema"] = Relationship(
         back_populates="user",
     )
@@ -131,9 +137,9 @@ class UserSchema(NamedSchema, table=True):
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="user",
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(back_populates="user")
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(back_populates="user")
+    )
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
     ] = Relationship(back_populates="user")
@@ -166,6 +172,10 @@ class UserSchema(NamedSchema, table=True):
             email_opted_in=model.email_opted_in,
             email=model.email,
             is_service_account=False,
+            is_admin=model.is_admin,
+            user_metadata=json.dumps(model.user_metadata)
+            if model.user_metadata
+            else None,
         )
 
     @classmethod
@@ -188,6 +198,7 @@ class UserSchema(NamedSchema, table=True):
             is_service_account=True,
             email_opted_in=False,
             full_name="",
+            is_admin=False,
         )
 
     def update_user(self, user_update: UserUpdate) -> "UserSchema":
@@ -200,12 +211,18 @@ class UserSchema(NamedSchema, table=True):
             The updated `UserSchema`.
         """
         for field, value in user_update.dict(exclude_unset=True).items():
+            if field == "old_password":
+                continue
+
             if field == "password":
                 setattr(self, field, user_update.create_hashed_password())
             elif field == "activation_token":
                 setattr(
                     self, field, user_update.create_hashed_activation_token()
                 )
+            elif field == "user_metadata":
+                if value is not None:
+                    self.user_metadata = json.dumps(value)
             else:
                 setattr(self, field, value)
 
@@ -258,6 +275,9 @@ class UserSchema(NamedSchema, table=True):
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
+                user_metadata=json.loads(self.user_metadata)
+                if self.user_metadata
+                else {},
             )
 
         return UserResponse(
@@ -270,6 +290,7 @@ class UserSchema(NamedSchema, table=True):
                 is_service_account=self.is_service_account,
                 created=self.created,
                 updated=self.updated,
+                is_admin=self.is_admin,
             ),
             metadata=metadata,
         )
