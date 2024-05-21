@@ -1299,5 +1299,6 @@ list_of_entities = [
     service_connector_crud_test_config,
     model_crud_test_config,
     event_source_crud_test_config,
+    action_crud_test_config,
     trigger_crud_test_config,
 ]
