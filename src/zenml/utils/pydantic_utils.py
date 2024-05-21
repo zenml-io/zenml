@@ -258,8 +258,15 @@ def validate_function_args(
     """
     signature = inspect.signature(__func)
 
+    validated_args = ()
+    validated_kwargs = {}
+
     def f(*args: Any, **kwargs: Dict[Any, Any]) -> None:
-        pass
+        nonlocal validated_args
+        nonlocal validated_kwargs
+
+        validated_args = args
+        validated_kwargs = kwargs
 
     # We create a dummy function with the original function signature to run
     # pydantic validation without actually running the function code
@@ -273,7 +280,7 @@ def validate_function_args(
     # This raises a pydantic.ValidatonError in case the arguments are not valid
     validated_function(*args, **kwargs)
 
-    return signature.bind(*args, **kwargs).arguments
+    return signature.bind(*validated_args, **validated_kwargs).arguments
 
 
 def model_validator_data_handler(
