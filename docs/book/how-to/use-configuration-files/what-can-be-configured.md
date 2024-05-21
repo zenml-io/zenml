@@ -6,8 +6,8 @@ These are boolean flags for various configurations:
 
 * `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](../handle-data-artifacts/handle-custom-data-types.md#optional-which-metadata-to-extract-for-the-artifact).
 * `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../handle-data-artifacts/visualize-artifacts.md).
-* `enable_cache`: Utilize [caching](../../user-guide/starter-guide/cache-previous-executions.md) or not.
-* `enable_step_logs`: Enable tracking [step logs](broken-reference).
+* `enable_cache`: Utilize [caching](../overview/control-caching-behavior.md) or not.
+* `enable_step_logs`: Enable tracking [step logs](../overview/enable-or-disable-logs-storing.md).
 
 ### `build` ID
 
@@ -23,7 +23,7 @@ Specifies the ZenML [Model](../../user-guide/starter-guide/track-ml-models.md) t
 
 ### Pipeline and step `parameters`
 
-A dictionary of JSON-serializable [parameters](broken-reference) specified at the pipeline or step level. For example:
+A dictionary of JSON-serializable [parameters](../use-configuration-files/README.md) specified at the pipeline or step level. For example:
 
 ```yaml
 parameters:

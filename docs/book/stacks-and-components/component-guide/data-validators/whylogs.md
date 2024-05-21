@@ -18,7 +18,7 @@ You should use the whylogs/WhyLabs Data Validator when you need the following da
 * Data Drift: detect data drift in model input features
 * Model Drift: Detect training-serving skew, concept drift, and model performance degradation
 
-You should consider one of the other [Data Validator flavors](./#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](./README.md#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 
