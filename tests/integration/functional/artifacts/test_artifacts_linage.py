@@ -79,7 +79,7 @@ def _validate_artifacts_state(
     # cannot be derived from the context, if called just fro artifact interface
     assert artifact.pipeline_run_id == producer_pr_id
     # but should be listed in all runs
-    assert pr_id in artifact.pipeline_runs
+    assert pr_id in artifact.pipeline_run_ids
 
 
 # TODO: remove clean client, ones clean env for REST is available

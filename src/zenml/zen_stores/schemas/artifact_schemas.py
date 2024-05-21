@@ -358,7 +358,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         resources = None
         if include_resources:
             resources = ArtifactVersionResponseResources(
-                pipeline_runs=[
+                pipeline_run_ids=[
                     output_.step_run.pipeline_run_id
                     for output_ in self.output_of_step_runs
                 ]

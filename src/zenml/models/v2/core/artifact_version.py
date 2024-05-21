@@ -174,7 +174,7 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
 class ArtifactVersionResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the artifact version entity."""
 
-    pipeline_runs: Optional[List[UUID]] = Field(
+    pipeline_run_ids: Optional[List[UUID]] = Field(
         title="List of all pipeline run IDs, which attached "
         "this artifact version to its' outputs."
     )
@@ -320,13 +320,13 @@ class ArtifactVersionResponse(
         return self.get_body().data_type
 
     @property
-    def pipeline_runs(self) -> Optional[List[UUID]]:
+    def pipeline_run_ids(self) -> Optional[List[UUID]]:
         """The `all_pipeline_run_ids` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().pipeline_runs
+        return self.get_resources().pipeline_run_ids
 
     # Helper methods
     @property
