@@ -44,6 +44,7 @@ class TektonOrchestratorSettings(BaseSettings):
     pod_settings: Optional[KubernetesPodSettings] = None
     resource_settings: Optional[Dict[str, Any]] = None
 
+
 class TektonOrchestratorConfig(
     BaseOrchestratorConfig, TektonOrchestratorSettings
 ):
