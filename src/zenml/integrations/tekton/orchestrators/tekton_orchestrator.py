@@ -17,7 +17,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from kfp import dsl
-from kfp.client import Client
+from kfp.client import Client as KFPClient
 from kfp.compiler import Compiler
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -602,7 +602,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 connector.name or str(connector),
             )
 
-        client = Client(host="http://20.73.208.165")
+        client = KFPClient(host="http://20.73.208.165")
         client.create_run_from_pipeline_package(pipeline_file_path)
         # try:
         #     # breakpoint()
