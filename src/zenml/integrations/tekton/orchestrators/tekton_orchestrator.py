@@ -18,6 +18,8 @@ import sys
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import yaml
+from kfp.client import Client
+from kfp.compiler import Compiler
 from kfp import dsl
 from kfp_tekton.compiler import TektonCompiler
 from kfp_tekton.compiler.pipeline_utils import TektonPipelineConf
