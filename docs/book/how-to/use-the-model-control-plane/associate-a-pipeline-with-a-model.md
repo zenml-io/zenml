@@ -25,7 +25,7 @@ from zenml.enums import ModelStages
 @pipeline(
     model=Model(
         name="ClassificationModel",  # Give your models unique names
-        tags=["MVP", "Tabular"]  # Use tags for future filtering
+        tags=["MVP", "Tabular"],  # Use tags for future filtering
         version=ModelStages.LATEST  # Alternatively use a stage: [STAGING, PRODUCTION]]
     )
 )

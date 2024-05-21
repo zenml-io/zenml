@@ -24,8 +24,10 @@ A hook can be defined as a callback function, and must be accessible within the 
 In case of failure hooks, you can optionally add a `BaseException` argument to the hook, allowing you to access the concrete Exception that caused your step to fail:
 
 ```python
+from zenml import step
+
 def on_failure(exception: BaseException):
-    print(f"Step failed: {str(e)}")
+    print(f"Step failed: {str(exception)}")
 
 
 def on_success():
@@ -46,7 +48,7 @@ def my_successful_step() -> int:
 
 In this example, we define two hooks: `on_failure` and `on_success`, which print a message when the step fails or succeeds, respectively. We then use these hooks with two steps, `my_failing_step` and `my_successful_step`. When `my_failing_step` is executed, it raises a `ValueError`, which triggers the `on_failure` hook. Similarly, when `my_successful_step` is executed, it returns an integer successfully, which triggers the on\_success hook.
 
-A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](broken-reference).
+A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](../use-configuration-files/README.md).
 
 ## Defining hooks on a pipeline level
 
@@ -66,7 +68,7 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md#advanced-guide)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
 
 In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/README.md) from the active stack.
 
@@ -75,6 +77,7 @@ We use `@step` for success notification to only notify the user about a fully su
 In [`pipelines/training.py`](../../../../examples/e2e/pipelines/training.py), you can find the usage of a notification step and a function. We will attach a `notify_on_failure` function directly to the pipeline definition like this:
 
 ```python
+from zenml import pipeline
 @pipeline(
     ...
     on_failure=notify_on_failure,
@@ -86,9 +89,9 @@ At the very end of the training pipeline, we will execute the `notify_on_success
 
 ```python
 ...
-    last_step_name = "promote_metric_compare_promoter"
+last_step_name = "promote_metric_compare_promoter"
 
-    notify_on_success(after=[last_step_name])
+notify_on_success(after=[last_step_name])
 ...
 ```
 
@@ -118,7 +121,7 @@ def my_step(some_parameter: int = 1)
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md#advanced-guide)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
 
 In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/README.md) from the active stack.
 
@@ -127,6 +130,8 @@ We use `@step` for success notification to only notify the user about a fully su
 Inside the helper function `build_message()`, you will find an example on how developers can work with [StepContext](fetch-metadata-within-steps.md) to form a proper notification:
 
 ```python
+from zenml import get_step_context
+
 def build_message(status: str) -> str:
     """Builds a message to post.
 
@@ -183,7 +188,7 @@ def my_step(...):
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md#advanced-guide)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
 
 In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/README.md) from the active stack.
 
@@ -193,6 +198,7 @@ Inside this code file, you can find how developers can work with Al component to
 
 ```python
 from zenml.client import Client
+from zenml import get_step_context
 
 alerter = Client().active_stack.alerter
 
@@ -208,6 +214,7 @@ If the Al component is not present in Stack we suppress notification, but you ca
 ```python
 from zenml.client import Client
 from zenml.logger import get_logger
+from zenml import get_step_context
 
 logger = get_logger(__name__)
 alerter = Client().active_stack.alerter
@@ -243,7 +250,7 @@ Then, you can use the hook in your pipeline:
 
 ```python
 from zenml.integration.openai.hooks import openai_chatgpt_alerter_failure_hook
-
+from zenml import step
 
 @step(on_failure=openai_chatgpt_alerter_failure_hook)
 def my_step(...):

@@ -37,8 +37,8 @@ You can view some of the options of what can be passed into this command by runn
 You can register a model using the Python SDK as follows:
 
 ```python
-from zenml.models import Model
-from zenml import Client
+from zenml import Model
+from zenml.client import Client
 
 Client().create_model(
     name="iris_logistic_regression",

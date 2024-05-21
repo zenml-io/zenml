@@ -14,7 +14,7 @@ Your functions will work as ZenML steps even if you don't provide any type annot
 * **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](../../getting-started/core-concepts.md#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](../handle-data-artifacts/handle-custom-data-types.md).
 
 {% hint style="warning" %}
-ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-materializers/#zenml.materializers.cloudpickle\_materializer.CloudpickleMaterializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](../../user-guide/advanced-guide/pipelining-features/handle-custom-data-types.md#custom-materializers) to save your objects in a more robust and efficient format.
+ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-materializers/#zenml.materializers.cloudpickle\_materializer.CloudpickleMaterializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](../handle-data-artifacts/handle-custom-data-types.md#custom-materializers) to save your objects in a more robust and efficient format.
 
 Moreover, using the `CloudpickleMaterializer` could allow users to upload of any kind of object. This could be exploited to upload a malicious file, which could execute arbitrary code on the vulnerable system.
 {% endhint %}
@@ -39,6 +39,10 @@ It is impossible for ZenML to detect whether you want your step to have a single
 We use the following convention to differentiate between the two: When the `return` statement is followed by a tuple literal (e.g. `return 1, 2` or `return (value_1, value_2)`) we treat it as a step with multiple outputs. All other cases are treated as a step with a single output of type `Tuple`.
 
 ```python
+from zenml import step
+from typing_extensions import Annotated
+from typing import Tuple
+
 # Single output artifact
 @step
 def my_step() -> Tuple[int, int]:

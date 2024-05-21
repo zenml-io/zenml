@@ -23,14 +23,14 @@ zenml model version update iris_logistic_regression --stage=...
 
 ### Promotion via Cloud Dashboard
 
-This feature is not yet available, but soon you will be able to promote your model versions directly from the ZenML Cloud dashboard. You can learn more about this feature [here](../../user-guide/advanced-guide/data-management/model-control-plane-dashboard.md).
+This feature is not yet available, but soon you will be able to promote your model versions directly from the ZenML Cloud dashboard. 
 
 ### Promotion via Python SDK
 
 This is the most common way that you'll use to promote your models. You can see how you would do this here:
 
 ```python
-from zenml import Client
+from zenml import Model
 
 MODEL_NAME = "iris_logistic_regression"
 from zenml.enums import ModelStages

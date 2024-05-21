@@ -15,6 +15,8 @@ In order to allow the configuration of your steps using a configuration file, on
 {% endhint %}
 
 ```python
+from zenml import step, pipeline
+
 @step
 def my_step(input_1: int, input_2: int) -> None:
     pass
@@ -49,11 +51,12 @@ steps:
 ```
 
 ```python
+from zenml import step, pipeline
 @step
 def my_step(input_1: int, input_2: int) -> None:
     ...
 
-# input `environment` will come from the configuration file
+# input `environment` will come from the configuration file,
 # and it is evaluated to `production`
 @pipeline
 def my_pipeline(environment: str):
@@ -79,6 +82,8 @@ steps:
 
 ```python
 # run.py
+from zenml import step, pipeline
+
 @step
 def my_step(input_1: int, input_2: int) -> None:
     pass

@@ -25,6 +25,7 @@ def my_step():
 ```python
 from zenml import step
 from zenml.client import Client
+from zenml.enums import ModelStages
 
 @step
 def model_evaluator_step()

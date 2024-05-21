@@ -23,6 +23,7 @@ Schedules don't work for all orchestrators. Here is a list of all supported orch
 ```python
 from zenml.config.schedule import Schedule
 from zenml import pipeline
+from datetime import datetime
 
 @pipeline()
 def my_pipeline(...):
@@ -30,7 +31,7 @@ def my_pipeline(...):
 
 # Use cron expressions
 schedule = Schedule(cron_expression="5 14 * * 3")
-# or alternatively use human readable notations
+# or alternatively use human-readable notations
 schedule = Schedule(start_time=datetime.now(), interval_second=1800)
 
 my_pipeline = my_pipeline.with_options(schedule=schedule)

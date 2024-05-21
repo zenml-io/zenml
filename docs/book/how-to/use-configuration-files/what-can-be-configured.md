@@ -15,7 +15,7 @@ The UUID of the [`build`](../handle-requirements-and-docker-settings/containeriz
 
 ### `extra` dict
 
-This is a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](what-can-be-configured.md#fetching-configuration).
+This is a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](what-can-be-configured.md).
 
 ### Configuring the `model`
 
@@ -38,19 +38,21 @@ steps:
 Corresponds to:
 
 ```python
+from zenml import step, pipeline
+
 @step
 def trainer(gamma: float):
     # Use gamma as normal
     print(gamma)
 
 @pipeline
-def my_pipeline(gamma: float)
+def my_pipeline(gamma: float):
     # use gamma or pass it into the step
     print(0.01)
     trainer(gamma=gamma)
 ```
 
-Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](what-can-be-configured.md#hierarchy-and-precedence).
+Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](../use-configuration-files/configuration-hierarchy.md).
 
 Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined.
 
@@ -60,11 +62,11 @@ Note that `parameters` are different from `artifacts`. Parameters are JSON-seria
 
 ### Setting the `run_name`
 
-To change the name for a run, pass `run_name` as a parameter. This can be a dynamic value as well. Read [here for details.](../../user-guide/starter-guide/create-an-ml-pipeline.md).
+To change the name for a run, pass `run_name` as a parameter. This can be a dynamic value as well. Read [here for details](../../user-guide/starter-guide/create-an-ml-pipeline.md).
 
 ### Real-time `settings`
 
-Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md). In short, they define a whole bunch of execution configuration such as Docker building and resource settings.
+Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md). In short, they define a bunch of execution configuration such as Docker building and resource settings.
 
 ### `failure_hook_source` and `success_hook_source`
 
@@ -72,8 +74,8 @@ The `source` of the [failure and success hooks](../overview/use-failure-success-
 
 ### Step-specific configuration
 
-A lot of pipeline-level configuration can also be applied at a step level (as we already seen with the `enable_cache` flag). However, there is some configuration that is step-specific, meaning it cannot be applied at a pipeline level, but only at a step level.
+A lot of pipeline-level configuration can also be applied at a step level (as we have already seen with the `enable_cache` flag). However, there is some configuration that is step-specific, meaning it cannot be applied at a pipeline level, but only at a step level.
 
 * `experiment_tracker`: Name of the [experiment\_tracker](../../stacks-and-components/component-guide/experiment-trackers/README.md) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
 * `step_operator`: Name of the [step\_operator](../../stacks-and-components/component-guide/step-operators/README.md) to enable for this step. This step\_operator should be defined in the active stack with the same name.
-* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](broken-reference)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../handle-data-artifacts/handle-custom-data-types.md).
+* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](../handle-data-artifacts/return-multiple-outputs-from-a-step.md)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../handle-data-artifacts/handle-custom-data-types.md).

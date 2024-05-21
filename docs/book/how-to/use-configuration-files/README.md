@@ -18,6 +18,7 @@ steps:
 </code></pre>
 
 ```python
+from zenml import step, pipeline
 @step
 def load_data(parameter: int) -> dict:
     ...

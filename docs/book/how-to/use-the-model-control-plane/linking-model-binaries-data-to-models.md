@@ -9,7 +9,7 @@ There are a few ways to link artifacts:
 The easiest way is to configure the `model` parameter on the `@pipeline` decorator or `@step` decorator:
 
 ```python
-from zenml import Model
+from zenml import Model, pipeline
 
 model = Model(
     name="my_model",
@@ -34,7 +34,10 @@ A ZenML model supports linking three types of artifacts:
 You can also explicitly specify the linkage on a per-artifact basis by passing a special configuration to the Annotated output:
 
 ```python
-from zenml import get_step_context, step, ArtifactConfig
+from zenml import step, ArtifactConfig
+from typing import Tuple
+from typing_extensions import Annotated
+import pandas as pd
 
 @step
 def svc_trainer(
@@ -54,12 +57,14 @@ The `ArtifactConfig` object allows configuring model linkage directly on the art
 
 ### Produce intermediate artifacts
 
-It often handy to save some of your work half-way: steps like epoch-based training can be running slow and you don't want to loose any checkpoints along the way if an error occurs. You can use the `save_artifact` utility function to save your data assets as ZenML artifacts. Moreover, if your step has the Model context configured in the `@pipeline` or `@step` decorator it will be automatically linked to it, so you can get easy access to it using the Model Control Plane features.
+It is often handy to save some of your work half-way: steps like epoch-based training can be running slow, and you don't want to lose any checkpoints along the way if an error occurs. You can use the `save_artifact` utility function to save your data assets as ZenML artifacts. Moreover, if your step has the Model context configured in the `@pipeline` or `@step` decorator it will be automatically linked to it, so you can get easy access to it using the Model Control Plane features.
 
 ```python
 from zenml import step, Model
 from zenml.artifacts.utils import save_artifact
-
+import pandas as pd
+from typing_extensions import Annotated
+from zenml.artifacts.artifact_config import ArtifactConfig
 
 @step(model=Model(name="MyModel", version="1.2.42"))
 def trainer(
@@ -89,7 +94,7 @@ def trainer(
 
 ### Link artifacts explicitly
 
-If you would like to link an artifact to a model not from the step context or even outside of a step, you can use the `link_artifact_to_model` function. All you need is ready to link artifact and the configuration of a model.
+If you would like to link an artifact to a model not from the step context or even outside a step, you can use the `link_artifact_to_model` function. All you need is ready to link artifact and the configuration of a model.
 
 ```python
 from zenml import step, Model, link_artifact_to_model, save_artifact
@@ -109,7 +114,7 @@ def f_() -> None:
 
 # use existing artifact
 existing_artifact = Client().get_artifact_version(name_id_or_prefix="existing_artifact")
-# and link it even outside of a step
+# and link it even outside a step
 link_artifact_to_model(
     artifact_version_id=existing_artifact.id,
     model=Model(name="MyModel", version="0.2.42"),

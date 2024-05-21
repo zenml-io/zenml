@@ -15,7 +15,7 @@ def simple_ml_pipeline(parameter: int):
     dataset = load_data(parameter=parameter)
     train_model(dataset)
 
-simple_ml_pipeline.write_run_configuration_template(path=<Insert_path_here>)
+simple_ml_pipeline.write_run_configuration_template(path="<Insert_path_here>")
 ```
 
 <details>

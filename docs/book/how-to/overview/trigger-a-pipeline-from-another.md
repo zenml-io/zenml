@@ -7,6 +7,8 @@ description: >-
 # Trigger a pipeline from another
 
 ```python
+from zenml import pipeline
+
 @pipeline
 def date_loader_pipeline(...) -> dict:
     ...

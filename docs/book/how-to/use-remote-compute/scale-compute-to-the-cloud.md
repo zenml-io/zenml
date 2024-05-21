@@ -19,7 +19,7 @@ def training_step(...) -> ...:
     # train a model
 ```
 
-If the underlying [orchestrator](../../../stacks-and-components/component-guide/orchestrators/README.md) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
+If the underlying [orchestrator](../../stacks-and-components/component-guide/orchestrators/README.md) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
 
 ```python
 from zenml import step
@@ -40,7 +40,7 @@ def training_step(...) -> ...:
 Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources in what way.
 
 {% hint style="info" %}
-If you're using an orchestrator which does not support this feature or its underlying infrastructure doesn't cover your requirements, you can also take a look at [step operators](../../../stacks-and-components/component-guide/step-operators/README.md) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
+If you're using an orchestrator which does not support this feature or its underlying infrastructure does not cover your requirements, you can also take a look at [step operators](../../stacks-and-components/component-guide/step-operators/README.md) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
 {% endhint %}
 
 ### Ensure your container is CUDA-enabled
@@ -59,6 +59,7 @@ For complete details, refer to the [containerization page](../handle-requirement
 
 ```python
 from zenml import pipeline
+from zenml.config import DockerSettings
 
 docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")
 
@@ -74,6 +75,9 @@ For TensorFlow, you might use the `tensorflow/tensorflow:latest-gpu` image, as d
 ZenML requires that ZenML itself be installed for the containers running your pipelines and steps. Therefore, you need to explicitly state that ZenML should be installed. There are several ways to specify this, but as an example, you can update the code from above as follows:
 
 ```python
+from zenml.config import DockerSettings
+from zenml import pipeline
+
 docker_settings = DockerSettings(
     parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime",
     requirements=["zenml==0.39.1", "torchvision"]

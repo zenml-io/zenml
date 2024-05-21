@@ -7,6 +7,8 @@ description: Understanding how and when the version of a pipeline is incremented
 You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a new **version** of the pipeline. Consider our example pipeline:
 
 ```python
+from zenml import pipeline
+
 @pipeline
 def first_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = training_data_loader()
@@ -31,6 +33,12 @@ Running it again (`python run.py`) will create _yet another_ `run` for `version 
 However, now let's change the pipeline configuration itself. You can do this by modifying the step connections within the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative step called `digits_data_loader` which loads a different dataset.
 
 ```python
+import pandas as pd
+
+from zenml import step
+from typing import Tuple
+from typing_extensions import Annotated
+
 @step
 def digits_data_loader() -> Tuple[
     Annotated[pd.DataFrame, "X_train"],

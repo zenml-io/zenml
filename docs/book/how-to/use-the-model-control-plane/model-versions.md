@@ -11,7 +11,7 @@ Model versions are created implicitly as you are running your machine learning t
 If you want to explicitly name your model version, you can do so by passing in the `version` argument to the `Model` object. If you don't do this, ZenML will automatically generate a version number for you.
 
 ```python
-from zenml import Model
+from zenml import Model, step, pipeline
 
 model= Model(
     name="my_model",
@@ -51,6 +51,8 @@ def svc_trainer(...) -> ...:
 A new model version will be created and ZenML will track that this is the next in the iteration sequence of the models using the `number` property. If `really_good_version` was the 5th version of `my_model`, then `even_better_version` will be the 6th version of `my_model`.
 
 ```python
+from zenml import Model
+
 earlier_version = Model(
     name="my_model",
     version="really_good_version"
