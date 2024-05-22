@@ -513,12 +513,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     # for each component, check to see what other steps are
                     # upstream of it
                     step = deployment.step_configurations[component_name]
-                    upstream_step_names = [
-                        step.name for step in step.spec.upstream_steps
-                    ]
                     upstream_step_components = [
                         step_name_to_dynamic_component[upstream_step_name]
-                        for upstream_step_name in upstream_step_names
+                        for upstream_step_name in step.spec.upstream_steps
                     ]
                     component().set_caching_options(
                         enable_caching=False

@@ -124,8 +124,8 @@ class SagemakerOrchestratorConfig(
 
     synchronous: bool = True
     execution_role: str
-    aws_access_key_id: Optional[str] = SecretField()
-    aws_secret_access_key: Optional[str] = SecretField()
+    aws_access_key_id: Optional[str] = SecretField(default=None)
+    aws_secret_access_key: Optional[str] = SecretField(default=None)
     aws_profile: Optional[str] = None
     aws_auth_role_arn: Optional[str] = None
     region: Optional[str] = None
