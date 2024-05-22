@@ -49,8 +49,6 @@ artifact = client.get_artifact_version("my_artifact", "my_version")
 print(artifact.run_metadata["metadata_key"].value)
 ```
 
-## Exam
-
 ## Grouping Metadata in the Dashboard
 
 When logging metadata passing a dictionary of dictionaries in the `metadata` parameter will group the metadata into cards in the ZenML dashboard. This feature helps organize metadata into logical sections, making it easier to visualize and understand.
