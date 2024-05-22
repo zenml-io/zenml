@@ -21,6 +21,7 @@ from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
+    SerializeAsAny,
     field_validator,
 )
 
@@ -137,7 +138,7 @@ class Source(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    def model_dump(self, **kwargs) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
         """Dump the source as a dictionary.
 
         Args:
@@ -148,7 +149,7 @@ class Source(BaseModel):
         """
         return super().model_dump(serialize_as_any=True, **kwargs)
 
-    def model_dump_json(self, **kwargs) -> str:
+    def model_dump_json(self, **kwargs: Any) -> str:
         """Dump the source as a JSON string.
 
         Args:
@@ -242,4 +243,6 @@ def convert_source(v: Any) -> Any:
     return v
 
 
-SourceWithValidator = Annotated[Source, BeforeValidator(convert_source)]
+SourceWithValidator = Annotated[
+    SerializeAsAny[Source], BeforeValidator(convert_source)
+]

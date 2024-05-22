@@ -1067,7 +1067,7 @@ def create_code_repository(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + STATISTICS,
-    response_model=Dict[str, str],
+    response_model=Dict[str, int],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
