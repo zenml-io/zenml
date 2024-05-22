@@ -21,6 +21,7 @@ from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
+    SerializeAsAny,
     field_validator,
 )
 
@@ -242,4 +243,6 @@ def convert_source(v: Any) -> Any:
     return v
 
 
-SourceWithValidator = Annotated[Source, BeforeValidator(convert_source)]
+SourceWithValidator = Annotated[
+    SerializeAsAny[Source], BeforeValidator(convert_source)
+]
