@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
 
 from pydantic import BaseModel, Field, SecretStr
+from typing_extensions import Annotated
 
 from tests.integration.functional.utils import sample_name
 from zenml import (
@@ -26,6 +27,8 @@ from zenml import (
     TriggerFilter,
     TriggerRequest,
     TriggerUpdate,
+    pipeline,
+    step,
 )
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -91,12 +94,10 @@ from zenml.models import (
     WorkspaceRequest,
     WorkspaceUpdate,
 )
-from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
-from zenml.steps import step
 from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.rest_zen_store import RestZenStore
@@ -104,27 +105,24 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @step
-def constant_int_output_test_step() -> int:
+def constant_int_output_test_step() -> Annotated[int, "test_step_output"]:
     logging.info("log")
     return 7
 
 
 @step
-def int_plus_one_test_step(input: int) -> int:
+def int_plus_one_test_step(
+    input: int,
+) -> Annotated[int, "test_step_output_plus_one"]:
     return input + 1
 
 
 @pipeline(name="connected_two_step_pipeline")
-def connected_two_step_pipeline(step_1, step_2):
+def connected_two_step_pipeline():
     """Pytest fixture that returns a pipeline which takes two steps
     `step_1` and `step_2` that are connected."""
-    step_2(step_1())
-
-
-pipeline_instance = connected_two_step_pipeline(
-    step_1=constant_int_output_test_step(),
-    step_2=int_plus_one_test_step(),
-)
+    ret = constant_int_output_test_step()
+    int_plus_one_test_step(ret)
 
 
 class PipelineRunContext:
@@ -139,11 +137,11 @@ class PipelineRunContext:
     def __enter__(self):
         self.pipeline_name = sample_name("sample_pipeline_run_")
         for i in range(self.num_runs):
-            pipeline_instance.run(
+            connected_two_step_pipeline.with_options(
                 run_name=f"{self.pipeline_name}_{i}",
                 unlisted=True,
                 enable_step_logs=self.enable_step_logs,
-            )
+            )()
 
         # persist which runs, steps and artifact versions were produced.
         # In case the test ends up deleting some or all of these, this allows
