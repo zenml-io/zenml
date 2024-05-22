@@ -58,7 +58,7 @@ jobs:
         run: |-
           # Extract the tag from GITHUB_REF if it exists
           TAG=$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')
-      
+
           # Check if the current ref is a tag
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             # Check if the VERSION file matches the tag
