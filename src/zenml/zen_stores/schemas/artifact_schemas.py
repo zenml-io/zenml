@@ -330,7 +330,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 producer_step_run_id = step_run.id
                 producer_pipeline_run_id = step_run.pipeline_run_id
             else:
-                step_run = self.output_of_step_runs[0]
+                step_run = self.output_of_step_runs[0].step_run
                 producer_step_run_id = step_run.original_step_run_id
 
         # Create the body of the model
