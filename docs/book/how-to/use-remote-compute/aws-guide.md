@@ -99,7 +99,7 @@ Replace `<ROLE_ARN>` with the ARN of the IAM role you created in the previous st
 
 ### Artifact Store (S3)
 
-An [artifact store](../production-guide/remote-storage.md) is used for storing and versioning data flowing through your pipelines.
+An [artifact store](../../user-guide/production-guide/remote-storage.md) is used for storing and versioning data flowing through your pipelines.
 
 1. Before you run anything within the ZenML CLI, create an AWS S3 bucket. If you already have one, you can skip this step. (Note: the bucket name should be unique, so you might need to try a few times to find a unique name.)
 
@@ -119,7 +119,7 @@ More details [here](../../stacks-and-components/component-guide/artifact-stores/
 
 ### Orchestrator (SageMaker Pipelines)
 
-An [orchestrator](../production-guide/cloud-orchestration.md) is the compute backend to run your pipelines.
+An [orchestrator](../../user-guide/production-guide/cloud-orchestration.md) is the compute backend to run your pipelines.
 
 1. Before you run anything within the ZenML CLI, head on over to AWS and create a SageMaker domain (Skip this if you already have one). The instructions for creating a domain can be found [in the AWS core documentation](https://docs.aws.amazon.com/sagemaker/latest/dg/onboard-quick-start.html).
 
@@ -147,7 +147,7 @@ More details [here](../../stacks-and-components/component-guide/orchestrators/sa
 
 ### Container Registry (ECR)
 
-A [container registry](../../stacks-and-components/component-guide/container-registries/README.md) is used to store Docker images for your pipelines.
+A [container registry](../../stacks-and-components/component-guide/container-registries/) is used to store Docker images for your pipelines.
 
 1. You'll need to create a repository in ECR. If you already have one, you can skip this step.
 
@@ -215,7 +215,7 @@ python run.py
 
 <figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
 
-Read more in the [production guide](../production-guide/README.md).
+Read more in the [production guide](../../user-guide/production-guide/).
 
 ## Cleanup
 
@@ -271,7 +271,7 @@ The benefits of using an AWS stack with ZenML include:
 
 Now that you have a functional AWS stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
 
-* Dive deeper into ZenML's [production guide](../production-guide/README.md) to learn best practices for deploying and managing production-ready pipelines.
+* Dive deeper into ZenML's [production guide](../../user-guide/production-guide/) to learn best practices for deploying and managing production-ready pipelines.
 * Explore ZenML's [integrations](../../stacks-and-components/component-guide/integration-overview.md) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack-invite) to connect with other users, ask questions, and get support.
 
