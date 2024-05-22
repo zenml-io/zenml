@@ -100,7 +100,7 @@
   * [Use your own docker files](how-to/containerize-your-pipeline/use-your-own-docker-files.md)
 * [🖥️ Use remote compute](how-to/use-remote-compute/README.md)
   * [Schedule a pipeline](how-to/use-remote-compute/schedule-a-pipeline.md)
-  * [Scale compute to the cloud](how-to/use-remote-compute/scale-compute-to-the-cloud.md)
+  * [Specify cloud resources](how-to/use-remote-compute/scale-compute-to-the-cloud.md)
 * [🗄️ Handle Data/Artifacts](how-to/handle-data-artifacts/README.md)
   * [How ZenML stores data](how-to/handle-data-artifacts/artifact-versioning.md)
   * [Return multiple outputs from a step](how-to/handle-data-artifacts/return-multiple-outputs-from-a-step.md)
