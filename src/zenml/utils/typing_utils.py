@@ -19,11 +19,11 @@ https://github.com/pydantic/pydantic/blob/v1.10.14/pydantic/typing.py
 
 import sys
 import typing
-from typing import Annotated, Any, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Optional, Set, Tuple, Type, Union, cast
 from typing import get_args as _typing_get_args
 from typing import get_origin as _typing_get_origin
 
-from typing_extensions import Literal
+from typing_extensions import Annotated, Literal
 
 # Annotated[...] is implemented by returning an instance of one of these
 # classes, depending on python/typing_extensions version.
