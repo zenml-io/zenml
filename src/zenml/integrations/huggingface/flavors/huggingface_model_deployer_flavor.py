@@ -61,7 +61,7 @@ class HuggingFaceModelDeployerConfig(
         namespace: Hugging Face namespace used to list endpoints
     """
 
-    token: Optional[str] = SecretField()
+    token: Optional[str] = SecretField(default=None)
 
     # The namespace to list endpoints for. Set to `"*"` to list all endpoints
     # from all namespaces (i.e. personal namespace and all orgs the user belongs to).

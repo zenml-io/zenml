@@ -62,8 +62,8 @@ class KubeflowOrchestratorSettings(BaseSettings):
     timeout: int = 1200
 
     client_args: Dict[str, Any] = {}
-    client_username: Optional[str] = SecretField()
-    client_password: Optional[str] = SecretField()
+    client_username: Optional[str] = SecretField(default=None)
+    client_password: Optional[str] = SecretField(default=None)
     user_namespace: Optional[str] = None
     node_selectors: Dict[str, str] = {}
     node_affinity: Dict[str, List[str]] = {}

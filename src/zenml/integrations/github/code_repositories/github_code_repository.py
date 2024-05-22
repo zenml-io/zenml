@@ -50,7 +50,7 @@ class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
     owner: str
     repository: str
     host: Optional[str] = "github.com"
-    token: Optional[str] = SecretField()
+    token: Optional[str] = SecretField(default=None)
 
 
 class GitHubCodeRepository(BaseCodeRepository):
