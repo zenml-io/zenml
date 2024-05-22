@@ -8,6 +8,10 @@ on:
         required: false
         type: string
         default: release-cloudbuild.yaml
+      nightly-version:
+        description: The nightly version to use
+        required: true
+        type: string
 jobs:
   publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub
@@ -18,9 +22,17 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v4.1.1
-      - name: Get the version from the github tag ref
+      - name: Get the version from the github tag or branch
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=${{ inputs.nightly-version }}
+          fi
+          # Sanitize the VERSION to make it Docker-compatible
+          VERSION=$(echo $VERSION | sed 's/[^a-zA-Z0-9._-]/-/g')
+          echo ::set-output name=VERSION::$VERSION
 
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@v0
@@ -34,5 +46,5 @@ jobs:
         run: |-
           gcloud builds submit \
             --quiet \
-            --config=${{inputs.config_file}} \
-            --substitutions=TAG_NAME=${{github.ref_name}} .
+            --config=${{ inputs.config_file }} \
+            --substitutions=TAG_NAME=${{ steps.get_version.outputs.VERSION }}
