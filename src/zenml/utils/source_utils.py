@@ -73,7 +73,7 @@ def load(source: Union[Source, str]) -> Any:
         _warn_about_potential_source_loading_issues(source=source)
         import_root = get_source_root()
     elif source.type == SourceType.DISTRIBUTION_PACKAGE:
-        source = DistributionPackageSource.model_validate(source)
+        source = DistributionPackageSource.model_validate(dict(source))
         if source.version:
             current_package_version = _get_package_version(
                 package_name=source.package_name

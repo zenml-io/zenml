@@ -737,7 +737,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             registered_model=RegisteredModel(name=mlflow_model_version.name),
             model_format=MLFLOW_MODEL_FORMAT,
             model_library=model_library,
-            version=mlflow_model_version.version,
+            version=str(mlflow_model_version.version),
             created_at=datetime.fromtimestamp(
                 int(mlflow_model_version.creation_timestamp) / 1e3
             ),

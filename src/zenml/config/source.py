@@ -14,10 +14,15 @@
 """Source classes."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Any, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    field_validator,
+)
 
 from zenml.logger import get_logger
 
@@ -131,6 +136,28 @@ class Source(BaseModel):
         return self.attribute is None
 
     model_config = ConfigDict(extra="allow")
+
+    def model_dump(self, **kwargs) -> Dict[str, Any]:
+        """Dump the source as a dictionary.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            The source as a dictionary.
+        """
+        return super().model_dump(serialize_as_any=True, **kwargs)
+
+    def model_dump_json(self, **kwargs) -> str:
+        """Dump the source as a JSON string.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            The source as a JSON string.
+        """
+        return super().model_dump_json(serialize_as_any=True, **kwargs)
 
 
 class DistributionPackageSource(Source):

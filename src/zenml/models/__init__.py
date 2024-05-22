@@ -25,7 +25,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseDatedResponseBody
+    BaseDatedResponseBody,
 )
 from zenml.models.v2.base.scoped import (
     UserScopedRequest,
@@ -39,7 +39,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -84,6 +84,7 @@ from zenml.models.v2.core.artifact_version import (
     ArtifactVersionResponseBody,
     ArtifactVersionResponseMetadata,
     ArtifactVersionUpdate,
+    LazyArtifactVersionResponse
 )
 from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationRequest,
@@ -194,7 +195,7 @@ from zenml.models.v2.core.pipeline_namespace import (
     PipelineNamespaceResponseBody,
     PipelineNamespaceResponseMetadata,
     PipelineNamespaceResponse,
-    PipelineNamespaceFilter
+    PipelineNamespaceFilter,
 )
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
@@ -223,6 +224,7 @@ from zenml.models.v2.core.pipeline_run import (
 )
 from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
+    LazyRunMetadataResponse,
     RunMetadataRequest,
     RunMetadataFilter,
     RunMetadataResponse,
@@ -323,7 +325,7 @@ from zenml.models.v2.core.trigger import (
     TriggerResponse,
     TriggerResponseBody,
     TriggerResponseMetadata,
-    TriggerResponseResources
+    TriggerResponseResources,
 )
 from zenml.models.v2.core.trigger_execution import (
     TriggerExecutionRequest,
@@ -331,7 +333,7 @@ from zenml.models.v2.core.trigger_execution import (
     TriggerExecutionResponse,
     TriggerExecutionResponseBody,
     TriggerExecutionResponseMetadata,
-    TriggerExecutionResponseResources
+    TriggerExecutionResponseResources,
 )
 from zenml.models.v2.core.event_source import (
     EventSourceRequest,
@@ -340,7 +342,7 @@ from zenml.models.v2.core.event_source import (
     EventSourceResponse,
     EventSourceResponseBody,
     EventSourceResponseMetadata,
-    EventSourceResponseResources
+    EventSourceResponseResources,
 )
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
@@ -393,6 +395,8 @@ EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
+LazyArtifactVersionResponse.model_rebuild()
+LazyRunMetadataResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
 ModelResponseMetadata.model_rebuild()
 ModelVersionResponseBody.model_rebuild()
