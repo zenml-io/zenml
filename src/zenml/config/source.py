@@ -137,7 +137,7 @@ class Source(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    def model_dump(self, **kwargs) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
         """Dump the source as a dictionary.
 
         Args:
@@ -148,7 +148,7 @@ class Source(BaseModel):
         """
         return super().model_dump(serialize_as_any=True, **kwargs)
 
-    def model_dump_json(self, **kwargs) -> str:
+    def model_dump_json(self, **kwargs: Any) -> str:
         """Dump the source as a JSON string.
 
         Args:
