@@ -44,6 +44,9 @@ jobs:
 
           # Update the version to the nightly version
           poetry version $NIGHTLY_VERSION
+
+          # Update the src/zenml/VERSION file with the nightly version
+          echo $NIGHTLY_VERSION > src/zenml/VERSION
       - name: Include latest dashboard
         run: bash scripts/install-dashboard.sh
       - name: Build package
