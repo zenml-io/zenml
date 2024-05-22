@@ -24,7 +24,7 @@ parse_args () {
 install_zenml() {
     # install ZenML in editable mode
 
-    uv pip install --system -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
+    uv pip install -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
 }
 
 install_integrations() {
@@ -61,7 +61,7 @@ install_integrations() {
     # https://github.com/pytorch/pytorch/issues/124897
     echo "torch<2.3.0" >> integration-requirements.txt
 
-    uv pip install --system -r integration-requirements.txt
+    uv pip install -r integration-requirements.txt
     rm integration-requirements.txt
 }
 

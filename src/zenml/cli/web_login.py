@@ -128,6 +128,7 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
         auth_response.verification_uri_complete
         or auth_response.verification_uri
     )
+    breakpoint()
     if verification_uri.startswith("/"):
         # If the verification URI is a relative path, we need to add the base
         # URL to it
