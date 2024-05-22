@@ -80,12 +80,12 @@
   * [Name your pipeline runs](how-to/overview/name-your-pipeline-and-runs.md)
   * [Use failure/success hooks](how-to/overview/use-failure-success-hooks.md)
   * [Hyperparameter tuning](how-to/overview/hyper-parameter-tuning.md)
+  * [Attach metadata to steps](how-to/metadata/attach-metadata-to-steps.md)
   * [Fetch metadata within steps](how-to/overview/fetch-metadata-within-steps.md)
+  * [Special Metadata Types](how-to/metadata/logging-metadata.md)
   * [Fetch metadata during pipeline composition](how-to/overview/fetch-metadata-within-pipeline.md)
   * [Version pipelines](how-to/overview/version-pipelines.md)
   * [Enable or disable logs storing](how-to/overview/enable-or-disable-logs-storing.md)
-  * [Attach metadata to steps](how-to/metadata/attach-metadata-to-steps.md)
-  * [Special Metadata Types](how-to/metadata/logging-metadata.md)
   * [Access secrets in a step](how-to/manage-secrets/access-secrets-in-a-step.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
   * [What can be configured](how-to/use-configuration-files/what-can-be-configured.md)
@@ -93,8 +93,11 @@
   * [Autogenerate a template yaml file](how-to/use-configuration-files/autogenerate-a-template-yaml-file.md)
 * [🐳 Containerize your Pipelines](how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md)
   * [Docker settings on a step](how-to/handle-requirements-and-docker-settings/docker-settings-on-a-step.md)
-  * [Build the pipeline without running](how-to/handle-requirements-and-docker-settings/build-the-pipeline-without-running.md)
+  * [Build the pipeline without running](how-to/containerize-your-pipeline/build-the-pipeline-without-running.md)
   * [Use code repositories to speed up docker build times](how-to/handle-requirements-and-docker-settings/use-code-repositories-to-speed-up-docker-build-times.md)
+  * [Specify pip dependencies and apt packages](how-to/containerize-your-pipeline/specify-pip-dependencies-and-apt-packages.md)
+  * [Which files are built into the image](how-to/containerize-your-pipeline/which-files-are-built-into-the-image.md)
+  * [Use your own docker files](how-to/containerize-your-pipeline/use-your-own-docker-files.md)
 * [🖥️ Use remote compute](how-to/use-remote-compute/README.md)
   * [Schedule a pipeline](how-to/use-remote-compute/schedule-a-pipeline.md)
   * [Scale compute to the cloud](how-to/use-remote-compute/scale-compute-to-the-cloud.md)
@@ -127,7 +130,6 @@
   * [Custom secret stores](how-to/configuring-zenml/custom-secret-stores.md)
   * [Secret management](how-to/configuring-zenml/secret-management.md)
   * [Interact with secrets](how-to/configuring-zenml/interact-with-secrets.md)
-
 
 ## Stacks & Components
 
