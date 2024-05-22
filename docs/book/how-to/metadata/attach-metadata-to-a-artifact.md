@@ -1,4 +1,4 @@
-# Attach metadata to a artifact
+# Attach metadata to an artifact
 
 Metadata plays a critical role in ZenML, providing context and additional information about various entities within the platform. Anything which is `metadata` in ZenML can be compared in the dashboard.
 
@@ -19,7 +19,7 @@ from zenml import step, log_artifact_metadata
 from zenml.metadata.metadata_types import StorageSize
 
 @step
-def process_data_step(dataframe: pd.DataFrame) -> pd.DataFrame:
+def process_data_step(dataframe: pd.DataFrame) ->  Annotated[pd.DataFrame, "processed_data"],:
     """Process a dataframe and log metadata about the result."""
     # Perform processing on the dataframe...
     processed_dataframe = ...
@@ -38,7 +38,7 @@ def process_data_step(dataframe: pd.DataFrame) -> pd.DataFrame:
 
 ## Fetching logged metadata
 
-Once metadata has been logged in an [artifact](../metadata/attach-metadata-to-a-artifact.md), or [step](../metadata/attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
+Once metadata has been logged in an [artifact](attach-metadata-to-a-artifact.md), or [step](attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
 
 ```python
 from zenml.client import Client

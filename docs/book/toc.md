@@ -107,7 +107,7 @@
   * [Get arbitrary artifacts in a step](how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md)
   * [Handle custom data types](how-to/handle-data-artifacts/handle-custom-data-types.md)
   * [Visualize artifacts](how-to/handle-data-artifacts/visualize-artifacts.md)
-  * [Attach metadata to a artifact](how-to/metadata/attach-metadata-to-a-artifact.md)
+  * [Attach metadata to an artifact](how-to/metadata/attach-metadata-to-a-artifact.md)
 * [🪆 Use the Model Control Plane](how-to/use-the-model-control-plane/README.md)
   * [Associate a pipeline with a model](how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model.md)
   * [Attach metadata to a model](how-to/metadata/attach-metadata-to-a-model.md)
