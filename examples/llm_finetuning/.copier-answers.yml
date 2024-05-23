@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 2024.04.05-21-g1156f4b
+_commit: 2024.05.23
 _src_path: gh:zenml-io/template-llm-finetuning
 bf16: true
 cuda_version: cuda11.8
