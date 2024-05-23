@@ -58,7 +58,7 @@ class ServerSettingsSchema(SQLModel, table=True):
         """
         for field, value in settings_update.dict(exclude_unset=True).items():
             if field == "onboarding_state":
-                if value:
+                if value is not None:
                     self.onboarding_state = json.dumps(value)
             elif hasattr(self, field):
                 setattr(self, field, value)
