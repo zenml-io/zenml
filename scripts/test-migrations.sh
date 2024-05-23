@@ -325,7 +325,7 @@ else
     stop_db
     start_db
 
-    # Test sequential migrations across multiple versions
+    # Test random migrations across multiple versions
     echo "===== TESTING RANDOM MIGRATIONS ====="
     set -e
 
