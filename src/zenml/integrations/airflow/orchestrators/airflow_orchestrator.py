@@ -99,18 +99,18 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     def __init__(self, **values: Any):
-        """Sets environment variables to configure airflow.
+        """Initialize the orchestrator
 
         Args:
             **values: Values to set in the orchestrator.
         """
         super().__init__(**values)
-        self.airflow_home = os.path.join(
+        self.dags_directory = os.path.join(
             io_utils.get_global_config_directory(),
             "airflow",
             str(self.id),
+            "dags",
         )
-        self._set_env()
 
     @property
     def config(self) -> AirflowOrchestratorConfig:
@@ -129,19 +129,6 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             The settings class.
         """
         return AirflowOrchestratorSettings
-
-    @property
-    def dags_directory(self) -> str:
-        """Returns path to the airflow dags directory.
-
-        Returns:
-            Path to the airflow dags directory.
-        """
-        return os.path.join(self.airflow_home, "dags")
-
-    def _set_env(self) -> None:
-        """Sets environment variables to configure airflow."""
-        os.environ["AIRFLOW_HOME"] = self.airflow_home
 
     @property
     def validator(self) -> Optional["StackValidator"]:
@@ -338,14 +325,14 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         """
         io_utils.create_dir_recursive_if_not_exists(output_dir)
 
-        if self.config.local and output_dir != self.dags_directory:
+        if self.config.local and output_dir == self.dags_directory:
             logger.warning(
-                "You're using a local Airflow orchestrator but specified a "
-                "custom DAG output directory `%s`. This DAG will not be found "
-                "by the local Airflow server until you copy it in the DAGs "
-                "directory `%s`.",
+                "You're using a local Airflow orchestrator but have not "
+                "specified a custom DAG output directory. Unless you've "
+                "configured your Airflow server to look for DAGs in this "
+                "directory (%s), this DAG will not be found automatically "
+                "by your local Airflow server.",
                 output_dir,
-                self.dags_directory,
             )
 
         def _write_zip(path: str) -> None:
