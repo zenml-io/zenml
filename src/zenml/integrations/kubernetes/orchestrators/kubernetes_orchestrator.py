@@ -396,11 +396,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # orchestrator pod. These settings should only be used
             # for the pods executing the actual steps.
             pod_settings = settings.pod_settings.copy(
-                exclude={
-                    "resources",
-                    "node_selectors",
-                    "affinity",
-                    "tolerations",
+                update={
+                    "resources": {},
+                    "node_selectors": {},
+                    "affinity": {},
+                    "tolerations": [],
                 }
             )
             settings = settings.copy(update={"pod_settings": pod_settings})
