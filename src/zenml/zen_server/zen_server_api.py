@@ -15,6 +15,7 @@
 
 import os
 from asyncio.log import logger
+from genericpath import isfile
 from typing import Any, List
 
 from fastapi import FastAPI, HTTPException, Request
@@ -22,7 +23,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from genericpath import isfile
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
