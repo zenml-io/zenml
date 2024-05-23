@@ -28,12 +28,21 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
           else
-            VERSION=${{ inputs.nightly-version }}
+              # Extract the current version
+              CURRENT_VERSION=$(poetry version -s)
+
+              # Get the current date in the format of YYYY-MM-DD
+              DATE=$(date +"%Y%m%d")
+
+              # Combine the current version with the date to form
+              # the new version string
+              VERSION="${CURRENT_VERSION}.dev${DATE}"
+              # Set the nightly version
+              echo "VERSION=$VERSION" >> $GITHUB_ENV
           fi
           # Sanitize the VERSION to make it Docker-compatible
           VERSION=$(echo $VERSION | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo ::set-output name=VERSION::$VERSION
-
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@v0
         with:
@@ -47,4 +56,4 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=${{ inputs.config_file }} \
-            --substitutions=TAG_NAME=${{ steps.get_version.outputs.VERSION }}
+            --substitutions=TAG_NAME=$VERSION

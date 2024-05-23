@@ -14,37 +14,12 @@ jobs:
       git-ref: develop
     secrets: inherit
     if: github.repository == 'zenml-io/zenml'
-  set-nightly-version:
-    runs-on: ubuntu-latest
-    outputs:
-      NIGHTLY_VERSION: ${{ steps.set_nightly_version.outputs.NIGHTLY_VERSION }}
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v4.1.1
-      - name: Set nightly version
-        id: set_nightly_version
-        run: |
-          # Extract the current version
-          CURRENT_VERSION=$(poetry version -s)
-
-          # Get the current date in the format of YYYY-MM-DD
-          DATE=$(date +"%Y%m%d")
-
-          # Combine the current version with the date to form
-          # the new version string
-          NIGHTLY_VERSION="${CURRENT_VERSION}.dev${DATE}"
-
-          # Set the nightly version
-          echo "NIGHTLY_VERSION=$NIGHTLY_VERSION" >> $GITHUB_ENV
-          echo ::set-output name=NIGHTLY_VERSION::$NIGHTLY_VERSION
   publish-python-package:
     permissions:
       id-token: write
       contents: read
-    needs: [setup-and-test, set-nightly-version]
+    needs: setup-and-test
     uses: ./.github/workflows/publish_to_pypi_nightly.yml
-    with:
-      nightly-version: ${{ needs.set-nightly-version.outputs.NIGHTLY_VERSION }}
     secrets: inherit
     if: github.repository == 'zenml-io/zenml'
   wait-for-package-release:
@@ -61,5 +36,4 @@ jobs:
     uses: ./.github/workflows/publish_docker_image.yml
     with:
       config_file: release-cloudbuild-nightly.yaml
-      nightly-version: ${{ needs.set-nightly-version.outputs.NIGHTLY_VERSION }}
     secrets: inherit
