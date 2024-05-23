@@ -33,7 +33,6 @@ from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
-from zenml.model.utils import link_artifact_config_to_model
 from zenml.models import (
     ArtifactVersionResponse,
     LogsRequest,
@@ -55,7 +54,6 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.model.model import Model
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -398,50 +396,20 @@ class StepLauncher:
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
                 }
-                self._link_cached_artifacts_to_model(
+                orchestrator_utils._link_cached_artifacts_to_model(
                     model_from_context=model,
                     step_run=step_run,
+                    step_source=self._step.spec.source,
                 )
+                if self._step.config.model:
+                    orchestrator_utils._link_pipeline_run_to_model_from_context(
+                        pipeline_run_id=step_run.pipeline_run_id,
+                        model=self._step.config.model,
+                    )
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
         return execution_needed, step_run
-
-    def _link_cached_artifacts_to_model(
-        self,
-        model_from_context: Optional["Model"],
-        step_run: StepRunRequest,
-    ) -> None:
-        """Links the output artifacts of the cached step to the model version in Control Plane.
-
-        Args:
-            model_from_context: The model version of the current step.
-            step_run: The step to run.
-        """
-        from zenml.artifacts.artifact_config import ArtifactConfig
-        from zenml.steps.base_step import BaseStep
-        from zenml.steps.utils import parse_return_type_annotations
-
-        step_instance = BaseStep.load_from_source(self._step.spec.source)
-        output_annotations = parse_return_type_annotations(
-            step_instance.entrypoint
-        )
-        for output_name_, output_id in step_run.outputs.items():
-            artifact_config_ = None
-            if output_name_ in output_annotations:
-                annotation = output_annotations.get(output_name_, None)
-                if annotation and annotation.artifact_config is not None:
-                    artifact_config_ = annotation.artifact_config.copy()
-            # no artifact config found or artifact was produced by `save_artifact`
-            # inside the step body, so was never in annotations
-            if artifact_config_ is None:
-                artifact_config_ = ArtifactConfig(name=output_name_)
-
-            link_artifact_config_to_model(
-                artifact_config=artifact_config_,
-                model=model_from_context,
-                artifact_version_id=output_id,
-            )
 
     def _run_step(
         self,

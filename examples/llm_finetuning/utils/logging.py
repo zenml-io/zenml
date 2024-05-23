@@ -15,19 +15,21 @@
 # limitations under the License.
 #
 
-from steps import merge
+from typing import Any
 
-from zenml import pipeline
-from zenml.config import DockerSettings
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
-@pipeline(
-    settings={
-        "docker": DockerSettings(
-            apt_packages=["git"], requirements="requirements.txt"
-        )
-    }
-)
-def llm_lora_merging() -> None:
-    """Pipeline to merge LLMs with adapters."""
-    merge()
+def print_trainable_parameters(model: Any):
+    """Prints the number of trainable parameters in the model."""
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    logger.info(
+        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
+    )

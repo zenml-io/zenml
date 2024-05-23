@@ -5679,7 +5679,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
+        model_name_or_id: Optional[Union[str, UUID]] = None,
         model_version_name_or_number_or_id: Optional[
             Union[str, int, ModelStages, UUID]
         ] = None,
@@ -5702,7 +5702,17 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: In case method inputs don't adhere to restrictions.
             KeyError: In case no model version with the identifiers exists.
+            ValueError: In case retrieval is attempted using non UUID model version
+                identifier and no model identifier provided.
         """
+        if (
+            not is_valid_uuid(model_version_name_or_number_or_id)
+            and model_name_or_id is None
+        ):
+            raise ValueError(
+                "No model identifier provided and model version identifier "
+                f"`{model_version_name_or_number_or_id}` is not a valid UUID."
+            )
         if cll := client_lazy_loader(
             "get_model_version",
             model_name_or_id=model_name_or_id,
