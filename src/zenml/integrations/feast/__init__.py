@@ -31,7 +31,9 @@ class FeastIntegration(Integration):
     """Definition of Feast integration for ZenML."""
 
     NAME = FEAST
-    REQUIREMENTS = ["feast<=0.37.1"]
+    # click is added to keep the feast click version
+    # in sync with ZenML's click
+    REQUIREMENTS = ["feast<=0.37.1", "click>=8.0.1,<8.1.4"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
