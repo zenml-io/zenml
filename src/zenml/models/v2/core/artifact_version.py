@@ -24,12 +24,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
+from zenml.model.model import Model
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
@@ -45,7 +46,6 @@ from zenml.models.v2.core.tag import TagResponse
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.model.model import Model
     from zenml.models.v2.core.artifact_visualization import (
         ArtifactVisualizationRequest,
         ArtifactVisualizationResponse,
@@ -550,9 +550,9 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
     """
 
     id: Optional[UUID] = None  # type: ignore[assignment]
-    _lazy_load_name: Optional[str] = None
-    _lazy_load_version: Optional[str] = None
-    _lazy_load_model: "Model"
+    lazy_load_name: Optional[str] = None
+    lazy_load_version: Optional[str] = None
+    lazy_load_model: Model
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
@@ -582,9 +582,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         from zenml.metadata.lazy_load import RunMetadataLazyGetter
 
         return RunMetadataLazyGetter(  # type: ignore[return-value]
-            self._lazy_load_model,
-            self._lazy_load_name,
-            self._lazy_load_version,
+            self.lazy_load_model,
+            self.lazy_load_name,
+            self.lazy_load_version,
         )
-
-    model_config = ConfigDict(extra="allow")

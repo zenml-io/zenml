@@ -449,9 +449,9 @@ class Model(BaseModel):
         try:
             get_pipeline_context()
             return LazyArtifactVersionResponse(
-                _lazy_load_name=name,
-                _lazy_load_version=version,
-                _lazy_load_model=Model(
+                lazy_load_name=name,
+                lazy_load_version=version,
+                lazy_load_model=Model(
                     name=self.name, version=self.version or self.number
                 ),
             )

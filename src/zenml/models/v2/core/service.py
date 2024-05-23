@@ -378,6 +378,7 @@ class ServiceFilter(WorkspaceScopedFilter):
     """
 
     name: Optional[str] = Field(
+        default=None,
         description="Name of the service. Use this to filter services by "
         "their name.",
     )

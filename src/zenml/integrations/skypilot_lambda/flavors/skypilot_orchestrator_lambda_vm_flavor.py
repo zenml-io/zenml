@@ -65,7 +65,7 @@ class SkypilotLambdaOrchestratorConfig(
 ):
     """Skypilot orchestrator config."""
 
-    api_key: Optional[str] = SecretField()
+    api_key: Optional[str] = SecretField(default=None)
 
 
 class SkypilotLambdaOrchestratorFlavor(BaseOrchestratorFlavor):

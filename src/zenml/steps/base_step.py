@@ -510,17 +510,17 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
             elif isinstance(value, LazyArtifactVersionResponse):
                 model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
-                    model=value._lazy_load_model,
-                    artifact_name=value._lazy_load_name,
-                    artifact_version=value._lazy_load_version,
+                    model=value.lazy_load_model,
+                    artifact_name=value.lazy_load_name,
+                    artifact_version=value.lazy_load_version,
                     metadata_name=None,
                 )
             elif isinstance(value, LazyRunMetadataResponse):
                 model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
-                    model=value._lazy_load_model,
-                    artifact_name=value._lazy_load_artifact_name,
-                    artifact_version=value._lazy_load_artifact_version,
-                    metadata_name=value._lazy_load_metadata_name,
+                    model=value.lazy_load_model,
+                    artifact_name=value.lazy_load_artifact_name,
+                    artifact_version=value.lazy_load_artifact_version,
+                    metadata_name=value.lazy_load_metadata_name,
                 )
             elif isinstance(value, ClientLazyLoader):
                 client_lazy_loaders[key] = value

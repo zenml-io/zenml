@@ -57,8 +57,8 @@ class RunMetadataLazyGetter:
         from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 
         return LazyRunMetadataResponse(
-            _lazy_load_model=self._lazy_load_model,
-            _lazy_load_artifact_name=self._lazy_load_artifact_name,
-            _lazy_load_artifact_version=self._lazy_load_artifact_version,
-            _lazy_load_metadata_name=key,
+            lazy_load_model=self._lazy_load_model,
+            lazy_load_artifact_name=self._lazy_load_artifact_name,
+            lazy_load_artifact_version=self._lazy_load_artifact_version,
+            lazy_load_metadata_name=key,
         )

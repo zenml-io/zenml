@@ -47,7 +47,7 @@ class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
     """
 
     project: Optional[str] = None
-    api_token: Optional[str] = SecretField()
+    api_token: Optional[str] = SecretField(default=None)
 
 
 class NeptuneExperimentTrackerSettings(BaseSettings):

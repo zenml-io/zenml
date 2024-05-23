@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+from zenml.model.model import Model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -29,9 +30,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-
-if TYPE_CHECKING:
-    from zenml.model.model import Model
 
 # ------------------ Request Model ------------------
 
@@ -230,10 +228,10 @@ class LazyRunMetadataResponse(RunMetadataResponse):
     """
 
     id: Optional[UUID] = None  # type: ignore[assignment]
-    _lazy_load_artifact_name: Optional[str] = None
-    _lazy_load_artifact_version: Optional[str] = None
-    _lazy_load_metadata_name: Optional[str] = None
-    _lazy_load_model: "Model"
+    lazy_load_artifact_name: Optional[str] = None
+    lazy_load_artifact_version: Optional[str] = None
+    lazy_load_metadata_name: Optional[str] = None
+    lazy_load_model: Model
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
@@ -254,5 +252,3 @@ class LazyRunMetadataResponse(RunMetadataResponse):
         raise RuntimeError(
             "Cannot access run metadata metadata before pipeline runs."
         )
-
-    model_config = ConfigDict(extra="allow")
