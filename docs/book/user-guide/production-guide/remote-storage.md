@@ -14,7 +14,7 @@ When using a stack with remote storage, nothing changes except the fact that the
 
 ## Provisioning and registering a remote artifact store
 
-Out of the box, ZenML ships with [many different supported artifact store flavors](../../stacks-and-components/component-guide/artifact-stores/README.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
+Out of the box, ZenML ships with [many different supported artifact store flavors](../../stacks-and-components/component-guide/artifact-stores/). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -93,7 +93,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](../
 {% endtab %}
 
 {% tab title="Other" %}
-You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../stacks-and-components/component-guide/artifact-stores/README.md).
+You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../stacks-and-components/component-guide/artifact-stores/).
 
 It is also relatively simple to create a [custom stack component flavor](../../stacks-and-components/custom-stack-solutions/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
@@ -105,9 +105,9 @@ Having trouble with setting up infrastructure? Join the [ZenML community](https:
 
 ## Configuring permissions with your first service connector
 
-While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](../../stacks-and-components/auth-management/README.md) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](../../stacks-and-components/auth-management/README.md) on them) - but we're going to be starting with a very basic approach.
+While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](../../stacks-and-components/auth-management/) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](../../stacks-and-components/auth-management/) on them) - but we're going to be starting with a very basic approach.
 
-First, let's understand what a service connector does. In simple words, a service connector contains credentials that grant stack components access to cloud infrastructure. These credentials are stored in the form a [secret](../../how-to/configuring-zenml/secret-management.md), and are available to the ZenML server to use. Using these credentials, the service connector brokers a short-lived token and grants temporary permissions to the stack component to access that infrastructure. This diagram represents this process:
+First, let's understand what a service connector does. In simple words, a service connector contains credentials that grant stack components access to cloud infrastructure. These credentials are stored in the form a [secret](../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md), and are available to the ZenML server to use. Using these credentials, the service connector brokers a short-lived token and grants temporary permissions to the stack component to access that infrastructure. This diagram represents this process:
 
 <figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
 

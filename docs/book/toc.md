@@ -19,6 +19,8 @@
       * [Upgrade the version of the ZenML server](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md)
       * [Troubleshoot the deployed server](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/troubleshoot-your-deployed-server.md)
       * [Troubleshoot stack components](deploying-zenml/zenml-self-hosted/manage-the-deployed-services/troubleshoot-stack-components.md)
+      * [Custom secret stores](getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/custom-secret-stores.md)
+      * [Secret management](getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md)
 
 ## User Guide
 
@@ -120,14 +122,12 @@
   * [Retrieve used configuration of a run](how-to/access-pipelines-models-artifacts/retrieve-used-configuration-of-a-run.md)
   * [Load artifacts into memory](how-to/access-pipelines-models-artifacts/load-artifacts-into-memory.md)
   * [Load artifacts from Model](how-to/access-pipelines-models-artifacts/load-artifacts-from-model.md)
-* [⚙️ Configuring ZenML](how-to/configuring-zenml/README.md)
+* [⚙️ ZenML Settings](how-to/configuring-zenml/README.md)
   * [Methods to connect to ZenML](how-to/configuring-zenml/connecting-to-zenml.md)
   * [Connect your git repository](how-to/configuring-zenml/connect-your-git-repository.md)
   * [CI/CD](how-to/configuring-zenml/ci-cd.md)
   * [Global settings of ZenML](how-to/configuring-zenml/global-settings-of-zenml.md)
   * [Environment Variables](how-to/configuring-zenml/environment-variables.md)
-  * [Custom secret stores](how-to/configuring-zenml/custom-secret-stores.md)
-  * [Secret management](how-to/configuring-zenml/secret-management.md)
   * [Interact with secrets](how-to/configuring-zenml/interact-with-secrets.md)
 
 ## Stacks & Components

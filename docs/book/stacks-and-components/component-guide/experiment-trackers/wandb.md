@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with Weights & Biases.
 
 # Weights & Biases
 
-The Weights & Biases Experiment Tracker is an [Experiment Tracker](./README.md) flavor provided with the Weights & Biases ZenML integration that uses [the Weights & Biases experiment tracking platform](https://wandb.ai/site/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
+The Weights & Biases Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Weights & Biases ZenML integration that uses [the Weights & Biases experiment tracking platform](https://wandb.ai/site/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ### When would you want to use it?
 
@@ -55,7 +55,7 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../../how-to/configuring-zenml/secret-management.md) to store the Weights & Biases tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) to store the Weights & Biases tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -79,7 +79,7 @@ zenml experiment-tracker register wandb_tracker \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../../how-to/configuring-zenml/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](../../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
