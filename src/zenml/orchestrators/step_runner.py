@@ -38,6 +38,7 @@ from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_IGNORE_FAILURE_HOOK,
     handle_bool_env_var,
 )
 from zenml.exceptions import StepContextError, StepInterfaceError
@@ -203,15 +204,18 @@ class StepRunner:
                     )
                 except BaseException as step_exception:  # noqa: E722
                     step_failed = True
-                    failure_hook_source = (
-                        self.configuration.failure_hook_source
-                    )
-                    if failure_hook_source:
-                        logger.info("Detected failure hook. Running...")
-                        self.load_and_run_hook(
-                            failure_hook_source,
-                            step_exception=step_exception,
-                        )
+                    if not handle_bool_env_var(
+                        ENV_ZENML_IGNORE_FAILURE_HOOK, False
+                    ):
+                        if (
+                            failure_hook_source
+                            := self.configuration.failure_hook_source
+                        ):
+                            logger.info("Detected failure hook. Running...")
+                            self.load_and_run_hook(
+                                failure_hook_source,
+                                step_exception=step_exception,
+                            )
                     raise
                 finally:
                     step_run_metadata = self._stack.get_step_run_metadata(
@@ -225,10 +229,10 @@ class StepRunner:
                         info=step_run_info, step_failed=step_failed
                     )
                     if not step_failed:
-                        success_hook_source = (
-                            self.configuration.success_hook_source
-                        )
-                        if success_hook_source:
+                        if (
+                            success_hook_source
+                            := self.configuration.success_hook_source
+                        ):
                             logger.info("Detected success hook. Running...")
                             self.load_and_run_hook(
                                 success_hook_source,
