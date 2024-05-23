@@ -25,8 +25,10 @@ order to persist the configuration across sessions.
 """
 from zenml.config.docker_settings import DockerSettings
 from zenml.config.resource_settings import ResourceSettings
+from zenml.config.retry_config import StepRetryConfig
 
 __all__ = [
     "DockerSettings",
     "ResourceSettings",
+    "StepRetryConfig",
 ]
