@@ -43,6 +43,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
             permissions will be created.
         step_pod_service_account_name: Name of the service account to use for the
             step pods. If not provided, the default service account will be used.
+        privileged: If the container should be run in privileged mode.
         pod_settings: Pod settings to apply.
     """
 
@@ -50,6 +51,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     timeout: int = 0
     service_account_name: Optional[str] = None
     step_pod_service_account_name: Optional[str] = None
+    privileged: bool = False
     pod_settings: Optional[KubernetesPodSettings] = None
 
 
