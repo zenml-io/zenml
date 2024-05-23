@@ -8,10 +8,6 @@ on:
         required: false
         type: string
         default: release-cloudbuild.yaml
-      nightly-version:
-        description: The nightly version to use
-        required: true
-        type: string
 jobs:
   publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub

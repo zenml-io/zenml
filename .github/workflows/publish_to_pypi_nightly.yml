@@ -2,11 +2,6 @@
 name: Publish Nightly PyPI package
 on:
   workflow_call:
-    inputs:
-      nightly-version:
-        description: The nightly version to use
-        required: true
-        type: string
 jobs:
   publish_to_pypi:
     name: Publish Nightly Python 🐍 package 📦 to PyPI
