@@ -153,7 +153,6 @@
 ## Stack Components
 
 * [📜 Overview](component-guide/README.md)
-* [Integration overview](component-guide/integration-overview.md)
 * [🔋 Orchestrators](component-guide/orchestrators/orchestrators.md)
   * [Local Orchestrator](component-guide/orchestrators/local.md)
   * [Local Docker Orchestrator](component-guide/orchestrators/local-docker.md)
