@@ -70,6 +70,7 @@
   * [Control caching behavior](how-to/overview/control-caching-behavior.md)
   * [Schedule a pipeline](how-to/overview/schedule-a-pipeline.md)
   * [Trigger a pipeline from another](how-to/overview/trigger-a-pipeline-from-another.md)
+  * [Run pipelines asynchronously in the background](how-to/overview/trigger-a-pipeline-from-another-1.md)
   * [Control execution order of steps](how-to/overview/control-execution-order-of-steps.md)
   * [Using a custom step invocation ID](how-to/overview/using-a-custom-step-invocation-id.md)
   * [Name your pipeline runs](how-to/overview/name-your-pipeline-and-runs.md)
