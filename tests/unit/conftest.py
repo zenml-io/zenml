@@ -291,7 +291,7 @@ def sample_step_run_info(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
 ) -> StepRunInfo:
-    step_run_info = StepRunInfo(
+    return StepRunInfo(
         step_run_id=sample_step_run.id,
         run_id=sample_pipeline_run.id,
         run_name=sample_pipeline_run.name,
@@ -299,7 +299,6 @@ def sample_step_run_info(
         config=sample_step_run.config,
         pipeline=sample_pipeline_run.config,
     )
-    return step_run_info
 
 
 @pytest.fixture

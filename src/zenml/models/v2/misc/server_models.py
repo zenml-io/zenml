@@ -78,11 +78,17 @@ class ServerModel(BaseModel):
     auth_scheme: AuthScheme = Field(
         title="The authentication scheme that the server is using.",
     )
-    base_url: str = Field(
+    server_url: str = Field(
         "",
-        title="The Base URL of the server.",
+        title="The URL where the ZenML server API is reachable. If not "
+        "specified, the clients will use the same URL used to connect them to "
+        "the ZenML server.",
     )
-
+    dashboard_url: str = Field(
+        "",
+        title="The URL where the ZenML dashboard is reachable. If "
+        "not specified, the `server_url` value will be used instead.",
+    )
     analytics_enabled: bool = Field(
         default=True,  # We set a default for migrations from < 0.57.0
         title="Enable server-side analytics.",

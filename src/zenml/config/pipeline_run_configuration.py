@@ -19,6 +19,7 @@ from uuid import UUID
 from pydantic import SerializeAsAny
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
@@ -44,3 +45,4 @@ class PipelineRunConfiguration(
     extra: Dict[str, Any] = {}
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
+    retry: Optional[StepRetryConfig] = None
