@@ -2,13 +2,13 @@
 description: Navigating multiple development environments.
 ---
 
-# 🗺️ Understanding environments
+# 🐍 Configure python environments
 
 ZenML deployments often involve multiple environments. This guide helps you manage dependencies and configurations across these environments.
 
 Here is a visual overview of the different environments:
 
-<figure><img src="../../../.gitbook/assets/SystemArchitecture.png" alt=""><figcaption><p>Left box is the client environment, middle is the zenml server environment, and the right most contains the build environments</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/SystemArchitecture.png" alt=""><figcaption><p>Left box is the client environment, middle is the zenml server environment, and the right most contains the build environments</p></figcaption></figure>
 
 ## Client Environment (or the Runner environment)
 
