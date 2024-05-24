@@ -99,7 +99,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     def __init__(self, **values: Any):
-        """Initialize the orchestrator
+        """Initialize the orchestrator.
 
         Args:
             **values: Values to set in the orchestrator.
