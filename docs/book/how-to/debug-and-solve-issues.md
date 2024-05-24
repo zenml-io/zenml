@@ -2,7 +2,7 @@
 description: A guide to debug common issues and get help.
 ---
 
-# Debug and solve issues
+# 🐞 Debug and solve issues
 
 If you stumbled upon this page, chances are you're facing issues with using ZenML. This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
@@ -200,6 +200,6 @@ and update your stack with the experiment tracker:
 zenml stack update -e mlflow_tracker
 ```
 
-This also applies to all other [stack components](../how-to/configure-stack-components/).
+This also applies to all other [stack components](configure-stack-components/).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

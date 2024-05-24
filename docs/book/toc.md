@@ -58,7 +58,6 @@
     * [Evaluating reranking performance](user-guide/llmops-guide/reranking/evaluating-reranking-performance.md)
   * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings.md)
   * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms.md)
-* [Debug and solve issues](user-guide/debug-and-solve-issues.md)
 
 ## How-To
 
@@ -214,6 +213,7 @@
   * [Connect your git repository](how-to/configuring-zenml/connect-your-git-repository.md)
   * [CI/CD](how-to/configuring-zenml/ci-cd.md)
   * [Interact with secrets](how-to/configuring-zenml/interact-with-secrets.md)
+* [🐞 Debug and solve issues](how-to/debug-and-solve-issues.md)
 
 ## Examples
 
