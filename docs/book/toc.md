@@ -6,10 +6,11 @@
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
 * [🤔 Deploying ZenML](getting-started/why-deploy-zenml/README.md)
-  * [☁️ ZenML Cloud](getting-started/why-deploy-zenml/zenml-cloud/README.md)
+  * [☁️ ZenML Pro](getting-started/why-deploy-zenml/zenml-cloud/README.md)
+    * [ZenML Cloud vs Self-Hosted](getting-started/why-deploy-zenml/zenml-cloud/zenml-cloud-vs-self-hosted.md)
     * [User Management](getting-started/why-deploy-zenml/zenml-cloud/user-management.md)
     * [System Architecture](getting-started/why-deploy-zenml/zenml-cloud/cloud-system-architecture.md)
-  * [🔧 ZenML Self-Hosted](getting-started/why-deploy-zenml/zenml-self-hosted/README.md)
+  * [🔧 ZenML OSS](getting-started/why-deploy-zenml/zenml-self-hosted/README.md)
     * [Manage deployed services](getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/README.md)
       * [Upgrade the version of the ZenML server](getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md)
       * [Troubleshoot the deployed server](getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/troubleshoot-your-deployed-server.md)
@@ -61,7 +62,7 @@
 
 ## How-To
 
-* [😸 Setting up a project repository](how-to/setting-up-a-project-repository/README.md)
+* [😸 Set up a project repository](how-to/setting-up-a-project-repository/README.md)
   * [Best practices](how-to/setting-up-a-project-repository/best-practices.md)
   * [Project templates](how-to/setting-up-a-project-repository/using-project-templates.md)
   * [Connect your git repository](how-to/setting-up-a-project-repository/connect-your-git-repository.md)
