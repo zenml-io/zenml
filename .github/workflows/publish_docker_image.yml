@@ -33,8 +33,6 @@ jobs:
               # Combine the current version with the date to form
               # the new version string
               VERSION="${CURRENT_VERSION}.dev${DATE}"
-              # Set the nightly version
-              echo "VERSION=$VERSION" >> $GITHUB_ENV
           fi
           # Sanitize the VERSION to make it Docker-compatible
           VERSION=$(echo $VERSION | sed 's/[^a-zA-Z0-9._-]/-/g')
