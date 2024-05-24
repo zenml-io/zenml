@@ -79,3 +79,7 @@ A lot of pipeline-level configuration can also be applied at a step level (as we
 * `experiment_tracker`: Name of the [experiment\_tracker](../configure-stack-components/experiment-trackers/) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
 * `step_operator`: Name of the [step\_operator](../configure-stack-components/step-operators/) to enable for this step. This step\_operator should be defined in the active stack with the same name.
 * `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](../handle-data-artifacts/return-multiple-outputs-from-a-step.md)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../handle-data-artifacts/handle-custom-data-types.md).
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

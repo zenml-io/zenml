@@ -65,3 +65,7 @@ if __name__ == "__main__":
 ```
 
 Here we also enriched the `predict` step logic with a metric comparison by MSE metric, so predictions are done on the best possible model. As before, calls like `Client().get_artifact_version("trained_model", version="42")` or `model_latest.run_metadata["MSE"].value` are not evaluating the actual objects behind them at pipeline compilation time. Rather, they do so only at the point of step execution. By doing so we ensure that latest version is actually the latest at the moment and not just the latest at the point of pipeline compilation.
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

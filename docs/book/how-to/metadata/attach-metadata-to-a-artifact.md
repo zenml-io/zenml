@@ -72,3 +72,7 @@ log_artifact_metadata(
 ```
 
 In the ZenML dashboard, "model\_metrics" and "data\_details" would appear as separate cards, each containing their respective key-value pairs.
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

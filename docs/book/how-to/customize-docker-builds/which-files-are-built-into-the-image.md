@@ -26,3 +26,7 @@ When including files in the image, ZenML copies all contents of the root directo
     def my_pipeline(...):
         ...
     ```
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

@@ -62,3 +62,7 @@ def train_and_promote_model():
     ...
     promote_to_staging(after=["train_and_evaluate"])
 ```
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

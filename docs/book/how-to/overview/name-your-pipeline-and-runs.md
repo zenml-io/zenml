@@ -30,3 +30,7 @@ training_pipeline()
 ```
 
 Be sure to include the `f` string prefix to allow for the placeholders to be replaced, as shown in the example above. Without the `f` prefix, the placeholders will not be replaced.
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+
