@@ -31,7 +31,7 @@ When posting on Slack it's useful to provide the following information (when app
 Let us know relevant information about your system. We recommend running the following in your terminal and attaching the output to your question.
 
 ```shell
-zenml info
+zenml info -a -s
 ```
 
 You can optionally include information about specific packages where you're having problems by using the `-p` option. For example, if you're having problems with the `tensorflow` package, you can run:
@@ -83,7 +83,10 @@ Walk us through how to reproduce the same error you had step-by-step, whenever p
 
 #### 4. Relevant log output
 
-As a general rule of thumb, always attach relevant log outputs and the full error traceback to help us understand what happened under the hood. If the full error traceback does not fit into a text message, attach a file or use a service like [Pastebin](https://pastebin.com/).
+As a general rule of thumb, always attach relevant log outputs and the full
+error traceback to help us understand what happened under the hood. If the full
+error traceback does not fit into a text message, attach a file or use a service
+like [Pastebin](https://pastebin.com/) or [Github's Gist](https://gist.github.com/).
 
 Along with the error traceback, we recommend to always share the output of the following commands:
 
