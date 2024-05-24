@@ -150,10 +150,10 @@ If you already have one or more GCP Service Connectors configured in your ZenML 
 
 ```sh
 zenml service-connector list-resources --connector-type gcp --resource-type docker-registry
-```
+``` 
 
 {% code title="Example Command Output" %}
-```
+```text
 The following 'docker-registry' resources can be accessed by 'gcp' service connectors configured in your workspace:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
@@ -183,14 +183,14 @@ zenml container-registry connect <CONTAINER_REGISTRY_NAME> --connector <CONNECTO
 ```
 
 {% hint style="info" %}
-Linking the GCP Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](../../../how-to/auth-management/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
+Linking the GCP Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](../../auth-management/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
 
 ```sh
 zenml service-connector login <CONNECTOR_NAME> --resource-type docker-registry
 ```
 
 {% code title="Example Command Output" %}
-```
+```text
 $ zenml service-connector login gcp-zenml-core --resource-type docker-registry
 ⠋ Attempting to configure local client using service connector 'gcp-zenml-core'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
@@ -203,7 +203,7 @@ The 'gcp-zenml-core' Docker Service Connector connector was used to successfully
 {% endhint %}
 
 {% code title="Example Command Output" %}
-```
+```text
 $ zenml container-registry connect gcp-zenml-core --connector gcp-zenml-core 
 Successfully connected container registry `gcp-zenml-core` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
