@@ -162,9 +162,7 @@ def test_that_cached_artifact_versions_are_created_properly_for_model_version(
         == pr_orig.id
     )
 
-    pr = cacheable_pipeline_which_always_run.with_options(
-        model=Model(name="foo")
-    )()
+    cacheable_pipeline_which_always_run.with_options(model=Model(name="foo"))()
 
     mv = clean_client.get_model_version("foo", ModelStages.LATEST)
     assert (
