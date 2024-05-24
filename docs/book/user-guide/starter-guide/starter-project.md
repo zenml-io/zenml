@@ -21,7 +21,7 @@ pip install "zenml[templates,server]" notebook
 zenml integration install sklearn -y
 ```
 
-We will then use [ZenML templates](../advanced-guide/best-practices/using-project-templates.md) to help us get the code we need for the project:
+We will then use [ZenML templates](../../how-to/setting-up-a-project-repository/using-project-templates.md) to help us get the code we need for the project:
 
 ```bash
 mkdir zenml_starter
@@ -61,6 +61,6 @@ And voilà! You're now well on your way to be an MLOps expert. As a next step, t
 
 ## Conclusion and next steps
 
-This marks the end of the first chapter of your MLOps journey with ZenML. Make sure you do your own experimentation with ZenML to master the basics. When ready, move on to the [production guide](../production-guide/README.md), which is the next part of the series.
+This marks the end of the first chapter of your MLOps journey with ZenML. Make sure you do your own experimentation with ZenML to master the basics. When ready, move on to the [production guide](../production-guide/), which is the next part of the series.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

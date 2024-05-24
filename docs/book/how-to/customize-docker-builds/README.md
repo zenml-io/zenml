@@ -4,7 +4,7 @@ description: Using Docker images to run your pipeline.
 
 # 🐳 Customize docker builds
 
-ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../stacks-and-components/component-guide/orchestrators/) or [step operators](../../stacks-and-components/component-guide/step-operators/), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
+ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../configure-stack-components/orchestrators/) or [step operators](../configure-stack-components/step-operators/), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
 
 There are three ways to control this containerization process:
 
@@ -14,11 +14,11 @@ There are three ways to control this containerization process:
 
 ## Define where an image is built
 
-[Image builders](../../stacks-and-components/component-guide/image-builders/) determine how and where an image is built. Learn more [here](../../user-guide/production-guide/understanding-environments.md#image-builder-environment).
+[Image builders](../configure-stack-components/image-builders/) determine how and where an image is built. Learn more [here](../understanding-environments/#image-builder-environment).
 
 ## Customize the Docker building
 
-When a [pipeline is run with a remote orchestrator](../../user-guide/production-guide/understanding-environments.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](../../user-guide/production-guide/understanding-environments.md#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
+When a [pipeline is run with a remote orchestrator](../understanding-environments/) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](../understanding-environments/#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
 
 * **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](./#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](specify-pip-dependencies-and-apt-packages.md).

@@ -61,7 +61,7 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 
 Ready to deploy and manage your MLOps infrastructure with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗️</span> <mark style="color:purple;"><strong>Switch to production</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td><a href="user-guide/production-guide/cloud-orchestration.md">cloud-orchestration.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td><a href="stacks-and-components/component-guide/">component-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗️</span> <mark style="color:purple;"><strong>Switch to production</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td><a href="user-guide/production-guide/cloud-orchestration.md">cloud-orchestration.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td><a href="how-to/configure-stack-components/">configure-stack-components</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
 {% endtab %}
 
 {% tab title="For Data Scientists" %}
@@ -98,7 +98,7 @@ ZenML gives data scientists the freedom to fully focus on modeling and experimen
 * **Automatic Metadata Tracking:** ZenML automatically tracks the metadata of all your runs and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can see detailed visualizations of all your experiments. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
 
 {% hint style="info" %}
-ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](stacks-and-components/component-guide/experiment-trackers/wandb.md), [MLflow](stacks-and-components/component-guide/experiment-trackers/mlflow.md), or [Neptune](stacks-and-components/component-guide/experiment-trackers/neptune.md) for even better reproducibility.
+ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](how-to/configure-stack-components/experiment-trackers/wandb.md), [MLflow](how-to/configure-stack-components/experiment-trackers/mlflow.md), or [Neptune](how-to/configure-stack-components/experiment-trackers/neptune.md) for even better reproducibility.
 {% endhint %}
 
 :rocket: **Learn More**
@@ -125,7 +125,7 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
 
 <figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
-*   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](stacks-and-components/component-guide/model-deployers/seldon.md).
+*   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](how-to/configure-stack-components/model-deployers/seldon.md).
 
     ```python
     from zenml.integrations.seldon.steps import seldon_model_deployer_step

@@ -24,7 +24,7 @@ pip install "zenml[templates,server]" notebook
 zenml integration install sklearn -y
 ```
 
-We will then use [ZenML templates](../advanced-guide/best-practices/using-project-templates.md) to help us get the code we need for the project:
+We will then use [ZenML templates](../../how-to/setting-up-a-project-repository/using-project-templates.md) to help us get the code we need for the project:
 
 ```bash
 mkdir zenml_batch_e2e
@@ -60,6 +60,6 @@ At the end, don't forget to share the [ZenML e2e template](https://github.com/ze
 
 ## Conclusion and next steps
 
-The production guide has now hopefully landed you with an end-to-end MLOps project, powered by a ZenML server connected to your cloud infrastructure. You are now ready to dive deep into writing your own pipelines and stacks. If you are looking to learn more advanced concepts, the [Advanced Guide](../advanced-guide/README.md) is for you. Until then, we wish you the best of luck chasing your MLOps dreams!
+The production guide has now hopefully landed you with an end-to-end MLOps project, powered by a ZenML server connected to your cloud infrastructure. You are now ready to dive deep into writing your own pipelines and stacks. If you are looking to learn more advanced concepts, the [Advanced Guide](../advanced-guide/) is for you. Until then, we wish you the best of luck chasing your MLOps dreams!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

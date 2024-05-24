@@ -7,7 +7,7 @@ description: Structuring an MLOps project
 Now that we've learned about managing [artifacts](manage-artifacts.md) and [models](track-ml-models.md), we can shift our attention again to the thing that brings them together: [Pipelines](create-an-ml-pipeline.md). This trifecta together will then inform how we structure our project.
 
 {% hint style="info" %}
-In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](../advanced-guide/best-practices/README.md) section.
+In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](../../how-to/setting-up-a-project-repository/best-practices.md) section.
 {% endhint %}
 
 So far in this guide, we have been focusing on the idea of a "training pipeline". In the real world, an MLOps project can often be broken down into many different pipelines. For example:

@@ -1,6 +1,6 @@
 # Use code repositories to speed up docker build times
 
-ZenML automatically [builds and pushes Docker images](../../user-guide/production-guide/understanding-environments.md#execution-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
+ZenML automatically [builds and pushes Docker images](../understanding-environments/#execution-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
 
 ```python
 my_pipeline.build(...)

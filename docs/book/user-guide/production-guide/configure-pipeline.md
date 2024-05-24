@@ -122,7 +122,7 @@ steps:
 Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_config.SkypilotBaseOrchestratorSettings) class in the Python SDK. You can adapt it to `vm_gcp` or `vm_azure` depending on which flavor of skypilot you have configured.
 
 {% hint style="info" %}
-Read more about settings in ZenML [here](../advanced-guide/pipelining-features/pipeline-settings.md).
+Read more about settings in ZenML [here](../../how-to/runtime-configuration.md).
 {% endhint %}
 
 Now let's run the pipeline again:

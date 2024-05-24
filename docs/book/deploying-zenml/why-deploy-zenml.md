@@ -14,7 +14,7 @@ Moving to a production environment offers several benefits over staying local:
 
 Despite these advantages, transitioning to production can be challenging due to the complexities involved in setting up the needed infrastructure.
 
-This is where the **ZenML server** comes in. By providing seamless integration with various [MLOps tools](../stacks-and-components/component-guide/integration-overview.md) and platforms, ZenML simplifies the process of moving your pipelines into production.
+This is where the **ZenML server** comes in. By providing seamless integration with various [MLOps tools](../how-to/configure-stack-components/integration-overview.md) and platforms, ZenML simplifies the process of moving your pipelines into production.
 
 ### ZenML Server
 
@@ -41,7 +41,7 @@ Deploying the ZenML Server is a crucial step towards transitioning to a producti
 Currently, there are two main options to access a deployed ZenML server:
 
 1. **ZenML Cloud:** With [ZenML Cloud](zenml-cloud/), you can utilize a control plane to create ZenML servers, also known as tenants. These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking and server maintenance.
-2. **Self-hosted Deployment:** Alternatively, you have the flexibility to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](zenml-self-hosted/deploy-with-zenml-cli.md), [Docker](../stacks-and-components/component-guide/model-registries/), [Helm](zenml-self-hosted/deploy-with-helm.md), or [HuggingFace Spaces](zenml-self-hosted/deploy-using-huggingface-spaces.md).
+2. **Self-hosted Deployment:** Alternatively, you have the flexibility to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](zenml-self-hosted/deploy-with-zenml-cli.md), [Docker](../how-to/configure-stack-components/model-registries/), [Helm](zenml-self-hosted/deploy-with-helm.md), or [HuggingFace Spaces](zenml-self-hosted/deploy-using-huggingface-spaces.md).
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 
