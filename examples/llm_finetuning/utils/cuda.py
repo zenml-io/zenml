@@ -15,7 +15,17 @@
 # limitations under the License.
 #
 
-from pipelines.evaluate import llm_lora_evaluation
-from pipelines.feature_engineering import llm_lora_feature_engineering
-from pipelines.finetuning import llm_lora_finetuning
-from pipelines.merge import llm_lora_merging
+import gc
+
+import torch
+
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+def cleanup_memory() -> None:
+    """Clean up GPU memory."""
+    logger.info("Cleaning up GPU memory on the machine...")
+    while gc.collect():
+        torch.cuda.empty_cache()

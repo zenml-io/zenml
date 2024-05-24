@@ -10,9 +10,16 @@ export ZENML_DEBUG=true
 export ZENML_CONFIG_PATH=/tmp/upgrade-tests
 
 if [ -z "$1" ]; then
-  echo "No argument passed, using default: $DB"
+  echo "No database argument passed, using default: $DB"
 else
   DB="$1"
+fi
+
+if [ -z "$2" ]; then
+  echo "No migration type argument passed, defaulting to full"
+  MIGRATION_TYPE="full"
+else
+  MIGRATION_TYPE="$2"
 fi
 
 # List of versions to test
@@ -289,6 +296,7 @@ fi
 
 echo "Testing database: $DB"
 echo "Testing versions: ${VERSIONS[@]}"
+echo "Migration type: $MIGRATION_TYPE"
 
 # Start completely fresh
 rm -rf "$ZENML_CONFIG_PATH"
@@ -298,65 +306,75 @@ pip install -U uv
 # Start the database
 start_db
 
-for VERSION in "${VERSIONS[@]}"
-do
-    test_upgrade_to_version "$VERSION"
-done
-
-# Test the most recent migration with MySQL
-test_upgrade_to_version "current"
-
-
-# Start fresh again for this part
-rm -rf "$ZENML_CONFIG_PATH"
-
-# fresh database for sequential testing
-stop_db
-start_db
-
-# Test sequential migrations across multiple versions
-echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
-set -e
-
-# Randomly select versions for sequential migrations
-MIGRATION_VERSIONS=()
-while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
-    VERSION=${VERSIONS[$RANDOM % ${#VERSIONS[@]}]}
-    if [[ ! " ${MIGRATION_VERSIONS[@]} " =~ " $VERSION " ]]; then
-        MIGRATION_VERSIONS+=("$VERSION")
-    fi
-done
-
-
-# Sort the versions in ascending order using semantic version comparison
-sorted_versions=()
-for version in "${MIGRATION_VERSIONS[@]}"; do
-    inserted=false
-    for i in "${!sorted_versions[@]}"; do
-        if [ "$(version_compare "$version" "${sorted_versions[$i]}")" == "<" ]; then
-            sorted_versions=("${sorted_versions[@]:0:$i}" "$version" "${sorted_versions[@]:$i}")
-            inserted=true
-            break
-        fi
+if [ "$MIGRATION_TYPE" == "full" ]; then
+    for VERSION in "${VERSIONS[@]}"
+    do
+        test_upgrade_to_version "$VERSION"
     done
-    if [ "$inserted" == false ]; then
-        sorted_versions+=("$version")
-    fi
-done
-MIGRATION_VERSIONS=("${sorted_versions[@]}")
 
+    # Test the most recent migration with MySQL
+    test_upgrade_to_version "current"
+else
+    # Test the most recent migration with MySQL
+    test_upgrade_to_version "current"
 
-# Echo the sorted list of migration versions
-echo "============================="
-echo "TESTING MIGRATION_VERSIONS: ${MIGRATION_VERSIONS[@]}"
-echo "============================="
+    # Start fresh again for this part
+    rm -rf "$ZENML_CONFIG_PATH"
 
-for i in "${!MIGRATION_VERSIONS[@]}"; do
-    test_upgrade_to_version "${MIGRATION_VERSIONS[$i]}"
-done
+    # Fresh database for sequential testing
+    stop_db
+    start_db
 
-# Test the most recent migration with MySQL
-test_upgrade_to_version "current"
+    # Test random migrations across multiple versions
+    echo "===== TESTING RANDOM MIGRATIONS ====="
+    set -e
+
+    function test_random_migrations() {
+        set -e  # Exit immediately if a command exits with a non-zero status
+
+        echo "===== TESTING RANDOM MIGRATIONS ====="
+
+        # Randomly select versions for random migrations
+        MIGRATION_VERSIONS=()
+        while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
+            VERSION=${VERSIONS[$RANDOM % ${#VERSIONS[@]}]}
+            if [[ ! " ${MIGRATION_VERSIONS[@]} " =~ " $VERSION " ]]; then
+                MIGRATION_VERSIONS+=("$VERSION")
+            fi
+        done
+
+        # Sort the versions in ascending order using semantic version comparison
+        sorted_versions=()
+        for version in "${MIGRATION_VERSIONS[@]}"; do
+            inserted=false
+            for i in "${!sorted_versions[@]}"; do
+                if [ "$(version_compare "$version" "${sorted_versions[$i]}")" == "<" ]; then
+                    sorted_versions=("${sorted_versions[@]:0:$i}" "$version" "${sorted_versions[@]:$i}")
+                    inserted=true
+                    break
+                fi
+            done
+            if [ "$inserted" == false ]; then
+                sorted_versions+=("$version")
+            fi
+        done
+        MIGRATION_VERSIONS=("${sorted_versions[@]}")
+
+        # Echo the sorted list of migration versions
+        echo "============================="
+        echo "TESTING MIGRATION_VERSIONS: ${MIGRATION_VERSIONS[@]}"
+        echo "============================="
+
+        for i in "${!MIGRATION_VERSIONS[@]}"; do
+            test_upgrade_to_version "${MIGRATION_VERSIONS[$i]}"
+        done
+
+        # Test the most recent migration with MySQL
+        test_upgrade_to_version "current"
+    }
+
+    test_random_migrations
+fi
 
 # Stop the database
 stop_db
