@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
@@ -56,7 +56,8 @@ class ArgillaAnnotatorSettings(BaseSettings):
     extra_headers: Optional[str] = None
     httpx_extra_kwargs: Optional[str] = None
 
-    @validator("instance_url")
+    @field_validator("instance_url")
+    @classmethod
     def ensure_instance_url_ends_without_slash(cls, instance_url: str) -> str:
         """Pydantic validator to ensure instance URL ends without a slash.
 
