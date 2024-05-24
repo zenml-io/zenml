@@ -58,6 +58,9 @@ device_auth_timeout: {{ .ZenML.auth.deviceAuthTimeout | quote }}
 {{- if .ZenML.auth.deviceAuthPollingInterval }}
 device_auth_polling_interval: {{ .ZenML.auth.deviceAuthPollingInterval | quote }}
 {{- end }}
+{{- if .ZenML.dashboardURL }}
+dashboard_url: {{ .ZenML.dashboardURL | quote }}
+{{- end }}
 {{- if .ZenML.auth.deviceExpirationMinutes }}
 device_expiration_minutes: {{ .ZenML.auth.deviceExpirationMinutes | quote }}
 {{- end }}
@@ -81,9 +84,6 @@ root_url_path: {{ .ZenML.rootUrlPath | quote }}
 {{- end }}
 {{- if .ZenML.serverURL }}
 server_url: {{ .ZenML.serverURL | quote }}
-{{- end }}
-{{- if .ZenML.dashboardURL }}
-dashboard_url: {{ .ZenML.dashboardURL | quote }}
 {{- end }}
 {{- if .ZenML.auth.rbacImplementationSource }}
 rbac_implementation_source: {{ .ZenML.auth.rbacImplementationSource | quote }}
