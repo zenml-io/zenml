@@ -27,7 +27,7 @@ In order for the visualizations to show up on the dashboard, the following must 
 
 Visualizations are usually stored alongside the artifact, in the [artifact store](../configure-stack-components/artifact-stores/). Therefore, if a user would like to see the visualization displayed on the ZenML dashboard, they must give access to the server to connect to the artifact store.
 
-The [service connector](../auth-management/) documentation goes deeper into the concept of service connectors and how they can be configured to give the server permission to access the artifact store. For a concrete example, see the [AWS S3](../configure-stack-components/artifact-stores/s3.md) artifact store documentation.
+The [service connector](../auth-management/) documentation goes deeper into the concept of service connectors and how they can be configured to give the server permission to access the artifact store. For a concrete example, see the [AWS S3](../../stacks-and-components/component-guide/artifact-stores/s3.md) artifact store documentation.
 
 {% hint style="info" %}
 When using the default/local artifact store with a deployed ZenML, the server naturally does not have access to your local files. In this case, the visualizations are also not displayed on the dashboard.
@@ -37,7 +37,7 @@ Please use a service connector enabled and remote artifact store alongside a dep
 
 ### Configuring Artifact Stores
 
-If all visualizations of a certain pipeline run are not showing up in the dashboard, it might be that your ZenML server does not have the required dependencies or permissions to access that artifact store. See the [custom artifact store docs page](../configure-stack-components/artifact-stores/custom.md#enabling-artifact-visualizations-with-custom-artifact-stores) for more information.
+If all visualizations of a certain pipeline run are not showing up in the dashboard, it might be that your ZenML server does not have the required dependencies or permissions to access that artifact store. See the [custom artifact store docs page](../../stacks-and-components/component-guide/artifact-stores/custom.md#enabling-artifact-visualizations-with-custom-artifact-stores) for more information.
 
 ## Creating Custom Visualizations
 

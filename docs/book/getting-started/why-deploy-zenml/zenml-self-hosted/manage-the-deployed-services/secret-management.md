@@ -33,7 +33,7 @@ The ZenML secrets store reuses the [ZenML Service Connector](../../../../how-to/
 
 The ZenML secrets store configured for the ZenML Server can be updated at any time by updating the ZenML Server configuration and redeploying the server. This allows you to easily switch between different secrets store back-ends and authentication mechanisms. However, it is recommended to follow [the documented secret store migration strategy](secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated, in case the location where secrets are stored in the back-end changes.
 
-For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../../../../deploying-zenml/zenml-self-hosted/).
+For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../../../deploying-zenml/zenml-self-hosted/).
 
 ## Backup secrets store
 
@@ -71,6 +71,6 @@ This migration strategy is not necessary if the actual location of the secrets v
 * updating the credentials used to authenticate with the Secrets Store back-end before or after they expire
 * switching to a different authentication method to authenticate with the same Secrets Store back-end (e.g. switching from an IAM account secret key to an IAM role in the AWS Secrets Manager)
 
-If you are a [ZenML Cloud](https://zenml.io/cloud) user, you can configure your cloud backend based on your [deployment scenario](../../../../deploying-zenml/zenml-cloud/cloud-system-architecture.md).
+If you are a [ZenML Cloud](https://zenml.io/cloud) user, you can configure your cloud backend based on your [deployment scenario](../../../deploying-zenml/zenml-cloud/cloud-system-architecture.md).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -133,7 +133,7 @@ To use _stack components_ that are running remotely on a cloud infrastructure, y
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](../deploying-zenml/zenml-cloud/) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](../deploying-zenml/zenml-self-hosted/).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](deploying-zenml/zenml-cloud/) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/zenml-self-hosted/).
 
 #### Metadata Tracking
 
@@ -155,7 +155,7 @@ With a deployed **ZenML Server**, users have the ability to create their own tea
 
 The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_, and share your stacks with them.
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](../deploying-zenml/zenml-self-hosted/). Don't worry though, there is a one-click way to do it which we'll learn about later.
+When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](deploying-zenml/zenml-self-hosted/). Don't worry though, there is a one-click way to do it which we'll learn about later.
 
 #### VS Code Extension
 

@@ -16,7 +16,7 @@ Please read [our Contribution guide](https://github.com/zenml-io/zenml/blob/main
 
 Please start by [reading the general documentation page](../how-to/stack-deployment/implement-a-custom-stack-component.md) on implementing a custom stack component which offers some general advice on what you'll need to do.
 
-From there, each of the custom stack component types has a dedicated section about adding your own custom components. For example, for adding custom orchestrators you would [visit this page](../how-to/configure-stack-components/orchestrators/custom.md).
+From there, each of the custom stack component types has a dedicated section about adding your own custom components. For example, for adding custom orchestrators you would [visit this page](../stacks-and-components/component-guide/orchestrators/custom.md).
 
 * **dependency clashes** mitigation with ZenML?
 
@@ -50,7 +50,7 @@ Please read our [general information on how to compose steps + pipelines togethe
 
 * **upgrade** my ZenML client and/or server?
 
-Upgrading your ZenML client package is as simple as running `pip install --upgrade zenml` in your terminal. For upgrading your ZenML server, please refer to [the dedicated documentation section](../deploying-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md) which covers most of the ways you might do this as well as common troubleshooting steps.
+Upgrading your ZenML client package is as simple as running `pip install --upgrade zenml` in your terminal. For upgrading your ZenML server, please refer to [the dedicated documentation section](../getting-started/deploying-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md) which covers most of the ways you might do this as well as common troubleshooting steps.
 
 * use a \<YOUR\_COMPONENT\_GOES\_HERE> stack component?
 

@@ -19,7 +19,7 @@ def training_step(...) -> ...:
     # train a model
 ```
 
-If the underlying [orchestrator](../configure-stack-components/orchestrators/) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../configure-stack-components/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
+If the underlying [orchestrator](../configure-stack-components/orchestrators/) in your stack then supports specifying resources, this setting will attempt to secure these resources. Some orchestrators (like the [Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)) do not support `ResourceSettings` directly, but rather use their `Orchestrator` specific settings to achieve the same effect:
 
 ```python
 from zenml import step

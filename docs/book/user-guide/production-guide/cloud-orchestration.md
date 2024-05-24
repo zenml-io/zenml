@@ -33,7 +33,7 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 
 ## Provisioning and registering a Skypilot orchestrator alongside a container registry
 
-While there are detailed docs on [how to set up a Skypilot orchestrator](../../how-to/configure-stack-components/orchestrators/skypilot-vm.md) and a [container registry](../../how-to/configure-stack-components/container-registries/) on each public cloud, we have put the most relevant details here for convenience:
+While there are detailed docs on [how to set up a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../how-to/configure-stack-components/container-registries/) on each public cloud, we have put the most relevant details here for convenience:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -49,14 +49,14 @@ Before we start registering any components, there is another step that we have t
 AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
 ```
 
-Once the service connector is set up, we can register [a Skypilot orchestrator](../../how-to/configure-stack-components/orchestrators/skypilot-vm.md):
+Once the service connector is set up, we can register [a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_aws
 zenml orchestrator connect skypilot_orchestrator --connector cloud_connector
 ```
 
-The next step is to register [an AWS container registry](../../how-to/configure-stack-components/container-registries/aws.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
+The next step is to register [an AWS container registry](../../stacks-and-components/component-guide/container-registries/aws.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
 
 ```shell
 zenml container-registry register cloud_container_registry -f aws --uri=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com
@@ -65,7 +65,7 @@ zenml container-registry connect cloud_container_registry --connector cloud_conn
 
 With the components registered, everything is set up for the next steps.
 
-For more information, you can always check the [dedicated Skypilot orchestrator guide](../../how-to/configure-stack-components/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 
 {% tab title="GCP" %}
@@ -81,7 +81,7 @@ Before we start registering any components, there is another step that we have t
 zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project_id=<PROJECT_ID> --generate_temporary_tokens=False
 ```
 
-Once the service connector is set up, we can register [a Skypilot orchestrator](../../how-to/configure-stack-components/orchestrators/skypilot-vm.md):
+Once the service connector is set up, we can register [a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_gcp 
@@ -97,7 +97,7 @@ zenml container-registry connect cloud_container_registry --connector cloud_conn
 
 With the components registered, everything is set up for the next steps.
 
-For more information, you can always check the [dedicated Skypilot orchestrator guide](../../how-to/configure-stack-components/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 
 {% tab title="Azure" %}
@@ -113,14 +113,14 @@ Before we start registering any components, there is another step that we have t
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>
 ```
 
-Once the service connector is set up, we can register [a Skypilot orchestrator](../../how-to/configure-stack-components/orchestrators/skypilot-vm.md):
+Once the service connector is set up, we can register [a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_azure
 zenml orchestrator connect skypilot_orchestrator --connect cloud_connector
 ```
 
-The next step is to register [an Azure container registry](../../how-to/configure-stack-components/container-registries/azure.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry.
+The next step is to register [an Azure container registry](../../stacks-and-components/component-guide/container-registries/azure.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry.
 
 ```shell
 zenml container-registry register cloud_container_registry -f azure --uri=<REGISTRY_NAME>.azurecr.io
@@ -129,7 +129,7 @@ zenml container-registry connect cloud_container_registry --connector cloud_conn
 
 With the components registered, everything is set up for the next steps.
 
-For more information, you can always check the [dedicated Skypilot orchestrator guide](../../how-to/configure-stack-components/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 {% endtabs %}
 

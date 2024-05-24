@@ -20,7 +20,7 @@ description: Welcome to ZenML!
 {% tab title="For MLOps Platform Engineers" %}
 ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
 
-*   <mark style="color:purple;">**ZenML Cloud**</mark>**:** [ZenML Cloud](deploying-zenml/zenml-cloud/) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
+*   <mark style="color:purple;">**ZenML Cloud**</mark>**:** [ZenML Cloud](getting-started/deploying-zenml/zenml-cloud/) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
 
     <figure><img src=".gitbook/assets/zenml-cloud-overview.png" alt=""><figcaption></figcaption></figure>
 *   **Self-hosted deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
@@ -98,7 +98,7 @@ ZenML gives data scientists the freedom to fully focus on modeling and experimen
 * **Automatic Metadata Tracking:** ZenML automatically tracks the metadata of all your runs and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can see detailed visualizations of all your experiments. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
 
 {% hint style="info" %}
-ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](how-to/configure-stack-components/experiment-trackers/wandb.md), [MLflow](how-to/configure-stack-components/experiment-trackers/mlflow.md), or [Neptune](how-to/configure-stack-components/experiment-trackers/neptune.md) for even better reproducibility.
+ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](stacks-and-components/component-guide/experiment-trackers/wandb.md), [MLflow](stacks-and-components/component-guide/experiment-trackers/mlflow.md), or [Neptune](stacks-and-components/component-guide/experiment-trackers/neptune.md) for even better reproducibility.
 {% endhint %}
 
 :rocket: **Learn More**
@@ -125,7 +125,7 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
 
 <figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
-*   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](how-to/configure-stack-components/model-deployers/seldon.md).
+*   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](stacks-and-components/component-guide/model-deployers/seldon.md).
 
     ```python
     from zenml.integrations.seldon.steps import seldon_model_deployer_step

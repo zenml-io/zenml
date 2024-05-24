@@ -10,13 +10,13 @@ Schedules don't work for all orchestrators. Here is a list of all supported orch
 
 | Orchestrator                                                                           | Scheduling Support |
 | -------------------------------------------------------------------------------------- | ------------------ |
-| [LocalOrchestrator](../configure-stack-components/orchestrators/local.md)              | ⛔️                 |
-| [LocalDockerOrchestrator](../configure-stack-components/orchestrators/local-docker.md) | ⛔️                 |
-| [KubernetesOrchestrator](../configure-stack-components/orchestrators/kubernetes.md)    | ✅                  |
-| [KubeflowOrchestrator](../configure-stack-components/orchestrators/kubeflow.md)        | ✅                  |
-| [VertexOrchestrator](../configure-stack-components/orchestrators/vertex.md)            | ✅                  |
-| [TektonOrchestrator](../configure-stack-components/orchestrators/tekton.md)            | ⛔️                 |
-| [AirflowOrchestrator](../configure-stack-components/orchestrators/airflow.md)          | ✅                  |
+| [LocalOrchestrator](../../stacks-and-components/component-guide/orchestrators/local.md)              | ⛔️                 |
+| [LocalDockerOrchestrator](../../stacks-and-components/component-guide/orchestrators/local-docker.md) | ⛔️                 |
+| [KubernetesOrchestrator](../../stacks-and-components/component-guide/orchestrators/kubernetes.md)    | ✅                  |
+| [KubeflowOrchestrator](../../stacks-and-components/component-guide/orchestrators/kubeflow.md)        | ✅                  |
+| [VertexOrchestrator](../../stacks-and-components/component-guide/orchestrators/vertex.md)            | ✅                  |
+| [TektonOrchestrator](../../stacks-and-components/component-guide/orchestrators/tekton.md)            | ⛔️                 |
+| [AirflowOrchestrator](../../stacks-and-components/component-guide/orchestrators/airflow.md)          | ✅                  |
 
 ### Set a schedule
 
