@@ -1,2 +1,2 @@
-# 🖥️ Use remote compute
+# ☁️ Utilize cloud resources
 

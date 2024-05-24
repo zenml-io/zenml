@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on VMs using SkyPilot.
 The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you to provision and manage virtual machines (VMs) on any cloud provider supported by the [SkyPilot framework](https://skypilot.readthedocs.io/en/latest/index.html). This integration is designed to simplify the process of running machine learning workloads on the cloud, offering cost savings, high GPU availability, and managed execution, We recommend using the SkyPilot VM Orchestrator if you need access to GPUs for your workloads, but don't want to deal with the complexities of managing cloud infrastructure or expensive managed solutions.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 {% hint style="warning" %}
@@ -32,7 +32,7 @@ You can configure the SkyPilot VM Orchestrator to use a specific VM type, and re
 {% endhint %}
 
 {% hint style="warning" %}
-The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](broken-reference)
+The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](broken-reference/)
 {% endhint %}
 
 {% hint style="info" %}
@@ -41,7 +41,7 @@ All ZenML pipeline runs are executed using Docker containers within the VMs prov
 
 ## How to deploy it
 
-You don't need to do anything special to deploy the SkyPilot VM Orchestrator. As the SkyPilot integration itself takes care of provisioning VMs, you can simply use the orchestrator as you would any other ZenML orchestrator. However, you will need to ensure that you have the appropriate permissions to provision VMs on your cloud provider of choice and to configure your SkyPilot orchestrator accordingly using the [service connectors](../../auth-management/service-connectors-guide.md) feature.
+You don't need to do anything special to deploy the SkyPilot VM Orchestrator. As the SkyPilot integration itself takes care of provisioning VMs, you can simply use the orchestrator as you would any other ZenML orchestrator. However, you will need to ensure that you have the appropriate permissions to provision VMs on your cloud provider of choice and to configure your SkyPilot orchestrator accordingly using the [service connectors](../../../how-to/auth-management/service-connectors-guide.md) feature.
 
 {% hint style="info" %}
 The SkyPilot VM Orchestrator currently only supports the AWS, GCP, and Azure cloud platforms.
@@ -67,11 +67,11 @@ To use the SkyPilot VM Orchestrator, you need:
       zenml integration install azure skypilot_azure # for Azure
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
-* A [remote container registry](../container-registries/README.md) as part of your stack.
-* A [remote ZenML deployment](../../../deploying-zenml/zenml-self-hosted/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/) as part of your stack.
+* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote ZenML deployment](../../../deploying-zenml/zenml-self-hosted/) as part of your stack.
 * The appropriate permissions to provision VMs on your cloud provider of choice.
-* A [service connector](../../auth-management/service-connectors-guide.md) configured to authenticate with your cloud provider of choice.
+* A [service connector](../../../how-to/auth-management/service-connectors-guide.md) configured to authenticate with your cloud provider of choice.
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -82,7 +82,7 @@ We need first to install the SkyPilot integration for AWS and the AWS connectors
   zenml integration install aws skypilot_aws 
 ```
 
-To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](../../auth-management/aws-service-connector.md). To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
+To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](../../../how-to/auth-management/aws-service-connector.md). To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
 
 First, check that the AWS service connector type is available using the following command:
 
@@ -127,7 +127,7 @@ We need first to install the SkyPilot integration for GCP and the GCP extra for 
   zenml integration install gcp skypilot_gcp
 ```
 
-To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](../../auth-management/gcp-service-connector.md)
+To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](../../../how-to/auth-management/gcp-service-connector.md)
 
 To configure the GCP Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
@@ -180,7 +180,7 @@ We need first to install the SkyPilot integration for Azure and the Azure extra 
   zenml integration install azure skypilot_azure 
 ```
 
-To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](../../auth-management/azure-service-connector.md)
+To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](../../../how-to/auth-management/azure-service-connector.md)
 
 To configure the Azure Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 

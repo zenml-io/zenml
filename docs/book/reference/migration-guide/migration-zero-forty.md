@@ -353,7 +353,7 @@ loaded_model = model.load()
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../how-to/overview/fetch-metadata-within-steps.md) for more information on how to programmatically fetch information about previous pipeline runs.
+Check out [this page](../../how-to/track-metrics-metadata/fetch-metadata-within-steps.md) for more information on how to programmatically fetch information about previous pipeline runs.
 
 ## Controlling the step execution order
 
@@ -457,6 +457,6 @@ def my_step() -> Any:  # New: StepContext is no longer an argument of the step
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../how-to/overview/fetch-metadata-within-steps.md) for more information on how to fetch run information inside your steps using `get_step_context()`.
+Check out [this page](../../how-to/track-metrics-metadata/fetch-metadata-within-steps.md) for more information on how to fetch run information inside your steps using `get_step_context()`.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

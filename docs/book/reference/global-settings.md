@@ -2,7 +2,7 @@
 description: Understanding the global settings of your ZenML installation.
 ---
 
-# Global settings of ZenML
+# 📼 Global settings
 
 The information about the global settings of ZenML on a machine is kept in a folder commonly referred to as the **ZenML Global Config Directory** or the **ZenML Config Path**. The location of this folder depends on the operating system type and the current system user, but is usually located in the following locations:
 
@@ -25,7 +25,7 @@ Manually altering or deleting the files and folders stored under the ZenML globa
 
 * `zenml analytics` - manage the analytics settings
 * `zenml clean` - to be used only in case of emergency, to bring the ZenML configuration back to its default factory state
-* `zenml downgrade` - downgrade the ZenML version in the global configuration to match the version of the ZenML package installed in the current environment. Read more about this in the [ZenML Version Mismatch](global-settings-of-zenml.md#version-mismatch-downgrading) section.
+* `zenml downgrade` - downgrade the ZenML version in the global configuration to match the version of the ZenML package installed in the current environment. Read more about this in the [ZenML Version Mismatch](global-settings.md#version-mismatch-downgrading) section.
 {% endhint %}
 
 The first time that ZenML is run on a machine, it creates the global config directory and initializes the default configuration in it, along with a default Stack:

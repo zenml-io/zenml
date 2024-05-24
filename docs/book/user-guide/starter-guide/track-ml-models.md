@@ -105,7 +105,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 ## Fetching the model in a pipeline
 
-When configured at the pipeline or step level, the model will be available through the [StepContext](../../how-to/overview/fetch-metadata-within-pipeline.md) or [PipelineContext](../../how-to/overview/fetch-metadata-within-pipeline.md).
+When configured at the pipeline or step level, the model will be available through the [StepContext](../../how-to/track-metrics-metadata/fetch-metadata-within-pipeline.md) or [PipelineContext](../../how-to/track-metrics-metadata/fetch-metadata-within-pipeline.md).
 
 ```python
 from zenml import get_step_context, get_pipeline_context, step, pipeline
@@ -202,7 +202,7 @@ model = client.get_model_version("my_model", "my_version")
 print(model.run_metadata["metadata_key"].value)
 ```
 
-For further depth, there is an [advanced metadata logging guide](../../how-to/metadata/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](../../how-to/track-metrics-metadata/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
 
 ## Using the stages of a model
 
@@ -259,6 +259,6 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../../how-to/use-the-model-control-plane/README.md). guide.
+ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../../how-to/use-the-model-control-plane/). guide.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

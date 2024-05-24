@@ -8,7 +8,7 @@ This guide will explain how to log metadata for artifacts and models in ZenML an
 
 Artifacts in ZenML are outputs of steps within a pipeline, such as datasets, models, or evaluation results. Associating metadata with artifacts can help users understand the nature and characteristics of these outputs.
 
-To log metadata for an artifact, you can use the `log_artifact_metadata` method. This method allows you to attach a dictionary of key-value pairs as metadata to an artifact. The metadata can be any JSON-serializable value, including custom classes such as `Uri`, `Path`, `DType`, and `StorageSize`. Find out more about these different types [here](logging-metadata.md).&#x20;
+To log metadata for an artifact, you can use the `log_artifact_metadata` method. This method allows you to attach a dictionary of key-value pairs as metadata to an artifact. The metadata can be any JSON-serializable value, including custom classes such as `Uri`, `Path`, `DType`, and `StorageSize`. Find out more about these different types [here](../track-metrics-metadata/logging-metadata.md).&#x20;
 
 Here's an example of logging metadata for an artifact:
 
@@ -36,7 +36,7 @@ def process_data_step(dataframe: pd.DataFrame) ->  Annotated[pd.DataFrame, "proc
 
 ## Fetching logged metadata
 
-Once metadata has been logged in an [artifact](attach-metadata-to-a-artifact.md), or [step](attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
+Once metadata has been logged in an [artifact](attach-metadata-to-a-artifact.md), or [step](../track-metrics-metadata/attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
 
 ```python
 from zenml.client import Client

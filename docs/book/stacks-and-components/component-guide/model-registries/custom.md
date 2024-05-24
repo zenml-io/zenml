@@ -5,7 +5,7 @@ description: Learning how to develop a custom model registry.
 # Develop a Custom Model Registry
 
 {% hint style="info" %}
-Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../custom-stack-solutions/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../../how-to/stack-deployment/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
 {% hint style="warning" %}
@@ -166,7 +166,7 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 If you want to create your own custom flavor for a model registry, you can follow the following steps:
 
-1. Learn more about the core concepts for the model registry [here](./README.md#model-registry-concepts-and-terminology). Your custom model registry will be built on top of these concepts so it helps to be aware of them.
+1. Learn more about the core concepts for the model registry [here](./#model-registry-concepts-and-terminology). Your custom model registry will be built on top of these concepts so it helps to be aware of them.
 2. Create a class that inherits from `BaseModelRegistry` and implements the abstract methods.
 3. Create a `ModelRegistryConfig` class that inherits from `BaseModelRegistryConfig` and adds any additional configuration parameters that you need.
 4. Bring the implementation and the configuration together by inheriting from the `BaseModelRegistryFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.

@@ -95,7 +95,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](../
 {% tab title="Other" %}
 You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../stacks-and-components/component-guide/artifact-stores/).
 
-It is also relatively simple to create a [custom stack component flavor](../../stacks-and-components/custom-stack-solutions/implement-a-custom-stack-component.md) for your use case.
+It is also relatively simple to create a [custom stack component flavor](../../how-to/stack-deployment/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
 {% endtabs %}
 
@@ -105,7 +105,7 @@ Having trouble with setting up infrastructure? Join the [ZenML community](https:
 
 ## Configuring permissions with your first service connector
 
-While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](../../stacks-and-components/auth-management/) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](../../stacks-and-components/auth-management/) on them) - but we're going to be starting with a very basic approach.
+While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](../../how-to/auth-management/) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](../../how-to/auth-management/) on them) - but we're going to be starting with a very basic approach.
 
 First, let's understand what a service connector does. In simple words, a service connector contains credentials that grant stack components access to cloud infrastructure. These credentials are stored in the form a [secret](../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md), and are available to the ZenML server to use. Using these credentials, the service connector brokers a short-lived token and grants temporary permissions to the stack component to access that infrastructure. This diagram represents this process:
 
@@ -113,7 +113,7 @@ First, let's understand what a service connector does. In simple words, a servic
 
 {% tabs %}
 {% tab title="AWS" %}
-There are [many ways to create an AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](../../stacks-and-components/auth-management/aws-service-connector.md#aws-iam-role).
+There are [many ways to create an AWS service connector](../../how-to/auth-management/aws-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](../../how-to/auth-management/aws-service-connector.md#aws-iam-role).
 
 ```shell
 AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
@@ -121,7 +121,7 @@ AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --typ
 {% endtab %}
 
 {% tab title="GCP" %}
-There are [many ways to create a GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account).
+There are [many ways to create a GCP service connector](../../how-to/auth-management/gcp-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](../../how-to/auth-management/gcp-service-connector.md#gcp-service-account).
 
 ```shell
 zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project_id=<PROJECT_ID> --generate_temporary_tokens=False
@@ -129,7 +129,7 @@ zenml service-connector register cloud_connector --type gcp --auth-method servic
 {% endtab %}
 
 {% tab title="Azure" %}
-There are [many ways to create an Azure service connector](../../stacks-and-components/auth-management/azure-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](../../stacks-and-components/auth-management/azure-service-connector.md#azure-service-principal).
+There are [many ways to create an Azure service connector](../../how-to/auth-management/azure-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](../../how-to/auth-management/azure-service-connector.md#azure-service-principal).
 
 ```shell
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>

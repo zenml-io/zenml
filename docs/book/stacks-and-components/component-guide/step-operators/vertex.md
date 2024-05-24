@@ -35,7 +35,7 @@ To use the Vertex step operator, we need:
 * Vertex AI enabled and a service account file. See the [deployment section](vertex.md#how-to-deploy-it) for detailed instructions.
 * A [GCR container registry](../container-registries/gcp.md) as part of our stack.
 * (Optional) A machine type that we want to execute our steps on (this defaults to `n1-standard-4`). See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types) for a list of available machine types.
-* A [remote artifact store](../artifact-stores/README.md) as part of your stack. This is needed so that both your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* A [remote artifact store](../artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 You have three different options to provide GCP credentials to the step operator:
 
@@ -60,7 +60,7 @@ You have three different options to provide GCP credentials to the step operator
         --service_account_path=<SERVICE_ACCOUNT_PATH> \
     #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
     ```
-*   (recommended) configure [a GCP Service Connector](../../auth-management/gcp-service-connector.md) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
+*   (recommended) configure [a GCP Service Connector](../../../how-to/auth-management/gcp-service-connector.md) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
 
     ```shell
     zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@<SERVICE_ACCOUNT_PATH> --resource-type gcp-generic
@@ -96,7 +96,7 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](../../../how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Additional configuration

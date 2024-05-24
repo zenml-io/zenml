@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Vertex AI.
 [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a serverless ML workflow tool running on the Google Cloud Platform. It is an easy way to quickly run your code in a production-ready, repeatable cloud orchestrator that requires minimal setup without provisioning and paying for standby compute.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ## When to use it
@@ -22,7 +22,7 @@ You should use the Vertex orchestrator if:
 
 ## How to deploy it
 
-In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../../deploying-zenml/zenml-self-hosted/README.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
+In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../../deploying-zenml/zenml-self-hosted/). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
 
 The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex-relevant APIs on the Google Cloud project.
 
@@ -42,8 +42,8 @@ To use the Vertex orchestrator, we need:
     zenml integration install gcp
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
-* A [remote container registry](../container-registries/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/) as part of your stack.
+* A [remote container registry](../container-registries/) as part of your stack.
 * [GCP credentials with proper permissions](vertex.md#gcp-credentials-and-permissions)
 * The GCP project ID and location in which you want to run your Vertex AI pipelines.
 
@@ -55,7 +55,7 @@ You also have three different options to provide credentials to the orchestrator
 
 * use the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud) to authenticate locally with GCP
 * configure the orchestrator to use a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) to authenticate with GCP by setting the `service_account_path` parameter in the orchestrator configuration.
-* (recommended) configure [a GCP Service Connector](../../auth-management/gcp-service-connector.md) with GCP credentials and then link the Vertex AI Orchestrator stack component to the Service Connector.
+* (recommended) configure [a GCP Service Connector](../../../how-to/auth-management/gcp-service-connector.md) with GCP credentials and then link the Vertex AI Orchestrator stack component to the Service Connector.
 
 This section [explains the different components and GCP resources](vertex.md#vertex-ai-pipeline-components) involved in running a Vertex AI pipeline and what permissions they need, then provides instructions for three different configuration use-cases:
 
@@ -136,7 +136,7 @@ The following GCP service accounts are needed:
 
 A key is also needed for the "client" service account. You can create a key for this service account and download it to your local machine (e.g. in a `connectors-vertex-ai-workload.json` file).
 
-With all the service accounts and the key ready, we can register [the GCP Service Connector](../../auth-management/gcp-service-connector.md) and Vertex AI orchestrator as follows:
+With all the service accounts and the key ready, we can register [the GCP Service Connector](../../../how-to/auth-management/gcp-service-connector.md) and Vertex AI orchestrator as follows:
 
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@connectors-vertex-ai-workload.json --resource-type gcp-generic
@@ -160,7 +160,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Vertex AI. Check out [this page](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Vertex AI. Check out [this page](../../../how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Vertex orchestrator:

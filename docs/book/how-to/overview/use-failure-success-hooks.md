@@ -48,7 +48,7 @@ def my_successful_step() -> int:
 
 In this example, we define two hooks: `on_failure` and `on_success`, which print a message when the step fails or succeeds, respectively. We then use these hooks with two steps, `my_failing_step` and `my_successful_step`. When `my_failing_step` is executed, it raises a `ValueError`, which triggers the `on_failure` hook. Similarly, when `my_successful_step` is executed, it returns an integer successfully, which triggers the on\_success hook.
 
-A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](../use-configuration-files/README.md).
+A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](../use-configuration-files/).
 
 ## Defining hooks on a pipeline level
 
@@ -70,7 +70,7 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 
 _To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
 
-In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/README.md) from the active stack.
+In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
@@ -99,7 +99,7 @@ notify_on_success(after=[last_step_name])
 
 ## Accessing step information inside a hook
 
-Similar as for regular ZenML steps, you can use the [StepContext](fetch-metadata-within-steps.md) to access information about the current pipeline run or step inside your hook function:
+Similar as for regular ZenML steps, you can use the [StepContext](../track-metrics-metadata/fetch-metadata-within-steps.md) to access information about the current pipeline run or step inside your hook function:
 
 ```python
 from zenml import step, get_step_context
@@ -123,11 +123,11 @@ def my_step(some_parameter: int = 1)
 
 _To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
 
-In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/README.md) from the active stack.
+In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
-Inside the helper function `build_message()`, you will find an example on how developers can work with [StepContext](fetch-metadata-within-steps.md) to form a proper notification:
+Inside the helper function `build_message()`, you will find an example on how developers can work with [StepContext](../track-metrics-metadata/fetch-metadata-within-steps.md) to form a proper notification:
 
 ```python
 from zenml import get_step_context
@@ -162,7 +162,7 @@ def notify_on_success() -> None:
 
 ## Linking to the `Alerter` Stack component
 
-A common use case is to use the [Alerter](../../stacks-and-components/component-guide/alerters/README.md) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
+A common use case is to use the [Alerter](../../stacks-and-components/component-guide/alerters/) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
 
 ```python
 from zenml import get_step_context
@@ -190,7 +190,7 @@ def my_step(...):
 
 _To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../user-guide/advanced-guide/best-practices/using-project-templates.md)_._
 
-In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/README.md) from the active stack.
+In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../stacks-and-components/component-guide/alerters/) from the active stack.
 
 We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 

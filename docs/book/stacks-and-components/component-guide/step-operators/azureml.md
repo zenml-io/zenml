@@ -30,7 +30,7 @@ To use the AzureML step operator, we need:
     zenml integration install azure
     ```
 * An AzureML compute cluster and environment. See the [deployment section](azureml.md#how-to-deploy-it) for detailed instructions.
-* A [remote artifact store](../artifact-stores/README.md) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* A [remote artifact store](../artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 We can then register the step operator and use it in our active stack:
 
@@ -64,7 +64,7 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in AzureML. Check out [this page](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in AzureML. Check out [this page](../../../how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Additional configuration

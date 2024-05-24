@@ -2,7 +2,7 @@
 description: How to control ZenML behavior with environmental variables.
 ---
 
-# Environment Variables
+# 🌎 Environment Variables
 
 There are a few pre-defined environmental variables that can be used to control the behavior of ZenML. See the list below with default values and options:
 
@@ -16,7 +16,7 @@ Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
 ## Disable step logs
 
-Usually, ZenML [stores step logs in the artifact store](../../how-to/overview/enable-or-disable-logs-storing.md), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
+Usually, ZenML [stores step logs in the artifact store](../how-to/overview/enable-or-disable-logs-storing.md), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
 
 If you want to configure whether logged output from steps is stored or not, set the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that this will mean that logs from your steps will no longer be stored and thus won't be visible on the dashboard anymore.
 
@@ -34,7 +34,7 @@ export ZENML_REPOSITORY_PATH=/path/to/somewhere
 
 ## Analytics
 
-Please see [our full page](global-settings-of-zenml.md#usage-analytics) on what analytics are tracked and how you can opt out, but the quick summary is that you can set this to `false` if you want to opt out of analytics.
+Please see [our full page](global-settings.md#usage-analytics) on what analytics are tracked and how you can opt out, but the quick summary is that you can set this to `false` if you want to opt out of analytics.
 
 ```bash
 export ZENML_ANALYTICS_OPT_IN=false
@@ -106,7 +106,7 @@ export ZENML_CONFIG_PATH=/path/to/somewhere
 
 ## Server configuration
 
-For more information on server configuration, see the [ZenML Server documentation](../../deploying-zenml/zenml-self-hosted/deploy-with-docker.md) for more, especially the section entitled "ZenML server configuration options".
+For more information on server configuration, see the [ZenML Server documentation](../deploying-zenml/zenml-self-hosted/deploy-with-docker.md) for more, especially the section entitled "ZenML server configuration options".
 
 ## Client configuration
 

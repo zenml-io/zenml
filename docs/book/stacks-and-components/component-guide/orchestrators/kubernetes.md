@@ -15,7 +15,7 @@ Compared to Kubeflow, this means that the Kubernetes-native orchestrator is fast
 However, since Kubeflow is much more mature, you should, in most cases, aim to move your pipelines to Kubeflow in the long run. A smooth way to production-grade orchestration could be to set up a Kubernetes cluster first and get started with the Kubernetes-native orchestrator. If needed, you can then install and set up Kubeflow later and simply switch out the orchestrator of your stack as soon as your full setup is ready.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -31,7 +31,7 @@ You should use the Kubernetes orchestrator if:
 
 The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our cloud guide
 
-If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../../deploying-zenml/zenml-self-hosted/README.md).
+If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../../deploying-zenml/zenml-self-hosted/).
 
 #### Infrastructure Deployment
 
@@ -54,18 +54,18 @@ To use the Kubernetes orchestrator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
-* A [remote container registry](../container-registries/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/) as part of your stack.
+* A [remote container registry](../container-registries/) as part of your stack.
 * A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts) . This is optional (see below).
 
 {% hint style="info" %}
-It is recommended that you set up [a Service Connector](../../auth-management/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
+It is recommended that you set up [a Service Connector](../../../how-to/auth-management/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
 {% endhint %}
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1.  If you have [a Service Connector](../../auth-management/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../auth-management/service-connectors-guide.md#connect-stack-components-to-resources) instead:
+1.  If you have [a Service Connector](../../../how-to/auth-management/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../../how-to/auth-management/service-connectors-guide.md#connect-stack-components-to-resources) instead:
 
     ```
     $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubernetes
@@ -99,7 +99,7 @@ We can then register the orchestrator and use it in our active stack. This can b
     # Register and activate a stack with the new orchestrator
     $ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
     ```
-2.  if you don't have a Service Connector on hand and you don't want to [register one](../../auth-management/service-connectors-guide.md#register-service-connectors) , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+2.  if you don't have a Service Connector on hand and you don't want to [register one](../../../how-to/auth-management/service-connectors-guide.md#register-service-connectors) , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
 
     ```shell
     zenml orchestrator register <ORCHESTRATOR_NAME> \
@@ -111,7 +111,7 @@ We can then register the orchestrator and use it in our active stack. This can b
     ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubernetes. Check out [this page](../../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubernetes. Check out [this page](../../../how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Kubernetes orchestrator:

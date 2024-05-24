@@ -6,21 +6,20 @@ description: >-
 
 # Connect your git repository
 
-A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/
-) and [GitLab](https://gitlab.com/).
+A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../handle-requirements-and-docker-settings/use-code-repositories-to-speed-up-docker-build-times.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
 <figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
 #### Speeding up Docker builds for containerized components
 
-As [discussed before](../handle-requirements-and-docker-settings/containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs), when using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](../../user-guide/production-guide/understanding-environments.md#execution-environments). If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
+As [discussed before](../customize-docker-builds/#reuse-docker-image-builds-from-previous-runs), when using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](../../user-guide/production-guide/understanding-environments.md#execution-environments). If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
 It is also important to take some additional points into consideration:
 
 * The file download is only possible if the local checkout is clean (i.e. it does not contain any untracked or uncommitted files) and the latest commit has been pushed to the remote repository. This is necessary as otherwise, the file download inside the Docker container will fail.
-* If you want to disable or enforce the downloading of files, check out [this docs page](../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) for the available options.
+* If you want to disable or enforce the downloading of files, check out [this docs page](../customize-docker-builds/) for the available options.
 
 {% hint style="warning" %}
 In order to benefit from the advantages of having a code repository in a project, you need to make sure that **the relevant integrations are installed for your ZenML installation.**
@@ -52,7 +51,7 @@ For concrete options, check out the section on the [`GitHubCodeRepository`](conn
 
 Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
 
-* First, the [source root](../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md#handling-source-files) is computed
+* First, the [source root](../customize-docker-builds/#handling-source-files) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
 #### Tracking code version for pipeline runs

@@ -11,7 +11,7 @@ These are boolean flags for various configurations:
 
 ### `build` ID
 
-The UUID of the [`build`](../handle-requirements-and-docker-settings/containerize-your-pipeline.md) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
+The UUID of the [`build`](../customize-docker-builds/) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
 
 ### `extra` dict
 
@@ -23,7 +23,7 @@ Specifies the ZenML [Model](../../user-guide/starter-guide/track-ml-models.md) t
 
 ### Pipeline and step `parameters`
 
-A dictionary of JSON-serializable [parameters](../use-configuration-files/README.md) specified at the pipeline or step level. For example:
+A dictionary of JSON-serializable [parameters](./) specified at the pipeline or step level. For example:
 
 ```yaml
 parameters:
@@ -52,12 +52,12 @@ def my_pipeline(gamma: float):
     trainer(gamma=gamma)
 ```
 
-Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](../use-configuration-files/configuration-hierarchy.md).
+Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](configuration-hierarchy.md).
 
 Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined.
 
 {% hint style="info" %}
-Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../handle-data-artifacts/handle-custom-data-types.md) handle their persistence in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/README.md)).
+Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../handle-data-artifacts/handle-custom-data-types.md) handle their persistence in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/)).
 {% endhint %}
 
 ### Setting the `run_name`
@@ -76,6 +76,6 @@ The `source` of the [failure and success hooks](../overview/use-failure-success-
 
 A lot of pipeline-level configuration can also be applied at a step level (as we have already seen with the `enable_cache` flag). However, there is some configuration that is step-specific, meaning it cannot be applied at a pipeline level, but only at a step level.
 
-* `experiment_tracker`: Name of the [experiment\_tracker](../../stacks-and-components/component-guide/experiment-trackers/README.md) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
-* `step_operator`: Name of the [step\_operator](../../stacks-and-components/component-guide/step-operators/README.md) to enable for this step. This step\_operator should be defined in the active stack with the same name.
+* `experiment_tracker`: Name of the [experiment\_tracker](../../stacks-and-components/component-guide/experiment-trackers/) to enable for this step. This experiment\_tracker should be defined in the active stack with the same name.
+* `step_operator`: Name of the [step\_operator](../../stacks-and-components/component-guide/step-operators/) to enable for this step. This step\_operator should be defined in the active stack with the same name.
 * `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](../handle-data-artifacts/return-multiple-outputs-from-a-step.md)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../handle-data-artifacts/handle-custom-data-types.md).
