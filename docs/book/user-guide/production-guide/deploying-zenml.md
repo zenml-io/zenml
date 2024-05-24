@@ -16,7 +16,7 @@ In order to move into production, you will need to deploy this server somewhere 
 
 ## Choosing how to deploy ZenML
 
-While there are many options on how to [deploy ZenML](../../getting-started/deploying-zenml/), the two simplest ones are:
+While there are many options on how to [deploy ZenML](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/deploying-zenml/README.md), the two simplest ones are:
 
 ### Option 1: Sign up for a free ZenML Cloud Trial
 
@@ -26,7 +26,7 @@ On top of the one-click experience, ZenML Cloud also comes built-in with additio
 
 ### Option 2: Self-host ZenML on your cloud provider
 
-As ZenML is open source, it is easy to [self-host it](../../getting-started/deploying-zenml/zenml-self-hosted/). There is even a [ZenML CLI](../../getting-started/deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md) one-liner that deploys ZenML on a Kubernetes cluster, abstracting away all the infrastructure complexity. If you don't have an existing Kubernetes cluster, you can create it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
+As ZenML is open source, it is easy to [self-host it](../../getting-started/why-deploy-zenml/zenml-self-hosted/). There is even a [ZenML CLI](../../getting-started/why-deploy-zenml/zenml-self-hosted/deploy-with-zenml-cli.md) one-liner that deploys ZenML on a Kubernetes cluster, abstracting away all the infrastructure complexity. If you don't have an existing Kubernetes cluster, you can create it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
 
 {% hint style="warning" %}
 Once you have created your cluster, make sure that you configure your [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) client to connect to it.
@@ -44,7 +44,7 @@ You will be prompted to provide a name for your deployment and details like what
 In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 {% endhint %}
 
-To learn more about different options for [deploying ZenML, visit the deployment documentation](../../getting-started/deploying-zenml/why-deploy-zenml.md).
+To learn more about different options for [deploying ZenML, visit the deployment documentation](../../getting-started/why-deploy-zenml/).
 
 ## Connecting to a deployed ZenML
 
