@@ -1,6 +1,6 @@
 # Using a custom step invocation ID
 
-When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](control-execution-order-of-steps.md) of your pipeline steps or use it to [fetch information](../inspecting-pipelines-models-artifacts/fetching-pipelines.md) about the invocation after the pipeline has finished running.
+When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](control-execution-order-of-steps.md) of your pipeline steps or use it to [fetch information](fetching-pipelines.md) about the invocation after the pipeline has finished running.
 
 ```python
 from zenml import pipeline, step
