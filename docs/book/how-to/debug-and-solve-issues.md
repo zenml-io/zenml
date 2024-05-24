@@ -17,9 +17,6 @@ We suggest going through the following checklist before asking for help:
 *   Search the [docs](https://docs.zenml.io) using the search bar in the top right corner of the page.
 
     ![Searching on docs page.](../.gitbook/assets/doc\_search\_bar.png)
-*   Search on https://open.crowd.dev/zenml for issues older than 90 days on our Slack channel.
-
-    ![Searching on crowd.dev.](../.gitbook/assets/opendev\_search\_bar.png)
 * Check out the [common errors](debug-and-solve-issues.md#most-common-errors) section below.
 * Understand the problem by studying the [additional logs](debug-and-solve-issues.md#41-additional-logs) and [client/server logs](debug-and-solve-issues.md#client-and-server-logs).
 
