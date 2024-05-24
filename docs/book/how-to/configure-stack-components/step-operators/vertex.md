@@ -33,7 +33,7 @@ To use the Vertex step operator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * Vertex AI enabled and a service account file. See the [deployment section](vertex.md#how-to-deploy-it) for detailed instructions.
-* A [GCR container registry](../container-registries/gcp.md) as part of our stack.
+* A [GCR container registry](broken-reference) as part of our stack.
 * (Optional) A machine type that we want to execute our steps on (this defaults to `n1-standard-4`). See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types) for a list of available machine types.
 * A [remote artifact store](../artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 

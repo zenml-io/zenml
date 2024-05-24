@@ -4,7 +4,7 @@ description: >-
   your models with data profiling and validation
 ---
 
-# Data Validators
+# 🧪 Data Validators
 
 Without good data, even the best machine learning models will yield questionable results. A lot of effort goes into ensuring and maintaining data quality not only in the initial stages of model development, but throughout the entire machine learning project lifecycle. Data Validators are a category of ML libraries, tools and frameworks that grant a wide range of features and best practices that should be employed in the ML pipelines to keep data quality in check and to monitor model performance to keep it from degrading over time.
 
@@ -13,7 +13,7 @@ Data profiling, data integrity testing, data and model drift detection are all w
 Related concepts:
 
 * the Data Validator is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](../../../user-guide/production-guide/understand-stacks.md).
-* Data Validators used in ZenML pipelines usually generate data profiles and data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/) and can be [retrieved and visualized](../../../how-to/handle-data-artifacts/visualize-artifacts.md) later.
+* Data Validators used in ZenML pipelines usually generate data profiles and data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/) and can be [retrieved and visualized](../../handle-data-artifacts/visualize-artifacts.md) later.
 
 ### When to use it
 
@@ -47,7 +47,7 @@ Every Data Validator has different data profiling and testing capabilities and u
 
 * first, you have to configure and add a Data Validator to your ZenML stack
 * every integration includes one or more builtin data validation steps that you can add to your pipelines. Of course, you can also use the libraries directly in your own custom pipeline steps and simply return the results (e.g. data profiles, test reports) as artifacts that are versioned and stored by ZenML in its Artifact Store.
-* you can access the data validation artifacts in subsequent pipeline steps, or [fetch them afterwards](../../../how-to/overview/fetching-pipelines.md) to process them or visualize them as needed.
+* you can access the data validation artifacts in subsequent pipeline steps, or [fetch them afterwards](../../overview/fetching-pipelines.md) to process them or visualize them as needed.
 
 Consult the documentation for the particular [Data Validator flavor](./#data-validator-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.
 

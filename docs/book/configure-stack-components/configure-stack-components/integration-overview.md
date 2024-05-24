@@ -6,7 +6,7 @@ description: Overview of third-party ZenML integrations.
 
 Categorizing the MLOps stack is a good way to write abstractions for an MLOps pipeline and standardize your processes. But ZenML goes further and also provides concrete implementations of these categories by **integrating** with various tools for each category. Once code is organized into a ZenML pipeline, you can supercharge your ML workflows with the best-in-class solutions from various MLOps areas.
 
-For example, you can orchestrate your ML pipeline workflows using [Airflow](orchestrators/airflow.md) or [Kubeflow](orchestrators/kubeflow.md), track experiments using [MLflow Tracking](experiment-trackers/mlflow.md) or [Weights & Biases](experiment-trackers/wandb.md), and transition seamlessly from a local [MLflow deployment](model-deployers/mlflow.md) to a deployed model on Kubernetes using [Seldon Core](model-deployers/seldon.md).
+For example, you can orchestrate your ML pipeline workflows using [Airflow](../../how-to/configure-stack-components/orchestrators/airflow.md) or [Kubeflow](../../how-to/configure-stack-components/orchestrators/kubeflow.md), track experiments using [MLflow Tracking](../../how-to/configure-stack-components/experiment-trackers/mlflow.md) or [Weights & Biases](../../how-to/configure-stack-components/experiment-trackers/wandb.md), and transition seamlessly from a local [MLflow deployment](../../how-to/configure-stack-components/model-deployers/mlflow.md) to a deployed model on Kubernetes using [Seldon Core](../../how-to/configure-stack-components/model-deployers/seldon.md).
 
 There are lots of moving parts for all the MLOps tooling and infrastructure you require for ML in production and ZenML brings them all together and enables you to manage them in one place. This also allows you to delay the decision of which MLOps tool to use in your stack as you have no vendor lock-in with ZenML and can easily switch out tools as soon as your requirements change.
 
@@ -20,7 +20,7 @@ Another easy way of seeing a list of integrations is to see the list of director
 
 ## Installing ZenML integrations
 
-Before you can use integrations, you first need to install them using `zenml integration install`, e.g., you can install [Kubeflow](orchestrators/kubeflow.md), [MLflow Tracking](experiment-trackers/mlflow.md), and [Seldon Core](model-deployers/seldon.md), using:
+Before you can use integrations, you first need to install them using `zenml integration install`, e.g., you can install [Kubeflow](../../how-to/configure-stack-components/orchestrators/kubeflow.md), [MLflow Tracking](../../how-to/configure-stack-components/experiment-trackers/mlflow.md), and [Seldon Core](../../how-to/configure-stack-components/model-deployers/seldon.md), using:
 
 ```
 zenml integration install kubeflow mlflow seldon -y

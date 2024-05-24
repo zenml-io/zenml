@@ -2,7 +2,7 @@
 description: Orchestrating the execution of ML pipelines.
 ---
 
-# Orchestrators
+# 🔋 Orchestrators
 
 The orchestrator is an essential component in any MLOps stack as it is responsible for running your machine learning pipelines. To do so, the orchestrator provides an environment that is set up to execute the steps of your pipeline. It also makes sure that the steps of your pipeline only get executed once all their inputs (which are outputs of previous steps of your pipeline) are available.
 

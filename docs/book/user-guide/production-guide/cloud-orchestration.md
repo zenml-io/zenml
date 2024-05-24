@@ -88,7 +88,7 @@ zenml orchestrator register skypilot_orchestrator -f vm_gcp
 zenml orchestrator connect skypilot_orchestrator --connect cloud_connector
 ```
 
-The next step is to register [a GCP container registry](../../how-to/configure-stack-components/container-registries/gcp.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
+The next step is to register [a GCP container registry](broken-reference). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
 
 ```shell
 zenml container-registry register cloud_container_registry -f gcp --uri=gcr.io/<PROJECT_ID>
@@ -163,6 +163,6 @@ python run.py --training-pipeline
 
 You will notice this time your pipeline behaves differently. After it has built the Docker image with all your code, it will push that image, and run a VM on the cloud. Here is where your pipeline will execute, and the logs will be streamed back to you. So with a few commands, we were able to ship our entire code to the cloud!
 
-Curious to see what other stacks you can create? The [Component Guide](../../how-to/configure-stack-components/) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
+Curious to see what other stacks you can create? The [Component Guide](../../configure-stack-components/configure-stack-components/) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

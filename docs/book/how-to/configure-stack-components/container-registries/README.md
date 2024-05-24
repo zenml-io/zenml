@@ -2,7 +2,7 @@
 description: Setting up a storage for Docker images.
 ---
 
-# Container Registries
+# 🐳 Container Registries
 
 The container registry is an essential part of most remote MLOps stacks. It is used to store container images that are built to run machine learning pipelines in remote environments. Containerization of the pipeline code creates a portable environment that allows code to run in an isolated manner.
 
@@ -25,7 +25,7 @@ We highly suggest using the specific container registry flavors in favor of the 
 | ------------------------------------------ | ----------- | ----------- | ----------------------------------------- |
 | [DefaultContainerRegistry](default.md)     | `default`   | _built-in_  | -                                         |
 | [DockerHubContainerRegistry](dockerhub.md) | `dockerhub` | _built-in_  | docker.io/zenml                           |
-| [GCPContainerRegistry](gcp.md)             | `gcp`       | _built-in_  | gcr.io/zenml                              |
+| [GCPContainerRegistry](broken-reference)   | `gcp`       | _built-in_  | gcr.io/zenml                              |
 | [AzureContainerRegistry](azure.md)         | `azure`     | _built-in_  | zenml.azurecr.io                          |
 | [GitHubContainerRegistry](github.md)       | `github`    | _built-in_  | ghcr.io/zenml                             |
 | [AWSContainerRegistry](aws.md)             | `aws`       | `aws`       | 123456789.dkr.ecr.us-east-1.amazonaws.com |

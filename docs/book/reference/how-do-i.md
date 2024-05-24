@@ -54,6 +54,6 @@ Upgrading your ZenML client package is as simple as running `pip install --upgra
 
 * use a \<YOUR\_COMPONENT\_GOES\_HERE> stack component?
 
-For information on how to use a specific stack component, please refer to [the component guide](../how-to/configure-stack-components/) which contains all our tips and advice on how to use each integration and component with ZenML.
+For information on how to use a specific stack component, please refer to [the component guide](../configure-stack-components/configure-stack-components/) which contains all our tips and advice on how to use each integration and component with ZenML.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

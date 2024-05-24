@@ -2,7 +2,7 @@
 description: Building container images for your ML workflow.
 ---
 
-# Image Builders
+# 🖼️ Image Builders
 
 The image builder is an essential part of most remote MLOps stacks. It is used to build container images such that your machine-learning pipelines and steps can be executed in remote environments.
 

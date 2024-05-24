@@ -1039,7 +1039,7 @@ This is an example of an end-to-end workflow involving Service Connectors that u
 
 * a [Kubernetes Orchestrator](../configure-stack-components/orchestrators/kubernetes.md) connected to a GKE Kubernetes cluster
 * a [GCS Artifact Store](../configure-stack-components/artifact-stores/gcp.md) connected to a GCS bucket
-* a [GCR Container Registry](../configure-stack-components/container-registries/gcp.md) connected to a GCR container registry
+* a [GCR Container Registry](broken-reference) connected to a GCR container registry
 * a local [Image Builder](../configure-stack-components/image-builders/local.md)
 
 As a last step, a simple pipeline is run on the resulting Stack.
@@ -1413,7 +1413,7 @@ This is an example of an end-to-end workflow involving Service Connectors that u
 
 * a [VertexAI Orchestrator](../configure-stack-components/orchestrators/vertex.md) connected to the GCP project
 * a [GCS Artifact Store](../configure-stack-components/artifact-stores/gcp.md) connected to a GCS bucket
-* a [GCR Container Registry](../configure-stack-components/container-registries/gcp.md) connected to a GCR container registry
+* a [GCR Container Registry](broken-reference) connected to a GCR container registry
 * a [Google Cloud Image Builder](../configure-stack-components/image-builders/gcp.md) connected to the GCP project
 
 As a last step, a simple pipeline is run on the resulting Stack.
