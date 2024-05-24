@@ -37,8 +37,8 @@ from zenml.artifacts.external_artifact_config import (
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
-from zenml.config.source import Source, SourceWithValidator
 from zenml.config.retry_config import StepRetryConfig
+from zenml.config.source import Source, SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader

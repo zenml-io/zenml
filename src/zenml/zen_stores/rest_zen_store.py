@@ -32,7 +32,13 @@ from uuid import UUID
 
 import requests
 import urllib3
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 from requests.adapters import HTTPAdapter, Retry
 
 import zenml
