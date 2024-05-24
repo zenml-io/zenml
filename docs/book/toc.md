@@ -150,7 +150,7 @@
 * [🔐 Interact with secrets](how-to/interact-with-secrets.md)
 * [🐞 Debug and solve issues](how-to/debug-and-solve-issues.md)
 
-## Configure stack components
+## Stack Components
 
 * [📜 Overview](component-guide/README.md)
 * [Integration overview](component-guide/integration-overview.md)
