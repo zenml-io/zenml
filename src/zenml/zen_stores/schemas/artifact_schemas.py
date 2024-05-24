@@ -40,9 +40,6 @@ from zenml.models import (
     ArtifactVersionUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
-from zenml.models.v2.core.artifact_version import (
-    ArtifactVersionResponseResources,
-)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -346,8 +343,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
             producer_pipeline_run_id=producer_pipeline_run_id,
-            pipeline_run_id=pipeline_run_id_in_context
-            or producer_pipeline_run_id,
         )
 
         # Create the metadata of the model
@@ -362,13 +357,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             )
 
         resources = None
-        if include_resources:
-            resources = ArtifactVersionResponseResources(
-                pipeline_run_ids=[
-                    output_.step_run.pipeline_run_id
-                    for output_ in self.output_of_step_runs
-                ]
-            )
 
         return ArtifactVersionResponse(
             id=self.id,

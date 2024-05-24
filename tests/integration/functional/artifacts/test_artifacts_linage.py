@@ -70,19 +70,12 @@ def _validate_artifacts_state(
         assert (
             outputs[artifact_name].producer_pipeline_run_id == producer_pr_id
         )
-        # if derived from the pipeline run context - we can point to exact run
-        assert outputs[artifact_name].pipeline_run_id == pr_id
 
     artifact = clean_client.get_artifact_version(artifact_name)
     assert artifact.name == artifact_name
     assert int(artifact.version) == expected_version
     # producer ID is always the original PR
     assert artifact.producer_pipeline_run_id == producer_pr_id
-    # cannot be derived from the context, if called just fro artifact interface
-    assert artifact.pipeline_run_id == producer_pr_id
-    # but should be listed in all runs
-    assert pr_id in artifact.pipeline_run_ids
-    assert producer_pr_id in artifact.pipeline_run_ids
 
 
 # TODO: remove clean client, ones clean env for REST is available
@@ -168,10 +161,6 @@ def test_that_cached_artifact_versions_are_created_properly_for_model_version(
         mv.data_artifacts["trackable_artifact"]["1"].producer_pipeline_run_id
         == pr_orig.id
     )
-    assert (
-        pr_orig.id
-        in mv.data_artifacts["trackable_artifact"]["1"].pipeline_run_ids
-    )
 
     pr = cacheable_pipeline_which_always_run.with_options(
         model=Model(name="foo")
@@ -185,7 +174,4 @@ def test_that_cached_artifact_versions_are_created_properly_for_model_version(
     assert (
         pr_orig.id
         in mv.data_artifacts["trackable_artifact"]["1"].pipeline_run_ids
-    )
-    assert (
-        pr.id in mv.data_artifacts["trackable_artifact"]["1"].pipeline_run_ids
     )
