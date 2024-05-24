@@ -2,7 +2,7 @@
 description: Managing your secrets with ZenML.
 ---
 
-# Interact with secrets
+# 🔐 Interact with secrets
 
 ## How to create a secret
 

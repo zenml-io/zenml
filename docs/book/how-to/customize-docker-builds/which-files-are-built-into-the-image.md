@@ -7,7 +7,7 @@ ZenML determines the root directory of your source files in the following order:
 
 You can specify how these files are handled using the `source_files` attribute on the `DockerSettings`:
 
-* The default behavior `download_or_include`: The files will be downloaded if they're inside a registered [code repository](../configuring-zenml/connect-your-git-repository.md) and the repository has no local changes, otherwise, they will be included in the image.
+* The default behavior `download_or_include`: The files will be downloaded if they're inside a registered [code repository](../setting-up-a-project-repository/connect-your-git-repository.md) and the repository has no local changes, otherwise, they will be included in the image.
 * If you want your files to be included in the image in any case, set the `source_files` attribute to `include`.
 * If you want your files to be downloaded in any case, set the `source_files` attribute to `download`. If this is specified, the files must be inside a registered code repository and the repository must have no local changes, otherwise the Docker build will fail.
 * If you want to prevent ZenML from copying or downloading any of your source files, you can do so by setting the `source_files` attribute on the Docker settings to `ignore`. This is an advanced feature and will most likely cause unintended and unanticipated behavior when running your pipelines. If you use this, make sure to copy all the necessary files to the correct paths yourself.
