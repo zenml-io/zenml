@@ -285,8 +285,8 @@ To use the `KubernetesSparkStepOperator`, you need:
     zenml integration install spark
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
-* A [remote container registry](../container-registries/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/) as part of your stack.
+* A [remote container registry](../container-registries/) as part of your stack.
 * A Kubernetes cluster [deployed](spark-kubernetes.md#how-to-deploy-it).
 
 We can then register the step operator and use it in our active stack:
@@ -325,7 +325,7 @@ def step_on_spark(...) -> ...:
 After successfully running any step with a `KubernetesSparkStepOperator`, you should be able to see that a Spark driver pod was created in your cluster for each pipeline step when running `kubectl get pods -n $KUBERNETES_NAMESPACE`.
 
 {% hint style="info" %}
-Instead of hardcoding a step operator name, you can also use the [Client](../../advanced-guide/configuring-zenml/client.md) to dynamically use the step operator of your active stack:
+Instead of hardcoding a step operator name, you can also use the [Client](../../../stacks-and-components/advanced-guide/configuring-zenml/client.md) to dynamically use the step operator of your active stack:
 
 ```python
 from zenml.client import Client

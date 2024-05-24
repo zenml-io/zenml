@@ -55,7 +55,7 @@ The MLflow Experiment Tracker can be deployed directly from the ZenML CLI:
 zenml experiment-tracker deploy mlflow_tracker --flavor=mlflow -x mlflow_bucket=gs://my_bucket --provider=<YOUR_PROVIDER>
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../../how-to/stack-deployment/).
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../stack-deployment/).
 
 ### Authentication Methods
 
@@ -156,7 +156,7 @@ def tf_trainer(
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](../../advanced-guide/configuring-zenml/client.md) to dynamically use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](../../../stacks-and-components/advanced-guide/configuring-zenml/client.md) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client

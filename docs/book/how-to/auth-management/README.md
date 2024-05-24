@@ -22,7 +22,7 @@ The hard-to-swallow truth is there is no single standard that unifies all authen
 
 The range of features covered by Service Connectors is extensive and going through the entire [Service Connector Guide](service-connectors-guide.md) can be overwhelming. If all you want is to get a quick overview of how Service Connectors work and what they can do for you, this section is for you.
 
-This is a representative example of how you would use a Service Connector to connect ZenML to a cloud service. This example uses [the AWS Service Connector](aws-service-connector.md) to connect ZenML to an AWS S3 bucket and then link [an S3 Artifact Store Stack Component](../../stacks-and-components/component-guide/artifact-stores/s3.md) to it.
+This is a representative example of how you would use a Service Connector to connect ZenML to a cloud service. This example uses [the AWS Service Connector](aws-service-connector.md) to connect ZenML to an AWS S3 bucket and then link [an S3 Artifact Store Stack Component](../component-guide/artifact-stores/s3.md) to it.
 
 Some details about the current alternatives to using Service Connectors and their drawbacks are provided below. Feel free to skip them if you are already familiar with them or just want to get to the good part.
 

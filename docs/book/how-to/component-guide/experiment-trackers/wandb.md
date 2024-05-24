@@ -125,7 +125,7 @@ def tf_trainer(
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](../../advanced-guide/configuring-zenml/client.md) to dynamically use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](../../../stacks-and-components/advanced-guide/configuring-zenml/client.md) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client

@@ -296,7 +296,7 @@ Updated the global store configuration.
 ```
 
 {% hint style="info" %}
-The `localhost` URL **will** work, even if you are using Docker-backed ZenML orchestrators in your stack, like [the local Docker orchestrator](../../stacks-and-components/component-guide/orchestrators/local-docker.md) or [a locally deployed Kubeflow orchestrator](../../stacks-and-components/component-guide/orchestrators/kubeflow.md).
+The `localhost` URL **will** work, even if you are using Docker-backed ZenML orchestrators in your stack, like [the local Docker orchestrator](../../how-to/component-guide/orchestrators/local-docker.md) or [a locally deployed Kubeflow orchestrator](../../how-to/component-guide/orchestrators/kubeflow.md).
 
 ZenML makes use of specialized DNS entries such as `host.docker.internal` and `host.k3d.internal` to make the ZenML server accessible from the pipeline steps running inside other Docker containers on the same machine.
 {% endhint %}

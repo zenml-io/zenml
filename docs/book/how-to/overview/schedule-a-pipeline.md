@@ -8,15 +8,15 @@ description: Learn how to set, pause and stop a schedule for pipelines.
 Schedules don't work for all orchestrators. Here is a list of all supported orchestrators.
 {% endhint %}
 
-| Orchestrator                                                                                         | Scheduling Support |
-| ---------------------------------------------------------------------------------------------------- | ------------------ |
-| [LocalOrchestrator](../../stacks-and-components/component-guide/orchestrators/local.md)              | ⛔️                 |
-| [LocalDockerOrchestrator](../../stacks-and-components/component-guide/orchestrators/local-docker.md) | ⛔️                 |
-| [KubernetesOrchestrator](../../stacks-and-components/component-guide/orchestrators/kubernetes.md)    | ✅                  |
-| [KubeflowOrchestrator](../../stacks-and-components/component-guide/orchestrators/kubeflow.md)        | ✅                  |
-| [VertexOrchestrator](../../stacks-and-components/component-guide/orchestrators/vertex.md)            | ✅                  |
-| [TektonOrchestrator](../../stacks-and-components/component-guide/orchestrators/tekton.md)            | ⛔️                 |
-| [AirflowOrchestrator](../../stacks-and-components/component-guide/orchestrators/airflow.md)          | ✅                  |
+| Orchestrator                                                                | Scheduling Support |
+| --------------------------------------------------------------------------- | ------------------ |
+| [LocalOrchestrator](../component-guide/orchestrators/local.md)              | ⛔️                 |
+| [LocalDockerOrchestrator](../component-guide/orchestrators/local-docker.md) | ⛔️                 |
+| [KubernetesOrchestrator](../component-guide/orchestrators/kubernetes.md)    | ✅                  |
+| [KubeflowOrchestrator](../component-guide/orchestrators/kubeflow.md)        | ✅                  |
+| [VertexOrchestrator](../component-guide/orchestrators/vertex.md)            | ✅                  |
+| [TektonOrchestrator](../component-guide/orchestrators/tekton.md)            | ⛔️                 |
+| [AirflowOrchestrator](../component-guide/orchestrators/airflow.md)          | ✅                  |
 
 ### Set a schedule
 
