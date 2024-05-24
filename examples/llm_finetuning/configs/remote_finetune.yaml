@@ -1,0 +1,69 @@
+# Apache Software License 2.0
+# 
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+
+model:
+  name: llm-peft-microsoft-phi-2
+  description: "Fine-tune `microsoft/phi-2`."
+  tags:
+    - llm
+    - peft
+    - microsoft/phi-2
+  version: 300_steps
+
+settings:
+  docker:
+    parent_image: pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime
+    requirements: requirements.txt
+    python_package_installer: uv
+    environment:
+      PJRT_DEVICE: CUDA
+      USE_TORCH_XLA: "false"
+      MKL_SERVICE_FORCE_INTEL: "1"
+
+parameters:
+  base_model_id: microsoft/phi-2
+  use_fast: False
+  load_in_4bit: True
+  system_prompt: |
+      Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values.
+      This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute'].
+      The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']
+      
+
+steps:
+  prepare_data:
+    parameters:
+      dataset_name: gem/viggo
+
+  finetune:
+    enable_step_logs: False
+    step_operator: gcp_a100
+    parameters:
+      max_steps: 300
+      eval_steps: 30
+      bf16: True
+
+  evaluate_finetuned:
+    step_operator: gcp_a100
+
+  evaluate_base:
+    step_operator: gcp_a100
+
+  promote:
+    parameters:
+      metric: rouge2
+      target_stage: staging
