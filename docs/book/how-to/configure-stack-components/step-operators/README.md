@@ -47,10 +47,10 @@ def my_step(...) -> ...:
 
 #### Specifying per-step resources
 
-If your steps require additional hardware resources, you can specify them on your steps as described [here](../../runtime-configuration.md).
+If your steps require additional hardware resources, you can specify them on your steps as described [here](../../use-configuration-files/runtime-configuration.md).
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use step operators to run steps on a GPU, you will need to follow [the instructions on this page](../../use-remote-compute/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use step operators to run steps on a GPU, you will need to follow [the instructions on this page](../../overview/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

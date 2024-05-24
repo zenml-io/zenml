@@ -10,7 +10,7 @@ Stack Component Config vs Settings in ZenML
 
 As we [saw before](../../user-guide/advanced-guide/pipelining-features/broken-reference/), one special type of configuration is called `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](../use-remote-compute/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
+* The [resources](../overview/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
 * Configuring the [containerization](../customize-docker-builds/) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
@@ -22,7 +22,7 @@ Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
   * [`DockerSettings`](../customize-docker-builds/) to specify docker settings.
-  * [`ResourceSettings`](../use-remote-compute/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
+  * [`ResourceSettings`](../overview/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`SkypilotAWSOrchestratorSettings`](../configure-stack-components/orchestrators/skypilot-vm.md) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
   * [`KubeflowOrchestratorSettings`](../configure-stack-components/orchestrators/kubeflow.md) to specify Kubeflow settings.

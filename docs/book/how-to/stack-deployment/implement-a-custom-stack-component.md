@@ -55,7 +55,7 @@ As the name suggests, the `StackComponentConfig` is used to configure a stack co
 {% hint style="info" %}
 The `config` and `settings` of a stack component are two separate, yet related entities. The `config` is the static part of your flavor's configuration, defined when you register your flavor. The `settings` are the dynamic part of your flavor's configuration that can be overridden at runtime.
 
-You can read more about the differences [here](../runtime-configuration.md).
+You can read more about the differences [here](../use-configuration-files/runtime-configuration.md).
 {% endhint %}
 
 Let us now continue with the base artifact store example from above and take a look at the `BaseArtifactStoreConfig`:

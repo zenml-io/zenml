@@ -151,6 +151,6 @@ def my_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-comet/#zenml.integrations.comet.flavors.comet\_experiment\_tracker\_flavor.CometExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-comet/#zenml.integrations.comet.flavors.comet\_experiment\_tracker\_flavor.CometExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
