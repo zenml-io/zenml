@@ -48,7 +48,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../component-guide/) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../stacks-and-components/component-guide/) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY

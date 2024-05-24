@@ -12,7 +12,7 @@ Each time a ZenML pipeline runs, the system first checks if there have been any 
 
 ![Artifact Stores Under the Hood](../../.gitbook/assets/zenml-artifact-store-underthehood-1.png)
 
-Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](../component-guide/artifact-stores/) with a unique ID and stores the data using the appropriate materializers in this directory.
+Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](../../stacks-and-components/component-guide/artifact-stores/) with a unique ID and stores the data using the appropriate materializers in this directory.
 
 ![Artifact Stores Under the Hood](../../.gitbook/assets/zenml-artifact-store-underthehood-2.png)
 
@@ -26,7 +26,7 @@ By tracking the lineage of artifacts across environments and stacks, ZenML enabl
 
 ## Saving and Loading Artifacts with Materializers
 
-[Materializers](handle-custom-data-types.md) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](../component-guide/artifact-stores/). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
+[Materializers](handle-custom-data-types.md) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](../../stacks-and-components/component-guide/artifact-stores/). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
 
 ![Visualizing artifacts](../../.gitbook/assets/zenml-artifact-store-underthehood-3.png)
 
