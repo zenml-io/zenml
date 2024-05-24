@@ -287,7 +287,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
-        pipeline_run_id_in_context: Optional[UUID] = None,
         **kwargs: Any,
     ) -> ArtifactVersionResponse:
         """Convert an `ArtifactVersionSchema` to an `ArtifactVersionResponse`.
@@ -295,7 +294,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
-            pipeline_run_id_in_context: The pipeline run id in context (e.g. StepRun context).
             **kwargs: Keyword arguments to allow schema specific logic
 
 
