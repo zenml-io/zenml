@@ -206,7 +206,9 @@ class StepRunSchema(NamedSchema, table=True):
         }
 
         output_artifacts = {
-            artifact.name: artifact.artifact_version.to_model()
+            artifact.name: artifact.artifact_version.to_model(
+                pipeline_run_id_in_context=self.pipeline_run_id
+            )
             for artifact in self.output_artifacts
         }
 

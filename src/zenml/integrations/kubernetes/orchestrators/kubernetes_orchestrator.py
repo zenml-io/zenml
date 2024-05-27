@@ -391,6 +391,20 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # Authorize pod to run Kubernetes commands inside the cluster.
         service_account_name = self._get_service_account_name(settings)
 
+        if settings.pod_settings:
+            # Remove all settings that specify on which pod to run for the
+            # orchestrator pod. These settings should only be used
+            # for the pods executing the actual steps.
+            pod_settings = settings.pod_settings.copy(
+                update={
+                    "resources": {},
+                    "node_selectors": {},
+                    "affinity": {},
+                    "tolerations": [],
+                }
+            )
+            settings = settings.copy(update={"pod_settings": pod_settings})
+
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
             if not deployment.schedule.cron_expression:
