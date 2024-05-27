@@ -51,6 +51,7 @@ jobs:
   # create a tag on the ZenML cloud plugins repo
   create_tag_on_cloud_plugins_repo:
     runs-on: ubuntu-latest
+    permissions: write-all
     # needs: wait-for-package-release
     steps:
       - name: Create a tag on ZenML Cloud plugins repo
