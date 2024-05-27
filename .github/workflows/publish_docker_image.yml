@@ -62,6 +62,6 @@ jobs:
             await github.rest.git.createRef({
               owner: 'zenml-io',
               repo: 'zenml-cloud-plugins',
-              ref: 'refs/heads/testtag',
+              ref: 'refs/tags/testtag',
               sha: '${{github.sha}}'
             })
