@@ -2479,7 +2479,9 @@ class SqlZenStore(BaseZenStore):
                     f"{artifact_version_id}: No artifact version with this ID "
                     f"found."
                 )
-            return artifact_version.to_model(include_metadata=hydrate)
+            return artifact_version.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
 
     def list_artifact_versions(
         self,
@@ -3777,10 +3779,6 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.status,
                 )
                 .outerjoin(
-                    PipelineSchema,
-                    PipelineSchema.name == max_date_subquery.c.name,  # type: ignore[arg-type]
-                )
-                .outerjoin(
                     PipelineRunSchema,
                     PipelineRunSchema.created  # type: ignore[arg-type]
                     == max_date_subquery.c.max_created,
@@ -4355,7 +4353,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_run_schema(
                 run_name_or_id, session=session
-            ).to_model(include_metadata=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=hydrate)
 
     def _replace_placeholder_run(
         self,
@@ -7058,7 +7056,9 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get step run with ID {step_run_id}: No step "
                     "run with this ID found."
                 )
-            return step_run.to_model(include_metadata=hydrate)
+            return step_run.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
 
     def list_run_steps(
         self,

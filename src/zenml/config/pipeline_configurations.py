@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from pydantic import SerializeAsAny, field_validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
+from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model import Model
@@ -43,6 +44,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     success_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
+    retry: Optional[StepRetryConfig] = None
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):

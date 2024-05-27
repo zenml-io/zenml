@@ -43,7 +43,7 @@ There are many options to use a deployed Airflow server:
 If you're not using `mlstacks` to deploy Airflow, there are some additional Python packages that you'll need to
 install in the Python environment of your Airflow server:
 
-* `pydantic~=1.9.2`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate
+* `pydantic~=2.7.1`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate
   configuration files.
 * `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending on which Airflow operator
   you'll be using to run your pipeline steps. Check out [this section](airflow.md#using-different-airflow-operators) for
@@ -72,70 +72,70 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 {% tabs %}
 {% tab title="Local" %}
-In the local case, we need to reinstall in a certain way for the local Airflow server:
+Due to dependency conflicts, we need to install the Python packages to start a local Airflow server
+in a separate Python environment.
 
 ```bash
-pip install "apache-airflow-providers-docker<3.8.0" "apache-airflow==2.4.0" "pendulum<3.0.0" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.4.0/constraints-3.9.txt"
+# Create a fresh virtual environment in which we install the Airflow server dependencies
+python -m venv airflow_server_environment
+source airflow_server_environment/bin/activate
+
+# Install the Airflow server dependencies
+pip install "apache-airflow==2.4.0" "apache-airflow-providers-docker<3.8.0" "pydantic~=2.7.1"
 ```
 
-Please make sure to replace 3.9 with your Python (major) version in the
-constraints file URL given above.
-
-Once that is installed, we can start the local Airflow server by running the
-following command in your terminal. See further below on an alternative way to
-set up the Airflow server manually since the `zenml stack up` command is
-deprecated.
-
-```shell
-zenml stack up
-```
-
-This command will start up an Airflow server on your local machine that's running in the same Python environment that
-you used to provision it. When it is finished, it will print a username and password which you can use to log in to the
-Airflow UI [here](http://0.0.0.0:8080).
-
-As long as you didn't configure any custom value for the `dag_output_dir` attribute of your orchestrator, running a
-pipeline locally is as simple as calling:
-
-```shell
-python file_that_runs_a_zenml_pipeline.py
-```
-
-This call will produce a `.zip` file containing a representation of your ZenML pipeline to the Airflow DAGs directory.
-From there, the local Airflow server will load it and run your pipeline (It might take a few seconds until the pipeline
-shows up in the Airflow UI).
-
-{% hint style="info" %}
-The ability to provision resources using the `zenml stack up` command is deprecated and will be removed in a future
-release. While it is still available for the Airflow orchestrator, we recommend following the steps to set up a local
-Airflow server manually.
-
-1. Install the `apache-airflow` package in your Python environment where ZenML is installed.
-2. The Airflow environment variables are used to configure the behavior of the Airflow server. The following variables
-   are particularly important to set:
-3. `AIRFLOW_HOME`: This variable defines the location where the Airflow server stores its database and configuration
-   files. The default value is \~/airflow.
-4. `AIRFLOW__CORE__DAGS_FOLDER`: This variable defines the location where the Airflow server looks for DAG files. The
-   default value is \<AIRFLOW\_HOME>/dags.
-5. `AIRFLOW__CORE__LOAD_EXAMPLES`: This variable controls whether the Airflow server should load the default set of
-   example DAGs. The default value is false, which means that the example DAGs will not be loaded.
-6. `AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL`: This variable controls how often the Airflow scheduler checks for new or
+Before starting the local Airflow server, we can set a few environment variables to configure it:
+* `AIRFLOW_HOME`: This variable defines the location where the Airflow server stores its database and configuration
+   files. The default value is `~/airflow`.
+* `AIRFLOW__CORE__DAGS_FOLDER`: This variable defines the location where the Airflow server looks for DAG files. The
+   default value is `<AIRFLOW_HOME>/dags`.
+* `AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL`: This variable controls how often the Airflow scheduler checks for new or
    updated DAGs. By default, the scheduler will check for new DAGs every 30 seconds. This variable can be used to
    increase or decrease the frequency of the checks, depending on the specific needs of your pipeline.
 
-    ```bash
-    export AIRFLOW_HOME=...
-    export AIRFLOW__CORE__DAGS_FOLDER=...
-    export AIRFLOW__CORE__LOAD_EXAMPLES=false
-    export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
+{% hint style="warning" %}
+When running this on MacOS, you might need to set the `no_proxy` environment variable to prevent crashes due to a bug
+in Airflow (see [this page](https://github.com/apache/airflow/issues/28487) for more information):
 
-    # Prevent crashes during forking on MacOS
-    # https://github.com/apache/airflow/issues/28487
-    export no_proxy=*
-    ```
-
-7. Run `airflow standalone` to initialize the database, create a user, and start all components for you.
+```bash
+export no_proxy=*
+```
 {% endhint %}
+
+We can now start the local Airflow server by running the following command:
+```bash
+# Switch to the Python environment that has Airflow installed before running this command
+airflow standalone
+```
+
+This command will start up an Airflow server on your local machine. During the startup, it will print a username and
+password which you can use to log in to the Airflow UI [here](http://0.0.0.0:8080).
+
+We can now switch back the our Python environment in which ZenML is installed and run a pipeline:
+```shell
+# Switch to the Python environment that has ZenML installed before running this command
+python file_that_runs_a_zenml_pipeline.py
+```
+
+This call will produce a `.zip` file containing a representation of your ZenML pipeline for Airflow.
+The location of this `.zip` file will be in the logs of the command above. We now need to copy this file
+to the Airflow DAGs directory, from where the local Airflow server will load it and run your pipeline
+(It might take a few seconds until the pipeline shows up in the Airflow UI).
+To figure out the DAGs directory, we can run `airflow config get-value core DAGS_FOLDER` while having our
+Python environment with the Airflow installation active.
+
+To make this process easier, we can configure our ZenML Airflow orchestrator to automatically copy the `.zip` file
+to this directory for us. To do so, run the following command:
+```bash
+# Switch to the Python environment that has ZenML installed before running this command
+zenml orchestrator update --dag_output_dir=<AIRFLOW_DAG_DIRECTORY>
+```
+
+Now that we've set this up, running a pipeline in Airflow is as simple as just running the Python file:
+```shell
+# Switch to the Python environment that has ZenML installed before running this command
+python file_that_runs_a_zenml_pipeline.py
+```
 {% endtab %}
 
 {% tab title="Remote" %}
@@ -190,24 +190,12 @@ scheduled_pipeline()
 
 Airflow comes with its own UI that you can use to find further details about your pipeline runs, such as the logs of
 your steps. For local Airflow, you can find the Airflow UI at [http://localhost:8080](http://localhost:8080) by default.
-Alternatively, you can get the orchestrator UI URL in Python using the following code snippet:
-
-```python
-from zenml.client import Client
-
-pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
-```
 
 {% hint style="info" %}
 If you cannot see the Airflow UI credentials in the console, you can find the
-password in
-`<GLOBAL_CONFIG_DIR>/airflow/<ORCHESTRATOR_UUID>/standalone_admin_password.txt`.
-- `GLOBAL_CONFIG_DIR` depends on your OS.
-  Run `python -c "from zenml.config.global_config import GlobalConfiguration; print(GlobalConfiguration().config_directory)"`
-  to get the path for your machine.
-- `ORCHESTRATOR_UUID` is the unique ID of the Airflow orchestrator, but there
-  should be only one folder here, so you can just navigate into that one.
+password in `<AIRFLOW_HOME>/standalone_admin_password.txt`. `AIRFLOW_HOME` will usually be `~/airflow` unless you've
+manually configured it with the `AIRFLOW_HOME` environment variable.
+You can always run `airflow info` to figure out the directory for the active environment.
 
 The username will always be `admin`.
 {% endhint %}

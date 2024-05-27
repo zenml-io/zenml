@@ -16,9 +16,19 @@ zenml:
     # Overrides the image tag whose default is the chart appVersion.
     tag:
 
-  # The URL of the ZenML server. This is used to direct users to the correct
-  # address in log messages when running a pipeline and for other similar tasks.
-  baseURL:
+  # The URL where the ZenML server API is reachable. If not specified, the
+  # clients will use the same URL used to connect them to the ZenML server.
+  serverURL:
+
+  # The URL where the ZenML dashboard is reachable.
+  # If not specified, the `serverURL` value is used. This should be
+  # configured if the dashboard is served from a different URL than the
+  # ZenML server.
+  #
+  # This is value is used to compute the dashboard URLs during the web login
+  # authentication workflow, to print dashboard URLs in log messages when
+  # running a pipeline and for other similar tasks.
+  dashboardURL:
 
   debug: true
 
@@ -111,12 +121,6 @@ zenml:
     # device authorization endpoint for the status of a pending device
     # authorization request.
     deviceAuthPollingInterval: 5
-
-    # The URL where the ZenML dashboard is hosted. Used to construct the OAuth
-    # 2.0 device authorization endpoint. If not set, a partial URL is returned
-    # to the client which is used to construct the full URL based on the
-    # server's root URL path.
-    dashboardURL:
 
     # The time in minutes that an OAuth 2.0 device is allowed to be used to
     # authenticate with the ZenML server. If not set or if

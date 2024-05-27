@@ -972,8 +972,27 @@ def _validate_and_configure_resources(
         required = attr_name in auth_method_spec.config_schema.get(
             "required", []
         )
-        secret = attr_schema.get("format", "") == "password"
-        attr_type = attr_schema.get("type", "string")
+
+        attr_any_of = attr_schema.get("anyOf", [])
+
+        if attr_any_of:
+            no_null_attr_any_of = [
+                a for a in attr_any_of if a.get("type", "string") != "null"
+            ]
+
+            if len(no_null_attr_any_of) == 1:
+                secret = no_null_attr_any_of[0].get("format", "") == "password"
+                attr_type = no_null_attr_any_of[0].get("type", "string")
+            else:
+                # TODO: Still not sure what needs to happen here. We will
+                #   only end up here if the auth method config schema has a
+                #   field with a Union[SecretStr, int] or something.
+                raise RuntimeError("Service connector schema error.")
+
+        else:
+            secret = attr_schema.get("format", "") == "password"
+            attr_type = attr_schema.get("type", "string")
+
         value = configuration.get(attr_name, secrets.get(attr_name))
         if required:
             if value is None:

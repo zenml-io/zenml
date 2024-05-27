@@ -14,7 +14,7 @@
 """Source classes."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import (
@@ -24,6 +24,7 @@ from pydantic import (
     SerializeAsAny,
     field_validator,
 )
+from typing_extensions import Annotated
 
 from zenml.logger import get_logger
 

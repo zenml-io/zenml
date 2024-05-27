@@ -2966,6 +2966,40 @@ def test_list_unused_artifacts():
         assert artifact_versions.total == num_unused_artifact_versions_before
 
 
+def test_list_custom_named_artifacts():
+    """Tests listing with `has_custom_name=True` only returns custom named artifacts with proper filtering."""
+    client = Client()
+    store = client.zen_store
+
+    num_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
+    num_matching_named_before = store.list_artifact_versions(
+        ArtifactVersionFilter(
+            has_custom_name=True, name="contains:test_step_output"
+        )
+    ).total
+    num_runs = 1
+
+    with PipelineRunContext(num_runs):
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter()
+        )
+        assert (
+            artifact_versions.total
+            == num_artifact_versions_before + num_runs * 2
+        )
+
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter(
+                has_custom_name=True, name="contains:test_step_output"
+            )
+        )
+        assert (
+            artifact_versions.total - num_matching_named_before == num_runs * 2
+        )
+
+
 def test_artifacts_are_not_deleted_with_run(clean_client: "Client"):
     """Tests listing with `unused=True` only returns unused artifacts."""
     store = clean_client.zen_store

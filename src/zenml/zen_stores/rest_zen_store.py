@@ -32,7 +32,13 @@ from uuid import UUID
 
 import requests
 import urllib3
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 from requests.adapters import HTTPAdapter, Retry
 
 import zenml
@@ -274,7 +280,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
     password: Optional[str] = None
     api_key: Optional[str] = None
     api_token: Optional[str] = None
-    verify_ssl: Union[bool, str] = True
+    verify_ssl: Union[bool, str] = Field(True, union_mode="left_to_right")
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
     @model_validator(mode="after")

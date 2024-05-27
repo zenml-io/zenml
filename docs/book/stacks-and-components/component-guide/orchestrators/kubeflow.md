@@ -155,7 +155,11 @@ When using the Kubeflow orchestrator locally, you'll additionally need:
 
 To run the pipeline on a local Kubeflow Pipelines deployment, you can use the
 ZenML `mlstacks` package to spin up a local
-Kubernetes cluster and install Kubeflow Pipelines on it.
+Kubernetes cluster and install Kubeflow Pipelines on it. Please check the
+`mlstacks` [installation
+documentation](https://mlstacks.zenml.io/getting-started/installation#other-requirements-and-dependencies)
+for information on dependencies needed for Kubeflow deployment. For example,
+you'll need `helm` to be installed on your machine.
 
 To deploy the stack, run the following commands:
 
