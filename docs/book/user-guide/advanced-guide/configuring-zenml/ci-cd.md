@@ -3,6 +3,11 @@ description: >-
   Managing the lifecycle of a ZenML pipeline with Continuous Integration and Delivery
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # CI/CD with ZenML pipelines
 
 Until now, we have been executing ZenML pipelines locally. While this is a good mode of operating pipelines, in production
