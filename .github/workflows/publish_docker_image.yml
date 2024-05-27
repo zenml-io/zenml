@@ -49,5 +49,5 @@ jobs:
         run: |-
           gcloud builds submit \
             --quiet \
-            --config=${{ inputs.config_file }} \
-            --substitutions=TAG_NAME=$VERSION
+            --config=${{inputs.config_file}} \
+            --substitutions=TAG_NAME=$VERSION .
