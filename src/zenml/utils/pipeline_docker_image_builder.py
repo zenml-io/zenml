@@ -20,6 +20,7 @@ import sys
 from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
+    Any,
     DefaultDict,
     Dict,
     List,
@@ -645,7 +646,7 @@ class PipelineDockerImageBuilder:
             == PythonPackageInstaller.PIP
         ):
             install_command = "pip install"
-            default_installer_args = PIP_DEFAULT_ARGS
+            default_installer_args: Dict[str, Any] = PIP_DEFAULT_ARGS
         elif (
             docker_settings.python_package_installer
             == PythonPackageInstaller.UV
