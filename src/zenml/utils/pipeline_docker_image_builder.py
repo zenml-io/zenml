@@ -65,6 +65,14 @@ DEFAULT_DOCKER_PARENT_IMAGE = (
     f"py{sys.version_info.major}.{sys.version_info.minor}"
 )
 
+PIP_DEFAULT_ARGS = {
+    "no-cache-dir": None,
+    "default-timeout": 60,
+}
+UV_DEFAULT_ARGS = {
+    "no-cache-dir": None,
+}
+
 
 class PipelineDockerImageBuilder:
     """Builds Docker images to run a ZenML pipeline."""
@@ -636,22 +644,32 @@ class PipelineDockerImageBuilder:
             docker_settings.python_package_installer
             == PythonPackageInstaller.PIP
         ):
-            install_command = "pip install --default-timeout=60"
+            install_command = "pip install"
+            default_installer_args = PIP_DEFAULT_ARGS
         elif (
             docker_settings.python_package_installer
             == PythonPackageInstaller.UV
         ):
             lines.append("RUN pip install uv")
-            install_command = "uv pip install --system"
+            install_command = "uv pip install"
+            default_installer_args = UV_DEFAULT_ARGS
         else:
             raise ValueError("Unsupported python package installer.")
 
+        installer_args = {
+            **default_installer_args,
+            **docker_settings.python_package_installer_args,
+        }
+        installer_args_string = " ".join(
+            f"--{key}" if value is None else f"--{key}={value}"
+            for key, value in installer_args.items()
+        )
         for file, _, options in requirements_files:
             lines.append(f"COPY {file} .")
             option_string = " ".join(options)
 
             lines.append(
-                f"RUN {install_command} --no-cache-dir "
+                f"RUN {install_command} {installer_args_string}"
                 f"{option_string} -r {file}"
             )
 
