@@ -1,5 +1,93 @@
 <!-- markdown-link-check-disable -->
 
+# 0.58.0
+
+## New Annotators
+This release brings in three new Annotator Stack Components: [Prodigy](https://prodi.gy/), Argilla and Pigeon.
+* Pigeon works within Jupyter notebooks and supports a limited feature set but is great for 
+experimentation and demos.
+* Argilla works both locally-deployed and when the annotation instance lives in the cloud 
+(i.e. in the Hugging Face Spaces deployment which they recommend).
+* Prodigy is a powerful annotation tool that allows for efficient data labeling. With this 
+integration, users can now connect ZenML with Prodigy and leverage its annotation capabilities 
+in their ML pipelines.
+
+## Retry configuration for steps
+This release also includes new `retry` configuration for the steps. The following parameters 
+can be set:
+
+- _**max_retries**_: The maximum number of times the step should be retried in case of failure.
+- _**delay**_: The initial delay in seconds before the first retry attempt.
+- _**backoff**_: The factor by which the delay should be multiplied after each retry attempt.
+
+Code Snippet:
+
+```python
+from zenml.config.retry_config import StepRetryConfig
+
+@step(retry=StepRetryConfig(max_retries=3, delay=10, backoff=2))
+def step_3() -> None:
+    # Step implementation
+    raise Exception("This is a test exception")
+```
+
+or config.yaml:
+
+```yaml
+steps:
+  my_step:
+    retry:
+      max_retries: 3
+      delay: 10
+      backoff: 2
+ ```
+
+In addition, this release includes a number of bug fixes and documentation updates, such
+as new LLM finetuning template powered by PEFT and BitsAndBytes and instructions for the
+new annotators.
+
+
+## Breaking changes
+* The interface for the base class of the annotator stack component has been updated to 
+account for the fact that not all annotator will launch with a specific URL. So there is 
+no longer an url argument passed in.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot who contributed to this release 
+by bumping the `mlflow` version to 2.12.2
+
+## What's Changed
+* Add more failure logs for code repositories and build reuse by @schustmi in https://github.com/zenml-io/zenml/pull/2697
+* Prodigy annotator by @strickvl in https://github.com/zenml-io/zenml/pull/2655
+* Bump mlflow support to version 2.12.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2693
+* add 0.57.1 to migration test scripts by @safoinme in https://github.com/zenml-io/zenml/pull/2702
+* Pigeon annotator by @strickvl in https://github.com/zenml-io/zenml/pull/2641
+* Allow credentials expiry to be configured for service connectors by @stefannica in https://github.com/zenml-io/zenml/pull/2704
+* Argilla annotator by @strickvl in https://github.com/zenml-io/zenml/pull/2687
+* Add `MySQL` and `mariadb` migration tests to Slow CI by @safoinme in https://github.com/zenml-io/zenml/pull/2686
+* Misc small fixes by @schustmi in https://github.com/zenml-io/zenml/pull/2712
+* Allow resetting server and user metadata by @schustmi in https://github.com/zenml-io/zenml/pull/2666
+* Fix Docker failures in the CI by @avishniakov in https://github.com/zenml-io/zenml/pull/2716
+* Add note about helm dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/2709
+* Add retry config for failing steps by @safoinme in https://github.com/zenml-io/zenml/pull/2627
+* Update pyparsing version by @strickvl in https://github.com/zenml-io/zenml/pull/2710
+* New ruff issue by @avishniakov in https://github.com/zenml-io/zenml/pull/2718
+* PEFT LLM Template by @avishniakov in https://github.com/zenml-io/zenml/pull/2719
+* Add `model_version_id` as part of the Model config by @avishniakov in https://github.com/zenml-io/zenml/pull/2703
+* Add more runners to fast CI by @safoinme in https://github.com/zenml-io/zenml/pull/2706
+* Fail faster on notebook installation and only clone / download the branch we need for `zenml go` by @strickvl in https://github.com/zenml-io/zenml/pull/2721
+* Make a clear separation between server and dashboard API in the server configuration by @stefannica in https://github.com/zenml-io/zenml/pull/2722
+* Update pymysql to fix CVE-2024-36039 by @stefannica in https://github.com/zenml-io/zenml/pull/2714
+* Allow specifying privileged mode for Kubernetes orchestrator containers by @schustmi in https://github.com/zenml-io/zenml/pull/2717
+* Don't use pod resources/affinity for kubernetes orchestrator pod by @schustmi in https://github.com/zenml-io/zenml/pull/2707
+* Extra test for artifact listing by @avishniakov in https://github.com/zenml-io/zenml/pull/2715
+* Pipeline run not tracked in cached artifact version by @avishniakov in https://github.com/zenml-io/zenml/pull/2713
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.57.1...0.58.0
+
+
 # 0.57.1
 
 This a minor release that brings a variety of enhancements for
