@@ -4,9 +4,7 @@ description: Why do we need to deploy ZenML?
 
 # 🤔 Deploying ZenML
 
-Transitioning your machine learning pipelines to production means deploying your models on real-world data to make predictions that drive business decisions. To achieve this, you need an infrastructure that can handle the demands of running machine learning models at scale. However, setting up such an infrastructure involves careful planning and consideration of various factors, such as data storage, compute resources, monitoring, and security.
-
-Moving to a production environment offers several benefits over staying local:
+Moving your ZenML Server to a production environment offers several benefits over staying local:
 
 1. **Scalability**: Production environments are designed to handle large-scale workloads, allowing your models to process more data and deliver faster results.
 2. **Reliability**: Production-grade infrastructure ensures high availability and fault tolerance, minimizing downtime and ensuring consistent performance.
@@ -14,15 +12,13 @@ Moving to a production environment offers several benefits over staying local:
 
 Despite these advantages, transitioning to production can be challenging due to the complexities involved in setting up the needed infrastructure.
 
-This is where the **ZenML server** comes in. By providing seamless integration with various [MLOps tools](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/stacks-and-components/component-guide/integration-overview.md) and platforms, ZenML simplifies the process of moving your pipelines into production.
-
 ### ZenML Server
 
-When you first get started with ZenML, it is based on the following architecture on your machine.
+When you first get started with ZenML, it relies with the following architecture on your machine.
 
 ![Scenario 1: ZenML default local configuration](../../.gitbook/assets/Scenario1.png)
 
-The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. In the previous pages, we used the `zenml up` command to spin up a local REST server to serve the dashboard as well. The diagram for this will look as follows:
+The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. Users can run the `zenml up` command to spin up a local REST server to serve the dashboard. The diagram for this looks as follows:
 
 ![Scenario 2: ZenML with a local REST Server](../../.gitbook/assets/Scenario2.png)
 
@@ -30,7 +26,7 @@ The SQLite database that you can see in this diagram is used to store informatio
 In Scenario 2, the `zenml up` command implicitly connects the client to the server.
 {% endhint %}
 
-In order to move into production, you will need to deploy this server somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
+In order to move into production, the ZenML server needs to be deployed somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
 ![Scenario 3: Deployed ZenML Server](../../.gitbook/assets/Scenario3.2.png)
 
@@ -40,8 +36,8 @@ Deploying the ZenML Server is a crucial step towards transitioning to a producti
 
 Currently, there are two main options to access a deployed ZenML server:
 
-1. **ZenML Cloud:** With [ZenML Cloud](zenml-cloud/), you can utilize a control plane to create ZenML servers, also known as tenants. These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking and server maintenance.
-2. **Self-hosted Deployment:** Alternatively, you have the flexibility to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](zenml-self-hosted/deploy-with-zenml-cli.md), [Docker](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/how-to/configure-stack-components/model-registries/README.md), [Helm](zenml-self-hosted/deploy-with-helm.md), or [HuggingFace Spaces](zenml-self-hosted/deploy-using-huggingface-spaces.md).
+1. **SaaS:** With the [Cloud](zenml-pro/cloud-system-architecture/zenml-cloud.md) offering you can utilize a control plane to create ZenML servers, also known as tenants. These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking of metadata and server maintenance.
+2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](zenml-self-hosted/deploy-with-zenml-cli.md), [Docker](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/how-to/configure-stack-components/model-registries/README.md), [Helm](zenml-self-hosted/deploy-with-helm.md), or [HuggingFace Spaces](zenml-self-hosted/deploy-using-huggingface-spaces.md). We also offer our Pro version for self-hosted deployments so you can use our full paid feature-set while staying fully in control with an airgapped solution on your infrastructure.
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 
