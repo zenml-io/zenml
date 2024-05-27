@@ -146,7 +146,8 @@ def test_build_skipping():
     assert image_digest
 
 
-def test_installer_args():
+def test_python_package_installer_args():
+    """Tests that the python package installer args get passed correctly."""
     docker_settings = DockerSettings(
         python_package_installer_args={
             "default-timeout": 99,
