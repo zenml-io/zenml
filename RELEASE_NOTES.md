@@ -3,12 +3,12 @@
 # 0.58.0
 
 ## New Annotators
-This release brings in three new Annotator Stack Components: [Prodigy](https://prodi.gy/), Argilla and Pigeon.
+This release brings in three new integrations for our annotator stack component: [Prodigy](https://prodi.gy/), [Argilla](https://github.com/argilla-io/argilla) and [Pigeon](https://github.com/agermanidis/pigeon).
 * Pigeon works within Jupyter notebooks and supports a limited feature set but is great for 
 experimentation and demos.
 * Argilla works both locally-deployed and when the annotation instance lives in the cloud 
 (i.e. in the Hugging Face Spaces deployment which they recommend).
-* Prodigy is a powerful annotation tool that allows for efficient data labeling. With this 
+* Prodigy is a powerful closed-source annotation tool that allows for efficient data labeling. With this 
 integration, users can now connect ZenML with Prodigy and leverage its annotation capabilities 
 in their ML pipelines.
 
@@ -20,7 +20,7 @@ can be set:
 - _**delay**_: The initial delay in seconds before the first retry attempt.
 - _**backoff**_: The factor by which the delay should be multiplied after each retry attempt.
 
-Code Snippet:
+To use this in your code:
 
 ```python
 from zenml.config.retry_config import StepRetryConfig
@@ -31,7 +31,7 @@ def step_3() -> None:
     raise Exception("This is a test exception")
 ```
 
-or config.yaml:
+or using a `config.yaml`:
 
 ```yaml
 steps:
@@ -43,13 +43,13 @@ steps:
  ```
 
 In addition, this release includes a number of bug fixes and documentation updates, such
-as new LLM finetuning template powered by PEFT and BitsAndBytes and instructions for the
+as a new LLM finetuning template powered by PEFT and BitsAndBytes and instructions for the
 new annotators.
 
 
 ## Breaking changes
 * The interface for the base class of the annotator stack component has been updated to 
-account for the fact that not all annotator will launch with a specific URL. So there is 
+account for the fact that not all annotators will launch with a specific URL. So there is 
 no longer an url argument passed in.
 
 ## 🥳 Community Contributions 🥳
