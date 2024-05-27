@@ -315,11 +315,17 @@ class ArtifactVersionSchema(BaseSchema, table=True):
 
         producer_step_run_id, producer_pipeline_run_id = None, None
         if self.output_of_step_runs:
-            step_run = self.output_of_step_runs[0].step_run
-            if step_run.status == ExecutionStatus.COMPLETED:
+            original_step_runs = [
+                sr
+                for sr in self.output_of_step_runs
+                if sr.step_run.status == ExecutionStatus.COMPLETED
+            ]
+            if len(original_step_runs) == 1:
+                step_run = original_step_runs[0].step_run
                 producer_step_run_id = step_run.id
                 producer_pipeline_run_id = step_run.pipeline_run_id
             else:
+                step_run = self.output_of_step_runs[0].step_run
                 producer_step_run_id = step_run.original_step_run_id
 
         # Create the body of the model
@@ -348,10 +354,13 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},
             )
 
+        resources = None
+
         return ArtifactVersionResponse(
             id=self.id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(
