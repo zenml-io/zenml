@@ -82,6 +82,24 @@ class PipelineNamespaceResponse(
         """
         return self
 
+    @property
+    def latest_run_id(self) -> Optional[UUID]:
+        """The `latest_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_run_id
+
+    @property
+    def latest_run_status(self) -> Optional[ExecutionStatus]:
+        """The `latest_run_status` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_run_status
+
 
 # ------------------ Filter Model ------------------
 

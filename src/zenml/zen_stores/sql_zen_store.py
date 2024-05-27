@@ -3777,10 +3777,6 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.status,
                 )
                 .outerjoin(
-                    PipelineSchema,
-                    PipelineSchema.name == max_date_subquery.c.name,  # type: ignore[arg-type]
-                )
-                .outerjoin(
                     PipelineRunSchema,
                     PipelineRunSchema.created  # type: ignore[arg-type]
                     == max_date_subquery.c.max_created,
