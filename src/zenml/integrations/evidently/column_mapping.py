@@ -66,14 +66,24 @@ class EvidentlyColumnMapping(BaseModel):
 
         # preserve the Evidently defaults where possible
         column_mapping.target = self.target or column_mapping.target
-        column_mapping.prediction = self.prediction or column_mapping.prediction
+        column_mapping.prediction = (
+            self.prediction or column_mapping.prediction
+        )
         column_mapping.datetime = self.datetime or column_mapping.datetime
         column_mapping.id = self.id or column_mapping.id
-        column_mapping.numerical_features = self.numerical_features or column_mapping.numerical_features
-        column_mapping.datetime_features = self.datetime_features or column_mapping.datetime_features
-        column_mapping.target_names = self.target_names or column_mapping.target_names
+        column_mapping.numerical_features = (
+            self.numerical_features or column_mapping.numerical_features
+        )
+        column_mapping.datetime_features = (
+            self.datetime_features or column_mapping.datetime_features
+        )
+        column_mapping.target_names = (
+            self.target_names or column_mapping.target_names
+        )
         column_mapping.task = self.task or column_mapping.task
         column_mapping.pos_label = self.pos_label or column_mapping.pos_label
-        column_mapping.text_features = self.text_features or column_mapping.text_features
+        column_mapping.text_features = (
+            self.text_features or column_mapping.text_features
+        )
 
         return column_mapping
