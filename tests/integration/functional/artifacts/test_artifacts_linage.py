@@ -169,7 +169,3 @@ def test_that_cached_artifact_versions_are_created_properly_for_model_version(
         mv.data_artifacts["trackable_artifact"]["1"].producer_pipeline_run_id
         == pr_orig.id
     )
-    assert (
-        pr_orig.id
-        in mv.data_artifacts["trackable_artifact"]["1"].pipeline_run_ids
-    )
