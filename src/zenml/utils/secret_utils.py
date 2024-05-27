@@ -14,9 +14,10 @@
 """Utility functions for secrets and secret references."""
 
 import re
-from typing import TYPE_CHECKING, Annotated, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from pydantic import Field, PlainSerializer, SecretStr
+from typing_extensions import Annotated
 
 if TYPE_CHECKING:
     from pydantic.fields import FieldInfo
