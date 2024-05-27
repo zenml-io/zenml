@@ -2,13 +2,13 @@
 description: Using settings to configure runtime configuration.
 ---
 
-# 🍜 Runtime configuration
+# Stack component specific configuration
 
 {% embed url="https://www.youtube.com/embed/AdwW6DlCWFE" %}
 Stack Component Config vs Settings in ZenML
 {% endembed %}
 
-As we [saw before](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/user-guide/advanced-guide/pipelining-features/broken-reference/README.md), one special type of configuration is called `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
+Part of the configuration of a pipeline are its `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
 * The [resources](../overview/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
 * Configuring the [containerization](../customize-docker-builds/) process of a pipeline (e.g. What requirements get installed in the Docker image)
