@@ -103,13 +103,10 @@ def dehydrate_response_model(
         )
 
     dehydrated_values = {}
-    for key, value in model.__dict__.items():
-        if key in model.__private_attributes__:
-            dehydrated_values[key] = value
-        else:
-            dehydrated_values[key] = _dehydrate_value(
-                value, permissions=permissions
-            )
+    for key, value in dict(model).items():
+        dehydrated_values[key] = _dehydrate_value(
+            value, permissions=permissions
+        )
 
     return type(model).model_validate(dehydrated_values)
 
