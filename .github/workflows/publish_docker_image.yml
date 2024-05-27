@@ -18,25 +18,18 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v4.1.1
-      - name: Get the version from the github tag or branch
-        id: get_version
-        run: |
+      - name: Determine version
+        run: |-
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
           else
-              # Extract the current version
-              CURRENT_VERSION=$(cat src/zenml/VERSION)
-
-              # Get the current date in the format of YYYY-MM-DD
-              DATE=$(date +"%Y%m%d")
-
-              # Combine the current version with the date to form
-              # the new version string
-              VERSION="${CURRENT_VERSION}.dev${DATE}"
+            CURRENT_VERSION=$(cat src/zenml/VERSION)
+            DATE=$(date +"%Y%m%d")
+            VERSION="${CURRENT_VERSION}.dev${DATE}"
           fi
-          # Sanitize the VERSION to make it Docker-compatible
           VERSION=$(echo $VERSION | sed 's/[^a-zA-Z0-9._-]/-/g')
-          echo ::set-output name=VERSION::$VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Determined VERSION=$VERSION"
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@v0
         with:
@@ -47,6 +40,7 @@ jobs:
       # Cloudbuild
       - name: Build docker images
         run: |-
+          echo "Building Docker image with tag: $VERSION"
           gcloud builds submit \
             --quiet \
             --config=${{inputs.config_file}} \
