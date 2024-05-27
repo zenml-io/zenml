@@ -3,6 +3,11 @@ description: >-
   Connect a Git repository to ZenML to track code changes and collaborate on MLOps projects.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Connect your code repository
 
 Throughout the lifecycle of a MLOps pipeline, it can get quite tiresome to always wait for a Docker build every time after running a pipeline (even if the local Docker cache is used). However, there is a way to just have one pipeline build and keep reusing it until a change to the pipeline environment is made: by connecting a code repository.
