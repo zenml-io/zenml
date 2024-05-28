@@ -8,7 +8,7 @@ One of the most straightforward paths to start with a deployed ZenML server is t
 
 <div data-full-width="true">
 
-<figure><img src="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/.gitbook/assets/zenml-cloud-tenant-overview.png" alt=""><figcaption><p>ZenML Cloud comes equipped with a powerful cloud-only dashboard</p></figcaption></figure>
+<figure>.gitbook/assets/zenml-cloud-tenant-overview.png" alt=""><figcaption><p>ZenML Cloud comes equipped with a powerful cloud-only dashboard</p></figcaption></figure>
 
 </div>
 

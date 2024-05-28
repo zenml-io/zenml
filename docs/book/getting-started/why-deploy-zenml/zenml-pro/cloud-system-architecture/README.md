@@ -23,7 +23,7 @@ The above four interact with other MLOps stack components, secrets, and data in 
 
 <div data-full-width="true">
 
-<figure><img src="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/.gitbook/assets/cloud_architecture_scenario_1.png" alt=""><figcaption><p>Scenario 1: Full SaaS deployment</p></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/cloud_architecture_scenario_1.png" alt=""><figcaption><p>Scenario 1: Full SaaS deployment</p></figcaption></figure>
 
 </div>
 
@@ -39,7 +39,7 @@ This scenario is meant for customers who want to quickly get started with ZenML 
 
 <div data-full-width="true">
 
-<figure><img src="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/.gitbook/assets/cloud_architecture_scenario_2.png" alt=""><figcaption><p>Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML</p></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/cloud_architecture_scenario_2.png" alt=""><figcaption><p>Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML</p></figcaption></figure>
 
 </div>
 
@@ -53,7 +53,7 @@ All access to customer secrets is, of course, regulated through authentication a
 
 <div data-full-width="true">
 
-<figure><img src="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/.gitbook/assets/cloud_architecture_scenario_3%20(1).png" alt=""><figcaption><p>Scenario 3: ZenML Agent deployment</p></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/cloud_architecture_scenario_3.png" alt=""><figcaption><p>Scenario 3: ZenML Agent deployment</p></figcaption></figure>
 
 </div>
 
@@ -73,7 +73,7 @@ Here is a concrete example of how this works:
 
 <div data-full-width="true">
 
-<figure><img src="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/.gitbook/assets/cloud_architecture_scenario_5.png" alt=""><figcaption><p>Scenario 4: Fully on-premises deployment</p></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/cloud_architecture_scenario_5.png" alt=""><figcaption><p>Scenario 4: Fully on-premises deployment</p></figcaption></figure>
 
 </div>
 

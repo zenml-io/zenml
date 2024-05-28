@@ -123,7 +123,7 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
 
 <figure><img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="70%"><figcaption></figcaption></figure>
 
-<figure><img src="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/.gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
 *   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/model-deployers/seldon.md).
 
