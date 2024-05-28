@@ -469,9 +469,7 @@ def get_subresources_for_model(
     """
     resources = set()
 
-    for key, value in model.__dict__.items():
-        if key in model.__private_attributes__:
-            continue
+    for value in dict(model).values():
         resources.update(_get_subresources_for_value(value))
 
     return resources
