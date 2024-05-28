@@ -141,6 +141,8 @@ def _dehydrate_value(
             return dehydrate_response_model(value, permissions=permissions)
         else:
             return get_permission_denied_model(value)
+    elif isinstance(value, Page):
+        return dehydrate_page(page=value)
     elif isinstance(value, BaseModel):
         return dehydrate_response_model(value, permissions=permissions)
     elif isinstance(value, Dict):
