@@ -240,7 +240,7 @@ def get_step_status(
 def get_step_logs(
     step_id: UUID,
     offset: int = 0,
-    length: Optional[int] = 1024 * 1024 * 16,  # Default to 15MB of data
+    length: Optional[int] = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
 ) -> str:
     """Get the logs of a specific step.
