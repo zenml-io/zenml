@@ -17,6 +17,7 @@ import json
 from abc import ABC
 from collections.abc import Mapping, Sequence
 from datetime import datetime
+from inspect import isclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
@@ -270,7 +271,7 @@ class StackComponentConfig(BaseModel, ABC):
                     return json.loads(value)
                 except json.JSONDecodeError as e:
                     raise ValueError(f"Invalid json string '{value}'") from e
-            elif issubclass(field.type_, BaseModel):
+            elif isclass(field.type_) and issubclass(field.type_, BaseModel):
                 return field.type_.parse_raw(value).dict()
 
         return value
