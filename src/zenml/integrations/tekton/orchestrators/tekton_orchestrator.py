@@ -14,7 +14,16 @@
 """Implementation of the Tekton orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from kfp import dsl
 from kfp.client import Client as KFPClient
@@ -358,7 +367,12 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         """
 
         @dsl.container_component
-        def dynamic_container_component():
+        def dynamic_container_component() -> dsl.ContainerSpec:  # type: ignore
+            """Dynamic container component.
+
+            Returns:
+                The dynamic container component.
+            """
             _component = dsl.ContainerSpec(
                 image=image,
                 command=command,
@@ -408,8 +422,12 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             pipeline_name=deployment.pipeline_configuration.name
         ).replace("_", "-")
 
-        def _create_dynamic_pipeline():
-            """Create a dynamic pipeline including each step."""
+        def _create_dynamic_pipeline() -> Any:
+            """Create a dynamic pipeline including each step.
+
+            Returns:
+                pipeline_func
+            """
             step_name_to_dynamic_component: Dict[str, Any] = {}
 
             for step_name, step in deployment.step_configurations.items():
@@ -466,24 +484,36 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
                 # add resource requirements
                 if step_settings.resource_settings:
-                    if step_settings.resource_settings.cpu_count is not None:
+                    if (
+                        step_settings.resource_settings.get("cpu_count")
+                        is not None
+                    ):
                         dynamic_component = dynamic_component.set_cpu_limit(
-                            str(step_settings.resource_settings.cpu_count)
-                        )
-
-                    if step_settings.resource_settings.gpu_count is not None:
-                        dynamic_component = (
-                            dynamic_component.set_accelerator_limit(
-                                step_settings.resource_settings.gpu_count
+                            str(
+                                step_settings.resource_settings.get(
+                                    "cpu_count"
+                                )
                             )
                         )
 
-                    if step_settings.resource_settings.memory is not None:
-                        memory_limit = step_settings.resource_settings.memory[
-                            :-1
-                        ]
+                    if (
+                        step_settings.resource_settings.get("gpu_count")
+                        is not None
+                    ):
+                        dynamic_component = (
+                            dynamic_component.set_accelerator_limit(
+                                step_settings.resource_settings.get(
+                                    "gpu_count"
+                                )
+                            )
+                        )
+
+                    if (
+                        step_settings.resource_settings.get("memory")
+                        is not None
+                    ):
                         dynamic_component = dynamic_component.set_memory_limit(
-                            memory_limit
+                            step_settings.resource_settings.get("memory")
                         )
 
                 step_name_to_dynamic_component[step_name] = dynamic_component
@@ -491,7 +521,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             @dsl.pipeline(
                 display_name=orchestrator_run_name,
             )
-            def dynamic_pipeline():
+            def dynamic_pipeline() -> None:  # type: ignore
+                """Dynamic pipeline."""
                 # iterate through the components one by one
                 # (from step_name_to_dynamic_component)
                 for (
