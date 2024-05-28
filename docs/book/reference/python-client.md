@@ -40,25 +40,25 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Pipeline Runs**: Information about all pipeline runs that were executed on your ZenML instance.
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
-* **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](../pipelining-features/schedule-pipeline-runs.md).
-* **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](containerize-your-pipeline.md).
+* **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/pipelining-features/schedule-pipeline-runs.md).
+* **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/reference/containerize-your-pipeline.md).
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](../user-guide/production-guide/connect-code-repository.md) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](../../starter-guide/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
+Checkout the [documentation on fetching runs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/starter-guide/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
 #### Stacks, Infrastructure, Authentication
 
 * **Stack**: The stacks registered in your ZenML instance.
 * **Stack Components**: The stack components registered in your ZenML instance, e.g., all orchestrators, artifact stores, model deployers, ...
-* **Flavors**: The [stack component flavors](../../../getting-started/core-concepts.md#flavor) available to you, including:
-  * Built-in flavors like the [local orchestrator](../../../stacks-and-components/component-guide/orchestrators/local.md),
-  * Integration-enabled flavors like the [Kubeflow orchestrator](../../../stacks-and-components/component-guide/orchestrators/kubeflow.md),
-  * Custom flavors that you have [created yourself](../custom-stack-solutions/implement-a-custom-stack-component.md).
+* **Flavors**: The [stack component flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/getting-started/core-concepts.md#flavor) available to you, including:
+  * Built-in flavors like the [local orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/stacks-and-components/component-guide/orchestrators/local.md),
+  * Integration-enabled flavors like the [Kubeflow orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/stacks-and-components/component-guide/orchestrators/kubeflow.md),
+  * Custom flavors that you have [created yourself](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/custom-stack-solutions/implement-a-custom-stack-component.md).
 * **User**: The users registered in your ZenML instance. If you are running locally, there will only be a single `default` user.
-* **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../secret-management/secret-management.md).
-* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../../../stacks-and-components/auth-management/auth-management.md).
+* **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/secret-management/secret-management.md).
+* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/stacks-and-components/auth-management/auth-management.md).
 
 ### Client Methods
 

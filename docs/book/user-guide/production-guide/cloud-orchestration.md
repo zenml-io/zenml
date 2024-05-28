@@ -8,8 +8,8 @@ Until now, we've only run pipelines locally. The next step is to get free from o
 
 In order to do this, we need to get familiar with two more stack components:
 
-* The [orchestrator](../../how-to/configure-stack-components/orchestrators/) manages the workflow and execution of your pipelines.
-* The [container registry](../../how-to/configure-stack-components/container-registries/) is a storage and content delivery system that holds your Docker container images.
+* The [orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/configure-stack-components/orchestrators/README.md) manages the workflow and execution of your pipelines.
+* The [container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/configure-stack-components/container-registries/README.md) is a storage and content delivery system that holds your Docker container images.
 
 These, along with [remote storage](remote-storage.md), complete a basic cloud stack where our pipeline is entirely running on the cloud.
 
@@ -33,7 +33,7 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 
 ## Provisioning and registering a Skypilot orchestrator alongside a container registry
 
-While there are detailed docs on [how to set up a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../how-to/configure-stack-components/container-registries/) on each public cloud, we have put the most relevant details here for convenience:
+While there are detailed docs on [how to set up a Skypilot orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md) and a [container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/configure-stack-components/container-registries/README.md) on each public cloud, we have put the most relevant details here for convenience:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -43,20 +43,20 @@ In order to launch a pipeline on AWS with the SkyPilot orchestrator, the first t
 zenml integration install aws skypilot_aws -y
 ```
 
-Before we start registering any components, there is another step that we have to execute. As we [explained in the previous section](remote-storage.md#configuring-permissions-with-your-first-service-connector), components such as orchestrators and container registries often require you to set up the right permissions. In ZenML, this process is simplified with the use of [Service Connectors](../../stacks-and-components/auth-management/auth-management.md). For this example, we need to use the [IAM role authentication method of our AWS service connector](../../how-to/auth-management/aws-service-connector.md#aws-iam-role):
+Before we start registering any components, there is another step that we have to execute. As we [explained in the previous section](remote-storage.md#configuring-permissions-with-your-first-service-connector), components such as orchestrators and container registries often require you to set up the right permissions. In ZenML, this process is simplified with the use of [Service Connectors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/auth-management/auth-management.md). For this example, we need to use the [IAM role authentication method of our AWS service connector](../../how-to/auth-management/aws-service-connector.md#aws-iam-role):
 
 ```shell
 AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
 ```
 
-Once the service connector is set up, we can register [a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
+Once the service connector is set up, we can register [a Skypilot orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_aws
 zenml orchestrator connect skypilot_orchestrator --connector cloud_connector
 ```
 
-The next step is to register [an AWS container registry](../../stacks-and-components/component-guide/container-registries/aws.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
+The next step is to register [an AWS container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/container-registries/aws.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
 
 ```shell
 zenml container-registry register cloud_container_registry -f aws --uri=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com
@@ -65,7 +65,7 @@ zenml container-registry connect cloud_container_registry --connector cloud_conn
 
 With the components registered, everything is set up for the next steps.
 
-For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 
 {% tab title="GCP" %}
@@ -81,14 +81,14 @@ Before we start registering any components, there is another step that we have t
 zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project_id=<PROJECT_ID> --generate_temporary_tokens=False
 ```
 
-Once the service connector is set up, we can register [a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
+Once the service connector is set up, we can register [a Skypilot orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_gcp 
 zenml orchestrator connect skypilot_orchestrator --connect cloud_connector
 ```
 
-The next step is to register [a GCP container registry](broken-reference). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
+The next step is to register [a GCP container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/user-guide/production-guide/broken-reference/README.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
 
 ```shell
 zenml container-registry register cloud_container_registry -f gcp --uri=gcr.io/<PROJECT_ID>
@@ -97,7 +97,7 @@ zenml container-registry connect cloud_container_registry --connector cloud_conn
 
 With the components registered, everything is set up for the next steps.
 
-For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 
 {% tab title="Azure" %}
@@ -113,14 +113,14 @@ Before we start registering any components, there is another step that we have t
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>
 ```
 
-Once the service connector is set up, we can register [a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
+Once the service connector is set up, we can register [a Skypilot orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_azure
 zenml orchestrator connect skypilot_orchestrator --connect cloud_connector
 ```
 
-The next step is to register [an Azure container registry](../../stacks-and-components/component-guide/container-registries/azure.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry.
+The next step is to register [an Azure container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/container-registries/azure.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry.
 
 ```shell
 zenml container-registry register cloud_container_registry -f azure --uri=<REGISTRY_NAME>.azurecr.io
@@ -129,7 +129,7 @@ zenml container-registry connect cloud_container_registry --connector cloud_conn
 
 With the components registered, everything is set up for the next steps.
 
-For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 {% endtabs %}
 
@@ -163,6 +163,6 @@ python run.py --training-pipeline
 
 You will notice this time your pipeline behaves differently. After it has built the Docker image with all your code, it will push that image, and run a VM on the cloud. Here is where your pipeline will execute, and the logs will be streamed back to you. So with a few commands, we were able to ship our entire code to the cloud!
 
-Curious to see what other stacks you can create? The [Component Guide](../../configure-stack-components/configure-stack-components/) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
+Curious to see what other stacks you can create? The [Component Guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/configure-stack-components/configure-stack-components/README.md) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

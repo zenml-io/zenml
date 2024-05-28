@@ -43,7 +43,7 @@ class BaseArtifactStore(StackComponent):
 As each component defines a different interface, make sure to check out the base class definition of the component type that you want to implement and also check out the [documentation on how to extend specific stack components](implement-a-custom-stack-component.md#extending-specific-stack-components).
 
 {% hint style="info" %}
-If you would like to automatically track some metadata about your custom stack component with each pipeline run, you can do so by defining some additional methods in your stack component implementation class as shown in the [Tracking Custom Stack Component Metadata](../../stacks-and-components/pipelining-features/fetch-metadata-within-steps.md) section.
+If you would like to automatically track some metadata about your custom stack component with each pipeline run, you can do so by defining some additional methods in your stack component implementation class as shown in the [Tracking Custom Stack Component Metadata](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/pipelining-features/fetch-metadata-within-steps.md) section.
 {% endhint %}
 
 See the full code of the base `StackComponent` class [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/stack\_component.py#L301).
@@ -145,7 +145,7 @@ class MyS3ArtifactStoreConfig(BaseArtifactStoreConfig):
 ```
 
 {% hint style="info" %}
-You can pass sensitive configuration values as [secrets](../../stacks-and-components/secret-management/secret-management.md) by defining them as type `SecretField` in the configuration class.
+You can pass sensitive configuration values as [secrets](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/secret-management/secret-management.md) by defining them as type `SecretField` in the configuration class.
 {% endhint %}
 
 With the configuration defined, we can move on to the implementation class, which will use the S3 file system to implement the abstract methods of the `BaseArtifactStore`:
@@ -275,17 +275,17 @@ zenml stack register <STACK_NAME> \
 
 If you would like to learn more about how to build a custom stack component flavor for a specific stack component type, check out the links below:
 
-| **Type of Stack Component**                                                                         | **Description**                                                   |
-| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [Orchestrator](../../../stacks-and-components/component-guide/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
-| [Artifact Store](../../../stacks-and-components/component-guide/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
-| [Container Registry](../../../stacks-and-components/component-guide/container-registries/custom.md) | Store for your containers                                         |
-| [Step Operator](../../../stacks-and-components/component-guide/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](../../../stacks-and-components/component-guide/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
-| [Feature Store](../../../stacks-and-components/component-guide/feature-stores/custom.md)            | Management of your data/features                                  |
-| [Experiment Tracker](../../../stacks-and-components/component-guide/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
-| [Alerter](../../../stacks-and-components/component-guide/alerters/custom.md)                        | Sending alerts through specified channels                         |
-| [Annotator](../../../stacks-and-components/component-guide/annotators/custom.md)                    | Annotating and labeling data                                      |
-| [Data Validator](../../../stacks-and-components/component-guide/data-validators/custom.md)          | Validating and monitoring your data                               |
+| **Type of Stack Component**                                                                                                                                  | **Description**                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| [Orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
+| [Artifact Store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
+| [Container Registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/container-registries/custom.md) | Store for your containers                                         |
+| [Step Operator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
+| [Feature Store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/feature-stores/custom.md)            | Management of your data/features                                  |
+| [Experiment Tracker](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
+| [Alerter](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/alerters/custom.md)                        | Sending alerts through specified channels                         |
+| [Annotator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/annotators/custom.md)                    | Annotating and labeling data                                      |
+| [Data Validator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/data-validators/custom.md)          | Validating and monitoring your data                               |
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

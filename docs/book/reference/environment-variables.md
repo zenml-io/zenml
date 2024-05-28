@@ -106,7 +106,7 @@ export ZENML_CONFIG_PATH=/path/to/somewhere
 
 ## Server configuration
 
-For more information on server configuration, see the [ZenML Server documentation](../getting-started/deploying-zenml/zenml-self-hosted/deploy-with-docker.md) for more, especially the section entitled "ZenML server configuration options".
+For more information on server configuration, see the [ZenML Server documentation](../getting-started/why-deploy-zenml/zenml-self-hosted/deploy-with-docker.md) for more, especially the section entitled "ZenML server configuration options".
 
 ## Client configuration
 

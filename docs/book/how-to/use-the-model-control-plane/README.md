@@ -14,7 +14,7 @@ ZenML is already versioning your models and storing some metadata, but the Model
 
 ## Registering models
 
-Registering models can be done in a number of ways depending on your specific needs. You can explicitly register models using the CLI or the Python SDK, or you can just allow ZenML to implicitly register your models as part of a pipeline run. (If you are using [ZenML Cloud](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link/) you already have access to [a dashboard interface that allows you to register models](../../user-guide/advanced-guide/data-management/model-control-plane-dashboard.md).)
+Registering models can be done in a number of ways depending on your specific needs. You can explicitly register models using the CLI or the Python SDK, or you can just allow ZenML to implicitly register your models as part of a pipeline run. (If you are using [ZenML Cloud](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link/) you already have access to [a dashboard interface that allows you to register models](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/user-guide/advanced-guide/data-management/model-control-plane-dashboard.md).)
 
 ### Explicit CLI registration
 
@@ -71,7 +71,5 @@ def train_and_promote_model():
 ```
 
 Running the training pipeline creates a new model version, all while maintaining a connection to the artifacts.
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
