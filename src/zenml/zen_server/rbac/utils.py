@@ -141,6 +141,8 @@ def _dehydrate_value(
             return dehydrate_response_model(value, permissions=permissions)
         else:
             return get_permission_denied_model(value)
+    elif isinstance(value, Page):
+        return dehydrate_page(page=value)
     elif isinstance(value, BaseModel):
         return dehydrate_response_model(value, permissions=permissions)
     elif isinstance(value, Dict):
@@ -469,9 +471,7 @@ def get_subresources_for_model(
     """
     resources = set()
 
-    for key, value in model.__dict__.items():
-        if key in model.__private_attributes__:
-            continue
+    for value in dict(model).values():
         resources.update(_get_subresources_for_value(value))
 
     return resources
