@@ -248,7 +248,7 @@ class StackComponentConfig(BaseModel, ABC):
 
     @validator("*", pre=True)
     def _convert_json_strings(cls, value: Any, field: ModelField) -> Any:
-        """Converts potential JSON strings passed via the CLI to dictionaries.
+        """Converts potential JSON strings passed via the CLI.
 
         Args:
             value: The value to convert.
