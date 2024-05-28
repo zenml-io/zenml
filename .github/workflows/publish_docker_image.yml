@@ -54,6 +54,10 @@ jobs:
     permissions: write-all
     # needs: wait-for-package-release
     steps:
+      - name: Get the sha of the latest commit on plugins/main
+        id: get_sha
+        run: |
+          echo "::set-output name=sha::$(curl -s -H "Authorization: token ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}" https://api.github.com/repos/zenml-io/zenml-cloud-plugins/commits/main | jq -r '.sha')"
       - name: Create a tag on ZenML Cloud plugins repo
         uses: actions/github-script@v7
         with:
@@ -63,5 +67,5 @@ jobs:
               owner: 'zenml-io',
               repo: 'zenml-cloud-plugins',
               ref: 'refs/tags/testtag',
-              sha: '${{github.sha}}'
+              sha: '${{ steps.get_sha.outputs.sha }}'
             })
