@@ -13,12 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
 
+import json
 from abc import ABC
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, validator
+from pydantic.fields import ModelField
+from pydantic.typing import get_origin
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
@@ -241,6 +245,35 @@ class StackComponentConfig(BaseModel, ABC):
         # attributes without failing
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
+
+    @validator("*", pre=True)
+    def _convert_json_strings(cls, value: Any, field: ModelField) -> Any:
+        """Converts potential JSON strings passed via the CLI to dictionaries.
+
+        Args:
+            value: The value to convert.
+
+        Returns:
+            The converted value.
+
+        Raises:
+            ValueError: If the value is an invalid JSON string.
+        """
+        if isinstance(value, str):
+            if get_origin(field.outer_type_) in [
+                dict,
+                list,
+                Mapping,
+                Sequence,
+            ]:
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"Invalid json string '{value}'") from e
+            elif issubclass(field.type_, BaseModel):
+                return field.type_.parse_raw(value).dict()
+
+        return value
 
     class Config:
         """Pydantic configuration class."""
