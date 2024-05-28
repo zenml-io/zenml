@@ -39,7 +39,7 @@ from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils
+from zenml.utils import io_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -424,11 +424,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         deployment_id=deployment.id,
                     )
                 )
-
                 dynamic_component = self._create_dynamic_component(
                     image, command, arguments, step_name
                 )
-
                 step_settings = cast(
                     TektonOrchestratorSettings, self.get_settings(step)
                 )
@@ -488,16 +486,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                             memory_limit
                         )
 
-                # TODO: this must be set within a pipeline definition
-                # https://github.com/kubeflow/website/pull/3489/files
-                # set environment variables
-                # for key, value in environment.items():
-                #     breakpoint()
-                #     dynamic_component.set_env_variable(
-                #         name=key,
-                #         value=value,
-                #     )
-
                 step_name_to_dynamic_component[step_name] = dynamic_component
 
             @dsl.pipeline(
@@ -525,6 +513,39 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     ).after(*upstream_step_components)
 
             return dynamic_pipeline
+
+        def _update_yaml_with_environment(
+            yaml_file_path: str, environment: Dict[str, str]
+        ) -> None:
+            """Updates the env section of the steps in the YAML file with the given environment variables.
+
+            Args:
+                yaml_file_path: The path to the YAML file to update.
+                environment: A dictionary of environment variables to add.
+            """
+            pipeline_definition = yaml_utils.read_yaml(pipeline_file_path)
+
+            # Iterate through each component and add the environment variables
+            for executor in pipeline_definition["deploymentSpec"]["executors"]:
+                if (
+                    "container"
+                    in pipeline_definition["deploymentSpec"]["executors"][
+                        executor
+                    ]
+                ):
+                    container = pipeline_definition["deploymentSpec"][
+                        "executors"
+                    ][executor]["container"]
+                    if "env" not in container:
+                        container["env"] = []
+                    for key, value in environment.items():
+                        container["env"].append({"name": key, "value": value})
+
+            yaml_utils.write_yaml(pipeline_file_path, pipeline_definition)
+
+            print(
+                f"Updated YAML file with environment variables at {yaml_file_path}"
+            )
 
         # dynamic_pipeline = _create_dynamic_pipeline()
 
@@ -571,6 +592,10 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             #     "pipelines.kubeflow.org/cache_enabled": "false"
             # },
         )
+
+        # Let's update the YAML file with the environment variables
+        _update_yaml_with_environment(pipeline_file_path, environment)
+
         logger.info(
             "Writing Tekton workflow definition to `%s`.", pipeline_file_path
         )
