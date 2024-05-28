@@ -43,6 +43,7 @@ from zenml.client_lazy_loader import (
     evaluate_all_lazy_load_args_in_client_methods,
 )
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -2428,6 +2429,99 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
+    @_fail_for_sql_zen_store
+    def trigger_pipeline(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+        config_path: Optional[str] = None,
+        deployment_id: Optional[UUID] = None,
+        build_id: Optional[UUID] = None,
+        stack_id: Optional[UUID] = None,
+        syncronous: bool = False,
+    ) -> PipelineRunResponse:
+        # Config YAML
+        # Handle OSS
+        from zenml.new.pipelines.run_utils import (
+            validate_run_config_is_runnable_from_server,
+            validate_stack_is_runnable_from_server,
+            wait_for_pipeline_run_to_finish,
+        )
+
+        if deployment_id and build_id:
+            raise RuntimeError(
+                "Only build ID or deployment ID can be specified."
+            )
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
+        if stack_id:
+            stack = self.get_stack(stack_id)
+            validate_stack_is_runnable_from_server(stack)
+
+        pipeline = self.get_pipeline(
+            name_id_or_prefix=name_id_or_prefix, version=version
+        )
+
+        if deployment_id:
+            deployment = self.get_deployment(deployment_id, hydrate=True)
+            if deployment.pipeline.id != pipeline.id:
+                raise RuntimeError("Wrong pipeline")
+
+            if stack_id and deployment.stack.id != stack_id:
+                raise RuntimeError("Wrong stack")
+
+            run = self.zen_store.run_deployment(
+                deployment_id=deployment_id,
+                run_configuration=run_configuration,
+            )
+        elif build_id:
+            build = self.get_build(build_id, hydrate=True)
+            if build.pipeline.id == pipeline.id:
+                raise RuntimeError("Wrong pipeline")
+
+            if stack_id and build.stack.id != stack_id:
+                raise RuntimeError("Wrong stack")
+
+            run = self.zen_store.run_build(
+                build_id=build_id, run_configuration=run_configuration
+            )
+        else:
+            # Find runnable build if not given
+            builds = depaginate(
+                partial(
+                    self.list_builds,
+                    pipeline_id=pipeline.id,
+                    stack_id=stack_id,
+                )
+            )
+
+            for build in builds:
+                if not build.template_deployment_id:
+                    continue
+
+                if not build.stack:
+                    continue
+
+                try:
+                    validate_stack_is_runnable_from_server(build.stack)
+                except ValueError:
+                    continue
+
+                run = self.zen_store.run_build(
+                    build_id=build.id, run_configuration=run_configuration
+                )
+                break
+            else:
+                raise RuntimeError("Unable to find build.")
+
+        if syncronous:
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
+
     # -------------------------------- Builds ----------------------------------
 
     def get_build(
@@ -2563,6 +2657,37 @@ class Client(metaclass=ClientMetaClass):
         """
         build = self.get_build(id_or_prefix=id_or_prefix)
         self.zen_store.delete_build(build_id=build.id)
+
+    @_fail_for_sql_zen_store
+    def run_build(
+        self,
+        build_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+        syncronous: bool = False,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a build.
+
+        Args:
+            build_id: The ID of the build to run.
+            run_configuration: Configuration for the run.
+            syncronous: If set to True, this method will wait until the run
+                failed or finished before returning.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run = self.zen_store.run_build(
+            build_id=build_id, run_configuration=run_configuration
+        )
+
+        if syncronous:
+            from zenml.new.pipelines.run_utils import (
+                wait_for_pipeline_run_to_finish,
+            )
+
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
 
     # --------------------------------- Event Sources -------------------------
 
@@ -3086,6 +3211,37 @@ class Client(metaclass=ClientMetaClass):
         """
         deployment = self.get_deployment(id_or_prefix=id_or_prefix)
         self.zen_store.delete_deployment(deployment_id=deployment.id)
+
+    @_fail_for_sql_zen_store
+    def run_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+        syncronous: bool = False,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to run.
+            run_configuration: Configuration for the run.
+            syncronous: If set to True, this method will wait until the run
+                failed or finished before returning.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run = self.zen_store.run_deployment(
+            deployment_id=deployment_id, run_configuration=run_configuration
+        )
+
+        if syncronous:
+            from zenml.new.pipelines.run_utils import (
+                wait_for_pipeline_run_to_finish,
+            )
+
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
 
     # ------------------------------- Schedules --------------------------------
 

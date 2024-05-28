@@ -38,6 +38,7 @@ from requests.adapters import HTTPAdapter, Retry
 import zenml
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
@@ -1415,9 +1416,26 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
         )
 
-        # ----------------------
-        # Pipeline Deployments
-        # ----------------------
+    def run_build(
+        self,
+        build_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a build.
+
+        Args:
+            build_id: The ID of the build to run.
+            run_configuration: Configuration for the run.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run_configuration = run_configuration or PipelineRunConfiguration()
+        response_body = self.post(
+            f"{PIPELINE_BUILDS}/{build_id}/run", body=run_configuration
+        )
+
+        return PipelineRunResponse.parse_obj(response_body)
 
     # -------------------------- Pipeline Deployments --------------------------
 
@@ -1492,6 +1510,28 @@ class RestZenStore(BaseZenStore):
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
         )
+
+    def run_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to run.
+            run_configuration: Configuration for the run.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run_configuration = run_configuration or PipelineRunConfiguration()
+        response_body = self.post(
+            f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/run",
+            body=run_configuration,
+        )
+
+        return PipelineRunResponse.parse_obj(response_body)
 
     # -------------------- Event Sources  --------------------
 
