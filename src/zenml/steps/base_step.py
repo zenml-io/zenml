@@ -191,36 +191,36 @@ class BaseStep(metaclass=BaseStepMeta):
                 # We therefore disable caching unless it is explicitly enabled
                 enable_cache = False
                 logger.debug(
-                    "Step '%s': Step context required and caching not "
+                    "Step `%s`: Step context required and caching not "
                     "explicitly enabled.",
                     name,
                 )
 
         logger.debug(
-            "Step '%s': Caching %s.",
+            "Step `%s`: Caching %s.",
             name,
             "enabled" if enable_cache is not False else "disabled",
         )
         logger.debug(
-            "Step '%s': Artifact metadata %s.",
+            "Step `%s`: Artifact metadata %s.",
             name,
             "enabled" if enable_artifact_metadata is not False else "disabled",
         )
         logger.debug(
-            "Step '%s': Artifact visualization %s.",
+            "Step `%s`: Artifact visualization %s.",
             name,
             "enabled"
             if enable_artifact_visualization is not False
             else "disabled",
         )
         logger.debug(
-            "Step '%s': logs %s.",
+            "Step `%s`: logs %s.",
             name,
             "enabled" if enable_step_logs is not False else "disabled",
         )
         if model is not None:
             logger.debug(
-                "Step '%s': Is in Model context %s.",
+                "Step `%s`: Is in Model context %s.",
                 name,
                 {
                     "model": model.name,
@@ -479,7 +479,7 @@ class BaseStep(metaclass=BaseStepMeta):
             bound_args = signature.bind_partial(*args, **kwargs)
         except TypeError as e:
             raise StepInterfaceError(
-                f"Wrong arguments when calling step '{self.name}': {e}"
+                f"Wrong arguments when calling step `{self.name}`: {e}"
             ) from e
 
         artifacts = {}
@@ -1020,7 +1020,7 @@ To avoid this consider setting step parameters only in one place (config or code
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
                     f"Got unexpected materializers for non-existent "
-                    f"output '{output_name}' in step '{self.name}'. "
+                    f"output '{output_name}' in step `{self.name}`. "
                     f"Only materializers for the outputs "
                     f"{allowed_output_names} of this step can"
                     f" be registered."
@@ -1033,7 +1033,7 @@ To avoid this consider setting step parameters only in one place (config or code
                     ):
                         raise StepInterfaceError(
                             f"Materializer source `{source}` "
-                            f"for output '{output_name}' of step '{self.name}' "
+                            f"for output '{output_name}' of step `{self.name}` "
                             "does not resolve to a `BaseMaterializer` subclass."
                         )
 
