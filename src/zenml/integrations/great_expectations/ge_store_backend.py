@@ -145,9 +145,6 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
     def _get_all(self) -> List[Any]:
         """Get all objects in the store.
 
-        Returns:
-            List of all objects in the store.
-
         Raises:
             NotImplementedError: if the method is not implemented for this store
                 backend.

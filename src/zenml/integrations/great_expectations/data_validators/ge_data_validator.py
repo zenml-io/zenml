@@ -101,6 +101,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     def context_config(self) -> Optional[DataContextConfig]:
         """Get the Great Expectations data context configuration.
 
+        Raises:
+            ValueError: In case there is an invalid context_config value
+
         Returns:
             A dictionary with the GE data context configuration.
         """
