@@ -6962,7 +6962,7 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if run is None:
                 raise KeyError(
-                    f"Unable to create step '{step_run.name}': No pipeline run "
+                    f"Unable to create step `{step_run.name}`: No pipeline run "
                     f"with ID '{step_run.pipeline_run_id}' found."
                 )
 
@@ -6976,7 +6976,7 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_step_run is not None:
                 raise EntityExistsError(
-                    f"Unable to create step '{step_run.name}': A step with "
+                    f"Unable to create step `{step_run.name}`: A step with "
                     f"this name already exists in the pipeline run with ID "
                     f"'{step_run.pipeline_run_id}'."
                 )
