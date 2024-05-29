@@ -24,7 +24,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, PrivateAttr, model_validator
+from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
 
 from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
@@ -83,6 +83,14 @@ class Model(BaseModel):
 
     _model_id: UUID = PrivateAttr(None)
     _number: int = PrivateAttr(None)
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     #########################
     #    Public methods     #
