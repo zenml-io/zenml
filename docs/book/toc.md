@@ -65,7 +65,7 @@
 * [😸 Set up a project repository](how-to/setting-up-a-project-repository/README.md)
   * [Best practices](how-to/setting-up-a-project-repository/best-practices.md)
   * [Project templates](how-to/setting-up-a-project-repository/using-project-templates.md)
-  * [Connect your git repository](how-to/setting-up-a-project-repository/connect-your-git-repository.md)
+  * [Connect your code repository](how-to/setting-up-a-project-repository/connect-your-git-repository.md)
 * [⛓️ Build a pipeline](how-to/overview/README.md)
   * [Use pipeline/step parameters](how-to/overview/use-pipeline-step-parameters.md)
   * [Step output typing and annotation](how-to/overview/step-output-typing-and-annotation.md)
