@@ -36,4 +36,5 @@ jobs:
     uses: ./.github/workflows/publish_docker_image.yml
     with:
       config_file: release-cloudbuild-nightly.yaml
+      zenml_nightly: true
     secrets: inherit

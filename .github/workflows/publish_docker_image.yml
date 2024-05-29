@@ -1,4 +1,3 @@
----
 name: Publish Docker images
 on:
   workflow_call:
@@ -8,6 +7,11 @@ on:
         required: false
         type: string
         default: release-cloudbuild.yaml
+      zenml_nightly:
+        description: "Set to true for nightly builds"
+        required: false
+        type: boolean
+        default: false
 jobs:
   publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub
@@ -30,6 +34,12 @@ jobs:
           VERSION=$(echo $VERSION | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Determined VERSION=$VERSION"
+      - name: Set ZenML version as nightly
+        if: github.event.inputs.zenml_nightly == 'true'
+        run: echo "ZENML_NIGHTLY=true" >> $GITHUB_ENV
+      - name: Set ZenML version as stable
+        if: github.event.inputs.zenml_nightly != 'true'
+        run: echo "ZENML_NIGHTLY=false" >> $GITHUB_ENV
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@v0
         with:
@@ -44,4 +54,4 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=${{inputs.config_file}} \
-            --substitutions=TAG_NAME=$VERSION .
+            --substitutions=TAG_NAME=$VERSION,ZENML_NIGHTLY=$ZENML_NIGHTLY
