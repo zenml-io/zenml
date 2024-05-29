@@ -4,7 +4,7 @@ description: Structuring an MLOps project
 
 # Passing artifacts between pipelines
 
-In the real world, an MLOps project can often be broken down into many different pipelines. For example:
+An MLOps project can often be broken down into many different pipelines. For example:
 
 * A feature engineering pipeline that prepares raw data into a format ready to get trained.
 * A training pipeline that takes input data from a feature engineering pipeline and trains a models on it.
