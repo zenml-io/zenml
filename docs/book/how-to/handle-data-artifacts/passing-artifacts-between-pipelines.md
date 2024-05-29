@@ -4,13 +4,7 @@ description: Structuring an MLOps project
 
 # Passing artifacts between pipelines
 
-Now that we've learned about managing [artifacts](../../user-guide/starter-guide/manage-artifacts.md) and [models](../../user-guide/starter-guide/track-ml-models.md), we can shift our attention again to the thing that brings them together: [Pipelines](../../user-guide/starter-guide/create-an-ml-pipeline.md). This trifecta together will then inform how we structure our project.
-
-{% hint style="info" %}
-In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](../setting-up-a-project-repository/best-practices.md) section.
-{% endhint %}
-
-So far in this guide, we have been focusing on the idea of a "training pipeline". In the real world, an MLOps project can often be broken down into many different pipelines. For example:
+In the real world, an MLOps project can often be broken down into many different pipelines. For example:
 
 * A feature engineering pipeline that prepares raw data into a format ready to get trained.
 * A training pipeline that takes input data from a feature engineering pipeline and trains a models on it.
@@ -53,7 +47,7 @@ def training_pipeline():
 ```
 
 {% hint style="info" %}
-Please note, that in the above example, the `train_data` and `test_data` artifacts are not [materialized](artifact-versioning.md) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
+Note that in the above example, the `train_data` and `test_data` artifacts are not [materialized](artifact-versioning.md) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
 
 You will learn more about different environments in a [later chapter](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/user-guide/advanced-guide/environment-management/environment-management.md).
 {% endhint %}
