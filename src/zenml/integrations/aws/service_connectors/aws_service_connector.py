@@ -71,6 +71,7 @@ logger = get_logger(__name__)
 EKS_KUBE_API_TOKEN_EXPIRATION = 15  # 15 minutes
 DEFAULT_IAM_ROLE_TOKEN_EXPIRATION = 3600  # 1 hour
 DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours
+BOTO3_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
 
 
 class AWSSecretKey(AuthenticationConfig):
@@ -140,11 +141,6 @@ class AWSSecretKeyConfig(AWSBaseConfig, AWSSecretKey):
 
 class STSTokenConfig(AWSBaseConfig, STSToken):
     """AWS STS token authentication configuration."""
-
-    expires_at: Optional[datetime.datetime] = Field(
-        default=None,
-        title="AWS STS Token Expiration",
-    )
 
 
 class IAMRoleAuthenticationConfig(AWSSecretKeyConfig, AWSSessionPolicy):
@@ -713,8 +709,10 @@ class AWSServiceConnector(ServiceConnector):
             # Refresh expired sessions
             now = datetime.datetime.now(datetime.timezone.utc)
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
-            # check if the token expires in the next 5 minutes
-            if expires_at > now + datetime.timedelta(minutes=5):
+            # check if the token expires in the near future
+            if expires_at > now + datetime.timedelta(
+                minutes=BOTO3_SESSION_EXPIRATION_BUFFER
+            ):
                 return session, expires_at
 
         logger.debug(
@@ -727,6 +725,37 @@ class AWSServiceConnector(ServiceConnector):
         )
         self._session_cache[key] = (session, expires_at)
         return session, expires_at
+
+    def get_ecr_client(self) -> BaseClient:
+        """Get an ECR client.
+
+        Raises:
+            ValueError: If the service connector is not able to instantiate an
+                ECR client.
+
+        Returns:
+            An ECR client.
+        """
+        if self.resource_type and self.resource_type not in {
+            AWS_RESOURCE_TYPE,
+            DOCKER_REGISTRY_RESOURCE_TYPE,
+        }:
+            raise ValueError(
+                f"Unable to instantiate ECR client for a connector that is "
+                f"configured to provide access to a '{self.resource_type}' "
+                "resource type."
+            )
+
+        session, _ = self.get_boto3_session(
+            auth_method=self.auth_method,
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
+            resource_id=self.config.region,
+        )
+        return session.client(
+            "ecr",
+            region_name=self.config.region,
+            endpoint_url=self.config.endpoint_url,
+        )
 
     def _get_iam_policy(
         self,
@@ -949,7 +978,7 @@ class AWSServiceConnector(ServiceConnector):
                 aws_session_token=cfg.aws_session_token.get_secret_value(),
                 region_name=cfg.region,
             )
-            return session, cfg.expires_at
+            return session, self.expires_at
         elif auth_method in [
             AWSAuthenticationMethods.IAM_ROLE,
             AWSAuthenticationMethods.SESSION_TOKEN,

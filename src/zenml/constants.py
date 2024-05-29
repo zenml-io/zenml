@@ -148,6 +148,7 @@ ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES = (
     "ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES"
 )
+ENV_ZENML_IGNORE_FAILURE_HOOK = "ZENML_IGNORE_FAILURE_HOOK"
 
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
@@ -294,9 +295,9 @@ DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
 REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
     ENV_ZENML_SERVER_REPORTABLE_RESOURCES,
     expected_type=list,
-    default=["pipeline_run", "model"],
+    default=["pipeline", "pipeline_run", "model"],
 )
-REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline"]
+REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline", "pipeline_run"]
 
 # API Endpoint paths:
 ACTIVATE = "/activate"

@@ -134,7 +134,7 @@ from zenml.config import ResourceSettings, DockerSettings
 
 @step(
   settings={
-    "resources": ResourceSettings(memory="16Gb", gpu="1", cpu="8"),
+    "resources": ResourceSettings(memory="16GB", gpu_count="1", cpu_count="8"),
     "docker": DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")
   }
 )
@@ -146,6 +146,9 @@ def training(...):
 zenml stack set k8s  # Set a stack with kubernetes orchestrator
 python run.py
 ```
+
+![Workloads with ZenML](/docs/book/.gitbook/assets/readme_compute.gif)
+
 
 ### Track models, pipeline, and artifacts
 
@@ -286,7 +289,7 @@ the Apache License Version 2.0.
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.57.1 is out. Check out the release notes
+    🎉 Version 0.58.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.

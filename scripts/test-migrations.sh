@@ -10,13 +10,20 @@ export ZENML_DEBUG=true
 export ZENML_CONFIG_PATH=/tmp/upgrade-tests
 
 if [ -z "$1" ]; then
-  echo "No argument passed, using default: $DB"
+  echo "No database argument passed, using default: $DB"
 else
   DB="$1"
 fi
 
+if [ -z "$2" ]; then
+  echo "No migration type argument passed, defaulting to full"
+  MIGRATION_TYPE="full"
+else
+  MIGRATION_TYPE="$2"
+fi
+
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.2" "0.56.3" "0.56.4" "0.57.0")
+VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.2" "0.56.3" "0.56.4" "0.57.0" "0.57.1")
 
 # Function to compare semantic versions
 function version_compare() {
@@ -118,50 +125,64 @@ function run_tests_for_version() {
     zenml version
 
     # Confirm DB works and is accessible
-    pipelines=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
-    echo "$pipelines"
+    ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list
 
     # The database backup and restore feature is available since 0.55.1.
     # However, it has been broken for various reasons up to and including
-    # 0.56.3, so we skip this test for those versions.
-    if [ "$VERSION" == "current" ] || [ "$(version_compare "$VERSION" "0.56.3")" == ">" ]; then
-        echo "===== Testing database backup and restore ====="
+    # 0.57.0, so we skip this test for those versions.
+    if [ "$VERSION" == "current" ] || [ "$(version_compare "$VERSION" "0.57.0")" == ">" ]; then
+        echo "===== Testing database backup and restore (file dump) ====="
+
+        pipelines_before_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
 
         # Perform a DB backup and restore using a dump file
         rm -f /tmp/zenml-backup.sql
-        zenml backup-database -s dump-file --location /tmp/zenml-backup.sql
+        zenml backup-database -s dump-file --location /tmp/zenml-backup.sql --overwrite
         zenml restore-database -s dump-file --location /tmp/zenml-backup.sql
 
         # Check that DB still works after restore and the content is the same
-        pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
-        if [ "$pipelines" != "$pipelines_after_restore" ]; then
+        pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
+        if [ "$pipelines_before_restore" != "$pipelines_after_restore" ]; then
             echo "----- Before restore -----"
-            echo "$pipelines"
+            echo "$pipelines_before_restore"
             echo "----- After restore -----"
             echo "$pipelines_after_restore"
-            echo "ERROR: database backup and restore test failed!"
+            echo "ERROR: database backup and restore (file dump) test failed!"
             exit 1
         fi
+
+        # Run the pipeline again to check if the restored database is working
+        echo "===== Running starter template pipeline after DB restore (file dump) ====="
+        python3 run.py --feature-pipeline --training-pipeline --no-cache
 
         # For a mysql compatible database, perform a DB backup and restore using
         # the backup database
         if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
+            echo "===== Testing database backup and restore (backup database) ====="
+
+            pipelines_before_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
+
             # Perform a DB backup and restore
-            zenml backup-database -s database --location zenml-backup
+            zenml backup-database -s database --location zenml-backup --overwrite
             zenml restore-database -s database --location zenml-backup
 
             # Check that DB still works after restore and the content is the
             # same
-            pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list)
-            if [ "$pipelines" != "$pipelines_after_restore" ]; then
+            pipelines_after_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
+            if [ "$pipelines_before_restore" != "$pipelines_after_restore" ]; then
                 echo "----- Before restore -----"
-                echo "$pipelines"
+                echo "$pipelines_before_restore"
                 echo "----- After restore -----"
                 echo "$pipelines_after_restore"
-                echo "ERROR: database backup and restore test failed!"
+                echo "ERROR: database backup and restore (backup database) test failed!"
                 exit 1
             fi
+
+            # Run the pipeline again to check if the restored database is working
+            echo "===== Running starter template pipeline after DB restore (backup database) ====="
+            python3 run.py --feature-pipeline --training-pipeline --no-cache
         fi
+
     else
         echo "Skipping database backup and restore test for version $VERSION"
     fi
@@ -205,7 +226,7 @@ function test_upgrade_to_version() {
     fi
 
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
-                zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
     fi
 
     # Run the tests for this version
@@ -275,6 +296,7 @@ fi
 
 echo "Testing database: $DB"
 echo "Testing versions: ${VERSIONS[@]}"
+echo "Migration type: $MIGRATION_TYPE"
 
 # Start completely fresh
 rm -rf "$ZENML_CONFIG_PATH"
@@ -284,65 +306,75 @@ pip install -U uv
 # Start the database
 start_db
 
-for VERSION in "${VERSIONS[@]}"
-do
-    test_upgrade_to_version "$VERSION"
-done
-
-# Test the most recent migration with MySQL
-test_upgrade_to_version "current"
-
-
-# Start fresh again for this part
-rm -rf "$ZENML_CONFIG_PATH"
-
-# fresh database for sequential testing
-stop_db
-start_db
-
-# Test sequential migrations across multiple versions
-echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
-set -e
-
-# Randomly select versions for sequential migrations
-MIGRATION_VERSIONS=()
-while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
-    VERSION=${VERSIONS[$RANDOM % ${#VERSIONS[@]}]}
-    if [[ ! " ${MIGRATION_VERSIONS[@]} " =~ " $VERSION " ]]; then
-        MIGRATION_VERSIONS+=("$VERSION")
-    fi
-done
-
-
-# Sort the versions in ascending order using semantic version comparison
-sorted_versions=()
-for version in "${MIGRATION_VERSIONS[@]}"; do
-    inserted=false
-    for i in "${!sorted_versions[@]}"; do
-        if [ "$(version_compare "$version" "${sorted_versions[$i]}")" == "<" ]; then
-            sorted_versions=("${sorted_versions[@]:0:$i}" "$version" "${sorted_versions[@]:$i}")
-            inserted=true
-            break
-        fi
+if [ "$MIGRATION_TYPE" == "full" ]; then
+    for VERSION in "${VERSIONS[@]}"
+    do
+        test_upgrade_to_version "$VERSION"
     done
-    if [ "$inserted" == false ]; then
-        sorted_versions+=("$version")
-    fi
-done
-MIGRATION_VERSIONS=("${sorted_versions[@]}")
 
+    # Test the most recent migration with MySQL
+    test_upgrade_to_version "current"
+else
+    # Test the most recent migration with MySQL
+    test_upgrade_to_version "current"
 
-# Echo the sorted list of migration versions
-echo "============================="
-echo "TESTING MIGRATION_VERSIONS: ${MIGRATION_VERSIONS[@]}"
-echo "============================="
+    # Start fresh again for this part
+    rm -rf "$ZENML_CONFIG_PATH"
 
-for i in "${!MIGRATION_VERSIONS[@]}"; do
-    test_upgrade_to_version "${MIGRATION_VERSIONS[$i]}"
-done
+    # Fresh database for sequential testing
+    stop_db
+    start_db
 
-# Test the most recent migration with MySQL
-test_upgrade_to_version "current"
+    # Test random migrations across multiple versions
+    echo "===== TESTING RANDOM MIGRATIONS ====="
+    set -e
+
+    function test_random_migrations() {
+        set -e  # Exit immediately if a command exits with a non-zero status
+
+        echo "===== TESTING RANDOM MIGRATIONS ====="
+
+        # Randomly select versions for random migrations
+        MIGRATION_VERSIONS=()
+        while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
+            VERSION=${VERSIONS[$RANDOM % ${#VERSIONS[@]}]}
+            if [[ ! " ${MIGRATION_VERSIONS[@]} " =~ " $VERSION " ]]; then
+                MIGRATION_VERSIONS+=("$VERSION")
+            fi
+        done
+
+        # Sort the versions in ascending order using semantic version comparison
+        sorted_versions=()
+        for version in "${MIGRATION_VERSIONS[@]}"; do
+            inserted=false
+            for i in "${!sorted_versions[@]}"; do
+                if [ "$(version_compare "$version" "${sorted_versions[$i]}")" == "<" ]; then
+                    sorted_versions=("${sorted_versions[@]:0:$i}" "$version" "${sorted_versions[@]:$i}")
+                    inserted=true
+                    break
+                fi
+            done
+            if [ "$inserted" == false ]; then
+                sorted_versions+=("$version")
+            fi
+        done
+        MIGRATION_VERSIONS=("${sorted_versions[@]}")
+
+        # Echo the sorted list of migration versions
+        echo "============================="
+        echo "TESTING MIGRATION_VERSIONS: ${MIGRATION_VERSIONS[@]}"
+        echo "============================="
+
+        for i in "${!MIGRATION_VERSIONS[@]}"; do
+            test_upgrade_to_version "${MIGRATION_VERSIONS[$i]}"
+        done
+
+        # Test the most recent migration with MySQL
+        test_upgrade_to_version "current"
+    }
+
+    test_random_migrations
+fi
 
 # Stop the database
 stop_db

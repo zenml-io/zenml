@@ -375,11 +375,10 @@ class BaseZenStore(
         server_config = ServerConfiguration.get_server_config()
         deployment_type = server_config.deployment_type
         auth_scheme = server_config.auth_scheme
-        base_url = server_config.base_url
         metadata = server_config.metadata
         secrets_store_type = SecretsStoreType.NONE
-        if isinstance(self, SqlZenStore):
-            secrets_store_type = self.secrets_store.type
+        if isinstance(self, SqlZenStore) and self.config.secrets_store:
+            secrets_store_type = self.config.secrets_store.type
         use_legacy_dashboard = server_config.use_legacy_dashboard
         return ServerModel(
             id=GlobalConfiguration().user_id,
@@ -390,7 +389,8 @@ class BaseZenStore(
             debug=IS_DEBUG_ENV,
             secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
-            base_url=base_url,
+            server_url=server_config.server_url or "",
+            dashboard_url=server_config.dashboard_url or "",
             analytics_enabled=GlobalConfiguration().analytics_opt_in,
             metadata=metadata,
             use_legacy_dashboard=use_legacy_dashboard,

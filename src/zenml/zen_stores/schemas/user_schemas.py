@@ -221,7 +221,7 @@ class UserSchema(NamedSchema, table=True):
                     self, field, user_update.create_hashed_activation_token()
                 )
             elif field == "user_metadata":
-                if value:
+                if value is not None:
                     self.user_metadata = json.dumps(value)
             else:
                 setattr(self, field, value)
