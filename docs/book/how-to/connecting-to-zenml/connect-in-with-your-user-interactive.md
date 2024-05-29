@@ -38,3 +38,7 @@ To keep things simple, we can summarize the steps:
 Using the ZenML CLI is a secure and comfortable way to interact with your ZenML tenants. It's important to always ensure that only trusted devices are used to maintain security and privacy.
 
 Don't forget to manage your device trust levels regularly for optimal security. Should you feel a device trust needs to be revoked, lock the device immediately. Every token issued is a potential gateway to access your data, secrets and infrastructure.
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+

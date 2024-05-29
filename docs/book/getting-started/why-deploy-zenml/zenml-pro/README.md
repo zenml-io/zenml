@@ -15,3 +15,7 @@ We have built the ZenML Cloud from the ground-up. With ZenML Cloud, you get acce
 Additionally, ZenML Cloud users get exclusive access to an array of cloud-specific features, such as triggering pipelines directly through the dashboard, integrating with your code repository CI/CD system, generating usage reports and more.
 
 Learn more about ZenML Cloud on the [ZenML Website](https://zenml.io/cloud).
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+
