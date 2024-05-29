@@ -1,3 +1,7 @@
+---
+description: Learn how to log metadata for artifacts and models in ZenML.
+---
+
 # Attach metadata to an artifact
 
 ![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
