@@ -149,7 +149,7 @@
   * [Contribute flavors or components](how-to/stack-deployment/contribute-flavors-or-components.md)
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
   * [Implement a custom integration](how-to/stack-deployment/implement-a-custom-integration.md)
-* [🐍 Configure python environments](how-to/configure-python-environments/README.md)
+* [🐍 Configure Python environments](how-to/configure-python-environments/README.md)
   * [Handling dependencies](how-to/configure-python-environments/handling-dependencies.md)
 * [🔌 Connect to a server](how-to/connecting-to-zenml/README.md)
   * [Connect in with your User (interactive)](how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md)
