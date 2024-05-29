@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Union, cast
 
 import pandas as pd
 
-# import redis
 from feast import FeatureStore  # type: ignore
 from feast.infra.registry.base_registry import BaseRegistry  # type: ignore
 
