@@ -1,12 +1,13 @@
 # Attach metadata to an artifact
 
+![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
+
 Metadata plays a critical role in ZenML, providing context and additional information about various entities within the platform. Anything which is `metadata` in ZenML can be compared in the dashboard.
 
 This guide will explain how to log metadata for artifacts and models in ZenML and detail the types of metadata that can be logged.
 
 ### Logging Metadata for Artifacts
 
-![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
 
 Artifacts in ZenML are outputs of steps within a pipeline, such as datasets, models, or evaluation results. Associating metadata with artifacts can help users understand the nature and characteristics of these outputs.
 
