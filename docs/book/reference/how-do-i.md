@@ -16,7 +16,7 @@ Please read [our Contribution guide](https://github.com/zenml-io/zenml/blob/main
 
 Please start by [reading the general documentation page](../how-to/stack-deployment/implement-a-custom-stack-component.md) on implementing a custom stack component which offers some general advice on what you'll need to do.
 
-From there, each of the custom stack component types has a dedicated section about adding your own custom components. For example, for adding custom orchestrators you would [visit this page](../stacks-and-components/component-guide/orchestrators/custom.md).
+From there, each of the custom stack component types has a dedicated section about adding your own custom components. For example, for adding custom orchestrators you would [visit this page](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/custom.md).
 
 * **dependency clashes** mitigation with ZenML?
 
@@ -42,18 +42,18 @@ To reset your ZenML client, you can run `zenml clean` which will wipe your local
 
 * **steps that create other steps AKA dynamic pipelines and steps**?
 
-Please read our [general information on how to compose steps + pipelines together](broken-reference/) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../how-to/overview/hyper-parameter-tuning.md) which is related to this topic.
+Please read our [general information on how to compose steps + pipelines together](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/reference/broken-reference/README.md) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../how-to/overview/hyper-parameter-tuning.md) which is related to this topic.
 
 * **templates**: using starter code with ZenML?
 
-[Project templates](../user-guide/starter-guide/using-project-templates/) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
+[Project templates](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/user-guide/starter-guide/using-project-templates/README.md) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
 
 * **upgrade** my ZenML client and/or server?
 
-Upgrading your ZenML client package is as simple as running `pip install --upgrade zenml` in your terminal. For upgrading your ZenML server, please refer to [the dedicated documentation section](../getting-started/deploying-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md) which covers most of the ways you might do this as well as common troubleshooting steps.
+Upgrading your ZenML client package is as simple as running `pip install --upgrade zenml` in your terminal. For upgrading your ZenML server, please refer to [the dedicated documentation section](../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md) which covers most of the ways you might do this as well as common troubleshooting steps.
 
 * use a \<YOUR\_COMPONENT\_GOES\_HERE> stack component?
 
-For information on how to use a specific stack component, please refer to [the component guide](../configure-stack-components/configure-stack-components/) which contains all our tips and advice on how to use each integration and component with ZenML.
+For information on how to use a specific stack component, please refer to [the component guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/configure-stack-components/configure-stack-components/README.md) which contains all our tips and advice on how to use each integration and component with ZenML.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

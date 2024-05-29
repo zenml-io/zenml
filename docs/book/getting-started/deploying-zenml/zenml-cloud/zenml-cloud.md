@@ -34,7 +34,7 @@ Utilizing ZenML Cloud provides you with early access to a robust control plane t
 
 ### A brand-new, modern MLOps experience
 
-![Walkthrough of ZenML Model Control Plane](../../../.gitbook/assets/mcp_walkthrough.gif)
+![Walkthrough of ZenML Model Control Plane](../../../.gitbook/assets/mcp-walkthrough.gif)
 
 We have built the ZenML Cloud from the ground-up. With ZenML Cloud, you get access to a new dashboard, with a better experience. The new dashboard features more functionality such as the [Model Control Plane](../../../user-guide/starter-guide/track-ml-models.md) and [Artifact Control Plane](../../../user-guide/starter-guide/manage-artifacts.md).
 

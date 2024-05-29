@@ -48,7 +48,7 @@ In this example, the metadata is associated with the model rather than the speci
 
 ## Fetching logged metadata
 
-Once metadata has been logged in an [artifact](../metadata/attach-metadata-to-a-artifact.md), [model](attach-metadata-to-a-model.md), or [step](attach-metadata-to-steps.md), we can easily fetch the metadata with the ZenML Client:
+Once metadata has been logged in an [artifact](../handle-data-artifacts/attach-metadata-to-a-artifact.md), [model](attach-metadata-to-a-model.md), or [step](attach-metadata-to-steps.md), we can easily fetch the metadata with the ZenML Client:
 
 ```python
 from zenml.client import Client
@@ -58,7 +58,5 @@ model = client.get_model_version("my_model", "my_version")
 
 print(model.run_metadata["metadata_key"].value)
 ```
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

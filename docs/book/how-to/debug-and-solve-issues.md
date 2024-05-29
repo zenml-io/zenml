@@ -200,6 +200,6 @@ and update your stack with the experiment tracker:
 zenml stack update -e mlflow_tracker
 ```
 
-This also applies to all other [stack components](../configure-stack-components/configure-stack-components/).
+This also applies to all other [stack components](broken-reference).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

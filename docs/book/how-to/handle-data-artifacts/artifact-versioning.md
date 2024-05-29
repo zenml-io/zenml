@@ -10,11 +10,11 @@ ZenML seamlessly integrates data versioning and lineage into its core functional
 
 Each time a ZenML pipeline runs, the system first checks if there have been any changes in the inputs, outputs, parameters, or configuration of the pipeline steps. Each step in a run gets a new directory in the artifact store:
 
-![Artifact Stores Under the Hood](../../.gitbook/assets/zenml-artifact-store-underthehood-1.png)
+![Artifact Stores Under the Hood](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/.gitbook/assets/zenml-artifact-store-underthehood-1.png)
 
-Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](../configure-stack-components/artifact-stores/) with a unique ID and stores the data using the appropriate materializers in this directory.
+Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](../../configure-stack-components/artifact-stores/) with a unique ID and stores the data using the appropriate materializers in this directory.
 
-![Artifact Stores Under the Hood](../../.gitbook/assets/zenml-artifact-store-underthehood-2.png)
+![Artifact Stores Under the Hood](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/.gitbook/assets/zenml-artifact-store-underthehood-2.png)
 
 On the other hand, if the step remains unchanged, ZenML intelligently decides whether to cache the step or not. By caching steps that have not been modified, ZenML can save [valuable time and computational resources](../../user-guide/starter-guide/cache-previous-executions.md), allowing you to focus on experimenting with different configurations and improving your machine-learning models without the need to rerun unchanged parts of your pipeline.
 
@@ -26,9 +26,9 @@ By tracking the lineage of artifacts across environments and stacks, ZenML enabl
 
 ## Saving and Loading Artifacts with Materializers
 
-[Materializers](handle-custom-data-types.md) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](../configure-stack-components/artifact-stores/). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
+[Materializers](handle-custom-data-types.md) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](../../configure-stack-components/artifact-stores/). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
 
-![Visualizing artifacts](../../.gitbook/assets/zenml-artifact-store-underthehood-3.png)
+![Visualizing artifacts](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/.gitbook/assets/zenml-artifact-store-underthehood-3.png)
 
 Materializers are designed to be extensible and customizable, allowing you to define your own serialization and deserialization logic for specific data types or storage systems. By default, ZenML provides built-in materializers for common data types and uses `cloudpickle` to pickle objects where there is no default materializer. If you want direct control over how objects are serialized, you can easily create custom materializers by extending the `BaseMaterializer` class and implementing the required methods for your specific use case. Read more about materializers [here](handle-custom-data-types.md).
 

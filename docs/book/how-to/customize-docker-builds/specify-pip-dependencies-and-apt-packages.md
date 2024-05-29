@@ -48,7 +48,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../configure-stack-components/configure-stack-components/) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/configure-stack-components/configure-stack-components/README.md) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY
@@ -112,7 +112,5 @@ def my_pipeline(...):
 {% hint style="info" %}
 `uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation. If this happens, try switching the installer back to `pip` and see if that solves the issue.
 {% endhint %}
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

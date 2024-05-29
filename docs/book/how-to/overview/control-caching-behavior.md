@@ -34,8 +34,6 @@ my_step.configure(enable_cache=...)
 my_pipeline.configure(enable_cache=...)
 ```
 
-For configuring this in a separate yaml file, check out the relevant documentation [here](../../how-to/use-configuration-files/README.md).
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+***
 
-
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Find out here how to configure this in a YAML file</td><td></td><td></td><td><a href="../use-configuration-files/">use-configuration-files</a></td></tr></tbody></table>

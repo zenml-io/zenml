@@ -4,7 +4,7 @@ description: Creating an external integration and contributing to ZenML
 
 # Implement a custom integration
 
-![ZenML integrates with a bunch of tools from the MLOps landscape](../../../.gitbook/assets/sam-side-by-side-full-text.png)
+![ZenML integrates with a bunch of tools from the MLOps landscape](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/.gitbook/assets/sam-side-by-side-full-text.png)
 
 One of the main goals of ZenML is to find some semblance of order in the ever-growing MLOps landscape. ZenML already provides [numerous integrations](https://zenml.io/integrations) into many popular tools, and allows you to come up with ways to [implement your own stack component flavors](implement-a-custom-stack-component.md) in order to fill in any gaps that are remaining.
 
@@ -12,15 +12,15 @@ _However, what if you want to make your extension of ZenML part of the main code
 
 ### Step 1: Plan out your integration
 
-In [the previous page](implement-a-custom-stack-component.md), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](../../../stacks-and-components/component-guide/component-guide.md) as well.
+In [the previous page](implement-a-custom-stack-component.md), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/component-guide.md) as well.
 
-Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](../../../stacks-and-components/component-guide/container-registries/container-registries.md), [artifact stores](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md) etc.
+Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/container-registries/container-registries.md), [artifact stores](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/artifact-stores/artifact-stores.md) etc.
 
 ### Step 2: Create individual stack component flavors
 
-Each category selected above would correspond to a [stack component type](../../../stacks-and-components/component-guide/component-guide.md). You can now start developing individual stack component flavors for this type by following the detailed instructions on the respective pages.
+Each category selected above would correspond to a [stack component type](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/component-guide.md). You can now start developing individual stack component flavors for this type by following the detailed instructions on the respective pages.
 
-Before you package your new components into an integration, you may want to use/test them as a regular custom flavor. For instance, if you are [developing a custom orchestrator](../../../stacks-and-components/component-guide/orchestrators/custom.md) and your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`, you can register it by using:
+Before you package your new components into an integration, you may want to use/test them as a regular custom flavor. For instance, if you are [developing a custom orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/orchestrators/custom.md) and your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`, you can register it by using:
 
 ```shell
 zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
@@ -38,7 +38,7 @@ Afterward, you should see the new flavor in the list of available flavors:
 zenml orchestrator flavor list
 ```
 
-See the docs on extensibility of the different components [here](../../../stacks-and-components/component-guide/component-guide.md) or get inspired by the many integrations that are already implemented such as [the MLflow experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment\_trackers/mlflow\_experiment\_tracker.py).
+See the docs on extensibility of the different components [here](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/component-guide.md) or get inspired by the many integrations that are already implemented such as [the MLflow experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment\_trackers/mlflow\_experiment\_tracker.py).
 
 ### Step 3: Create an integration class
 
