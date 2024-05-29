@@ -85,6 +85,8 @@ ENV \
   PYTHONFAULTHANDLER=1 \
   # Use a random seed for random number generators
   PYTHONHASHSEED=random \
+  # Set environment variable to point to the active virtual env
+  VIRTUAL_ENV=$VIRTUAL_ENV \
   # Signal to ZenML that it is running in a container
   ZENML_CONTAINER=1 \
   # Set ZenML debug mode to true
