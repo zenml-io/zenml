@@ -2,26 +2,31 @@
 description: The best way to trigger a pipeline run so that it runs in the background
 ---
 
-# Run pipelines asynchronously in the background
+# Run pipelines asynchronously
 
-yes you can pass the `synchronous=False` when you configure your orchestrator
+By default your pipelines will run synchronously. This means your terminal will follow along the logs as the pipeline is being built/runs.&#x20;
 
-ep it’s a orchestrator setting, which means you can specify it either when registering the stack component but also override it at runtime for certain pipelines:
+This behavior can be changed in multiple ways. Either the orchestrator can be configured to always run asynchronously by setting `synchronous=False`. The other option is to temporarily set this at the pipeline configuration level during runtime.
 
-```
-@pipeline(settings = {"orchestrator.kubernetes": {"synchronous": False}})
+```python
+from zenml import pipeline
+
+@pipeline(settings = {"orchestrator.<STACK_NAME>": {"synchronous": False}})
 def my_pipeline():
   ...
 ```
 
-or in a yaml config file:\
+or in a yaml config file:
 
-
-```
+```yaml
 settings:
-  orchestrator.kubernetes:
+  orchestrator.<STACK_NAME>:
     synchronous: false
 ```
+
+***
+
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Learn more about orchestrators here</td><td></td><td></td><td><a href="../../configure-stack-components/orchestrators/">orchestrators</a></td></tr></tbody></table>
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 

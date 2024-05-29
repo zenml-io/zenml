@@ -2,7 +2,7 @@
 description: A simple guide to quickly set up a minimal stack on GCP.
 ---
 
-# GCP
+# Run on GCP
 
 {% hint style="warning" %}
 The GCP integration currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
@@ -88,7 +88,7 @@ zenml artifact-store connect ${ARTIFACT_STORE_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../../../../stacks-and-components/component-guide/artifact-stores/gcp.md) to learn more about artifact stores and how to configure them.
+Head on over to our [docs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/stacks-and-components/component-guide/artifact-stores/gcp.md) to learn more about artifact stores and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -111,7 +111,7 @@ zenml orchestrator connect ${ORCHESTRATOR_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../../../../stacks-and-components/component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
+Head on over to our [docs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/stacks-and-components/component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -130,7 +130,7 @@ zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../../../../stacks-and-components/component-guide/container-registries/gcp.md) to learn more about container registries and how to configure them.
+Head on over to our [docs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/stacks-and-components/component-guide/container-registries/gcp.md) to learn more about container registries and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}

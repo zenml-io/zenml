@@ -20,7 +20,7 @@ def simple_ml_pipeline():
     train_model(dataset)
 ```
 
-{% hint style="info" %}
+{% hint style="warning" %}
 Calling a pipeline inside another pipeline does not actually trigger a separate run of the child pipeline but instead invokes the steps of the child pipeline to the parent pipeline.
 {% endhint %}
 <!-- For scarf -->
