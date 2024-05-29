@@ -1080,16 +1080,6 @@ def install_packages(
         else:
             raise e
 
-    if "label-studio" in packages:
-        warning(
-            "There is a known issue with Label Studio installations "
-            "via zenml. You might find that the Label Studio "
-            "installation breaks the ZenML CLI. In this case, please "
-            "run `pip install 'pydantic<1.11,>=1.9.0'` to fix the "
-            "issue or message us on Slack if you need help with this. "
-            "We are working on a more definitive fix."
-        )
-
 
 def uninstall_package(package: str, use_uv: bool = False) -> None:
     """Uninstalls pypi package from the current environment with pip or uv.

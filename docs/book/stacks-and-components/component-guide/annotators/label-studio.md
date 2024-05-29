@@ -36,35 +36,18 @@ to register it as an Annotator and add it to your stack:
 zenml integration install label_studio
 ```
 
-{% hint style="warning" %}
-There is a known issue with Label Studio installations via `zenml integration install...`. You might find that the Label
-Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the
-issue or [message us on Slack](https://zenml.io/slack-invite) if you need more help with this. We are working on a more
-definitive fix.
-{% endhint %}
-
-Before registering a `label_studio` flavor stack component as part of your stack, you'll need to have registered a cloud
-artifact store. (See the docs on how to register and set
-up[ a cloud artifact store](/docs/book/stacks-and-components/component-guide/artifact-stores/artifact-stores.md).)
-
-Be sure to register a secret for whichever artifact store you choose, and then you should make sure to pass the name of
-that secret into the artifact store as the `--authentication_secret`
-as [described in this guide](/docs/book/stacks-and-components/component-guide/artifact-stores/s3.md#advanced-configuration), 
-for example in the case of AWS.
-
-You will next need to obtain your Label Studio API key. This will give you access to the web annotation interface. (The
+You will then need to obtain your Label Studio API key. This will give you access to the web annotation interface. (The
 following steps apply to a local instance of Label Studio, but feel free to obtain your API key directly from your
 deployed instance if that's what you are using.)
 
 ```shell
-# choose a username and password for your label-studio account
-label-studio reset_password --username <USERNAME> --password <PASSWORD>
-# start a local label-studio instance
-label-studio start -p 8093
+git clone https://github.com/HumanSignal/label-studio.git
+cd label-studio
+docker-compose up -d # starts label studio at http://localhost:8080
 ```
 
-Then visit [http://localhost:8093/](http://localhost:8093/) to log in, and then
-visit [http://localhost:8093/user/account](http://localhost:8093/user/account) and get your Label Studio API key (from
+Then visit [http://localhost:8080/](http://localhost:8080/) to log in, and then
+visit [http://localhost:8080/user/account](http://localhost:8080/user/account) and get your Label Studio API key (from
 the upper right-hand corner). You will need it for the next step. Keep the Label Studio server running, because the
 ZenML Label Studio annotator will use it as the backend.
 
@@ -85,7 +68,9 @@ zenml annotator register label_studio --flavor label_studio --api_key={{label_st
 ```
 
 When using a deployed instance of Label Studio, the instance URL must be specified without any trailing `/` at the end.
-You should specify the port, for example, port 80 for a standard HTTP connection.
+You should specify the port, for example, port 80 for a standard HTTP
+connection. For a Hugging Face deployment (the easiest way to get going with
+Label Studio), please read the [Hugging Face deployment documentation](https://huggingface.co/docs/hub/spaces-sdks-docker-label-studio).
 
 Finally, add all these components to a stack and set it as your active stack. For example:
 
