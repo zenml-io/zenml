@@ -119,7 +119,12 @@ def load(source: Union[Source, str]) -> Any:
 
 def resolve(
     obj: Union[
-        Type[Any], Callable[..., Any], ModuleType, FunctionType, NoneType
+        Type[Any],
+        Callable[..., Any],
+        ModuleType,
+        FunctionType,
+        BuiltinFunctionType,
+        NoneType,
     ],
     skip_validation: bool = False,
 ) -> Source:
@@ -136,7 +141,7 @@ def resolve(
     Returns:
         The source of the resolved object.
     """
-    if obj is NoneType:  # type: ignore[comparison-overlap]
+    if obj is NoneType:
         # The class of the `None` object doesn't exist in the `builtin` module
         # so we need to manually handle it here
         return NoneTypeSource
