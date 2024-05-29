@@ -61,7 +61,9 @@ Using the values you pass for the cloud, the CLI picks up the right modular reci
 
 ## Destroying a stack component
 
-Destroying a stack component is as easy as deploying one. You can run the following command to destroy the artifact store we created above:
+Destroying a stack component (i.e. deleting and destroying the underlying
+infrastructure) is as easy as deploying one. You can run the following command
+to destroy the artifact store we created above:
 
 ```bash
 zenml artifact-store destroy -p gcp my_store

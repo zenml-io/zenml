@@ -64,4 +64,9 @@ def secret_loader() -> None:
     ...
 ```
 
+## See Also
+
+- [Interact with secrets](../interact-with-secrets.md): Learn how to create,
+  list, and delete secrets using the ZenML CLI and Python SDK.
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
