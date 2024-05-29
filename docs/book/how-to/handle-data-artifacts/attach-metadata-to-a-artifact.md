@@ -6,6 +6,8 @@ This guide will explain how to log metadata for artifacts and models in ZenML an
 
 ### Logging Metadata for Artifacts
 
+![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
+
 Artifacts in ZenML are outputs of steps within a pipeline, such as datasets, models, or evaluation results. Associating metadata with artifacts can help users understand the nature and characteristics of these outputs.
 
 To log metadata for an artifact, you can use the `log_artifact_metadata` method. This method allows you to attach a dictionary of key-value pairs as metadata to an artifact. The metadata can be any JSON-serializable value, including custom classes such as `Uri`, `Path`, `DType`, and `StorageSize`. Find out more about these different types [here](../track-metrics-metadata/logging-metadata.md).&#x20;
