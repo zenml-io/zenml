@@ -2432,16 +2432,15 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def trigger_pipeline(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
+        pipeline_name_or_id: Union[str, UUID, None] = None,
+        pipeline_version: Optional[str] = None,
         run_configuration: Optional[PipelineRunConfiguration] = None,
         config_path: Optional[str] = None,
         deployment_id: Optional[UUID] = None,
         build_id: Optional[UUID] = None,
-        stack_id: Optional[UUID] = None,
+        stack_name_or_id: Union[str, UUID, None] = None,
         syncronous: bool = False,
     ) -> PipelineRunResponse:
-        # Config YAML
         # Handle OSS
         from zenml.new.pipelines.run_utils import (
             validate_run_config_is_runnable_from_server,
@@ -2454,24 +2453,47 @@ class Client(metaclass=ClientMetaClass):
                 "Only build ID or deployment ID can be specified."
             )
 
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
         if run_configuration:
             validate_run_config_is_runnable_from_server(run_configuration)
 
-        if stack_id:
-            stack = self.get_stack(stack_id)
-            validate_stack_is_runnable_from_server(stack)
+        stack = None
+        if stack_name_or_id:
+            stack = self.get_stack(
+                stack_name_or_id, allow_name_prefix_match=False
+            )
+            validate_stack_is_runnable_from_server(
+                zen_store=self.zen_store, stack=stack
+            )
 
-        pipeline = self.get_pipeline(
-            name_id_or_prefix=name_id_or_prefix, version=version
-        )
+        pipeline = None
+        if pipeline_name_or_id:
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id, version=pipeline_version
+            )
 
         if deployment_id:
             deployment = self.get_deployment(deployment_id, hydrate=True)
-            if deployment.pipeline.id != pipeline.id:
-                raise RuntimeError("Wrong pipeline")
+            if pipeline and deployment.pipeline.id != pipeline.id:
+                raise RuntimeError(
+                    "The deployment you specified was compiled for a different "
+                    f"pipeline version ({deployment.pipeline.version}) than "
+                    f"the pipeline version you specified ({pipeline.version})."
+                )
 
-            if stack_id and deployment.stack.id != stack_id:
-                raise RuntimeError("Wrong stack")
+            if stack and deployment.stack.id != stack.id:
+                raise RuntimeError(
+                    "The deployment you specified was compiled for a different "
+                    f"stack ({deployment.stack.name}) than the stack you "
+                    f"specified ({stack.name})."
+                )
 
             run = self.zen_store.run_deployment(
                 deployment_id=deployment_id,
@@ -2479,11 +2501,19 @@ class Client(metaclass=ClientMetaClass):
             )
         elif build_id:
             build = self.get_build(build_id, hydrate=True)
-            if build.pipeline.id == pipeline.id:
-                raise RuntimeError("Wrong pipeline")
+            if pipeline and build.pipeline.id != pipeline.id:
+                raise RuntimeError(
+                    "The build you specified was created for a different "
+                    f"pipeline version ({deployment.pipeline.version}) than "
+                    f"the pipeline version you specified ({pipeline.version})."
+                )
 
-            if stack_id and build.stack.id != stack_id:
-                raise RuntimeError("Wrong stack")
+            if stack and build.stack.id != stack.id:
+                raise RuntimeError(
+                    "The build you specified was created for a different "
+                    f"stack ({deployment.stack.name}) than the stack you "
+                    f"specified ({stack.name})."
+                )
 
             run = self.zen_store.run_build(
                 build_id=build_id, run_configuration=run_configuration
@@ -2493,8 +2523,8 @@ class Client(metaclass=ClientMetaClass):
             builds = depaginate(
                 partial(
                     self.list_builds,
-                    pipeline_id=pipeline.id,
-                    stack_id=stack_id,
+                    pipeline_id=pipeline.id if pipeline else None,
+                    stack_id=stack.id if stack else None,
                 )
             )
 
@@ -2506,7 +2536,9 @@ class Client(metaclass=ClientMetaClass):
                     continue
 
                 try:
-                    validate_stack_is_runnable_from_server(build.stack)
+                    validate_stack_is_runnable_from_server(
+                        zen_store=self.zen_store, stack=build.stack
+                    )
                 except ValueError:
                     continue
 
@@ -2515,7 +2547,9 @@ class Client(metaclass=ClientMetaClass):
                 )
                 break
             else:
-                raise RuntimeError("Unable to find build.")
+                raise RuntimeError(
+                    "Unable to find a runnable build for the given stack and pipeline."
+                )
 
         if syncronous:
             run = wait_for_pipeline_run_to_finish(run_id=run.id)
@@ -2657,37 +2691,6 @@ class Client(metaclass=ClientMetaClass):
         """
         build = self.get_build(id_or_prefix=id_or_prefix)
         self.zen_store.delete_build(build_id=build.id)
-
-    @_fail_for_sql_zen_store
-    def run_build(
-        self,
-        build_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-        syncronous: bool = False,
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a build.
-
-        Args:
-            build_id: The ID of the build to run.
-            run_configuration: Configuration for the run.
-            syncronous: If set to True, this method will wait until the run
-                failed or finished before returning.
-
-        Returns:
-            Model of the pipeline run.
-        """
-        run = self.zen_store.run_build(
-            build_id=build_id, run_configuration=run_configuration
-        )
-
-        if syncronous:
-            from zenml.new.pipelines.run_utils import (
-                wait_for_pipeline_run_to_finish,
-            )
-
-            run = wait_for_pipeline_run_to_finish(run_id=run.id)
-
-        return run
 
     # --------------------------------- Event Sources -------------------------
 
@@ -3211,37 +3214,6 @@ class Client(metaclass=ClientMetaClass):
         """
         deployment = self.get_deployment(id_or_prefix=id_or_prefix)
         self.zen_store.delete_deployment(deployment_id=deployment.id)
-
-    @_fail_for_sql_zen_store
-    def run_deployment(
-        self,
-        deployment_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-        syncronous: bool = False,
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a deployment.
-
-        Args:
-            deployment_id: The ID of the deployment to run.
-            run_configuration: Configuration for the run.
-            syncronous: If set to True, this method will wait until the run
-                failed or finished before returning.
-
-        Returns:
-            Model of the pipeline run.
-        """
-        run = self.zen_store.run_deployment(
-            deployment_id=deployment_id, run_configuration=run_configuration
-        )
-
-        if syncronous:
-            from zenml.new.pipelines.run_utils import (
-                wait_for_pipeline_run_to_finish,
-            )
-
-            run = wait_for_pipeline_run_to_finish(run_id=run.id)
-
-        return run
 
     # ------------------------------- Schedules --------------------------------
 
