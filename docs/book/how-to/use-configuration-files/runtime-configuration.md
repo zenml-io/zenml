@@ -43,31 +43,6 @@ Even though settings can be overridden at runtime, you can also specify _default
 
 This means that all pipelines that run using this experiment tracker use nested MLflow runs unless overridden by specifying settings for the pipeline at runtime.
 
-### Using objects or dicts
-
-Settings can be passed in directly as `BaseSettings`-subclassed objects, or a dictionary representation of the object. For example, a Docker configuration can be passed in as follows:
-
-```python
-from zenml.config import DockerSettings
-
-settings = {'docker': DockerSettings(requirements=['pandas'])}
-```
-
-Or like this:
-
-```python
-settings = {'docker': {'requirements': ['pandas']}}
-```
-
-Or in a YAML like this:
-
-```yaml
-settings:
-  docker:
-    requirements:
-      - pandas
-```
-
 ### Using the right key for Stack-component-specific settings
 
 When specifying stack-component-specific settings, a key needs to be passed. This key should always correspond to the pattern: \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>

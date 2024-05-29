@@ -24,10 +24,6 @@ The UUID of the [`build`](../customize-docker-builds/) to use for this pipeline.
 build: <INSERT-BUILD-ID-HERE>
 ```
 
-### `extra` dict
-
-This is a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](what-can-be-configured.md).
-
 ### Configuring the `model`
 
 Specifies the ZenML [Model](../../user-guide/starter-guide/track-ml-models.md) to use for this pipeline.
@@ -81,13 +77,39 @@ Note that `parameters` are different from `artifacts`. Parameters are JSON-seria
 
 ### Setting the `run_name`
 
-To change the name for a run, pass `run_name` as a parameter. This can be a dynamic value as well. Read [here for details](../../user-guide/starter-guide/create-an-ml-pipeline.md).
+To change the name for a run, pass `run_name` as a parameter. This can be a dynamic value as well.&#x20;
+
+```python
+run_name: <INSERT_RUN_NAME_HERE>  
+```
+
+{% hint style="warning" %}
+You will not be able to run with the same run\_name twice. Do not set this statically when running on a schedule. Try to include some auto-incrementation or timestamp to the name.
+{% endhint %}
 
 ### Stack Component Runtime settings
 
 {% hint style="info" %}
 Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](runtime-configuration.md). In short, they define a bunch of execution configuration such as Docker building and resource settings.
 {% endhint %}
+
+### Docker Settings
+
+Docker Settings can be passed in directly as objects, or a dictionary representation of the object. For example, the Docker configuration can be set in configuration files as follows:
+
+```yaml
+settings:
+  docker:
+    requirements:
+      - pandas
+    
+```
+
+{% hint style="info" %}
+Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings). To learn more about pipeline containeraization consult our documentation on this [here](../customize-docker-builds/).
+{% endhint %}
+
+### Resoure Settings
 
 ### `failure_hook_source` and `success_hook_source`
 
