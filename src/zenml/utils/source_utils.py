@@ -21,7 +21,7 @@ import site
 import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
-from types import ModuleType
+from types import BuiltinFunctionType, FunctionType, ModuleType
 from typing import (
     Any,
     Callable,
@@ -46,6 +46,16 @@ NoneType = type(None)
 NoneTypeSource = Source(
     module=NoneType.__module__, attribute="NoneType", type=SourceType.BUILTIN
 )
+FunctionTypeSource = Source(
+    module=FunctionType.__module__,
+    attribute=FunctionType.__name__,
+    type=SourceType.BUILTIN,
+)
+BuiltinFunctionTypeSource = Source(
+    module=BuiltinFunctionType.__module__,
+    attribute=BuiltinFunctionType.__name__,
+    type=SourceType.BUILTIN,
+)
 
 _CUSTOM_SOURCE_ROOT: Optional[str] = None
 
@@ -66,6 +76,10 @@ def load(source: Union[Source, str]) -> Any:
         # The class of the `None` object doesn't exist in the `builtin` module
         # so we need to manually handle it here
         return NoneType
+    elif source.import_path == FunctionTypeSource.import_path:
+        return FunctionType
+    elif source.import_path == BuiltinFunctionTypeSource.import_path:
+        return BuiltinFunctionType
 
     import_root = None
     if source.type == SourceType.CODE_REPOSITORY:
@@ -104,7 +118,9 @@ def load(source: Union[Source, str]) -> Any:
 
 
 def resolve(
-    obj: Union[Type[Any], Callable[..., Any], ModuleType, NoneType],
+    obj: Union[
+        Type[Any], Callable[..., Any], ModuleType, FunctionType, NoneType
+    ],
     skip_validation: bool = False,
 ) -> Source:
     """Resolve an object.
@@ -124,6 +140,10 @@ def resolve(
         # The class of the `None` object doesn't exist in the `builtin` module
         # so we need to manually handle it here
         return NoneTypeSource
+    elif obj is FunctionType:
+        return FunctionTypeSource
+    elif obj is BuiltinFunctionType:
+        return BuiltinFunctionTypeSource
     elif isinstance(obj, ModuleType):
         module = obj
         attribute_name = None
