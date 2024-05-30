@@ -39,10 +39,12 @@ class TektonOrchestratorSettings(BaseSettings):
     Attributes:
         pod_settings: Pod settings to apply.
         resource_settings: Resource settings to apply.
+        client_args: Arguments to pass to the Tekton client.
     """
 
     pod_settings: Optional[KubernetesPodSettings] = None
     resource_settings: Optional[Dict[str, Any]] = None
+    client_args: Dict[str, Any] = {}
 
 
 class TektonOrchestratorConfig(

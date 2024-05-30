@@ -25,6 +25,7 @@ from typing import (
     cast,
 )
 
+import kfp
 from kfp import dsl
 from kfp.client import Client as KFPClient
 from kfp.compiler import Compiler
@@ -62,38 +63,128 @@ logger = get_logger(__name__)
 ENV_ZENML_TEKTON_RUN_ID = "ZENML_TEKTON_RUN_ID"
 
 
+class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
+    """KFP client initialized from a Kubernetes client.
+
+    This is a workaround for the fact that the native KFP client does not
+    support initialization from an existing Kubernetes client.
+    """
+
+    def __init__(
+        self, client: k8s_client.ApiClient, *args: Any, **kwargs: Any
+    ) -> None:
+        """Initializes the KFP client from a Kubernetes client.
+
+        Args:
+            client: pre-configured Kubernetes client.
+            args: standard KFP client positional arguments.
+            kwargs: standard KFP client keyword arguments.
+        """
+        self._k8s_client = client
+        super().__init__(*args, **kwargs)
+
+    def _load_config(self, *args: Any, **kwargs: Any) -> Any:
+        """Loads the KFP configuration.
+
+        Initializes the KFP configuration from the Kubernetes client.
+
+        Args:
+            args: standard KFP client positional arguments.
+            kwargs: standard KFP client keyword arguments.
+
+        Returns:
+            The KFP configuration.
+        """
+        from kfp_server_api.configuration import Configuration
+
+        kube_config = self._k8s_client.configuration
+
+        config = Configuration(
+            host=kube_config.host,
+            api_key=kube_config.api_key,
+            api_key_prefix=kube_config.api_key_prefix,
+            username=kube_config.username,
+            password=kube_config.password,
+            discard_unknown_keys=kube_config.discard_unknown_keys,
+        )
+
+        # Extra attributes not present in the Configuration constructor
+        keys = ["ssl_ca_cert", "cert_file", "key_file", "verify_ssl"]
+        for key in keys:
+            if key in kube_config.__dict__:
+                setattr(config, key, getattr(kube_config, key))
+
+        return config
+
+
 class TektonOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Tekton."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
-    @property
-    def kube_client(self) -> k8s_client.ApiClient:
-        """Getter for the Kubernetes API client.
+    def _get_kfp_client(
+        self,
+        settings: TektonOrchestratorSettings,
+    ) -> kfp.Client:
+        """Creates a KFP client instance.
+
+        Args:
+            settings: Settings which can be used to
+                configure the client instance.
 
         Returns:
-            The Kubernetes API client.
+            A KFP client instance.
 
         Raises:
-            RuntimeError: if the Kubernetes connector behaves unexpectedly.
+            RuntimeError: If the linked Kubernetes connector behaves
+                unexpectedly.
         """
-        # Refresh the client also if the connector has expired
-        if self._k8s_client and not self.connector_has_expired():
-            return self._k8s_client
+        connector = self.get_connector()
+        client_args = settings.client_args.copy()
 
-        if connector := self.get_connector():
+        # The kube_context, host and namespace are stack component
+        # configurations that refer to the Kubeflow deployment. We don't want
+        # these overwritten on a run by run basis by user settings
+        client_args["namespace"] = self.config.kubernetes_namespace
+
+        if connector:
             client = connector.connect()
             if not isinstance(client, k8s_client.ApiClient):
                 raise RuntimeError(
                     f"Expected a k8s_client.ApiClient while trying to use the "
                     f"linked connector, but got {type(client)}."
                 )
-            self._k8s_client = client
-        else:
-            k8s_config.load_kube_config(context=self.config.kubernetes_context)
-            self._k8s_client = k8s_client.ApiClient()
 
-        return self._k8s_client
+            return KubeClientKFPClient(
+                client=client,
+                **client_args,
+            )
+
+        elif self.config.kubernetes_context:
+            client_args["kube_context"] = self.config.kubernetes_context
+
+        elif self.config.tekton_hostname:
+            client_args["host"] = self.config.tekton_hostname
+
+            # Handle username and password, ignore the case if one is passed and
+            # not the other. Also do not attempt to get cookie if cookie is
+            # already passed in client_args
+            if settings.client_username and settings.client_password:
+                # If cookie is already set, then ignore
+                if "cookie" in client_args:
+                    logger.warning(
+                        "Cookie already set in `client_args`, ignoring "
+                        "`client_username` and `client_password`..."
+                    )
+                else:
+                    session_cookie = self._get_session_cookie(
+                        username=settings.client_username,
+                        password=settings.client_password,
+                    )
+
+                    client_args["cookies"] = session_cookie
+
+        return KFPClient(**client_args)
 
     @property
     def config(self) -> TektonOrchestratorConfig:
@@ -618,10 +709,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
             pipeline_name=orchestrator_run_name,
-            # TODO: turn off caching
-            # pipeline_parameters={
-            #     "pipelines.kubeflow.org/cache_enabled": "false"
-            # },
         )
 
         # Let's update the YAML file with the environment variables
@@ -629,6 +716,10 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
         logger.info(
             "Writing Tekton workflow definition to `%s`.", pipeline_file_path
+        )
+
+        settings = cast(
+            TektonOrchestratorSettings, self.get_settings(deployment)
         )
 
         if deployment.schedule:
@@ -655,27 +746,11 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 connector.name or str(connector),
             )
 
-        client = KFPClient(host="http://20.73.208.165")
-        client.create_run_from_pipeline_package(pipeline_file_path)
-        # try:
-        #     # breakpoint()
-        #     logger.debug("Creating Tekton resource ...")
-        #     response = custom_objects_api.create_namespaced_custom_object(
-        #         group=tekton_resource["sdkVersion"].split("/")[0],
-        #         version=tekton_resource["sdkVersion"].split("/")[1],
-        #         namespace=self.config.kubernetes_namespace,
-        #         # plural=tekton_resource["kind"].lower() + "s",
-        #         plural="pipelines",
-        #         body=tekton_resource,
-        #     )
-        #     logger.debug("Tekton API response: %s", response)
-        # except k8s_client.rest.ApiException as e:
-        #     logger.error("Exception when creating Tekton resource: %s", str(e))
-        #     raise RuntimeError(
-        #         f"Failed to upload Tekton pipeline: {str(e)}. "
-        #         f"Please make sure your Kubernetes cluster is running and "
-        #         f"accessible.",
-        #     )
+        client = self._get_kfp_client(settings=settings)
+        client.create_run_from_pipeline_package(
+            pipeline_file_path,
+            enable_caching=True,
+        )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
