@@ -17,6 +17,9 @@ You can display the logs in the dashboard as follows:
 
 ![Displaying step logs on the dashboard](../../.gitbook/assets/zenml\_step\_logs.png)
 
+Note that if you are not connected to a cloud artifact store then you will not
+be able to view your logs in the dashboard.
+
 If you do not want to store the logs in your artifact store, you can:
 
 1.  Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
