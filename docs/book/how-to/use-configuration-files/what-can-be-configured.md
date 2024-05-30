@@ -106,10 +106,10 @@ settings:
 ```
 
 {% hint style="info" %}
-Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings). To learn more about pipeline containeraization consult our documentation on this [here](../customize-docker-builds/).
+Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings). To learn more about pipeline containerization consult our documentation on this [here](../customize-docker-builds/).
 {% endhint %}
 
-### Resoure Settings
+### Resource Settings
 
 ### `failure_hook_source` and `success_hook_source`
 
