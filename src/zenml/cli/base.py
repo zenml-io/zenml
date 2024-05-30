@@ -492,7 +492,10 @@ def go() -> None:
         input("Press ENTER to continue...")
 
     try:
-        subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+        subprocess.check_call(
+            ["jupyter", "notebook", "--ContentsManager.allow_hidden=True"],
+            cwd=zenml_tutorial_path,
+        )
     except subprocess.CalledProcessError as e:
         cli_utils.error(
             "An error occurred while launching Jupyter Notebook. "
