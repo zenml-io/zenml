@@ -6,8 +6,6 @@ description: How to handle issues with conflicting dependencies
 
 This page documents a some of the common issues that arise when using ZenML with other libraries.
 
-**Last Updated**: October 17, 2023
-
 When using ZenML with other libraries, you may encounter issues with conflicting dependencies. ZenML aims to be stack- and integration-agnostic, allowing you to run your pipelines using the tools that make sense for your problems. With this flexibility comes the possibility of dependency conflicts.
 
 ZenML allows you to install dependencies required by integrations through the `zenml integration install ...` command. This is a convenient way to install dependencies for a specific integration, but it can also lead to dependency conflicts if you are using other libraries in your environment. An easy way to see if the ZenML requirements are still met (after installing any extra dependencies required by your work) by running `zenml integration list` and checking that your desired integrations still bear the green tick symbol denoting that all requirements are met.

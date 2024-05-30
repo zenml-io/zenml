@@ -150,6 +150,7 @@
   * [Implement a custom integration](how-to/stack-deployment/implement-a-custom-integration.md)
 * [🐍 Configure Python environments](how-to/configure-python-environments/README.md)
   * [Handling dependencies](how-to/configure-python-environments/handling-dependencies.md)
+  * [Configure the server environment](how-to/configure-python-environments/configure-the-server-environment.md)
 * [🔌 Connect to a server](how-to/connecting-to-zenml/README.md)
   * [Connect in with your User (interactive)](how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md)
   * [Connect with a Service Account](how-to/connecting-to-zenml/connect-with-a-service-account.md)

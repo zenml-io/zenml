@@ -33,6 +33,8 @@ Please note that the `@pipeline` function in your code is **only ever called** i
 
 The ZenML server environment is a FastAPI application managing pipelines and metadata. It includes the ZenML Dashboard and is accessed when you [deploy ZenML](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md). To manage dependencies, install them during [ZenML deployment](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md), but only if you have custom integrations, as most are built-in.
 
+See also [here](./configure-the-server-environment.md) for more on [configuring the server environment](./configure-the-server-environment.md).
+
 ## Execution Environments
 
 When running locally, there is no real concept of a `execution` environment as the client, server, and execution environment are all the same. However, when running a pipeline remotely, ZenML needs to transfer your code and environment over to the remote [orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/orchestrators/README.md). In order to achieve this, ZenML builds docker images known as `execution environments`.
