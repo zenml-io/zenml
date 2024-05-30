@@ -4,7 +4,13 @@ description: Use tags to organize tags in ZenML.
 
 # Organizing data with tags
 
-Organizing and categorizing your machine learning artifacts and models can streamline your workflow and enhance discoverability. ZenML enables the use of tags as a flexible tool to classify and filter your ML assets. In this guide, we'll demonstrate how to assign tags to both artifacts and models within the ZenML ecosystem.
+Organizing and categorizing your machine learning artifacts and models can
+streamline your workflow and enhance discoverability. ZenML enables the use of
+tags as a flexible tool to classify and filter your ML assets. In this guide,
+we'll demonstrate how to assign tags to both artifacts and models within the
+ZenML ecosystem.
+
+![Tags are visible in the ZenML Dashboard](../../.gitbook/assets/tags-in-dashboard.png)
 
 ## Assigning tags to artifacts
 
