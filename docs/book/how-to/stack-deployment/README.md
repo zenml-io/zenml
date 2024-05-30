@@ -8,7 +8,7 @@ The first step in running your pipelines on remote infrastructure is to deploy a
 
 This can bring plenty of benefits like scalability, reliability, and collaboration. ZenML eases the path to production by providing a seamless way for all tools to interact with others through the use of abstractions. However, one of the most painful parts of this process, from what we see on our Slack and in general, is the deployment of these stack components.
 
-## Deploying MLOps tools is tricky 😭😵‍💫
+## Deploying and managing MLOps tools is tricky 😭😵‍💫
 
 It is not trivial to set up all the different tools that you might need for your pipeline.
 
@@ -55,12 +55,6 @@ MLStacks is built around the concept of a stack specification. A stack specifica
 ZenML handles the creation of stack specifications for you when you run one of the `deploy` subcommands using the CLI. A valid specification is generated and used by `mlstacks` to deploy your stack using Terraform. The Terraform definitions and state are stored in your global configuration directory along with any state files generated while deploying your stack.
 
 Your configuration directory could be in a number of different places depending on your operating system, but read more about it in the [Click docs](https://click.palletsprojects.com/en/8.1.x/api/#click.get\_app\_dir) to see which location applies to your situation.
-
-## Migration / breaking changes
-
-The new `mlstacks` package is a breaking change for the syntax you might have been used to in previous versions of ZenML. Previous versions of ZenML will still work with the old syntax and you will continue to be able to pull recipes from the old ZenML `mlops-stacks` repository, but we encourage you to try out the new `mlstacks`-driven way of deploying components and stacks.
-
-Notably and most importantly, instead of using the `zenml stack recipe ...` command to use and interact with the stack recipes, you will now use the `zenml stack deploy ...` command. Some of the flags have also been updated to reflect and support the generation of the new stack specifications. Please refer to the documentation around [deploying individual stack components](deploy-a-stack-component.md) and [deploying a stack](deploy-a-stack-using-mlstacks.md) for more details on the specific changes.
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy stack components individually</strong></mark></td><td>Individually deploying different stack components.</td><td><a href="deploy-a-stack-component.md">deploy-a-stack-component.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy a stack with multiple components using mlstacks</strong></mark></td><td>Deploying an entire stack with ZenML's `mlstacks` package.</td><td><a href="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md">https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td><td>Creating your custom stack component solutions.</td><td><a href="contribute-flavors-or-components.md">contribute-flavors-or-components.md</a></td></tr></tbody></table>
 
