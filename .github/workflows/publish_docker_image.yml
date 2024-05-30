@@ -1,3 +1,4 @@
+---
 name: Publish Docker images
 on:
   workflow_call:
@@ -8,7 +9,7 @@ on:
         type: string
         default: release-cloudbuild.yaml
       zenml_nightly:
-        description: "Set to true for nightly builds"
+        description: Set to true for nightly builds
         required: false
         type: boolean
         default: false
