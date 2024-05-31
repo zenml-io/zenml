@@ -2,7 +2,7 @@
 description: Using Docker images to run your pipeline.
 ---
 
-# 🐳 Specify docker image for a pipeline
+# 🐳 Specify docker settings for a pipeline
 
 When a [pipeline is run with a remote orchestrator](../configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](../configure-python-environments/README#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
 
@@ -13,11 +13,11 @@ When a [pipeline is run with a remote orchestrator](../configure-python-environm
 
 The process described above is automated by ZenML and covers the most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
 
-For a full list of configuration options, check out [our API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings).
+For a full list of configuration options, check out [the DockerSettings object on the SDKDocs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings).
 
-### How to configure Docker builds for your pipelines
+## How to configure settings for a pipeline
 
-Customizing the Docker builds for your pipelines and steps is done using the `DockerSettings` class which you can import like this:
+Customizing the Docker builds for your pipelines and steps is done using the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class which you can import like this:
 
 ```python
 from zenml.config import DockerSettings
