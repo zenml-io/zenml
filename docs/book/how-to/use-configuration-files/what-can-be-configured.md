@@ -23,48 +23,41 @@ extra:
 
 # Specify the "ZenML Model"
 model:
-  name: str
-  version: Union[ModelStages, int, str, NoneType]
+  name: "classification_model"
+  version: production
 
-  audience: Optional[str]
-  description: Optional[str]
-  ethics: Optional[str]
-  license: Optional[str]
-  limitations: Optional[str]
-  tags: Optional[List[str]]
-  trade_offs: Optional[str]
-  use_cases: Optional[str]
+  audience: "Data scientists"
+  description: "This classifies hotdogs and not hotdogs"
+  ethics: "No ethical implications"
+  license: "Apache 2.0"
+  limitations: "Only works for hotdogs"
+  tags: ["sklearn", "hotdog", "classification"]
 
 # Parameters of the pipeline 
-parameters: Optional[Mapping[str, Any]]
+parameters: 
+  dataset_name: "another_dataset"
 
 # Name of the run
-run_name: Optional[str]
+run_name: "my_great_run"
 
 # Schedule, if supported on the orchestrator
 schedule:
-  catchup: bool
-  cron_expression: Optional[str]
-  end_time: Optional[datetime]
-  interval_second: Optional[timedelta]
-  name: Optional[str]
-  run_once_start_time: Optional[datetime]
-  start_time: Optional[datetime]
+  catchup: true
+  cron_expression: "* * * * *"
 
 # Real-time settings for docker and resources
 settings:
   # Controls docker building
   docker:
-    apt_packages: List[str]
-    build_context_root: Optional[str]
-    build_options: Mapping[str, Any]
-    copy_files: bool
-    dockerfile: Optional[str]
-    dockerignore: Optional[str]
-    environment: Mapping[str, Any]
-    parent_image: Optional[str]
-    requirements: Union[NoneType, str, List[str]]
-    skip_build: bool
+    apt_packages: ["curl"]
+    copy_files: True
+    dockerfile: "Dockerfile"
+    dockerignore: ".dockerignore"
+    environment:
+      ZENML_LOGGING_VERBOSITY: DEBUG
+    parent_image: "zenml-io/zenml-cuda"
+    requirements: ["torch"]
+    skip_build: False
   
   # Control resources for the entire pipeline
   resources:
@@ -81,17 +74,11 @@ steps:
       data_source: "best_dataset"
 
     # Step-only configuration
-    experiment_tracker: Optional[str]
-    step_operator: Optional[str]
+    experiment_tracker: "mlflow_production"
+    step_operator: "vertex_gpu"
     outputs: {}
-    failure_hook_source:
-      attribute: Optional[str]
-      module: str
-      type: SourceType
-    success_hook_source:
-      attribute: Optional[str]
-      module: str
-      type: SourceType
+    failure_hook_source: {}
+    success_hook_source: {}
 
     # Same as pipeline level configuration, if specified overrides for this step
     enable_artifact_metadata: True
