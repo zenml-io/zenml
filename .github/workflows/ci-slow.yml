@@ -91,6 +91,7 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mysql random
   sqlite-db-migration-testing-full:
+    needs: run-slow-ci-label-is-set
     runs-on: arc-runner-set
     env:
       ZENML_ANALYTICS_OPT_IN: false
