@@ -91,7 +91,7 @@
   * [Autogenerate a template yaml file](how-to/use-configuration-files/autogenerate-a-template-yaml-file.md)
   * [Retrieve used configuration of a run](how-to/use-configuration-files/retrieve-used-configuration-of-a-run.md)
 * [🐳 Customize docker builds](how-to/customize-docker-builds/README.md)
-  * [Specify docker image for a pipeline](how-to/customize-docker-builds/docker-settings-on-a-pipeline.md)
+  * [Docker settings on a pipeline](how-to/customize-docker-builds/docker-settings-on-a-pipeline.md)
   * [Docker settings on a step](how-to/customize-docker-builds/docker-settings-on-a-step.md)
   * [Specify pip dependencies and apt packages](how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md)
   * [Use your own dockerfiles](how-to/customize-docker-builds/use-your-own-docker-files.md)
