@@ -7,14 +7,12 @@ You can do so by connecting a git repository. Registering a code repository lets
 ZenML will **automatically figure out which builds match your pipeline and reuse the appropriate build id**. Therefore, you **do not** need to explictly pass in the build id when you have a clean repository state and a connected git repository. This approach is **highly recommended**. See an end to end example [here](../../user-guide/production-guide/connect-code-repository.md).
 
 {% hint style="warning" %}
-In order to benefit from the advantages of having a code repository in a project, you need to make sure that **the relevant integrations are installed for your ZenML installation.**
-{% endhint %}
-
-For instance, let's assume you are working on a project with ZenML and one of your team members has already registered a corresponding code repository of type `github` for it. If you do `zenml code-repository list`, you would also be able to see this repository. However, in order to fully use this repository, you still need to install the corresponding integration for it, in this example the `github` integration.
+In order to benefit from the advantages of having a code repository in a project, you need to make sure that **the relevant integrations are installed for your ZenML installation.**. For instance, let's assume you are working on a project with ZenML and one of your team members has already registered a corresponding code repository of type `github` for it. If you do `zenml code-repository list`, you would also be able to see this repository. However, in order to fully use this repository, you still need to install the corresponding integration for it, in this example the `github` integration.
 
 ```sh
 zenml integration install github
 ```
+{% endhint %}
 
 ## Detecting local code repository checkouts
 
