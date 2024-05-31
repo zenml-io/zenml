@@ -1,6 +1,6 @@
 # Enable or disable logs storing
 
-By default, ZenML uses a special logging handler to capture the logs that occur during the execution of a step. These logs are stored within the respective artifact store of your stack.
+By default, ZenML uses a logging handler to capture the logs that occur during the execution of a step. Users are free to use the default python logging module or print statements, and ZenML's logging handler will catch these logs and store them. 
 
 ```python
 import logging
@@ -13,12 +13,14 @@ def my_step() -> None:
     print("World.")  # You can utilize `print` statements as well. 
 ```
 
-You can display the logs in the dashboard as follows:
+These logs are stored within the respective artifact store of your stack. You can display the logs in the dashboard as follows:
 
 ![Displaying step logs on the dashboard](../../.gitbook/assets/zenml\_step\_logs.png)
 
-Note that if you are not connected to a cloud artifact store then you will not
+{% hint style="warning" %}
+Note that if you are not connected to a cloud artifact store with a service connector configured then you will not
 be able to view your logs in the dashboard.
+{% endhint %}
 
 If you do not want to store the logs in your artifact store, you can:
 
@@ -35,8 +37,8 @@ If you do not want to store the logs in your artifact store, you can:
     def my_pipeline():
         ...
     ```
-2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above.
+2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above. Note this environmental variable needs to be set on the [client/runner environment](../configure-python-environments/README.md#client-environment-or-the-runner-environment), i.e., where the pipeline run is initially executed.
+
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-
