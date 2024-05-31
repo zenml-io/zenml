@@ -22,17 +22,21 @@ steps:
 
 ```python
 from zenml import step, pipeline
+
 @step
-def load_data(parameter: int) -> dict:
+def load_data(dataset_name: str) -> dict:
     ...
 
 @pipeline  # This function combines steps together 
 def simple_ml_pipeline(dataset_name: str):
-    ...
+    load_data(dataset_name)
     
 if __name__=="__main__":
-    simple_ml_pipeline.with_options(config_path=<INSERT_PATH_TO_CONFIG_YAML>)
+    simple_ml_pipeline.with_options(config_path=<INSERT_PATH_TO_CONFIG_YAML>)()
 ```
+
+The above would run the `simple_ml_pipeline` with cache disabled for `load_data` and the parameter
+`dataset_name` set to `best_dataset`.
 
 Learn more about the different options in the following sections:
 
