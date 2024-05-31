@@ -19,7 +19,7 @@ These logs are stored within the respective artifact store of your stack. You ca
 
 {% hint style="warning" %}
 Note that if you are not connected to a cloud artifact store with a service connector configured then you will not
-be able to view your logs in the dashboard.
+be able to view your logs in the dashboard. Read more [here](./view-logs-on-the-dasbhoard.md).
 {% endhint %}
 
 If you do not want to store the logs in your artifact store, you can:
