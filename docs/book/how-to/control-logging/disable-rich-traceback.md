@@ -11,6 +11,23 @@ export ZENML_ENABLE_RICH_TRACEBACK=true
 ```
 
 This will ensure that you see only the plain text traceback output.
+
+Note that setting this on your local machine will automatically disable rich tracebacks on remote orchestrators. If you wish to only disable it locally, but turn on for remote orchestrators, you can set the `ZENML_ENABLE_RICH_TRACEBACK` environment variable in your orchestrator's environment as follows:
+
+```python
+docker_settings = DockerSettings(environment={"ZENML_ENABLE_RICH_TRACEBACK": "false"})
+
+# Either add it to the decorator
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+# Or configure the pipelines options
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
