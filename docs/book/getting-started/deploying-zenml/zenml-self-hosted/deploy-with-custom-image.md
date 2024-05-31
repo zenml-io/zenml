@@ -10,7 +10,7 @@ In most cases, deploying ZenML with the default `zenmlhub/zenml-server` Docker i
 * You have forked the ZenML repository and want to deploy a ZenML server based on your own fork because you made changes to the server / database logic.
 
 {% hint style="warning" %}
-Deploying ZenML with custom Docker images is only possible for [Docker](broken-reference) or [Helm](broken-reference) deployments.
+Deploying ZenML with custom Docker images is only possible for [Docker](../zenml-self-hosted/deploy-with-docker.md) or [Helm](../zenml-self-hosted/deploy-with-helm.md) deployments.
 {% endhint %}
 
 ### Build and Push Custom ZenML Server Docker Image

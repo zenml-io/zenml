@@ -28,7 +28,6 @@ Running [`pip check`](https://pip.pypa.io/en/stable/cli/pip\_check/) will verify
 
 Some of ZenML's integrations come with strict dependency and package version requirements. We try to keep these dependency requirements ranges as wide as possible for the integrations developed by ZenML, but it is not always possible to make this work completely smoothly. Here are some of the known issues:
 
-* `label_studio`: the packages required for this integration are not compatible with quite a few of our other integrations. At a minimum, you will get warnings when installing `label_studio` via `zenml integration install ...`. We have found these warnings to be mostly harmless. You might find you need to separate your installations of Label Studio and any other integrations you need for your environment / pipeline, however. Note [the warning on our own documentation page](broken-reference) for the Label Studio integration which currently breaks ZenML's CLI.
 * `click`: ZenML currently requires `click~=8.0.3` for its CLI. This is on account of another dependency of ZenML. Using versions of `click` in your own project that are greater than 8.0.3 may cause unanticipated behaviors.
 
 ### Manually bypassing ZenML's integration installation
