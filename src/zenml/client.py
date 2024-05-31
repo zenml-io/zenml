@@ -2441,6 +2441,63 @@ class Client(metaclass=ClientMetaClass):
         stack_name_or_id: Union[str, UUID, None] = None,
         syncronous: bool = False,
     ) -> PipelineRunResponse:
+        """Trigger a pipeline from the server.
+
+        Usage examples:
+        * Run the latest runnable build for the latest version of a pipeline:
+        ```python
+        Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
+        ```
+        * Run the latest runnable build for a specific version of a pipeline:
+        ```python
+        Client().trigger_pipeline(
+            pipeline_name_or_id=<NAME>,
+            pipeline_version=<VERSION>
+        )
+        ```
+        * Run a specific pipeline version on a specific stack:
+        ```python
+        Client().trigger_pipeline(
+            pipeline_name_or_id=<ID>,
+            stack_name_or_id=<ID>
+        )
+        ```
+        * Run a specific deployment:
+        ```python
+        Client().trigger_pipeline(deployment_id=<ID>)
+        ```
+        * Run a specific build:
+        ```python
+        Client().trigger_pipeline(build_id=<ID>)
+        ```
+
+        Args:
+            pipeline_name_or_id: Name or ID of the pipeline. If not given,
+                either the build or deployment that should be run needs to be
+                specified.
+            pipeline_version: Version of the pipeline. This is only used if a
+                pipeline name is given.
+            run_configuration: Configuration for the run. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `PipelineRunConfiguration` object. Either this or
+                the configuration in code can be specified.
+            deployment_id: ID of the deployment to run. Either this or a build
+                to run can be specified.
+            build_id: ID of the build to run. Either this or a deployment to
+                run can be specified.
+            stack_name_or_id: Name or ID of the stack on which to run the
+                pipeline. If not specified, this method will try to find a
+                runnable build on any stack.
+            syncronous: If `True`, this method will wait until the triggered
+                run is finished.
+
+        Raises:
+            RuntimeError: If triggering the pipeline failed.
+
+        Returns:
+            Model of the pipeline run.
+        """
         from zenml.new.pipelines.run_utils import (
             validate_run_config_is_runnable_from_server,
             validate_stack_is_runnable_from_server,
