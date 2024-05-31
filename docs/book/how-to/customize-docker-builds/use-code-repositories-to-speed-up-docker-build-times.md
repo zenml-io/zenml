@@ -16,7 +16,7 @@ This means specifying a custom build when running a pipeline will **not run the 
 
 If you would like to disconnect your code from the build, you can do so by [connecting a git repository](../setting-up-a-project-repository/connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
-ZenML will automatically figure out which builds match your pipeline and reuse the appropriate execution environment. This approach is **highly recommended**. See an end to end example [here](../../user-guide/production-guide/connect-code-repository.md).
+ZenML will **automatically figure out which builds match your pipeline and reuse the appropriate build id**. Therefore, you **do not** need to explictly pass in the build id when you have a clean repository state and a connected git repository. This approach is **highly recommended**. See an end to end example [here](../../user-guide/production-guide/connect-code-repository.md).
 
 ### Important information regarding git repositories
 
