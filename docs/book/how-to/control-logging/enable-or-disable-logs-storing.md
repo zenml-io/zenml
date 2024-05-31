@@ -37,7 +37,21 @@ If you do not want to store the logs in your artifact store, you can:
     def my_pipeline():
         ...
     ```
-2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above. Note this environmental variable needs to be set on the [client/runner environment](../configure-python-environments/README.md#client-environment-or-the-runner-environment), i.e., where the pipeline run is initially executed.
+2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameters mentioned above. Note this environmental variable needs to be set on the [execution environment](../configure-python-environments/README.md#execution-environments), i.e., on the orchestrator level:
+
+```python
+docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_LOGS_STORAGE": "true"})
+
+# Either add it to the decorator
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+# Or configure the pipelines options
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```
 
 
 <!-- For scarf -->
