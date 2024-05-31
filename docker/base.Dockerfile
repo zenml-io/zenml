@@ -22,7 +22,7 @@ FROM base AS builder
 
 ARG VIRTUAL_ENV=/opt/venv
 ARG ZENML_VERSION
-ARG ZENML_NIGHTLY
+ARG ZENML_NIGHTLY="false"
 
 ENV \
   # Set up virtual environment
@@ -45,7 +45,7 @@ FROM builder as client-builder
 
 ARG VIRTUAL_ENV=/opt/venv
 ARG ZENML_VERSION
-ARG ZENML_NIGHTLY
+ARG ZENML_NIGHTLY="false"
 
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
@@ -64,7 +64,7 @@ FROM builder as server-builder
 
 ARG VIRTUAL_ENV=/opt/venv
 ARG ZENML_VERSION
-ARG ZENML_NIGHTLY
+ARG ZENML_NIGHTLY="false"
 
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
