@@ -1,4 +1,4 @@
-# Enable or disable logs storing
+# Viewing logs on the dashboard
 
 By default, ZenML uses a logging handler to capture the logs that occur during the execution of a step. Users are free to use the default python logging module or print statements, and ZenML's logging handler will catch these logs and store them.
 
@@ -13,7 +13,14 @@ def my_step() -> None:
     print("World.")  # You can utilize `print` statements as well. 
 ```
 
-These logs are stored within the respective artifact store of your stack.
+These logs are stored within the respective artifact store of your stack. This means that you can only view these logs in the dashboard
+*if the deployed ZenML server has direct access to the underlying artifact store*. There are two cases in which this will be true:
+
+* In case of a local ZenML server (via `zenml up`), both local and remote artifact stores may be accessible, depending on configuration of the client.
+* In case of a deployed ZenML server, logs for runs on a [local artifact store](../../component-guide/artifact-stores/local.md) will not be accessible. Logs
+for runs using a [remote artifact store](../../user-guide/production-guide/remote-storage.md) **maybe** accessible, if the artifact store has been configured
+with a [service connector](../auth-management/service-connectors-guide.md). Please read [this chapter](../../user-guide/production-guide/remote-storage.md) of
+the production guide to learn how to configure a remote artifact store with a service connector.
 
 If configured correctly, the logs are displayed in the dashboard as follows:
 
