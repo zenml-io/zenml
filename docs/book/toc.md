@@ -95,6 +95,7 @@
   * [Use your own docker files](how-to/customize-docker-builds/use-your-own-docker-files.md)
   * [Docker settings on a step](how-to/customize-docker-builds/docker-settings-on-a-step.md)
   * [Build the pipeline without running](how-to/customize-docker-builds/build-the-pipeline-without-running.md)
+  * [Reuse docker builds](how-to/customize-docker-builds/reuse-docker-builds.md)
   * [Use code repositories to speed up docker build times](how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md)
 * [🌲 Control logging](how-to/control-logging/README.md)
   * [View logs on the dashboard](how-to/control-logging/view-logs-on-the-dasbhoard.md)
