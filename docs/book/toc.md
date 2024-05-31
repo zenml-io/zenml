@@ -96,11 +96,10 @@
   * [Specify pip dependencies and apt packages](how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages.md)
   * [Use your own dockerfiles](how-to/customize-docker-builds/use-your-own-docker-files.md)
   * [Which files are built into the image](how-to/customize-docker-builds/which-files-are-built-into-the-image.md)
-  * [Reuse docker builds](how-to/customize-docker-builds/reuse-docker-builds.md)
-  * [Use code repositories to speed up docker build times](how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md)
+  * [Reuse docker builds to speed up docker build times](how-to/customize-docker-builds/reuse-docker-builds.md)
+  * [Use code repositories to automate docker build reuse](how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md)
   * [Build the pipeline without running](how-to/customize-docker-builds/build-the-pipeline-without-running.md)
   * [Define where an image is built](how-to/customize-docker-builds/define-where-an-image-is-built.md)
-
 * [🌲 Control logging](how-to/control-logging/README.md)
   * [View logs on the dashboard](how-to/control-logging/view-logs-on-the-dasbhoard.md)
   * [Enable or disable logs storing](how-to/control-logging/enable-or-disable-logs-storing.md)
