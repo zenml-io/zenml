@@ -4,7 +4,7 @@ description: Using Docker images to run your pipeline.
 
 # 🐳 Customize docker builds
 
-ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../configure-stack-components/orchestrators/README.md) or [step operators](../../configure-stack-components/step-operators/README.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
+ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../user-guide/production-guide/cloud-orchestration.md) or [step operators](../../configure-stack-components/step-operators/README.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
 
 This section discusses how to control this dockerization process.
 
