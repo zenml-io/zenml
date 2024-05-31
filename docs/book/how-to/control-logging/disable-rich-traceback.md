@@ -12,10 +12,12 @@ export ZENML_ENABLE_RICH_TRACEBACK=false
 
 This will ensure that you see only the plain text traceback output.
 
-Note that setting this on the [client environment](../configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable rich tracebacks on remote pipeline runs. If you wish to only disable it locally, but turn on for remote pipeline runs, you can set the `ZENML_ENABLE_RICH_TRACEBACK` environment variable in your pipeline runs environment as follows:
+Note that setting this on the [client environment](../configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will **not automatically disable rich tracebacks on remote pipeline runs**. That means setting this variable locally with only effect pipelines that run locally.
+
+If you wish to disable it also for [remote pipeline runs](../../user-guide/production-guide/cloud-orchestration.md), you can set the `ZENML_ENABLE_RICH_TRACEBACK` environment variable in your pipeline runs environment as follows:
 
 ```python
-docker_settings = DockerSettings(environment={"ZENML_ENABLE_RICH_TRACEBACK": "true"})
+docker_settings = DockerSettings(environment={"ZENML_ENABLE_RICH_TRACEBACK": "false"})
 
 # Either add it to the decorator
 @pipeline(settings={"docker": docker_settings})
