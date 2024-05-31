@@ -83,7 +83,6 @@
   * [Access secrets in a step](how-to/overview/access-secrets-in-a-step.md)
   * [Fetching pipelines](how-to/overview/fetching-pipelines.md)
   * [Get past pipeline/step runs](how-to/overview/get-past-pipeline-step-runs.md)
-  * [Specify cloud resources](how-to/overview/scale-compute-to-the-cloud.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
   * [Configuration hierarchy](how-to/use-configuration-files/configuration-hierarchy.md)
   * [What can be configured](how-to/use-configuration-files/what-can-be-configured.md)
