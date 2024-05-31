@@ -20,7 +20,7 @@ This will register the build output in the ZenML database and allow you to use t
 zenml pipeline builds list
 ```
 
-To use a registered build when running a pipeline, pass it as an argument in Python
+To [reuse a registered build](./reuse-docker-builds.md) when running a pipeline, pass it as an argument in Python
 
 ```python
 my_pipeline = my_pipeline.with_options(build=<BUILD_ID>)
