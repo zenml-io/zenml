@@ -70,6 +70,7 @@
   * [Use pipeline/step parameters](how-to/overview/use-pipeline-step-parameters.md)
   * [Step output typing and annotation](how-to/overview/step-output-typing-and-annotation.md)
   * [Control caching behavior](how-to/overview/control-caching-behavior.md)
+  * [Specify pip or apt requirements](how-to/overview/specify-pip-or-apt-requirements.md)
   * [Schedule a pipeline](how-to/overview/schedule-a-pipeline.md)
   * [Trigger a pipeline from another](how-to/overview/trigger-a-pipeline-from-another.md)
   * [Run pipelines asynchronously](how-to/overview/trigger-a-pipeline-from-another-1.md)
