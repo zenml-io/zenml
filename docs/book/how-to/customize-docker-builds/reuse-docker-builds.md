@@ -4,7 +4,7 @@
 
 When using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](../configure-python-environments/README#execution-environments). Building Docker images without [connecting a git repository](../../user-guide/production-guide/connect-code-repository.md) **includes your step code in the built docker image**. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files.
 
-One way of skipping docker builds each time is to pass in a `build` id as you run the pipeline:
+One way of skipping docker builds each time is to pass in the ID of a `build` as you run the pipeline:
 
 ```python
 my_pipeline = my_pipeline.with_options(build=<BUILD_ID>)
