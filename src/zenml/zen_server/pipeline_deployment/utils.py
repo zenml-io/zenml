@@ -15,7 +15,7 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import StoreType
 from zenml.integrations.utils import get_integration_for_module
 from zenml.models import (
     CodeReferenceRequest,
@@ -28,9 +28,9 @@ from zenml.models import (
 )
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
+    validate_run_config_is_runnable_from_server,
+    validate_stack_is_runnable_from_server,
 )
-from zenml.orchestrators import BaseOrchestratorConfig
-from zenml.stack.flavor import Flavor
 from zenml.utils import dict_utils, pydantic_utils
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.pipeline_deployment.runner_entrypoint_configuration import (
@@ -72,7 +72,9 @@ def run_pipeline(
     if not stack:
         raise ValueError("Unable to run deployment without associated stack.")
 
-    validate_stack(stack)
+    validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
+    if run_config:
+        validate_run_config_is_runnable_from_server(run_config)
 
     deployment_request = apply_run_config(
         deployment=deployment,
@@ -160,41 +162,6 @@ def run_pipeline(
         _task()
 
     return placeholder_run
-
-
-def validate_stack(stack: StackResponse) -> None:
-    """Validate a stack model.
-
-    Args:
-        stack: The stack to validate.
-
-    Raises:
-        ValueError: If the stack has components of a custom flavor, local
-            components or a synchronous orchestrator.
-    """
-    for component_list in stack.components.values():
-        assert len(component_list) == 1
-        component = component_list[0]
-        flavors = zen_store().list_flavors(
-            FlavorFilter(name=component.flavor, type=component.type)
-        )
-        assert len(flavors) == 1
-        flavor_model = flavors[0]
-
-        if flavor_model.workspace is not None:
-            raise ValueError("No custom stack component flavors allowed.")
-
-        flavor = Flavor.from_model(flavor_model)
-        component_config = flavor.config_class(**component.configuration)
-
-        if component_config.is_local:
-            raise ValueError("No local stack components allowed.")
-
-        if flavor.type == StackComponentType.ORCHESTRATOR:
-            assert isinstance(component_config, BaseOrchestratorConfig)
-
-            if component_config.is_synchronous:
-                raise ValueError("No synchronous orchestrator allowed.")
 
 
 def get_requirements_for_stack(
@@ -318,32 +285,10 @@ def apply_run_config(
         run_config: The run configuration to apply.
         user_id: The ID of the user that wants to run the deployment.
 
-    Raises:
-        ValueError: If the run configuration contains values that can't be
-            updated when running a pipeline deployment.
-
     Returns:
         The updated deployment.
     """
     pipeline_updates = {}
-
-    if run_config.parameters:
-        raise ValueError(
-            "Can't set parameters when running pipeline via Rest API."
-        )
-
-    if run_config.build:
-        raise ValueError("Can't set build when running pipeline via Rest API.")
-
-    if run_config.schedule:
-        raise ValueError(
-            "Can't set schedule when running pipeline via Rest API."
-        )
-
-    if run_config.settings.get("docker"):
-        raise ValueError(
-            "Can't set DockerSettings when running pipeline via Rest API."
-        )
 
     pipeline_updates = run_config.dict(
         exclude_none=True, include=set(PipelineConfiguration.__fields__)
@@ -364,11 +309,6 @@ def apply_run_config(
         step_config = StepConfiguration.parse_obj(step_config_dict)
 
         if update := run_config.steps.get(invocation_id):
-            if update.settings.get("docker"):
-                raise ValueError(
-                    "Can't set DockerSettings when running pipeline via Rest API."
-                )
-
             step_config = pydantic_utils.update_model(
                 step_config, update=update
             )
