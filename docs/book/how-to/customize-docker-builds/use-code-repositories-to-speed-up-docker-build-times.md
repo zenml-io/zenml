@@ -2,11 +2,21 @@
 
 ## Automate build reuse by connecting a code repository
 
-Building Docker images without [connecting a git repository](../../user-guide/production-guide/connect-code-repository.md) includes your step code. This means specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. This allows you to make local code changes, but reusing a build from before will _always_ execute the code bundled in the Docker image, rather than the local code. This is why you also have to explicitly specify the `build_id` when running a pipeline.
+When using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](../configure-python-environments/README#execution-environments). Building Docker images without [connecting a git repository](../../user-guide/production-guide/connect-code-repository.md) **includes your step code in the built docker image**. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files.
 
-To avoid this, disconnect your code from the build by [connecting a git repository](../setting-up-a-project-repository/connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline and quickly iterate on your code. Also, ZenML will automatically figure out which builds match your pipeline and reuse the appropriate execution environment. This approach is **highly recommended**. Read more [here](../../user-guide/production-guide/connect-code-repository.md).
+One way of skipping docker builds each time is to pass in a `build` id as you run the pipeline:
 
-When using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](../configure-python-environments/README#execution-environments). If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
+```python
+my_pipeline.with_options(build=<MY_BUILD_ID>)
+```
+
+{% hint style="warning" %}
+This means specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. This allows you to make local code changes, but reusing a build from before will _always_ execute the code bundled in the Docker image, rather than the local code. This is why you also have to explicitly specify the `build` when running a pipeline.
+{% endhint %}
+
+If you would like to disconnect your code from the build, you can do so by [connecting a git repository](../setting-up-a-project-repository/connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
+
+ZenML will automatically figure out which builds match your pipeline and reuse the appropriate execution environment. This approach is **highly recommended**. See an end to end example [here](../../user-guide/production-guide/connect-code-repository.md).
 
 ### Important information regarding git repositories
 
