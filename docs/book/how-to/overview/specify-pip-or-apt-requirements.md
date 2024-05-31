@@ -1,7 +1,7 @@
 # Specify pip dependencies and apt packages
 
 {% hint style="warning" %}
-The configuration for specifying pip and apt dependencies only works in the remote pipeline case, and is disregarded for local pipelines (i.e. pipelines that run locally without having to build a docker image)
+The configuration for specifying pip and apt dependencies only works in the remote pipeline case, and is disregarded for local pipelines (i.e. pipelines that run locally without having to build a Docker image).
 {% endhint %}
 
 When a [pipeline is run with a remote orchestrator](../configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](../configure-python-environments/README#image-builder-environment) component of your stack.
