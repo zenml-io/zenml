@@ -4,7 +4,7 @@ description: Recommended repository structure and best practices.
 
 # Best practices
 
-Until now, you probably have kept all your code in one single file. In production, it is recommended to split up your steps and pipelines into separate files.
+While it doesn't matter how you structure your ZenML project, here is a recommended project structure the core team often uses:
 
 ```markdown
 .
@@ -34,7 +34,7 @@ Until now, you probably have kept all your code in one single file. In productio
 └── run.py
 ```
 
-Check out how to initialize your project from a template following best practices in the [Project templates](using-project-templates.md#generating-project-from-a-project-template) section.
+All ZenML [Project templates](using-project-templates.md#generating-project-from-a-project-template) are modeled around this basic structure.
 
 #### Steps
 
