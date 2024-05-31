@@ -7,17 +7,21 @@ we have removed all possible keys. To view a sample file with all possible keys,
 [this page](./autogenerate-a-template-yaml-file.md).
 
 ```yaml
+# Build ID (i.e. which docker image to use)
 build: dcd6fafb-c200-4e85-8328-428bef98d804
 
+# Enable flags (boolean flags that control behavior)
 enable_artifact_metadata: True
 enable_artifact_visualization: False
 enable_cache: False
 enable_step_logs: True
 
+# Extra dictionary to pass in arbitrary values
 extra: 
   any_param: 1
   another_random_key: "some_string"
 
+# Specify the "ZenML Model"
 model:
   name: str
   version: Union[ModelStages, int, str, NoneType]
@@ -31,9 +35,13 @@ model:
   trade_offs: Optional[str]
   use_cases: Optional[str]
 
+# Parameters of the pipeline 
 parameters: Optional[Mapping[str, Any]]
+
+# Name of the run
 run_name: Optional[str]
 
+# Schedule, if supported on the orchestrator
 schedule:
   catchup: bool
   cron_expression: Optional[str]
@@ -43,93 +51,64 @@ schedule:
   run_once_start_time: Optional[datetime]
   start_time: Optional[datetime]
 
+# Real-time settings for docker and resources
 settings:
+  # Controls docker building
   docker:
     apt_packages: List[str]
     build_context_root: Optional[str]
     build_options: Mapping[str, Any]
     copy_files: bool
-    copy_global_config: bool
     dockerfile: Optional[str]
     dockerignore: Optional[str]
     environment: Mapping[str, Any]
-    install_stack_requirements: bool
     parent_image: Optional[str]
-    python_package_installer: PythonPackageInstaller
-    replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
-     NoneType]
-    required_hub_plugins: List[str]
-    required_integrations: List[str]
     requirements: Union[NoneType, str, List[str]]
     skip_build: bool
-    source_files: SourceFileMode
-    target_repository: str
-    user: Optional[str]
+  
+  # Control resources for the entire pipeline
   resources:
-    cpu_count: Optional[PositiveFloat]
-    gpu_count: Optional[NonNegativeInt]
-    memory: Optional[ConstrainedStrValue]
-
+    cpu_count: 2
+    gpu_count: 1
+    memory: "4Gb"
+  
+# Per step configuration
 steps:
+  # Top-level key should be the name of the step invocation ID
   train_model:
-    enable_artifact_metadata: Optional[bool]
-    enable_artifact_visualization: Optional[bool]
-    enable_cache: Optional[bool]
-    enable_step_logs: Optional[bool]
+    # Parameters of the step
+    parameters:
+      data_source: "best_dataset"
+
+    # Step-only configuration
     experiment_tracker: Optional[str]
-    extra: Mapping[str, Any]
+    step_operator: Optional[str]
+    outputs: {}
     failure_hook_source:
       attribute: Optional[str]
       module: str
       type: SourceType
-    model:
-      audience: Optional[str]
-      description: Optional[str]
-      ethics: Optional[str]
-      license: Optional[str]
-      limitations: Optional[str]
-      name: str
-      save_models_to_registry: bool
-      suppress_class_validation_warnings: bool
-      tags: Optional[List[str]]
-      trade_offs: Optional[str]
-      use_cases: Optional[str]
-      version: Union[ModelStages, int, str, NoneType]
-      was_created_in_this_run: bool
-    name: Optional[str]
-    outputs: {}
-    parameters: {}
-    settings:
-      docker:
-        apt_packages: List[str]
-        build_context_root: Optional[str]
-        build_options: Mapping[str, Any]
-        copy_files: bool
-        copy_global_config: bool
-        dockerfile: Optional[str]
-        dockerignore: Optional[str]
-        environment: Mapping[str, Any]
-        install_stack_requirements: bool
-        parent_image: Optional[str]
-        python_package_installer: PythonPackageInstaller
-        replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
-         NoneType]
-        required_hub_plugins: List[str]
-        required_integrations: List[str]
-        requirements: Union[NoneType, str, List[str]]
-        skip_build: bool
-        source_files: SourceFileMode
-        target_repository: str
-        user: Optional[str]
-      resources:
-        cpu_count: Optional[PositiveFloat]
-        gpu_count: Optional[NonNegativeInt]
-        memory: Optional[ConstrainedStrValue]
-    step_operator: Optional[str]
     success_hook_source:
       attribute: Optional[str]
       module: str
       type: SourceType
+
+    # Same as pipeline level configuration, if specified overrides for this step
+    enable_artifact_metadata: True
+    enable_artifact_visualization: True
+    enable_cache: False
+    enable_step_logs: True
+
+    # Same as pipeline level configuration, if specified overrides for this step
+    extra: {}
+
+    # Same as pipeline level configuration, if specified overrides for this step
+    model: {}
+      
+    # Same as pipeline level configuration, if specified overrides for this step
+    settings:
+      docker: {}
+      resources: {}
 ```
 
 ## Deep-dive
