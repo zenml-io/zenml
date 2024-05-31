@@ -6,7 +6,7 @@ on:
     # Run this workflow every day at midnight
     - cron: 30 0 * * *
 jobs:
-  #setup-and-test:
+  # setup-and-test:
   #  uses: ./.github/workflows/unit-test.yml
   #  with:
   #    os: ubuntu-latest
@@ -18,7 +18,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    #needs: setup-and-test
+    # needs: setup-and-test
     uses: ./.github/workflows/publish_to_pypi_nightly.yml
     secrets: inherit
     if: github.repository == 'zenml-io/zenml'
