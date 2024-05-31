@@ -16,7 +16,7 @@ The client environment (sometimes known as the runner environment) is where the 
 
 * A local development environment
 * A CI runner in production.
-* A [ZenML Cloud](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-cloud/README.md) runner.
+* A [ZenML Pro](https://zenml.io/pro) runner.
 * A `runner` image orchestrated by the ZenML server to start pipelines.
 
 In all the environments, you should use your preferred package manager (e.g., `pip` or `poetry`) to manage dependencies. Ensure you install the ZenML package and any required [integrations](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/README.md).
@@ -37,7 +37,7 @@ See also [here](./configure-the-server-environment.md) for more on [configuring 
 
 ## Execution Environments
 
-When running locally, there is no real concept of a `execution` environment as the client, server, and execution environment are all the same. However, when running a pipeline remotely, ZenML needs to transfer your code and environment over to the remote [orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/orchestrators/README.md). In order to achieve this, ZenML builds docker images known as `execution environments`.
+When running locally, there is no real concept of an `execution` environment as the client, server, and execution environment are all the same. However, when running a pipeline remotely, ZenML needs to transfer your code and environment over to the remote [orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/orchestrators/README.md). In order to achieve this, ZenML builds docker images known as `execution environments`.
 
 ZenML handles the Docker image configuration, creation, and pushing, starting with a [base image](https://hub.docker.com/r/zenmldocker/zenml) containing ZenML and Python, then adding pipeline dependencies. To manage the Docker image configuration, follow the steps in the [containerize your pipeline](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md) guide, including specifying additional pip dependencies, using a custom parent image, and customizing the build process.
 
