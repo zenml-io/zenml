@@ -17,6 +17,7 @@ import functools
 import json
 import os
 from abc import ABCMeta
+from collections import Counter
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -2504,15 +2505,10 @@ class Client(metaclass=ClientMetaClass):
             wait_for_pipeline_run_to_finish,
         )
 
-        if deployment_id and build_id:
+        if Counter([build_id, deployment_id, pipeline_name_or_id])[None] != 2:
             raise RuntimeError(
-                "Only build ID or deployment ID can be specified."
-            )
-
-        if not (deployment_id or build_id or pipeline_name_or_id):
-            raise RuntimeError(
-                "You need to specify at least a pipeline, build or deployment "
-                "to trigger."
+                "You need to specify exactly one of pipeline, build or "
+                "deployment to trigger."
             )
 
         if run_configuration and config_path:
@@ -2526,66 +2522,34 @@ class Client(metaclass=ClientMetaClass):
         if run_configuration:
             validate_run_config_is_runnable_from_server(run_configuration)
 
-        stack = None
-        if stack_name_or_id:
-            stack = self.get_stack(
-                stack_name_or_id, allow_name_prefix_match=False
-            )
-            validate_stack_is_runnable_from_server(
-                zen_store=self.zen_store, stack=stack
-            )
-
-        pipeline = None
-        if pipeline_name_or_id:
-            pipeline = self.get_pipeline(
-                name_id_or_prefix=pipeline_name_or_id, version=pipeline_version
-            )
-
         if deployment_id:
-            deployment = self.get_deployment(deployment_id, hydrate=True)
-            if pipeline and deployment.pipeline.id != pipeline.id:
-                raise RuntimeError(
-                    "The deployment you specified was compiled for a different "
-                    f"pipeline version ({deployment.pipeline.version}) than "
-                    f"the pipeline version you specified ({pipeline.version})."
-                )
-
-            if stack and deployment.stack.id != stack.id:
-                raise RuntimeError(
-                    "The deployment you specified was compiled for a different "
-                    f"stack ({deployment.stack.name}) than the stack you "
-                    f"specified ({stack.name})."
-                )
-
             run = self.zen_store.run_deployment(
                 deployment_id=deployment_id,
                 run_configuration=run_configuration,
             )
         elif build_id:
-            build = self.get_build(build_id, hydrate=True)
-            if pipeline and build.pipeline.id != pipeline.id:
-                raise RuntimeError(
-                    "The build you specified was created for a different "
-                    f"pipeline version ({deployment.pipeline.version}) than "
-                    f"the pipeline version you specified ({pipeline.version})."
-                )
-
-            if stack and build.stack.id != stack.id:
-                raise RuntimeError(
-                    "The build you specified was created for a different "
-                    f"stack ({deployment.stack.name}) than the stack you "
-                    f"specified ({stack.name})."
-                )
-
             run = self.zen_store.run_build(
                 build_id=build_id, run_configuration=run_configuration
             )
         else:
-            # Find runnable build if not given
+            assert pipeline_name_or_id
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id, version=pipeline_version
+            )
+
+            stack = None
+            if stack_name_or_id:
+                stack = self.get_stack(
+                    stack_name_or_id, allow_name_prefix_match=False
+                )
+                validate_stack_is_runnable_from_server(
+                    zen_store=self.zen_store, stack=stack
+                )
+
             builds = depaginate(
                 partial(
                     self.list_builds,
-                    pipeline_id=pipeline.id if pipeline else None,
+                    pipeline_id=pipeline.id,
                     stack_id=stack.id if stack else None,
                 )
             )

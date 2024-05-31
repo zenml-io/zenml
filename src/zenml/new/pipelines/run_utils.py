@@ -281,7 +281,7 @@ def wait_for_pipeline_run_to_finish(run_id: UUID) -> "PipelineRunResponse":
     while True:
         run = Client().get_pipeline_run(run_id)
 
-        if run.status.is_finished():
+        if run.status.is_finished:
             return run
 
         logger.info(
@@ -297,9 +297,10 @@ def wait_for_pipeline_run_to_finish(run_id: UUID) -> "PipelineRunResponse":
 def validate_stack_is_runnable_from_server(
     zen_store: BaseZenStore, stack: StackResponse
 ) -> None:
-    """Validate a stack model.
+    """Validate if a stack model is runnable from the server.
 
     Args:
+        zen_store: ZenStore to use for listing flavors.
         stack: The stack to validate.
 
     Raises:

@@ -30,6 +30,7 @@ from typing import (
     Dict,
     ForwardRef,
     List,
+    NoReturn,
     Optional,
     Tuple,
     Type,
@@ -3989,7 +3990,7 @@ class SqlZenStore(BaseZenStore):
         self,
         build_id: UUID,
         run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> PipelineRunResponse:
+    ) -> NoReturn:
         """Run a pipeline from a build.
 
         Args:
@@ -3998,9 +3999,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             NotImplementedError: Always.
-
-        Returns:
-            Model of the pipeline run.
         """
         raise NotImplementedError(
             "Running a build is not possible with a local store."
@@ -4135,7 +4133,7 @@ class SqlZenStore(BaseZenStore):
         self,
         deployment_id: UUID,
         run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> PipelineRunResponse:
+    ) -> NoReturn:
         """Run a pipeline from a deployment.
 
         Args:
@@ -4144,9 +4142,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             NotImplementedError: Always.
-
-        Returns:
-            Model of the pipeline run.
         """
         raise NotImplementedError(
             "Running a deployment is not possible with a local store."
