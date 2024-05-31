@@ -8,6 +8,7 @@ ZenML pipelines can be configured at runtime with a simple YAML file that can he
 
 {% hint style="info" %}
 All configuration that can be specified in a YAML file can also be specified in code itself.
+However, it is best practice to use a YAML file to seperate config from code.
 {% endhint %}
 
 Here is a minimal example of using a file based configuration yaml.
