@@ -3136,13 +3136,13 @@ class Client(metaclass=ClientMetaClass):
 
     def get_deployment(
         self,
-        id_or_prefix: str,
+        id_or_prefix: Union[str, UUID],
         hydrate: bool = True,
     ) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
 
         Args:
-            id_or_prefix: The id or id prefix of the build.
+            id_or_prefix: The id or id prefix of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3158,10 +3158,12 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            return self.zen_store.get_deployment(
-                UUID(id_or_prefix),
-                hydrate=hydrate,
+            id_ = (
+                UUID(id_or_prefix)
+                if isinstance(id_or_prefix, str)
+                else id_or_prefix
             )
+            return self.zen_store.get_deployment(id_, hydrate=hydrate)
 
         entity = self.list_deployments(
             id=f"startswith:{id_or_prefix}",
