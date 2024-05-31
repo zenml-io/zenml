@@ -66,44 +66,47 @@ def test_integration_compatibility(integrations: Tuple[str, ...]) -> bool:
 def test_integration_combinations(
     integration_names: Tuple[str, ...],
     combination_size: int,
-    max_workers: int = 4,
+    executor: ThreadPoolExecutor,
 ) -> Tuple[int, Tuple[Tuple[str, ...], ...]]:
     """Test all possible combinations of integrations of a given size.
 
     Args:
         integration_names: A tuple of all integration names.
         combination_size: The size of the combinations to test.
-        max_workers: The maximum number of worker threads to use for testing combinations. Defaults to 4.
+        executor: The ThreadPoolExecutor to use for testing combinations.
 
     Returns:
         A tuple containing the total number of combinations and a tuple of
         incompatible combinations.
     """
+    print("-----------------------------")
+    print(f"Testing integration combinations of size {combination_size}")
+    print(
+        f"Total combinations: {len(list(combinations(integration_names, combination_size)))}"
+    )
+    print("-----------------------------")
     total_combinations = len(
         list(combinations(integration_names, combination_size))
     )
     incompatible_combinations = []
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        for combination in combinations(integration_names, combination_size):
-            future = executor.submit(
-                test_integration_compatibility, combination
-            )
-            future.combination = combination
-            futures.append(future)
+    futures = []
+    for combination in combinations(integration_names, combination_size):
+        future = executor.submit(test_integration_compatibility, combination)
+        future.combination = combination
+        futures.append(future)
 
-        for i, future in enumerate(as_completed(futures), start=1):
-            combination = future.combination
-            if future.result():
-                print(
-                    f"[green]PASS[/green] Completed integration combination {i}/{total_combinations}: {combination}"
-                )
-            else:
-                print(
-                    f"[red]FAIL[/red] Completed integration combination {i}/{total_combinations}: {combination}"
-                )
-                incompatible_combinations.append(combination)
+    for i, future in enumerate(as_completed(futures), start=1):
+        combination = future.combination
+        if future.result():
+            print(
+                f"[green]PASS[/green] Completed integration combination {i}/{total_combinations}: {combination}"
+            )
+        else:
+            print(
+                f"[red]FAIL[/red] Completed integration combination {i}/{total_combinations}: {combination}"
+            )
+            incompatible_combinations.append(combination)
 
     return total_combinations, tuple(incompatible_combinations)
 
@@ -116,15 +119,16 @@ def main() -> None:
     incompatible_pairs = []
     incompatible_triplets = []
 
-    for combination_size in [2, 3]:
-        _, incompatible_combinations = test_integration_combinations(
-            integration_names, combination_size, max_workers=6
-        )
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        for combination_size in [2, 3]:
+            _, incompatible_combinations = test_integration_combinations(
+                integration_names, combination_size, executor=executor
+            )
 
-        if combination_size == 2:
-            incompatible_pairs = sorted(incompatible_combinations)
-        else:
-            incompatible_triplets = sorted(incompatible_combinations)
+            if combination_size == 2:
+                incompatible_pairs = sorted(incompatible_combinations)
+            else:
+                incompatible_triplets = sorted(incompatible_combinations)
 
     from rich.console import Console
     from rich.table import Table
