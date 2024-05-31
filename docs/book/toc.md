@@ -63,8 +63,6 @@
 ## How-To
 
 * [😸 Set up a project repository](how-to/setting-up-a-project-repository/README.md)
-  * [Best practices](how-to/setting-up-a-project-repository/best-practices.md)
-  * [Project templates](how-to/setting-up-a-project-repository/using-project-templates.md)
   * [Connect your git repository](how-to/setting-up-a-project-repository/connect-your-git-repository.md)
   * [Project templates](how-to/setting-up-a-project-repository/using-project-templates.md)
   * [Best practices](how-to/setting-up-a-project-repository/best-practices.md)
