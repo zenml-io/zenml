@@ -2523,11 +2523,23 @@ class Client(metaclass=ClientMetaClass):
             validate_run_config_is_runnable_from_server(run_configuration)
 
         if deployment_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Deployment ID and stack specified, ignoring the stack and "
+                    "using stack from deployment instead."
+                )
+
             run = self.zen_store.run_deployment(
                 deployment_id=deployment_id,
                 run_configuration=run_configuration,
             )
         elif build_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Build ID and stack specified, ignoring the stack and "
+                    "using stack from build instead."
+                )
+
             run = self.zen_store.run_build(
                 build_id=build_id, run_configuration=run_configuration
             )
