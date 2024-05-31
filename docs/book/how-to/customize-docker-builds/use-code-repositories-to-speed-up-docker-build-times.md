@@ -7,7 +7,13 @@ When using containerized components in your stack, ZenML needs to [build Docker 
 One way of skipping docker builds each time is to pass in a `build` id as you run the pipeline:
 
 ```python
-my_pipeline.with_options(build=<MY_BUILD_ID>)
+my_pipeline = my_pipeline.with_options(build=<BUILD_ID>)
+```
+
+or when running a pipeline from the CLI:
+
+```shell
+zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
 ```
 
 {% hint style="warning" %}

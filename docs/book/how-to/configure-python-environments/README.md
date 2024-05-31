@@ -45,8 +45,8 @@ The execution environments do not need to be built each time a pipeline is run -
 
 ## Image Builder Environment
 
-By default, execution environments are created locally in the [client environment](./#client-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/image-builders/README.md), a special [stack component](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/production-guide/understand-stacks.md), allowing users to build and push docker images in a different specialized _image builder environment_.
+By default, execution environments are created locally in the [client environment](#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](../../component-guide/image-builders/image-builders.md), a special [stack component](../../component-guide/README.md), allowing users to build and push docker images in a different specialized _image builder environment_.
 
-Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/image-builders/local.md) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.
+Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](../../component-guide/image-builders/local.md) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
