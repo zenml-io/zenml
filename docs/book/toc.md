@@ -99,6 +99,7 @@
   * [Build the pipeline without running](how-to/customize-docker-builds/build-the-pipeline-without-running.md)
   * [Use code repositories to speed up docker build times](how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md)
 * [🌲 Control logging](how-to/control-logging/README.md)
+  * [View logs on the dashboard](how-to/control-logging/view-logs-on-the-dasbhoard.md)
   * [Enable or disable logs storing](how-to/control-logging/enable-or-disable-logs-storing.md)
   * [Set logging verbosity](how-to/control-logging/set-logging-verbosity.md)
   * [Disable `rich` traceback output](how-to/control-logging/disable-rich-traceback.md)
