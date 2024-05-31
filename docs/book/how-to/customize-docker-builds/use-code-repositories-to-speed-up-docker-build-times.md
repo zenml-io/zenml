@@ -21,6 +21,18 @@ For instance, let's assume you are working on a project with ZenML and one of yo
 ```sh
 zenml integration install github
 ```
+
+#### Detecting local code repository checkouts
+
+Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
+
+* First, the [source root](../customize-docker-builds/README#handling-source-files) is computed
+* Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
+
+#### Tracking code version for pipeline runs
+
+If a [local code repository checkout](connect-your-git-repository.md#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
+
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

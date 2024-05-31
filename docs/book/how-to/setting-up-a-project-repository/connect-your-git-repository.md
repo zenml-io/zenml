@@ -10,6 +10,8 @@ A code repository in ZenML refers to a remote storage location for your code. So
 
 Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
+Learn more about how code repositories benefit development [here](../customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md).
+
 ## Registering a code repository
 
 If you are planning to use one of the [available implementations of code repositories](connect-your-git-repository.md#available-implementations), first, you need to install the corresponding ZenML integration:
@@ -25,17 +27,6 @@ zenml code-repository register <NAME> --type=<TYPE> [--CODE_REPOSITORY_OPTIONS]
 ```
 
 For concrete options, check out the section on the [`GitHubCodeRepository`](connect-your-git-repository.md#github), the [`GitLabCodeRepository`](connect-your-git-repository.md#gitlab) or how to develop and register a [custom code repository implementation](connect-your-git-repository.md#developing-a-custom-code-repository).
-
-#### Detecting local code repository checkouts
-
-Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
-
-* First, the [source root](../customize-docker-builds/#handling-source-files) is computed
-* Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
-
-#### Tracking code version for pipeline runs
-
-If a [local code repository checkout](connect-your-git-repository.md#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
 ## Available implementations
 
