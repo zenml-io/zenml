@@ -2,7 +2,7 @@
 description: Using Docker images to run your pipeline.
 ---
 
-# 🐳 Specify docker settings for a pipeline
+# Specify docker settings for a pipeline
 
 When a [pipeline is run with a remote orchestrator](../configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](../configure-python-environments/README#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
 
