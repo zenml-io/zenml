@@ -4,7 +4,7 @@ description: You have the option to customize the docker settings at a step leve
 
 # Docker settings on a step
 
-By default every step of a pipeline uses the same docker image that is defined at the pipeline level. Sometimes your steps will have special requirements that make it necessary to define a different docker image for one or many steps. This can easily be accomplished by adding the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) to the step decorator directly.
+By default every step of a pipeline uses the same docker image that is defined at the [pipeline level](./docker-settings-on-a-pipeline.md). Sometimes your steps will have special requirements that make it necessary to define a different docker image for one or many steps. This can easily be accomplished by adding the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) to the step decorator directly.
 
 ```python
 from zenml import step
