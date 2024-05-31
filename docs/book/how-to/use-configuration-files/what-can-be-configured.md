@@ -1,5 +1,139 @@
 # What can be configured
 
+## Sample YAML file
+
+Here is an example of a sample YAML file, with the most important configuration highlighted. For brevity,
+we have removed all possible keys. To view a sample file with all possible keys, refer to
+[this page](./autogenerate-a-template-yaml-file.md).
+
+```yaml
+build: dcd6fafb-c200-4e85-8328-428bef98d804
+
+enable_artifact_metadata: True
+enable_artifact_visualization: False
+enable_cache: False
+enable_step_logs: True
+
+extra: 
+  any_param: 1
+  another_random_key: "some_string"
+
+model:
+  name: str
+  version: Union[ModelStages, int, str, NoneType]
+
+  audience: Optional[str]
+  description: Optional[str]
+  ethics: Optional[str]
+  license: Optional[str]
+  limitations: Optional[str]
+  tags: Optional[List[str]]
+  trade_offs: Optional[str]
+  use_cases: Optional[str]
+
+parameters: Optional[Mapping[str, Any]]
+run_name: Optional[str]
+
+schedule:
+  catchup: bool
+  cron_expression: Optional[str]
+  end_time: Optional[datetime]
+  interval_second: Optional[timedelta]
+  name: Optional[str]
+  run_once_start_time: Optional[datetime]
+  start_time: Optional[datetime]
+
+settings:
+  docker:
+    apt_packages: List[str]
+    build_context_root: Optional[str]
+    build_options: Mapping[str, Any]
+    copy_files: bool
+    copy_global_config: bool
+    dockerfile: Optional[str]
+    dockerignore: Optional[str]
+    environment: Mapping[str, Any]
+    install_stack_requirements: bool
+    parent_image: Optional[str]
+    python_package_installer: PythonPackageInstaller
+    replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
+     NoneType]
+    required_hub_plugins: List[str]
+    required_integrations: List[str]
+    requirements: Union[NoneType, str, List[str]]
+    skip_build: bool
+    source_files: SourceFileMode
+    target_repository: str
+    user: Optional[str]
+  resources:
+    cpu_count: Optional[PositiveFloat]
+    gpu_count: Optional[NonNegativeInt]
+    memory: Optional[ConstrainedStrValue]
+
+steps:
+  train_model:
+    enable_artifact_metadata: Optional[bool]
+    enable_artifact_visualization: Optional[bool]
+    enable_cache: Optional[bool]
+    enable_step_logs: Optional[bool]
+    experiment_tracker: Optional[str]
+    extra: Mapping[str, Any]
+    failure_hook_source:
+      attribute: Optional[str]
+      module: str
+      type: SourceType
+    model:
+      audience: Optional[str]
+      description: Optional[str]
+      ethics: Optional[str]
+      license: Optional[str]
+      limitations: Optional[str]
+      name: str
+      save_models_to_registry: bool
+      suppress_class_validation_warnings: bool
+      tags: Optional[List[str]]
+      trade_offs: Optional[str]
+      use_cases: Optional[str]
+      version: Union[ModelStages, int, str, NoneType]
+      was_created_in_this_run: bool
+    name: Optional[str]
+    outputs: {}
+    parameters: {}
+    settings:
+      docker:
+        apt_packages: List[str]
+        build_context_root: Optional[str]
+        build_options: Mapping[str, Any]
+        copy_files: bool
+        copy_global_config: bool
+        dockerfile: Optional[str]
+        dockerignore: Optional[str]
+        environment: Mapping[str, Any]
+        install_stack_requirements: bool
+        parent_image: Optional[str]
+        python_package_installer: PythonPackageInstaller
+        replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
+         NoneType]
+        required_hub_plugins: List[str]
+        required_integrations: List[str]
+        requirements: Union[NoneType, str, List[str]]
+        skip_build: bool
+        source_files: SourceFileMode
+        target_repository: str
+        user: Optional[str]
+      resources:
+        cpu_count: Optional[PositiveFloat]
+        gpu_count: Optional[NonNegativeInt]
+        memory: Optional[ConstrainedStrValue]
+    step_operator: Optional[str]
+    success_hook_source:
+      attribute: Optional[str]
+      module: str
+      type: SourceType
+```
+
+## Deep-dive
+
 ### `enable_XXX` parameters
 
 These are boolean flags for various configurations:
