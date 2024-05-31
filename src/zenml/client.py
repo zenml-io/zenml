@@ -2441,7 +2441,6 @@ class Client(metaclass=ClientMetaClass):
         stack_name_or_id: Union[str, UUID, None] = None,
         syncronous: bool = False,
     ) -> PipelineRunResponse:
-        # Handle OSS
         from zenml.new.pipelines.run_utils import (
             validate_run_config_is_runnable_from_server,
             validate_stack_is_runnable_from_server,
@@ -2451,6 +2450,12 @@ class Client(metaclass=ClientMetaClass):
         if deployment_id and build_id:
             raise RuntimeError(
                 "Only build ID or deployment ID can be specified."
+            )
+
+        if not (deployment_id or build_id or pipeline_name_or_id):
+            raise RuntimeError(
+                "You need to specify at least a pipeline, build or deployment "
+                "to trigger."
             )
 
         if run_configuration and config_path:
@@ -2548,7 +2553,8 @@ class Client(metaclass=ClientMetaClass):
                 break
             else:
                 raise RuntimeError(
-                    "Unable to find a runnable build for the given stack and pipeline."
+                    "Unable to find a runnable build for the given stack and "
+                    "pipeline."
                 )
 
         if syncronous:

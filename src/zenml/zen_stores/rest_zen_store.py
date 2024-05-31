@@ -98,9 +98,7 @@ from zenml.enums import (
     OAuthGrantTypes,
     StoreType,
 )
-from zenml.exceptions import (
-    AuthorizationException,
-)
+from zenml.exceptions import AuthorizationException, MethodNotAllowedError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
@@ -1427,13 +1425,21 @@ class RestZenStore(BaseZenStore):
             build_id: The ID of the build to run.
             run_configuration: Configuration for the run.
 
+        Raises:
+            RuntimeError: If the server does not support running a build.
+
         Returns:
             Model of the pipeline run.
         """
         run_configuration = run_configuration or PipelineRunConfiguration()
-        response_body = self.post(
-            f"{PIPELINE_BUILDS}/{build_id}/run", body=run_configuration
-        )
+        try:
+            response_body = self.post(
+                f"{PIPELINE_BUILDS}/{build_id}/run", body=run_configuration
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a build is not supported for this server."
+            ) from e
 
         return PipelineRunResponse.parse_obj(response_body)
 
@@ -1522,14 +1528,23 @@ class RestZenStore(BaseZenStore):
             deployment_id: The ID of the deployment to run.
             run_configuration: Configuration for the run.
 
+        Raises:
+            RuntimeError: If the server does not support running a deployment.
+
         Returns:
             Model of the pipeline run.
         """
         run_configuration = run_configuration or PipelineRunConfiguration()
-        response_body = self.post(
-            f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/run",
-            body=run_configuration,
-        )
+
+        try:
+            response_body = self.post(
+                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/run",
+                body=run_configuration,
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a deployment is not supported for this server."
+            ) from e
 
         return PipelineRunResponse.parse_obj(response_body)
 
