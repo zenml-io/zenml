@@ -65,8 +65,6 @@ def training_pipeline( ... ):
     # training happens here
 ```
 
-As 
-
 ## Autonumbering of versions
 
 ZenML automatically numbers your model versions for you. If you don't specify a version number, or if you pass `None` into the `version` argument of the `Model` object, ZenML will automatically generate a version number (or a new version, if you already have a version) for you. For example if we had a model version `really_good_version` for model `my_model` and we wanted to create a new version of this model, we could do so as follows:
