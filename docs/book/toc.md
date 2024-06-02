@@ -123,7 +123,7 @@
   * [Controlling Model versions](how-to/use-the-model-control-plane/model-versions.md)
   * [Load a Model in code](how-to/use-the-model-control-plane/load-a-model-in-code.md)
   * [Promote a Model](how-to/use-the-model-control-plane/promote-a-model.md)
-  * [Linking model binaries/data to Models](how-to/use-the-model-control-plane/linking-model-binaries-data-to-models.md)
+  * [Linking model binaries/data to a Model](how-to/use-the-model-control-plane/linking-model-binaries-data-to-models.md)
   * [Load artifacts from Model](how-to/use-the-model-control-plane/load-artifacts-from-model.md)
 * [📈 Track metrics and metadata](how-to/track-metrics-metadata/README.md)
   * [Attach metadata to a model](how-to/track-metrics-metadata/attach-metadata-to-a-model.md)
