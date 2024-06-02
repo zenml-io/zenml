@@ -10,11 +10,11 @@ Now that we've learned about managing [artifacts](../../user-guide/starter-guide
 In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](../setting-up-a-project-repository/best-practices.md) section.
 {% endhint %}
 
-So far in this guide, we have been focusing on the idea of a "training pipeline". In the real world, an MLOps project can often be broken down into many different pipelines. For example:
+An MLOps project can often be broken down into many different pipelines. For example:
 
-* A feature engineering pipeline that prepares raw data into a format ready to get trained.
-* A training pipeline that takes input data from a feature engineering pipeline and trains a models on it.
-* An inference pipeline that runs batch predictions on the trained model and often takes pre-processing from the training pipeline.
+* A `feature engineering` pipeline that prepares raw data into a format ready to get trained.
+* A `training pipeline` that takes input data from a feature engineering pipeline and trains a models on it.
+* An `inference pipeline` that runs batch predictions on the trained model and often takes pre-processing from the training pipeline.
 * A deployment pipeline that deploys a trained model into a production endpoint.
 
 The lines between these pipelines can often get blurry: Some use cases call for these pipelines to be merged into one big pipeline. Others go further and break the pipeline down into even smaller chunks. Ultimately, the decision of how to structure your pipelines depends on the use case and requirements of the project.
