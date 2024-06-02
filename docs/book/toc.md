@@ -118,7 +118,7 @@
   * [Some chapter](how-to/visualize-artifacts/README.md)
 * [🪆 Use the Model Control Plane](how-to/use-the-model-control-plane/README.md)
   * [Registering a Model](how-to/use-the-model-control-plane/register-a-model.md)
-  * [Associate a pipeline with a Nodel](how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model.md)
+  * [Associate a pipeline with a Model](how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model.md)
   * [Connecting artifacts via a Model](how-to/use-the-model-control-plane/connecting-artifacts-via-a-model.md)
   * [Controlling Model versions](how-to/use-the-model-control-plane/model-versions.md)
   * [Load a Model in code](how-to/use-the-model-control-plane/load-a-model-in-code.md)
