@@ -128,7 +128,7 @@
   * [Load artifacts from Model](how-to/use-the-model-control-plane/load-artifacts-from-model.md)
 * [📈 Track metrics and metadata](how-to/track-metrics-metadata/README.md)
   * [Attach metadata to a model](how-to/track-metrics-metadata/attach-metadata-to-a-model.md)
-  * [Attach metadata to an artifact](how-to/track-metrics-metadata/attach-metadata-to-a-model.md)
+  * [Attach metadata to an artifact](how-to/track-metrics-metadata/attach-metadata-to-an-artifact.md)
   * [Attach metadata to steps](how-to/track-metrics-metadata/attach-metadata-to-steps.md)
   * [Special Metadata Types](how-to/track-metrics-metadata/logging-metadata.md)
   * [Fetch metadata within steps](how-to/track-metrics-metadata/fetch-metadata-within-steps.md)
