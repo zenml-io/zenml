@@ -4,7 +4,7 @@ Artifacts generated during pipeline runs can be linked to models in ZenML. This 
 
 There are a few ways to link artifacts:
 
-### Configuring the Model
+## Configuring the Model at a pipeline level
 
 The easiest way is to configure the `model` parameter on the `@pipeline` decorator or `@step` decorator:
 
@@ -23,7 +23,7 @@ def my_pipeline():
 
 This will automatically link all artifacts from this pipeline run to the specified model configuration.
 
-### Artifact Configuration
+### Controlling artifact types and linkage
 
 A ZenML model supports linking three types of artifacts:
 
@@ -55,7 +55,7 @@ def svc_trainer(
 
 The `ArtifactConfig` object allows configuring model linkage directly on the artifact, and you specify whether it's for a model or deployment by using the `is_model_artifact` and `is_deployment_artifact` flags (as shown above) else it will be assumed to be a data artifact.
 
-### Produce intermediate artifacts
+## Saving intermediate artifacts
 
 It is often handy to save some of your work half-way: steps like epoch-based training can be running slow, and you don't want to lose any checkpoints along the way if an error occurs. You can use the `save_artifact` utility function to save your data assets as ZenML artifacts. Moreover, if your step has the Model context configured in the `@pipeline` or `@step` decorator it will be automatically linked to it, so you can get easy access to it using the Model Control Plane features.
 
@@ -92,7 +92,7 @@ def trainer(
     return model
 ```
 
-### Link artifacts explicitly
+## Link artifacts explicitly
 
 If you would like to link an artifact to a model not from the step context or even outside a step, you can use the `link_artifact_to_model` function. All you need is ready to link artifact and the configuration of a model.
 
