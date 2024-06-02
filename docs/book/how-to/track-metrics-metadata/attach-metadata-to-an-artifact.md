@@ -42,7 +42,7 @@ def process_data_step(dataframe: pd.DataFrame) ->  Annotated[pd.DataFrame, "proc
 
 ## Fetching logged metadata
 
-Once metadata has been logged in an [artifact](attach-metadata-to-a-artifact.md), or [step](../track-metrics-metadata/attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
+Once metadata has been logged in an artifact, or [step](../track-metrics-metadata/attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
 
 ```python
 from zenml.client import Client

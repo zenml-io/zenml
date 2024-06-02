@@ -113,7 +113,6 @@
   * [Get arbitrary artifacts in a step](how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md)
   * [Handle custom data types](how-to/handle-data-artifacts/handle-custom-data-types.md)
   * [Visualize artifacts](how-to/handle-data-artifacts/visualize-artifacts.md)
-  * [Attach metadata to an artifact](how-to/handle-data-artifacts/attach-metadata-to-a-artifact.md)
   * [Load artifacts into memory](how-to/handle-data-artifacts/load-artifacts-into-memory.md)
   * [Passing artifacts between pipelines](how-to/handle-data-artifacts/passing-artifacts-between-pipelines.md)
 * [🪆 Use the Model Control Plane](how-to/use-the-model-control-plane/README.md)

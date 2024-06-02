@@ -48,7 +48,7 @@ In this example, the metadata is associated with the model rather than the speci
 
 ## Fetching logged metadata
 
-Once metadata has been logged in an [artifact](../handle-data-artifacts/attach-metadata-to-a-artifact.md), model, or [step](attach-metadata-to-steps.md), we can easily fetch the metadata with the ZenML Client:
+Once metadata has been logged in an [artifact](attach-metadata-to-an-artifact.md), model, or [step](attach-metadata-to-steps.md), we can easily fetch the metadata with the ZenML Client:
 
 ```python
 from zenml.client import Client
