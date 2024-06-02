@@ -14,5 +14,6 @@ A Model captures lineage information and more. Within a Model, different Model v
 
 The Model Control Plane is how you manage your models through this unified interface. It allows you to combine the logic of your pipelines, artifacts and crucial business data along with the actual 'technical model'.
 
+To see an end-to-end example, please refer to the [starter guide](../../user-guide/starter-guide/track-ml-models.md).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
