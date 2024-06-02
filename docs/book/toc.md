@@ -130,6 +130,7 @@
   * [Attach metadata to a model](how-to/track-metrics-metadata/attach-metadata-to-a-model.md)
   * [Attach metadata to an artifact](how-to/track-metrics-metadata/attach-metadata-to-an-artifact.md)
   * [Attach metadata to steps](how-to/track-metrics-metadata/attach-metadata-to-steps.md)
+  * [Group metadata](how-to/track-metrics-metadata/grouping-metadata.md)
   * [Special Metadata Types](how-to/track-metrics-metadata/logging-metadata.md)
   * [Fetch metadata within steps](how-to/track-metrics-metadata/fetch-metadata-within-steps.md)
   * [Fetch metadata during pipeline composition](how-to/track-metrics-metadata/fetch-metadata-within-pipeline.md)
