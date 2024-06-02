@@ -103,8 +103,6 @@
   <!-- * [Distributed Training](how-to/training-with-gpus/distributed-training.md) -->
 * [🌲 Control logging](how-to/control-logging/README.md)
   * [View logs on the dashboard](how-to/control-logging/view-logs-on-the-dasbhoard.md)
-  * [Enable * [🚜 Train with GPUs](how-to/training-with-gpus/training-with-gpus.md)
-  <!-- * [Distributed Training](how-to/training-with-gpus/distributed-training.md) -->or disable logs storing](how-to/control-logging/enable-or-disable-logs-storing.md)
   * [Set logging verbosity](how-to/control-logging/set-logging-verbosity.md)
   * [Disable `rich` traceback output](how-to/control-logging/disable-rich-traceback.md)
   * [Disable colorful logging](how-to/control-logging/disable-colorful-logging.md)
