@@ -32,14 +32,12 @@ def training_pipeline( ... ):
 Here we are specifically setting the model configuration for a particular step or for the pipeline as a whole.
 
 {% hint style="info" %}
-Please note in the above example if the model version exists, it is automatically associated with the pipeline and becomes active in the pipeline context. Therefore, a user should be careful and intentional as to whether you want to create a new pipeline, or fetch an existing one.
+Please note in the above example if the model version exists, it is automatically associated with the pipeline and becomes active in the pipeline context. Therefore, a user should be careful and intentional as to whether you want to create a new pipeline, or fetch an existing one. See below for an example of fetching a model from an existing version/stage.
 {% endhint %}
 
 ## Fetching model versions by stage
 
-A common pattern of fetching model versions in a pipeline is to specify the special `stages`, i.e. `production`, `staging`, `development` etc.
-
-A model version can be assigned a particular version in the dashboard or by executing the following command in the CLI:
+A common pattern is to assign a special `stage` to a model version, i.e. `production`, `staging`, `development` etc. This marks this version especially, and can be used to fetch it using a particular semantic meaning, disconnected from the concrete model version. A model version can be assigned a particular stage in the dashboard or by executing the following command in the CLI:
 
 ```shell
 zenml model version update MODEL_NAME --stage=STAGE
@@ -66,6 +64,8 @@ def svc_trainer(...) -> ...:
 def training_pipeline( ... ):
     # training happens here
 ```
+
+As 
 
 ## Autonumbering of versions
 
