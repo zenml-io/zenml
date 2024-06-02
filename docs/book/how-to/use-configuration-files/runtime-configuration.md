@@ -25,13 +25,13 @@ Settings are categorized into two types:
   * [`ResourceSettings`](../training-with-gpus/training-with-gpus.md) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`SkypilotAWSOrchestratorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
-  * [`KubeflowOrchestratorSettings`](https://sdkdocs.zenml.io/0.58.0/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor.KubeflowOrchestratorSettings to specify Kubeflow settings.
-  * [`MLflowExperimentTrackerSettings`](https://sdkdocs.zenml.io/0.58.0/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor.MLFlowExperimentTrackerSettings) to specify MLflow settings.
-  * [`WandbExperimentTrackerSettings`](https://sdkdocs.zenml.io/0.58.0/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings) to specify W\&B settings.
-  * [`WhylogsDataValidatorSettings`](https://sdkdocs.zenml.io/0.58.0/integration_code_docs/integrations-whylogs/#zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor.WhylogsDataValidatorSettings) to specify Whylogs settings.
-  * [`SagemakerStepOperatorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/step-operators/sagemaker.md) to specify AWS Sagemaker step operator settings.
-  * [`VertexStepOperatorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/step-operators/vertex.md) to specify GCP Vertex step operator settings.
-  * [`AzureMLStepOeratorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/step-operators/azureml.md) to specify AzureML step operator settings.
+  * [`KubeflowOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor.KubeflowOrchestratorSettings to specify Kubeflow settings.
+  * [`MLflowExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor.MLFlowExperimentTrackerSettings) to specify MLflow settings.
+  * [`WandbExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings) to specify W\&B settings.
+  * [`WhylogsDataValidatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-whylogs/#zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor.WhylogsDataValidatorSettings) to specify Whylogs settings.
+  * [`SagemakerStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) to specify AWS Sagemaker step operator settings.
+  * [`VertexStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex_step_operator_flavor.VertexStepOperatorSettings) to specify GCP Vertex step operator settings.
+  * [`AzureMLStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml_step_operator_flavor.AzureMLStepOperatorSettings) to specify AzureML step operator settings.
 
 ### Difference between stack component settings at registration-time vs real-time
 
