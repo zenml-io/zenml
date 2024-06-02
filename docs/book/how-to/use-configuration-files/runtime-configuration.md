@@ -11,7 +11,7 @@ Stack Component Config vs Settings in ZenML
 Part of the configuration of a pipeline are its `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
 * The [resources](../overview/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
-* Configuring the [containerization](../customize-docker-builds/) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* Configuring the [containerization](../customize-docker-builds/README.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept called `BaseSettings`. (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
@@ -21,8 +21,8 @@ You will learn about all of the above in more detail later, but for now, let's t
 Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  * [`DockerSettings`](../customize-docker-builds/) to specify docker settings.
-  * [`ResourceSettings`](../overview/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
+  * [`DockerSettings`](../customize-docker-builds/README.md) to specify docker settings.
+  * [`ResourceSettings`](../training-with-gpus/training-with-gpus.md) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`SkypilotAWSOrchestratorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
   * [`KubeflowOrchestratorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/kubeflow.md) to specify Kubeflow settings.

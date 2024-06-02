@@ -96,6 +96,11 @@ steps:
     settings:
       docker: {}
       resources: {}
+
+      # Stack component specific settings
+      step_operator.sagemaker:
+        estimator_args:
+          instance_type: m7g.medium
 ```
 
 ## Deep-dive
@@ -189,9 +194,7 @@ You will not be able to run with the same run\_name twice. Do not set this stati
 
 ### Stack Component Runtime settings
 
-{% hint style="info" %}
 Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](runtime-configuration.md). In short, they define a bunch of execution configuration such as Docker building and resource settings.
-{% endhint %}
 
 ### Docker Settings
 
@@ -210,6 +213,18 @@ Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/late
 {% endhint %}
 
 ### Resource Settings
+
+Some stacks allow setting the resource settings using these settings.
+
+```yaml
+resources:
+  cpu_count: 2
+  gpu_count: 1
+  memory: "4Gb"
+```
+
+Note that this may not work for all types of stack components. To learn which components support this,
+please refer to the specific orchestrator docs.
 
 ### `failure_hook_source` and `success_hook_source`
 
