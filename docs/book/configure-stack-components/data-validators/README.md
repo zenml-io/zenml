@@ -13,7 +13,7 @@ Data profiling, data integrity testing, data and model drift detection are all w
 Related concepts:
 
 * the Data Validator is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/user-guide/production-guide/understand-stacks.md).
-* Data Validators used in ZenML pipelines usually generate data profiles and data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/) and can be [retrieved and visualized](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/handle-data-artifacts/visualize-artifacts.md) later.
+* Data Validators used in ZenML pipelines usually generate data profiles and data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/) and can be [retrieved and visualized](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/visualize-artifacts/README.md) later.
 
 ### When to use it
 

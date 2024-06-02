@@ -110,7 +110,7 @@ steps:
 These are boolean flags for various configurations:
 
 * `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](../handle-data-artifacts/handle-custom-data-types.md#optional-which-metadata-to-extract-for-the-artifact).
-* `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../handle-data-artifacts/visualize-artifacts.md).
+* `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../visualize-artifacts/README.md).
 * `enable_cache`: Utilize [caching](../overview/control-caching-behavior.md) or not.
 * `enable_step_logs`: Enable tracking [step logs](../control-logging/enable-or-disable-logs-storing.md).
 
