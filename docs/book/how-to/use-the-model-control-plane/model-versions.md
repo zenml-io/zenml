@@ -2,6 +2,8 @@
 
 Each model can have many versions. Model versions are a way for you to track different iterations of your training process, complete with some extra dashboard and API functionality to support the full ML lifecycle.
 
+E.g. Based on your business rules during training, you can associate model version with stages and promote them to production. You have an interface that allows you to link these versions with non-technical artifacts and data, e.g. business data, datasets, or even stages in your process and workflow.
+
 ### When are model versions created?
 
 Model versions are created implicitly as you are running your machine learning training, so you don't have to immediately think about this. If you want more control over versions, our API has you covered, with an option to explicitly name your versions.
