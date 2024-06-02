@@ -16,7 +16,7 @@ zenml model register iris_logistic_regression --license=... --description=...
 
 You can view some of the options of what can be passed into this command by running `zenml model register --help` but since you are using the CLI outside a pipeline run the arguments you can pass in are limited to non-runtime items. You can also associate tags with models at this point, for example, using the `--tag` option.
 
-### Explicit dashboard registration
+## Explicit dashboard registration
 
 [ZenML Cloud](https://zenml.io/cloud) can register their models directly from the cloud dashboard interface.
 
