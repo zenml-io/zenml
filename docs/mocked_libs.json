@@ -114,6 +114,7 @@
     "hvac.exceptions",
     "huggingface_hub",
     "huggingface_hub.utils",
+    "keras",
     "kfp",
     "kfp.compiler",
     "kfp.v2",
