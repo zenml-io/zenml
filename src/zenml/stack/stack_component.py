@@ -21,8 +21,7 @@ from inspect import isclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, validator
-from pydantic.fields import ModelField
+from pydantic import BaseModel, Extra, root_validator
 from pydantic.typing import get_origin
 
 from zenml.config.build_configuration import BuildConfiguration
@@ -247,8 +246,8 @@ class StackComponentConfig(BaseModel, ABC):
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
 
-    @validator("*", pre=True)
-    def _convert_json_strings(cls, value: Any, field: ModelField) -> Any:
+    @root_validator(pre=True)
+    def _convert_json_strings(cls, values: Dict[str, Any]) -> Any:
         """Converts potential JSON strings passed via the CLI.
 
         Args:
@@ -261,21 +260,28 @@ class StackComponentConfig(BaseModel, ABC):
         Raises:
             ValueError: If the value is an invalid JSON string.
         """
-        if isinstance(value, str):
-            if get_origin(field.outer_type_) in {
-                dict,
-                list,
-                Mapping,
-                Sequence,
-            }:
-                try:
-                    return json.loads(value)
-                except json.JSONDecodeError as e:
-                    raise ValueError(f"Invalid json string '{value}'") from e
-            elif isclass(field.type_) and issubclass(field.type_, BaseModel):
-                return field.type_.parse_raw(value).dict()
+        for key, field in cls.__fields__.items():
+            value = values.get(key, None)
 
-        return value
+            if isinstance(value, str):
+                if get_origin(field.outer_type_) in {
+                    dict,
+                    list,
+                    Mapping,
+                    Sequence,
+                }:
+                    try:
+                        values[key] = json.loads(value)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(
+                            f"Invalid json string '{value}'"
+                        ) from e
+                elif isclass(field.type_) and issubclass(
+                    field.type_, BaseModel
+                ):
+                    values[key] = field.type_.parse_raw(value).dict()
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
