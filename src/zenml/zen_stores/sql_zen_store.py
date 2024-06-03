@@ -96,6 +96,8 @@ from zenml.constants import (
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
+    is_false_string_value,
+    is_true_string_value,
 )
 from zenml.enums import (
     AuthScheme,
@@ -561,32 +563,39 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 self.database = sql_url.database
                 sql_url = sql_url._replace(database=None)
             if sql_url.query:
+                def _get_query_result(
+                    result: Union[str, Tuple[str, ...]],
+                ) -> Optional[str]:
+                    """Returns the only or the first result of a query.
+
+                    Args:
+                        result: The result of the query.
+
+                    Returns:
+                        The only or the first result, None otherwise.
+                    """
+                    if isinstance(result, str):
+                        return result
+                    elif isinstance(result, tuple) and len(result) > 0:
+                        return result[0]
+                    else:
+                        return None
+
                 for k, v in sql_url.query.items():
                     if k == "ssl_ca":
-                        if isinstance(v, tuple) and len(v) > 0:
-                            self.ssl_ca = v[0]
-                        elif isinstance(v, str):
-                            self.ssl_ca = v
+                        if r := _get_query_result(v):
+                            self.ssl_ca = r
                     elif k == "ssl_cert":
-                        if isinstance(v, tuple) and len(v) > 0:
-                            self.ssl_cert = v[0]
-                        elif isinstance(v, str):
-                            self.ssl_cert = v
+                        if r := _get_query_result(v):
+                            self.ssl_cert = r
                     elif k == "ssl_key":
-                        if isinstance(v, tuple) and len(v) > 0:
-                            self.ssl_key = v[0]
-                        elif isinstance(v, str):
-                            self.ssl_key = v
+                        if r := _get_query_result(v):
+                            self.ssl_key = r
                     elif k == "ssl_verify_server_cert":
-                        if isinstance(v, tuple) and len(v) > 0:
-                            if v[0] in ["1", "y", "yes", "True", "true"]:
+                        if r := _get_query_result(v):
+                            if is_true_string_value(r):
                                 self.ssl_verify_server_cert = True
-                            elif v[0] in ["0", "n", "no", "False", "false"]:
-                                self.ssl_verify_server_cert = False
-                        elif isinstance(v, str):
-                            if v in ["1", "y", "yes", "True", "true"]:
-                                self.ssl_verify_server_cert = True
-                            elif v in ["0", "n", "no", "False", "false"]:
+                            elif is_false_string_value(r):
                                 self.ssl_verify_server_cert = False
                     else:
                         raise ValueError(
