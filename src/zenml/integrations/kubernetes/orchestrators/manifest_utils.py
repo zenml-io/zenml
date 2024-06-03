@@ -128,6 +128,9 @@ def build_pod_manifest(
     env = env.copy() if env else {}
     env.setdefault(ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, "False")
 
+    security_context = k8s_client.V1SecurityContext(
+        privileged=settings.privileged
+    )
     container_spec = k8s_client.V1Container(
         name="main",
         image=image_name,
@@ -137,6 +140,7 @@ def build_pod_manifest(
             k8s_client.V1EnvVar(name=name, value=value)
             for name, value in env.items()
         ],
+        security_context=security_context,
     )
 
     pod_spec = k8s_client.V1PodSpec(

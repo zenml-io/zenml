@@ -458,10 +458,10 @@ def device_authorization(
             ),
         )
 
-    if config.dashboard_url:
-        verification_uri = (
-            config.dashboard_url.lstrip("/") + DEVICES + DEVICE_VERIFY
-        )
+    dashboard_url = config.dashboard_url or config.server_url
+
+    if dashboard_url:
+        verification_uri = dashboard_url.lstrip("/") + DEVICES + DEVICE_VERIFY
     else:
         verification_uri = DEVICES + DEVICE_VERIFY
 
