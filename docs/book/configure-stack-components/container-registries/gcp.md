@@ -113,7 +113,7 @@ Stacks using the GCP Container Registry set up with local authentication are not
 {% endtab %}
 
 {% tab title="GCP Service Connector (recommended)" %}
-To set up the GCP Container Registry to authenticate to GCP and access a GCR registry, it is recommended to leverage the many features provided by [the GCP Service Connector](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/auth-management/gcp-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the GCP Container Registry to authenticate to GCP and access a GCR registry, it is recommended to leverage the many features provided by [the GCP Service Connector](../../how-to/auth-management/gcp-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 {% hint style="warning" %}
 The GCP Service Connector does not support the Google Artifact Registry yet. If you need to connect your GCP Container Registry to a Google Artifact Registry, you can use the _Local Authentication_ method instead.
@@ -144,7 +144,7 @@ Successfully registered service connector `gcp-zenml-core` with access to the fo
 ```
 {% endcode %}
 
-> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to read and write to your GCR registry. For a full list of permissions required to use a GCP Service Connector to access a GCR registry, please refer to the [GCP Service Connector GCR registry resource type documentation](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/auth-management/gcp-service-connector.md#gcr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The GCP Service Connector supports [many different authentication methods](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/auth-management/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to read and write to your GCR registry. For a full list of permissions required to use a GCP Service Connector to access a GCR registry, please refer to the [GCP Service Connector GCR registry resource type documentation](../../how-to/auth-management/gcp-service-connector.md#gcr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The GCP Service Connector supports [many different authentication methods](../../how-to/auth-management/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
 
 If you already have one or more GCP Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the GCR registry you want to use for your GCP Container Registry by running e.g.:
 
@@ -183,7 +183,7 @@ zenml container-registry connect <CONTAINER_REGISTRY_NAME> --connector <CONNECTO
 ```
 
 {% hint style="info" %}
-Linking the GCP Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/auth-management/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
+Linking the GCP Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](../../how-to/auth-management/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
 
 ```sh
 zenml service-connector login <CONNECTOR_NAME> --resource-type docker-registry
