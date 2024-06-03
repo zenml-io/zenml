@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from zenml.logger import get_logger
 from zenml.utils import secret_utils
-from zenml.utils.pydantic_utils import check_validators
+from zenml.utils.pydantic_utils import has_validators
 
 logger = get_logger(__name__)
 
@@ -76,7 +76,7 @@ class SecretReferenceMixin(BaseModel):
                     "not allowed."
                 )
 
-            requires_validation = check_validators(
+            requires_validation = has_validators(
                 pydantic_class=self.__class__, field_name=key
             )
             if requires_validation:

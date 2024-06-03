@@ -98,7 +98,7 @@ class StackComponentConfig(BaseModel, ABC):
                     )
                 continue
 
-            if pydantic_utils.check_validators(
+            if pydantic_utils.has_validators(
                 pydantic_class=self.__class__, field_name=key
             ):
                 raise ValueError(
