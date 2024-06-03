@@ -1,10 +1,16 @@
+---
+description: Learn how to log metadata for artifacts and models in ZenML.
+---
+
 # Attach metadata to an artifact
+
+![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
 
 Metadata plays a critical role in ZenML, providing context and additional information about various entities within the platform. Anything which is `metadata` in ZenML can be compared in the dashboard.
 
 This guide will explain how to log metadata for artifacts and models in ZenML and detail the types of metadata that can be logged.
 
-### Logging Metadata for Artifacts
+## Logging Metadata for Artifacts
 
 Artifacts in ZenML are outputs of steps within a pipeline, such as datasets, models, or evaluation results. Associating metadata with artifacts can help users understand the nature and characteristics of these outputs.
 
@@ -36,7 +42,7 @@ def process_data_step(dataframe: pd.DataFrame) ->  Annotated[pd.DataFrame, "proc
 
 ## Fetching logged metadata
 
-Once metadata has been logged in an [artifact](attach-metadata-to-a-artifact.md), or [step](../track-metrics-metadata/attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
+Once metadata has been logged in an artifact, or [step](../track-metrics-metadata/attach-metadata-to-a-model.md), we can easily fetch the metadata with the ZenML Client:
 
 ```python
 from zenml.client import Client

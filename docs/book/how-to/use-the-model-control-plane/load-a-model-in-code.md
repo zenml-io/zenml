@@ -1,11 +1,17 @@
 # Load a model in code
 
-### Load the attached model
+There are a few different ways to load a ZenML Model in code:
+
+## Load the active model in a pipeline
 
 You can also use the [active model](../../user-guide/starter-guide/track-ml-models.md) to get the model metadata, or the associated artifacts directly as described in the [starter guide](../../user-guide/starter-guide/track-ml-models.md):
 
 ```python
-from zenml import step, pipeline, get_step_context
+from zenml import step, pipeline, get_step_context, pipeline, Model
+
+@pipeline(model=Model(name="my_model"))
+def my_pipeline():
+    ...
 
 @step
 def my_step():
@@ -20,7 +26,9 @@ def my_step():
     output.run_metadata["accuracy"].value
 ```
 
-### Load any model
+## Load any model via the Client
+
+Alternatively, you can use the `Client`:
 
 ```python
 from zenml import step

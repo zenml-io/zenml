@@ -6,6 +6,12 @@ description: >-
 
 # Configuration hierarchy
 
+There are a few general rules when it comes to settings and configurations that are applied in multiple places. Generally the following is true:
+
+* Configurations in code override configurations made inside of the yaml file
+* Configurations at the step level override those made at the pipeline level
+* In case of attributes the dictionaries are merged
+
 ```python
 from zenml import pipeline, step
 from zenml.config import ResourceSettings
@@ -33,7 +39,5 @@ train_model.configuration.settings["resources"]
 simple_ml_pipeline.configuration.settings["resources"]
 # -> cpu_count: 2, memory="1GB"
 ```
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

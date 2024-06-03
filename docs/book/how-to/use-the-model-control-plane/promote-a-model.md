@@ -62,7 +62,29 @@ def train_and_promote_model():
     ...
     promote_to_staging(after=["train_and_evaluate"])
 ```
+
+## Fetching model versions by stage
+
+The stage can be used to load the right model version, by passing them in as a `version`:
+
+```python
+from zenml import Model, step, pipeline
+
+model= Model(
+    name="my_model",
+    version="production"
+)
+
+# The step configuration will take precedence over the pipeline
+@step(model=model)
+def svc_trainer(...) -> ...:
+    ...
+
+# This configures it for all steps within the pipeline
+@pipeline(model=model)
+def training_pipeline( ... ):
+    # training happens here
+```
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-

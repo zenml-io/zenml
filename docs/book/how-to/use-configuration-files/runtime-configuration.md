@@ -11,7 +11,7 @@ Stack Component Config vs Settings in ZenML
 Part of the configuration of a pipeline are its `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
 * The [resources](../overview/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
-* Configuring the [containerization](../customize-docker-builds/) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* Configuring the [containerization](../customize-docker-builds/README.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept called `BaseSettings`. (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
@@ -21,17 +21,17 @@ You will learn about all of the above in more detail later, but for now, let's t
 Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  * [`DockerSettings`](../customize-docker-builds/) to specify docker settings.
-  * [`ResourceSettings`](../overview/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
+  * [`DockerSettings`](../customize-docker-builds/README.md) to specify docker settings.
+  * [`ResourceSettings`](../training-with-gpus/training-with-gpus.md) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
-  * [`SkypilotAWSOrchestratorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/skypilot-vm.md) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
-  * [`KubeflowOrchestratorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/kubeflow.md) to specify Kubeflow settings.
-  * [`MLflowExperimentTrackerSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/experiment-trackers/mlflow.md) to specify MLflow settings.
-  * [`WandbExperimentTrackerSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/experiment-trackers/wandb.md) to specify W\&B settings.
-  * [`WhylogsDataValidatorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/configure-stack-components/data-validators/whylogs.md) to specify Whylogs settings.
-  * [`SagemakerStepOperatorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/step-operators/sagemaker.md) to specify AWS Sagemaker step operator settings.
-  * [`VertexStepOperatorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/step-operators/vertex.md) to specify GCP Vertex step operator settings.
-  * [`AzureMLStepOeratorSettings`](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/step-operators/azureml.md) to specify AzureML step operator settings.
+  * [`SkypilotAWSOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot_aws/#zenml.integrations.skypilot_aws.flavors.skypilot_orchestrator_aws_vm_flavor.SkypilotAWSOrchestratorSettings) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
+  * [`KubeflowOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor.KubeflowOrchestratorSettings) to specify Kubeflow settings.
+  * [`MLflowExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor.MLFlowExperimentTrackerSettings) to specify MLflow settings.
+  * [`WandbExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings) to specify W\&B settings.
+  * [`WhylogsDataValidatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-whylogs/#zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor.WhylogsDataValidatorSettings) to specify Whylogs settings.
+  * [`SagemakerStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) to specify AWS Sagemaker step operator settings.
+  * [`VertexStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex_step_operator_flavor.VertexStepOperatorSettings) to specify GCP Vertex step operator settings.
+  * [`AzureMLStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml_step_operator_flavor.AzureMLStepOperatorSettings) to specify AzureML step operator settings.
 
 ### Difference between stack component settings at registration-time vs real-time
 
@@ -42,31 +42,6 @@ A good example of this is the [`MLflow Experiment Tracker`](https://github.com/z
 Even though settings can be overridden at runtime, you can also specify _default_ values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker: `zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
 
 This means that all pipelines that run using this experiment tracker use nested MLflow runs unless overridden by specifying settings for the pipeline at runtime.
-
-### Using objects or dicts
-
-Settings can be passed in directly as `BaseSettings`-subclassed objects, or a dictionary representation of the object. For example, a Docker configuration can be passed in as follows:
-
-```python
-from zenml.config import DockerSettings
-
-settings = {'docker': DockerSettings(requirements=['pandas'])}
-```
-
-Or like this:
-
-```python
-settings = {'docker': {'requirements': ['pandas']}}
-```
-
-Or in a YAML like this:
-
-```yaml
-settings:
-  docker:
-    requirements:
-      - pandas
-```
 
 ### Using the right key for Stack-component-specific settings
 

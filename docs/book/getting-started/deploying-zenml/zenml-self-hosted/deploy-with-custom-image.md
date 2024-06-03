@@ -10,7 +10,7 @@ In most cases, deploying ZenML with the default `zenmlhub/zenml-server` Docker i
 * You have forked the ZenML repository and want to deploy a ZenML server based on your own fork because you made changes to the server / database logic.
 
 {% hint style="warning" %}
-Deploying ZenML with custom Docker images is only possible for [Docker](broken-reference) or [Helm](broken-reference) deployments.
+Deploying ZenML with custom Docker images is only possible for [Docker](../zenml-self-hosted/deploy-with-docker.md) or [Helm](../zenml-self-hosted/deploy-with-helm.md) deployments.
 {% endhint %}
 
 ### Build and Push Custom ZenML Server Docker Image
@@ -60,7 +60,7 @@ Next, adjust your preferred deployment strategy to use the custom Docker image y
 
 You can deploy your custom image via the `zenml deploy` CLI command by setting the `--config` argument to a custom configuration file that has both `zenmlserver_image_repo` and `zenmlserver_image_tag` set:
 
-1.  Define a custom `config.yaml` based on the [base deployment configuration file](broken-reference) and set `zenmlserver_image_repo` and `zenmlserver_image_tag` according to the custom image you built:
+1.  Define a custom `config.yaml` based on the [base deployment configuration file](./deploy-with-zenml-cli.md#base-configuration-file) and set `zenmlserver_image_repo` and `zenmlserver_image_tag` according to the custom image you built:
 
     ```yaml
     zenmlserver_image_repo: <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>
@@ -72,11 +72,11 @@ You can deploy your custom image via the `zenml deploy` CLI command by setting t
     zenml deploy --config=/PATH/TO/FILE
     ```
 
-See the general [ZenML CLI Deployment Guide](broken-reference) for more information on how to use the `zenml deploy` CLI command and what other options can be configured.
+See the general [ZenML CLI Deployment Guide](./deploy-with-zenml-cli.md) for more information on how to use the `zenml deploy` CLI command and what other options can be configured.
 
 #### Deploy a custom ZenML image via Docker
 
-To deploy your custom image via Docker, first familiarize yourself with the general [ZenML Docker Deployment Guide](broken-reference).
+To deploy your custom image via Docker, first familiarize yourself with the general [ZenML Docker Deployment Guide](deploy-with-docker.md).
 
 To use your own image, follow the general guide step by step but replace all mentions of `zenmldocker/zenml-server` with your custom image reference `<YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>:<IMAGE_TAG>`. E.g.:
 
@@ -96,7 +96,7 @@ services:
 
 #### Deploy a custom ZenML image via Helm
 
-To deploy your custom image via Helm, first familiarize yourself with the general [ZenML Helm Deployment Guide](broken-reference).
+To deploy your custom image via Helm, first familiarize yourself with the general [ZenML Helm Deployment Guide](./deploy-with-helm.md).
 
 To use your own image, the only thing you need to do differently is to modify the `image` section of your `values.yaml` file:
 

@@ -4,13 +4,17 @@ description: Creating a full picture of a ML model using the Model Control Plane
 
 # Track ML models
 
-![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/mcp\_walkthrough.gif)
+![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/mcp_walkthrough.gif)
 
 As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
 ## What is a ZenML Model?
 
-Before diving in, let's take some time to build an understanding of what we mean when we say `Model` in ZenML terms. A `Model` is simply an entity that groups pipelines, artifacts, metadata, and other crucial business data into a unified entity. Please note that one of the most common artifacts that is associated with a Model in ZenML is the so-called technical model, which is the actual model file/files that hold the weight and parameters of a machine learning training result. However, this is not the only artifact that is relevant; artifacts such as the training data and the predictions this model produces in production are also linked inside a ZenML Model. In this sense, a ZenML Model is a concept that more broadly encapsulates your ML product's business logic.
+Before diving in, let's take some time to build an understanding of what we mean when we say `Model` in ZenML terms. A `Model` is simply an entity that groups pipelines, artifacts, metadata, and other crucial business data into a unified entity. In this sense, a ZenML Model is a concept that more broadly encapsulates your ML product's business logic. You may even think of a ZenML Model as a "project" or a "workspace"
+
+{% hint style="warning" %}
+Please note that one of the most common artifacts that is associated with a Model in ZenML is the so-called technical model, which is the actually model file/files that holds the weight and parameters of a machine learning training result. However, this is not the only artifact that is relevant; artifacts such as the training data and the predictions this model produces in production are also linked inside a ZenML Model.
+{% endhint %}
 
 Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, the ZenML client as well as on the [ZenML Cloud](https://zenml.io/cloud) dashboard.
 
@@ -259,6 +263,6 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../../how-to/use-the-model-control-plane/). guide.
+ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../../how-to/use-the-model-control-plane/README.md). guide.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

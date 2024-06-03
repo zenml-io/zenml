@@ -164,10 +164,8 @@ Just like that, you now have a fully working GCP stack ready to go. Feel free to
 
 If you do not want to use any of the created resources in the future, simply delete the project you created.
 
-````bash
+```bash
 gcloud project delete <PROJECT_ID_OR_NUMBER>
-```<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+```
 
-
-````
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
