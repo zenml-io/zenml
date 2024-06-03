@@ -492,7 +492,10 @@ def go() -> None:
         input("Press ENTER to continue...")
 
     try:
-        subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+        subprocess.check_call(
+            ["jupyter", "notebook", "--ContentsManager.allow_hidden=True"],
+            cwd=zenml_tutorial_path,
+        )
     except subprocess.CalledProcessError as e:
         cli_utils.error(
             "An error occurred while launching Jupyter Notebook. "
@@ -653,7 +656,15 @@ def info(
         cli_utils.print_user_info(user_info)
 
     if stack:
-        cli_utils.print_debug_stack()
+        try:
+            cli_utils.print_debug_stack()
+        except ModuleNotFoundError as e:
+            cli_utils.warning(
+                "Could not print debug stack information. Please make sure "
+                "you have the necessary dependencies and integrations "
+                "installed for all your stack components."
+            )
+            cli_utils.warning(f"The missing package is: '{e.name}'")
 
 
 @cli.command(
