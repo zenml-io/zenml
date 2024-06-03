@@ -679,7 +679,7 @@ class Model(BaseModel):
         model_version_request = ModelVersionRequest(
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
-            name=self.version,
+            name=str(self.version) if self.version else None,
             description=self.description,
             model=model.id,
             tags=self.tags,

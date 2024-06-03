@@ -72,7 +72,8 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         title="The deployment associated with the pipeline run."
     )
     pipeline: Optional[UUID] = Field(
-        title="The pipeline associated with the pipeline run."
+        title="The pipeline associated with the pipeline run.",
+        default=None,
     )
     orchestrator_run_id: Optional[str] = Field(
         title="The orchestrator run ID.",
