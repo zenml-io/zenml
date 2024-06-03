@@ -53,7 +53,7 @@ A GCS Artifact Store can be deployed directly from the ZenML CLI:
 zenml artifact-store deploy gcs_artifact_store --flavor=gcp --provider=gcp ...
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/stack-deployment/README.md).
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../how-to/stack-deployment/README.md).
 
 #### Authentication Methods
 

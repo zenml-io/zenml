@@ -93,7 +93,7 @@ zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) to store the MLflow tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../user-guide/advanced-guide/secret-management/secret-management.md) to store the MLflow tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -117,7 +117,7 @@ zenml experiment-tracker register mlflow \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](..//https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}

@@ -418,6 +418,4 @@ if __name__ == "__main__":
     visualize_results("data_validation_pipeline", "data_integrity_check")
 ```
 
-![Deepchecks Visualization Example](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/examples/deepchecks\_data\_validation/assets/drift\_visualization%20\(1\).png)
-
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
