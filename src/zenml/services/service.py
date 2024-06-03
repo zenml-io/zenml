@@ -219,7 +219,7 @@ class BaseService(BaseTypedModel):
             admin_state=model.admin_state,
             config=model.config,
             status=model.status,
-            service_type=dict(model.service_type),
+            service_type=model.service_type.model_dump(),
             endpoint=model.endpoint,
         )
 
