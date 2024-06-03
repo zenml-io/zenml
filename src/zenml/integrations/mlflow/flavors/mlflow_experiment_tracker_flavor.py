@@ -126,7 +126,7 @@ class MLFlowExperimentTrackerConfig(
             if is_databricks_tracking_uri(self.tracking_uri):
                 # If the tracking uri is "databricks", then we need the
                 # databricks host to be set.
-                if self.databricks_host:
+                if not self.databricks_host:
                     logging.warning(
                         "MLflow experiment tracking with a Databricks MLflow "
                         "managed tracking server requires the "
