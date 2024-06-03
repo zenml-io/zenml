@@ -29,7 +29,7 @@ The above four interact with other MLOps stack components, secrets, and data in 
 
 In this scenario, all services are hosted on the ZenML Cloud infrastructure. Customer secrets and credentials required to access customer infrastructure are stored and managed by the ZenML Cloud.
 
-On our  infrastructure for ZenML Cloud only ML _metadata_ (e.g. pipeline and model tracking and versioning information) is stored. All the actual ML data artifacts (e.g. data produced or consumed by pipeline steps, logs and visualizations, models) are stored on the customer cloud. This can be set up quite easily by configuring an [artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/how-to/configure-stack-components/artifact-stores/README.md) with your MLOps stack.
+On our  infrastructure for ZenML Cloud only ML _metadata_ (e.g. pipeline and model tracking and versioning information) is stored. All the actual ML data artifacts (e.g. data produced or consumed by pipeline steps, logs and visualizations, models) are stored on the customer cloud. This can be set up quite easily by configuring an [artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/how-to/component-guide/artifact-stores/README.md) with your MLOps stack.
 
 Your tenant only needs permissions to read from this data to display artifacts on the ZenML dashboard. The tenant also needs direct access to parts of the customer infrastructure services to support dashboard control plane features such as CI/CD, triggering and running pipelines, triggering model deployments etc.
 

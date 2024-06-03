@@ -35,7 +35,7 @@ zenml integration install discord -y
 ```
 
 {% hint style="info" %}
-See the [Integrations](../integration-overview.md) page for more details on ZenML integrations and how to install and
+See the [Integrations](../README.md) page for more details on ZenML integrations and how to install and
 use them.
 {% endhint %}
 

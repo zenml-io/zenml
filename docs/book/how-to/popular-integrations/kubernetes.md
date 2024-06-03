@@ -58,7 +58,7 @@ python your_pipeline.py
 
 This will create a Kubernetes pod for each step in your pipeline. You can interact with the pods using `kubectl` commands.
 
-For more advanced configuration options and additional details, refer to the [full Kubernetes Orchestrator documentation](../../configure-stack-components/orchestrators/kubernetes.md).
+For more advanced configuration options and additional details, refer to the [full Kubernetes Orchestrator documentation](../../component-guide/orchestrators/kubernetes.md).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -4,7 +4,7 @@ description: Storing artifacts using Azure Blob Storage
 
 # Azure Blob Storage
 
-The Azure Artifact Store is an [Artifact Store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) flavor provided with the Azure ZenML integration that uses [the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/) to store ZenML artifacts in an Azure Blob Storage container.
+The Azure Artifact Store is an [Artifact Store](../artifact-stores/README.md) flavor provided with the Azure ZenML integration that uses [the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/) to store ZenML artifacts in an Azure Blob Storage container.
 
 ### When would you want to use it?
 
@@ -17,7 +17,7 @@ Running ZenML pipelines with [the local Artifact Store](local.md) is usually suf
 
 In all these cases, you need an Artifact Store that is backed by a form of public cloud or self-hosted shared object storage service.
 
-You should use the Azure Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the Azure Blob Storage managed service. You should consider one of the other [Artifact Store flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md#artifact-store-flavors) if you don't have access to the Azure Blob Storage service.
+You should use the Azure Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the Azure Blob Storage managed service. You should consider one of the other [Artifact Store flavors](../../artifact-stores/README.md#artifact-store-flavors) if you don't have access to the Azure Blob Storage service.
 
 ### How do you deploy it?
 
@@ -68,9 +68,9 @@ Certain dashboard functionality, such as visualizing or deleting artifacts, is n
 
 The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to the function. If these components are not running on your machine, they do not have access to the local environment variables and will encounter authentication failures while trying to access the Azure Artifact Store:
 
-* [Orchestrators](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/orchestrators/README.md) need to access the Artifact Store to manage pipeline artifacts
-* [Step Operators](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/step-operators/README.md) need to access the Artifact Store to manage step-level artifacts
-* [Model Deployers](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/model-deployers/README.md) need to access the Artifact Store to load served models
+* [Orchestrators](../orchestrators/README.md) need to access the Artifact Store to manage pipeline artifacts
+* [Step Operators](../step-operators/README.md) need to access the Artifact Store to manage step-level artifacts
+* [Model Deployers](../model-deployers/README.md) need to access the Artifact Store to load served models
 
 To enable these use cases, it is recommended to use [an Azure Service Connector](../../how-to/auth-management/azure-service-connector.md) to link your Azure Artifact Store to the remote Azure Blob storage container.
 {% endhint %}
@@ -214,6 +214,6 @@ For more, up-to-date information on the Azure Artifact Store implementation and 
 
 ### How do you use it?
 
-Aside from the fact that the artifacts are stored in Azure Blob Storage, using the Azure Artifact Store is no different from [using any other flavor of Artifact Store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md#how-to-use-it).
+Aside from the fact that the artifacts are stored in Azure Blob Storage, using the Azure Artifact Store is no different from [using any other flavor of Artifact Store](../artifact-stores/README.md#how-to-use-it).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

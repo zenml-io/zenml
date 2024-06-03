@@ -11,7 +11,7 @@ Before diving into the specifics of this component type, it is beneficial to fam
 {% hint style="warning" %}
 **Base abstraction in progress!**
 
-We are actively working on the base abstraction for the Experiment Tracker, which will be available soon. As a result, their extension is not recommended at the moment. When you are selecting an Experiment Tracker for your stack, you can use one of [the existing flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/experiment-trackers/README.md#experiment-tracker-flavors).
+We are actively working on the base abstraction for the Experiment Tracker, which will be available soon. As a result, their extension is not recommended at the moment. When you are selecting an Experiment Tracker for your stack, you can use one of [the existing flavors](../experiment-trackers/README.md#experiment-tracker-flavors).
 
 If you need to implement your own Experiment Tracker flavor, you can still do so, but keep in mind that you may have to refactor it when the base abstraction is released.
 {% endhint %}

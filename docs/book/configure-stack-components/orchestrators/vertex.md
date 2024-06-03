@@ -42,8 +42,8 @@ To use the Vertex orchestrator, we need:
     zenml integration install gcp
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) as part of your stack.
-* A [remote container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/container-registries/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
+* A [remote container registry](../container-registries/README.md) as part of your stack.
 * [GCP credentials with proper permissions](vertex.md#gcp-credentials-and-permissions)
 * The GCP project ID and location in which you want to run your Vertex AI pipelines.
 

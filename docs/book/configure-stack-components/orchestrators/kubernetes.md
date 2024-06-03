@@ -54,8 +54,8 @@ To use the Kubernetes orchestrator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) as part of your stack.
-* A [remote container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/container-registries/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
+* A [remote container registry](../container-registries/README.md) as part of your stack.
 * A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts) . This is optional (see below).
 

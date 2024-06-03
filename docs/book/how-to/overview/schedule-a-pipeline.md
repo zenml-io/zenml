@@ -10,13 +10,13 @@ Schedules don't work for all orchestrators. Here is a list of all supported orch
 
 | Orchestrator                                                                                                                                                          | Scheduling Support |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| [LocalOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/local.md)              | ⛔️                 |
-| [LocalDockerOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/local-docker.md) | ⛔️                 |
-| [KubernetesOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/kubernetes.md)    | ✅                  |
-| [KubeflowOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/kubeflow.md)        | ✅                  |
-| [VertexOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/vertex.md)            | ✅                  |
-| [TektonOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/tekton.md)            | ⛔️                 |
-| [AirflowOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/airflow.md)          | ✅                  |
+| [LocalOrchestrator](../../component-guide/orchestrators/local.md)              | ⛔️                 |
+| [LocalDockerOrchestrator](../../component-guide/orchestrators/local-docker.md) | ⛔️                 |
+| [KubernetesOrchestrator](../../component-guide/orchestrators/kubernetes.md)    | ✅                  |
+| [KubeflowOrchestrator](../../component-guide/orchestrators/kubeflow.md)        | ✅                  |
+| [VertexOrchestrator](../../component-guide/orchestrators/vertex.md)            | ✅                  |
+| [TektonOrchestrator](../../component-guide/orchestrators/tekton.md)            | ⛔️                 |
+| [AirflowOrchestrator](../../component-guide/orchestrators/airflow.md)          | ✅                  |
 
 ### Set a schedule
 

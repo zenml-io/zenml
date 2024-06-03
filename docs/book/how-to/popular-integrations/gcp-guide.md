@@ -92,7 +92,7 @@ zenml artifact-store connect ${ARTIFACT_STORE_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/artifact-stores/gcp.md) to learn more about artifact stores and how to configure them.
+Head on over to our [docs](../../component-guide/artifact-stores/gcp.md) to learn more about artifact stores and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -115,7 +115,7 @@ zenml orchestrator connect ${ORCHESTRATOR_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
+Head on over to our [docs](../../component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}

@@ -110,8 +110,8 @@ When using the Airflow orchestrator with a remote deployment, you'll additionall
 
 * A remote ZenML server deployed to the cloud. See the [deployment guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md) for more information.
 * A deployed Airflow server. See the [deployment section](airflow.md#how-to-deploy-it) for more information.
-* A [remote artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) as part of your stack.
-* A [remote container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/container-registries/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
+* A [remote container registry](../container-registries/README.md) as part of your stack.
 
 In the remote case, the Airflow orchestrator works differently than other ZenML orchestrators. Executing a python file which runs a pipeline by calling `pipeline.run()` will not actually run the pipeline, but instead will create a `.zip` file containing an Airflow representation of your ZenML pipeline. In one additional step, you need to make sure this zip file ends up in the [DAGs directory](https://airflow.apache.org/docs/apache-airflow/stable/concepts/overview.html#architecture-overview) of your Airflow deployment.
 {% endtab %}

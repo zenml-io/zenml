@@ -91,8 +91,8 @@ To use the Tekton orchestrator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * Tekton pipelines deployed on a remote cluster. See the [deployment section](tekton.md#how-to-deploy-it) for more information.
 * The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts.
-* A [remote artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) as part of your stack.
-* A [remote container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/container-registries/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
+* A [remote container registry](../container-registries/README.md) as part of your stack.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts). This is optional (see below).
 
 {% hint style="info" %}

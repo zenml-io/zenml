@@ -33,9 +33,9 @@ To use the Vertex step operator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * Vertex AI enabled and a service account file. See the [deployment section](vertex.md#how-to-deploy-it) for detailed instructions.
-* A [GCR container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/step-operators/broken-reference/README.md) as part of our stack.
+* A [GCR container registry](../step-operators/broken-reference/README.md) as part of our stack.
 * (Optional) A machine type that we want to execute our steps on (this defaults to `n1-standard-4`). See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types) for a list of available machine types.
-* A [remote artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) as part of your stack. This is needed so that both your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack. This is needed so that both your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 You have three different options to provide GCP credentials to the step operator:
 

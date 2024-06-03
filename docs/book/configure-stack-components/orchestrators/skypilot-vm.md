@@ -67,8 +67,8 @@ To use the SkyPilot VM Orchestrator, you need:
       zenml integration install azure skypilot_azure # for Azure
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) as part of your stack.
-* A [remote container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/container-registries/README.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
+* A [remote container registry](../container-registries/README.md) as part of your stack.
 * A [remote ZenML deployment](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md) as part of your stack.
 * The appropriate permissions to provision VMs on your cloud provider of choice.
 * A [service connector](../../how-to/auth-management/service-connectors-guide.md) configured to authenticate with your cloud provider of choice.

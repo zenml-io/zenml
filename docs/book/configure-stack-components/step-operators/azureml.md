@@ -30,7 +30,7 @@ To use the AzureML step operator, we need:
     zenml integration install azure
     ```
 * An AzureML compute cluster and environment. See the [deployment section](azureml.md#how-to-deploy-it) for detailed instructions.
-* A [remote artifact store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 We can then register the step operator and use it in our active stack:
 

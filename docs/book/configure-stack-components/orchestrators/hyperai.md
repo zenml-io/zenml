@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run on HyperAI.ai instances.
 
 # HyperAI Orchestrator
 
-[HyperAI](https://www.hyperai.ai) is a cutting-edge cloud compute platform designed to make AI accessible for everyone. The HyperAI orchestrator is an [orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/orchestrators/README.md) flavor that allows you to easily deploy your pipelines on HyperAI instances.
+[HyperAI](https://www.hyperai.ai) is a cutting-edge cloud compute platform designed to make AI accessible for everyone. The HyperAI orchestrator is an [orchestrator](../orchestrators/README.md) flavor that allows you to easily deploy your pipelines on HyperAI instances.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!

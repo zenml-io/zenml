@@ -4,7 +4,7 @@ description: Defining the image builder.
 
 # 🐳 Define where an image is built
 
-ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../configure-stack-components/orchestrators/README.md) or [step operators](../../configure-stack-components/step-operators/README.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
+ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../component-guide/orchestrators/README.md) or [step operators](../../component-guide/step-operators/README.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
 
 By default, execution environments are created locally in the [client environment](#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](../../component-guide/image-builders/image-builders.md), a special [stack component](../../component-guide/README.md), allowing users to build and push docker images in a different specialized _image builder environment_.
 

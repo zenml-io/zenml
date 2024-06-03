@@ -14,13 +14,13 @@ When using a stack with remote storage, nothing changes except the fact that the
 
 ## Provisioning and registering a remote artifact store
 
-Out of the box, ZenML ships with [many different supported artifact store flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/configure-stack-components/artifact-stores/README.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
+Out of the box, ZenML ships with [many different supported artifact store flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/component-guide/artifact-stores/README.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
 
 {% tabs %}
 {% tab title="AWS" %}
 You will need to install and set up the AWS CLI on your machine as a prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before you register the S3 Artifact Store.
 
-The Amazon Web Services S3 Artifact Store flavor is provided by the [S3 ZenML integration](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/artifact-stores/s3.md), you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
+The Amazon Web Services S3 Artifact Store flavor is provided by the [S3 ZenML integration](../../component-guide/artifact-stores/s3.md), you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
 
 ```shell
 zenml integration install s3 -y
@@ -39,13 +39,13 @@ With the URI to your S3 bucket known, registering an S3 Artifact Store can be do
 zenml artifact-store register cloud_artifact_store -f s3 --path=s3://bucket-name
 ```
 
-For more information, read the [dedicated S3 artifact store flavor guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/artifact-stores/s3.md).
+For more information, read the [dedicated S3 artifact store flavor guide](../../component-guide/artifact-stores/s3.md).
 {% endtab %}
 
 {% tab title="GCP" %}
 You will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk) , before you register the GCS Artifact Store.
 
-The Google Cloud Storage Artifact Store flavor is provided by the [GCP ZenML integration](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/artifact-stores/gcp.md), you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
+The Google Cloud Storage Artifact Store flavor is provided by the [GCP ZenML integration](../../component-guide/artifact-stores/gcp.md), you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
 
 ```shell
 zenml integration install gcp -y
@@ -64,13 +64,13 @@ With the URI to your GCS bucket known, registering a GCS Artifact Store can be d
 zenml artifact-store register cloud_artifact_store -f gcp --path=gs://bucket-name
 ```
 
-For more information, read the [dedicated GCS artifact store flavor guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/artifact-stores/gcp.md).
+For more information, read the [dedicated GCS artifact store flavor guide](../../component-guide/artifact-stores/gcp.md).
 {% endtab %}
 
 {% tab title="Azure" %}
 You will need to install and set up the Azure CLI on your machine as a prerequisite, as covered in [the Azure documentation](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli), before you register the Azure Artifact Store.
 
-The Microsoft Azure Artifact Store flavor is provided by the [Azure ZenML integration](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/artifact-stores/azure.md), you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
+The Microsoft Azure Artifact Store flavor is provided by the [Azure ZenML integration](../../component-guide/artifact-stores/azure.md), you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
 
 ```shell
 zenml integration install azure -y
@@ -89,11 +89,11 @@ With the URI to your Azure Blob Storage container known, registering an Azure Ar
 zenml artifact-store register cloud_artifact_store -f azure --path=az://container-name
 ```
 
-For more information, read the [dedicated Azure artifact store flavor guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/artifact-stores/azure.md).
+For more information, read the [dedicated Azure artifact store flavor guide](../../component-guide/artifact-stores/azure.md).
 {% endtab %}
 
 {% tab title="Other" %}
-You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/configure-stack-components/artifact-stores/README.md).
+You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/component-guide/artifact-stores/README.md).
 
 It is also relatively simple to create a [custom stack component flavor](../../how-to/stack-deployment/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}

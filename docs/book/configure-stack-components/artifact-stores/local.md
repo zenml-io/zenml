@@ -4,7 +4,7 @@ description: Storing artifacts on your local filesystem.
 
 # Local Artifact Store
 
-The local Artifact Store is a built-in ZenML [Artifact Store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md) flavor that uses a folder on your local filesystem to store artifacts.
+The local Artifact Store is a built-in ZenML [Artifact Store](../artifact-stores/README.md) flavor that uses a folder on your local filesystem to store artifacts.
 
 ### When would you want to use it?
 
@@ -17,9 +17,9 @@ Furthermore, the local Artifact Store doesn't cover services like high-availabil
 
 The fact that it stores artifacts on your local filesystem also means that not all stack components can be used in the same stack as a local Artifact Store:
 
-* only [Orchestrators](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/orchestrators/README.md) running on the local machine, such as the [local Orchestrator](../orchestrators/local.md), a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined with a local Artifact Store
-* only [Model Deployers](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/model-deployers/README.md) that are running locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md), can be used in combination with a local Artifact Store
-* [Step Operators](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/step-operators/README.md): none of the Step Operators can be used in the same stack as a local Artifact Store, given that their very purpose is to run ZenML steps in remote specialized environments
+* only [Orchestrators](../orchestrators/README.md) running on the local machine, such as the [local Orchestrator](../orchestrators/local.md), a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined with a local Artifact Store
+* only [Model Deployers](../model-deployers/README.md) that are running locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md), can be used in combination with a local Artifact Store
+* [Step Operators](../step-operators/README.md): none of the Step Operators can be used in the same stack as a local Artifact Store, given that their very purpose is to run ZenML steps in remote specialized environments
 
 As you transition to a team setting or a production setting, you can replace the local Artifact Store in your stack with one of the other flavors that are better suited for these purposes, with no changes required in your code.
 {% endhint %}
@@ -79,6 +79,6 @@ For more, up-to-date information on the local Artifact Store implementation and 
 
 ### How do you use it?
 
-Aside from the fact that the artifacts are stored locally, using the local Artifact Store is no different from [using any other flavor of Artifact Store](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/artifact-stores/README.md#how-to-use-it).
+Aside from the fact that the artifacts are stored locally, using the local Artifact Store is no different from [using any other flavor of Artifact Store](../artifact-stores/README.md#how-to-use-it).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

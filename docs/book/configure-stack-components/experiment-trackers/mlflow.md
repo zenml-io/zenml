@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with MLflow.
 
 # MLflow
 
-The MLflow Experiment Tracker is an [Experiment Tracker](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/experiment-trackers/README.md) flavor provided with the MLflow ZenML integration that uses [the MLflow tracking service](https://mlflow.org/docs/latest/tracking.html) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
+The MLflow Experiment Tracker is an [Experiment Tracker](../experiment-trackers/README.md) flavor provided with the MLflow ZenML integration that uses [the MLflow tracking service](https://mlflow.org/docs/latest/tracking.html) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ## When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the MLflow Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 * if you or your team already have a shared MLflow Tracking service deployed somewhere on-premise or in the cloud, and you would like to connect ZenML to it to share the artifacts and metrics logged by your pipelines
 
-You should consider one of the other [Experiment Tracker flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/experiment-trackers/README.md#experiment-tracker-flavors) if you have never worked with MLflow before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](../experiment-trackers/README.md#experiment-tracker-flavors) if you have never worked with MLflow before and would rather use another experiment tracking tool that you are more familiar with.
 
 ## How do you deploy it?
 

@@ -6,7 +6,7 @@ description: >-
 
 # Whylogs
 
-The whylogs/WhyLabs [Data Validator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/data-validators/README.md) flavor provided with the ZenML integration uses [whylogs](https://whylabs.ai/whylogs) and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation.
+The whylogs/WhyLabs [Data Validator](../data-validators/README.md) flavor provided with the ZenML integration uses [whylogs](https://whylabs.ai/whylogs) and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -18,7 +18,7 @@ You should use the whylogs/WhyLabs Data Validator when you need the following da
 * Data Drift: detect data drift in model input features
 * Model Drift: Detect training-serving skew, concept drift, and model performance degradation
 
-You should consider one of the other [Data Validator flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/component-guide/data-validators/README.md#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](../data-validators/README.md#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 
