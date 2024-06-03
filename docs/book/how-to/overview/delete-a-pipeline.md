@@ -1,53 +1,25 @@
 ---
-description: Learn how to set, pause and stop a schedule for pipelines.
+description: Learn how to delete pipelines.
 ---
 
-# Schedule a pipeline
+# Delete a pipeline
 
-{% hint style="info" %}
-Schedules don't work for all orchestrators. Here is a list of all supported orchestrators.
-{% endhint %}
+## Delete the latest version of a pipeline
 
-| Orchestrator                                                                                                                                                          | Scheduling Support |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| [LocalOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/local.md)              | ⛔️                 |
-| [LocalDockerOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/local-docker.md) | ⛔️                 |
-| [KubernetesOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/kubernetes.md)    | ✅                  |
-| [KubeflowOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/kubeflow.md)        | ✅                  |
-| [VertexOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/vertex.md)            | ✅                  |
-| [TektonOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/tekton.md)            | ⛔️                 |
-| [AirflowOrchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/component-guide/orchestrators/airflow.md)          | ✅                  |
-
-### Set a schedule
-
-```python
-from zenml.config.schedule import Schedule
-from zenml import pipeline
-from datetime import datetime
-
-@pipeline()
-def my_pipeline(...):
-    ...
-
-# Use cron expressions
-schedule = Schedule(cron_expression="5 14 * * 3")
-# or alternatively use human-readable notations
-schedule = Schedule(start_time=datetime.now(), interval_second=1800)
-
-my_pipeline = my_pipeline.with_options(schedule=schedule)
-my_pipeline()
+```shell
+zenml pipeline delete <PIPELINE_NAME>
 ```
 
-{% hint style="info" %}
-Check out our [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.schedule.Schedule) to learn more about the different scheduling options.
-{% endhint %}
+## Delete a specific version of a pipeline
 
-### Pause/Stop a schedule
+```shell
+zenml pipeline delete <PIPELINE_NAME> --version=<VERSION_NAME>
+```
 
-The way pipelines are scheduled depends on the orchestrator you are using. For example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause a scheduled run. However, the exact steps for stopping or pausing a scheduled run may vary depending on the orchestrator you are using. We recommend consulting the documentation for your orchestrator to learn the current method for stopping or pausing a scheduled run.
+## Delete all versions of a pipeline
 
-{% hint style="warning" %}
-Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule (as explained above) is the responsibility of the user. If you run a pipeline containing a schedule two times, two scheduled pipelines (with different/unique names) will be created.
-{% endhint %}
+```shell
+zenml pipeline delete <PIPELINE_NAME> --all-versions
+```
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
