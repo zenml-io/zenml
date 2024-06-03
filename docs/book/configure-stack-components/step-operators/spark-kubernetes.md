@@ -175,7 +175,7 @@ You should use the Spark step operator:
 
 To use the `KubernetesSparkStepOperator` you will need to setup a few things first:
 
-* **Remote ZenML server:** See the [deployment guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md) for more information.
+* **Remote ZenML server:** See the [deployment guide](../../getting-started/deploying-zenml/why-deploy-zenml.md) for more information.
 * **Kubernetes cluster:** There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure. For AWS, you can follow the [Spark EKS Setup Guide](spark-kubernetes.md#spark-eks-setup-guide) below.
 
 ### Spark EKS Setup Guide
@@ -325,7 +325,7 @@ def step_on_spark(...) -> ...:
 After successfully running any step with a `KubernetesSparkStepOperator`, you should be able to see that a Spark driver pod was created in your cluster for each pipeline step when running `kubectl get pods -n $KUBERNETES_NAMESPACE`.
 
 {% hint style="info" %}
-Instead of hardcoding a step operator name, you can also use the [Client](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/advanced-guide/configuring-zenml/client.md) to dynamically use the step operator of your active stack:
+Instead of hardcoding a step operator name, you can also use the [Client](../../reference/python-client.md) to dynamically use the step operator of your active stack:
 
 ```python
 from zenml.client import Client

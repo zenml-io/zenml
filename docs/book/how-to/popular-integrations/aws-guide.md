@@ -182,7 +182,7 @@ In case you want to also add any other stack components to this stack, feel free
 {% endtab %}
 
 {% tab title="Dashboard" %}
-<figure><img src="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/.gitbook/assets/Create_Stack.png" alt=""><figcaption><p>Combine the three stack components and you have your AWS stack. Feel free to add any other component of your choice as well.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Create_Stack.png" alt=""><figcaption><p>Combine the three stack components and you have your AWS stack. Feel free to add any other component of your choice as well.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 

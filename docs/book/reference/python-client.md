@@ -45,16 +45,16 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](../user-guide/production-guide/connect-code-repository.md) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/starter-guide/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
+Checkout the [documentation on fetching runs](../how-to/overview/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
 #### Stacks, Infrastructure, Authentication
 
 * **Stack**: The stacks registered in your ZenML instance.
 * **Stack Components**: The stack components registered in your ZenML instance, e.g., all orchestrators, artifact stores, model deployers, ...
-* **Flavors**: The [stack component flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/getting-started/core-concepts.md#flavor) available to you, including:
-  * Built-in flavors like the [local orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/stacks-and-components/component-guide/orchestrators/local.md),
-  * Integration-enabled flavors like the [Kubeflow orchestrator](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/stacks-and-components/component-guide/orchestrators/kubeflow.md),
+* **Flavors**: The [stack component flavors](../getting-started/core-concepts.md#flavor) available to you, including:
+  * Built-in flavors like the [local orchestrator](../component-guide/orchestrators/local.md),
+  * Integration-enabled flavors like the [Kubeflow orchestrator](../component-guide/orchestrators/kubeflow.md),
   * Custom flavors that you have [created yourself](../how-to/stack-deployment/implement-a-custom-stack-component.md).
 * **User**: The users registered in your ZenML instance. If you are running locally, there will only be a single `default` user.
 * **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../how-to/interact-with-secrets.md).
