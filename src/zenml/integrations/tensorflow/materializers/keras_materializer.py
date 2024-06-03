@@ -17,7 +17,6 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
-import keras  # type: ignore[import-untyped]
 import tensorflow as tf
 from tensorflow.python import keras as tf_keras
 from tensorflow.python.keras.utils.layer_utils import count_params
@@ -35,14 +34,13 @@ class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
-        keras.Model,
         tf.keras.Model,
         tf_keras.Model,
     )
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     MODEL_FILE_NAME = "model.keras"
 
-    def load(self, data_type: Type[Any]) -> keras.Model:
+    def load(self, data_type: Type[Any]) -> tf_keras.Model:
         """Reads and returns a Keras model after copying it to temporary path.
 
         Args:
@@ -59,14 +57,14 @@ class KerasMaterializer(BaseMaterializer):
         io_utils.copy_dir(self.uri, temp_dir.name)
 
         # Load the model from the temporary directory
-        model = keras.models.load_model(temp_model_file)
+        model = tf.keras.models.load_model(temp_model_file)
 
         # Cleanup and return
         fileio.rmtree(temp_dir.name)
 
         return model
 
-    def save(self, model: keras.Model) -> None:
+    def save(self, model: tf_keras.Model) -> None:
         """Writes a keras model to the artifact store.
 
         Args:
@@ -82,7 +80,7 @@ class KerasMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir.name)
 
     def extract_metadata(
-        self, model: keras.Model
+        self, model: tf_keras.Model
     ) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Model` object.
 
