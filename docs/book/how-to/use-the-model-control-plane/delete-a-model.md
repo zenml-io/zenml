@@ -9,9 +9,19 @@ and artifacts + pipeline runs, and will also delete all metadata associated with
 
 ## Deleting all versions of a model
 
+{% tabs %}
+{% tab title="CLI" %}
+
 ```shell
 zenml model delete <MODEL_NAME>
 ```
+
+{% endtab %}
+
+{% tab title="Python SDK" %}
+{% endtab %}
+
+{% endtabs %}
 
 ## Delete a specific version of a model
 
