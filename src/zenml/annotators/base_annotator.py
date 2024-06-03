@@ -95,7 +95,8 @@ class BaseAnnotator(StackComponent, ABC):
         """Launches the annotation interface.
 
         Args:
-            **kwargs: Additional keyword arguments to pass to the annotation client.
+            **kwargs: Additional keyword arguments to pass to the
+                annotation client.
         """
 
     @abstractmethod

@@ -14,6 +14,7 @@
 """Constants for ZenML integrations."""
 
 AIRFLOW = "airflow"
+ARGILLA = "argilla"
 AWS = "aws"
 AZURE = "azure"
 AZUREML = "azureml"

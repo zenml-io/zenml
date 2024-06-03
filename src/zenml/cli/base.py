@@ -91,7 +91,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     ),
     llm_finetuning=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-llm-finetuning",
-        github_tag="2024.04.05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.05.23",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -432,6 +432,13 @@ def go() -> None:
 
     zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
 
+    if not is_jupyter_installed():
+        cli_utils.error(
+            "Jupyter Notebook or JupyterLab is not installed. "
+            "Please install the 'notebook' package with `pip` "
+            "first so you can run the tutorial notebooks."
+        )
+
     with track_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
         console.print(zenml_cli_privacy_message, width=80)
 
@@ -459,6 +466,7 @@ def go() -> None:
                         TUTORIAL_REPO,
                         tmp_cloned_dir,
                         branch=f"release/{zenml_version}",
+                        depth=1,  # to prevent timeouts when downloading
                     )
                 example_dir = os.path.join(
                     tmp_cloned_dir, "examples/quickstart"
@@ -483,23 +491,14 @@ def go() -> None:
         )
         input("Press ENTER to continue...")
 
-    if is_jupyter_installed():
-        try:
-            subprocess.check_call(
-                ["jupyter", "notebook"], cwd=zenml_tutorial_path
-            )
-        except subprocess.CalledProcessError as e:
-            cli_utils.error(
-                "An error occurred while launching Jupyter Notebook. "
-                "Please make sure Jupyter is properly installed and try again."
-            )
-            raise e
-    else:
+    try:
+        subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+    except subprocess.CalledProcessError as e:
         cli_utils.error(
-            "Jupyter Notebook or JupyterLab is not installed. "
-            "Please install the 'notebook' package with `pip` "
-            "to run the tutorial notebooks."
+            "An error occurred while launching Jupyter Notebook. "
+            "Please make sure Jupyter is properly installed and try again."
         )
+        raise e
 
 
 def _prompt_email(event_source: AnalyticsEventSource) -> bool:

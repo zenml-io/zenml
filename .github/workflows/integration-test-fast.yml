@@ -78,7 +78,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -226,7 +226,7 @@ jobs:
         # Ubuntu integration tests run as 6 shards
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 12 ${{ matrix.shard }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17

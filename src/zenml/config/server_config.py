@@ -65,8 +65,16 @@ class ServerConfiguration(BaseModel):
 
     Attributes:
         deployment_type: The type of ZenML server deployment that is running.
-        base_url: The base URL of the ZenML server.
-        root_url_path: The root URL path of the ZenML server.
+        server_url: The URL where the ZenML server API is reachable. Must be
+            configured for features that involve triggering workloads from the
+            ZenML dashboard (e.g., running pipelines). If not specified, the
+            clients will use the same URL used to connect them to the ZenML
+            server.
+        dashboard_url: The URL where the ZenML dashboard is reachable.
+            If not specified, the `server_url` value is used. This should be
+            configured if the dashboard is served from a different URL than the
+            ZenML server.
+        root_url_path: The root URL path for the ZenML API and dashboard.
         auth_scheme: The authentication scheme used by the ZenML server.
         jwt_token_algorithm: The algorithm used to sign and verify JWT tokens.
         jwt_token_issuer: The issuer of the JWT tokens. If not specified, the
@@ -93,10 +101,6 @@ class ServerConfiguration(BaseModel):
             2.0 device authorization request expires.
         device_auth_polling_interval: The polling interval in seconds used to
             poll the OAuth 2.0 device authorization endpoint.
-        dashboard_url: The URL where the ZenML dashboard is hosted. Used to
-            construct the OAuth 2.0 device authorization endpoint. If not set,
-            a partial URL is returned to the client which is used to construct
-            the full URL based on the server's root URL path.
         device_expiration_minutes: The time in minutes that an OAuth 2.0 device is
             allowed to be used to authenticate with the ZenML server. If not
             set or if `jwt_token_expire_minutes` is not set, the devices are
@@ -204,7 +208,7 @@ class ServerConfiguration(BaseModel):
             of the reserved values `enabled`, `yes`, `true`, `on`, the
             `Permissions-Policy` header will be set to the default value
             (`accelerometer=(), camera=(), geolocation=(), gyroscope=(),
-              magnetometer=(), microphone=(), payment=(), usb=()`). If set to
+            magnetometer=(), microphone=(), payment=(), usb=()`). If set to
             one of the reserved values `disabled`, `no`, `none`, `false`, `off`
             or to an empty string, the `Permissions-Policy` header will not be
             included in responses.
@@ -225,7 +229,8 @@ class ServerConfiguration(BaseModel):
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
-    base_url: str = ""
+    server_url: Optional[str] = None
+    dashboard_url: Optional[str] = None
     root_url_path: str = ""
     metadata: Dict[str, Any] = {}
     auth_scheme: AuthScheme = AuthScheme.OAUTH2_PASSWORD_BEARER
@@ -245,7 +250,6 @@ class ServerConfiguration(BaseModel):
     device_auth_polling_interval: int = (
         DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
     )
-    dashboard_url: Optional[str] = None
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None
 

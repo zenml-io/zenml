@@ -147,7 +147,8 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         """Launches the annotation interface.
 
         Args:
-            **kwargs: Additional keyword arguments to pass to the annotation client.
+            **kwargs: Additional keyword arguments to pass to the
+                annotation client.
         """
         url = kwargs.get("url") or self.get_url()
         if self._connection_available():

@@ -132,7 +132,7 @@ class StepContext(metaclass=SingletonMetaClass):
         if output_materializers.keys() != output_artifact_uris.keys():
             raise StepContextError(
                 f"Mismatched keys in output materializers and output artifact "
-                f"URIs for step '{self.step_name}'. Output materializer "
+                f"URIs for step `{self.step_name}`. Output materializer "
                 f"keys: {set(output_materializers)}, output artifact URI "
                 f"keys: {set(output_artifact_uris)}"
             )
@@ -158,7 +158,7 @@ class StepContext(metaclass=SingletonMetaClass):
         if self.pipeline_run.pipeline:
             return self.pipeline_run.pipeline
         raise StepContextError(
-            f"Unable to get pipeline in step '{self.step_name}' of pipeline "
+            f"Unable to get pipeline in step `{self.step_name}` of pipeline "
             f"run '{self.pipeline_run.id}': This pipeline run does not have "
             f"a pipeline associated with it."
         )
@@ -183,7 +183,7 @@ class StepContext(metaclass=SingletonMetaClass):
             model = self.pipeline_run.config.model
         else:
             raise StepContextError(
-                f"Unable to get Model in step '{self.step_name}' of pipeline "
+                f"Unable to get Model in step `{self.step_name}` of pipeline "
                 f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
             )
 
@@ -235,13 +235,13 @@ class StepContext(metaclass=SingletonMetaClass):
         output_count = len(self._outputs)
         if output_count == 0:
             raise StepContextError(
-                f"Unable to get step output for step '{self.step_name}': "
+                f"Unable to get step output for step `{self.step_name}`: "
                 f"This step does not have any outputs."
             )
 
         if not output_name and output_count > 1:
             raise StepContextError(
-                f"Unable to get step output for step '{self.step_name}': "
+                f"Unable to get step output for step `{self.step_name}`: "
                 f"This step has multiple outputs ({set(self._outputs)}), "
                 f"please specify which output to return."
             )
@@ -250,7 +250,7 @@ class StepContext(metaclass=SingletonMetaClass):
             if output_name not in self._outputs:
                 raise StepContextError(
                     f"Unable to get step output '{output_name}' for "
-                    f"step '{self.step_name}'. This step does not have an "
+                    f"step `{self.step_name}`. This step does not have an "
                     f"output with the given name, please specify one of the "
                     f"available outputs: {set(self._outputs)}."
                 )
