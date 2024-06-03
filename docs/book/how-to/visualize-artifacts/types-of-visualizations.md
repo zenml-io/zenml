@@ -1,16 +1,16 @@
 ---
-description: Configuring ZenML to display data visualizations in the dashboard.
+description: Types of visualizations in ZenML.
 ---
 
 # Types of visualizations
 
 ZenML automatically saves visualizations of many common data types and allows you to view these visualizations in the ZenML dashboard:
 
-![ZenML Artifact Visualizations](<../../.gitbook/assets/artifact\_visualization\_dashboard (1).png>)
+![ZenML Artifact Visualizations](../../.gitbook/assets/artifact_visualization_dashboard.png)
 
 Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the `artifact.visualize()` method:
 
-![output.visualize() Output](../../.gitbook/assets/artifact\_visualization\_evidently.png)
+![output.visualize() Output](../../.gitbook/assets/artifact_visualization_evidently.png)
 
 Currently, the following visualization types are supported:
 
