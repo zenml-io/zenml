@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Kubeflow.
 The Kubeflow orchestrator is an [orchestrator](../orchestrators/README.md) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -147,7 +147,7 @@ The local Kubeflow Pipelines deployment requires more than 4 GB of RAM, and 30 G
 {% tab title="Remote" %}
 When using the Kubeflow orchestrator with a remote cluster, you'll additionally need:
 
-* A remote ZenML server deployed to the cloud. See the [deployment guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md) for more information.
+* A remote ZenML server deployed to the cloud. See the [deployment guide](../../getting-started/deploying-zenml/zenml-self-hosted/README.md) for more information.
 * Kubeflow pipelines deployed on a remote cluster. See the [deployment section](kubeflow.md#how-to-deploy-it) for more information.
 * The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector ](../../how-to/auth-management/service-connectors-guide.md)to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
 * A [remote artifact store](../artifact-stores/README.md) as part of your stack.

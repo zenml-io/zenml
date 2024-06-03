@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Tekton.
 [Tekton](https://tekton.dev/) is a powerful and flexible open-source framework for creating CI/CD systems, allowing developers to build, test, and deploy across cloud providers and on-premise systems.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -25,7 +25,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
 {% tabs %}
 {% tab title="AWS" %}
-* A remote ZenML server. See the [deployment guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md) for more information.
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/zenml-self-hosted/README.md) for more information.
 * Have an existing AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html) set up.
 * Make sure you have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) set up.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/) it to talk to your EKS cluster using the following command:
@@ -37,7 +37,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 {% endtab %}
 
 {% tab title="GCP" %}
-* A remote ZenML server. See the [deployment guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md) for more information.
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/zenml-self-hosted/README.md) for more information.
 * Have an existing GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart) set up.
 * Make sure you have the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) set up first.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) it to talk to your GKE cluster using the following command:
@@ -49,7 +49,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 {% endtab %}
 
 {% tab title="Azure" %}
-* A remote ZenML server. See the [deployment guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md) for more information.
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/zenml-self-hosted/README.md) for more information.
 * Have an existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation) set up.
 * Make sure you have the [`az` CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) set up first.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and it to talk to your AKS cluster using the following command:

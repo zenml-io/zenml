@@ -25,7 +25,7 @@ You should add an Experiment Tracker to your ZenML stack and use it when you wan
 
 Here is an architecture diagram that shows how experiment trackers fit into the overall story of a remote stack.
 
-![Experiment Tracker](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/.gitbook/assets/Remote\_with\_exp\_tracker.png)
+![Experiment Tracker](../../.gitbook/assets/Remote\_with\_exp\_tracker.png)
 
 #### Experiment Tracker Flavors
 

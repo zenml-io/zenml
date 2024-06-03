@@ -26,7 +26,7 @@ Using a model registry in your stack is particularly useful if you want to inter
 
 Here is an architecture diagram that shows how a model registry fits into the overall story of a remote stack.
 
-![Model Registries](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/.gitbook/assets/Remote\_with\_model\_registry.png)
+![Model Registries](../../.gitbook/assets/Remote\_with\_model\_registry.png)
 
 #### Model Registry Flavors
 
@@ -45,7 +45,7 @@ zenml model-registry flavor list
 
 ### How to use it
 
-Model registries are an optional component in the ZenML stack that is tied to the experiment tracker. This means that a model registry can only be used if you are also using an experiment tracker. If you're not using an experiment tracker, you can still store your models in ZenML, but you will need to manually retrieve model artifacts from the artifact store. More information on this can be found in the [documentation on the fetching runs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/user-guide/starter-guide/fetching-pipelines.md).
+Model registries are an optional component in the ZenML stack that is tied to the experiment tracker. This means that a model registry can only be used if you are also using an experiment tracker. If you're not using an experiment tracker, you can still store your models in ZenML, but you will need to manually retrieve model artifacts from the artifact store. More information on this can be found in the [documentation on the fetching runs](../../how-to/overview/fetching-pipelines.md).
 
 To use model registries, you first need to register a model registry in your stack with the same flavor as your experiment tracker. Then, you can register your trained model in the model registry using one of three methods:
 

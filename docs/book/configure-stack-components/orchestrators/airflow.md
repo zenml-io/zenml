@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Airflow.
 ZenML pipelines can be executed natively as [Airflow](https://airflow.apache.org/) DAGs. This brings together the power of the Airflow orchestration with the ML-specific benefits of ZenML pipelines. Each ZenML step runs in a separate Docker container which is scheduled and started using Airflow.
 
 {% hint style="warning" %}
-If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md).
+If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](../../getting-started/deploying-zenml/zenml-self-hosted/README.md).
 {% endhint %}
 
 ### When to use it
@@ -108,7 +108,7 @@ The ability to provision resources using the `zenml stack up` command is depreca
 {% tab title="Remote" %}
 When using the Airflow orchestrator with a remote deployment, you'll additionally need:
 
-* A remote ZenML server deployed to the cloud. See the [deployment guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md) for more information.
+* A remote ZenML server deployed to the cloud. See the [deployment guide](../../getting-started/deploying-zenml/zenml-self-hosted/README.md) for more information.
 * A deployed Airflow server. See the [deployment section](airflow.md#how-to-deploy-it) for more information.
 * A [remote artifact store](../artifact-stores/README.md) as part of your stack.
 * A [remote container registry](../container-registries/README.md) as part of your stack.

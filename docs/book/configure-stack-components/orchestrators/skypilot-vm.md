@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on VMs using SkyPilot.
 The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you to provision and manage virtual machines (VMs) on any cloud provider supported by the [SkyPilot framework](https://skypilot.readthedocs.io/en/latest/index.html). This integration is designed to simplify the process of running machine learning workloads on the cloud, offering cost savings, high GPU availability, and managed execution, We recommend using the SkyPilot VM Orchestrator if you need access to GPUs for your workloads, but don't want to deal with the complexities of managing cloud infrastructure or expensive managed solutions.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 {% hint style="warning" %}
@@ -32,7 +32,7 @@ You can configure the SkyPilot VM Orchestrator to use a specific VM type, and re
 {% endhint %}
 
 {% hint style="warning" %}
-The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/orchestrators/broken-reference/README.md)
+The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](../../how-to/overview/schedule-a-pipeline.md)
 {% endhint %}
 
 {% hint style="info" %}
@@ -69,7 +69,7 @@ To use the SkyPilot VM Orchestrator, you need:
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/README.md) as part of your stack.
 * A [remote container registry](../container-registries/README.md) as part of your stack.
-* A [remote ZenML deployment](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md) as part of your stack.
+* A [remote ZenML deployment](../../getting-started/deploying-zenml/zenml-self-hosted/README.md) as part of your stack.
 * The appropriate permissions to provision VMs on your cloud provider of choice.
 * A [service connector](../../how-to/auth-management/service-connectors-guide.md) configured to authenticate with your cloud provider of choice.
 

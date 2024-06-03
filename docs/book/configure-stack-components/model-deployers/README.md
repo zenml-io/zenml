@@ -20,7 +20,7 @@ The model deployers are optional components in the ZenML stack. They are used to
 
 Here is an architecture diagram that shows how model deployers fit into the overall story of a remote stack.
 
-![Model Deployers](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/.gitbook/assets/Remote\_with\_deployer.png)
+![Model Deployers](../../.gitbook/assets/Remote\_with\_deployer.png)
 
 #### Model Deployers Flavors
 

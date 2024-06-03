@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on HyperAI.ai instances.
 [HyperAI](https://www.hyperai.ai) is a cutting-edge cloud compute platform designed to make AI accessible for everyone. The HyperAI orchestrator is an [orchestrator](../orchestrators/README.md) flavor that allows you to easily deploy your pipelines on HyperAI instances.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -36,7 +36,7 @@ If configured for it, the HyperAI orchestrator will connect the HyperAI instance
 
 ### Scheduled pipelines
 
-[Scheduled pipelines](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/component-guide/orchestrators/broken-reference/README.md) are supported by the HyperAI orchestrator. Currently, the HyperAI orchestrator supports the following inputs to `Schedule`:
+[Scheduled pipelines](../../how-to/overview/schedule-a-pipeline.md) are supported by the HyperAI orchestrator. Currently, the HyperAI orchestrator supports the following inputs to `Schedule`:
 
 * Cron expressions via `cron_expression`. When pipeline runs are scheduled, they are added as a crontab entry on the HyperAI instance. Use this when you want pipelines to run in intervals. Using cron expressions assumes that `crontab` is available on your instance and that its daemon is running.
 * Scheduled runs via `run_once_start_time`. When pipeline runs are scheduled this way, they are added as an `at` entry on the HyperAI instance. Use this when you want pipelines to run just once and at a specified time. This assumes that `at` is available on your instance.

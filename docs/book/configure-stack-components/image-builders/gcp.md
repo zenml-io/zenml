@@ -146,7 +146,7 @@ Successfully connected image builder `gcp-image-builder` to the following resour
 
 A similar experience is available when you configure the GCP Image Builder through the ZenML dashboard:
 
-![GCP Image Builder Configuration](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/.gitbook/assets/gcp-image-builder-service-connector.png)
+![GCP Image Builder Configuration](../../.gitbook/assets/gcp-image-builder-service-connector.png)
 
 As a final step, you can use the GCP Image Builder in a ZenML Stack:
 

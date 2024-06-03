@@ -117,7 +117,7 @@ zenml experiment-tracker register mlflow \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](..//https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -156,7 +156,7 @@ def tf_trainer(
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/advanced-guide/configuring-zenml/client.md) to dynamically use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](../../reference/python-client.md) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client
@@ -220,6 +220,6 @@ def step_one(
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow\_experiment\_tracker\_flavor.MLFlowExperimentTrackerSettings) for a full list of available attributes and [this docs page](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow\_experiment\_tracker\_flavor.MLFlowExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

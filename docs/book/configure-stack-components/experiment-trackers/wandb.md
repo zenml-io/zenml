@@ -55,7 +55,7 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) to store the Weights & Biases tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) to store the Weights & Biases tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -79,7 +79,7 @@ zenml experiment-tracker register wandb_tracker \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -125,7 +125,7 @@ def tf_trainer(
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/stacks-and-components/advanced-guide/configuring-zenml/client.md) to dynamically use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](../../reference/python-client.md) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client
@@ -144,7 +144,7 @@ Weights & Biases comes with a web-based UI that you can use to find further deta
 
 Every ZenML step that uses Weights & Biases should create a separate experiment run which you can inspect in the Weights & Biases UI:
 
-![WandB UI](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/.gitbook/assets/WandBUI.png)
+![WandB UI](../../.gitbook/assets/WandBUI.png)
 
 You can find the URL of the Weights & Biases experiment linked to a specific ZenML run via the metadata of the step in which the experiment tracker was used:
 
@@ -194,6 +194,6 @@ def my_step(
 
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action is required!
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
