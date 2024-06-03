@@ -656,7 +656,15 @@ def info(
         cli_utils.print_user_info(user_info)
 
     if stack:
-        cli_utils.print_debug_stack()
+        try:
+            cli_utils.print_debug_stack()
+        except ModuleNotFoundError as e:
+            cli_utils.warning(
+                "Could not print debug stack information. Please make sure "
+                "you have the necessary dependencies and integrations "
+                "installed for all your stack components."
+            )
+            cli_utils.warning(f"The missing package is: '{e.name}'")
 
 
 @cli.command(
