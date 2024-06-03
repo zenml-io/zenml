@@ -114,7 +114,7 @@ zenml model-registry models register-version Tensorflow-model \
 
 ### Deploy a registered model
 
-Afte you have registered a model in the MLflow model registry, you can also easily deploy it as a prediction service. Checkout the [MLflow model deployer documentation](../model-deployers/mlflow.md#deploy-from-model-registry) for more information on how to do that.
+After you have registered a model in the MLflow model registry, you can also easily deploy it as a prediction service. Checkout the [MLflow model deployer documentation](../model-deployers/mlflow.md#deploy-from-model-registry) for more information on how to do that.
 
 ### Interact with registered models
 
