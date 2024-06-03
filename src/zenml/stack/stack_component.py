@@ -261,12 +261,12 @@ class StackComponentConfig(BaseModel, ABC):
             ValueError: If the value is an invalid JSON string.
         """
         if isinstance(value, str):
-            if get_origin(field.outer_type_) in [
+            if get_origin(field.outer_type_) in {
                 dict,
                 list,
                 Mapping,
                 Sequence,
-            ]:
+            }:
                 try:
                     return json.loads(value)
                 except json.JSONDecodeError as e:
