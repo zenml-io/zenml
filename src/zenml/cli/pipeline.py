@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
 
-import functools
 import json
 import os
 from typing import Any, Dict, Optional, Union
@@ -35,7 +34,7 @@ from zenml.models import (
     ScheduleFilter,
 )
 from zenml.new.pipelines.pipeline import Pipeline
-from zenml.utils import pagination_utils, source_utils, uuid_utils
+from zenml.utils import source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -370,17 +369,11 @@ def delete_pipeline(
             return
 
     try:
-        if all_versions:
-            for pipeline in pagination_utils.depaginate(
-                functools.partial(
-                    Client().list_pipelines, name=pipeline_name_or_id
-                )
-            ):
-                Client().delete_pipeline(pipeline.id)
-        else:
-            Client().delete_pipeline(
-                name_id_or_prefix=pipeline_name_or_id, version=version
-            )
+        Client().delete_pipeline(
+            name_id_or_prefix=pipeline_name_or_id,
+            version=version,
+            all_versions=all_versions,
+        )
     except KeyError as e:
         cli_utils.error(str(e))
     else:
