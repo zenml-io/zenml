@@ -147,7 +147,7 @@ More details [here](../../component-guide/orchestrators/sagemaker.md).
 
 ### Container Registry (ECR)
 
-A [container registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/component-guide/container-registries/README.md) is used to store Docker images for your pipelines.
+A [container registry](../../component-guide/container-registries/container-registries.md) is used to store Docker images for your pipelines.
 
 1. You'll need to create a repository in ECR. If you already have one, you can skip this step.
 

@@ -43,7 +43,7 @@ class BaseArtifactStore(StackComponent):
 As each component defines a different interface, make sure to check out the base class definition of the component type that you want to implement and also check out the [documentation on how to extend specific stack components](implement-a-custom-stack-component.md#extending-specific-stack-components).
 
 {% hint style="info" %}
-If you would like to automatically track some metadata about your custom stack component with each pipeline run, you can do so by defining some additional methods in your stack component implementation class as shown in the [Tracking Custom Stack Component Metadata](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/pipelining-features/fetch-metadata-within-steps.md) section.
+If you would like to automatically track some metadata about your custom stack component with each pipeline run, you can do so by defining some additional methods in your stack component implementation class as shown in the [Tracking Custom Stack Component Metadata](../../how-to/track-metrics-metadata/fetch-metadata-within-steps.md) section.
 {% endhint %}
 
 See the full code of the base `StackComponent` class [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/stack\_component.py#L301).
@@ -145,7 +145,7 @@ class MyS3ArtifactStoreConfig(BaseArtifactStoreConfig):
 ```
 
 {% hint style="info" %}
-You can pass sensitive configuration values as [secrets](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stacks-and-components/secret-management/secret-management.md) by defining them as type `SecretField` in the configuration class.
+You can pass sensitive configuration values as [secrets](../../user-guide/advanced-guide/secret-management/secret-management.md) by defining them as type `SecretField` in the configuration class.
 {% endhint %}
 
 With the configuration defined, we can move on to the implementation class, which will use the S3 file system to implement the abstract methods of the `BaseArtifactStore`:

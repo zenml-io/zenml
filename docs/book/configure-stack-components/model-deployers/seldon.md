@@ -175,7 +175,7 @@ Successfully registered service connector `eks-zenhacks` with access to the foll
 
 Alternatively, you can configure a Service Connector through the ZenML dashboard:
 
-![AWS Service Connector Type](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/.gitbook/assets/aws-service-connector-type.png) ![AWS EKS Service Connector Configuration](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/.gitbook/assets/aws-eks-service-connector-configuration.png)
+![AWS Service Connector Type](../../.gitbook/assets/aws-service-connector-type.png) ![AWS EKS Service Connector Configuration](../../.gitbook/assets/aws-eks-service-connector-configuration.png)
 
 > **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](../../how-to/auth-management/) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
 
@@ -233,7 +233,7 @@ Successfully connected model deployer `seldon-test` to the following resources:
 
 A similar experience is available when you configure the Seldon Core Model Deployer through the ZenML dashboard:
 
-![Seldon Core Model Deployer Configuration](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/.gitbook/assets/seldon-model-deployer-service-connector.png)
+![Seldon Core Model Deployer Configuration](../../.gitbook/assets/seldon-model-deployer-service-connector.png)
 
 ### Managing Seldon Core Authentication
 

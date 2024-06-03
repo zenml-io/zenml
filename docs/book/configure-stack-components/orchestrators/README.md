@@ -7,7 +7,7 @@ description: Orchestrating the execution of ML pipelines.
 The orchestrator is an essential component in any MLOps stack as it is responsible for running your machine learning pipelines. To do so, the orchestrator provides an environment that is set up to execute the steps of your pipeline. It also makes sure that the steps of your pipeline only get executed once all their inputs (which are outputs of previous steps of your pipeline) are available.
 
 {% hint style="info" %}
-Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute your pipeline code. If you want to learn more about how Docker images are built by ZenML, check out [this guide](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md).
+Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute your pipeline code. If you want to learn more about how Docker images are built by ZenML, check out [this guide](../../how-to/handle-requirements-and-docker-settings/containerize-your-pipeline.md).
 {% endhint %}
 
 ### When to use it
@@ -42,7 +42,7 @@ zenml orchestrator flavor list
 
 ### How to use it
 
-You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), using the orchestrator is as simple as executing a Python file that [runs a ZenML pipeline](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/user-guide/starter-guide/starter-guide.md):
+You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), using the orchestrator is as simple as executing a Python file that [runs a ZenML pipeline](../../user-guide/starter-guide/starter-guide.md):
 
 ```shell
 python file_that_runs_a_zenml_pipeline.py
@@ -61,7 +61,7 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 
 #### Specifying per-step resources
 
-If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
+If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look at [step operators](../step-operators/).
 

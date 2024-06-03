@@ -1039,7 +1039,7 @@ This is an example of an end-to-end workflow involving Service Connectors that u
 
 * a [Kubernetes Orchestrator](../../component-guide/orchestrators/kubernetes.md) connected to a GKE Kubernetes cluster
 * a [GCS Artifact Store](../../component-guide/artifact-stores/gcp.md) connected to a GCS bucket
-* a [GCR Container Registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/auth-management/broken-reference/README.md) connected to a GCR container registry
+* a [GCR Container Registry](../../component-guide/container-registries/gcp.md) connected to a GCR container registry
 * a local [Image Builder](../../component-guide/image-builders/local.md)
 
 As a last step, a simple pipeline is run on the resulting Stack.
@@ -1413,7 +1413,7 @@ This is an example of an end-to-end workflow involving Service Connectors that u
 
 * a [VertexAI Orchestrator](../../component-guide/orchestrators/vertex.md) connected to the GCP project
 * a [GCS Artifact Store](../../component-guide/artifact-stores/gcp.md) connected to a GCS bucket
-* a [GCR Container Registry](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/auth-management/broken-reference/README.md) connected to a GCR container registry
+* a [GCR Container Registry](../../component-guide/container-registries/gcp.md) connected to a GCR container registry
 * a [Google Cloud Image Builder](../../component-guide/image-builders/gcp.md) connected to the GCP project
 
 As a last step, a simple pipeline is run on the resulting Stack.

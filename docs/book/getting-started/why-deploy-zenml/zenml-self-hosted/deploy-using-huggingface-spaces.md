@@ -10,7 +10,7 @@ A quick way to deploy ZenML and get started is to use [HuggingFace Spaces](https
 Note that it is not recommended to use HuggingFace Spaces for production use as by default the data stored there is non-persistent and the underlying machine is not as available to you as a dedicated machine. See our [other deployment options](./) if you want to use ZenML in production.
 {% endhint %}
 
-![ZenML on HuggingFace Spaces -- default deployment](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/.gitbook/assets/hf\_spaces\_chart.png)
+![ZenML on HuggingFace Spaces -- default deployment](../../../.gitbook/assets/hf\_spaces\_chart.png)
 
 In this diagram, you can see what the default deployment of ZenML on HuggingFace looks like.
 

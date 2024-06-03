@@ -16,7 +16,7 @@ In order to move into production, you will need to deploy this server somewhere 
 
 ## Choosing how to deploy ZenML
 
-While there are many options on how to [deploy ZenML](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/getting-started/deploying-zenml/README.md), the two simplest ones are:
+While there are many options on how to [deploy ZenML](../../getting-started/deploying-zenml/README.md), the two simplest ones are:
 
 ### Option 1: Sign up for a free ZenML Cloud Trial
 

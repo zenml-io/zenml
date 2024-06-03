@@ -14,7 +14,7 @@ When using a stack with remote storage, nothing changes except the fact that the
 
 ## Provisioning and registering a remote artifact store
 
-Out of the box, ZenML ships with [many different supported artifact store flavors](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/component-guide/artifact-stores/README.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
+Out of the box, ZenML ships with [many different supported artifact store flavors](../../how-to/component-guide/artifact-stores/README.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -93,7 +93,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](../
 {% endtab %}
 
 {% tab title="Other" %}
-You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/component-guide/artifact-stores/README.md).
+You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../how-to/component-guide/artifact-stores/README.md).
 
 It is also relatively simple to create a [custom stack component flavor](../../how-to/stack-deployment/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
@@ -157,7 +157,7 @@ zenml stack register local_with_remote_storage -o default -a cloud_artifact_stor
 {% endtab %}
 
 {% tab title="Dashboard" %}
-<figure><img src="https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 

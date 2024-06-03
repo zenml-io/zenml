@@ -134,7 +134,7 @@ zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/how-to/popular-integrations/gcp-guide/broken-reference/README.md) to learn more about container registries and how to configure them.
+Head on over to our [docs](../../component-guide/container-registries/container-registries.md) to learn more about container registries and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}

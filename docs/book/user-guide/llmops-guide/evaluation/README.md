@@ -29,6 +29,6 @@ When evaluating the performance of your RAG pipeline, your specific use case and
 
 These are just examples, and the specific metrics and methods you use will depend on your use case. The [generation evaluation](generation.md) functions as an end-to-end evaluation of the RAG pipeline, as it checks the final output of the system. It's during these end-to-end evaluations that you'll have most leeway to use subjective metrics, as you're evaluating the system as a whole.
 
-Before we dive into the details, let's take a moment to look at [a short high-level code example](evaluation-in-65-loc.md) showcasing the two main areas of evaluation. Afterwards the following sections will cover the two main areas of evaluation in more detail [as well as offer practical guidance](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/user-guide/llmops-guide/evaluation/evaluation/evaluation-in-practice.md) on when to run these evaluations and what to look for in the results.
+Before we dive into the details, let's take a moment to look at [a short high-level code example](evaluation-in-65-loc.md) showcasing the two main areas of evaluation. Afterwards the following sections will cover the two main areas of evaluation in more detail [as well as offer practical guidance](../evaluation/evaluation-in-practice.md) on when to run these evaluations and what to look for in the results.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

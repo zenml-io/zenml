@@ -55,7 +55,7 @@ The MLflow Experiment Tracker can be deployed directly from the ZenML CLI:
 zenml experiment-tracker deploy mlflow_tracker --flavor=mlflow -x mlflow_bucket=gs://my_bucket --provider=<YOUR_PROVIDER>
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](https://github.com/zenml-io/zenml/blob/feature/gro-1047-docs/docs/book/stack-deployment/README.md).
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../how-to/stack-deployment/README.md).
 
 ### Authentication Methods
 
