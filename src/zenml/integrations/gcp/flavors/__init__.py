@@ -29,6 +29,10 @@ from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
     VertexStepOperatorConfig,
     VertexStepOperatorFlavor,
 )
+from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
+    VertexModelDeployerConfig,
+    VertexModelDeployerFlavor,
+)
 
 __all__ = [
     "GCPArtifactStoreFlavor",
@@ -39,4 +43,6 @@ __all__ = [
     "VertexOrchestratorConfig",
     "VertexStepOperatorFlavor",
     "VertexStepOperatorConfig",
+    "VertexModelDeployerFlavor",
+    "VertexModelDeployerConfig",
 ]

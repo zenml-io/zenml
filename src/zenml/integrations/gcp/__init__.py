@@ -33,6 +33,10 @@ GCP_IMAGE_BUILDER_FLAVOR = "gcp"
 GCP_VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
 GCP_VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
 
+# Model deployer constants
+VERTEX_MODEL_DEPLOYER_FLAVOR = "vertex"
+VERTEX_SERVICE_ARTIFACT = "vertex_deployment_service"
+
 # Service connector constants
 GCP_CONNECTOR_TYPE = "gcp"
 GCP_RESOURCE_TYPE = "gcp-generic"
