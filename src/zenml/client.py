@@ -2440,7 +2440,7 @@ class Client(metaclass=ClientMetaClass):
         deployment_id: Optional[UUID] = None,
         build_id: Optional[UUID] = None,
         stack_name_or_id: Union[str, UUID, None] = None,
-        syncronous: bool = False,
+        synchronous: bool = False,
     ) -> PipelineRunResponse:
         """Trigger a pipeline from the server.
 
@@ -2490,7 +2490,7 @@ class Client(metaclass=ClientMetaClass):
             stack_name_or_id: Name or ID of the stack on which to run the
                 pipeline. If not specified, this method will try to find a
                 runnable build on any stack.
-            syncronous: If `True`, this method will wait until the triggered
+            synchronous: If `True`, this method will wait until the triggered
                 run is finished.
 
         Raises:
@@ -2590,7 +2590,7 @@ class Client(metaclass=ClientMetaClass):
                     "pipeline."
                 )
 
-        if syncronous:
+        if synchronous:
             run = wait_for_pipeline_run_to_finish(run_id=run.id)
 
         return run
