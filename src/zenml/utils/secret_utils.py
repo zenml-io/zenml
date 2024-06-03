@@ -125,9 +125,6 @@ def is_secret_field(field: "FieldInfo") -> bool:
     Args:
         field: The field to check.
 
-    Raises:
-        ValueError: if the extras for the field are set incorrectly.
-
     Returns:
         `True` if the field contains sensitive information, `False` otherwise.
     """
@@ -158,9 +155,6 @@ def is_clear_text_field(field: "FieldInfo") -> bool:
 
     Args:
         field: The field to check.
-
-    Raises:
-        ValueError: if the extras for the field are set incorrectly.
 
     Returns:
         `True` if the field prevents secret references, `False` otherwise.
