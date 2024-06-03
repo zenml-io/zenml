@@ -563,6 +563,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 self.database = sql_url.database
                 sql_url = sql_url._replace(database=None)
             if sql_url.query:
+
                 def _get_query_result(
                     result: Union[str, Tuple[str, ...]],
                 ) -> Optional[str]:
