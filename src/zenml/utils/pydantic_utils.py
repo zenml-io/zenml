@@ -444,7 +444,7 @@ def has_validators(
             check model validators.
 
     Returns:
-        boolean, indicating whether the specified field or class has a validator
+        Whether the specified field or class has a validator or not.
     """
     # If field is not specified check model validators
     if field_name is None:
