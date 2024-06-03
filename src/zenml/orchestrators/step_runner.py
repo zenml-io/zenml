@@ -25,11 +25,8 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
 )
 from uuid import UUID
-
-from typing_extensions import get_origin
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.artifacts.utils import save_artifact
@@ -64,6 +61,7 @@ from zenml.steps.utils import (
     resolve_type_annotation,
 )
 from zenml.utils import materializer_utils, source_utils
+from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
@@ -444,7 +442,7 @@ class StepRunner:
                 **artifact.get_hydrated_version().dict()
             )
 
-        if data_type is Any or get_origin(data_type) is Union:
+        if data_type is Any or is_union(get_origin(data_type)):
             # Entrypoint function does not define a specific type for the input,
             # we use the datatype of the stored artifact
             data_type = source_utils.load(artifact.data_type)
