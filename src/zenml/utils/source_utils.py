@@ -72,9 +72,9 @@ def load(source: Union[Source, str]) -> Any:
     if isinstance(source, str):
         source = Source.from_import_path(source)
 
+    # The types of some objects don't exist in the `builtin` module
+    # so we need to manually handle it here
     if source.import_path == NoneTypeSource.import_path:
-        # The class of the `None` object doesn't exist in the `builtin` module
-        # so we need to manually handle it here
         return NoneType
     elif source.import_path == FunctionTypeSource.import_path:
         return FunctionType
@@ -141,9 +141,9 @@ def resolve(
     Returns:
         The source of the resolved object.
     """
+    # The types of some objects don't exist in the `builtin` module
+    # so we need to manually handle it here
     if obj is NoneType:
-        # The class of the `None` object doesn't exist in the `builtin` module
-        # so we need to manually handle it here
         return NoneTypeSource
     elif obj is FunctionType:
         return FunctionTypeSource
