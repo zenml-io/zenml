@@ -248,17 +248,16 @@ class StackComponentConfig(BaseModel, ABC):
 
     @root_validator(pre=True)
     def _convert_json_strings(cls, values: Dict[str, Any]) -> Any:
-        """Converts potential JSON strings passed via the CLI.
+        """Converts potential JSON strings.
 
         Args:
-            value: The value to convert.
-            field: The pydantic field.
+            values: The model values.
 
         Returns:
-            The converted value.
+            The potentially converted values.
 
         Raises:
-            ValueError: If the value is an invalid JSON string.
+            ValueError: If any of the values is an invalid JSON string.
         """
         for key, field in cls.__fields__.items():
             value = values.get(key, None)
