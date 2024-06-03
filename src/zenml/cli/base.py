@@ -432,6 +432,13 @@ def go() -> None:
 
     zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
 
+    if not is_jupyter_installed():
+        cli_utils.error(
+            "Jupyter Notebook or JupyterLab is not installed. "
+            "Please install the 'notebook' package with `pip` "
+            "first so you can run the tutorial notebooks."
+        )
+
     with track_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
         console.print(zenml_cli_privacy_message, width=80)
 
@@ -459,6 +466,7 @@ def go() -> None:
                         TUTORIAL_REPO,
                         tmp_cloned_dir,
                         branch=f"release/{zenml_version}",
+                        depth=1,  # to prevent timeouts when downloading
                     )
                 example_dir = os.path.join(
                     tmp_cloned_dir, "examples/quickstart"
@@ -483,23 +491,17 @@ def go() -> None:
         )
         input("Press ENTER to continue...")
 
-    if is_jupyter_installed():
-        try:
-            subprocess.check_call(
-                ["jupyter", "notebook"], cwd=zenml_tutorial_path
-            )
-        except subprocess.CalledProcessError as e:
-            cli_utils.error(
-                "An error occurred while launching Jupyter Notebook. "
-                "Please make sure Jupyter is properly installed and try again."
-            )
-            raise e
-    else:
-        cli_utils.error(
-            "Jupyter Notebook or JupyterLab is not installed. "
-            "Please install the 'notebook' package with `pip` "
-            "to run the tutorial notebooks."
+    try:
+        subprocess.check_call(
+            ["jupyter", "notebook", "--ContentsManager.allow_hidden=True"],
+            cwd=zenml_tutorial_path,
         )
+    except subprocess.CalledProcessError as e:
+        cli_utils.error(
+            "An error occurred while launching Jupyter Notebook. "
+            "Please make sure Jupyter is properly installed and try again."
+        )
+        raise e
 
 
 def _prompt_email(event_source: AnalyticsEventSource) -> bool:
@@ -654,7 +656,15 @@ def info(
         cli_utils.print_user_info(user_info)
 
     if stack:
-        cli_utils.print_debug_stack()
+        try:
+            cli_utils.print_debug_stack()
+        except ModuleNotFoundError as e:
+            cli_utils.warning(
+                "Could not print debug stack information. Please make sure "
+                "you have the necessary dependencies and integrations "
+                "installed for all your stack components."
+            )
+            cli_utils.warning(f"The missing package is: '{e.name}'")
 
 
 @cli.command(

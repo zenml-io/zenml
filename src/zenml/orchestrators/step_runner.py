@@ -481,7 +481,7 @@ class StepRunner:
         if len(output_annotations) == 0:
             if return_values is not None:
                 raise StepInterfaceError(
-                    f"Wrong step function output type for step '{step_name}': "
+                    f"Wrong step function output type for step `{step_name}`: "
                     f"Expected no outputs but the function returned something: "
                     f"{return_values}."
                 )
@@ -497,7 +497,7 @@ class StepRunner:
         # or tuple.
         if not isinstance(return_values, (list, tuple)):
             raise StepInterfaceError(
-                f"Wrong step function output type for step '{step_name}': "
+                f"Wrong step function output type for step `{step_name}`: "
                 f"Expected multiple outputs ({output_annotations}) but "
                 f"the function did not return a list or tuple "
                 f"(actual return value: {return_values})."
