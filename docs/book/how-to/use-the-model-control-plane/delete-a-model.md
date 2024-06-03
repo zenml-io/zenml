@@ -25,8 +25,18 @@ zenml model delete <MODEL_NAME>
 
 ## Delete a specific version of a model
 
+{% tabs %}
+{% tab title="CLI" %}
+
 ```shell
 zenml model delete <MODEL_NAME> <MODEL_VERSION_NAME>
 ```
+
+{% endtab %}
+
+{% tab title="Python SDK" %}
+{% endtab %}
+
+{% endtabs %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
