@@ -1,4 +1,6 @@
 ARG PYTHON_VERSION=3.11
+ARG ZENML_VERSION=""
+ARG ZENML_NIGHTLY="false"
 
 # Use a minimal base image to reduce the attack surface
 FROM python:${PYTHON_VERSION}-slim-bookworm AS base
@@ -20,6 +22,7 @@ FROM base AS builder
 
 ARG VIRTUAL_ENV=/opt/venv
 ARG ZENML_VERSION
+ARG ZENML_NIGHTLY="false"
 
 ENV \
   # Set up virtual environment
@@ -42,45 +45,39 @@ FROM builder as client-builder
 
 ARG VIRTUAL_ENV=/opt/venv
 ARG ZENML_VERSION
+ARG ZENML_NIGHTLY="false"
 
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Install client build dependencies
-#
-# NOTE: System packages required for the client build stage should be installed
-# here
-
-# Upgrade pip to the latest version and install the given zenml version (default
-# to latest).
-# Also create a requirements.txt file to keep track of
-# dependencies for reproducibility and debugging.
-RUN pip install --upgrade pip \
-  && pip install zenml${ZENML_VERSION:+==$ZENML_VERSION} \
-  && pip freeze > requirements.txt
-
+# Determine the package name based on ZENML_NIGHTLY
+RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
+      PACKAGE_NAME="zenml-nightly"; \
+    else \
+      PACKAGE_NAME="zenml"; \
+    fi \
+    && pip install --upgrade pip \
+    && pip install ${PACKAGE_NAME}${ZENML_VERSION:+==$ZENML_VERSION} \
+    && pip freeze > requirements.txt
 
 FROM builder as server-builder
 
 ARG VIRTUAL_ENV=/opt/venv
 ARG ZENML_VERSION
+ARG ZENML_NIGHTLY="false"
 
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-
-# Install server build dependencies
-#
-# NOTE: System packages required for the server build stage should be installed
-# here
-
-# Upgrade pip to the latest version and install the given zenml server version
-# (default to latest).
-# Also create a requirements.txt file to keep track of
-# dependencies for reproducibility and debugging.
-RUN pip install --upgrade pip \
-  && pip install "zenml[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]${ZENML_VERSION:+==$ZENML_VERSION}" \
-  && pip freeze > requirements.txt
+# Determine the package name based on ZENML_NIGHTLY
+RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
+      PACKAGE_NAME="zenml-nightly"; \
+    else \
+      PACKAGE_NAME="zenml"; \
+    fi \
+    && pip install --upgrade pip \
+    && pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]${ZENML_VERSION:+==$ZENML_VERSION}" \
+    && pip freeze > requirements.txt
 
 FROM base as client
 
