@@ -105,6 +105,16 @@ Depending on the options specified in your Docker settings, ZenML installs the r
 * The packages installed in your local Python environment
 * The packages specified via the `requirements` attribute (step level overwrites pipeline level)
 * The packages specified via the `required_integrations` and potentially stack requirements
+* You can specify additional arguments for the installer used to install your Python packages as follows:
+```python
+# This will result in a `pip install --timeout=1000 ...` call when installing packages in the
+# Docker image
+docker_settings = DockerSettings(python_package_installer_args={"timeout": 1000})
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
 * **Experimental**: If you want to use [`uv`](https://github.com/astral-sh/uv) for faster resolving and installation of your Python packages, you can use by it as follows:
 
 ```python
