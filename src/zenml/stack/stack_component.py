@@ -253,6 +253,7 @@ class StackComponentConfig(BaseModel, ABC):
 
         Args:
             value: The value to convert.
+            field: The pydantic field.
 
         Returns:
             The converted value.

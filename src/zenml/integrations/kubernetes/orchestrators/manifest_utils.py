@@ -112,7 +112,7 @@ def build_pod_manifest(
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
-        privileged: Whether to run the container in priviledged mode.
+        privileged: Whether to run the container in privileged mode.
         pod_settings: Optional settings for the pod.
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
@@ -237,7 +237,7 @@ def build_cron_job_manifest(
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
-        privileged: Whether to run the container in priviledged mode.
+        privileged: Whether to run the container in privileged mode.
         pod_settings: Optional settings for the pod.
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
