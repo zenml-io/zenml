@@ -110,6 +110,7 @@
 * [🗄️ Handle Data/Artifacts](how-to/handle-data-artifacts/README.md)
   * [How ZenML stores data](how-to/handle-data-artifacts/artifact-versioning.md)
   * [Return multiple outputs from a step](how-to/handle-data-artifacts/return-multiple-outputs-from-a-step.md)
+  * [Delete an artifact](how-to/handle-data-artifacts/delete-an-artifact.md)
   * [Organize data with tags](how-to/handle-data-artifacts/tagging.md)
   * [Get arbitrary artifacts in a step](how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md)
   * [Handle custom data types](how-to/handle-data-artifacts/handle-custom-data-types.md)
