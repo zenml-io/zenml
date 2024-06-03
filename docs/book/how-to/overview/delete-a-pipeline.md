@@ -58,11 +58,11 @@ Deleting a pipeline does not automatically delete any of its associated runs or 
 
 {% tabs %}
 {% tab title="CLI" %}
-```shell
+
 ```shell
 zenml pipeline runs delete <RUN_NAME_OR_ID>
 ```
-```
+
 {% endtab %}
 
 {% tab title="Python SDK" %}
