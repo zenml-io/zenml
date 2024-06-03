@@ -86,7 +86,7 @@
   * [Get past pipeline/step runs](how-to/overview/get-past-pipeline-step-runs.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
   * [What can be configured](how-to/use-configuration-files/what-can-be-configured.md)
-  * [Runtime settings for docker, resources, and stack components](how-to/use-configuration-files/runtime-configuration.md)
+  * [Runtime settings for Docker, resources, and stack components](how-to/use-configuration-files/runtime-configuration.md)
   * [Configuration hierarchy](how-to/use-configuration-files/configuration-hierarchy.md)
   * [Find out which configuration was used for a run](how-to/use-configuration-files/retrieve-used-configuration-of-a-run.md)
   * [Autogenerate a template yaml file](how-to/use-configuration-files/autogenerate-a-template-yaml-file.md)
