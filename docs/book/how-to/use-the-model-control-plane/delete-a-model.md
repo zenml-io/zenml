@@ -19,6 +19,13 @@ zenml model delete <MODEL_NAME>
 {% endtab %}
 
 {% tab title="Python SDK" %}
+
+```python
+from zenml.client import Client
+
+Client().delete_model(<MODEL_NAME>)
+```
+
 {% endtab %}
 
 {% endtabs %}
@@ -29,12 +36,19 @@ zenml model delete <MODEL_NAME>
 {% tab title="CLI" %}
 
 ```shell
-zenml model delete <MODEL_NAME> <MODEL_VERSION_NAME>
+zenml model version delete <MODEL_VERSION_NAME>
 ```
 
 {% endtab %}
 
 {% tab title="Python SDK" %}
+
+```python
+from zenml.client import Client
+
+Client().delete_model_version(<MODEL_VERSION_ID>)
+```
+
 {% endtab %}
 
 {% endtabs %}

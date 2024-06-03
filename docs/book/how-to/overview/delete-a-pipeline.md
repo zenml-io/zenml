@@ -16,6 +16,13 @@ zenml pipeline delete <PIPELINE_NAME>
 {% endtab %}
 
 {% tab title="Python SDK" %}
+
+```python
+from zenml.client import Client
+
+Client().delete_pipeline(<PIPELINE_NAME>)
+```
+
 {% endtab %}
 
 {% endtabs %}
@@ -32,6 +39,13 @@ zenml pipeline delete <PIPELINE_NAME> --version=<VERSION_NAME>
 {% endtab %}
 
 {% tab title="Python SDK" %}
+
+```python
+from zenml.client import Client
+
+Client().delete_pipeline(<PIPELINE_NAME>, version=<VERSION_NAME>)
+```
+
 {% endtab %}
 
 {% endtabs %}
@@ -48,6 +62,14 @@ zenml pipeline delete <PIPELINE_NAME> --all-versions
 {% endtab %}
 
 {% tab title="Python SDK" %}
+
+```python
+from zenml.client import Client
+
+Client().delete_pipeline(<PIPELINE_NAME>, all_versions=True)
+```
+
+
 {% endtab %}
 
 {% endtabs %}
@@ -66,6 +88,14 @@ zenml pipeline runs delete <RUN_NAME_OR_ID>
 {% endtab %}
 
 {% tab title="Python SDK" %}
+
+```python
+from zenml.client import Client
+
+Client().delete_pipeline_run(<RUN_NAME_OR_ID>)
+```
+
+
 {% endtab %}
 
 {% endtabs %}
