@@ -24,7 +24,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -72,7 +72,8 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         title="The deployment associated with the pipeline run."
     )
     pipeline: Optional[UUID] = Field(
-        title="The pipeline associated with the pipeline run."
+        title="The pipeline associated with the pipeline run.",
+        default=None,
     )
     orchestrator_run_id: Optional[str] = Field(
         title="The orchestrator run ID.",
@@ -198,6 +199,14 @@ class PipelineRunResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class PipelineRunResponse(
