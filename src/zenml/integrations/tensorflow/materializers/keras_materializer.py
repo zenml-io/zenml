@@ -17,7 +17,7 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
-import keras
+import keras  # type: ignore[import-untyped]
 import tensorflow as tf
 from tensorflow.python import keras as tf_keras
 from tensorflow.python.keras.utils.layer_utils import count_params
