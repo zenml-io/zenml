@@ -72,6 +72,7 @@
   * [Control caching behavior](how-to/overview/control-caching-behavior.md)
   * [Specify pip or apt requirements](how-to/overview/specify-pip-or-apt-requirements.md)
   * [Schedule a pipeline](how-to/overview/schedule-a-pipeline.md)
+  * [Deleting a pipeline](how-to/overview/delete-a-pipeline.md)
   * [Trigger a pipeline from another](how-to/overview/trigger-a-pipeline-from-another.md)
   * [Run pipelines asynchronously](how-to/overview/trigger-a-pipeline-from-another-1.md)
   * [Control execution order of steps](how-to/overview/control-execution-order-of-steps.md)
