@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Amazon S3 artifact store flavor."""
 
-import json
 import re
 from typing import (
     TYPE_CHECKING,
@@ -23,7 +22,6 @@ from typing import (
     Optional,
     Set,
     Type,
-    Union,
 )
 
 from pydantic import validator
@@ -71,42 +69,6 @@ class S3ArtifactStoreConfig(
     client_kwargs: Optional[Dict[str, Any]] = None
     config_kwargs: Optional[Dict[str, Any]] = None
     s3_additional_kwargs: Optional[Dict[str, Any]] = None
-
-    @validator(
-        "client_kwargs", "config_kwargs", "s3_additional_kwargs", pre=True
-    )
-    def _convert_json_string(
-        cls, value: Union[None, str, Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
-        """Converts potential JSON strings passed via the CLI to dictionaries.
-
-        Args:
-            value: The value to convert.
-
-        Returns:
-            The converted value.
-
-        Raises:
-            TypeError: If the value is not a `str`, `Dict` or `None`.
-            ValueError: If the value is an invalid json string or a json string
-                that does not decode into a dictionary.
-        """
-        if isinstance(value, str):
-            try:
-                dict_ = json.loads(value)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{value}'") from e
-
-            if not isinstance(dict_, Dict):
-                raise ValueError(
-                    f"Json string '{value}' did not decode into a dictionary."
-                )
-
-            return dict_
-        elif isinstance(value, Dict) or value is None:
-            return value
-        else:
-            raise TypeError(f"{value} is not a json string or a dictionary.")
 
     @validator("client_kwargs")
     def _validate_client_kwargs(
