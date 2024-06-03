@@ -157,6 +157,7 @@
     * [Spark](stacks-and-components/component-guide/step-operators/spark-kubernetes.md)
     * [Develop a Custom Step Operator](stacks-and-components/component-guide/step-operators/custom.md)
   * [Alerters](stacks-and-components/component-guide/alerters/alerters.md)
+    * [Discord Alerter](stacks-and-components/component-guide/alerters/discord.md)
     * [Slack Alerter](stacks-and-components/component-guide/alerters/slack.md)
     * [Develop a Custom Alerter](stacks-and-components/component-guide/alerters/custom.md)
   * [Feature Stores](stacks-and-components/component-guide/feature-stores/feature-stores.md)

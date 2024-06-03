@@ -1672,8 +1672,14 @@ occasionally want to delete a pipeline, which you can do via:
 zenml pipeline delete <PIPELINE_NAME>
 ```
 
-This will delete the pipeline and change all corresponding pipeline runs to
-become unlisted (not linked to any pipeline).
+This will delete the latest pipeline version and change all corresponding
+pipeline runs to become unlisted (not linked to any pipeline).
+
+If you want to delete all versions of a pipeline, you can do so as follows:
+
+```bash
+zenml pipeline delete <PIPELINE_NAME> --all-versions
+```
 
 To list all pipeline runs that you have executed, use:
 
