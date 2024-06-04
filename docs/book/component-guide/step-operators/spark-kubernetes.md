@@ -325,7 +325,7 @@ def step_on_spark(...) -> ...:
 After successfully running any step with a `KubernetesSparkStepOperator`, you should be able to see that a Spark driver pod was created in your cluster for each pipeline step when running `kubectl get pods -n $KUBERNETES_NAMESPACE`.
 
 {% hint style="info" %}
-Instead of hardcoding a step operator name, you can also use the [Client](../../../stacks-and-components/advanced-guide/configuring-zenml/client.md) to dynamically use the step operator of your active stack:
+Instead of hardcoding a step operator name, you can also use the [Client](../../reference/python-client.md) to dynamically use the step operator of your active stack:
 
 ```python
 from zenml.client import Client
