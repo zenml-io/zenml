@@ -14,7 +14,7 @@ Moving to a production environment offers several benefits over staying local:
 
 Despite these advantages, transitioning to production can be challenging due to the complexities involved in setting up the needed infrastructure.
 
-This is where the **ZenML server** comes in. By providing seamless integration with various [MLOps tools](../stacks-and-components/component-guide/README.md) and platforms, ZenML simplifies the process of moving your pipelines into production.
+This is where the **ZenML server** comes in. By providing seamless integration with various [MLOps tools](https://zenml.io/integrations) and platforms, ZenML simplifies the process of moving your pipelines into production.
 
 ### ZenML Server
 
