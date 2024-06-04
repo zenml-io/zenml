@@ -99,8 +99,14 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
 
         kube_config = self._k8s_client.configuration
 
+        host = (
+            kube_config.host
+            + "/"
+            + self._KUBE_PROXY_PATH.format(kwargs.get("namespace", "kubeflow"))
+        )
+
         config = Configuration(
-            host=kube_config.host,
+            host=host,
             api_key=kube_config.api_key,
             api_key_prefix=kube_config.api_key_prefix,
             username=kube_config.username,
@@ -154,7 +160,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     f"Expected a k8s_client.ApiClient while trying to use the "
                     f"linked connector, but got {type(client)}."
                 )
-
             return KubeClientKFPClient(
                 client=client,
                 **client_args,
@@ -163,8 +168,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         elif self.config.kubernetes_context:
             client_args["kube_context"] = self.config.kubernetes_context
 
-        elif self.config.tekton_hostname:
-            client_args["host"] = self.config.tekton_hostname
+        elif self.config.kubernetes_namespace:
+            client_args["host"] = self.config.kubernetes_namespace
 
             # Handle username and password, ignore the case if one is passed and
             # not the other. Also do not attempt to get cookie if cookie is
@@ -176,14 +181,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         "Cookie already set in `client_args`, ignoring "
                         "`client_username` and `client_password`..."
                     )
-                else:
-                    session_cookie = self._get_session_cookie(
-                        username=settings.client_username,
-                        password=settings.client_password,
-                    )
-
-                    client_args["cookies"] = session_cookie
-
         return KFPClient(**client_args)
 
     @property
@@ -574,37 +571,25 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         )
 
                 # add resource requirements
-                if step_settings.resource_settings:
-                    if (
-                        step_settings.resource_settings.get("cpu_count")
-                        is not None
-                    ):
+                if step.config.resource_settings:
+                    if step.config.resource_settings.cpu_count is not None:
                         dynamic_component = dynamic_component.set_cpu_limit(
-                            str(
-                                step_settings.resource_settings.get(
-                                    "cpu_count"
-                                )
-                            )
+                            step.config.resource_settings.cpu_count
                         )
 
-                    if (
-                        step_settings.resource_settings.get("gpu_count")
-                        is not None
-                    ):
+                    if step.config.resource_settings.gpu_count is not None:
                         dynamic_component = (
                             dynamic_component.set_accelerator_limit(
-                                step_settings.resource_settings.get(
-                                    "gpu_count"
-                                )
+                                step.config.resource_settings.gpu_count
                             )
                         )
 
-                    if (
-                        step_settings.resource_settings.get("memory")
-                        is not None
-                    ):
+                    if step.config.resource_settings.memory is not None:
+                        memory_limit = step.config.resource_settings.memory[
+                            :-1
+                        ]
                         dynamic_component = dynamic_component.set_memory_limit(
-                            step_settings.resource_settings.get("memory")
+                            memory_limit
                         )
 
                 step_name_to_dynamic_component[step_name] = dynamic_component
