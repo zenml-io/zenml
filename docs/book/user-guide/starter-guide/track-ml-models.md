@@ -263,6 +263,6 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../../how-to/use-the-model-control-plane/README.md). guide.
+ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../../how-to/use-the-model-control-plane/README.md) guide.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
