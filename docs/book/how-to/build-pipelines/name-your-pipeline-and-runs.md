@@ -1,7 +1,5 @@
 # Name your pipeline runs
 
-### Give each pipeline run a name
-
 In the output logs of a pipeline run you will see the name of the run:
 
 ```bash
