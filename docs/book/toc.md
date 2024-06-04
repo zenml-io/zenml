@@ -250,7 +250,7 @@
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
 * [🔏 End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
 * [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e\_nlp)
-* [👁️ End-to-End Computer Vision with YoloV8](https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision)
+* [👁️ Computer Vision with YoloV8](https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision)
 * [📖 LLM Finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)
 * [🧩 More Projects...](https://github.com/zenml-io/zenml-projects)
 
@@ -259,6 +259,7 @@
 * [🐍 Python Client](reference/python-client.md)
 * [📼 Global settings](reference/global-settings.md)
 * [🌎 Environment Variables](reference/environment-variables.md)
+* [👀 API reference](reference/api-reference.md)
 * [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [📚 How do I...?](reference/how-do-i.md)
 * [♻️ Migration guide](reference/migration-guide/README.md)
