@@ -1,7 +1,5 @@
 # What can be configured
 
-## Sample YAML file
-
 Here is an example of a sample YAML file, with the most important configuration highlighted. For brevity,
 we have removed all possible keys. To view a sample file with all possible keys, refer to
 [this page](./autogenerate-a-template-yaml-file.md).
