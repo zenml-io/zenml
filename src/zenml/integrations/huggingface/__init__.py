@@ -31,6 +31,7 @@ class HuggingfaceIntegration(Integration):
         "datasets",
         "huggingface_hub>0.19.0",
         "accelerate",
+        "bitsandbytes>=0.41.3",
         # temporary fix for CI issue similar to:
         # - https://github.com/huggingface/datasets/issues/6737
         # - https://github.com/huggingface/datasets/issues/6697
