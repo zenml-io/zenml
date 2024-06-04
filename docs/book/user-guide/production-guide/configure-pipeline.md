@@ -133,6 +133,6 @@ python run.py --training-pipeline
 
 Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
 
-Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../../how-to/build-pipelines/scale-compute-to-the-cloud.md), including the ability to [attach a GPU](../../how-to/build-pipelines/scale-compute-to-the-cloud.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
+Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../../how-to/use-configuration-files/runtime-configuration.md), including the ability to [attach a GPU](../../how-to/training-with-gpus/training-with-gpus.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
