@@ -21,8 +21,7 @@ from inspect import isclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, root_validator
-from pydantic.typing import get_origin
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
@@ -31,7 +30,12 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements, StepRunResponse
-from zenml.utils import pydantic_utils, secret_utils, settings_utils
+from zenml.utils import (
+    pydantic_utils,
+    secret_utils,
+    settings_utils,
+    typing_utils,
+)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -248,41 +252,60 @@ class StackComponentConfig(BaseModel, ABC):
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
 
-    @root_validator(pre=True)
-    def _convert_json_strings(cls, values: Dict[str, Any]) -> Any:
+    @model_validator(mode="before")
+    @classmethod
+    @pydantic_utils.before_validator_handler
+    def _convert_json_strings(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Converts potential JSON strings.
 
         Args:
-            values: The model values.
+            data: The model data.
 
         Returns:
-            The potentially converted values.
+            The potentially converted data.
 
         Raises:
             ValueError: If any of the values is an invalid JSON string.
         """
-        for key, field in cls.__fields__.items():
-            value = values.get(key, None)
+        for key, field in cls.model_fields.items():
+            value = data.get(key, None)
 
             if isinstance(value, str):
-                if get_origin(field.outer_type_) in {
+                if typing_utils.is_optional(field.annotation):
+                    args = list(typing_utils.get_args(field.annotation))
+                    if str in args:
+                        # Don't do any type coercion in case str is in the
+                        # possible types of the field
+                        continue
+
+                    # Remove `NoneType` from the arguments
+                    NoneType = type(None)
+                    if NoneType in args:
+                        args.remove(NoneType)
+
+                    # We just choose the first arg and match against this
+                    annotation = args[0]
+                else:
+                    annotation = field.annotation
+
+                if typing_utils.get_origin(annotation) in {
                     dict,
                     list,
                     Mapping,
                     Sequence,
                 }:
                     try:
-                        values[key] = json.loads(value)
+                        data[key] = json.loads(value)
                     except json.JSONDecodeError as e:
                         raise ValueError(
                             f"Invalid json string '{value}'"
                         ) from e
-                elif isclass(field.type_) and issubclass(
-                    field.type_, BaseModel
-                ):
-                    values[key] = field.type_.parse_raw(value).dict()
+                elif isclass(annotation) and issubclass(annotation, BaseModel):
+                    data[key] = annotation.model_validate_json(
+                        value
+                    ).model_dump()
 
-        return values
+        return data
 
     model_config = ConfigDict(
         # public attributes are immutable
