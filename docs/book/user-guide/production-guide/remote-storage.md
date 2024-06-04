@@ -93,7 +93,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](../
 {% endtab %}
 
 {% tab title="Other" %}
-You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../how-to/component-guide/artifact-stores/README.md).
+You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../component-guide/artifact-stores/README.md).
 
 It is also relatively simple to create a [custom stack component flavor](../../how-to/stack-deployment/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
@@ -107,7 +107,14 @@ Having trouble with setting up infrastructure? Join the [ZenML community](https:
 
 While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](../../how-to/auth-management/) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](../../how-to/auth-management/) on them) - but we're going to be starting with a very basic approach.
 
-First, let's understand what a service connector does. In simple words, a service connector contains credentials that grant stack components access to cloud infrastructure. These credentials are stored in the form a [secret](../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md), and are available to the ZenML server to use. Using these credentials, the service connector brokers a short-lived token and grants temporary permissions to the stack component to access that infrastructure. This diagram represents this process:
+First, let's understand what a service connector does. In simple words, a
+service connector contains credentials that grant stack components access to
+cloud infrastructure. These credentials are stored in the form of a
+[secret](../../how-to/interact-with-secrets.md),
+and are available to the ZenML server to use. Using these credentials, the
+service connector brokers a short-lived token and grants temporary permissions
+to the stack component to access that infrastructure. This diagram represents
+this process:
 
 <figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
 
