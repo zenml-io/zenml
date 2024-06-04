@@ -16,7 +16,7 @@ Label Studio is one of the leading open-source annotation platforms available to
 
 If you need to label data as part of your ML workflow, that is the point at which you could consider adding the optional annotator stack component as part of your ZenML stack.
 
-We currently support the use of annotation at the various stages described in [the main annotators docs page](./), and also offer custom utility functions to generate Label Studio label config files for image classification and object detection. (More will follow in due course.)
+We currently support the use of annotation at the various stages described in [the main annotators docs page](./annotators.md), and also offer custom utility functions to generate Label Studio label config files for image classification and object detection. (More will follow in due course.)
 
 The Label Studio integration currently is built to support workflows using the following three cloud artifact stores: AWS S3, GCP/GCS, and Azure Blob Storage. Purely local stacks will currently _not_ work if you want to do add the annotation stack component as part of your stack.
 
@@ -32,7 +32,7 @@ zenml integration install label_studio
 There is a known issue with Label Studio installations via `zenml integration install...`. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or [message us on Slack](https://zenml.io/slack-invite) if you need more help with this. We are working on a more definitive fix.
 {% endhint %}
 
-Before registering a `label_studio` flavor stack component as part of your stack, you'll need to have registered a cloud artifact store. (See the docs on how to register and set up[ a cloud artifact store](../artifact-stores/).)
+Before registering a `label_studio` flavor stack component as part of your stack, you'll need to have registered a cloud artifact store. (See the docs on how to register and set up[ a cloud artifact store](../artifact-stores/artifact-stores.md).)
 
 Be sure to register a secret for whichever artifact store you choose, and then you should make sure to pass the name of that secret into the artifact store as the `--authentication_secret` as [described in this guide](../artifact-stores/s3.md#advanced-configuration), for example in the case of AWS.
 

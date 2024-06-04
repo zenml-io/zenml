@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Vertex AI.
 [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a serverless ML workflow tool running on the Google Cloud Platform. It is an easy way to quickly run your code in a production-ready, repeatable cloud orchestrator that requires minimal setup without provisioning and paying for standby compute.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../deploying-zenml/zenml-self-hosted/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ## When to use it
@@ -42,8 +42,8 @@ To use the Vertex orchestrator, we need:
     zenml integration install gcp
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact-stores/) as part of your stack.
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
+* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * [GCP credentials with proper permissions](vertex.md#gcp-credentials-and-permissions)
 * The GCP project ID and location in which you want to run your Vertex AI pipelines.
 
@@ -160,7 +160,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Vertex AI. Check out [this page](../../customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Vertex AI. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Vertex orchestrator:

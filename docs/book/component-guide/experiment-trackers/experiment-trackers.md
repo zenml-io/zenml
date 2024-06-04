@@ -35,7 +35,7 @@ features provided by experiment tracking tools.
 
 Here is an architecture diagram that shows how experiment trackers fit into the overall story of a remote stack.
 
-![Experiment Tracker](../../../.gitbook/assets/Remote_with_exp_tracker.png)
+![Experiment Tracker](../../.gitbook/assets/Remote_with_exp_tracker.png)
 
 #### Experiment Tracker Flavors
 

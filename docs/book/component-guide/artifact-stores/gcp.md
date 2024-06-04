@@ -4,7 +4,7 @@ description: Storing artifacts using GCP Cloud Storage.
 
 # Google Cloud Storage (GCS)
 
-The GCS Artifact Store is an [Artifact Store](./) flavor provided with the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction) to store ZenML artifacts in a GCP Cloud Storage bucket.
+The GCS Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction) to store ZenML artifacts in a GCP Cloud Storage bucket.
 
 ### When would you want to use it?
 
@@ -17,7 +17,7 @@ Running ZenML pipelines with [the local Artifact Store](local.md) is usually suf
 
 In all these cases, you need an Artifact Store that is backed by a form of public cloud or self-hosted shared object storage service.
 
-You should use the GCS Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the Google Cloud Storage managed service. You should consider one of the other [Artifact Store flavors](./#artifact-store-flavors) if you don't have access to the GCP Cloud Storage service.
+You should use the GCS Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the Google Cloud Storage managed service. You should consider one of the other [Artifact Store flavors](./artifact-stores.md#artifact-store-flavors) if you don't have access to the GCP Cloud Storage service.
 
 ### How do you deploy it?
 
@@ -53,7 +53,7 @@ A GCS Artifact Store can be deployed directly from the ZenML CLI:
 zenml artifact-store deploy gcs_artifact_store --flavor=gcp --provider=gcp ...
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../../how-to/stack-deployment/).
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the [dedicated documentation section](../../how-to/stack-deployment/README.md).
 
 #### Authentication Methods
 
@@ -68,9 +68,9 @@ Certain dashboard functionality, such as visualizing or deleting artifacts, is n
 
 The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to the function. If these components are not running on your machine, they do not have access to the local Google Cloud CLI configuration and will encounter authentication failures while trying to access the GCS Artifact Store:
 
-* [Orchestrators](../orchestrators/) need to access the Artifact Store to manage pipeline artifacts
-* [Step Operators](../step-operators/) need to access the Artifact Store to manage step-level artifacts
-* [Model Deployers](../model-deployers/) need to access the Artifact Store to load served models
+* [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact Store to manage pipeline artifacts
+* [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step-level artifacts
+* [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact Store to load served models
 
 To enable these use cases, it is recommended to use [a GCP Service Connector](../../how-to/auth-management/gcp-service-connector.md) to link your GCS Artifact Store to the remote GCS bucket.
 {% endhint %}
@@ -167,7 +167,7 @@ zenml stack register <STACK_NAME> -a <GCS_STORE_NAME> ... --set
 {% endtab %}
 
 {% tab title="GCP Credentials" %}
-When you register the GCS Artifact Store, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa) , store it in a [ZenML Secret](../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) and then reference it in the Artifact Store configuration.
+When you register the GCS Artifact Store, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa) , store it in a [ZenML Secret](../../getting-started/deploying-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) and then reference it in the Artifact Store configuration.
 
 This method has some advantages over the implicit authentication method:
 
@@ -200,6 +200,6 @@ For more, up-to-date information on the GCS Artifact Store implementation and it
 
 ### How do you use it?
 
-Aside from the fact that the artifacts are stored in GCP Cloud Storage, using the GCS Artifact Store is no different from [using any other flavor of Artifact Store](./#how-to-use-it).
+Aside from the fact that the artifacts are stored in GCP Cloud Storage, using the GCS Artifact Store is no different from [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

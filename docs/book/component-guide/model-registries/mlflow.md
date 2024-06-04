@@ -8,7 +8,7 @@ description: Managing MLFlow logged models and artifacts
 
 The MLflow model registry uses [the MLflow model registry service](https://mlflow.org/docs/latest/model-registry.html) to manage and track ML models and their artifacts and provides a user interface to browse them:
 
-![MLflow Model Registry UI](../../../.gitbook/assets/mlflow-ui-models.png)
+![MLflow Model Registry UI](../../.gitbook/assets/mlflow-ui-models.png)
 
 ## When would you want to use it?
 

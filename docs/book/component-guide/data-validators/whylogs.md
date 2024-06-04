@@ -6,7 +6,7 @@ description: >-
 
 # Whylogs
 
-The whylogs/WhyLabs [Data Validator](./) flavor provided with the ZenML integration uses [whylogs](https://whylabs.ai/whylogs) and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation.
+The whylogs/WhyLabs [Data Validator](./data-validators.md) flavor provided with the ZenML integration uses [whylogs](https://whylabs.ai/whylogs) and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -18,7 +18,7 @@ You should use the whylogs/WhyLabs Data Validator when you need the following da
 * Data Drift: detect data drift in model input features
 * Model Drift: Detect training-serving skew, concept drift, and model performance degradation
 
-You should consider one of the other [Data Validator flavors](./#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](./data-validators.md#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 
@@ -38,7 +38,7 @@ zenml data-validator register whylogs_data_validator --flavor=whylogs
 zenml stack register custom_stack -dv whylogs_data_validator ... --set
 ```
 
-Adding WhyLabs logging capabilities to your whylogs Data Validator is just slightly more complicated, as you also need to create a [ZenML Secret](../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) to store the sensitive WhyLabs authentication information in a secure location and then reference the secret in the Data Validator configuration. To generate a WhyLabs access token, you can follow [the official WhyLabs instructions documented here](https://docs.whylabs.ai/docs/whylabs-api/#creating-an-api-token) .
+Adding WhyLabs logging capabilities to your whylogs Data Validator is just slightly more complicated, as you also need to create a [ZenML Secret](../../getting-started/deploying-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) to store the sensitive WhyLabs authentication information in a secure location and then reference the secret in the Data Validator configuration. To generate a WhyLabs access token, you can follow [the official WhyLabs instructions documented here](https://docs.whylabs.ai/docs/whylabs-api/#creating-an-api-token) .
 
 Then, you can register the whylogs Data Validator with WhyLabs logging capabilities as follows:
 
@@ -278,8 +278,8 @@ if __name__ == "__main__":
     visualize_statistics("train_data_profiler", "test_data_profiler")
 ```
 
-![Whylogs Visualization Example 1](<../../../.gitbook/assets/whylogs-visualizer-01 (2).png>)
+![Whylogs Visualization Example 1](<../../.gitbook/assets/whylogs-visualizer-01.png>)
 
-![Whylogs Visualization Example 2](../../../.gitbook/assets/whylogs-visualizer-02.png)
+![Whylogs Visualization Example 2](../../.gitbook/assets/whylogs-visualizer-02.png)
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

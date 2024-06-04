@@ -15,7 +15,7 @@ Compared to Kubeflow, this means that the Kubernetes-native orchestrator is fast
 However, since Kubeflow is much more mature, you should, in most cases, aim to move your pipelines to Kubeflow in the long run. A smooth way to production-grade orchestration could be to set up a Kubernetes cluster first and get started with the Kubernetes-native orchestrator. If needed, you can then install and set up Kubeflow later and simply switch out the orchestrator of your stack as soon as your full setup is ready.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/zenml-self-hosted/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -31,7 +31,7 @@ You should use the Kubernetes orchestrator if:
 
 The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our cloud guide
 
-If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../../deploying-zenml/zenml-self-hosted/).
+If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../getting-started/deploying-zenml/README.md).
 
 #### Infrastructure Deployment
 
@@ -111,7 +111,7 @@ We can then register the orchestrator and use it in our active stack. This can b
     ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubernetes. Check out [this page](../../customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubernetes. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Kubernetes orchestrator:

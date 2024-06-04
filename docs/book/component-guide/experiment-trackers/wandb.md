@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with Weights & Biases.
 
 # Weights & Biases
 
-The Weights & Biases Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Weights & Biases ZenML integration that uses [the Weights & Biases experiment tracking platform](https://wandb.ai/site/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
+The Weights & Biases Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Weights & Biases ZenML integration that uses [the Weights & Biases experiment tracking platform](https://wandb.ai/site/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ### When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the Weights & Biases Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 * if you would like to connect ZenML to Weights & Biases to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with Weights & Biases before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors) if you have never worked with Weights & Biases before and would rather use another experiment tracking tool that you are more familiar with.
 
 ### How do you deploy it?
 
@@ -55,7 +55,7 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) to store the Weights & Biases tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../how-to/interact-with-secrets.md) to store the Weights & Biases tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -79,7 +79,7 @@ zenml experiment-tracker register wandb_tracker \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../../getting-started/why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](../../how-to/interact-with-secrets.md) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -144,7 +144,7 @@ Weights & Biases comes with a web-based UI that you can use to find further deta
 
 Every ZenML step that uses Weights & Biases should create a separate experiment run which you can inspect in the Weights & Biases UI:
 
-![WandB UI](../../../.gitbook/assets/WandBUI.png)
+![WandB UI](../../.gitbook/assets/WandBUI.png)
 
 You can find the URL of the Weights & Biases experiment linked to a specific ZenML run via the metadata of the step in which the experiment tracker was used:
 
@@ -194,6 +194,6 @@ def my_step(
 
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action is required!
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -65,7 +65,7 @@ described [here](../../how-to/training-with-gpus/training-with-gpus.md).
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use step operators to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/how-to/use-remote-compute/scale-compute-to-the-cloud.md) to ensure 
+follow [the instructions on this page](../../how-to/training-with-gpus/training-with-gpus.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
 

@@ -175,7 +175,7 @@ You should use the Spark step operator:
 
 To use the `KubernetesSparkStepOperator` you will need to setup a few things first:
 
-* **Remote ZenML server:** See the [deployment guide](../../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md) for more information.
+* **Remote ZenML server:** See the [deployment guide](../../getting-started/deploying-zenml/README.md) for more information.
 * **Kubernetes cluster:** There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure. For AWS, you can follow the [Spark EKS Setup Guide](spark-kubernetes.md#spark-eks-setup-guide) below.
 
 ### Spark EKS Setup Guide
@@ -285,8 +285,8 @@ To use the `KubernetesSparkStepOperator`, you need:
     zenml integration install spark
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact-stores/) as part of your stack.
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
+* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * A Kubernetes cluster [deployed](spark-kubernetes.md#how-to-deploy-it).
 
 We can then register the step operator and use it in our active stack:

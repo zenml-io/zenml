@@ -29,7 +29,7 @@ target environment, either a development (local) or a production (Kubernetes or 
 
 Here is an architecture diagram that shows how model deployers fit into the overall story of a remote stack.
 
-![Model Deployers](../../../.gitbook/assets/Remote_with_deployer.png)
+![Model Deployers](../../.gitbook/assets/Remote_with_deployer.png)
 
 #### Model Deployers Flavors
 
