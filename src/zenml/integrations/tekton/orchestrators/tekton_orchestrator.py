@@ -50,7 +50,6 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
-    from zenml.steps import ResourceSettings
 
 
 logger = get_logger(__name__)
@@ -339,32 +338,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             },
             custom_validation_function=_validate,
         )
-
-    @staticmethod
-    def _configure_container_resources(
-        pipeline_task: dsl.PipelineTask,
-        resource_settings: "ResourceSettings",
-    ) -> None:
-        """Adds resource requirements to the container.
-
-        Args:
-            pipeline_task: The pipeline task to configure.
-            resource_settings: The resource settings to use for this
-                container.
-        """
-        if resource_settings.cpu_count is not None:
-            pipeline_task = pipeline_task.set_cpu_limit(
-                str(resource_settings.cpu_count)
-            )
-
-        if resource_settings.gpu_count is not None:
-            pipeline_task = pipeline_task.set_accelerator_limit(
-                resource_settings.gpu_count
-            )
-
-        if resource_settings.memory is not None:
-            memory_limit = resource_settings.memory[:-1]
-            pipeline_task = pipeline_task.set_memory_limit(memory_limit)
 
     def _create_dynamic_component(
         self,
