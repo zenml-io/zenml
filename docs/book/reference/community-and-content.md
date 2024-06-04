@@ -46,14 +46,8 @@ learning, and artificial intelligence, with a particular focus on MLOps, or how 
 
 ### Newsletter
 
-You can also subscribe to our [Newsletter](https://zenml.substack.com/) where we share what we learn as we develop
+You can also subscribe to our [Newsletter](https://zenml.io/newsletter-signup) where we share what we learn as we develop
 open-source tooling for production machine learning. You will also get all the exciting news about ZenML in general.
-
-### Community meetup
-
-Every week, we pop in a session for 30 minutes to interact directly with the community. Sometimes we'll be presenting a
-feature, other times just taking questions and having fun. Join us if you are curious about ZenML or just want to talk
-shop about MLOps. The session is free and open to everyone, [sign up](https://zenml.io/meet) now.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
