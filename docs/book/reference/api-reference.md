@@ -13,6 +13,6 @@ In the local case (i.e. using `zenml up`, the docs are available on `http://loca
 
 ![ZenML API docs](../.gitbook/assets/zenml_api_docs.png)
 
-![ZenML API Redoc](../.gitbook/assets/zenml_api_redoc.png.png)
+![ZenML API Redoc](../.gitbook/assets/zenml_api_redoc.png)
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
