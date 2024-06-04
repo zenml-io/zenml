@@ -135,7 +135,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../user-guide/advanced-guide/pipelining-features/managing-steps.md#parameters-for-your-steps) for more information on how to parameterize your steps.
+Check out [this page](../../how-to/build-pipelines/use-pipeline-step-parameters.md) for more information on how to parameterize your steps.
 
 ## Calling a step outside of a pipeline
 
@@ -385,7 +385,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../user-guide/advanced-guide/pipelining-features/managing-steps.md#control-the-execution-order) for more information on how to control the step execution order.
+Check out [this page](../../how-to/build-pipelines/control-execution-order-of-steps.md) for more information on how to control the step execution order.
 
 ## Defining steps with multiple outputs
 
@@ -424,7 +424,7 @@ def my_step() -> Tuple[
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](../../user-guide/advanced-guide/pipelining-features/managing-steps.md#step-output-names) for more information on how to annotate your step outputs.
+Check out [this page](../../how-to/build-pipelines/step-output-typing-and-annotation.md) for more information on how to annotate your step outputs.
 
 ## Accessing run information inside steps
 
