@@ -111,9 +111,9 @@ class GithubEvent(BaseEvent):
     after: str
     repository: Repository
     commits: List[Commit]
-    head_commit: Optional[Commit]
-    tags: Optional[List[Tag]]
-    pull_requests: Optional[List[PullRequest]]
+    head_commit: Optional[Commit] = None
+    tags: Optional[List[Tag]] = None
+    pull_requests: Optional[List[PullRequest]] = None
     model_config = ConfigDict(extra="allow")
 
     @property
@@ -153,9 +153,9 @@ class GithubEvent(BaseEvent):
 class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
     """Configuration for github event filters."""
 
-    repo: Optional[str]
-    branch: Optional[str]
-    event_type: Optional[GithubEventType]
+    repo: Optional[str] = None
+    branch: Optional[str] = None
+    event_type: Optional[GithubEventType] = None
 
     def event_matches_filter(self, event: BaseEvent) -> bool:
         """Checks the filter against the inbound event.

@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from typing import Generator, Type
+from typing import Dict, Generator, List, Mapping, Optional, Sequence, Type
 from uuid import uuid4
 
 import pytest
-from pydantic import ValidationError, field_validator
+from pydantic import BaseModel, ValidationError, field_validator
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -26,6 +26,7 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
+from zenml.stack import StackComponentConfig
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -244,3 +245,54 @@ def test_stack_component_serialization_does_not_resolve_secrets(
         new_orchestrator.configuration["attribute_without_validator"]
         == secret_ref
     )
+
+
+def test_stack_component_config_converts_json_strings():
+    """Tests that the stack component config converts json strings if a string
+    is passed for certain fields."""
+
+    class PydanticModel(BaseModel):
+        value: int
+
+    class ComponentConfig(StackComponentConfig):
+        list_: List[str]
+        optional_list: Optional[List[str]] = None
+        sequence_: Sequence[str]
+        dict_: Dict[str, int]
+        mapping_: Mapping[str, int]
+        pydantic_model: PydanticModel
+        optional_model: Optional[PydanticModel] = None
+
+    config = ComponentConfig(
+        list_=["item"],
+        optional_list=["item"],
+        sequence_=["item"],
+        dict_={"key": 1},
+        mapping_={"key": 1},
+        pydantic_model=PydanticModel(value=1),
+        optional_model=PydanticModel(value=1),
+    )
+    assert config.list_ == ["item"]
+    assert config.optional_list == ["item"]
+    assert config.sequence_ == ["item"]
+    assert config.dict_ == {"key": 1}
+    assert config.mapping_ == {"key": 1}
+    assert config.pydantic_model == PydanticModel(value=1)
+    assert config.optional_model == PydanticModel(value=1)
+
+    config = ComponentConfig(
+        list_='["item"]',
+        optional_list='["item"]',
+        sequence_='["item"]',
+        dict_='{"key": 1}',
+        mapping_='{"key": 1}',
+        pydantic_model='{"value": 1}',
+        optional_model='{"value": 1}',
+    )
+    assert config.list_ == ["item"]
+    assert config.optional_list == ["item"]
+    assert config.sequence_ == ["item"]
+    assert config.dict_ == {"key": 1}
+    assert config.mapping_ == {"key": 1}
+    assert config.pydantic_model == PydanticModel(value=1)
+    assert config.optional_model == PydanticModel(value=1)

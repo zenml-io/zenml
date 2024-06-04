@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """MLflow experiment tracker flavor."""
 
-import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import model_validator
@@ -121,13 +120,16 @@ class MLFlowExperimentTrackerConfig(
 
         Returns:
             The validated values.
+
+        Raises:
+             ValueError: If neither credentials nor a token are provided.
         """
         if self.tracking_uri:
             if is_databricks_tracking_uri(self.tracking_uri):
                 # If the tracking uri is "databricks", then we need the
                 # databricks host to be set.
-                if self.databricks_host:
-                    logging.warning(
+                if not self.databricks_host:
+                    raise ValueError(
                         "MLflow experiment tracking with a Databricks MLflow "
                         "managed tracking server requires the "
                         "`databricks_host` to be set in your stack component. "
@@ -143,7 +145,7 @@ class MLFlowExperimentTrackerConfig(
                 basic_auth = self.tracking_username and self.tracking_password
 
                 if not (basic_auth or self.tracking_token):
-                    logging.warning(
+                    raise ValueError(
                         f"MLflow experiment tracking with a remote backend "
                         f"{self.tracking_uri} is only possible when specifying "
                         f"either username and password or an authentication "

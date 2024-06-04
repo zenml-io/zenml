@@ -431,7 +431,7 @@ def before_validator_handler(
     return before_validator
 
 
-def check_validators(
+def has_validators(
     pydantic_class: Type[BaseModel],
     field_name: Optional[str] = None,
 ) -> bool:
@@ -444,7 +444,7 @@ def check_validators(
             check model validators.
 
     Returns:
-        boolean, indicating whether the specified field or class has a validator
+        Whether the specified field or class has a validator or not.
     """
     # If field is not specified check model validators
     if field_name is None:

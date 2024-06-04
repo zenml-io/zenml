@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 from pydantic import Field, PlainSerializer, SecretStr
 from typing_extensions import Annotated
 
+from zenml.logger import get_logger
+
 if TYPE_CHECKING:
     from pydantic.fields import FieldInfo
 
@@ -33,6 +35,8 @@ PlainSerializedSecretStr = Annotated[
         lambda v: v.get_secret_value() if v else None, when_used="json"
     ),
 ]
+
+logger = get_logger(__name__)
 
 
 def is_secret_reference(value: Any) -> bool:
@@ -121,9 +125,6 @@ def is_secret_field(field: "FieldInfo") -> bool:
     Args:
         field: The field to check.
 
-    Raises:
-        ValueError: if the extras for the field are set incorrectly.
-
     Returns:
         `True` if the field contains sensitive information, `False` otherwise.
     """
@@ -139,9 +140,11 @@ def is_secret_field(field: "FieldInfo") -> bool:
                 return marker
 
         else:
-            raise ValueError(
-                f"Please make sure that the extras are set correctly "
-                f"for field: {field.title}"
+            logger.warning(
+                f"The 'json_schema_extra' of the field '{field.title}' is "
+                "not defined as a dict. This might lead to unexpected "
+                "behaviour as we are checking it is a secret text field. "
+                "Returning 'False' as default..."
             )
 
     return False
@@ -152,9 +155,6 @@ def is_clear_text_field(field: "FieldInfo") -> bool:
 
     Args:
         field: The field to check.
-
-    Raises:
-        ValueError: if the extras for the field are set incorrectly.
 
     Returns:
         `True` if the field prevents secret references, `False` otherwise.
@@ -171,9 +171,11 @@ def is_clear_text_field(field: "FieldInfo") -> bool:
                 return marker
 
         else:
-            raise ValueError(
-                f"Please make sure that the extras are set correctly "
-                f"for field: {field.title}"
+            logger.warning(
+                f"The 'json_schema_extra' of the field '{field.title}' is "
+                "not defined as a dict. This might lead to unexpected "
+                "behaviour as we are checking it is a clear text field. "
+                "Returning 'False' as default..."
             )
 
     return False

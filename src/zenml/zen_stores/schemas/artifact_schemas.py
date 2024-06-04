@@ -331,7 +331,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         # Create the body of the model
         body = ArtifactVersionResponseBody(
             artifact=self.artifact.to_model(),
-            version=self.version_number or self.version,
+            version=self.version or str(self.version_number),
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
             type=ArtifactType(self.type),

@@ -241,7 +241,7 @@ def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_wi
     file_config = dict(
         parameters={"foo": "bar"},
         steps={
-            "assert_input_params": {"parameters": {"bar": 1}}
+            "assert_input_params": {"parameters": {"bar": "1"}}
         },  # here we set `bar` for `assert_input_params`
         enable_cache=False,
     )

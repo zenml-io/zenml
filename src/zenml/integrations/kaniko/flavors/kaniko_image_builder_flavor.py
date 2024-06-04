@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 """Kaniko image builder flavor."""
 
-import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-from pydantic import PositiveInt, field_validator
+from pydantic import PositiveInt
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.kaniko import KANIKO_IMAGE_BUILDER_FLAVOR
@@ -81,46 +80,6 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
     store_context_in_artifact_store: bool = False
 
     executor_args: List[str] = []
-
-    @field_validator(
-        "env",
-        "env_from",
-        "volume_mounts",
-        "volumes",
-        "executor_args",
-        mode="before",
-    )
-    @classmethod
-    def _convert_json_string(cls, v: Any) -> Any:
-        """Converts potential JSON strings passed via the CLI to lists.
-
-        Args:
-            v: The value to convert.
-
-        Returns:
-            The converted value.
-
-        Raises:
-            TypeError: If the value is not a `str`, `List` or `None`.
-            ValueError: If the value is an invalid json string or a json string
-                that does not decode into a list.
-        """
-        if isinstance(v, str):
-            try:
-                list_ = json.loads(v)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{v}'") from e
-
-            if not isinstance(list_, List):
-                raise ValueError(
-                    f"Json string '{v}' did not decode into a list."
-                )
-
-            return list_
-        elif isinstance(v, List) or v is None:
-            return v
-        else:
-            raise TypeError(f"{v} is not a json string or a list.")
 
 
 class KanikoImageBuilderFlavor(BaseImageBuilderFlavor):

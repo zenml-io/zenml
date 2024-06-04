@@ -137,7 +137,7 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     artifact: ArtifactResponse = Field(
         title="Artifact to which this version belongs."
     )
-    version: Union[str, int] = Field(title="Version of the artifact.")
+    version: str = Field(title="Version of the artifact.")
     uri: str = Field(
         title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )

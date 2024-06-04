@@ -507,7 +507,7 @@ def sample_artifact_version_model(
         id=uuid4(),
         body=ArtifactVersionResponseBody(
             artifact=sample_artifact_model,
-            version=1,
+            version="1",
             user=sample_user_model,
             created=datetime.now(),
             updated=datetime.now(),

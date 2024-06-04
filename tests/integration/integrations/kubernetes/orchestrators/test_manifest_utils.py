@@ -23,9 +23,6 @@ from kubernetes.client import (
     V1Toleration,
 )
 
-from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
-    KubernetesOrchestratorSettings,
-)
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_cron_job_manifest,
     build_pod_manifest,
@@ -42,10 +39,9 @@ def test_build_pod_manifest_metadata():
         image_name="test_image",
         command=["test", "command"],
         args=["test", "args"],
-        settings=KubernetesOrchestratorSettings(
-            pod_settings=KubernetesPodSettings(
-                annotations={"blupus_loves": "strawberries"},
-            )
+        privileged=True,
+        pod_settings=KubernetesPodSettings(
+            annotations={"blupus_loves": "strawberries"},
         ),
     )
     assert isinstance(manifest, V1Pod)
@@ -57,45 +53,46 @@ def test_build_pod_manifest_metadata():
     assert metadata.labels["pipeline"] == "test_pipeline"
     assert metadata.annotations["blupus_loves"] == "strawberries"
 
+    container = manifest.spec.containers[0]
+    assert container.security_context.privileged is True
+
 
 @pytest.fixture
-def kubernetes_settings() -> KubernetesOrchestratorSettings:
-    """build KubernetesOrchestratorSettings fixture."""
-    kubernetes_settings = KubernetesOrchestratorSettings(
-        pod_settings={
-            "affinity": {
-                "nodeAffinity": {
-                    "requiredDuringSchedulingIgnoredDuringExecution": {
-                        "nodeSelectorTerms": [
-                            {
-                                "matchExpressions": [
-                                    {
-                                        "key": "node.kubernetes.io/name",
-                                        "operator": "In",
-                                        "values": ["my_powerful_node_group"],
-                                    }
-                                ]
-                            }
-                        ]
-                    }
+def kubernetes_pod_settings() -> KubernetesPodSettings:
+    """build KubernetesPodSettings fixture."""
+    pod_settings = KubernetesPodSettings(
+        affinity={
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "node.kubernetes.io/name",
+                                    "operator": "In",
+                                    "values": ["my_powerful_node_group"],
+                                }
+                            ]
+                        }
+                    ]
                 }
-            },
-            "tolerations": [
-                V1Toleration(
-                    key="node.kubernetes.io/name",
-                    operator="Equal",
-                    value="",
-                    effect="NoSchedule",
-                )
-            ],
-            "resources": {"requests": {"memory": "2G"}},
-        }
+            }
+        },
+        tolerations=[
+            V1Toleration(
+                key="node.kubernetes.io/name",
+                operator="Equal",
+                value="",
+                effect="NoSchedule",
+            )
+        ],
+        resources={"requests": {"memory": "2G"}},
     )
-    return kubernetes_settings
+    return pod_settings
 
 
 def test_build_pod_manifest_pod_settings(
-    kubernetes_settings: KubernetesOrchestratorSettings,
+    kubernetes_pod_settings: KubernetesPodSettings,
 ):
     """Test that the pod settings are correctly set in the manifest."""
     manifest: V1Pod = build_pod_manifest(
@@ -105,7 +102,8 @@ def test_build_pod_manifest_pod_settings(
         image_name="test_image",
         command=["test", "command"],
         args=["test", "args"],
-        settings=kubernetes_settings,
+        privileged=False,
+        pod_settings=kubernetes_pod_settings,
     )
     assert isinstance(manifest, V1Pod)
     assert isinstance(manifest.spec, V1PodSpec)
@@ -117,10 +115,11 @@ def test_build_pod_manifest_pod_settings(
     )
     assert manifest.spec.tolerations[0]["key"] == "node.kubernetes.io/name"
     assert manifest.spec.containers[0].resources["requests"]["memory"] == "2G"
+    assert manifest.spec.containers[0].security_context.privileged is False
 
 
 def test_build_cron_job_manifest_pod_settings(
-    kubernetes_settings: KubernetesOrchestratorSettings,
+    kubernetes_pod_settings: KubernetesPodSettings,
 ):
     """Test that the pod settings are correctly set in the manifest."""
     manifest: V1CronJob = build_cron_job_manifest(
@@ -131,7 +130,8 @@ def test_build_cron_job_manifest_pod_settings(
         image_name="test_image",
         command=["test", "command"],
         args=["test", "args"],
-        settings=kubernetes_settings,
+        privileged=False,
+        pod_settings=kubernetes_pod_settings,
         service_account_name="test_sa",
     )
     assert isinstance(manifest, V1CronJob)
@@ -145,4 +145,5 @@ def test_build_cron_job_manifest_pod_settings(
     )
     assert job_pod_spec.tolerations[0]["key"] == "node.kubernetes.io/name"
     assert job_pod_spec.containers[0].resources["requests"]["memory"] == "2G"
+    assert job_pod_spec.containers[0].security_context.privileged is False
     assert job_pod_spec.service_account_name == "test_sa"
