@@ -33,7 +33,7 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 
 ## Provisioning and registering a Skypilot orchestrator alongside a container registry
 
-While there are detailed docs on [how to set up a Skypilot orchestrator](../../component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../component-guide/container-registries/README.md) on each public cloud, we have put the most relevant details here for convenience:
+While there are detailed docs on [how to set up a Skypilot orchestrator](../../component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../component-guide/container-registries/container-registries.md) on each public cloud, we have put the most relevant details here for convenience:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -88,7 +88,7 @@ zenml orchestrator register skypilot_orchestrator -f vm_gcp
 zenml orchestrator connect skypilot_orchestrator --connect cloud_connector
 ```
 
-The next step is to register [a GCP container registry](../../user-guide/production-guide/broken-reference/README.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
+The next step is to register [a GCP container registry](../../component-guide/container-registries/gcp.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry:
 
 ```shell
 zenml container-registry register cloud_container_registry -f gcp --uri=gcr.io/<PROJECT_ID>
