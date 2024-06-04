@@ -1,5 +1,8 @@
 # Get past pipeline/step runs
 
+In order to get past pipeline/step runs, you can use the `get_pipeline` method
+in combination with the `last_run` property or just index into the runs:
+
 <pre class="language-python"><code class="lang-python">from zenml.client import Client
 
 client = Client()
