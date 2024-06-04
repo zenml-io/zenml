@@ -8,8 +8,8 @@ Until now, we've only run pipelines locally. The next step is to get free from o
 
 In order to do this, we need to get familiar with two more stack components:
 
-* The [orchestrator](../../how-to/component-guide/orchestrators/README.md) manages the workflow and execution of your pipelines.
-* The [container registry](../../how-to/component-guide/container-registries/README.md) is a storage and content delivery system that holds your Docker container images.
+* The [orchestrator](../../component-guide/orchestrators/orchestrators.md) manages the workflow and execution of your pipelines.
+* The [container registry](../../component-guide/container-registries/container-registries.md) is a storage and content delivery system that holds your Docker container images.
 
 These, along with [remote storage](remote-storage.md), complete a basic cloud stack where our pipeline is entirely running on the cloud.
 
@@ -33,7 +33,7 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 
 ## Provisioning and registering a Skypilot orchestrator alongside a container registry
 
-While there are detailed docs on [how to set up a Skypilot orchestrator](../../component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../how-to/component-guide/container-registries/README.md) on each public cloud, we have put the most relevant details here for convenience:
+While there are detailed docs on [how to set up a Skypilot orchestrator](../../component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../component-guide/container-registries/README.md) on each public cloud, we have put the most relevant details here for convenience:
 
 {% tabs %}
 {% tab title="AWS" %}
