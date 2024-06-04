@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run in Docker.
 
 # Local Docker Orchestrator
 
-The local Docker orchestrator is an [orchestrator](./) flavor that comes built-in with ZenML and runs your pipelines locally using Docker.
+The local Docker orchestrator is an [orchestrator](./orchestrators.md) flavor that comes built-in with ZenML and runs your pipelines locally using Docker.
 
 ### When to use it
 

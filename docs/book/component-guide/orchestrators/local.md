@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run locally.
 
 # Local Orchestrator
 
-The local orchestrator is an [orchestrator](./) flavor that comes built-in with ZenML and runs your pipelines locally.
+The local orchestrator is an [orchestrator](./orchestrators.md) flavor that comes built-in with ZenML and runs your pipelines locally.
 
 ### When to use it
 
