@@ -4,20 +4,20 @@ description: Storing container images in DockerHub.
 
 # DockerHub
 
-The DockerHub container registry is a [container registry](./) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
+The DockerHub container registry is a [container registry](./container-registries.md) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
 
 ### When to use it
 
 You should use the DockerHub container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you have a DockerHub account. If you're not using DockerHub, take a look at the other [container registry flavors](./#container-registry-flavors).
+* you have a DockerHub account. If you're not using DockerHub, take a look at the other [container registry flavors](./container-registries.md#container-registry-flavors).
 
 ### How to deploy it
 
 To use the DockerHub container registry, all you need to do is create a [DockerHub](https://hub.docker.com/) account.
 
-When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](../orchestrators/) or [step operator](../step-operators/) that you're using in your stack.
+When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](../orchestrators/orchestrators.md) or [step operator](../step-operators/step-operators.md) that you're using in your stack.
 
 ### How to find the registry URI
 
