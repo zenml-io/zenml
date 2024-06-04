@@ -268,6 +268,9 @@ class StackComponentConfig(BaseModel, ABC):
             ValueError: If any of the values is an invalid JSON string.
         """
         for key, field in cls.model_fields.items():
+            if not field.annotation:
+                continue
+
             value = data.get(key, None)
 
             if isinstance(value, str):
