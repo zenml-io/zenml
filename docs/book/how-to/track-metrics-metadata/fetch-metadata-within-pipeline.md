@@ -1,5 +1,5 @@
 ---
-description: Accessing meta information during pipeline composition.
+description: How to fetch metadata during pipeline composition.
 ---
 
 # Fetch metadata during pipeline composition
