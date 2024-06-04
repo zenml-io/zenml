@@ -145,7 +145,7 @@ class MyS3ArtifactStoreConfig(BaseArtifactStoreConfig):
 ```
 
 {% hint style="info" %}
-You can pass sensitive configuration values as [secrets](../../user-guide/advanced-guide/secret-management/secret-management.md) by defining them as type `SecretField` in the configuration class.
+You can pass sensitive configuration values as [secrets](../../how-to/interact-with-secrets.md) by defining them as type `SecretField` in the configuration class.
 {% endhint %}
 
 With the configuration defined, we can move on to the implementation class, which will use the S3 file system to implement the abstract methods of the `BaseArtifactStore`:
