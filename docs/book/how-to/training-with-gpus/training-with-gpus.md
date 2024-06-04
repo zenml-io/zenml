@@ -97,6 +97,48 @@ The core cloud operators offer prebuilt Docker images that fit with their hardwa
 * [GCP](https://cloud.google.com/deep-learning-vm/docs/images)
 * [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/concept-prebuilt-docker-images-inference)
 
-Not all of these images are available on DockerHub, so ensure that the orchestrator environment your pipeline runs in has sufficient permissions to pull images from registries if you are using one of those.
+Not all of these images are available on DockerHub, so ensure that the
+orchestrator environment your pipeline runs in has sufficient permissions to
+pull images from registries if you are using one of those.
+
+### Reset the CUDA cache in between steps
+
+Your use case will determine whether this is necessary or makes sense to do, but
+we have seen that resetting the CUDA cache in between steps can help avoid issues
+with the GPU cache. This is particularly necessary if your training jobs are
+pushing the boundaries of the GPU cache. Doing so is simple; just use a helper
+function to reset the cache at the beginning of any GPU-enabled steps. For
+example, something as simple as this might suffice:
+
+```python
+import gc
+import torch
+
+def cleanup_memory() -> None:
+    while gc.collect():
+        torch.cuda.empty_cache()
+```
+
+You can then call this function at the beginning of your GPU-enabled steps:
+
+```python
+from zenml import step
+
+@step
+def training_step(...):
+    cleanup_memory()
+    # train a model
+```
+
+Note that resetting the memory cache will potentially affect others using the
+same GPU, so use this judiciously.
+
+## Train across multiple GPUs
+
+ZenML supports training your models with multiple GPUs on a single node. This is
+useful if you have a large dataset and want to train your model in parallel.
+There are some things you might want to bear in mind if you choose to do this.
+
+
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -102,7 +102,6 @@
   * [Build the pipeline without running](how-to/customize-docker-builds/build-the-pipeline-without-running.md)
   * [Define where an image is built](how-to/customize-docker-builds/define-where-an-image-is-built.md)
 * [🚜 Train with GPUs](how-to/training-with-gpus/training-with-gpus.md)
-  <!-- * [Distributed Training](how-to/training-with-gpus/distributed-training.md) -->
 * [🌲 Control logging](how-to/control-logging/README.md)
   * [View logs on the dashboard](how-to/control-logging/view-logs-on-the-dasbhoard.md)
   * [Set logging verbosity](how-to/control-logging/set-logging-verbosity.md)
