@@ -85,6 +85,7 @@
   * [Fetching pipelines](how-to/build-pipelines/fetching-pipelines.md)
   * [Get past pipeline/step runs](how-to/build-pipelines/get-past-pipeline-step-runs.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
+  * [How to configure a pipeline with a YAML](how-to/use-configuration-files/how-to-use-config.md)
   * [What can be configured](how-to/use-configuration-files/what-can-be-configured.md)
   * [Runtime settings for Docker, resources, and stack components](how-to/use-configuration-files/runtime-configuration.md)
   * [Configuration hierarchy](how-to/use-configuration-files/configuration-hierarchy.md)

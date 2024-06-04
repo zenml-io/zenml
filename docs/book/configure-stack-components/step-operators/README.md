@@ -47,7 +47,7 @@ def my_step(...) -> ...:
 
 #### Specifying per-step resources
 
-If your steps require additional hardware resources, you can specify them on your steps as described [here](../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
+If your steps require additional hardware resources, you can specify them on your steps as described [here](../../how-to/use-configuration-files/runtime-configuration.md).
 
 #### Enabling CUDA for GPU-backed hardware
 

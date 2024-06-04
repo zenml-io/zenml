@@ -87,7 +87,7 @@ defined when you register your flavor. The `settings` are the dynamic part of
 your flavor's configuration that can be overridden at runtime. 
 
 You can read more about the differences 
-[here](../../user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
+[here](../../how-to/use-configuration-files/runtime-configuration.md).
 
 {% endhint %}
 
