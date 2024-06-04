@@ -136,9 +136,23 @@ same GPU, so use this judiciously.
 ## Train across multiple GPUs
 
 ZenML supports training your models with multiple GPUs on a single node. This is
-useful if you have a large dataset and want to train your model in parallel.
-There are some things you might want to bear in mind if you choose to do this.
+useful if you have a large dataset and want to train your model in parallel. The
+most important thing that you'll have to handle is preventing multiple ZenML
+instances from being spawned as you split the work among multiple GPUs.
 
+In practice this will probably involve:
 
+- creating a script / Python function that contains the logic of training your
+  model (with the specification that this should run in parallel across multiple
+  GPUs)
+- calling that script / external function from within the step, possibly with
+  some wrapper or helper code to dynamically configure or update the external
+  script function
+
+We're aware that this is not the most elegant solution and we're at work to
+implement a better option with some inbuilt support for this task. If this is
+something you're struggling with and need support getting the step code working,
+please do [connect with us on Slack](https://zenml.io/slack) and we'll do our best
+to help you out.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
