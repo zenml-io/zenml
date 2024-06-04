@@ -154,6 +154,7 @@
   * [AWS Service Connector](how-to/auth-management/aws-service-connector.md)
   * [GCP Service Connector](how-to/auth-management/gcp-service-connector.md)
   * [Azure Service Connector](how-to/auth-management/azure-service-connector.md)
+  * [HyperAI Service Connector](how-to/auth-management/hyperai-service-connector.md)
 * [⚒️ Manage stacks](how-to/stack-deployment/README.md)
   * [Deploy a stack component](how-to/stack-deployment/deploy-a-stack-component.md)
   * [Deploy a stack using mlstacks](how-to/stack-deployment/deploy-a-stack-using-mlstacks.md)
