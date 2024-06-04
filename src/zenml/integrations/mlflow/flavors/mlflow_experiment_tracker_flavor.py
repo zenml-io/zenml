@@ -120,6 +120,9 @@ class MLFlowExperimentTrackerConfig(
 
         Returns:
             The validated values.
+
+        Raises:
+             ValueError: If neither credentials nor a token are provided.
         """
         if self.tracking_uri:
             if is_databricks_tracking_uri(self.tracking_uri):
