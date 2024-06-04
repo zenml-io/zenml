@@ -105,21 +105,11 @@ class TektonOrchestratorConfig(
             mandatory.
         kubernetes_namespace: Name of the kubernetes namespace in which the
             pods that run the pipeline steps should be running.
-        local: If `True`, the orchestrator will assume it is connected to a
-            local kubernetes cluster and will perform additional validations and
-            operations to allow using the orchestrator in combination with other
-            local stack components that store data in the local filesystem
-            (i.e. it will mount the local stores directory into the pipeline
-            containers).
-        skip_local_validations: If `True`, the local validations will be
-            skipped.
     """
 
     tekton_hostname: Optional[str] = None
     kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "kubeflow"
-    local: bool = False
-    skip_local_validations: bool = False
 
     @model_validator(mode="before")
     @classmethod
@@ -163,7 +153,7 @@ class TektonOrchestratorConfig(
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return not self.local
+        return True
 
     @property
     def is_local(self) -> bool:
@@ -172,7 +162,7 @@ class TektonOrchestratorConfig(
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        return self.local
+        return False
 
 
 class TektonOrchestratorFlavor(BaseOrchestratorFlavor):

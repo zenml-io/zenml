@@ -32,11 +32,6 @@ from kfp.compiler import Compiler
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
-from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import (
-    ENV_ZENML_LOCAL_STORES_PATH,
-)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -345,73 +340,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate,
         )
 
-    def _configure_pipeline_task(
-        self,
-        pipeline_task: dsl.PipelineTask,
-    ) -> None:
-        """Makes changes in place to the configuration of the pipeline task.
-
-        Configures persistent mounted volumes for each stack component that
-        writes to a local path.
-
-        Args:
-            pipeline_task: The Tekton pipeline task to configure.
-        """
-        volumes: Dict[str, k8s_client.V1Volume] = {}
-
-        stack = Client().active_stack
-
-        if self.config.is_local:
-            stack.check_local_paths()
-
-            local_stores_path = GlobalConfiguration().local_stores_path
-
-            # TODO: use this instead
-            # https://kfp-kubernetes.readthedocs.io/en/kfp-kubernetes-1.0.0/source/kubernetes.html
-            host_path = k8s_client.V1HostPathVolumeSource(
-                path=local_stores_path, type="Directory"
-            )
-
-            volumes[local_stores_path] = k8s_client.V1Volume(
-                name="local-stores",
-                host_path=host_path,
-            )
-            logger.debug(
-                "Adding host path volume for the local ZenML stores "
-                "(path: %s) in Tekton pipelines container. ",
-                local_stores_path,
-            )
-
-            # TODO: Rewrite this security context logic once v2 supports
-            #  security context
-
-            # if sys.platform == "win32":
-            #     # File permissions are not checked on Windows. This if clause
-            #     # prevents mypy from complaining about unused 'type: ignore'
-            #     # statements
-            #     pass
-            # else:
-            #     # Run KFP containers in the context of the local UID/GID
-            #     # to ensure that the local stores can be shared
-            #     # with the local pipeline runs.
-            #     container_op.container.security_context = k8s_client.V1SecurityContext(
-            #         run_as_user=os.getuid(),
-            #         run_as_group=os.getgid(),
-            #     )
-            #     logger.debug(
-            #         "Setting security context UID and GID to local user/group "
-            #         "in Tekton pipelines container."
-            #     )
-
-            pipeline_task.set_env_variable(
-                name=ENV_ZENML_LOCAL_STORES_PATH,
-                value=local_stores_path,
-            )
-
-        # TODO: use these instead
-        # https://kfp-kubernetes.readthedocs.io/en/kfp-kubernetes-1.0.0/source/kubernetes.html
-        pipeline_task.add_pvolumes(volumes)
-
     @staticmethod
     def _configure_container_resources(
         pipeline_task: dsl.PipelineTask,
@@ -653,36 +581,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             print(
                 f"Updated YAML file with environment variables at {yaml_file_path}"
             )
-
-        # dynamic_pipeline = _create_dynamic_pipeline()
-
-        # @dsl.pipeline(display_name=orchestrator_run_name)
-        # def _kfp_pipeline() -> None:
-        #     """Create a container_op for each step.
-
-        #     This should contain the name of the docker image and configures the
-        #     entrypoint of the docker image to run the step.
-
-        #     Additionally, this gives each container_op information about its
-        #     direct downstream steps.
-        #     """
-        #     # Dictionary of container_ops index by the associated step name
-        #     step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
-
-        #     self._configure_pipeline_task(
-        #         pipeline_task=_pipeline_task,
-        #     )
-
-        #     # Find the upstream container ops of the current step and
-        #     # configure the current container op to run after them
-        #     for upstream_step_name in step.spec.upstream_steps:
-        #         upstream_pipeline_task = step_name_to_container_op[
-        #             upstream_step_name
-        #         ]
-        #         _pipeline_task().after(upstream_pipeline_task)
-
-        #     # Update dictionary of container ops with the current one
-        #     step_name_to_container_op[step_name] = _pipeline_task
 
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
