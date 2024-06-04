@@ -71,7 +71,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 
 For additional configuration of the AzureML step operator, you can pass `AzureMLStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
-For more information and a full list of configurable attributes of the AzureML step operator, check out the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.step\_operators.azureml\_step\_operator.AzureMLStepOperator) .
+For more information and a full list of configurable attributes of the AzureML step operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.step\_operators.azureml\_step\_operator.AzureMLStepOperator) .
 
 #### Enabling CUDA for GPU-backed hardware
 

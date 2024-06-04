@@ -226,6 +226,6 @@ If you need more control over how the Airflow DAG is generated, you can provide 
 
 Check out our docs on how to apply settings to your pipelines [here](../../how-to/use-configuration-files/runtime-configuration.md).
 
-For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator) .
+For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

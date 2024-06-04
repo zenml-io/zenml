@@ -43,7 +43,7 @@ zenml image-builder register <NAME> \
 zenml stack register <STACK_NAME> -i <NAME> ... --set
 ```
 
-For more information and a full list of configurable attributes of the Kaniko image builder, check out the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kaniko/#zenml.integrations.kaniko.image\_builders.kaniko\_image\_builder.KanikoImageBuilder) .
+For more information and a full list of configurable attributes of the Kaniko image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kaniko/#zenml.integrations.kaniko.image\_builders.kaniko\_image\_builder.KanikoImageBuilder) .
 
 #### Authentication for the container registry and artifact store
 

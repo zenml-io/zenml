@@ -193,7 +193,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes\_orchestrator\_flavor.KubernetesOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
-For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes\_orchestrator.KubernetesOrchestrator) .
+For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes\_orchestrator.KubernetesOrchestrator) .
 
 #### Enabling CUDA for GPU-backed hardware
 

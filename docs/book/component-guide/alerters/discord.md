@@ -131,7 +131,7 @@ if __name__ == "__main__":
 ```
 
 For more information and a full list of configurable attributes of the Discord alerter, check out
-the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-discord/#zenml.integrations.discord.alerters.discord\_alerter.DiscordAlerter)
+the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-discord/#zenml.integrations.discord.alerters.discord\_alerter.DiscordAlerter)
 .
 
 <!-- For scarf -->

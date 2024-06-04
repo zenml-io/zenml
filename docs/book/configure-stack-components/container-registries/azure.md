@@ -180,6 +180,6 @@ The 'azure-demo' Docker Service Connector connector was used to successfully con
 {% endtab %}
 {% endtabs %}
 
-For more information and a full list of configurable attributes of the Azure container registry, check out the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.azure\_container\_registry.AzureContainerRegistry) .
+For more information and a full list of configurable attributes of the Azure container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.azure\_container\_registry.AzureContainerRegistry) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
