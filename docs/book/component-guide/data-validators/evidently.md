@@ -421,6 +421,7 @@ from evidently.pipeline.column_mapping import ColumnMapping
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.tests import EvidentlyTestConfig
+from zenml.types import HTMLString
 from zenml import step
 
 
@@ -430,9 +431,9 @@ def data_profiling(
     comparison_dataset: pd.DataFrame,
 ) -> Tuple[
     Annotated[str, "report_json"],
-    Annotated[str, "report_html"]
+    Annotated[HTMLString, "report_html"]
 ]:
-    """Custom data profiling step with Evidently
+    """Custom data profiling step with Evidently.
 
     Args:
         reference_dataset: a Pandas DataFrame
@@ -442,7 +443,6 @@ def data_profiling(
     Returns:
         The Evidently report rendered in JSON and HTML formats.
     """
-
     # pre-processing (e.g. dataset preparation) can take place here
 
     data_validator = EvidentlyDataValidator.get_active_data_validator()
@@ -459,23 +459,23 @@ def data_profiling(
                 columns=["Review_Text", "Title"],
                 reg_exp=r"[A-Z][A-Za-z0-9 ]*",
             ),
-        ]
-    column_mapping = ColumnMapping(
-        target="Rating",
-        numerical_features=["Age", "Positive_Feedback_Count"],
-        categorical_features=[
-            "Division_Name",
-            "Department_Name",
-            "Class_Name",
         ],
-        text_features=["Review_Text", "Title"],
-    ),
-                     download_nltk_data = True,
+        column_mapping = ColumnMapping(
+            target="Rating",
+            numerical_features=["Age", "Positive_Feedback_Count"],
+            categorical_features=[
+                "Division_Name",
+                "Department_Name",
+                "Class_Name",
+            ],
+            text_features=["Review_Text", "Title"],
+        ),
+        download_nltk_data = True,
     )
 
     # post-processing (e.g. interpret results, take actions) can happen here
 
-    return report.json(), report.show(mode="inline").data
+    return report.json(), HTMLString(report.show(mode="inline").data)
 
 
 @step
@@ -484,9 +484,9 @@ def data_validation(
     comparison_dataset: pd.DataFrame,
 ) -> Tuple[
     Annotated[str, "test_json"],
-    Annotated[str, "test_html"]
+    Annotated[HTMLString, "test_html"]
 ]:
-    """Custom data validation step with Evidently
+    """Custom data validation step with Evidently.
 
     Args:
         reference_dataset: a Pandas DataFrame
@@ -496,7 +496,6 @@ def data_validation(
     Returns:
         The Evidently test suite results rendered in JSON and HTML formats.
     """
-
     # pre-processing (e.g. dataset preparation) can take place here
 
     data_validator = EvidentlyDataValidator.get_active_data_validator()
@@ -510,23 +509,23 @@ def data_validation(
                 columns=["Review_Text", "Title"],
                 reg_exp=r"[A-Z][A-Za-z0-9 ]*",
             ),
-        ]
-    column_mapping = ColumnMapping(
-        target="Rating",
-        numerical_features=["Age", "Positive_Feedback_Count"],
-        categorical_features=[
-            "Division_Name",
-            "Department_Name",
-            "Class_Name",
         ],
-        text_features=["Review_Text", "Title"],
-    ),
-                     download_nltk_data = True,
+        column_mapping = ColumnMapping(
+            target="Rating",
+            numerical_features=["Age", "Positive_Feedback_Count"],
+            categorical_features=[
+                "Division_Name",
+                "Department_Name",
+                "Class_Name",
+            ],
+            text_features=["Review_Text", "Title"],
+        ),
+        download_nltk_data = True,
     )
 
     # post-processing (e.g. interpret results, take actions) can happen here
 
-    return test_suite.json(), test_suite.show(mode="inline").data
+    return test_suite.json(), HTMLString(test_suite.show(mode="inline").data)
 ```
 
 Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.data\_validators.evidently\_data\_validator.EvidentlyDataValidator) in the SDK docs.
@@ -544,6 +543,7 @@ import evidently.metric_preset as metric_preset
 from evidently.test_suite import TestSuite
 import evidently.test_preset as test_preset
 from evidently.pipeline.column_mapping import ColumnMapping
+from zenml.types import HTMLString
 from zenml import step
 
 
@@ -552,7 +552,7 @@ def data_profiler(
     dataset: pd.DataFrame,
 ) -> Tuple[
     Annotated[str, "report_json"],
-    Annotated[str, "report_html"]
+    Annotated[HTMLString, "report_html"]
 ]:
     """Custom data profiler step with Evidently
 
@@ -565,14 +565,15 @@ def data_profiler(
 
     # pre-processing (e.g. dataset preparation) can take place here
 
-    report = Report(metrics=[metric_preset.DataQualityPreset])
+    report = Report(metrics=[metric_preset.DataQualityPreset()])
     report.run(
+        current_data=dataset,
         reference_data=dataset,
     )
 
     # post-processing (e.g. interpret results, take actions) can happen here
 
-    return report.json(), report.show(mode="inline").data
+    return report.json(), HTMLString(report.show(mode="inline").data)
 
 
 @step
@@ -580,7 +581,7 @@ def data_tester(
     dataset: pd.DataFrame,
 ) -> Tuple[
     Annotated[str, "test_json"],
-    Annotated[str, "test_html"]
+    Annotated[HTMLString, "test_html"]
 ]:
     """Custom data tester step with Evidently
 
@@ -593,14 +594,15 @@ def data_tester(
 
     # pre-processing (e.g. dataset preparation) can take place here
 
-    test_suite = TestSuite(metrics=[test_preset.DataQualityTestPreset])
+    test_suite = TestSuite(metrics=[test_preset.DataQualityTestPreset()])
     report.run(
+        current_data=dataset,
         reference_data=dataset,
     )
 
     # post-processing (e.g. interpret results, take actions) can happen here
 
-    return test_suite.json(), test_suite.show(mode="inline").data
+    return test_suite.json(), HTMLString(test_suite.show(mode="inline").data)
 ```
 
 ### Visualizing Evidently Reports
