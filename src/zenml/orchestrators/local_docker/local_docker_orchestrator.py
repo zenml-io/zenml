@@ -14,7 +14,6 @@
 """Implementation of the ZenML local Docker orchestrator."""
 
 import copy
-import json
 import os
 import sys
 import time
@@ -22,7 +21,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 from uuid import uuid4
 
 from docker.errors import ContainerError
-from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
@@ -206,39 +204,6 @@ class LocalDockerOrchestratorSettings(BaseSettings):
     """
 
     run_args: Dict[str, Any] = {}
-
-    @field_validator("run_args", mode="before")
-    @classmethod
-    def _convert_json_string(cls, v: Any) -> Any:
-        """Converts potential JSON strings passed via the CLI to dictionaries.
-
-        Args:
-            v: The value to convert.
-
-        Returns:
-            The converted value.
-
-        Raises:
-            TypeError: If the value is not a `str`, `Dict` or `None`.
-            ValueError: If the value is an invalid json string or a json string
-                that does not decode into a dictionary.
-        """
-        if isinstance(v, str):
-            try:
-                dict_ = json.loads(v)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{v}'") from e
-
-            if not isinstance(dict_, Dict):
-                raise ValueError(
-                    f"Json string '{v}' did not decode into a dictionary."
-                )
-
-            return dict_
-        elif isinstance(v, Dict) or v is None:
-            return v
-        else:
-            raise TypeError(f"{v} is not a json string or a dictionary.")
 
 
 class LocalDockerOrchestratorConfig(
