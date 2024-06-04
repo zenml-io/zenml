@@ -168,7 +168,7 @@ step = run.steps["first_step"]
 ````
 
 {% hint style="info" %}
-If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../overview/using-a-custom-step-invocation-id.md) to learn more about the invocation ID.
+If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../build-pipelines/using-a-custom-step-invocation-id.md) to learn more about the invocation ID.
 {% endhint %}
 
 ### Inspect pipeline runs with our VS Code extension

@@ -12,7 +12,7 @@ Throughout this guide, we'll cover essential topics including:
 
 * [Creating your first ML pipeline](create-an-ml-pipeline.md)
 * [Understanding caching between pipeline steps](cache-previous-executions.md)
-* [Fetching objects after pipelines have run](../../how-to/overview/fetching-pipelines.md)
+* [Fetching objects after pipelines have run](../../how-to/build-pipelines/fetching-pipelines.md)
 * [Managing data and data versioning](manage-artifacts.md)
 * [Tracking your machine learning models](track-ml-models.md)
 * [Structuring your pipelines, models, and artifacts](../../how-to/use-the-model-control-plane/connecting-artifacts-via-a-model.md)

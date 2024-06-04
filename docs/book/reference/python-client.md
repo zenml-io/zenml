@@ -40,12 +40,12 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Pipeline Runs**: Information about all pipeline runs that were executed on your ZenML instance.
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
-* **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](../how-to/overview/schedule-a-pipeline.md).
+* **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](../how-to/build-pipelines/schedule-a-pipeline.md).
 * **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](../how-to/customize-docker-builds/README.md).
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](../user-guide/production-guide/connect-code-repository.md) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](../how-to/overview/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
+Checkout the [documentation on fetching runs](../how-to/build-pipelines/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
 #### Stacks, Infrastructure, Authentication
