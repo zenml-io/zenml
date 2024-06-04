@@ -43,14 +43,19 @@ class KubernetesOrchestratorSettings(BaseSettings):
             permissions will be created.
         step_pod_service_account_name: Name of the service account to use for the
             step pods. If not provided, the default service account will be used.
-        pod_settings: Pod settings to apply.
+        privileged: If the container should be run in privileged mode.
+        pod_settings: Pod settings to apply to pods executing the steps.
+        orchestrator_pod_settings: Pod settings to apply to the pod which is
+            launching the actual steps.
     """
 
     synchronous: bool = True
     timeout: int = 0
     service_account_name: Optional[str] = None
     step_pod_service_account_name: Optional[str] = None
+    privileged: bool = False
     pod_settings: Optional[KubernetesPodSettings] = None
+    orchestrator_pod_settings: Optional[KubernetesPodSettings] = None
 
 
 class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

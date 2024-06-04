@@ -37,6 +37,7 @@ from zenml.models import (
     StepRunResponseMetadata,
     StepRunUpdate,
 )
+from zenml.models.v2.core.step_run import StepRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
@@ -207,7 +208,9 @@ class StepRunSchema(NamedSchema, table=True):
         }
 
         output_artifacts = {
-            artifact.name: artifact.artifact_version.to_model()
+            artifact.name: artifact.artifact_version.to_model(
+                pipeline_run_id_in_context=self.pipeline_run_id
+            )
             for artifact in self.output_artifacts
         }
 
@@ -250,11 +253,24 @@ class StepRunSchema(NamedSchema, table=True):
                 parent_step_ids=[p.parent_id for p in self.parents],
                 run_metadata=run_metadata,
             )
+
+        resources = None
+        if include_resources:
+            model_version = None
+            if full_step_config.config.model:
+                model_version = (
+                    full_step_config.config.model._get_model_version(
+                        hydrate=False
+                    )
+                )
+            resources = StepRunResponseResources(model_version=model_version)
+
         return StepRunResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, step_update: "StepRunUpdate") -> "StepRunSchema":
