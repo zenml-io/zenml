@@ -32,7 +32,7 @@ To use the Google Cloud image builder, we need:
     zenml integration install gcp
     ```
 * A [GCP Artifact Store](../artifact-stores/gcp.md) where the build context will be uploaded, so Google Cloud Build can access it.
-* A [GCP container registry](../image-builders/broken-reference/README.md) where the built image will be pushed.
+* A [GCP container registry](../container-registries/gcp.md) where the built image will be pushed.
 * Optionally, the GCP project ID in which you want to run the build and a service account with the needed permissions to run the build. If not provided, then the project ID and credentials will be inferred from the environment.
 * Optionally, you can change:
   * the Docker image used by Google Cloud Build to execute the steps to build and push the Docker image. By default, the builder image will be `'gcr.io/cloud-builders/docker'`.
