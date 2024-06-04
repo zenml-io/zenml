@@ -34,7 +34,7 @@ thoughts here or vote on existing ideas.
 
 ### Blog
 
-On our [Blog](https://blog.zenml.io/) page, you can find various articles written by our team. We use it as a platform
+On our [Blog](https://zenml.io/blog/) page, you can find various articles written by our team. We use it as a platform
 to share our thoughts and explain the implementation process of our tool, its new features, and the thought process
 behind them.
 
