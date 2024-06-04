@@ -14,7 +14,7 @@ When using a stack with remote storage, nothing changes except the fact that the
 
 ## Provisioning and registering a remote artifact store
 
-Out of the box, ZenML ships with [many different supported artifact store flavors](../../how-to/component-guide/artifact-stores/README.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
+Out of the box, ZenML ships with [many different supported artifact store flavors](../../component-guide/artifact-stores/artifact-stores.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
 
 {% tabs %}
 {% tab title="AWS" %}
