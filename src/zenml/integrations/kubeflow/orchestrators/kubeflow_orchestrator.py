@@ -164,7 +164,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         # The kube_context, host and namespace are stack component
         # configurations that refer to the Kubeflow deployment. We don't want
         # these overwritten on a run by run basis by user settings
-        client_args["namespace"] = self.config.kubernetes_namespace
+        client_args["namespace"] = self.config.kubeflow_namespace
 
         if connector:
             client = connector.connect()
@@ -412,7 +412,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         arguments: List[str],
         component_name: str,
     ) -> dsl.PipelineTask:
-        """Creates a dynamic container component for a Tekton pipeline.
+        """Creates a dynamic container component for a Kubeflow pipeline.
 
         Args:
             image: The image to use for the component.
@@ -532,23 +532,23 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                         )
                     if pod_settings.affinity:
                         logger.warning(
-                            "Affinity is set but not supported in Tekton with "
+                            "Affinity is set but not supported in Kubeflow with "
                             "Kubeflow Pipelines 2.x. Ignoring..."
                         )
                     if pod_settings.tolerations:
                         logger.warning(
                             "Tolerations are set but not supported in "
-                            "Tekton with Kubeflow Pipelines 2.x. Ignoring..."
+                            "Kubeflow with Kubeflow Pipelines 2.x. Ignoring..."
                         )
                     if pod_settings.volumes:
                         logger.warning(
-                            "Volumes are set but not supported in Tekton with "
+                            "Volumes are set but not supported in Kubeflow with "
                             "Kubeflow Pipelines 2.x. Ignoring..."
                         )
                     if pod_settings.volume_mounts:
                         logger.warning(
                             "Volume mounts are set but not supported in "
-                            "Tekton with Kubeflow Pipelines 2.x. Ignoring..."
+                            "Kubeflow with Kubeflow Pipelines 2.x. Ignoring..."
                         )
 
                     # apply pod settings
@@ -667,7 +667,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         if deployment.schedule:
             logger.warning(
-                "The Tekton Orchestrator currently does not support the "
+                "The Kubeflow Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
@@ -675,7 +675,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         kubernetes_context = self.config.kubernetes_context
         if kubernetes_context:
             logger.info(
-                "Running Tekton pipeline in kubernetes context '%s' and "
+                "Running Kubeflow pipeline in kubernetes context '%s' and "
                 "namespace '%s'.",
                 kubernetes_context,
                 self.config.kubeflow_namespace,
@@ -684,7 +684,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             connector = self.get_connector()
             assert connector is not None
             logger.info(
-                "Running Tekton pipeline with Kubernetes credentials from "
+                "Running Kubeflow pipeline with Kubernetes credentials from "
                 "connector '%s'.",
                 connector.name or str(connector),
             )
