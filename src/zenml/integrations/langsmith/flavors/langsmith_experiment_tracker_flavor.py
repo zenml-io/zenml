@@ -44,6 +44,7 @@ class LangSmithExperimentTrackerSettings(BaseSettings):
         tags: Tags for the LangSmith experiment.
         settings: Settings for the LangSmith experiment.
     """
+
     tags: List[str] = []
     settings: Dict[str, Any] = {}
 

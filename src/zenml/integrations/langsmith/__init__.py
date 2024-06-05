@@ -14,7 +14,7 @@
 """Initialization for the LangSmith integration."""
 from typing import List, Type
 
-from zenml.integrations.constants import COMET
+from zenml.integrations.constants import LANGSMITH
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
@@ -24,7 +24,7 @@ LANGSMITH_EXPERIMENT_TRACKER_FLAVOR = "langsmith"
 class LangSmithIntegration(Integration):
     """Definition of LangSmith integration for ZenML."""
 
-    NAME = COMET
+    NAME = LANGSMITH
     REQUIREMENTS = ["langsmith>=0.1.46"]
 
     @classmethod
