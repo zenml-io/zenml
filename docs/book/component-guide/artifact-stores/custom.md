@@ -183,6 +183,6 @@ ZenML automatically saves visualizations for many common data types and allows y
 
 In order to load and display these visualizations, ZenML needs to be able to load and access the corresponding artifact store. This means that your custom artifact store needs to be configured in a way that allows authenticating to the back-end without relying on the local environment, e.g., by embedding the authentication credentials in the stack component configuration or by referencing a secret.
 
-Furthermore, for deployed ZenML instances, you need to install the package dependencies of your artifact store implementation in the environment where you have deployed ZenML. See the [Documentation on deploying ZenML with custom Docker images](../../getting-started/deploying-zenml/zenml-self-hosted/deploy-with-custom-image.md) for more information on how to do that.
+Furthermore, for deployed ZenML instances, you need to install the package dependencies of your artifact store implementation in the environment where you have deployed ZenML. See the [Documentation on deploying ZenML with custom Docker images](../../getting-started/deploying-zenml/deploy-with-custom-image.md) for more information on how to do that.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
