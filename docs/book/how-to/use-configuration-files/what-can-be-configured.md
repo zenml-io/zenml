@@ -121,7 +121,7 @@ enable_step_logs: True
 
 ### `build` ID
 
-The UUID of the [`build`](../customize-docker-builds/) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
+The UUID of the [`build`](../customize-docker-builds/README.md) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
 
 ```yaml
 build: <INSERT-BUILD-ID-HERE>
@@ -141,7 +141,7 @@ model:
 
 ### Pipeline and step `parameters`
 
-A dictionary of JSON-serializable [parameters](./) specified at the pipeline or step level. For example:
+A dictionary of JSON-serializable [parameters](../build-pipelines/use-pipeline-step-parameters.md) specified at the pipeline or step level. For example:
 
 ```yaml
 parameters:
@@ -207,7 +207,7 @@ settings:
 ```
 
 {% hint style="info" %}
-Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings). To learn more about pipeline containerization consult our documentation on this [here](../customize-docker-builds/).
+Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings). To learn more about pipeline containerization consult our documentation on this [here](../customize-docker-builds/README.md).
 {% endhint %}
 
 ### Resource Settings

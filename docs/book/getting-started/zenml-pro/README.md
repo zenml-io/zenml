@@ -1,5 +1,7 @@
 # ☁️ ZenML Pro
 
+The Pro version of ZenML comes with a bunch of features 
+
 ### Role-based access control and permissions
 
 Utilizing ZenML Cloud provides you with access to a robust control plane that unifies user management and optimizes your workflows. Efficiently manage access and permissions through centralized user administration. Create fine-grained permissions for resources such as stacks, pipelines, models, etc.

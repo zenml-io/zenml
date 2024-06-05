@@ -26,7 +26,7 @@ ZenML Cloud simplifies your machine learning workflows, enabling you to deploy a
 
 ### Maximum data security
 
-At ZenML Cloud, your data security and privacy are our top priority. The platform enables a secure connection to your infrastructure, tracking only metadata via an encrypted connection to maintain the confidentiality of your sensitive information. ZenML Cloud integrates smoothly with your cloud services via service connectors, allowing a straightforward connection with various cloud resources without sacrificing data security. We hold your confidential information in a secure and isolated environment, offering an extra degree of protection. If desired, you can even [supply your own secret store](../../../deploying-zenml/zenml-cloud/README.md).
+At ZenML Cloud, your data security and privacy are our top priority. The platform enables a secure connection to your infrastructure, tracking only metadata via an encrypted connection to maintain the confidentiality of your sensitive information. ZenML Cloud integrates smoothly with your cloud services via service connectors, allowing a straightforward connection with various cloud resources without sacrificing data security. We hold your confidential information in a secure and isolated environment, offering an extra degree of protection. If desired, you can even [supply your own secret store](../../deploying-zenml/manage-the-deployed-services/custom-secret-stores.md).
 
 Click [here](README.md) to understand about the ZenML Cloud system architecture.
 

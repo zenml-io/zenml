@@ -133,7 +133,7 @@ To use _stack components_ that are running remotely on a cloud infrastructure, y
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](why-deploy-zenml/zenml-pro/cloud-system-architecture/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](why-deploy-zenml/zenml-self-hosted/).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](zenml-pro/cloud-system-architecture/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
 
 #### Metadata Tracking
 
@@ -141,9 +141,9 @@ On top of the communication with the stack components, the **ZenML Server** also
 
 #### Secrets
 
-The **ZenML Server** also acts as a [centralized secrets store](why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
+The **ZenML Server** also acts as a [centralized secrets store](deploying-zenml/manage-the-deployed-services/secret-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
 
-Secrets are sensitive data that you don't want to store in your code or configure alongside your stacks and pipelines. ZenML includes a [centralized secrets store](why-deploy-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) that you can use to store and access your secrets securely.
+Secrets are sensitive data that you don't want to store in your code or configure alongside your stacks and pipelines. ZenML includes a [centralized secrets store](deploying-zenml/manage-the-deployed-services/secret-management.md) that you can use to store and access your secrets securely.
 
 #### Collaboration
 
@@ -155,7 +155,7 @@ With a deployed **ZenML Server**, users have the ability to create their own tea
 
 The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_, and share your stacks with them.
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](why-deploy-zenml/zenml-self-hosted/). Don't worry though, there is a one-click way to do it which we'll learn about later.
+When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](deploying-zenml/README.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
 
 #### VS Code Extension
 
