@@ -16,26 +16,23 @@
 #
 """Step function to run any ZenML step using Accelerate."""
 
+import functools
 import subprocess
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, Optional, TypeVar, cast
 
 import cloudpickle as pickle
 
-from zenml import step
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.utils.function_utils import _cli_arg_name, create_cli_wrapped_script
 
 logger = get_logger(__name__)
-F = TypeVar("F", bound=Callable[..., None])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
-@step
 def run_with_accelerate(
-    step_function: BaseStep,
-    num_processes: Optional[int] = None,
-    **function_kwargs: Any,
-) -> Any:
+    step_function: BaseStep, num_processes: Optional[int] = None
+) -> BaseStep:
     """Run a function with accelerate.
 
     Accelerate package: https://huggingface.co/docs/accelerate/en/index
@@ -50,72 +47,88 @@ def run_with_accelerate(
 
         @pipeline
         def training_pipeline(some_param: int, ...):
-            run_with_accelerate(training_step, some_param, ...)
+            run_with_accelerate(training_step, num_processes=4)(some_param, ...)
         ```
 
     Args:
         step_function: The step function to run.
         num_processes: The number of processes to use.
-        **function_kwargs: The keyword arguments to pass to the function.
 
     Returns:
-        The return value of the function in the main process.
-
-    Raises:
-        CalledProcessError: If the function fails.
+        The accelerate-enabled version of the step.
     """
-    import torch
 
-    logger.info("Starting accelerate job...")
+    def _decorator(entrypoint: F) -> F:
+        @functools.wraps(entrypoint)
+        def inner(*args: Any, **kwargs: Any) -> Any:
+            if args:
+                raise ValueError(
+                    "Accelerated steps do not support positional arguments."
+                )
 
-    device_count = torch.cuda.device_count()
-    if num_processes is None:
-        num_processes = device_count
-    else:
-        if num_processes > device_count:
-            logger.warning(
-                f"Number of processes ({num_processes}) is greater than "
-                f"the number of available GPUs ({device_count}). Using all GPUs."
-            )
-            num_processes = device_count
-        num_processes = num_processes
+            import torch
 
-    with create_cli_wrapped_script(
-        step_function.entrypoint, flavour="accelerate"
-    ) as (
-        script_path,
-        output_path,
-    ):
-        command = f"accelerate launch --num_processes {num_processes} "
-        command += str(script_path.absolute()) + " "
-        for k, v in function_kwargs.items():
-            k = _cli_arg_name(k)
-            if isinstance(v, bool):
-                if v:
-                    command += f"--{k} "
-            elif isinstance(v, str):
-                command += f'--{k} "{v}" '
-            elif type(v) in (list, tuple, set):
-                for each in v:
-                    command += f"--{k} {each} "
+            logger.info("Starting accelerate job...")
+
+            device_count = torch.cuda.device_count()
+            if num_processes is None:
+                _num_processes = device_count
             else:
-                command += f"--{k} {v} "
+                if num_processes > device_count:
+                    logger.warning(
+                        f"Number of processes ({num_processes}) is greater than "
+                        f"the number of available GPUs ({device_count}). Using all GPUs."
+                    )
+                    _num_processes = device_count
+                else:
+                    _num_processes = num_processes
 
-        logger.info(command)
+            with create_cli_wrapped_script(
+                entrypoint, flavour="accelerate"
+            ) as (
+                script_path,
+                output_path,
+            ):
+                command = (
+                    f"accelerate launch --num_processes {_num_processes} "
+                )
+                command += str(script_path.absolute()) + " "
+                for k, v in kwargs.items():
+                    k = _cli_arg_name(k)
+                    if isinstance(v, bool):
+                        if v:
+                            command += f"--{k} "
+                    elif isinstance(v, str):
+                        command += f'--{k} "{v}" '
+                    elif type(v) in (list, tuple, set):
+                        for each in v:
+                            command += f"--{k} {each} "
+                    else:
+                        command += f"--{k} {v} "
 
-        result = subprocess.run(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        for stdout_line in result.stdout.split("\n"):
-            logger.info(stdout_line)
-        if result.returncode == 0:
-            logger.info("Accelerate training job finished.")
-            return pickle.load(open(output_path, "rb"))
-        else:
-            logger.error(
-                f"Accelerate training job failed. With return code {result.returncode}."
-            )
-            raise subprocess.CalledProcessError(result.returncode, command)
+                logger.info(command)
+
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    universal_newlines=True,
+                )
+                for stdout_line in result.stdout.split("\n"):
+                    logger.info(stdout_line)
+                if result.returncode == 0:
+                    logger.info("Accelerate training job finished.")
+                    return pickle.load(open(output_path, "rb"))
+                else:
+                    logger.error(
+                        f"Accelerate training job failed. With return code {result.returncode}."
+                    )
+                    raise subprocess.CalledProcessError(
+                        result.returncode, command
+                    )
+
+        return cast(F, inner)
+
+    setattr(step_function, "entrypoint", _decorator(step_function.entrypoint))
+
+    return step_function
