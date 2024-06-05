@@ -64,6 +64,18 @@ class PythonPackageInstaller(Enum):
 
 
 class DockerBuildConfig(BaseModel):
+    """Configuration for a Docker build.
+
+    Attributes:
+        build_options: Additional options that will be passed unmodified to the
+            Docker build call when building an image. You can use this to for
+            example specify build args or a target stage. See
+            https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
+            for a full list of available options.
+        dockerignore: Path to a dockerignore file to use when building the
+            Docker image.
+    """
+
     build_options: Dict[str, Any] = {}
     dockerignore: Optional[str] = None
 
@@ -119,12 +131,9 @@ class DockerSettings(BaseSettings):
         build_context_root: Build context root for the Docker build, only used
             when the `dockerfile` attribute is set. If this is left empty, the
             build context will only contain the Dockerfile.
-        build_options: Additional options that will be passed unmodified to the
-            Docker build call when building an image using the specified
-            `dockerfile`. You can use this to for example specify build
-            args or a target stage. See
-            https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
-            for a full list of available options.
+        parent_build_config: Configuration for the parent image build.
+        build_options: DEPRECATED, use parent_build_config.build_options
+            instead.
         skip_build: If set to `True`, the parent image will be used directly to
             run the steps of your pipeline.
         target_repository: Name of the Docker repository to which the
@@ -161,8 +170,8 @@ class DockerSettings(BaseSettings):
         apt_packages: APT packages to install inside the Docker image.
         environment: Dictionary of environment variables to set inside the
             Docker image.
-        dockerignore: Path to a dockerignore file to use when building the
-            Docker image.
+        build_config: Configuration for the main image build.
+        dockerignore: DEPRECATED, use build_config.dockerignore instead.
         copy_files: DEPRECATED, use the `source_files` attribute instead.
         copy_global_config: DEPRECATED/UNUSED.
         user: If not `None`, will set the user, make it owner of the `/app`
