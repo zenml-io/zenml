@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Extra, root_validator
+from pydantic import BaseModel, Extra, root_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -61,6 +61,11 @@ class PythonPackageInstaller(Enum):
 
     PIP = "pip"
     UV = "uv"
+
+
+class DockerBuildConfig(BaseModel):
+    build_options: Dict[str, Any] = {}
+    dockerignore: Optional[str] = None
 
 
 class DockerSettings(BaseSettings):
@@ -182,6 +187,7 @@ class DockerSettings(BaseSettings):
     dockerfile: Optional[str] = None
     build_context_root: Optional[str] = None
     build_options: Dict[str, Any] = {}
+    parent_build_config: Optional[DockerBuildConfig] = None
     skip_build: bool = False
     target_repository: str = "zenml"
     python_package_installer: PythonPackageInstaller = (
@@ -201,6 +207,7 @@ class DockerSettings(BaseSettings):
     copy_files: bool = True
     copy_global_config: bool = True
     user: Optional[str] = None
+    build_config: Optional[DockerBuildConfig] = None
 
     source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
 
