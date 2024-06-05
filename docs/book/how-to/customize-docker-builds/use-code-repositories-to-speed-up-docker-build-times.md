@@ -1,6 +1,6 @@
-# Use code repositories to speed up docker build times
+# Use code repositories to speed up Docker build times
 
-While [reusing docker builds](reuse-docker-builds.md) is useful, it can be limited. This is because specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. As a consequence, even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code. Therefore, if you would like to reuse a docker build AND make sure your local code changes are also downloaded into the image, you need to disconnect your code from the build.
+While [reusing Docker builds](reuse-docker-builds.md) is useful, it can be limited. This is because specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. As a consequence, even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code. Therefore, if you would like to reuse a Docker build AND make sure your local code changes are also downloaded into the image, you need to disconnect your code from the build.
 
 You can do so by connecting a git repository. Registering a code repository lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
@@ -23,7 +23,7 @@ Once you have registered one or more code repositories, ZenML will check whether
 
 ## Tracking code version for pipeline runs
 
-If a [local code repository checkout](connect-your-git-repository.md#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
+If a [local code repository checkout](#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
 ## Tips and best practices
 

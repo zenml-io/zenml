@@ -5,7 +5,7 @@ we have removed all possible keys. To view a sample file with all possible keys,
 [this page](./autogenerate-a-template-yaml-file.md).
 
 ```yaml
-# Build ID (i.e. which docker image to use)
+# Build ID (i.e. which Docker image to use)
 build: dcd6fafb-c200-4e85-8328-428bef98d804
 
 # Enable flags (boolean flags that control behavior)
@@ -43,9 +43,9 @@ schedule:
   catchup: true
   cron_expression: "* * * * *"
 
-# Real-time settings for docker and resources
+# Real-time settings for Docker and resources
 settings:
-  # Controls docker building
+  # Controls Docker building
   docker:
     apt_packages: ["curl"]
     copy_files: True

@@ -94,10 +94,10 @@ Your code is now connected to your ZenML server. ZenML will automatically detect
 You can try this out by running our training pipeline again:
 
 ```python
-# This will build the docker image the first time
+# This will build the Docker image the first time
 python run.py --training-pipeline
 
-# This will skip docker building
+# This will skip Docker building
 python run.py --training-pipeline
 ```
 

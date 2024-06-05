@@ -21,7 +21,7 @@ You will learn about all of the above in more detail later, but for now, let's t
 Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  * [`DockerSettings`](../customize-docker-builds/README.md) to specify docker settings.
+  * [`DockerSettings`](../customize-docker-builds/README.md) to specify Docker settings.
   * [`ResourceSettings`](../training-with-gpus/training-with-gpus.md) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`SkypilotAWSOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot_aws/#zenml.integrations.skypilot_aws.flavors.skypilot_orchestrator_aws_vm_flavor.SkypilotAWSOrchestratorSettings) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).

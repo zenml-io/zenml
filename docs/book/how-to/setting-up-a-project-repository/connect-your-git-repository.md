@@ -1,6 +1,6 @@
 ---
 description: >-
-  Tracking your code and avoiding unnecessary docker builds by connecting your
+  Tracking your code and avoiding unnecessary Docker builds by connecting your
   git repo.
 ---
 

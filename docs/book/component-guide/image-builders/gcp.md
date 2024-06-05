@@ -36,7 +36,7 @@ To use the Google Cloud image builder, we need:
 * Optionally, the GCP project ID in which you want to run the build and a service account with the needed permissions to run the build. If not provided, then the project ID and credentials will be inferred from the environment.
 * Optionally, you can change:
   * the Docker image used by Google Cloud Build to execute the steps to build and push the Docker image. By default, the builder image will be `'gcr.io/cloud-builders/docker'`.
-  * The network to which the container used to build the ZenML pipeline docker image will be attached. More information: [Cloud build network](https://cloud.google.com/build/docs/build-config-file-schema#network).
+  * The network to which the container used to build the ZenML pipeline Docker image will be attached. More information: [Cloud build network](https://cloud.google.com/build/docs/build-config-file-schema#network).
   * The build timeout for the build, and for the blocking operation waiting for the build to finish. More information: [Build Timeout](https://cloud.google.com/build/docs/build-config-file-schema#timeout\_2).
 
 We can register the image builder and use it in our active stack:

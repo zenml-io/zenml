@@ -38,7 +38,7 @@ class BaseContainerRegistry(AuthenticationMixin):
         """Conduct necessary checks/preparations before an image gets pushed."""
 
     def push_image(self, image_name: str) -> str:
-        """Pushes a docker image."""
+        """Pushes a Docker image."""
         if not image_name.startswith(self.config.uri):
             raise ValueError(
                 f"Docker image `{image_name}` does not belong to container "

@@ -244,7 +244,7 @@ bentoml list
 # Generate deployment configuration file
 bentoctl init
 
-# Build and push the docker image to the cloud
+# Build and push the Docker image to the cloud
 bentoctl build -b $BENTO_TAG -f deployment_config.yaml
 
 # Deploy to the cloud

@@ -4,11 +4,11 @@ description: Deploying ZenML in a Docker container.
 
 # Deploy with Docker
 
-The ZenML server container image is available at [`zenmldocker/zenml-server`](https://hub.docker.com/r/zenmldocker/zenml/) and can be used to deploy ZenML with a container management or orchestration tool like docker and docker-compose, or a serverless platform like [Cloud Run](https://cloud.google.com/run), [Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/overview), and more! This guide walks you through the various configuration options that the ZenML server container expects as well as a few deployment use cases.
+The ZenML server container image is available at [`zenmldocker/zenml-server`](https://hub.docker.com/r/zenmldocker/zenml/) and can be used to deploy ZenML with a container management or orchestration tool like Docker and docker-compose, or a serverless platform like [Cloud Run](https://cloud.google.com/run), [Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/overview), and more! This guide walks you through the various configuration options that the ZenML server container expects as well as a few deployment use cases.
 
 ## Try it out locally first
 
-If you're just looking for a quick way to deploy the ZenML server using a container, without going through the hassle of interacting with a container management tool like docker and manually configuring your container, you can use the ZenML CLI to do so. You only need to have Docker installed and running on your machine:
+If you're just looking for a quick way to deploy the ZenML server using a container, without going through the hassle of interacting with a container management tool like Docker and manually configuring your container, you can use the ZenML CLI to do so. You only need to have Docker installed and running on your machine:
 
 ```bash
 zenml up --docker
@@ -49,7 +49,7 @@ If none of the `ZENML_STORE_*` variables are set, the container will default to 
 
 ### Secret store environment variables
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](manage-the-deployed-services/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it explicitly using docker environment variables. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](manage-the-deployed-services/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it explicitly using Docker environment variables. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
 
 > **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](manage-the-deployed-services/secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
@@ -220,7 +220,7 @@ If your custom secrets store implementation requires additional configuration op
 
 [A backup secrets store](manage-the-deployed-services/secret-management.md#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](manage-the-deployed-services/secret-management.md#secrets-migration-strategy).
 
-To configure a backup secrets store in the docker container, use the same approach and instructions documented for the primary secrets store, but set the `**ZENML\_BACKUP\_SECRETS\_STORE\***` environment variables instead of `**ZENML\_SECRETS\_STORE\***`, e.g.:
+To configure a backup secrets store in the Docker container, use the same approach and instructions documented for the primary secrets store, but set the `**ZENML\_BACKUP\_SECRETS\_STORE\***` environment variables instead of `**ZENML\_SECRETS\_STORE\***`, e.g.:
 
 ```yaml
 ZENML_BACKUP_SECRETS_STORE_TYPE: aws

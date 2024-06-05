@@ -113,7 +113,7 @@ In its first iteration, the pre-configuration with `_io_configuration` method is
 
 ## Stack Component: `KubernetesSparkStepOperator`
 
-The `KubernetesSparkStepOperator` is implemented by subclassing the base `SparkStepOperator` and uses the `PipelineDockerImageBuilder` class to build and push the required docker images.
+The `KubernetesSparkStepOperator` is implemented by subclassing the base `SparkStepOperator` and uses the `PipelineDockerImageBuilder` class to build and push the required Docker images.
 
 ```python
 from typing import Optional
