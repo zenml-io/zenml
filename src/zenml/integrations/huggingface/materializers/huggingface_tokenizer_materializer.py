@@ -51,7 +51,9 @@ class HFTokenizerMaterializer(BaseMaterializer):
             os.path.join(self.uri, DEFAULT_TOKENIZER_DIR), temp_dir.name
         )
 
-        return AutoTokenizer.from_pretrained(temp_dir.name)
+        return AutoTokenizer.from_pretrained(
+            os.path.join(self.uri, DEFAULT_TOKENIZER_DIR)
+        )
 
     def save(self, tokenizer: Type[Any]) -> None:
         """Writes a Tokenizer to the specified dir.
@@ -59,9 +61,9 @@ class HFTokenizerMaterializer(BaseMaterializer):
         Args:
             tokenizer: The HFTokenizer to write.
         """
-        temp_dir = TemporaryDirectory()
-        tokenizer.save_pretrained(temp_dir.name)
-        io_utils.copy_dir(
-            temp_dir.name,
-            os.path.join(self.uri, DEFAULT_TOKENIZER_DIR),
-        )
+        with TemporaryDirectory() as temp_dir:
+            tokenizer.save_pretrained(temp_dir)
+            io_utils.copy_dir(
+                temp_dir,
+                os.path.join(self.uri, DEFAULT_TOKENIZER_DIR),
+            )
