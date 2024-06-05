@@ -80,7 +80,7 @@ If you wish to disable colourful logging, set the following environment variable
 ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
-Note that setting this on the [client environment](../configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
+Note that setting this on the [client environment](../how-to/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
 
 ```python
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_COLORS_DISABLED": "false"})
@@ -106,7 +106,7 @@ export ZENML_CONFIG_PATH=/path/to/somewhere
 
 ## Server configuration
 
-For more information on server configuration, see the [ZenML Server documentation](../getting-started/deploying-zenml/zenml-self-hosted/deploy-with-docker.md) for more, especially the section entitled "ZenML server configuration options".
+For more information on server configuration, see the [ZenML Server documentation](../getting-started/deploying-zenml/deploy-with-docker.md#zenml-server-configuration-options) for more, especially the section entitled "ZenML server configuration options".
 
 ## Client configuration
 

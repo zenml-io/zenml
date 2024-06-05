@@ -93,7 +93,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](../
 {% endtab %}
 
 {% tab title="Other" %}
-You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../component-guide/artifact-stores/README.md).
+You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../component-guide/artifact-stores/artifact-stores.md).
 
 It is also relatively simple to create a [custom stack component flavor](../../how-to/stack-deployment/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
