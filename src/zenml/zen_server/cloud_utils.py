@@ -8,6 +8,7 @@ from pydantic import BaseModel, validator
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.exceptions import SubscriptionUpgradeRequiredError
+from zenml.zen_server.utils import server_config
 
 ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
 
@@ -99,7 +100,7 @@ class ZenMLCloudSession:
                 raise SubscriptionUpgradeRequiredError(response.json())
             else:
                 raise RuntimeError(
-                    f"Failed with the following error {response.json()}"
+                    f"Failed with the following error {response} {response.text}"
                 )
 
         return response
@@ -154,12 +155,29 @@ class ZenMLCloudSession:
             A requests session with the authentication token.
         """
         if self._session is None:
+            # Set up the session's connection pool size to match the server's
+            # thread pool size. This allows the server to cache one connection
+            # per thread, which means we can keep connections open for longer
+            # and avoid the overhead of setting up a new connection for each
+            # request.
+            conn_pool_size = server_config().thread_pool_size
+
             self._session = requests.Session()
             token = self._fetch_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
 
             retries = Retry(total=5, backoff_factor=0.1)
-            self._session.mount("https://", HTTPAdapter(max_retries=retries))
+            self._session.mount(
+                "https://",
+                HTTPAdapter(
+                    max_retries=retries,
+                    # We only use one connection pool to be cached because we
+                    # only communicate with one remote server (the control
+                    # plane)
+                    pool_connections=1,
+                    pool_maxsize=conn_pool_size,
+                ),
+            )
 
         return self._session
 
