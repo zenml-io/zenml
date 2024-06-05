@@ -110,11 +110,10 @@ their secrets on their own infrastructure.
 
 In this scenario, all services, data, and secrets are deployed on the customer
 cloud. This is the opposite of Scenario 1, and is meant for customers who
-require completely airgapped deployments, for the tightest security standards.
+require completely airgapped deployments, for the tightest security standards. 
+[Reach out to us](mailto:cloud@zenml.io) if you want to set this up.
 
-Are you interested in the ZenML Cloud? While in beta, we're looking for early
-adopters to talk
-to! [Sign up](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link)
-and get access to Scenario 1. with a free 30 day trial now!
+Are you interested in the ZenML Cloud? [Sign up](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link)
+and get access to Scenario 1. with a free 14 day trial now!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
