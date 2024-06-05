@@ -18,8 +18,8 @@
   * [Deploy using HuggingFace Spaces](getting-started/deploying-zenml/deploy-using-huggingface-spaces.md)
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
 * [☁️ ZenML Pro](getting-started/zenml-pro/README.md)
-  * [ZenML SaaS vs Self-Hosted](getting-started/zenml-pro/cloud-system-architecture/README.md)
-    * [ZenML SaaS](getting-started/zenml-pro/cloud-system-architecture/zenml-cloud.md)
+  * [System Architectures](getting-started/zenml-pro/system-architectures.md)
+  * [ZenML SaaS](getting-started/zenml-pro/zenml-cloud.md)
   * [User Management](getting-started/zenml-pro/user-management.md)
 
 ## User Guide
