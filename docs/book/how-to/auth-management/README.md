@@ -421,7 +421,7 @@ Service connector 'aws-s3' of type 'aws' with id '96a92154-4ec7-4722-bc18-21eeea
 ```
 {% endcode %}
 
-The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](../../getting-started/deploying-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md).
+The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md).
 
 Moreover, the following security best practice is automatically enforced by the AWS connector: the AWS Secret Key will be kept hidden on the ZenML Server and the clients will never use it directly to gain access to any AWS resources. Instead, the AWS Service Connector will generate short-lived security tokens and distribute those to clients. It will also take care of issuing new tokens when those expire. This is identifiable from the `session-token` authentication method and the session duration configuration attributes.
 

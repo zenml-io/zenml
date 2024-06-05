@@ -29,7 +29,7 @@ The above four interact with other MLOps stack components, secrets, and data in 
 
 In this scenario, all services are hosted on the ZenML Cloud infrastructure. Customer secrets and credentials required to access customer infrastructure are stored and managed by the ZenML Cloud.
 
-On our  infrastructure for ZenML Cloud only ML _metadata_ (e.g. pipeline and model tracking and versioning information) is stored. All the actual ML data artifacts (e.g. data produced or consumed by pipeline steps, logs and visualizations, models) are stored on the customer cloud. This can be set up quite easily by configuring an [artifact store](../../../../component-guide/artifact-stores/artifact-stores.md) with your MLOps stack.
+On our  infrastructure for ZenML Cloud only ML _metadata_ (e.g. pipeline and model tracking and versioning information) is stored. All the actual ML data artifacts (e.g. data produced or consumed by pipeline steps, logs and visualizations, models) are stored on the customer cloud. This can be set up quite easily by configuring an [artifact store](../../../component-guide/artifact-stores/artifact-stores.md) with your MLOps stack.
 
 Your tenant only needs permissions to read from this data to display artifacts on the ZenML dashboard. The tenant also needs direct access to parts of the customer infrastructure services to support dashboard control plane features such as CI/CD, triggering and running pipelines, triggering model deployments etc.
 
@@ -43,7 +43,7 @@ This scenario is meant for customers who want to quickly get started with ZenML 
 
 </div>
 
-This scenario is a version of Scenario 1. modified to store all sensitive information on the customer side. In this case, the customer connects their own secret store directly to the ZenML server that is managed by us. All ZenML secrets used by running pipelines to access infrastructure services and resources are stored in the customer secret store. This allows users to use [service connectors](../../../../how-to/auth-management/service-connectors-guide.md) and the [secrets API](../../../../how-to/interact-with-secrets.md) to authenticate ZenML pipelines and the ZenML Cloud to 3rd party services and infrastructure while ensuring that credentials are always stored on the customer side.
+This scenario is a version of Scenario 1. modified to store all sensitive information on the customer side. In this case, the customer connects their own secret store directly to the ZenML server that is managed by us. All ZenML secrets used by running pipelines to access infrastructure services and resources are stored in the customer secret store. This allows users to use [service connectors](../../../how-to/auth-management/service-connectors-guide.md) and the [secrets API](../../../how-to/interact-with-secrets.md) to authenticate ZenML pipelines and the ZenML Cloud to 3rd party services and infrastructure while ensuring that credentials are always stored on the customer side.
 
 Even though they are stored customer side, access to ZenML secrets is fully managed by the ZenML Cloud. The ZenML Cloud is also allowed to use some of those credentials to connect directly to customer infrastructure services to implement control plane features such as artifact visualization or triggering pipelines. This implies that the secret values are allowed to leave the customer environment to allow their access to be managed centrally by the ZenML Cloud and to enforce access control policies, but the ZenML users and pipelines never have direct access to the secret store.
 
