@@ -6,7 +6,7 @@ description: Understand and adjust how ZenML versions your data.
 
 Data sits at the heart of every machine learning workflow. Managing and versioning this data correctly is essential for reproducibility and traceability within your ML pipelines. ZenML takes a proactive approach to data versioning, ensuring that every artifact—be it data, models, or evaluations—is automatically tracked and versioned upon pipeline execution.
 
-![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/dcp\_walkthrough.gif)
+![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/dcp\_walkthrough.gif)
 
 This guide will delve into artifact versioning and management, showing you how to efficiently name, organize, and utilize your data with the ZenML framework.
 
@@ -54,7 +54,7 @@ To list artifacts: `zenml artifact list`
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
-The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration.
+The [ZenML Pro](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration.
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 
@@ -330,7 +330,7 @@ The information regarding the metadata of an artifact can be found within the DA
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
-The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
+The [ZenML Pro](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
 
 <figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 {% endtab %}
