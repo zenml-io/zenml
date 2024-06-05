@@ -273,7 +273,7 @@ Now that you have a functional AWS stack set up with ZenML, you can explore more
 
 * Dive deeper into ZenML's [production guide](../../user-guide/production-guide/production-guide.md) to learn best practices for deploying and managing production-ready pipelines.
 * Explore ZenML's [integrations](../../component-guide/README.md) with other popular tools and frameworks in the machine learning ecosystem.
-* Join the [ZenML community](https://zenml.io/slack-invite) to connect with other users, ask questions, and get support.
+* Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
 
 By leveraging the power of AWS and ZenML, you can streamline your machine learning workflows, improve collaboration, and deploy production-ready pipelines with ease. Happy experimenting and building!
 

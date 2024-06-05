@@ -9,7 +9,7 @@ development team of ZenML and develop a deeper understanding of the framework.
 
 ### Slack Channel: Get help from the community
 
-The ZenML [Slack channel](https://zenml.io/slack-invite) is the main gathering point for the community. Not only is it
+The ZenML [Slack channel](https://zenml.io/slack) is the main gathering point for the community. Not only is it
 the best place to get in touch with the core team of ZenML, but it is also a great way to discuss new ideas and share
 your ZenML projects with the community. If you have a question, there is a high chance someone else might have already
 answered it on Slack!

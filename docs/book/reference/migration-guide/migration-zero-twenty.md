@@ -339,7 +339,7 @@ Pipelines and steps now allow all configurations on their decorators as well as 
 
 Read more about this paradigm in the [new docs section about settings](../../how-to/use-configuration-files/what-can-be-configured.md).
 
-Here is a list of changes that are the most obvious in consequence of the above code. Please note that this list is not exhaustive, and if we have missed something let us know via [Slack](https://zenml.io/slack-invite).
+Here is a list of changes that are the most obvious in consequence of the above code. Please note that this list is not exhaustive, and if we have missed something let us know via [Slack](https://zenml.io/slack).
 
 **Deprecating the `enable_xxx` decorators**
 
@@ -458,7 +458,7 @@ While this rehaul is big and will break previous releases, we do have some more 
 
 ## 🐞 Reporting Bugs
 
-While we have tried our best to document everything that has changed, we realize that mistakes can be made and smaller changes overlooked. If this is the case, or you encounter a bug at any time, the ZenML core team and community are available around the clock on the growing [Slack community](https://zenml.io/slack-invite).
+While we have tried our best to document everything that has changed, we realize that mistakes can be made and smaller changes overlooked. If this is the case, or you encounter a bug at any time, the ZenML core team and community are available around the clock on the growing [Slack community](https://zenml.io/slack).
 
 For bug reports, please also consider submitting a [GitHub Issue](https://github.com/zenml-io/zenml/issues/new/choose).
 

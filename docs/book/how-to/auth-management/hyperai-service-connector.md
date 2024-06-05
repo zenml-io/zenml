@@ -46,7 +46,7 @@ When configuring the Service Connector, it is required to provide at least one h
 ## Auto-configuration
 
 {% hint style="info" %}
-This Service Connector does not support auto-discovery and extraction of authentication credentials from HyperAI instances. If this feature is useful to you or your organization, please let us know by messaging us in [Slack](https://zenml.io/slack-invite) or [creating an issue on GitHub](https://github.com/zenml-io/zenml/issues).
+This Service Connector does not support auto-discovery and extraction of authentication credentials from HyperAI instances. If this feature is useful to you or your organization, please let us know by messaging us in [Slack](https://zenml.io/slack) or [creating an issue on GitHub](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
 ## Stack Components use

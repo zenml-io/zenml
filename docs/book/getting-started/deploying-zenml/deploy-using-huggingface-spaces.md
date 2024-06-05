@@ -70,7 +70,7 @@ If you wish to use a cloud secrets backend together with ZenML for secrets manag
 
 If you are having trouble with your ZenML server on HuggingFace Spaces, you can view the logs by clicking on the "Open Logs" button at the top of the space. This will give you more context of what's happening with your server.
 
-If you have any other issues, please feel free to reach out to us on our [Slack channel](https://zenml.io/slack-invite/) for more support.
+If you have any other issues, please feel free to reach out to us on our [Slack channel](https://zenml.io/slack/) for more support.
 
 ## Upgrading your ZenML Server on HF Spaces
 

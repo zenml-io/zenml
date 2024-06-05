@@ -10,7 +10,7 @@ Some common questions that we get asked are:
 
 * **contribute** to ZenML's open-source codebase?
 
-Please read [our Contribution guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) for more information. For small features and bug fixes, please open a pull request as described in the guide. For anything bigger, it is worth [posting a message in Slack](https://zenml.io/slack-invite/) or [creating an issue](https://github.com/zenml-io/zenml/issues/new/choose) so we can best discuss and support your plans.
+Please read [our Contribution guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) for more information. For small features and bug fixes, please open a pull request as described in the guide. For anything bigger, it is worth [posting a message in Slack](https://zenml.io/slack/) or [creating an issue](https://github.com/zenml-io/zenml/issues/new/choose) so we can best discuss and support your plans.
 
 * **custom components**: adding them to ZenML?
 
@@ -38,7 +38,7 @@ Read [the documentation on self-hosted ZenML deployments](../getting-started/dep
 
 * **reset** things when something goes wrong?
 
-To reset your ZenML client, you can run `zenml clean` which will wipe your local metadata database and reset your client. Note that this is a destructive action, so feel free to [reach out to us on Slack](https://zenml.io/slack-invite/) before doing this if you are unsure.
+To reset your ZenML client, you can run `zenml clean` which will wipe your local metadata database and reset your client. Note that this is a destructive action, so feel free to [reach out to us on Slack](https://zenml.io/slack/) before doing this if you are unsure.
 
 * **steps that create other steps AKA dynamic pipelines and steps**?
 

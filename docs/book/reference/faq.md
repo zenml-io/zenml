@@ -30,7 +30,7 @@ We develop ZenML together with our community! To get involved, the best way to g
 
 #### How can I speak with the community?
 
-The first point of the call should be [our Slack group](https://zenml.io/slack-invite/). Ask your questions about bugs or specific use cases and someone from the core team will respond.
+The first point of the call should be [our Slack group](https://zenml.io/slack/). Ask your questions about bugs or specific use cases and someone from the core team will respond.
 
 #### Which license does ZenML use?
 

@@ -345,7 +345,7 @@ if "__name__" == "__main__":
 # Run the pipeline
 ```
 
-Note that the above is also currently not tested on all Kubeflow versions, so there might be further bugs with older Kubeflow versions. In this case, please reach out to us on [Slack](https://zenml.io/slack-invite).
+Note that the above is also currently not tested on all Kubeflow versions, so there might be further bugs with older Kubeflow versions. In this case, please reach out to us on [Slack](https://zenml.io/slack).
 
 #### Using secrets in settings
 
