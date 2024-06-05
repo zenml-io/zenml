@@ -25,9 +25,6 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
-from zenml.integrations.kubernetes.flavors import (
-    KubernetesOrchestratorSettings,
-)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 
@@ -100,7 +97,8 @@ def build_pod_manifest(
     image_name: str,
     command: List[str],
     args: List[str],
-    settings: KubernetesOrchestratorSettings,
+    privileged: bool,
+    pod_settings: Optional[KubernetesPodSettings] = None,
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
@@ -114,7 +112,8 @@ def build_pod_manifest(
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
-        settings: `KubernetesOrchestratorSettings` object
+        privileged: Whether to run the container in privileged mode.
+        pod_settings: Optional settings for the pod.
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
@@ -128,9 +127,7 @@ def build_pod_manifest(
     env = env.copy() if env else {}
     env.setdefault(ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, "False")
 
-    security_context = k8s_client.V1SecurityContext(
-        privileged=settings.privileged
-    )
+    security_context = k8s_client.V1SecurityContext(privileged=privileged)
     container_spec = k8s_client.V1Container(
         name="main",
         image=image_name,
@@ -151,8 +148,8 @@ def build_pod_manifest(
     if service_account_name is not None:
         pod_spec.service_account_name = service_account_name
 
-    if settings.pod_settings:
-        add_pod_settings(pod_spec, settings.pod_settings)
+    if pod_settings:
+        add_pod_settings(pod_spec, pod_settings)
 
     pod_metadata = k8s_client.V1ObjectMeta(
         name=pod_name,
@@ -162,8 +159,8 @@ def build_pod_manifest(
         },
     )
 
-    if settings.pod_settings and settings.pod_settings.annotations:
-        pod_metadata.annotations = settings.pod_settings.annotations
+    if pod_settings and pod_settings.annotations:
+        pod_metadata.annotations = pod_settings.annotations
 
     pod_manifest = k8s_client.V1Pod(
         kind="Pod",
@@ -224,7 +221,8 @@ def build_cron_job_manifest(
     image_name: str,
     command: List[str],
     args: List[str],
-    settings: KubernetesOrchestratorSettings,
+    privileged: bool,
+    pod_settings: Optional[KubernetesPodSettings] = None,
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
@@ -239,7 +237,8 @@ def build_cron_job_manifest(
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
-        settings: `KubernetesOrchestratorSettings` object
+        privileged: Whether to run the container in privileged mode.
+        pod_settings: Optional settings for the pod.
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
@@ -257,7 +256,8 @@ def build_cron_job_manifest(
         image_name=image_name,
         command=command,
         args=args,
-        settings=settings,
+        privileged=privileged,
+        pod_settings=pod_settings,
         service_account_name=service_account_name,
         env=env,
         mount_local_stores=mount_local_stores,
