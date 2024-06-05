@@ -364,7 +364,7 @@ class ServiceConnectorUpdate(BaseUpdate):
             secrets: The connector secrets.
         """
         _validate_and_configure_resources(
-            connector=self.convert_to_request(),
+            connector=self,
             connector_type=connector_type,
             resource_types=resource_types,
             resource_id=resource_id,
@@ -861,6 +861,7 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
 def _validate_and_configure_resources(
     connector: Union[
         ServiceConnectorRequest,
+        ServiceConnectorUpdate,
         ServiceConnectorResponse,
     ],
     connector_type: "ServiceConnectorTypeModel",
@@ -893,13 +894,18 @@ def _validate_and_configure_resources(
     # metadata field.
     update_connector_metadata: Union[
         ServiceConnectorRequest,
+        ServiceConnectorUpdate,
         ServiceConnectorResponseMetadata,
     ]
     update_connector_body: Union[
         ServiceConnectorRequest,
+        ServiceConnectorUpdate,
         ServiceConnectorResponseBody,
     ]
     if isinstance(connector, ServiceConnectorRequest):
+        update_connector_metadata = connector
+        update_connector_body = connector
+    elif isinstance(connector, ServiceConnectorUpdate):
         update_connector_metadata = connector
         update_connector_body = connector
     else:
@@ -929,6 +935,7 @@ def _validate_and_configure_resources(
     try:
         # Validate the connector configuration and retrieve the resource
         # specification
+        assert connector.auth_method is not None
         (
             auth_method_spec,
             resource_spec,
