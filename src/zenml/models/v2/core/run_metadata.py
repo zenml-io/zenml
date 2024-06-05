@@ -66,7 +66,7 @@ class RunMetadataResponseBody(WorkspaceScopedResponseBody):
 
     key: str = Field(title="The key of the metadata.")
     value: MetadataType = Field(
-        title="The value of the metadata.", union_mode="left_to_right"
+        title="The value of the metadata.", union_mode="smart"
     )
     type: MetadataTypeEnum = Field(title="The type of the metadata.")
 
