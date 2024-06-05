@@ -6,9 +6,9 @@ description: Creating your own visualizations.
 
 There are two ways how you can add custom visualizations to the dashboard:
 
-* If you are already handling HTML, Markdown, or CSV data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](visualize-artifacts.md#visualization-via-special-return-types) inside your step.
-* If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](visualize-artifacts.md#visualization-via-materializers).
-* If you want to create any other custom visualizations, you can [create a custom return type class with corresponding materializer](visualize-artifacts.md#visualization-via-custom-return-type-and-materializer) and build and return this custom return type from one of your steps.
+* If you are already handling HTML, Markdown, or CSV data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](#visualization-via-special-return-types) inside your step.
+* If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](#visualization-via-materializers).
+* If you want to create any other custom visualizations, you can [create a custom return type class with corresponding materializer](#visualization-via-custom-return-type-and-materializer) and build and return this custom return type from one of your steps.
 
 ## Visualization via Special Return Types
 
@@ -35,14 +35,14 @@ This would create the following visualization in the dashboard:
 
 ## Visualization via Materializers
 
-If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding materializer. See the [materializer docs page](handle-custom-data-types.md#optional-how-to-visualize-the-artifact) for more information on how to create custom materializers that do this.
+If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding materializer. See the [materializer docs page](../handle-data-artifacts/handle-custom-data-types.md#optional-how-to-visualize-the-artifact) for more information on how to create custom materializers that do this.
 
 ## Visualization via Custom Return Type and Materializer
 
 By combining the ideas behind the above two visualization approaches, you can visualize virtually anything you want inside your ZenML dashboard in three simple steps:
 
 1. Create a **custom class** that will hold the data that you want to visualize.
-2. [Build a custom **materializer**](handle-custom-data-types.md#custom-materializers) for this custom class with the visualization logic implemented in the `save_visualizations()` method.
+2. [Build a custom **materializer**](../handle-data-artifacts/handle-custom-data-types.md#custom-materializers) for this custom class with the visualization logic implemented in the `save_visualizations()` method.
 3. Return your custom class from any of your ZenML steps.
 
 ### Example: Facets Data Skew Visualization
