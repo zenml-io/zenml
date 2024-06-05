@@ -25,7 +25,7 @@ Thus, to make even this process easier for our users, we have created the `deplo
 
 ## What is `mlstacks`?
 
-[MLStacks](https://mlstacks.zenml.io) is a [Python package](https://pypi.org/project/mlstacks/README.md) that allows you to quickly spin up MLOps infrastructure using Terraform. It is designed to be used with [ZenML](https://zenml.io), but can be used with any MLOps tool or platform.
+[MLStacks](https://mlstacks.zenml.io) is a [Python package](https://pypi.org/project/mlstacks/) that allows you to quickly spin up MLOps infrastructure using Terraform. It is designed to be used with [ZenML](https://zenml.io), but can be used with any MLOps tool or platform.
 
 The ZenML CLI has special subcommands that allow you to deploy individual stack components as well as whole stacks using MLStacks. These stacks will be useful for you if:
 
@@ -56,6 +56,6 @@ ZenML handles the creation of stack specifications for you when you run one of t
 
 Your configuration directory could be in a number of different places depending on your operating system, but read more about it in the [Click docs](https://click.palletsprojects.com/en/8.1.x/api/#click.get\_app\_dir) to see which location applies to your situation.
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy stack components individually</strong></mark></td><td>Individually deploying different stack components.</td><td><a href="deploy-a-stack-component.md">deploy-a-stack-component.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy a stack with multiple components using mlstacks</strong></mark></td><td>Deploying an entire stack with ZenML's `mlstacks` package.</td><td><a href="../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md">../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td><td>Creating your custom stack component solutions.</td><td><a href="contribute-flavors-or-components.md">contribute-flavors-or-components.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy stack components individually</strong></mark></td><td>Individually deploying different stack components.</td><td><a href="deploy-a-stack-component.md">deploy-a-stack-component.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy a stack with multiple components using mlstacks</strong></mark></td><td>Deploying an entire stack with ZenML's `mlstacks` package.</td><td><a href="../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md">../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td><td>Creating your custom stack component solutions.</td><td><a href="../../../../CONTRIBUTING.md">CONTRIBUTING.md</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

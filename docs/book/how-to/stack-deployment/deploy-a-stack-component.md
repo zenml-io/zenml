@@ -73,7 +73,7 @@ This will destroy the deployed infrastructure and prompt you if you also want to
 
 ## 🍨 Available flavors for stack components
 
-Here's a table of all the flavors that can be deployed through the CLI for every stack component. This is a list that will keep on growing and you can also contribute any flavor or stack component that you feel is missing. Refer to the [Contribution page](contribute-flavors-or-components.md) for steps on how to do that :smile:
+Here's a table of all the flavors that can be deployed through the CLI for every stack component. This is a list that will keep on growing and you can also contribute any flavor or stack component that you feel is missing. Refer to the [Contribution page](../../../../CONTRIBUTING.md) for steps on how to do that :smile:
 
 <details>
 
