@@ -322,10 +322,14 @@ class ModelFilter(WorkspaceScopedTaggableFilter):
         description="Name of the Model",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Model"
+        default=None,
+        description="Workspace of the Model",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the Model"
+        default=None,
+        description="User of the Model",
+        union_mode="left_to_right",
     )
 
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [

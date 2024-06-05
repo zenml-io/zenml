@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import SettingsConfigDict
 
 from zenml.config.base_settings import BaseSettings
@@ -192,8 +192,10 @@ class DockerSettings(BaseSettings):
     python_package_installer_args: Dict[str, Any] = {}
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]
-    ] = None
-    requirements: Union[None, str, List[str]] = None
+    ] = Field(default=None, union_mode="left_to_right")
+    requirements: Union[None, str, List[str]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     required_integrations: List[str] = []
     required_hub_plugins: List[str] = []
     install_stack_requirements: bool = True

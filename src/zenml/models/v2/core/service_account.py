@@ -201,6 +201,7 @@ class ServiceAccountFilter(BaseFilter):
     active: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user is active",
+        union_mode="left_to_right",
     )
 
     def apply_filter(

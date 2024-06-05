@@ -443,17 +443,24 @@ class PipelineBuildFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all pipeline builds."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(
-        description="Workspace for this pipeline build.", default=None
+        description="Workspace for this pipeline build.",
+        default=None,
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        description="User that produced this pipeline build.", default=None
+        description="User that produced this pipeline build.",
+        default=None,
+        union_mode="left_to_right",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,
+        union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
-        description="Stack used for the Pipeline Run", default=None
+        description="Stack used for the Pipeline Run",
+        default=None,
+        union_mode="left_to_right",
     )
     is_local: Optional[bool] = Field(
         description="Whether the build images are stored in a container "

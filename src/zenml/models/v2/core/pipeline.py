@@ -294,8 +294,12 @@ class PipelineFilter(WorkspaceScopedFilter):
         description="Docstring of the Pipeline",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Pipeline"
+        default=None,
+        description="Workspace of the Pipeline",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the Pipeline"
+        default=None,
+        description="User of the Pipeline",
+        union_mode="left_to_right",
     )

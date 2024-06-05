@@ -67,7 +67,9 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     artifact_id: UUID = Field(
         title="ID of the artifact to which this version belongs.",
     )
-    version: Union[str, int] = Field(title="Version of the artifact.")
+    version: Union[str, int] = Field(
+        title="Version of the artifact.", union_mode="left_to_right"
+    )
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
@@ -440,6 +442,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="ID of the artifact to which this version belongs.",
+        union_mode="left_to_right",
     )
     name: Optional[str] = Field(
         default=None,
@@ -452,6 +455,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     version_number: Optional[Union[int, str]] = Field(
         default=None,
         description="Version of the artifact if it is an integer",
+        union_mode="left_to_right",
     )
     uri: Optional[str] = Field(
         default=None,
@@ -470,13 +474,19 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="Datatype of the artifact",
     )
     artifact_store_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Artifact store for this artifact"
+        default=None,
+        description="Artifact store for this artifact",
+        union_mode="left_to_right",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace for this artifact"
+        default=None,
+        description="Workspace for this artifact",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that produced this artifact"
+        default=None,
+        description="User that produced this artifact",
+        union_mode="left_to_right",
     )
     only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"

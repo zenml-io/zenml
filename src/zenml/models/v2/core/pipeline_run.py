@@ -439,42 +439,62 @@ class PipelineRunFilter(WorkspaceScopedFilter):
         description="Name of the Pipeline Run within the orchestrator",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Pipeline associated with the Pipeline Run"
+        default=None,
+        description="Pipeline associated with the Pipeline Run",
+        union_mode="left_to_right",
     )
     pipeline_name: Optional[str] = Field(
         default=None,
         description="Name of the pipeline associated with the run",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Pipeline Run"
+        default=None,
+        description="Workspace of the Pipeline Run",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that created the Pipeline Run"
+        default=None,
+        description="User that created the Pipeline Run",
+        union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Stack used for the Pipeline Run"
+        default=None,
+        description="Stack used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     schedule_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Schedule that triggered the Pipeline Run"
+        default=None,
+        description="Schedule that triggered the Pipeline Run",
+        union_mode="left_to_right",
     )
     build_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Build used for the Pipeline Run"
+        default=None,
+        description="Build used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     deployment_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Deployment used for the Pipeline Run"
+        default=None,
+        description="Deployment used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     code_repository_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Code repository used for the Pipeline Run"
+        default=None,
+        description="Code repository used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     status: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
     start_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="Start time for this run"
+        default=None,
+        description="Start time for this run",
+        union_mode="left_to_right",
     )
     end_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="End time for this run"
+        default=None,
+        description="End time for this run",
+        union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
 

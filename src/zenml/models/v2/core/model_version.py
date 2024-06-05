@@ -91,7 +91,9 @@ class ModelVersionUpdate(BaseModel):
         description="The ID of the model containing version",
     )
     stage: Optional[Union[str, ModelStages]] = Field(
-        description="Target model version stage to be set", default=None
+        description="Target model version stage to be set",
+        default=None,
+        union_mode="left_to_right",
     )
     force: bool = Field(
         description="Whether existing model version in target stage should be "
@@ -589,13 +591,19 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
         description="The number of the Model Version",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="The workspace of the Model Version"
+        default=None,
+        description="The workspace of the Model Version",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="The user of the Model Version"
+        default=None,
+        description="The user of the Model Version",
+        union_mode="left_to_right",
     )
     stage: Optional[Union[str, ModelStages]] = Field(
-        description="The model version stage", default=None
+        description="The model version stage",
+        default=None,
+        union_mode="left_to_right",
     )
 
     _model_id: UUID = PrivateAttr(None)

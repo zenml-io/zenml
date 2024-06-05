@@ -99,6 +99,7 @@ class ServiceRequest(WorkspaceScopedRequest):
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the event source this trigger is attached to.",
+        union_mode="left_to_right",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -121,50 +122,43 @@ class ServiceUpdate(BaseModel):
         title="The name of the service.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
     admin_state: Optional[ServiceState] = Field(
         None,
         title="The admin state of the service.",
         description="The administrative state of the service, e.g., ACTIVE, "
         "INACTIVE.",
     )
-
     service_source: Optional[str] = Field(
         None,
         title="The class of the service.",
         description="The fully qualified class name of the service "
         "implementation.",
     )
-
     status: Optional[Dict[str, Any]] = Field(
         None,
         title="The status of the service.",
     )
-
     endpoint: Optional[Dict[str, Any]] = Field(
         None,
         title="The service endpoint.",
     )
-
     prediction_url: Optional[str] = Field(
         None,
         title="The service endpoint URL.",
     )
-
     health_check_url: Optional[str] = Field(
         None,
         title="The service health check URL.",
     )
-
     labels: Optional[Dict[str, str]] = Field(
         default=None,
         title="The service labels.",
     )
-
     model_version_id: Optional[UUID] = Field(
         default=None,
         title="The model version id linked to the service.",
     )
+
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
     #  It is possible to suppress this warning message with the following
@@ -383,10 +377,14 @@ class ServiceFilter(WorkspaceScopedFilter):
         "their name.",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the service"
+        default=None,
+        description="Workspace of the service",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the service"
+        default=None,
+        description="User of the service",
+        union_mode="left_to_right",
     )
     type: Optional[str] = Field(
         default=None,
@@ -416,10 +414,12 @@ class ServiceFilter(WorkspaceScopedFilter):
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the model version this service is attached to.",
+        union_mode="left_to_right",
     )
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the pipeline run this service is attached to.",
+        union_mode="left_to_right",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all

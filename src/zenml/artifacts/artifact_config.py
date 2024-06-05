@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
@@ -63,12 +63,16 @@ class ArtifactConfig(BaseModel):
     """
 
     name: Optional[str] = None
-    version: Optional[Union[str, int]] = None
+    version: Optional[Union[str, int]] = Field(
+        default=None, union_mode="smart"
+    )
     tags: Optional[List[str]] = None
     run_metadata: Optional[Dict[str, MetadataType]] = None
 
     model_name: Optional[str] = None
-    model_version: Optional[Union[ModelStages, str, int]] = None
+    model_version: Optional[Union[ModelStages, str, int]] = Field(
+        default=None, union_mode="smart"
+    )
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
 

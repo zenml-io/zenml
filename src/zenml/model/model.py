@@ -24,7 +24,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
 from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
@@ -74,7 +74,9 @@ class Model(BaseModel):
     trade_offs: Optional[str] = None
     ethics: Optional[str] = None
     tags: Optional[List[str]] = None
-    version: Optional[Union[ModelStages, int, str]] = None
+    version: Optional[Union[ModelStages, int, str]] = Field(
+        default=None, union_mode="smart"
+    )
     save_models_to_registry: bool = True
     model_version_id: Optional[UUID] = None
 

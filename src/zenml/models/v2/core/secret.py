@@ -257,14 +257,19 @@ class SecretFilter(WorkspaceScopedFilter):
     scope: Optional[Union[SecretScope, str]] = Field(
         default=None,
         description="Scope in which to filter secrets",
+        union_mode="left_to_right",
     )
 
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Secret"
+        default=None,
+        description="Workspace of the Secret",
+        union_mode="left_to_right",
     )
 
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that created the Secret"
+        default=None,
+        description="User that created the Secret",
+        union_mode="left_to_right",
     )
 
     @staticmethod

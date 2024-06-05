@@ -17,7 +17,7 @@ import os
 from typing import Any, Optional, Type, Union
 from uuid import UUID, uuid4
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
@@ -79,7 +79,9 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     """
 
     value: Optional[Any] = None
-    materializer: Optional[MaterializerClassOrSource] = None
+    materializer: Optional[MaterializerClassOrSource] = Field(
+        default=None, union_mode="left_to_right"
+    )
     store_artifact_metadata: bool = True
     store_artifact_visualizations: bool = True
 

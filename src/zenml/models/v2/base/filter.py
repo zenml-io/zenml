@@ -211,7 +211,7 @@ class UUIDFilter(StrFilter):
 class NumericFilter(Filter):
     """Filter for all numeric fields."""
 
-    value: Union[float, datetime]
+    value: Union[float, datetime] = Field(union_mode="left_to_right")
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
@@ -293,13 +293,15 @@ class BaseFilter(BaseModel):
     )
 
     id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Id for this resource"
+        default=None,
+        description="Id for this resource",
+        union_mode="left_to_right",
     )
     created: Optional[Union[datetime, str]] = Field(
-        default=None, description="Created"
+        default=None, description="Created", union_mode="left_to_right"
     )
     updated: Optional[Union[datetime, str]] = Field(
-        default=None, description="Updated"
+        default=None, description="Updated", union_mode="left_to_right"
     )
 
     _rbac_configuration: Optional[

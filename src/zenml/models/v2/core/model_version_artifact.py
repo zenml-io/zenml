@@ -182,19 +182,29 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
     ]
 
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="The workspace of the Model Version"
+        default=None,
+        description="The workspace of the Model Version",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="The user of the Model Version"
+        default=None,
+        description="The user of the Model Version",
+        union_mode="left_to_right",
     )
     model_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Filter by model ID"
+        default=None,
+        description="Filter by model ID",
+        union_mode="left_to_right",
     )
     model_version_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Filter by model version ID"
+        default=None,
+        description="Filter by model version ID",
+        union_mode="left_to_right",
     )
     artifact_version_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Filter by artifact ID"
+        default=None,
+        description="Filter by artifact ID",
+        union_mode="left_to_right",
     )
     artifact_name: Optional[str] = Field(
         default=None,
