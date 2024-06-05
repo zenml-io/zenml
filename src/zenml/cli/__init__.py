@@ -80,7 +80,7 @@ You can also pass in a directory path manually using the
 zenml init --path /path/to/dir
 ```
 
-If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/user-guide/starter-guide/using-project-templates#list-of-zenml-project-templates)
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/how-to/setting-up-a-project-repository/using-project-templates#list-of-zenml-project-templates)
 to generate a ready-to-use project scaffold in your repository, you can do so by
 passing the ``--template`` option:
 
@@ -1828,7 +1828,7 @@ Connecting to a ZenML Server
 ----------------------------
 
 The ZenML client can be [configured to connect to a remote database or ZenML
-server](https://docs.zenml.io/user-guide/advanced-guide/configuring-zenml/connecting-to-zenml)
+server](https://docs.zenml.io/how-to/connecting-to-zenml)
 with the `zenml connect` command. If no arguments are supplied, ZenML
 will attempt to connect to the last ZenML server deployed from the local host
 using the 'zenml deploy' command:
@@ -1980,7 +1980,7 @@ Secrets management
 ------------------
 
 ZenML offers a way to [securely store secrets associated with your other
-stack components and infrastructure](https://docs.zenml.io/user-guide/advanced-guide/secret-management).
+stack components and infrastructure](https://docs.zenml.io/getting-started/deploying-zenml/manage-the-deployed-services/secret-management).
 A ZenML Secret is a collection or grouping of key-value pairs stored by the
 ZenML secrets store. ZenML Secrets are identified by a unique name which
 allows you to fetch or reference them in your pipelines and stacks.
@@ -2076,7 +2076,7 @@ challenge in configuring uninterrupted, secure access to infrastructure
 resources. In ZenML, Service Connectors streamline this process by abstracting
 away the complexity of authentication and help you connect your stack to your
 resources. You can find the full docs on the ZenML service connectors
-[here](https://docs.zenml.io/stacks-and-components/auth-management).
+[here](https://docs.zenml.io/how-to/auth-management).
 
 The ZenML CLI features a variety of commands to help you manage your service
 connectors. First of all, to explore all the types of service connectors
@@ -2106,7 +2106,7 @@ zenml service-connector register SERVICE_CONNECTOR_NAME \
 ```
 
 For more details on how to create a service connector, please refer to our
-[docs](https://docs.zenml.io/stacks-and-components/auth-management).
+[docs](https://docs.zenml.io/how-to/auth-management).
 
 To check if your service connector is registered properly, you can `verify` it.
 By doing this, you can both check if it is configured correctly and also, you
@@ -2338,7 +2338,7 @@ zenml code-repository delete <REPOSITORY_NAME_OR_ID>
 Building an image without Runs
 ------------------------------
 
-To [build Docker images for your pipeline](https://docs.zenml.io/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline)
+To [build Docker images for your pipeline](https://docs.zenml.io/how-to/customize-docker-builds)
 without actually running the pipeline, use:
 
 ```bash
@@ -2385,7 +2385,7 @@ Tagging your resources with ZenML
 ---------------------------------
 
 When you are using ZenML, you can [use tags to organize and categorize your
-assets](https://docs.zenml.io/user-guide/advanced-guide/data-management/tagging).
+assets](https://docs.zenml.io/how-to/handle-data-artifacts/tagging).
 This way, you can streamline your workflows and enhance the discoverability of
 your resources more easily.
 
@@ -2487,7 +2487,7 @@ zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core b
 ```
 
 For full documentation on this functionality, please refer to [the dedicated
-documentation on stack component deploy](https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-component).
+documentation on stack component deploy](https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-component).
 
 Interacting with the ZenML Hub
 ------------------------------
