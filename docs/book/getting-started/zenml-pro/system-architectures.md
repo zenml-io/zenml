@@ -40,11 +40,8 @@ varying scenarios described below.
 
 ## Scenario 1: Full SaaS
 
-<div data-full-width="false">
+![Scenario 1: Full SaaS deployment](../../.gitbook/assets/cloud_architecture_scenario_1.png)
 
-<figure><img src="../../../../.gitbook/assets/cloud_architecture_scenario_1.png" alt=""><figcaption><p>Scenario 1: Full SaaS deployment</p></figcaption></figure>
-
-</div>
 
 In this scenario, all services are hosted on the ZenML Cloud infrastructure.
 Customer secrets and credentials required to access customer infrastructure are
@@ -70,11 +67,7 @@ from an external SaaS provider.
 
 ## Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML
 
-<div data-full-width="false">
-
-<figure><img src="../../../../.gitbook/assets/cloud_architecture_scenario_2.png" alt=""><figcaption><p>Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML</p></figcaption></figure>
-
-</div>
+![Scenario 2: Hybrid SaaS with Customer Secret Store managed by ZenML](../../.gitbook/assets/cloud_architecture_scenario_2.png)
 
 This scenario is a version of Scenario 1. modified to store all sensitive
 information on the customer side. In this case, the customer connects their own
@@ -102,11 +95,7 @@ their secrets on their own infrastructure.
 
 ## Scenario 3: Fully On-prem
 
-<div data-full-width="false">
-
-<figure><img src="../../../../.gitbook/assets/cloud_architecture_scenario_5.png" alt=""><figcaption><p>Scenario 4: Fully on-premises deployment</p></figcaption></figure>
-
-</div>
+![Scenario 3: Fully on-premises deployment](../../.gitbook/assets/cloud_architecture_scenario_5.png)
 
 In this scenario, all services, data, and secrets are deployed on the customer
 cloud. This is the opposite of Scenario 1, and is meant for customers who
