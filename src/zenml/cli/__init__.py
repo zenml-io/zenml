@@ -232,7 +232,7 @@ and `and` keywords.
 Artifact Stores
 ---------------
 
-In ZenML, [the artifact store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores)
+In ZenML, [the artifact store](https://docs.zenml.io/stack-components/artifact-stores)
 is where all the inputs and outputs of your pipeline steps are stored. By
 default, ZenML initializes your repository with an artifact store with
 everything kept on your local machine. You can get a better understanding
@@ -327,7 +327,7 @@ zenml artifact-store --help
 Orchestrators
 -------------
 
-An [orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators)
+An [orchestrator](https://docs.zenml.io/stack-components/orchestrators)
 is a special kind of backend that manages the running of each step of the
 pipeline. Orchestrators administer the actual pipeline runs. By default,
 ZenML initializes your repository with an orchestrator that runs everything
@@ -423,7 +423,7 @@ zenml orchestrators --help
 Container Registries
 --------------------
 
-[The container registry](https://docs.zenml.io/stacks-and-components/component-guide/container-registries)
+[The container registry](https://docs.zenml.io/stack-components/container-registries)
 is where all the images that are used by a container-based orchestrator are
 stored. To get a better understanding regarding container registries, use
 the command:
@@ -518,7 +518,7 @@ zenml container-registry --help
 Data Validators
 ---------------
 
-In ZenML, [data validators](https://docs.zenml.io/stacks-and-components/component-guide/data-validators)
+In ZenML, [data validators](https://docs.zenml.io/stack-components/data-validators)
 help you profile and validate your data.
 
 By default, a default ZenML local stack will not register a data validator. If
@@ -605,7 +605,7 @@ zenml data-validator --help
 Experiment Trackers
 -------------------
 
-[Experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers)
+[Experiment trackers](https://docs.zenml.io/stack-components/experiment-trackers)
  let you track your ML experiments by logging the parameters
 and allow you to compare between different runs. To get a better
 understanding regarding experiment trackers, use the command:
@@ -701,7 +701,7 @@ zenml experiment-tracker --help
 Model Deployers
 ---------------
 
-[Model deployers](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers)
+[Model deployers](https://docs.zenml.io/stack-components/model-deployers)
 are stack components responsible for online model serving. They are responsible
 for deploying models to a remote server. Model deployers also act as a registry
 for models that are served with ZenML. To get a better understanding regarding
@@ -838,7 +838,7 @@ zenml model-deployer --help
 Step Operators
 --------------
 
-[Step operators](https://docs.zenml.io/stacks-and-components/component-guide/step-operators)
+[Step operators](https://docs.zenml.io/stack-components/step-operators)
 allow you to run individual steps in a custom environment different from the
 default one used by your active orchestrator. One example use-case is to run a
 training step of your pipeline in an environment with GPUs available. To get
@@ -933,7 +933,7 @@ zenml step-operator --help
 Alerters
 --------
 
-In ZenML, [alerters](https://docs.zenml.io/stacks-and-components/component-guide/alerters)
+In ZenML, [alerters](https://docs.zenml.io/stack-components/alerters)
 allow you to send alerts from within your pipeline.
 
 By default, a default ZenML local stack will not register an alerter. If
@@ -1018,7 +1018,7 @@ zenml alerter --help
 Feature Stores
 --------------
 
-[Feature stores](https://docs.zenml.io/stacks-and-components/component-guide/feature-stores)
+[Feature stores](https://docs.zenml.io/stack-components/feature-stores)
 allow data teams to serve data via an offline store and an online low-latency
 store where data is kept in sync between the two. To get a better understanding
 regarding feature stores, use the command:
@@ -1115,7 +1115,7 @@ zenml feature-store --help
 Annotators
 ----------
 
-[Annotators](https://docs.zenml.io/stacks-and-components/component-guide/annotators)
+[Annotators](https://docs.zenml.io/stack-components/annotators)
 enable the use of data annotation as part of your ZenML stack and pipelines.
 
 By default, a default ZenML local stack will not register an annotator. If
@@ -1207,7 +1207,7 @@ zenml annotator --help
 Image Builders
 --------------
 
-In ZenML, [image builders](https://docs.zenml.io/stacks-and-components/component-guide/image-builders)
+In ZenML, [image builders](https://docs.zenml.io/stack-components/image-builders)
 allow you to build container images such
 that your machine-learning pipelines and steps can be executed in remote
 environments.
@@ -1296,7 +1296,7 @@ zenml image-builder --help
 Model Registries
 ----------------
 
-[Model registries](https://docs.zenml.io/stacks-and-components/component-guide/model-registries)
+[Model registries](https://docs.zenml.io/stack-components/model-registries)
 are centralized repositories that facilitate the collaboration and management
 of machine learning models. To get a better understanding regarding model
 registries as a concept, use the command:

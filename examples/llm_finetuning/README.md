@@ -53,10 +53,10 @@ When running the pipeline like this, the trained model will be stored in the Zen
 ## ☁️ Running with a step operator in the stack
 
 To finetune an LLM on remote infrastructure, you can either use a remote orchestrator or a remote step operator. Follow these steps to set up a complete remote stack:
-- Register the [orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators) (or [step operator](https://docs.zenml.io/stacks-and-components/component-guide/step-operators)) and make sure to configure it in a way so that the finetuning step has access to a GPU with at least 24GB of VRAM. Check out our docs for more [details](https://docs.zenml.io/stacks-and-components/component-guide).
+- Register the [orchestrator](https://docs.zenml.io/stack-components/orchestrators) (or [step operator](https://docs.zenml.io/stack-components/step-operators)) and make sure to configure it in a way so that the finetuning step has access to a GPU with at least 24GB of VRAM. Check out our docs for more [details](https://docs.zenml.io/stack-components).
     - To access GPUs with this amount of VRAM, you might need to increase your GPU quota ([AWS](https://docs.aws.amazon.com/servicequotas/latest/userguide/request-quota-increase.html), [GCP](https://console.cloud.google.com/iam-admin/quotas), [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-quotas?view=azureml-api-2#request-quota-and-limit-increases)).
     - The GPU instance that your finetuning will be running on will have CUDA drivers of a specific version installed. If that CUDA version is not compatible with the one provided by the default Docker image of the finetuning pipeline, you will need to modify it in the configuration file. See [here](https://hub.docker.com/r/pytorch/pytorch/tags) for a list of available PyTorch images.
-- Register a remote [artifact store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores) and [container registry](https://docs.zenml.io/stacks-and-components/component-guide/container-registries).
+- Register a remote [artifact store](https://docs.zenml.io/stack-components/artifact-stores) and [container registry](https://docs.zenml.io/stack-components/container-registries).
 - Register a stack with all these components
     ```shell
     zenml stack register llm-finetuning-stack -o <ORCHESTRATOR_NAME> \
