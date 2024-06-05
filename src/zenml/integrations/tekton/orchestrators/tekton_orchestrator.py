@@ -28,7 +28,7 @@ from typing import (
 import kfp
 from kfp import dsl
 from kfp.client import Client as KFPClient
-from kfp.compiler import Compiler
+from kfp.compiler import KFPCompiler
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
@@ -162,8 +162,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         elif self.config.kubernetes_context:
             client_args["kube_context"] = self.config.kubernetes_context
 
-        elif self.config.kubernetes_namespace:
-            client_args["host"] = self.config.kubernetes_namespace
+        elif self.config.tekton_hostname:
+            client_args["host"] = self.config.tekton_hostname
 
             # Handle username and password, ignore the case if one is passed and
             # not the other. Also do not attempt to get cookie if cookie is
@@ -561,7 +561,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             self.pipeline_directory, f"{orchestrator_run_name}.yaml"
         )
 
-        Compiler().compile(
+        KFPCompiler().compile(
             pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
             pipeline_name=orchestrator_run_name,
