@@ -71,7 +71,7 @@ def model_trainer(
     hyperparameters to the model constructor. See the documentation for more
     information:
 
-        https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
+        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
 
     Args:
         dataset_trn: The preprocessed train dataset.
