@@ -160,7 +160,7 @@ class StepLauncher:
 
         if step_logging_enabled:
             # Configure the logs
-            logs_uri = step_logging.prepare_logs_uri(
+            logs_uri = step_logging.prepare_logs_folder_uri(
                 self._stack.artifact_store,
                 self._step.config.name,
             )

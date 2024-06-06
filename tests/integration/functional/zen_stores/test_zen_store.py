@@ -79,7 +79,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     StackExistsError,
 )
-from zenml.logging.step_logging import prepare_logs_uri
+from zenml.logging.step_logging import prepare_logs_folder_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
@@ -3101,17 +3101,17 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
 
         artifact_store = _load_artifact_store(artifact_store_id, store)
 
-        logs_uri_1 = prepare_logs_uri(
+        logs_uri_1 = prepare_logs_folder_uri(
             artifact_store=artifact_store,
             step_name=steps[0].name,
         )
 
-        logs_uri_2 = prepare_logs_uri(
+        logs_uri_2 = prepare_logs_folder_uri(
             artifact_store=artifact_store,
             step_name=steps[1].name,
         )
 
-        prepare_logs_uri(
+        prepare_logs_folder_uri(
             artifact_store=artifact_store,
             step_name=steps[1].name,
         )

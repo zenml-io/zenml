@@ -18,22 +18,31 @@ import re
 import sys
 import time
 from contextvars import ContextVar
+from tempfile import TemporaryDirectory
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Type
-from uuid import uuid4
+from typing import Any, Callable, List, Optional, Type, Union
+from uuid import UUID, uuid4
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifacts.utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.client import Client
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     STEP_LOGS_STORAGE_MAX_MESSAGES,
 )
+from zenml.zen_stores.base_zen_store import BaseZenStore
 
 # Get the logger
 logger = get_logger(__name__)
 
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
+
+LOGS_EXTENSION = ".log"
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -49,12 +58,12 @@ def remove_ansi_escape_codes(text: str) -> str:
     return ansi_escape.sub("", text)
 
 
-def prepare_logs_uri(
+def prepare_logs_folder_uri(
     artifact_store: "BaseArtifactStore",
     step_name: str,
     log_key: Optional[str] = None,
 ) -> str:
-    """Generates and prepares a URI for the log file for a step.
+    """Generates and prepares a URI for the log folder for a step.
 
     Args:
         artifact_store: The artifact store on which the artifact will be stored.
@@ -62,7 +71,7 @@ def prepare_logs_uri(
         log_key: The unique identification key of the log file.
 
     Returns:
-        The URI of the logs file.
+        The URI of the log folder.
     """
     if log_key is None:
         log_key = str(uuid4())
@@ -78,13 +87,44 @@ def prepare_logs_uri(
         artifact_store.makedirs(logs_base_uri)
 
     # Delete the file if it already exists
-    logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
-    if artifact_store.exists(logs_uri):
+    logs_uri_folder = os.path.join(logs_base_uri, log_key)
+    if artifact_store.exists(logs_uri_folder):
         logger.warning(
-            f"Logs file {logs_uri} already exists! Removing old log file..."
+            f"Logs directory {logs_uri_folder} already exists! Removing old log directory..."
         )
-        artifact_store.remove(logs_uri)
-    return logs_uri
+        artifact_store.remove(logs_uri_folder)
+
+    artifact_store.makedirs(logs_uri_folder)
+    return logs_uri_folder
+
+
+def fetch_logs(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+) -> str:
+    artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+    if logs_uri.endswith(LOGS_EXTENSION):
+        return str(
+            _load_file_from_artifact_store(
+                logs_uri, artifact_store=artifact_store, mode="r"
+            )
+        )
+    else:
+        files = artifact_store.listdir(logs_uri)
+        files.sort()
+        ret = []
+        for file in files:
+            ret.append(
+                str(
+                    _load_file_from_artifact_store(
+                        os.path.join(logs_uri, str(file)),
+                        artifact_store=artifact_store,
+                        mode="r",
+                    )
+                )
+            )
+        return "".join(ret)
 
 
 class StepLogsStorage:
@@ -92,20 +132,20 @@ class StepLogsStorage:
 
     def __init__(
         self,
-        logs_uri: str,
+        logs_uri_folder: str,
         max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
         time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     ) -> None:
         """Initialization.
 
         Args:
-            logs_uri: the target URI to store the logs.
+            logs_uri_folder: the URI of the log folder.
             max_messages: the maximum number of messages to save in the buffer.
             time_interval: the amount of seconds before the buffer gets saved
                 automatically.
         """
         # Parameters
-        self.logs_uri = logs_uri
+        self.logs_uri_folder = logs_uri_folder
         self.max_messages = max_messages
         self.time_interval = time_interval
 
@@ -114,6 +154,7 @@ class StepLogsStorage:
         self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
         self.disabled = False
+        self.file_count = 0
 
     def write(self, text: str) -> None:
         """Main write method.
@@ -144,7 +185,14 @@ class StepLogsStorage:
             artifact_store = Client().active_stack.artifact_store
             try:
                 if self.buffer:
-                    with artifact_store.open(self.logs_uri, "a") as file:
+                    self.file_count += 1
+                    with artifact_store.open(
+                        os.path.join(
+                            self.logs_uri_folder,
+                            f"{self.file_count:010}{LOGS_EXTENSION}",
+                        ),
+                        "w",
+                    ) as file:
                         for message in self.buffer:
                             file.write(
                                 remove_ansi_escape_codes(message) + "\n"
@@ -162,6 +210,52 @@ class StepLogsStorage:
 
                 self.disabled = False
 
+    def merge_log_files(self) -> None:
+        """Merges all log files into one in the given URI.
+
+        Called on the logging context exit.
+        """
+
+        artifact_store = Client().active_stack.artifact_store
+        files = artifact_store.listdir(self.logs_uri_folder)
+        files.sort()
+
+        with TemporaryDirectory() as temp_dir:
+            try:
+                local_log_file = os.path.join(
+                    temp_dir, f"merged{LOGS_EXTENSION}"
+                )
+                # dump all logs to a local file first
+                with open(local_log_file, "w") as merged_file:
+                    for file in files:
+                        merged_file.write(
+                            str(
+                                _load_file_from_artifact_store(
+                                    os.path.join(
+                                        self.logs_uri_folder, str(file)
+                                    ),
+                                    artifact_store=artifact_store,
+                                    mode="r",
+                                )
+                            )
+                        )
+
+                # copy it over to the artifact store
+                fileio.copy(
+                    local_log_file,
+                    os.path.join(
+                        self.logs_uri_folder, f"full_log{LOGS_EXTENSION}"
+                    ),
+                )
+            except Exception as e:
+                logger.warning(f"Failed to merge log files. {e}")
+            else:
+                # clean up left over files
+                for file in files:
+                    artifact_store.remove(
+                        os.path.join(self.logs_uri_folder, str(file))
+                    )
+
 
 class StepLogsStorageContext:
     """Context manager which patches stdout and stderr during step execution."""
@@ -172,7 +266,7 @@ class StepLogsStorageContext:
         Args:
             logs_uri: the URI of the logs file.
         """
-        self.storage = StepLogsStorage(logs_uri=logs_uri)
+        self.storage = StepLogsStorage(logs_uri_folder=logs_uri)
 
     def __enter__(self) -> "StepLogsStorageContext":
         """Enter condition of the context manager.
@@ -214,6 +308,7 @@ class StepLogsStorageContext:
         Restores the `write` method of both stderr and stdout.
         """
         self.storage.save_to_file()
+        self.storage.merge_log_files()
 
         setattr(sys.stdout, "write", self.stdout_write)
         setattr(sys.stdout, "flush", self.stdout_flush)
