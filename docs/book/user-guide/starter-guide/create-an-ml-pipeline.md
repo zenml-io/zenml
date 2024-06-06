@@ -2,7 +2,7 @@
 description: Start with the basics of steps and pipelines.
 ---
 
-# Developing ML pipelines
+# Create an ML pipeline
 
 In the quest for production-ready ML models, workflows can quickly become complex. Decoupling and standardizing stages such as data ingestion, preprocessing, and model evaluation allows for more manageable, reusable, and scalable processes. ZenML pipelines facilitate this by enabling each stage—represented as **Steps**—to be modularly developed and then integrated smoothly into an end-to-end **Pipeline**.
 
@@ -127,21 +127,12 @@ zenml integration install sklearn -y
 In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
 
 {% hint style="info" %}
-The `zenml integration install sklearn` command is simply doing a `pip install`
-of `sklearn` behind the scenes. If something goes wrong, one can always use
-`zenml integration requirements sklearn` to see which requirements are
-compatible and install using pip (or any other tool) directly. (If no specific
-requirements are mentioned for an integration then this means we support using
-all possible versions of that integration/package.)
-
+The `zenml integration install sklearn` command is simply doing a `pip install` of `sklearn` behind the scenes. If something goes wrong, one can always use `zenml integration requirements sklearn` to see which requirements are compatible and install using pip (or any other tool) directly. (If no specific requirements are mentioned for an integration then this means we support using all possible versions of that integration/package.)
 {% endhint %}
 
 ### Define a data loader with multiple outputs
 
-A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation.
-Additionally, you can use the `Annotated` annotation to assign
-[custom output names](../advanced-guide/pipelining-features/managing-steps.md#step-output-names).
-Here we load an open-source dataset and split it into a train and a test dataset.
+A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation. Additionally, you can use the `Annotated` annotation to assign [custom output names](manage-artifacts.md#giving-names-to-your-artifacts). Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
 import logging
@@ -252,10 +243,7 @@ training_pipeline = training_pipeline.with_options(
 training_pipeline()
 ```
 
-The reference to a local file will change depending on where you are executing
-the pipeline and code from, so please bear this in mind. It is best practice to
-put all config files in a configs directory at the root of your repository and
-check them into git history.
+The reference to a local file will change depending on where you are executing the pipeline and code from, so please bear this in mind. It is best practice to put all config files in a configs directory at the root of your repository and check them into git history.
 
 A simple version of such a YAML file could be:
 
@@ -272,40 +260,7 @@ If you are unsure how to format this config file, you can generate a template co
 training_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml) for advanced configuration options.
-
-### Give each pipeline run a name
-
-In the output logs of a pipeline run you will see the name of the run:
-
-```bash
-Pipeline run training_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
-```
-
-This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name` as a parameter to the `with_options()` method:
-
-```python
-training_pipeline = training_pipeline.with_options(
-    run_name="custom_pipeline_run_name"
-)
-training_pipeline()
-```
-
-Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
-
-* `{{date}}` will resolve to the current date, e.g. `2023_02_19`
-* `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`
-
-```python
-training_pipeline = training_pipeline.with_options(
-    run_name=f"custom_pipeline_run_name_{{date}}_{{time}}"
-)
-training_pipeline()
-```
-
-Be sure to include the `f` string prefix to allow for the placeholders to be
-replaced, as shown in the example above. Without the `f` prefix, the
-placeholders will not be replaced.
+Check out [this section](../../how-to/use-configuration-files/README.md) for advanced configuration options.
 
 ## Full Code Example
 
@@ -370,5 +325,4 @@ if __name__ == "__main__":
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
