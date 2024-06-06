@@ -3823,12 +3823,24 @@ class RestZenStore(BaseZenStore):
                     **kwargs,
                 )
             )
-        except AuthorizationException:
+        except AuthorizationException as e:
             # The authentication token could have expired; refresh it and try
             # again. This will clear any cached token and trigger a new
             # authentication flow.
             self.clear_session()
-            logger.info("Authentication token expired; refreshing...")
+
+            if self.config.api_token:
+                # We were unable to clear the api token because the store config
+                # does not contain username/password or API key which is needed
+                # to generate a new token
+                raise AuthorizationException(
+                    "Unable to refresh API token. This is probably because "
+                    "you're connected to your ZenML server with device "
+                    "authentication. Rerunning `zenml connect --url "
+                    f"{self.config.url}` should solve this issue."
+                ) from e
+            else:
+                logger.info("Authentication token expired; refreshing...")
 
         try:
             return self._handle_response(
