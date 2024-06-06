@@ -227,44 +227,45 @@ class StepLogsStorage:
 
         artifact_store = Client().active_stack.artifact_store
         files = artifact_store.listdir(self.logs_uri_folder)
-        files.sort()
-        logger.debug("Log files count: %s", len(files))
+        if len(files) > 1:
+            files.sort()
+            logger.debug("Log files count: %s", len(files))
 
-        with TemporaryDirectory() as temp_dir:
-            try:
-                local_log_file = os.path.join(
-                    temp_dir, f"merged{LOGS_EXTENSION}"
-                )
-                # dump all logs to a local file first
-                with open(local_log_file, "w") as merged_file:
-                    for file in files:
-                        merged_file.write(
-                            str(
-                                _load_file_from_artifact_store(
-                                    os.path.join(
-                                        self.logs_uri_folder, str(file)
-                                    ),
-                                    artifact_store=artifact_store,
-                                    mode="r",
+            with TemporaryDirectory() as temp_dir:
+                try:
+                    local_log_file = os.path.join(
+                        temp_dir, f"merged{LOGS_EXTENSION}"
+                    )
+                    # dump all logs to a local file first
+                    with open(local_log_file, "w") as merged_file:
+                        for file in files:
+                            merged_file.write(
+                                str(
+                                    _load_file_from_artifact_store(
+                                        os.path.join(
+                                            self.logs_uri_folder, str(file)
+                                        ),
+                                        artifact_store=artifact_store,
+                                        mode="r",
+                                    )
                                 )
                             )
-                        )
 
-                # copy it over to the artifact store
-                fileio.copy(
-                    local_log_file,
-                    os.path.join(
-                        self.logs_uri_folder, f"full_log{LOGS_EXTENSION}"
-                    ),
-                )
-            except Exception as e:
-                logger.warning(f"Failed to merge log files. {e}")
-            else:
-                # clean up left over files
-                for file in files:
-                    artifact_store.remove(
-                        os.path.join(self.logs_uri_folder, str(file))
+                    # copy it over to the artifact store
+                    fileio.copy(
+                        local_log_file,
+                        os.path.join(
+                            self.logs_uri_folder, f"full_log{LOGS_EXTENSION}"
+                        ),
                     )
+                except Exception as e:
+                    logger.warning(f"Failed to merge log files. {e}")
+                else:
+                    # clean up left over files
+                    for file in files:
+                        artifact_store.remove(
+                            os.path.join(self.logs_uri_folder, str(file))
+                        )
 
 
 class StepLogsStorageContext:
