@@ -3731,7 +3731,7 @@ class RestZenStore(BaseZenStore):
 
     def clear_session(self) -> None:
         """Clear the authentication session and any cached API tokens.
-        
+
         Raises:
             AuthorizationException: If the API token can't be reset because
                 the store configuration does not contain username and password
