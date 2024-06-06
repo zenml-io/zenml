@@ -8,6 +8,10 @@ We are also excited to announce the introduction of breadcrumbs to our dashboard
 
 We’d like to give a special thanks to @eltociear for their first contribution.
 
+## Docs re-work
+
+We reworked the structure of our documentation pages to make it easier to find answers to your practical questions. Please do let us know if you have any feedback on the structure or the new style of the 'How To' section!
+
 ## What's Changed
 * Add 0.58.0 to migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2730
 * Print step names in color, again by @avishniakov in https://github.com/zenml-io/zenml/pull/2728
