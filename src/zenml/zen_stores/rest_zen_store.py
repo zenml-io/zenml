@@ -3834,10 +3834,13 @@ class RestZenStore(BaseZenStore):
                 # does not contain username/password or API key which is needed
                 # to generate a new token
                 raise AuthorizationException(
-                    "Unable to refresh API token. This is probably because "
-                    "you're connected to your ZenML server with device "
+                    "Unable to refresh invalid API token. This is probably "
+                    "because you're connected to your ZenML server with device "
                     "authentication. Rerunning `zenml connect --url "
-                    f"{self.config.url}` should solve this issue."
+                    f"{self.config.url}` should solve this issue.\n"
+                    "If you're seeing this error from an automated workload, "
+                    "you should probably use a service account to start that "
+                    "workload to prevent this error."
                 ) from e
             else:
                 logger.info("Authentication token expired; refreshing...")
