@@ -29,6 +29,7 @@ from zenml.artifacts.utils import (
     _load_file_from_artifact_store,
 )
 from zenml.client import Client
+from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.logging import (
@@ -103,6 +104,16 @@ def fetch_logs(
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
 ) -> str:
+    """Fetches the logs from the artifact store.
+
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the artifact.
+
+    Returns:
+        The logs as a string.
+    """
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
     if logs_uri.endswith(LOGS_EXTENSION):
         return str(
@@ -123,6 +134,11 @@ def fetch_logs(
                         mode="r",
                     )
                 )
+            )
+        if not ret:
+            raise DoesNotExistException(
+                f"Folder '{logs_uri}' is empty in artifact store "
+                f"'{artifact_store.name}'."
             )
         return "".join(ret)
 
@@ -224,7 +240,6 @@ class StepLogsStorage:
 
         Called on the logging context exit.
         """
-
         artifact_store = Client().active_stack.artifact_store
         files = artifact_store.listdir(self.logs_uri_folder)
         if len(files) > 1:

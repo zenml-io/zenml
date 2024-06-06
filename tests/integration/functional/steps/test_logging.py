@@ -78,7 +78,9 @@ def test_that_small_files_are_merged_together():
         )
     ).split("\n")
 
+    content_pointer = 0
     for i in range(STEP_LOGS_STORAGE_MAX_MESSAGES * 10):
-        assert f"step 1 - {i}" in content
+        while f"step 1 - {i}" not in content[content_pointer]:
+            content_pointer += 1
 
     Client().delete_pipeline(ret.pipeline.id)
