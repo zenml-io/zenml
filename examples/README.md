@@ -30,7 +30,7 @@ It hosts a wide variety of projects that showcase the practical application
 of ZenML pipelines in different real-world examples.
 
 Furthermore, if you are interested in targeted examples featuring a particular integration, 
-you can check out the [component guide](https://docs.zenml.io/stacks-and-components/component-guide)
+you can check out the [component guide](https://docs.zenml.io/stack-components)
 in our docs or the [integration tests](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples)
 in our repository.
 
