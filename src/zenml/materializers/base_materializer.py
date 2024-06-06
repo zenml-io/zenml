@@ -65,7 +65,7 @@ class BaseMaterializerMeta(type):
                     f"Invalid materializer class '{name}'. When creating a "
                     f"custom materializer, make sure to specify at least one "
                     f"type in its ASSOCIATED_TYPES class variable.",
-                    url="https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types",
+                    url="https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types",
                 )
 
             # Validate associated artifact type.
@@ -80,7 +80,7 @@ class BaseMaterializerMeta(type):
                         f"custom materializer, make sure to specify a valid "
                         f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
                         f"variable.",
-                        url="https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types",
+                        url="https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types",
                     )
 
             # Validate associated data types.
@@ -89,7 +89,7 @@ class BaseMaterializerMeta(type):
                     raise MaterializerInterfaceError(
                         f"Associated type {associated_type} for materializer "
                         f"{name} is not a class.",
-                        url="https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types",
+                        url="https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types",
                     )
 
             # Register the materializer.

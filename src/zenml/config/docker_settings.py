@@ -128,6 +128,8 @@ class DockerSettings(BaseSettings):
             therefore **not** include any registry.
         python_package_installer: The package installer to use for python
             packages.
+        python_package_installer_args: Arguments to pass to the python package
+            installer.
         replicate_local_python_environment: If not `None`, ZenML will use the
             specified method to generate a requirements file that replicates
             the packages installed in the currently running python environment.
@@ -185,6 +187,7 @@ class DockerSettings(BaseSettings):
     python_package_installer: PythonPackageInstaller = (
         PythonPackageInstaller.PIP
     )
+    python_package_installer_args: Dict[str, Any] = {}
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]
     ] = None
