@@ -154,7 +154,6 @@ class StepLogsStorage:
         self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
         self.disabled = False
-        self.file_count = 0
 
     def write(self, text: str) -> None:
         """Main write method.
@@ -167,16 +166,27 @@ class StepLogsStorage:
 
         if not self.disabled:
             self.buffer.append(text)
+            self.save_to_file()
 
-            if (
-                len(self.buffer) >= self.max_messages
-                or time.time() - self.last_save_time >= self.time_interval
-            ):
-                self.save_to_file()
+    @property
+    def _is_write_needed(self) -> bool:
+        """Checks whether the buffer needs to be written to disk.
 
-    def save_to_file(self) -> None:
-        """Method to save the buffer to the given URI."""
-        if not self.disabled:
+        Returns:
+            whether the buffer needs to be written to disk.
+        """
+        return (
+            len(self.buffer) >= self.max_messages
+            or time.time() - self.last_save_time >= self.time_interval
+        )
+
+    def save_to_file(self, force: bool = False) -> None:
+        """Method to save the buffer to the given URI.
+
+        Args:
+            force: whether to force a save even if the write conditions not met.
+        """
+        if not self.disabled and (self._is_write_needed or force):
             # IMPORTANT: keep this as the first code line in this method! The
             # code that follows might still emit logging messages, which will
             # end up triggering this method again, causing an infinite loop.
@@ -185,11 +195,10 @@ class StepLogsStorage:
             artifact_store = Client().active_stack.artifact_store
             try:
                 if self.buffer:
-                    self.file_count += 1
                     with artifact_store.open(
                         os.path.join(
                             self.logs_uri_folder,
-                            f"{self.file_count:010}{LOGS_EXTENSION}",
+                            f"{time.time()}{LOGS_EXTENSION}",
                         ),
                         "w",
                     ) as file:
@@ -219,6 +228,7 @@ class StepLogsStorage:
         artifact_store = Client().active_stack.artifact_store
         files = artifact_store.listdir(self.logs_uri_folder)
         files.sort()
+        logger.debug("Log files count: %s", len(files))
 
         with TemporaryDirectory() as temp_dir:
             try:
@@ -307,7 +317,7 @@ class StepLogsStorageContext:
 
         Restores the `write` method of both stderr and stdout.
         """
-        self.storage.save_to_file()
+        self.storage.save_to_file(force=True)
         self.storage.merge_log_files()
 
         setattr(sys.stdout, "write", self.stdout_write)
