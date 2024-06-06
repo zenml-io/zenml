@@ -115,7 +115,7 @@ class StepArtifact:
             "you're trying to unpack the return value of your step but the "
             "step only returns a single artifact. For more information on how "
             "to add type annotations to your step to indicate multiple "
-            "artifacts visit https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/managing-steps#type-annotations."
+            "artifacts visit https://docs.zenml.io/how-to/build-pipelines/step-output-typing-and-annotation#type-annotations."
         )
 
 
@@ -214,7 +214,7 @@ class EntrypointFunctionDefinition(NamedTuple):
                 f"'{key}' is not JSON serializable and can not be passed as "
                 "a parameter. This input can either be provided by the "
                 "output of another step or as an external artifact: "
-                "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines#pass-any-kind-of-data-to-your-steps"
+                "https://docs.zenml.io/user-guide/starter-guide/manage-artifacts#managing-artifacts-not-produced-by-zenml-pipelines"
             )
 
         try:

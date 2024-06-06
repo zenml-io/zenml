@@ -30,7 +30,7 @@ Note: Ensure you have OCI support enabled in your Helm client and that you are a
 
 This chart offers a multitude of configuration options. For detailed
 information, check the default [`values.yaml`](values.yaml) file. For full
-details of the configuration options, refer to the [ZenML documentation](https://docs.zenml.io/deploying-zenml/zenml-self-hosted/deploy-with-helm).
+details of the configuration options, refer to the [ZenML documentation](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm).
 
 ## Telemetry
 

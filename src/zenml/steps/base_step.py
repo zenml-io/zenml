@@ -1235,7 +1235,7 @@ To avoid this consider setting step parameters only in one place (config or code
         logger.warning(
             "The `BaseParameters` class to define step parameters is "
             "deprecated. Check out our docs "
-            "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines "
+            "https://docs.zenml.io/how-to/use-configuration-files/how-to-use-config "
             "for information on how to parameterize your steps. As a quick "
             "fix to get rid of this warning, make sure your parameter class "
             "inherits from `pydantic.BaseModel` instead of the "
