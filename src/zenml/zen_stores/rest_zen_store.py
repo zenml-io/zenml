@@ -3730,7 +3730,13 @@ class RestZenStore(BaseZenStore):
         return self._session
 
     def clear_session(self) -> None:
-        """Clear the authentication session and any cached API tokens."""
+        """Clear the authentication session and any cached API tokens.
+        
+        Raises:
+            AuthorizationException: If the API token can't be reset because
+                the store configuration does not contain username and password
+                or an API key to fetch a new token.
+        """
         self._session = None
         self._api_token = None
         # Clear the configured API token only if it's possible to fetch a new
@@ -3742,6 +3748,16 @@ class RestZenStore(BaseZenStore):
             or self.config.api_key is not None
         ):
             self.config.api_token = None
+        elif self.config.api_token:
+            raise AuthorizationException(
+                "Unable to refresh invalid API token. This is probably "
+                "because you're connected to your ZenML server with device "
+                "authentication. Rerunning `zenml connect --url "
+                f"{self.config.url}` should solve this issue. "
+                "If you're seeing this error from an automated workload, "
+                "you should probably use a service account to start that "
+                "workload to prevent this error."
+            )
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:
@@ -3823,27 +3839,12 @@ class RestZenStore(BaseZenStore):
                     **kwargs,
                 )
             )
-        except AuthorizationException as e:
+        except AuthorizationException:
             # The authentication token could have expired; refresh it and try
             # again. This will clear any cached token and trigger a new
             # authentication flow.
             self.clear_session()
-
-            if self.config.api_token:
-                # We were unable to clear the api token because the store config
-                # does not contain username/password or API key which is needed
-                # to generate a new token
-                raise AuthorizationException(
-                    "Unable to refresh invalid API token. This is probably "
-                    "because you're connected to your ZenML server with device "
-                    "authentication. Rerunning `zenml connect --url "
-                    f"{self.config.url}` should solve this issue.\n"
-                    "If you're seeing this error from an automated workload, "
-                    "you should probably use a service account to start that "
-                    "workload to prevent this error."
-                ) from e
-            else:
-                logger.info("Authentication token expired; refreshing...")
+            logger.info("Authentication token expired; refreshing...")
 
         try:
             return self._handle_response(
