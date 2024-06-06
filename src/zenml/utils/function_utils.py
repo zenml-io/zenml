@@ -14,6 +14,7 @@
 """Utility functions for python functions."""
 
 import inspect
+import os
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Iterator, List, Tuple, TypeVar, Union
@@ -221,9 +222,13 @@ def create_cli_wrapped_script(
         output_path = Path(random_name + ".out")
 
         with open(script_path, "w") as f:
+            path = inspect.getmodule(func).__file__
+            relative_path = path.replace(func_path, "").lstrip(os.sep)
+            relative_path = os.path.splitext(relative_path)[0]
+            module = ".".join(relative_path.split(os.sep))
             script = _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER.format(
                 func_path=func_path,
-                func_module=func.__module__,
+                func_module=module,
                 func_name=func.__name__,
             )
             script += _CLI_WRAPPED_MAINS[flavour].format(

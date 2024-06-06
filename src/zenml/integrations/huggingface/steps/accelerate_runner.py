@@ -31,7 +31,9 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def run_with_accelerate(
-    step_function: BaseStep, num_processes: Optional[int] = None
+    step_function: BaseStep,
+    num_processes: Optional[int] = None,
+    use_cpu: bool = False,
 ) -> BaseStep:
     """Run a function with accelerate.
 
@@ -53,6 +55,7 @@ def run_with_accelerate(
     Args:
         step_function: The step function to run.
         num_processes: The number of processes to use.
+        use_cpu: Whether to use the CPU.
 
     Returns:
         The accelerate-enabled version of the step.
@@ -66,22 +69,25 @@ def run_with_accelerate(
                     "Accelerated steps do not support positional arguments."
                 )
 
-            import torch
+            if not use_cpu:
+                import torch
 
-            logger.info("Starting accelerate job...")
+                logger.info("Starting accelerate job...")
 
-            device_count = torch.cuda.device_count()
-            if num_processes is None:
-                _num_processes = device_count
-            else:
-                if num_processes > device_count:
-                    logger.warning(
-                        f"Number of processes ({num_processes}) is greater than "
-                        f"the number of available GPUs ({device_count}). Using all GPUs."
-                    )
+                device_count = torch.cuda.device_count()
+                if num_processes is None:
                     _num_processes = device_count
                 else:
-                    _num_processes = num_processes
+                    if num_processes > device_count:
+                        logger.warning(
+                            f"Number of processes ({num_processes}) is greater than "
+                            f"the number of available GPUs ({device_count}). Using all GPUs."
+                        )
+                        _num_processes = device_count
+                    else:
+                        _num_processes = num_processes
+            else:
+                _num_processes = num_processes or 1
 
             with create_cli_wrapped_script(
                 entrypoint, flavour="accelerate"
@@ -92,6 +98,8 @@ def run_with_accelerate(
                 command = (
                     f"accelerate launch --num_processes {_num_processes} "
                 )
+                if use_cpu:
+                    command += "--cpu --num_cpu_threads_per_process 10 "
                 command += str(script_path.absolute()) + " "
                 for k, v in kwargs.items():
                     k = _cli_arg_name(k)
