@@ -1820,7 +1820,7 @@ This is a minor ZenML release that introduces a couple of new features:
 
 In addition to that, this release also contains a couple of bug fixes and improvements, including:
 
-* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/vertex)
+* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/stack-components/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/stack-components/step-operators/vertex)
 * adjust Seldon and BentoML Steps and Examples to new pipeline interface
 
 ## What's Changed

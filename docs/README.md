@@ -11,13 +11,13 @@ The documentation source files can be found in this repository at `docs/book`
 * If you're adding a new page, make sure to add a reference to it inside the tables of contents `docs/book/toc.md`
 * Make sure to be consistent with the existing docs (similar style/messaging, reuse existing images if they fit your use case)
 
-## API Docs
+## SDK Docs
 
 The ZenML SDK docs are generated from our Python docstrings using [mkdocs](https://www.mkdocs.org/). 
 The SDK docs will be automatically updated each release using a Github workflow and can be found 
 at[https://sdkdocs.zenml.io](https://sdkdocs.zenml.io/).
 
-### Building the API Docs locally
+### Building the SDK Docs locally
 
 To build them locally follow these steps:
 
