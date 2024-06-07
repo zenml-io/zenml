@@ -174,7 +174,7 @@ class StepLogsStorage:
         self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
         self.disabled = False
-        self._artifact_store = None
+        self._artifact_store: Optional["BaseArtifactStore"] = None
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
