@@ -216,13 +216,13 @@ def create_cli_wrapped_script(
         The paths of the script and the output.
     """
     try:
-        func_path = str(Path(inspect.getabsfile(func)).parent)
         random_name = random_str(20)
         script_path = Path(random_name + ".py")
         output_path = Path(random_name + ".out")
 
         with open(script_path, "w") as f:
             path = inspect.getmodule(func).__file__
+            func_path = str(Path(path).parent)
             relative_path = path.replace(func_path, "").lstrip(os.sep)
             relative_path = os.path.splitext(relative_path)[0]
             module = ".".join(relative_path.split(os.sep))
