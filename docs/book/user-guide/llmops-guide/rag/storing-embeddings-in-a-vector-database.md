@@ -4,7 +4,7 @@ description: Store embeddings in a vector database for efficient retrieval.
 
 # Storing Embeddings in a Vector Database
 
-I am a hamster
+I am a hamster again
 
 The process of generating the embeddings doesn't take too long, especially if
 the machine on which the step is running has a GPU, but it's still not something
