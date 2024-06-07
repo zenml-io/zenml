@@ -159,7 +159,7 @@ def test_that_fetch_logs_works_with_one_file(clean_client: Client):
     artifact_store.makedirs(logs_dir)
     logs_dir = str(logs_dir.absolute())
     with artifact_store.open(
-        os.path.join(logs_dir, f"fake_logs.txt"), "w"
+        os.path.join(logs_dir, "fake_logs.txt"), "w"
     ) as f:
         f.write(data)
 
