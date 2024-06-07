@@ -52,7 +52,7 @@ def secret_loader() -> None:
         <td>Find out more about the secrets backend in ZenML</td>
         <td></td>
         <td></td>
-        <td><a href="getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md">secret-management.md</a></td>
+        <td><a href="../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md">secret-management.md</a></td>
     </tr>
     </tbody>
 </table>
