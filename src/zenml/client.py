@@ -5143,17 +5143,21 @@ class Client(metaclass=ClientMetaClass):
             # that the connector can be shared with other users or used
             # from other machines and because some auth methods rely on the
             # server-side authentication environment
+            connector_request = ServiceConnectorRequest.model_validate(
+                connector_update.model_dump()
+            )
+
             if connector.remote:
                 connector_resources = (
                     self.zen_store.verify_service_connector_config(
-                        connector_update.convert_to_request(),
+                        service_connector=connector_request,
                         list_resources=list_resources,
                     )
                 )
             else:
                 connector_instance = (
                     service_connector_registry.instantiate_connector(
-                        model=connector_update.convert_to_request(),
+                        model=connector_request,
                     )
                 )
                 connector_resources = connector_instance.verify(

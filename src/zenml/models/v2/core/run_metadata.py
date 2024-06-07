@@ -65,7 +65,9 @@ class RunMetadataResponseBody(WorkspaceScopedResponseBody):
     """Response body for run metadata."""
 
     key: str = Field(title="The key of the metadata.")
-    value: MetadataType = Field(title="The value of the metadata.")
+    value: MetadataType = Field(
+        title="The value of the metadata.", union_mode="smart"
+    )
     type: MetadataTypeEnum = Field(title="The type of the metadata.")
 
     @field_validator("key", "type")
@@ -210,11 +212,17 @@ class RunMetadataResponse(
 class RunMetadataFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of run metadata."""
 
-    resource_id: Optional[Union[str, UUID]] = None
+    resource_id: Optional[Union[str, UUID]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     resource_type: Optional[MetadataResourceTypes] = None
-    stack_component_id: Optional[Union[str, UUID]] = None
+    stack_component_id: Optional[Union[str, UUID]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     key: Optional[str] = None
-    type: Optional[Union[str, MetadataTypeEnum]] = None
+    type: Optional[Union[str, MetadataTypeEnum]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
 
 # -------------------- Lazy Loader --------------------

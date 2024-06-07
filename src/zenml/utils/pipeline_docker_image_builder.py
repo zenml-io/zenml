@@ -72,6 +72,7 @@ PIP_DEFAULT_ARGS = {
 }
 UV_DEFAULT_ARGS = {
     "no-cache-dir": None,
+    "system": None,
 }
 
 

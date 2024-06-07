@@ -17,7 +17,7 @@ import ipaddress
 import os
 from typing import Dict, List, Optional, Tuple, Union, cast
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -62,8 +62,9 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     """
 
     port: int = 8237
-    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = (
-        ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = Field(
+        default=ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS),
+        union_mode="left_to_right",
     )
     blocking: bool = False
     store: Optional[StoreConfiguration] = None

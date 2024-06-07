@@ -115,4 +115,5 @@ class TriggerExecutionFilter(WorkspaceScopedFilter):
     trigger_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="ID of the trigger of the execution.",
+        union_mode="left_to_right",
     )

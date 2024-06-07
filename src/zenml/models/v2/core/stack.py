@@ -270,13 +270,19 @@ class StackFilter(WorkspaceScopedFilter):
         default=None, description="Description of the stack"
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the stack"
+        default=None,
+        description="Workspace of the stack",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the stack"
+        default=None,
+        description="User of the stack",
+        union_mode="left_to_right",
     )
     component_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Component in the stack"
+        default=None,
+        description="Component in the stack",
+        union_mode="left_to_right",
     )
 
     def get_custom_filters(self) -> List["ColumnElement[bool]"]:

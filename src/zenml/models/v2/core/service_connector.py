@@ -50,6 +50,7 @@ class ServiceConnectorRequest(WorkspaceScopedRequest):
     )
     connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
         title="The type of service connector.",
+        union_mode="left_to_right",
     )
     description: str = Field(
         default="",
@@ -240,6 +241,7 @@ class ServiceConnectorUpdate(BaseUpdate):
     connector_type: Optional[Union[str, "ServiceConnectorTypeModel"]] = Field(
         title="The type of service connector.",
         default=None,
+        union_mode="left_to_right",
     )
     description: Optional[str] = Field(
         title="The service connector instance description.",
@@ -364,7 +366,7 @@ class ServiceConnectorUpdate(BaseUpdate):
             secrets: The connector secrets.
         """
         _validate_and_configure_resources(
-            connector=self.convert_to_request(),
+            connector=self,
             connector_type=connector_type,
             resource_types=resource_types,
             resource_id=resource_id,
@@ -406,7 +408,7 @@ class ServiceConnectorResponseBody(WorkspaceScopedResponseBody):
         title="The service connector instance description.",
     )
     connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
-        title="The type of service connector.",
+        title="The type of service connector.", union_mode="left_to_right"
     )
     auth_method: str = Field(
         title="The authentication method that the connector instance uses to "
@@ -788,10 +790,14 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
         description="The type of service connector to filter by",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace to filter by"
+        default=None,
+        description="Workspace to filter by",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User to filter by"
+        default=None,
+        description="User to filter by",
+        union_mode="left_to_right",
     )
     auth_method: Optional[str] = Field(
         default=None,
@@ -822,6 +828,7 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
         default=None,
         title="Filter by the ID of the secret that contains the service "
         "connector's credentials",
+        union_mode="left_to_right",
     )
 
     # Use this internally to configure and access the labels as a dictionary
@@ -861,6 +868,7 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
 def _validate_and_configure_resources(
     connector: Union[
         ServiceConnectorRequest,
+        ServiceConnectorUpdate,
         ServiceConnectorResponse,
     ],
     connector_type: "ServiceConnectorTypeModel",
@@ -893,13 +901,18 @@ def _validate_and_configure_resources(
     # metadata field.
     update_connector_metadata: Union[
         ServiceConnectorRequest,
+        ServiceConnectorUpdate,
         ServiceConnectorResponseMetadata,
     ]
     update_connector_body: Union[
         ServiceConnectorRequest,
+        ServiceConnectorUpdate,
         ServiceConnectorResponseBody,
     ]
     if isinstance(connector, ServiceConnectorRequest):
+        update_connector_metadata = connector
+        update_connector_body = connector
+    elif isinstance(connector, ServiceConnectorUpdate):
         update_connector_metadata = connector
         update_connector_body = connector
     else:
@@ -929,6 +942,7 @@ def _validate_and_configure_resources(
     try:
         # Validate the connector configuration and retrieve the resource
         # specification
+        assert connector.auth_method is not None
         (
             auth_method_spec,
             resource_spec,

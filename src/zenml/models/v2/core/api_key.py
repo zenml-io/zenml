@@ -358,12 +358,17 @@ class APIKeyFilter(BaseFilter):
     active: Optional[Union[bool, str]] = Field(
         default=None,
         title="Whether the API key is active.",
+        union_mode="left_to_right",
     )
     last_login: Optional[Union[datetime, str]] = Field(
-        default=None, title="Time when the API key was last used to log in."
+        default=None,
+        title="Time when the API key was last used to log in.",
+        union_mode="left_to_right",
     )
     last_rotated: Optional[Union[datetime, str]] = Field(
-        default=None, title="Time when the API key was last rotated."
+        default=None,
+        title="Time when the API key was last rotated.",
+        union_mode="left_to_right",
     )
 
     def set_service_account(self, service_account_id: UUID) -> None:

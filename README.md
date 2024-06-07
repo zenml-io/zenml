@@ -211,7 +211,7 @@ you can make use of a control plane to create ZenML servers, also known as tenan
 These tenants are managed and maintained by ZenML’s dedicated team, alleviating
 the burden of server management from your end.
 - **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy
-ZenML on your own self-hosted environment](https://docs.zenml.io/deploying-zenml/zenml-self-hosted).
+ZenML on your own self-hosted environment](https://docs.zenml.io/getting-started/deploying-zenml#deploying-a-zenml-server).
 This can be achieved through various methods, including using our CLI, Docker,
 Helm, or HuggingFace Spaces.
 

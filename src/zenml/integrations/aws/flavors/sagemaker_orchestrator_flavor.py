@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
+from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import (
     AWS_RESOURCE_TYPE,
@@ -80,10 +82,14 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
     processor_args: Dict[str, Any] = {}
     input_data_s3_mode: str = "File"
-    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
+    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
     output_data_s3_mode: str = "EndOfJob"
-    output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
+    output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
 
 class SagemakerOrchestratorConfig(

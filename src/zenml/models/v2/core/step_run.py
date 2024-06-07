@@ -479,20 +479,32 @@ class StepRunFilter(WorkspaceScopedFilter):
         description="Status of the Step Run",
     )
     start_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="Start time for this run"
+        default=None,
+        description="Start time for this run",
+        union_mode="left_to_right",
     )
     end_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="End time for this run"
+        default=None,
+        description="End time for this run",
+        union_mode="left_to_right",
     )
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Pipeline run of this step run"
+        default=None,
+        description="Pipeline run of this step run",
+        union_mode="left_to_right",
     )
     original_step_run_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Original id for this step run"
+        default=None,
+        description="Original id for this step run",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that produced this step run"
+        default=None,
+        description="User that produced this step run",
+        union_mode="left_to_right",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of this step run"
+        default=None,
+        description="Workspace of this step run",
+        union_mode="left_to_right",
     )

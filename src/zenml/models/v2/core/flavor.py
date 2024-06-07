@@ -429,8 +429,12 @@ class FlavorFilter(WorkspaceScopedFilter):
         description="Integration associated with the flavor",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the stack"
+        default=None,
+        description="Workspace of the stack",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the stack"
+        default=None,
+        description="User of the stack",
+        union_mode="left_to_right",
     )

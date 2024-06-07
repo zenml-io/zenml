@@ -737,7 +737,7 @@ def connect(
             "filesystem. You should consider using the web login workflow by "
             "omitting the `--username` and `--password` flags. An alternative "
             "for non-interactive environments is to create and use a service "
-            "account API key (see https://docs.zenml.io/user-guide/advanced-guide/configuring-zenml/connecting-to-zenml#using-service-accounts-to-connect-to-a-deployed-zenml-server "
+            "account API key (see https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account "
             "for more information)."
         )
 

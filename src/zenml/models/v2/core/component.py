@@ -352,16 +352,24 @@ class ComponentFilter(WorkspaceScopedFilter):
         description="Type of the stack component",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the stack component"
+        default=None,
+        description="Workspace of the stack component",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the stack component"
+        default=None,
+        description="User of the stack component",
+        union_mode="left_to_right",
     )
     connector_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Connector linked to the stack component"
+        default=None,
+        description="Connector linked to the stack component",
+        union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Stack of the stack component"
+        default=None,
+        description="Stack of the stack component",
+        union_mode="left_to_right",
     )
 
     def set_scope_type(self, component_type: str) -> None:

@@ -32,7 +32,8 @@ PYDANTIC_CLEAR_TEXT_FIELD_MARKER = "prevent_secret_reference"
 PlainSerializedSecretStr = Annotated[
     SecretStr,
     PlainSerializer(
-        lambda v: v.get_secret_value() if v else None, when_used="json"
+        lambda v: v.get_secret_value() if v is not None else None,
+        when_used="json",
     ),
 ]
 

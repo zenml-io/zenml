@@ -37,6 +37,7 @@ class LogsRequest(BaseRequest):
 
     artifact_store_id: Union[str, UUID] = Field(
         title="The artifact store ID to associate the logs with.",
+        union_mode="left_to_right",
     )
 
     @field_validator("uri")
@@ -105,14 +106,17 @@ class LogsResponseMetadata(BaseResponseMetadata):
         title="Step ID to associate the logs with.",
         default=None,
         description="When this is set, pipeline_run_id should be set to None.",
+        union_mode="left_to_right",
     )
     pipeline_run_id: Optional[Union[str, UUID]] = Field(
         title="Pipeline run ID to associate the logs with.",
         default=None,
         description="When this is set, step_run_id should be set to None.",
+        union_mode="left_to_right",
     )
     artifact_store_id: Union[str, UUID] = Field(
         title="The artifact store ID to associate the logs with.",
+        union_mode="left_to_right",
     )
 
     @field_validator("artifact_store_id")

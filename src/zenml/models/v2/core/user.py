@@ -477,14 +477,17 @@ class UserFilter(BaseFilter):
     active: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user is active",
+        union_mode="left_to_right",
     )
     email_opted_in: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user has opted in to emails",
+        union_mode="left_to_right",
     )
     external_user_id: Optional[Union[UUID, str]] = Field(
         default=None,
         title="The external user ID associated with the account.",
+        union_mode="left_to_right",
     )
 
     def apply_filter(

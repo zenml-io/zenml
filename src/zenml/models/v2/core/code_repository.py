@@ -192,8 +192,10 @@ class CodeRepositoryFilter(WorkspaceScopedFilter):
     workspace_id: Optional[Union[UUID, str]] = Field(
         description="Workspace of the code repository.",
         default=None,
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
         description="User that created the code repository.",
         default=None,
+        union_mode="left_to_right",
     )

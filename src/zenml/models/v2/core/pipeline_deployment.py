@@ -316,20 +316,32 @@ class PipelineDeploymentFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all pipeline deployments."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace for this deployment."
+        default=None,
+        description="Workspace for this deployment.",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that created this deployment."
+        default=None,
+        description="User that created this deployment.",
+        union_mode="left_to_right",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Pipeline associated with the deployment."
+        default=None,
+        description="Pipeline associated with the deployment.",
+        union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Stack associated with the deployment."
+        default=None,
+        description="Stack associated with the deployment.",
+        union_mode="left_to_right",
     )
     build_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Build associated with the deployment."
+        default=None,
+        description="Build associated with the deployment.",
+        union_mode="left_to_right",
     )
     schedule_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Schedule associated with the deployment."
+        default=None,
+        description="Schedule associated with the deployment.",
+        union_mode="left_to_right",
     )

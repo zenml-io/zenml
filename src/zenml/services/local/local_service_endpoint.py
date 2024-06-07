@@ -83,7 +83,7 @@ class LocalDaemonServiceEndpoint(BaseServiceEndpoint):
     )
     monitor: Optional[
         Union[HTTPEndpointHealthMonitor, TCPEndpointHealthMonitor]
-    ] = Field(..., discriminator="type")
+    ] = Field(..., discriminator="type", union_mode="left_to_right")
 
     def _lookup_free_port(self) -> int:
         """Search for a free TCP port for the service endpoint.

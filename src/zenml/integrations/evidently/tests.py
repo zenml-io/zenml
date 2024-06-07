@@ -73,7 +73,9 @@ class EvidentlyTestConfig(BaseModel):
     class_path: str
     parameters: Dict[str, Any] = Field(default_factory=dict)
     is_generator: bool = False
-    columns: Optional[Union[str, List[str]]] = None
+    columns: Optional[Union[str, List[str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
     @staticmethod
     def get_test_class(test_name: str) -> Union[Test, TestPreset]:

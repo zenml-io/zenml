@@ -280,17 +280,24 @@ class ScheduleFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Users."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace scope of the schedule."
+        default=None,
+        description="Workspace scope of the schedule.",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that created the schedule"
+        default=None,
+        description="User that created the schedule",
+        union_mode="left_to_right",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Pipeline that the schedule is attached to."
+        default=None,
+        description="Pipeline that the schedule is attached to.",
+        union_mode="left_to_right",
     )
     orchestrator_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Orchestrator that the schedule is attached to.",
+        union_mode="left_to_right",
     )
     active: Optional[bool] = Field(
         default=None,
@@ -301,10 +308,10 @@ class ScheduleFilter(WorkspaceScopedFilter):
         description="The cron expression, describing the schedule",
     )
     start_time: Optional[Union[datetime.datetime, str]] = Field(
-        default=None, description="Start time"
+        default=None, description="Start time", union_mode="left_to_right"
     )
     end_time: Optional[Union[datetime.datetime, str]] = Field(
-        default=None, description="End time"
+        default=None, description="End time", union_mode="left_to_right"
     )
     interval_second: Optional[Optional[float]] = Field(
         default=None,
@@ -322,4 +329,5 @@ class ScheduleFilter(WorkspaceScopedFilter):
     run_once_start_time: Optional[Union[datetime.datetime, str]] = Field(
         default=None,
         description="The time at which the schedule should run once",
+        union_mode="left_to_right",
     )
