@@ -13,12 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
 
+import json
 from abc import ABC
+from collections.abc import Mapping, Sequence
 from datetime import datetime
+from inspect import isclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, root_validator
+from pydantic.typing import get_origin
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
@@ -93,7 +97,7 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/user-guide/advanced-guide/secret-management"
+                        "https://docs.zenml.io/getting-started/deploying-zenml/manage-the-deployed-services/secret-management"
                     )
                 continue
 
@@ -241,6 +245,42 @@ class StackComponentConfig(BaseModel, ABC):
         # attributes without failing
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
+
+    @root_validator(pre=True)
+    def _convert_json_strings(cls, values: Dict[str, Any]) -> Any:
+        """Converts potential JSON strings.
+
+        Args:
+            values: The model values.
+
+        Returns:
+            The potentially converted values.
+
+        Raises:
+            ValueError: If any of the values is an invalid JSON string.
+        """
+        for key, field in cls.__fields__.items():
+            value = values.get(key, None)
+
+            if isinstance(value, str):
+                if get_origin(field.outer_type_) in {
+                    dict,
+                    list,
+                    Mapping,
+                    Sequence,
+                }:
+                    try:
+                        values[key] = json.loads(value)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(
+                            f"Invalid json string '{value}'"
+                        ) from e
+                elif isclass(field.type_) and issubclass(
+                    field.type_, BaseModel
+                ):
+                    values[key] = field.type_.parse_raw(value).dict()
+
+        return values
 
     class Config:
         """Pydantic configuration class."""

@@ -801,7 +801,7 @@ class Stack:
                     f"Additionally, we are also providing a variety of "
                     f" deployment recipes for popular Kubernetes-based "
                     f"integrations such as Kubeflow, Tekton, and Seldon etc."
-                    f"Check out https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes"
+                    f"Check out https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-using-mlstacks"
                     f"for more information."
                 )
 
@@ -811,7 +811,7 @@ class Stack:
                 "and step operators require a remote "
                 "ZenML server. To run a pipeline with this stack you need to "
                 "connect to a remote ZenML server first. Check out "
-                "https://docs.zenml.io/user-guide/starter-guide/switch-to-production "
+                "https://docs.zenml.io/getting-started/deploying-zenml "
                 "for more information on how to deploy ZenML."
             )
 

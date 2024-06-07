@@ -2417,6 +2417,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
+        all_versions: bool = False,
     ) -> None:
         """Delete a pipeline.
 
@@ -2424,11 +2425,30 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
             version: The pipeline version. If left empty, will delete
                 the latest version.
+            all_versions: If `True`, delete all versions of the pipeline.
+
+        Raises:
+            ValueError: If an ID is supplied when trying to delete all versions
+                of a pipeline.
         """
-        pipeline = self.get_pipeline(
-            name_id_or_prefix=name_id_or_prefix, version=version
-        )
-        self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
+        if all_versions:
+            if is_valid_uuid(name_id_or_prefix):
+                raise ValueError(
+                    "You need to supply a name (not an ID) when trying to "
+                    "delete all versions of a pipeline."
+                )
+
+            for pipeline in depaginate(
+                functools.partial(
+                    Client().list_pipelines, name=name_id_or_prefix
+                )
+            ):
+                Client().delete_pipeline(pipeline.id)
+        else:
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=name_id_or_prefix, version=version
+            )
+            self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
     @_fail_for_sql_zen_store
     def trigger_pipeline(

@@ -116,7 +116,8 @@ def main() -> None:
             command=step_command,
             args=step_args,
             env=env,
-            settings=settings,
+            privileged=settings.privileged,
+            pod_settings=settings.pod_settings,
             service_account_name=settings.step_pod_service_account_name
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,

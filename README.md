@@ -211,7 +211,7 @@ you can make use of a control plane to create ZenML servers, also known as tenan
 These tenants are managed and maintained by ZenML’s dedicated team, alleviating
 the burden of server management from your end.
 - **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy
-ZenML on your own self-hosted environment](https://docs.zenml.io/deploying-zenml/zenml-self-hosted).
+ZenML on your own self-hosted environment](https://docs.zenml.io/getting-started/deploying-zenml#deploying-a-zenml-server).
 This can be achieved through various methods, including using our CLI, Docker,
 Helm, or HuggingFace Spaces.
 
@@ -289,7 +289,7 @@ the Apache License Version 2.0.
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.58.0 is out. Check out the release notes
+    🎉 Version 0.58.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.
