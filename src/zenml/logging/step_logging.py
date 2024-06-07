@@ -104,7 +104,7 @@ def fetch_logs(
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
     offset: int = 0,
-    length: Optional[int] = 1024 * 1024 * 16,  # Default to 16MiB of data
+    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
 ) -> str:
     """Fetches the logs from the artifact store.
 
@@ -122,49 +122,68 @@ def fetch_logs(
         DoesNotExistException: If the artifact does not exist in the artifact
             store.
     """
-    artifact_store = _load_artifact_store(artifact_store_id, zen_store)
-    if logs_uri.endswith(LOGS_EXTENSION):
+
+    def _read_file(
+        uri: str, offset: int = 0, length: Optional[int] = None
+    ) -> str:
         return str(
             _load_file_from_artifact_store(
-                logs_uri,
+                uri,
                 artifact_store=artifact_store,
                 mode="rb",
                 offset=offset,
                 length=length,
             ).decode()
         )
+
+    artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+    if logs_uri.endswith(LOGS_EXTENSION):
+        return _read_file(logs_uri, offset, length)
     else:
         files = artifact_store.listdir(logs_uri)
         if len(files) == 1:
-            return str(
-                _load_file_from_artifact_store(
-                    os.path.join(logs_uri, str(files[0])),
-                    artifact_store=artifact_store,
-                    mode="rb",
-                    offset=offset,
-                    length=length,
-                ).decode()
+            return _read_file(
+                os.path.join(logs_uri, str(files[0])), offset, length
             )
         else:
+            is_negative_offset = offset < 0
             files.sort()
-            ret = []
-            for file in files:
-                data = str(
-                    _load_file_from_artifact_store(
-                        os.path.join(logs_uri, str(file)),
-                        artifact_store=artifact_store,
-                        mode="rb",
-                    ).decode()
-                )
-                if len(data) > offset:
-                    bytes_read = min(len(data) - offset, length)
-                    ret.append(data[offset : offset + bytes_read])
-                    offset = len(data) - bytes_read
-                    length -= bytes_read
-                    if length <= 0:
+
+            # search for the first file we need to read
+            for i, file in enumerate(files):
+                file_size: int = artifact_store.size(
+                    os.path.join(logs_uri, str(file))
+                )  # type: ignore[assignment]
+
+                if is_negative_offset:
+                    if file_size >= -offset:
+                        latest_file_id = -(i + 1)
                         break
+                    else:
+                        offset += file_size
                 else:
-                    offset -= len(data)
+                    if file_size > offset:
+                        latest_file_id = i
+                        break
+                    else:
+                        offset -= file_size
+
+            # read the files according to pre-filtering
+            ret = []
+            for file in files[latest_file_id:]:
+                ret.append(
+                    _read_file(
+                        os.path.join(logs_uri, str(file)),
+                        offset,
+                        length,
+                    )
+                )
+                offset = 0
+                length -= len(ret[-1])
+                if length <= 0:
+                    # stop further reading, if the whole length is already read
+                    break
+
             if not ret:
                 raise DoesNotExistException(
                     f"Folder '{logs_uri}' is empty in artifact store "

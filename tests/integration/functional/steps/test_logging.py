@@ -132,6 +132,23 @@ def test_that_fetch_logs_works_with_multiple_files(clean_client: Client):
     for d in data:
         assert data_.count(d[0]) == data_len
 
+    # read data from last file using negative offset
+    data_ = fetch_logs(
+        zen_store, artifact_store.id, logs_dir, -data_len, data_len
+    )
+    assert data_ == data[-1]
+
+    # read data from files overlap using negative offset
+    data_ = fetch_logs(
+        zen_store,
+        artifact_store.id,
+        logs_dir,
+        -data_len - (data_len // 2),
+        data_len,
+    )
+    assert data_.count(data[-2][0]) == data_len // 2
+    assert data_.count(data[-1][0]) == data_len // 2
+
 
 def test_that_fetch_logs_works_with_one_file(clean_client: Client):
     """Create only one log file in folder and try to offset through it."""
@@ -159,6 +176,10 @@ def test_that_fetch_logs_works_with_one_file(clean_client: Client):
     assert data_.count("1") == 3
     assert data_.count("2") == 3
     assert data_.count("3") == 3
+
+    # read data from last file using negative offset
+    data_ = fetch_logs(zen_store, artifact_store.id, logs_dir, -3, 3)
+    assert data_ == "333"
 
 
 def test_that_fetch_logs_works_with_legacy(clean_client: Client):
