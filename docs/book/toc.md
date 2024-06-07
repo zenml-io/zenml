@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-* [⭐ Introduction TESTING](introduction.md)
+* [⭐ Introduction](introduction.md)
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
 * [🤔 Deploying ZenML](getting-started/deploying-zenml/README.md)
