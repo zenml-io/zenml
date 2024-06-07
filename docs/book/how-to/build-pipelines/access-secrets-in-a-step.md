@@ -49,6 +49,12 @@ def secret_loader() -> None:
     </thead>
     <tbody>
     <tr>
+        <td>Learn how to create and manage secrets</td>
+        <td></td>
+        <td></td>
+        <td><a href="/how-to/interact-with-secrets.md">interact-with-secrets.md</a></td>
+    </tr>
+    <tr>
         <td>Find out more about the secrets backend in ZenML</td>
         <td></td>
         <td></td>
