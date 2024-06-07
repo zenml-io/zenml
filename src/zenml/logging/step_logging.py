@@ -93,7 +93,7 @@ def prepare_logs_folder_uri(
         logger.warning(
             f"Logs directory {logs_uri_folder} already exists! Removing old log directory..."
         )
-        artifact_store.remove(logs_uri_folder)
+        artifact_store.rmtree(logs_uri_folder)
 
     artifact_store.makedirs(logs_uri_folder)
     return logs_uri_folder
