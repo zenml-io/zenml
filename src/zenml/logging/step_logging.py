@@ -113,6 +113,10 @@ def fetch_logs(
 
     Returns:
         The logs as a string.
+
+    Raises:
+        DoesNotExistException: If the artifact does not exist in the artifact
+            store.
     """
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
     if logs_uri.endswith(LOGS_EXTENSION):
