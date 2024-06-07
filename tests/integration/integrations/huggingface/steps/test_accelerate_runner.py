@@ -25,7 +25,7 @@ from zenml.integrations.huggingface.steps import run_with_accelerate
 from zenml.steps.entrypoint_function_utils import StepArtifact
 
 try:
-    from tests.integration.integrations.huggingface.steps.helpers import (
+    from tests.integration.integrations.huggingface.steps import (
         load_base_model,
     )
 except ImportError:
