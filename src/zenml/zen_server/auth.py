@@ -238,8 +238,8 @@ def authenticate_credentials(
             decoded_token = JWTToken.decode_token(
                 token=access_token,
             )
-        except AuthorizationException:
-            error = "Authentication error: error decoding access token. You may need to rerun zenml connect."
+        except AuthorizationException as e:
+            error = f"Authentication error: error decoding access token: {e}."
             logger.exception(error)
             raise AuthorizationException(error)
 

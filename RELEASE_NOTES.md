@@ -1,5 +1,41 @@
 <!-- markdown-link-check-disable -->
 
+# 0.58.1
+
+The 0.58.1 release brings a set of minor enhancement and bugfix to the ZenML framework, such as the ability to delete all versions of a pipeline using the Client/CLI, providing greater flexibility and control over pipeline management. Users can now specify Python package installer arguments. Furthermore, a fix has been implemented for the Sentencepiece tokenizer materializer.
+
+We are also excited to announce the introduction of breadcrumbs to our dashboard to improve your navigation experience. This new feature allows you to easily visualize the path of your Pipelines, Models, and Artifacts, providing clear orientation, quick return to any section with a single click, and effortless navigation.
+
+We’d like to give a special thanks to @eltociear for their first contribution.
+
+## Docs re-work
+
+We reworked the structure of our documentation pages to make it easier to find answers to your practical questions. Please do let us know if you have any feedback on the structure or the new style of the 'How To' section!
+
+## What's Changed
+* Add 0.58.0 to migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2730
+* Print step names in color, again by @avishniakov in https://github.com/zenml-io/zenml/pull/2728
+* Workflow to create JIRA tickets when Github Issues are created by @strickvl in https://github.com/zenml-io/zenml/pull/2724
+* Allow specifying python package installer args by @schustmi in https://github.com/zenml-io/zenml/pull/2727
+* Send workflow dispatch event to Cloud Plugins repo on release by @wjayesh in https://github.com/zenml-io/zenml/pull/2633
+* Fix Nightly Release by @safoinme in https://github.com/zenml-io/zenml/pull/2711
+* Fix `zenml go` images visibility in notebook by @strickvl in https://github.com/zenml-io/zenml/pull/2742
+* Handle error when using `zenml info` with missing dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/2725
+* Add Discord Alerter into TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2735
+* Allow deleting all versions of a pipeline using the Client/CLI by @schustmi in https://github.com/zenml-io/zenml/pull/2745
+* Misc fixes by @schustmi in https://github.com/zenml-io/zenml/pull/2732
+* Move full SQLite DB migration test to slow CI by @strickvl in https://github.com/zenml-io/zenml/pull/2743
+* Add system flag as default for uv by @schustmi in https://github.com/zenml-io/zenml/pull/2748
+* Add how-to section & restructure/update documentation by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2705
+* Fix typo in help text by @eltociear in https://github.com/zenml-io/zenml/pull/2750
+* Add support for function types in source utils by @schustmi in https://github.com/zenml-io/zenml/pull/2738
+* Fix Sentencepiece tokenizer materializer by @safoinme in https://github.com/zenml-io/zenml/pull/2751
+
+## New Contributors
+* @eltociear made their first contribution in https://github.com/zenml-io/zenml/pull/2750
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.58.0...0.58.1
+
 # 0.58.0
 
 ## New Annotators
