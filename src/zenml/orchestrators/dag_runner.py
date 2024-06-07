@@ -14,6 +14,7 @@
 """DAG (Directed Acyclic Graph) Runners."""
 
 import threading
+import time
 from collections import defaultdict
 from enum import Enum
 from typing import Any, Callable, Dict, List
@@ -66,7 +67,10 @@ class ThreadedDagRunner:
     """
 
     def __init__(
-        self, dag: Dict[str, List[str]], run_fn: Callable[[str], Any]
+        self,
+        dag: Dict[str, List[str]],
+        run_fn: Callable[[str], Any],
+        parallel_node_startup_waiting_period: float = 0.0,
     ) -> None:
         """Define attributes and initialize all nodes in waiting state.
 
@@ -75,7 +79,12 @@ class ThreadedDagRunner:
                 E.g.: [(1->2), (1->3), (2->4), (3->4)] should be represented as
                 `dag={2: [1], 3: [1], 4: [2, 3]}`
             run_fn: A function `run_fn(node)` that runs a single node
+            parallel_node_startup_waiting_period: Delay in seconds to wait in
+                between starting parallel nodes.
         """
+        self.parallel_node_startup_waiting_period = (
+            parallel_node_startup_waiting_period
+        )
         self.dag = dag
         self.reversed_dag = reverse_dag(dag)
         self.run_fn = run_fn
@@ -159,6 +168,8 @@ class ThreadedDagRunner:
             if self._can_run(downstram_node):
                 thread = self._run_node_in_thread(downstram_node)
                 threads.append(thread)
+                if self.parallel_node_startup_waiting_period > 0:
+                    time.sleep(self.parallel_node_startup_waiting_period)
 
         # Wait for all downstream nodes to complete.
         for thread in threads:
@@ -178,6 +189,8 @@ class ThreadedDagRunner:
             if self._can_run(node):
                 thread = self._run_node_in_thread(node)
                 threads.append(thread)
+                if self.parallel_node_startup_waiting_period > 0:
+                    time.sleep(self.parallel_node_startup_waiting_period)
 
         # Wait till all nodes have completed.
         for thread in threads:
