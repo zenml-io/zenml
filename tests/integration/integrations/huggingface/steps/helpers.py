@@ -1,5 +1,3 @@
-import os
-
 from peft import (
     LoraConfig,
     TaskType,
@@ -25,7 +23,6 @@ def load_base_model(
     """
     from accelerate import Accelerator
 
-    get_full_path = lambda x: os.path.join(os.path.split(__file__)[0], x)
     model = BertForSequenceClassification.from_pretrained(
         "bert-base-cased", num_labels=2
     )

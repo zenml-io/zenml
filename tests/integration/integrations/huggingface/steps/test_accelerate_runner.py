@@ -35,7 +35,9 @@ except ImportError:
 
 @step
 def train() -> str:
-    get_full_path = lambda x: os.path.join(os.path.split(__file__)[0], x)
+    def get_full_path(folder: str):
+        return os.path.join(os.path.split(__file__)[0], folder)
+
     tokenized_train_dataset = load_from_disk(get_full_path("trn_dataset"))
     tokenized_eval_dataset = load_from_disk(get_full_path("eval_dataset"))
     model = load_base_model()
