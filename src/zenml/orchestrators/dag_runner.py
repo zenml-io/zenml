@@ -163,7 +163,7 @@ class ThreadedDagRunner:
             self.node_states[node] = NodeStatus.COMPLETED
 
         # Run downstream nodes.
-        threads = []
+        threads: List[threading.Thread] = []
         for downstram_node in self.reversed_dag[node]:
             if self._can_run(downstram_node):
                 if threads and self.parallel_node_startup_waiting_period > 0:
@@ -185,7 +185,7 @@ class ThreadedDagRunner:
         # Run all nodes that can be started immediately.
         # These will, in turn, start other nodes once all of their respective
         # upstream nodes have completed.
-        threads = []
+        threads: List[threading.Thread] = []
         for node in self.nodes:
             if self._can_run(node):
                 if threads and self.parallel_node_startup_waiting_period > 0:
