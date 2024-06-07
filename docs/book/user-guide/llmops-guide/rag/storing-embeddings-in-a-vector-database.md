@@ -144,7 +144,7 @@ embeddings you're storing, you might find that running this step on a CPU is too
 slow. In that case, you should ensure that this step runs on a GPU-enabled
 machine to speed up the process. You can do this with ZenML by using a step
 operator that runs on a GPU-enabled machine. See <a
-href="/docs/book/stacks-and-components/component-guide/step-operators">the docs
+href="/docs/book/stacks-and-components/component-guide/step-operators/step-operators">the docs
  here</a> for more on how to set this up. {% endhint %}
 
 We also generate an index for the embeddings using the `ivfflat` method with the
