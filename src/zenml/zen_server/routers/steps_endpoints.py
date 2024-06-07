@@ -263,4 +263,10 @@ def get_step_logs(
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
-    return fetch_logs(store, logs.artifact_store_id, logs.uri)
+    return fetch_logs(
+        zen_store=store,
+        artifact_store_id=logs.artifact_store_id,
+        logs_uri=logs.uri,
+        offset=offset,
+        length=length,
+    )

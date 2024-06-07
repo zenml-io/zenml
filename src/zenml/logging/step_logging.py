@@ -103,6 +103,8 @@ def fetch_logs(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
+    offset: int = 0,
+    length: Optional[int] = 1024 * 1024 * 16,  # Default to 16MiB of data
 ) -> str:
     """Fetches the logs from the artifact store.
 
@@ -110,6 +112,8 @@ def fetch_logs(
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the artifact.
+        offset: The offset from which to start reading.
+        length: The amount of bytes that should be read.
 
     Returns:
         The logs as a string.
@@ -122,29 +126,51 @@ def fetch_logs(
     if logs_uri.endswith(LOGS_EXTENSION):
         return str(
             _load_file_from_artifact_store(
-                logs_uri, artifact_store=artifact_store, mode="r"
-            )
+                logs_uri,
+                artifact_store=artifact_store,
+                mode="rb",
+                offset=offset,
+                length=length,
+            ).decode()
         )
     else:
         files = artifact_store.listdir(logs_uri)
-        files.sort()
-        ret = []
-        for file in files:
-            ret.append(
-                str(
+        if len(files) == 1:
+            return str(
+                _load_file_from_artifact_store(
+                    os.path.join(logs_uri, str(files[0])),
+                    artifact_store=artifact_store,
+                    mode="rb",
+                    offset=offset,
+                    length=length,
+                ).decode()
+            )
+        else:
+            files.sort()
+            ret = []
+            for file in files:
+                data = str(
                     _load_file_from_artifact_store(
                         os.path.join(logs_uri, str(file)),
                         artifact_store=artifact_store,
-                        mode="r",
-                    )
+                        mode="rb",
+                    ).decode()
                 )
-            )
-        if not ret:
-            raise DoesNotExistException(
-                f"Folder '{logs_uri}' is empty in artifact store "
-                f"'{artifact_store.name}'."
-            )
-        return "".join(ret)
+                if len(data) > offset:
+                    bytes_read = min(len(data) - offset, length)
+                    ret.append(data[offset : offset + bytes_read])
+                    offset = len(data) - bytes_read
+                    length -= bytes_read
+                    if length <= 0:
+                        break
+                else:
+                    offset -= len(data)
+            if not ret:
+                raise DoesNotExistException(
+                    f"Folder '{logs_uri}' is empty in artifact store "
+                    f"'{artifact_store.name}'."
+                )
+            return "".join(ret)
 
 
 class StepLogsStorage:

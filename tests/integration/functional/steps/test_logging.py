@@ -1,11 +1,13 @@
 import os
 import time
+from pathlib import Path
 from unittest.mock import patch
 
 from zenml import pipeline, step
 from zenml.artifacts.utils import _load_file_from_artifact_store
 from zenml.client import Client
 from zenml.logger import get_logger
+from zenml.logging.step_logging import fetch_logs
 
 logger = get_logger(__name__)
 
@@ -92,3 +94,94 @@ def test_that_small_files_are_merged_together():
             content_pointer += 1
 
     Client().delete_pipeline(ret.pipeline.id)
+
+
+def test_that_fetch_logs_works_with_multiple_files(clean_client: Client):
+    """Create multiple files in the artifact store and fetch them in different combinations."""
+    artifact_store = clean_client.active_stack.artifact_store
+    zen_store = clean_client.zen_store
+    data_len = 10
+    data = ["1" * data_len, "2" * data_len, "3" * data_len]
+    logs_dir = Path(os.path.join(artifact_store.path, "fake_logs"))
+    artifact_store.makedirs(logs_dir)
+    logs_dir = str(logs_dir.absolute())
+    for i, d in enumerate(data):
+        with artifact_store.open(
+            os.path.join(logs_dir, f"fake_logs_{i}.txt"), "w"
+        ) as f:
+            f.write(d)
+
+    # read data from each file separately using offset and length
+    for i in range(len(data)):
+        data_ = fetch_logs(
+            zen_store, artifact_store.id, logs_dir, 0 + data_len * i, data_len
+        )
+        assert data_ == data[i]
+
+    # read data on intersection of 2 files using offset and length
+    data_ = fetch_logs(
+        zen_store, artifact_store.id, logs_dir, data_len // 2, data_len
+    )
+    assert data_.count(data[0][0]) == data_len // 2
+    assert data_.count(data[1][0]) == data_len // 2
+
+    # read data from all files using offset and length
+    data_ = fetch_logs(
+        zen_store, artifact_store.id, logs_dir, 0, data_len * len(data)
+    )
+    for d in data:
+        assert data_.count(d[0]) == data_len
+
+
+def test_that_fetch_logs_works_with_one_file(clean_client: Client):
+    """Create only one log file in folder and try to offset through it."""
+    artifact_store = clean_client.active_stack.artifact_store
+    zen_store = clean_client.zen_store
+    data = "111222333"
+    logs_dir = Path(os.path.join(artifact_store.path, "fake_logs"))
+    artifact_store.makedirs(logs_dir)
+    logs_dir = str(logs_dir.absolute())
+    with artifact_store.open(
+        os.path.join(logs_dir, f"fake_logs.txt"), "w"
+    ) as f:
+        f.write(data)
+
+    # read data only 1s using offset and length
+    data_ = fetch_logs(zen_store, artifact_store.id, logs_dir, 0, 3)
+    assert data_.count("1") == 3
+
+    # read data only 3s using offset and length
+    data_ = fetch_logs(zen_store, artifact_store.id, logs_dir, 6, 3)
+    assert data_.count("3") == 3
+
+    # read data from all files using offset and length
+    data_ = fetch_logs(zen_store, artifact_store.id, logs_dir, 0, len(data))
+    assert data_.count("1") == 3
+    assert data_.count("2") == 3
+    assert data_.count("3") == 3
+
+
+def test_that_fetch_logs_works_with_legacy(clean_client: Client):
+    """Create only one log file, pass it directly and try to offset through it."""
+    artifact_store = clean_client.active_stack.artifact_store
+    zen_store = clean_client.zen_store
+    data = "111222333"
+    logs_dir = Path(os.path.join(artifact_store.path, "fake_logs"))
+    artifact_store.makedirs(logs_dir)
+    logs_file = str((logs_dir / "fake_logs.log").absolute())
+    with artifact_store.open(logs_file, "w") as f:
+        f.write(data)
+
+    # read data only 1s using offset and length
+    data_ = fetch_logs(zen_store, artifact_store.id, logs_file, 0, 3)
+    assert data_.count("1") == 3
+
+    # read data only 3s using offset and length
+    data_ = fetch_logs(zen_store, artifact_store.id, logs_file, 6, 3)
+    assert data_.count("3") == 3
+
+    # read data from all files using offset and length
+    data_ = fetch_logs(zen_store, artifact_store.id, logs_file, 0, len(data))
+    assert data_.count("1") == 3
+    assert data_.count("2") == 3
+    assert data_.count("3") == 3
