@@ -34,7 +34,7 @@ def cleanup_gpu_memory(force: bool = False) -> None:
             "This will clean up all GPU memory on current physical machine. "
             "This action is considered to be dangerous by default, since "
             "it might affect other processes running in the same environment. "
-            "If this is intended, please, explicitly pass `force=True`."
+            "If this is intended, please explicitly pass `force=True`."
         )
     else:
         try:
