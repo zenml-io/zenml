@@ -214,27 +214,41 @@ def create_cli_wrapped_script(
 
     Yields:
         The paths of the script and the output.
+
+    Raises:
+        ValueError: If the function is not defined in a module.
     """
     try:
         random_name = random_str(20)
         script_path = Path(random_name + ".py")
         output_path = Path(random_name + ".out")
 
+        module = inspect.getmodule(func)
+        if module is None:
+            raise ValueError(
+                f"Function `{func.__name__}` must be defined in a "
+                "module to be used with Accelerate."
+            )
+
         with open(script_path, "w") as f:
-            path = inspect.getmodule(func).__file__
-            func_path = str(Path(path).parent)
-            relative_path = path.replace(func_path, "").lstrip(os.sep)
-            relative_path = os.path.splitext(relative_path)[0]
-            module = ".".join(relative_path.split(os.sep))
-            script = _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER.format(
-                func_path=func_path,
-                func_module=module,
-                func_name=func.__name__,
-            )
-            script += _CLI_WRAPPED_MAINS[flavour].format(
-                output_file=str(output_path.absolute())
-            )
-            f.write(script)
+            if path := module.__file__:
+                func_path = str(Path(path).parent)
+                relative_path = path.replace(func_path, "").lstrip(os.sep)
+                relative_path = os.path.splitext(relative_path)[0]
+                clean_module_name = ".".join(relative_path.split(os.sep))
+                script = _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER.format(
+                    func_path=func_path,
+                    func_module=clean_module_name,
+                    func_name=func.__name__,
+                )
+                script += _CLI_WRAPPED_MAINS[flavour].format(
+                    output_file=str(output_path.absolute())
+                )
+                f.write(script)
+            else:
+                raise ValueError(
+                    f"Cannot find module file path for function `{func.__name__}`."
+                )
 
         logger.debug(f"Created script:\n\n{script}")
 
