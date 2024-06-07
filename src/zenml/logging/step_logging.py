@@ -35,6 +35,7 @@ from zenml.logger import get_logger
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     STEP_LOGS_STORAGE_MAX_MESSAGES,
+    STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -200,6 +201,7 @@ class StepLogsStorage:
         logs_uri_folder: str,
         max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
         time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
+        merge_files_interval: int = STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
     ) -> None:
         """Initialization.
 
@@ -208,18 +210,24 @@ class StepLogsStorage:
             max_messages: the maximum number of messages to save in the buffer.
             time_interval: the amount of seconds before the buffer gets saved
                 automatically.
+            merge_files_interval: the amount of seconds before the created files
+                get merged into a single file.
         """
         # Parameters
         self.logs_uri_folder = logs_uri_folder
         self.max_messages = max_messages
         self.time_interval = time_interval
+        self.merge_files_interval = merge_files_interval
 
         # State
         self.buffer: List[str] = []
         self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
+        self.last_merge_time = time.time()
         self.disabled = False
         self._artifact_store: Optional["BaseArtifactStore"] = None
+        self.log_files_not_merged: List[str] = []
+        self.next_merged_file_name: str = f"{time.time()}{LOGS_EXTENSION}"
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
@@ -271,10 +279,16 @@ class StepLogsStorage:
 
             try:
                 if self.buffer:
+                    if not self.log_files_not_merged:
+                        self.next_merged_file_name = (
+                            f"{time.time()}{LOGS_EXTENSION}"
+                        )
+                    log_file_ = f"{time.time()}{LOGS_EXTENSION}"
+                    self.log_files_not_merged.append(log_file_)
                     with self.artifact_store.open(
                         os.path.join(
                             self.logs_uri_folder,
-                            f"{time.time()}{LOGS_EXTENSION}",
+                            log_file_,
                         ),
                         "w",
                     ) as file:
@@ -294,25 +308,44 @@ class StepLogsStorage:
                 self.last_save_time = time.time()
 
                 self.disabled = False
+        # merge created files on a given interval (defaults to 10 minutes)
+        if time.time() - self.last_merge_time > self.merge_files_interval:
+            try:
+                self.merge_log_files(
+                    self.next_merged_file_name, self.log_files_not_merged
+                )
+            except (OSError, IOError) as e:
+                logger.error(f"Error while trying to roll up logs: {e}")
+            else:
+                self.log_files_not_merged = []
+            finally:
+                self.last_merge_time = time.time()
 
-    def merge_log_files(self) -> None:
+    def merge_log_files(
+        self,
+        file_name: Optional[str] = None,
+        files: Optional[List[str]] = None,
+    ) -> None:
         """Merges all log files into one in the given URI.
 
         Called on the logging context exit.
+
+        Args:
+            file_name: The name of the merged log file.
+            files: The list of log files to merge.
         """
-        files = self.artifact_store.listdir(self.logs_uri_folder)
-        if len(files) > 1:
-            files.sort()
-            logger.debug("Log files count: %s", len(files))
+        files_ = files or self.artifact_store.listdir(self.logs_uri_folder)
+        file_name_ = file_name or f"full_log{LOGS_EXTENSION}"
+        if len(files_) > 1:
+            files_.sort()
+            logger.debug("Log files count: %s", len(files_))
 
             with TemporaryDirectory() as temp_dir:
                 try:
-                    local_log_file = os.path.join(
-                        temp_dir, f"merged{LOGS_EXTENSION}"
-                    )
+                    local_log_file = os.path.join(temp_dir, file_name_)
                     # dump all logs to a local file first
                     with open(local_log_file, "w") as merged_file:
-                        for file in files:
+                        for file in files_:
                             merged_file.write(
                                 str(
                                     _load_file_from_artifact_store(
@@ -328,15 +361,13 @@ class StepLogsStorage:
                     # copy it over to the artifact store
                     fileio.copy(
                         local_log_file,
-                        os.path.join(
-                            self.logs_uri_folder, f"full_log{LOGS_EXTENSION}"
-                        ),
+                        os.path.join(self.logs_uri_folder, file_name_),
                     )
                 except Exception as e:
                     logger.warning(f"Failed to merge log files. {e}")
                 else:
                     # clean up left over files
-                    for file in files:
+                    for file in files_:
                         self.artifact_store.remove(
                             os.path.join(self.logs_uri_folder, str(file))
                         )
