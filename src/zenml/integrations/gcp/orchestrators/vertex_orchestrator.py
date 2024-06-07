@@ -452,10 +452,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         )
                 step_name_to_dynamic_component[step_name] = dynamic_component
 
-            @dsl.pipeline(
+            @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
             )
-            def dynamic_pipeline() -> None:  # type: ignore
+            def dynamic_pipeline() -> None:
                 """Dynamic pipeline."""
                 # iterate through the components one by one
                 # (from step_name_to_dynamic_component)

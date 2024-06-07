@@ -36,9 +36,9 @@ from uuid import UUID
 
 import kfp
 import requests
-from kfp import dsl
 from kfp.client import Client as KFPClient
-from kfp.compiler import KFPCompiler
+from kfp.v2 import dsl
+from kfp.v2.compiler import Compiler as KFPCompiler
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
@@ -323,10 +323,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if (
-                not self.config.skip_local_validations
-                and not self.config.is_local
-            ):
+            if not self.config.is_local:
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
@@ -421,8 +418,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             component_name: The name of the component.
         """
 
-        @dsl.container_component
-        def dynamic_container_component() -> dsl.ContainerSpec:  # type: ignore
+        @dsl.container_component  # type: ignore[misc]
+        def dynamic_container_component() -> dsl.ContainerSpec:
             """Dynamic container component.
 
             Returns:
@@ -581,10 +578,10 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
                 step_name_to_dynamic_component[step_name] = dynamic_component
 
-            @dsl.pipeline(
+            @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
             )
-            def dynamic_pipeline() -> None:  # type: ignore
+            def dynamic_pipeline() -> None:
                 """Dynamic pipeline."""
                 # iterate through the components one by one
                 # (from step_name_to_dynamic_component)
@@ -766,7 +763,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 f"Error while trying to fetch kubeflow cookie: {errh}"
             )
-        cookie_dict = session.cookies.get_dict()  # type: ignore[no-untyped-call]
+        cookie_dict = session.cookies.get_dict()
 
         if "authservice_session" not in cookie_dict:
             raise RuntimeError("Invalid username and/or password!")
