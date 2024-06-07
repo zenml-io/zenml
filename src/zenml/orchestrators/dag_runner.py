@@ -166,10 +166,11 @@ class ThreadedDagRunner:
         threads = []
         for downstram_node in self.reversed_dag[node]:
             if self._can_run(downstram_node):
+                if threads and self.parallel_node_startup_waiting_period > 0:
+                    time.sleep(self.parallel_node_startup_waiting_period)
+
                 thread = self._run_node_in_thread(downstram_node)
                 threads.append(thread)
-                if self.parallel_node_startup_waiting_period > 0:
-                    time.sleep(self.parallel_node_startup_waiting_period)
 
         # Wait for all downstream nodes to complete.
         for thread in threads:
@@ -187,10 +188,11 @@ class ThreadedDagRunner:
         threads = []
         for node in self.nodes:
             if self._can_run(node):
+                if threads and self.parallel_node_startup_waiting_period > 0:
+                    time.sleep(self.parallel_node_startup_waiting_period)
+
                 thread = self._run_node_in_thread(node)
                 threads.append(thread)
-                if self.parallel_node_startup_waiting_period > 0:
-                    time.sleep(self.parallel_node_startup_waiting_period)
 
         # Wait till all nodes have completed.
         for thread in threads:
