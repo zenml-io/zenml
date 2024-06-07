@@ -30,7 +30,7 @@ We also build and maintain [the `mlstacks` package](https://mlstacks.zenml.io/) 
 
 * **deploy ZenML** on my internal company cluster?
 
-Read [the documentation on self-hosted ZenML deployments](../getting-started/deploying-zenml/zenml-self-hosted/README.md) in which several options are presented.
+Read [the documentation on self-hosted ZenML deployments](../getting-started/deploying-zenml/README.md) in which several options are presented.
 
 * **hyperparameter tuning**?
 
