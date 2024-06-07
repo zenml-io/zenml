@@ -174,6 +174,18 @@ class StepLogsStorage:
         self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
         self.disabled = False
+        self._artifact_store = None
+
+    @property
+    def artifact_store(self) -> "BaseArtifactStore":
+        """Returns the active artifact store.
+
+        Returns:
+            The active artifact store.
+        """
+        if self._artifact_store is None:
+            self._artifact_store = Client().active_stack.artifact_store
+        return self._artifact_store
 
     def write(self, text: str) -> None:
         """Main write method.
@@ -212,10 +224,9 @@ class StepLogsStorage:
             # end up triggering this method again, causing an infinite loop.
             self.disabled = True
 
-            artifact_store = Client().active_stack.artifact_store
             try:
                 if self.buffer:
-                    with artifact_store.open(
+                    with self.artifact_store.open(
                         os.path.join(
                             self.logs_uri_folder,
                             f"{time.time()}{LOGS_EXTENSION}",
@@ -244,8 +255,7 @@ class StepLogsStorage:
 
         Called on the logging context exit.
         """
-        artifact_store = Client().active_stack.artifact_store
-        files = artifact_store.listdir(self.logs_uri_folder)
+        files = self.artifact_store.listdir(self.logs_uri_folder)
         if len(files) > 1:
             files.sort()
             logger.debug("Log files count: %s", len(files))
@@ -264,7 +274,7 @@ class StepLogsStorage:
                                         os.path.join(
                                             self.logs_uri_folder, str(file)
                                         ),
-                                        artifact_store=artifact_store,
+                                        artifact_store=self.artifact_store,
                                         mode="r",
                                     )
                                 )
@@ -282,7 +292,7 @@ class StepLogsStorage:
                 else:
                     # clean up left over files
                     for file in files:
-                        artifact_store.remove(
+                        self.artifact_store.remove(
                             os.path.join(self.logs_uri_folder, str(file))
                         )
 
