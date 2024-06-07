@@ -134,6 +134,8 @@ tests:
     requirements:
       - integrations: [huggingface]
       - packages: [peft]
+      - capabilities:
+          synchronized: true
   - module: tests.integration.examples.test_huggingface_deployment
     requirements:
       - integrations: [huggingface]
