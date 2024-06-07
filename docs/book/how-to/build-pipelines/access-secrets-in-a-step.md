@@ -49,10 +49,16 @@ def secret_loader() -> None:
     </thead>
     <tbody>
     <tr>
-        <td>Schedules rely on remote orchestrators, learn about those here</td>
+        <td>Learn how to create and manage secrets</td>
         <td></td>
         <td></td>
-        <td><a href="../../stack-components/orchestrators.md">orchestrators.md</a></td>
+        <td><a href="../interact-with-secrets.md">interact-with-secrets.md</a></td>
+    </tr>
+    <tr>
+        <td>Find out more about the secrets backend in ZenML</td>
+        <td></td>
+        <td></td>
+        <td><a href="../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md">secret-management.md</a></td>
     </tr>
     </tbody>
 </table>
