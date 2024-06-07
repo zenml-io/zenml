@@ -52,6 +52,7 @@ def train() -> str:
             no_cuda=True,
             max_steps=1,
             per_device_train_batch_size=1,
+            report_to="none",
         ),
         train_dataset=tokenized_train_dataset,
         eval_dataset=tokenized_eval_dataset,
