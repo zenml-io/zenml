@@ -109,7 +109,6 @@ If you do not give your outputs custom names, the created artifacts will be name
 {% endhint %}
 
 
-
 ***
 
 ### See Also:
@@ -129,13 +128,13 @@ If you do not give your outputs custom names, the created artifacts will be name
         <td>Learn more about output annotation here</td>
         <td></td>
         <td></td>
-        <td><a href="/how-to/handle-data-artifacts/return-multiple-outputs-from-a-step.md">return-multiple-outputs-from-a-step.md</a></td>
+        <td><a href="../handle-data-artifacts/return-multiple-outputs-from-a-step.md">return-multiple-outputs-from-a-step.md</a></td>
     </tr>
     <tr>
         <td>For custom data types you should check these docs out</td>
         <td></td>
         <td></td>
-        <td><a href="./how-to/handle-data-artifacts/handle-custom-data-types.md">handle-custom-data-types.md</a></td>
+        <td><a href="../handle-data-artifacts/handle-custom-data-types.md">handle-custom-data-types.md</a></td>
     </tr>
     </tbody>
 </table>
