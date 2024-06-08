@@ -438,7 +438,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     )
 
                 if step_settings.node_selector_constraint:
-                    constraint_label, value = (
+                    (constraint_label, value) = (
                         step_settings.node_selector_constraint,
                     )
                     if not (
