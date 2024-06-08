@@ -119,7 +119,6 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
             + "/"
             + self._KUBE_PROXY_PATH.format(kwargs.get("namespace", "kubeflow"))
         )
-        breakpoint()
 
         config = Configuration(
             host=host,
@@ -176,7 +175,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     f"Expected a k8s_client.ApiClient while trying to use the "
                     f"linked connector, but got {type(client)}."
                 )
-            breakpoint()
             return KubeClientKFPClient(
                 client=client,
                 **client_args,
@@ -713,7 +711,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             # upload the pipeline to Kubeflow and start it
 
             client = self._get_kfp_client(settings=settings)
-            breakpoint()
             if deployment.schedule:
                 try:
                     experiment = client.get_experiment(

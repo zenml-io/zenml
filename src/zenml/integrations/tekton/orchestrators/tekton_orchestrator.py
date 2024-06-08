@@ -627,7 +627,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             # upload the pipeline to Tekton and start it
 
             client = self._get_kfp_client(settings=settings)
-            breakpoint()
             if deployment.schedule:
                 try:
                     experiment = client.get_experiment(
