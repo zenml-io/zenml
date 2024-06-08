@@ -37,8 +37,7 @@ from uuid import UUID
 from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
 from kfp import dsl
-from kfp.v2 import dsl as dslv2
-from kfp.v2.compiler import Compiler as KFPV2Compiler
+from kfp.compiler import Compiler as KFPCOmpiler
 
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
@@ -474,7 +473,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         enable_caching=False
                     ).set_env_variable(
                         name=ENV_ZENML_VERTEX_RUN_ID,
-                        value=dslv2.PIPELINE_JOB_NAME_PLACEHOLDER,
+                        value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
                     ).after(*upstream_step_components)
 
             return dynamic_pipeline
@@ -522,7 +521,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
         # to generate a JSON representation of the pipeline that can be later
         # upload to Vertex AI Pipelines service.
-        KFPV2Compiler().compile(
+        KFPCOmpiler().compile(
             pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
             pipeline_name=_clean_pipeline_name(

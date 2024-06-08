@@ -36,9 +36,11 @@ from uuid import UUID
 
 import kfp
 import requests
+import urllib3
+from kfp import dsl
 from kfp.client import Client as KFPClient
-from kfp.v2 import dsl
-from kfp.v2.compiler import Compiler as KFPCompiler
+from kfp.compiler import Compiler as KFPCompiler
+from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
@@ -117,6 +119,7 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
             + "/"
             + self._KUBE_PROXY_PATH.format(kwargs.get("namespace", "kubeflow"))
         )
+        breakpoint()
 
         config = Configuration(
             host=host,
@@ -173,6 +176,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     f"Expected a k8s_client.ApiClient while trying to use the "
                     f"linked connector, but got {type(client)}."
                 )
+            breakpoint()
             return KubeClientKFPClient(
                 client=client,
                 **client_args,
@@ -600,7 +604,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                         enable_caching=False
                     ).set_env_variable(
                         name=ENV_KFP_RUN_ID,
-                        value=self.get_orchestrator_run_id(),
+                        value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
                     ).after(*upstream_step_components)
 
             return dynamic_pipeline
@@ -645,10 +649,10 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         )
 
         # write the argo pipeline yaml
-        KFPCompiler()._create_and_write_workflow(
+        KFPCompiler().compile(
             pipeline_func=_create_dynamic_pipeline(),
-            pipeline_name=deployment.pipeline_configuration.name,
             package_path=pipeline_file_path,
+            pipeline_name=orchestrator_run_name,
         )
 
         # Let's update the YAML file with the environment variables
@@ -658,39 +662,144 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
         )
 
+        # using the kfp client uploads the pipeline to kubeflow pipelines and
+        # runs it there
+        self._upload_and_run_pipeline(
+            deployment=deployment,
+            pipeline_file_path=pipeline_file_path,
+            run_name=orchestrator_run_name,
+        )
+
+    def _upload_and_run_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponse",
+        pipeline_file_path: str,
+        run_name: str,
+    ) -> None:
+        """Tries to upload and run a KFP pipeline.
+
+        Args:
+            deployment: The pipeline deployment.
+            pipeline_file_path: Path to the pipeline definition file.
+            run_name: The Kubeflow run name.
+
+        Raises:
+            RuntimeError: If Kubeflow API returns an error.
+        """
+        pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
             KubeflowOrchestratorSettings, self.get_settings(deployment)
         )
-
-        if deployment.schedule:
-            logger.warning(
-                "The Kubeflow Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
+        user_namespace = settings.user_namespace
 
         kubernetes_context = self.config.kubernetes_context
-        if kubernetes_context:
-            logger.info(
-                "Running Kubeflow pipeline in kubernetes context '%s' and "
-                "namespace '%s'.",
-                kubernetes_context,
-                self.config.kubeflow_namespace,
-            )
-        elif self.connector:
-            connector = self.get_connector()
-            assert connector is not None
-            logger.info(
-                "Running Kubeflow pipeline with Kubernetes credentials from "
-                "connector '%s'.",
-                connector.name or str(connector),
-            )
+        try:
+            if kubernetes_context:
+                logger.info(
+                    "Running in kubernetes context '%s'.",
+                    kubernetes_context,
+                )
+            elif self.config.kubeflow_hostname:
+                logger.info(
+                    "Running on Kubeflow deployment '%s'.",
+                    self.config.kubeflow_hostname,
+                )
+            elif self.connector:
+                logger.info(
+                    "Running with Kubernetes credentials from connector '%s'.",
+                    str(self.connector),
+                )
 
-        client = self._get_kfp_client(settings=settings)
-        client.create_run_from_pipeline_package(
-            pipeline_file_path,
-            enable_caching=True,
-        )
+            # upload the pipeline to Kubeflow and start it
+
+            client = self._get_kfp_client(settings=settings)
+            breakpoint()
+            if deployment.schedule:
+                try:
+                    experiment = client.get_experiment(
+                        pipeline_name, namespace=user_namespace
+                    )
+                    logger.info(
+                        "A recurring run has already been created with this "
+                        "pipeline. Creating new recurring run now.."
+                    )
+                except (ValueError, ApiException):
+                    experiment = client.create_experiment(
+                        pipeline_name, namespace=user_namespace
+                    )
+                    logger.info(
+                        "Creating a new recurring run for pipeline '%s'.. ",
+                        pipeline_name,
+                    )
+                logger.info(
+                    "You can see all recurring runs under the '%s' experiment.",
+                    pipeline_name,
+                )
+
+                interval_seconds = (
+                    deployment.schedule.interval_second.seconds
+                    if deployment.schedule.interval_second
+                    else None
+                )
+                result = client.create_recurring_run(
+                    experiment_id=experiment.id,
+                    job_name=run_name,
+                    pipeline_package_path=pipeline_file_path,
+                    enable_caching=False,
+                    cron_expression=deployment.schedule.cron_expression,
+                    start_time=deployment.schedule.utc_start_time,
+                    end_time=deployment.schedule.utc_end_time,
+                    interval_second=interval_seconds,
+                    no_catchup=not deployment.schedule.catchup,
+                )
+
+                logger.info("Started recurring run with ID '%s'.", result.id)
+            else:
+                logger.info(
+                    "No schedule detected. Creating a one-off pipeline run.."
+                )
+                try:
+                    result = client.create_run_from_pipeline_package(
+                        pipeline_file_path,
+                        arguments={},
+                        run_name=run_name,
+                        enable_caching=False,
+                        namespace=user_namespace,
+                    )
+                except ApiException:
+                    raise RuntimeError(
+                        f"Failed to create {run_name} on kubeflow! "
+                        "Please check stack component settings and "
+                        "configuration!"
+                    )
+
+                logger.info(
+                    "Started one-off pipeline run with ID '%s'.", result.run_id
+                )
+
+                if settings.synchronous:
+                    client.wait_for_run_completion(
+                        run_id=result.run_id, timeout=settings.timeout
+                    )
+        except urllib3.exceptions.HTTPError as error:
+            if kubernetes_context:
+                msg = (
+                    f"Please make sure your kubernetes config is present and "
+                    f"the '{kubernetes_context}' kubernetes context is "
+                    "configured correctly."
+                )
+            elif self.connector:
+                msg = (
+                    f"Please check that the '{self.connector}' connector "
+                    f"linked to this component is configured correctly with "
+                    "valid credentials."
+                )
+            else:
+                msg = ""
+
+            logger.warning(
+                f"Failed to upload Kubeflow pipeline: {error}. {msg}",
+            )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.

@@ -87,7 +87,7 @@ class TektonOrchestratorSettings(BaseSettings):
         username = data.get("client_username")
         password = data.get("client_password")
         client_creds_error = "`client_username` and `client_password` both need to be set together."
-        if username is None or password is None:
+        if (username and password is None) or (password and username is None):
             raise ValueError(client_creds_error)
         return data
 
