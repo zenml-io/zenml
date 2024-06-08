@@ -739,7 +739,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     else None
                 )
                 result = client.create_recurring_run(
-                    experiment_id=experiment.id,
+                    experiment_id=experiment.experiment_id,
                     job_name=run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=False,
@@ -750,7 +750,10 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     no_catchup=not deployment.schedule.catchup,
                 )
 
-                logger.info("Started recurring run with ID '%s'.", result.id)
+                logger.info(
+                    "Started recurring run with ID '%s'.",
+                    result.recurring_run_id,
+                )
             else:
                 logger.info(
                     "No schedule detected. Creating a one-off pipeline run.."
