@@ -259,8 +259,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             component_name: The name of the component.
         """
 
-        @dsl.container_component
-        def dynamic_container_component() -> dsl.ContainerSpec:  # type: ignore
+        @dsl.container_component  # type: ignore[misc]
+        def dynamic_container_component() -> dsl.ContainerSpec:
             """Dynamic container component.
 
             Returns:
