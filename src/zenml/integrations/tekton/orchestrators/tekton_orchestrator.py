@@ -352,6 +352,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             command: The command to use for the component.
             arguments: The arguments to use for the component.
             component_name: The name of the component.
+
+        Returns:
+            The dynamic container component.
         """
 
         @dsl.container_component  # type: ignore[misc]

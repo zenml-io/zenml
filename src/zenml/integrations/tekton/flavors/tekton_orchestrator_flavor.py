@@ -80,7 +80,6 @@ class TektonOrchestratorSettings(BaseSettings):
             Validated settings.
 
         Raises:
-            AssertionError: If old and new settings are used together.
             ValueError: If username and password are not specified together.
         """
         # Validate username and password for auth cookie logic

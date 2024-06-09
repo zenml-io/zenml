@@ -80,7 +80,6 @@ class KubeflowOrchestratorSettings(BaseSettings):
             Validated settings.
 
         Raises:
-            AssertionError: If old and new settings are used together.
             ValueError: If username and password are not specified together.
         """
         node_selectors = cast(Dict[str, str], data.get("node_selectors") or {})
