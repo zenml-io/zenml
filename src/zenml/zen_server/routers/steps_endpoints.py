@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security
@@ -237,7 +237,7 @@ def get_step_status(
 def get_step_logs(
     step_id: UUID,
     offset: int = 0,
-    length: Optional[int] = 1024 * 1024 * 16,  # Default to 16MiB of data
+    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
 ) -> str:
     """Get the logs of a specific step.

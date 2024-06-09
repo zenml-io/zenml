@@ -151,6 +151,7 @@ def fetch_logs(
             files.sort()
 
             # search for the first file we need to read
+            latest_file_id = 0
             for i, file in enumerate(files):
                 file_size: int = artifact_store.size(
                     os.path.join(logs_uri, str(file))
