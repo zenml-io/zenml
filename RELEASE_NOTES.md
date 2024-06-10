@@ -1,5 +1,29 @@
 <!-- markdown-link-check-disable -->
 
+# 0.58.2
+
+The 0.58.2 minor release is packed with a set of improvements to the ZenML logging and ZenML Server.
+
+With this release ZenML logging will:
+- Offer pagination of the logs during fetching via REST API
+- Store the full logs history on GCS Artifact Stores
+- Be performant running logging-heavy tasks, like TQDM logging or logging of training in any Deep Learning framework (also TQDM-backed)
+
+## What's Changed
+* update test-migrations.sh with latest versions by @safoinme in https://github.com/zenml-io/zenml/pull/2757
+* Fix overriding expiration date for api tokens by @schustmi in https://github.com/zenml-io/zenml/pull/2753
+* Step logs pagination by @schustmi in https://github.com/zenml-io/zenml/pull/2731
+* Fix broken links (round 2) by @strickvl in https://github.com/zenml-io/zenml/pull/2760
+* Remove default system flag in docker UV by @avishniakov in https://github.com/zenml-io/zenml/pull/2764
+* Another batch of small fixes and expansions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2762
+* Server scalability improvements by @stefannica in https://github.com/zenml-io/zenml/pull/2752
+* Add option to start parallel kubernetes steps with delay by @schustmi in https://github.com/zenml-io/zenml/pull/2758
+* Move `thread_limiter` to app startup event by @avishniakov in https://github.com/zenml-io/zenml/pull/2765
+* Logging performance improvements and GCP logging fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2755
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.58.1...0.58.2
+
 # 0.58.1
 
 The 0.58.1 release brings a set of minor enhancement and bugfix to the ZenML framework, such as the ability to delete all versions of a pipeline using the Client/CLI, providing greater flexibility and control over pipeline management. Users can now specify Python package installer arguments. Furthermore, a fix has been implemented for the Sentencepiece tokenizer materializer.
