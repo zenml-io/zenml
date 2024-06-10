@@ -176,11 +176,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     @field_validator("version")
     @classmethod
-    def _validate_version(cls, v: Optional[str]) -> Optional[str]:
+    def _validate_version(cls, value: Optional[str]) -> Optional[str]:
         """Validate the version attribute.
 
         Args:
-            v: The version attribute value.
+            value: The version attribute value.
 
         Returns:
             The version attribute value.
@@ -188,18 +188,18 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Raises:
             RuntimeError: If the version parsing fails.
         """
-        if v is None:
-            return v
+        if value is None:
+            return value
 
-        if not isinstance(version.parse(v), version.Version):
+        if not isinstance(value.parse(value), value.Version):
             # If the version parsing fails, it returns a `LegacyVersion`
             # instead. Check to make sure it's an actual `Version` object
             # which represents a valid version.
             raise RuntimeError(
-                f"Invalid version in global configuration: {v}."
+                f"Invalid version in global configuration: {value}."
             )
 
-        return v
+        return value
 
     def __setattr__(self, key: str, value: Any) -> None:
         """Sets an attribute and persists it in the global configuration.

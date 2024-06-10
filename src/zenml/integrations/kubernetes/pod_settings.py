@@ -46,11 +46,11 @@ class KubernetesPodSettings(BaseSettings):
 
     @field_validator("volumes", mode="before")
     @classmethod
-    def _convert_volumes(cls, v: Any) -> Any:
+    def _convert_volumes(cls, value: Any) -> Any:
         """Converts Kubernetes volumes to dicts.
 
         Args:
-            v: The volumes list.
+            value: The volumes list.
 
         Returns:
             The converted volumes.
@@ -58,7 +58,7 @@ class KubernetesPodSettings(BaseSettings):
         from kubernetes.client.models import V1Volume
 
         result = []
-        for element in v:
+        for element in value:
             if isinstance(element, V1Volume):
                 result.append(
                     serialization_utils.serialize_kubernetes_model(element)
@@ -70,11 +70,11 @@ class KubernetesPodSettings(BaseSettings):
 
     @field_validator("volume_mounts", mode="before")
     @classmethod
-    def _convert_volume_mounts(cls, v: Any) -> Any:
+    def _convert_volume_mounts(cls, value: Any) -> Any:
         """Converts Kubernetes volume mounts to dicts.
 
         Args:
-            v: The volume mounts list.
+            value: The volume mounts list.
 
         Returns:
             The converted volume mounts.
@@ -82,7 +82,7 @@ class KubernetesPodSettings(BaseSettings):
         from kubernetes.client.models import V1VolumeMount
 
         result = []
-        for element in v:
+        for element in value:
             if isinstance(element, V1VolumeMount):
                 result.append(
                     serialization_utils.serialize_kubernetes_model(element)
@@ -94,29 +94,29 @@ class KubernetesPodSettings(BaseSettings):
 
     @field_validator("affinity", mode="before")
     @classmethod
-    def _convert_affinity(cls, v: Any) -> Any:
+    def _convert_affinity(cls, value: Any) -> Any:
         """Converts Kubernetes affinity to a dict.
 
         Args:
-            v: The affinity value.
+            value: The affinity value.
 
         Returns:
             The converted value.
         """
         from kubernetes.client.models import V1Affinity
 
-        if isinstance(v, V1Affinity):
-            return serialization_utils.serialize_kubernetes_model(v)
+        if isinstance(value, V1Affinity):
+            return serialization_utils.serialize_kubernetes_model(value)
         else:
-            return v
+            return value
 
     @field_validator("tolerations", mode="before")
     @classmethod
-    def _convert_tolerations(cls, v: Any) -> Any:
+    def _convert_tolerations(cls, value: Any) -> Any:
         """Converts Kubernetes tolerations to dicts.
 
         Args:
-            v: The tolerations list.
+            value: The tolerations list.
 
         Returns:
             The converted tolerations.
@@ -124,7 +124,7 @@ class KubernetesPodSettings(BaseSettings):
         from kubernetes.client.models import V1Toleration
 
         result = []
-        for element in v:
+        for element in value:
             if isinstance(element, V1Toleration):
                 result.append(
                     serialization_utils.serialize_kubernetes_model(element)
@@ -136,18 +136,18 @@ class KubernetesPodSettings(BaseSettings):
 
     @field_validator("resources", mode="before")
     @classmethod
-    def _convert_resources(cls, v: Any) -> Any:
+    def _convert_resources(cls, value: Any) -> Any:
         """Converts Kubernetes resource requirements to a dict.
 
         Args:
-            v: The resource value.
+            value: The resource value.
 
         Returns:
             The converted value.
         """
         from kubernetes.client.models import V1ResourceRequirements
 
-        if isinstance(v, V1ResourceRequirements):
-            return serialization_utils.serialize_kubernetes_model(v)
+        if isinstance(value, V1ResourceRequirements):
+            return serialization_utils.serialize_kubernetes_model(value)
         else:
-            return v
+            return value
