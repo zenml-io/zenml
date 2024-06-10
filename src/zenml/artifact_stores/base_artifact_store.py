@@ -172,6 +172,7 @@ class BaseArtifactStoreConfig(StackComponentConfig):
     path: str
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
+    IS_IMMUTABLE_FILESYSTEM: ClassVar[bool] = False
 
     @model_validator(mode="before")
     @classmethod
