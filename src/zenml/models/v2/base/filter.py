@@ -83,11 +83,11 @@ class Filter(BaseModel, ABC):
 
     @field_validator("operation", mode="before")
     @classmethod
-    def validate_operation(cls, v: Any) -> Any:
+    def validate_operation(cls, value: Any) -> Any:
         """Validate that the operation is a valid op for the field type.
 
         Args:
-            v: The operation of this filter.
+            value: The operation of this filter.
 
         Returns:
             The operation if it is valid.
@@ -95,13 +95,13 @@ class Filter(BaseModel, ABC):
         Raises:
             ValueError: If the operation is not valid for this field type.
         """
-        if v not in cls.ALLOWED_OPS:
+        if value not in cls.ALLOWED_OPS:
             raise ValueError(
                 f"This datatype can not be filtered using this operation: "
-                f"'{v}'. The allowed operations are: {cls.ALLOWED_OPS}"
+                f"'{value}'. The allowed operations are: {cls.ALLOWED_OPS}"
             )
         else:
-            return v
+            return value
 
     def generate_query_conditions(
         self,
@@ -310,11 +310,11 @@ class BaseFilter(BaseModel):
 
     @field_validator("sort_by", mode="before")
     @classmethod
-    def validate_sort_by(cls, v: Any) -> Any:
+    def validate_sort_by(cls, value: Any) -> Any:
         """Validate that the sort_column is a valid column with a valid operand.
 
         Args:
-            v: The sort_by field value.
+            value: The sort_by field value.
 
         Returns:
             The validated sort_by field value.
@@ -326,13 +326,13 @@ class BaseFilter(BaseModel):
         # Somehow pydantic allows you to pass in int values, which will be
         #  interpreted as string, however within the validator they are still
         #  integers, which don't have a .split() method
-        if not isinstance(v, str):
+        if not isinstance(value, str):
             raise ValidationError(
                 f"str type expected for the sort_by field. "
-                f"Received a {type(v)}"
+                f"Received a {type(value)}"
             )
-        column = v
-        split_value = v.split(":", 1)
+        column = value
+        split_value = value.split(":", 1)
         if len(split_value) == 2:
             column = split_value[1]
 
@@ -344,14 +344,14 @@ class BaseFilter(BaseModel):
                     SorterOps.values(),
                     column,
                 )
-                v = column
+                value = column
 
         if column in cls.FILTER_EXCLUDE_FIELDS:
             raise ValueError(
-                f"This resource can not be sorted by this field: '{v}'"
+                f"This resource can not be sorted by this field: '{value}'"
             )
         elif column in cls.model_fields:
-            return v
+            return value
         else:
             raise ValueError(
                 "You can only sort by valid fields of this resource"

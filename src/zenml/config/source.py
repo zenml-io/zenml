@@ -229,19 +229,19 @@ class CodeRepositorySource(Source):
         return value
 
 
-def convert_source(v: Any) -> Any:
+def convert_source(source: Any) -> Any:
     """Converts an old source string to a source object.
 
     Args:
-        v: Source string or object.
+        source: Source string or object.
 
     Returns:
         The converted source.
     """
-    if isinstance(v, str):
-        v = Source.from_import_path(v)
+    if isinstance(source, str):
+        source = Source.from_import_path(source)
 
-    return v
+    return source
 
 
 SourceWithValidator = Annotated[

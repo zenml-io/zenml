@@ -89,22 +89,22 @@ class AirflowOrchestratorSettings(BaseSettings):
 
     @field_validator("operator", mode="before")
     @classmethod
-    def _convert_operator(cls, v: Any) -> Any:
+    def _convert_operator(cls, value: Any) -> Any:
         """Converts operator types to source strings.
 
         Args:
-            v: The operator type value.
+            value: The operator type value.
 
         Returns:
             The operator source.
         """
-        if isinstance(v, OperatorType):
-            return v.source
+        if isinstance(value, OperatorType):
+            return value.source
 
         try:
-            return OperatorType(v).source
+            return OperatorType(value).source
         except ValueError:
-            return v
+            return value
 
 
 class AirflowOrchestratorConfig(
