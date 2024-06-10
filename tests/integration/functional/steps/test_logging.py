@@ -28,6 +28,10 @@ def step_writing_above_the_time_limit():
         time.sleep(0.01)
 
 
+@patch(
+    "zenml.artifact_stores.base_artifact_store.BaseArtifactStoreConfig.IS_IMMUTABLE_FILESYSTEM",
+    True,
+)
 def test_that_save_to_file_called_multiple_times_on_exceeding_limits():
     @pipeline
     def _inner_1():
@@ -61,6 +65,10 @@ def test_that_save_to_file_called_multiple_times_on_exceeding_limits():
         Client().delete_pipeline(run_2.pipeline.id)
 
 
+@patch(
+    "zenml.artifact_stores.base_artifact_store.BaseArtifactStoreConfig.IS_IMMUTABLE_FILESYSTEM",
+    True,
+)
 def test_that_small_files_are_merged_together():
     @pipeline
     def _inner_1():
