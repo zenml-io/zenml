@@ -251,6 +251,6 @@ bentoctl build -b $BENTO_TAG -f deployment_config.yaml
 bentoctl apply -f deployment_config.yaml
 ```
 
-For more information and a full list of configurable attributes of the BentoML Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-bentoml/#zenml.integrations.bentoml) .
+For more information and a full list of configurable attributes of the BentoML Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-bentoml/#zenml.integrations.bentoml.model_deployers.bentoml_model_deployer) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

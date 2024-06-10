@@ -37,7 +37,7 @@ There are quicker alternatives to using a Service Connector to link an S3 Artifa
     ```shell
     zenml artifact-store register s3 --flavor s3 --path=s3://BUCKET_NAME --key=AWS_ACCESS_KEY --secret=AWS_SECRET_KEY
     ```
-2.  [a ZenML secret](../../getting-started/deploying-zenml/zenml-self-hosted/manage-the-deployed-services/secret-management.md) can hold the AWS credentials and then be referenced in the S3 Artifact Store configuration attributes:
+2.  [a ZenML secret](../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md) can hold the AWS credentials and then be referenced in the S3 Artifact Store configuration attributes:
 
     ```shell
     zenml secret create aws --aws_access_key_id=AWS_ACCESS_KEY --aws_secret_access_key=AWS_SECRET_KEY
