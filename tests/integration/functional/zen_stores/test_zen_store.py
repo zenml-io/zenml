@@ -221,7 +221,10 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         # Ids should remain the same
         assert updated_entity.id == created_entity.id
         # Something in the Model should have changed
-        assert updated_entity.model_dump_json() != created_entity.model_dump_json()
+        assert (
+            updated_entity.model_dump_json()
+            != created_entity.model_dump_json()
+        )
 
         # Test that the update method returns a hydrated model, if applicable
         if hasattr(updated_entity, "metadata"):

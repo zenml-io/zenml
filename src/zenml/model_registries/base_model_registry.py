@@ -83,7 +83,7 @@ class ModelRegistryModelMetadata(BaseModel):
             return {k: str(v) for k, v in self.model_extra.items()}
         return {}
 
-    def dict(
+    def model_dump(
         self,
         *,
         exclude_unset: bool = False,
