@@ -195,7 +195,6 @@ def _generic_get_args(tp: Type[Any]) -> Tuple[Any, ...]:
         return (Any,) * tp._nparams  # type: ignore[no-any-return]
     # Special case for `tuple[()]`, which used to return ((),) with
     # `typing.Tuple in python 3.10- but now returns () for `tuple` and `Tuple`.
-    # This will probably be clarified in pydantic v2
     try:
         if tp == Tuple[()] or sys.version_info >= (3, 9) and tp == tuple[()]:
             return ((),)
