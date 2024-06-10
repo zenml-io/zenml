@@ -189,7 +189,9 @@ class StackResponse(
                 flavor=component.flavor,
             )
             configuration = json.loads(
-                component.get_metadata().json(include={"configuration"})
+                component.get_metadata().model_dump_json(
+                    include={"configuration"}
+                )
             )
             component_dict.update(configuration)
 

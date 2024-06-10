@@ -197,7 +197,7 @@ class TerraformZenServer(TerraformService):
         # filter keys that are not modeled as terraform deployment vars
         vars = {
             k: str(v) if isinstance(v, UUID) else v
-            for k, v in self.config.server.dict().items()
+            for k, v in self.config.server.model_dump().items()
             if k not in filter_vars
         }
         assert self.status.runtime_path

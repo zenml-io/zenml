@@ -17,7 +17,6 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
@@ -31,6 +30,7 @@ from zenml.models import (
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
 )
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,

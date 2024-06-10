@@ -289,7 +289,7 @@ class ContainerService(BaseService):
         assert self.status.log_file is not None
 
         with open(self.status.config_file, "w") as f:
-            f.write(self.json(indent=4))
+            f.write(self.model_dump_json(indent=4))
         pathlib.Path(self.status.log_file).touch()
 
         command = [

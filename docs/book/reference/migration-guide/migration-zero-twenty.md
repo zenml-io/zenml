@@ -4,6 +4,8 @@ description: How to migrate from ZenML <=0.13.2 to 0.20.0.
 
 # Migration guide 0.13.2 → 0.20.0
 
+*Last updated: 2023-07-24*
+
 The ZenML 0.20.0 release brings a number of big changes to its architecture and its features, some of which are not backwards compatible with previous versions. This guide walks you through these changes and offers instructions on how to migrate your existing ZenML stacks and pipelines to the new version with minimal effort and disruption to your existing workloads.
 
 {% hint style="warning" %}

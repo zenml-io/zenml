@@ -116,7 +116,7 @@ class StackComponentSchema(NamedSchema, table=True):
         Returns:
             The updated `StackComponentSchema`.
         """
-        for field, value in component_update.dict(
+        for field, value in component_update.model_dump(
             exclude_unset=True, exclude={"workspace", "user", "connector"}
         ).items():
             if field == "configuration":

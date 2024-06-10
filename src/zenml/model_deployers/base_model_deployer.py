@@ -173,7 +173,7 @@ class BaseModelDeployer(StackComponent, ABC):
         if not continuous_deployment_mode:
             # Find existing model server
             services = self.find_model_server(
-                config=config.dict(),
+                config=config.model_dump(),
                 service_type=service_type,
             )
             if len(services) > 0:
@@ -196,7 +196,7 @@ class BaseModelDeployer(StackComponent, ABC):
                 service = services[0]
                 self.delete_model_server(service.uuid)
         logger.info(
-            f"Deploying model server for {config.model_name} with the following configuration: {config.dict()}"
+            f"Deploying model server for {config.model_name} with the following configuration: {config.model_dump()}"
         )
         service_response = client.create_service(
             config=config,
@@ -220,10 +220,12 @@ class BaseModelDeployer(StackComponent, ABC):
         client.update_service(
             id=service.uuid,
             name=service.config.service_name,
-            service_source=service.dict().get("type"),
+            service_source=service.model_dump().get("type"),
             admin_state=service.admin_state,
-            status=service.status.dict(),
-            endpoint=service.endpoint.dict() if service.endpoint else None,
+            status=service.status.model_dump(),
+            endpoint=service.endpoint.model_dump()
+            if service.endpoint
+            else None,
             # labels=service.config.get_service_labels()  # TODO: fix labels in services and config
             prediction_url=service.get_prediction_url(),
             health_check_url=service.get_healthcheck_url(),
@@ -343,12 +345,12 @@ class BaseModelDeployer(StackComponent, ABC):
                 continue
             service = BaseDeploymentService.from_model(service_response)
             service.update_status()
-            if service.status.dict() != service_response.status:
+            if service.status.model_dump() != service_response.status:
                 client.update_service(
                     id=service.uuid,
                     admin_state=service.admin_state,
-                    status=service.status.dict(),
-                    endpoint=service.endpoint.dict()
+                    status=service.status.model_dump(),
+                    endpoint=service.endpoint.model_dump()
                     if service.endpoint
                     else None,
                 )
@@ -411,8 +413,8 @@ class BaseModelDeployer(StackComponent, ABC):
             client.update_service(
                 id=updated_service.uuid,
                 admin_state=updated_service.admin_state,
-                status=updated_service.status.dict(),
-                endpoint=updated_service.endpoint.dict()
+                status=updated_service.status.model_dump(),
+                endpoint=updated_service.endpoint.model_dump()
                 if updated_service.endpoint
                 else None,
             )
@@ -461,8 +463,8 @@ class BaseModelDeployer(StackComponent, ABC):
             client.update_service(
                 id=updated_service.uuid,
                 admin_state=updated_service.admin_state,
-                status=updated_service.status.dict(),
-                endpoint=updated_service.endpoint.dict()
+                status=updated_service.status.model_dump(),
+                endpoint=updated_service.endpoint.model_dump()
                 if updated_service.endpoint
                 else None,
             )

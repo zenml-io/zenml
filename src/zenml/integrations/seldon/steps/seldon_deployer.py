@@ -141,7 +141,7 @@ def seldon_model_deployer_step(
     # fetch existing services with same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
-        config=service_config.dict()
+        config=service_config.model_dump()
     )
 
     # even when the deploy decision is negative, if an existing model server
@@ -240,7 +240,7 @@ def seldon_custom_model_deployer_step(
     # fetch existing services with the same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
-        config=service_config.dict()
+        config=service_config.model_dump()
     )
     # even when the deploy decision is negative if an existing model server
     # is not running for this pipeline/step, we still have to serve the

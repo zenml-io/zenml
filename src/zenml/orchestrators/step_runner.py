@@ -439,7 +439,7 @@ class StepRunner:
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact(
-                **artifact.get_hydrated_version().dict()
+                **artifact.get_hydrated_version().model_dump()
             )
 
         if data_type is Any or is_union(get_origin(data_type)):

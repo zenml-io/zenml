@@ -39,6 +39,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
+    DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ENV_ZENML_SERVER_PREFIX,
 )
@@ -312,6 +313,8 @@ class ServerConfiguration(BaseModel):
     display_announcements: bool = True
     display_updates: bool = True
     auto_activate: bool = False
+
+    thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
 
     _deployment_id: Optional[UUID] = None
 

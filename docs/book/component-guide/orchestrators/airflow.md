@@ -111,7 +111,7 @@ airflow standalone
 This command will start up an Airflow server on your local machine. During the startup, it will print a username and
 password which you can use to log in to the Airflow UI [here](http://0.0.0.0:8080).
 
-We can now switch back the our Python environment in which ZenML is installed and run a pipeline:
+We can now switch back the Python environment in which ZenML is installed and run a pipeline:
 ```shell
 # Switch to the Python environment that has ZenML installed before running this command
 python file_that_runs_a_zenml_pipeline.py
@@ -290,9 +290,7 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 Check out our docs on how to apply settings to your
 pipelines [here](/docs/book/how-to/use-configuration-files/README.md).
 
-For more information and a full list of configurable attributes of the Airflow orchestrator, check out
-the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator)
-.
+For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator) .
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -209,7 +209,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             event_source=event_source, config=config
         )
         # Serialize the configuration back into the request
-        event_source.configuration = config.dict(exclude_none=True)
+        event_source.configuration = config.model_dump(exclude_none=True)
         # Create the event source in the database
         event_source_response = self.zen_store.create_event_source(
             event_source=event_source
@@ -237,7 +237,9 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             raise
 
         # Serialize the configuration back into the response
-        event_source_response.set_configuration(config.dict(exclude_none=True))
+        event_source_response.set_configuration(
+            config.model_dump(exclude_none=True)
+        )
 
         # Return the response to the user
         return event_source_response
@@ -280,7 +282,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             config_update=config_update,
         )
         # Serialize the configuration update back into the update request
-        event_source_update.configuration = config_update.dict(
+        event_source_update.configuration = config_update.model_dump(
             exclude_none=True
         )
 
@@ -319,7 +321,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
         # Serialize the configuration back into the response
         event_source_response.set_configuration(
-            response_config.dict(exclude_none=True)
+            response_config.model_dump(exclude_none=True)
         )
         # Return the response to the user
         return event_source_response
@@ -386,7 +388,9 @@ class BaseEventSourceHandler(BasePlugin, ABC):
                 event_source=event_source, config=config
             )
             # Serialize the configuration back into the response
-            event_source.set_configuration(config.dict(exclude_none=True))
+            event_source.set_configuration(
+                config.model_dump(exclude_none=True)
+            )
 
         # Return the response to the user
         return event_source

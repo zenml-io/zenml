@@ -116,7 +116,7 @@ class StackRequirement(BaseTestConfigModel):
 
         def filter_components(component: "ComponentResponse") -> bool:
             if self.configuration:
-                for key, value in self.configuration.dict().items():
+                for key, value in self.configuration.model_dump().items():
                     if component.configuration.get(key) != value:
                         logging.debug(
                             f"{component.type.value} '{component.name}' does "
@@ -263,7 +263,7 @@ class StackRequirement(BaseTestConfigModel):
             name=self.name or f"pytest-{random_str(6).lower()}",
             flavor=self.flavor,
             component_type=self.type,
-            configuration=self.configuration.dict()
+            configuration=self.configuration.model_dump()
             if self.configuration
             else {},
         )

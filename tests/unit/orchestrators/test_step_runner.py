@@ -171,4 +171,4 @@ def test_loading_unmaterialized_input_artifact(local_stack, clean_client):
     artifact = runner._load_input_artifact(
         artifact=artifact_response, data_type=UnmaterializedArtifact
     )
-    assert artifact.dict() == artifact_response.dict()
+    assert artifact.model_dump() == artifact_response.model_dump()

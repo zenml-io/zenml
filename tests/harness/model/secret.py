@@ -144,7 +144,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
         Returns:
             The dictionary representation of the model.
         """
-        d = super().dict(**kwargs)
+        d = super().model_dump(**kwargs)
         for key, value in d.items():
             secret_name = self._get_secret_name(value)
             if secret_name:

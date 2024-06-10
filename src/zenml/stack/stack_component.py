@@ -834,7 +834,7 @@ class StackComponent:
             A string representation of the stack component.
         """
         attribute_representation = ", ".join(
-            f"{key}={value}" for key, value in self.config.dict().items()
+            f"{key}={value}" for key, value in self.config.model_dump().items()
         )
         return (
             f"{self.__class__.__qualname__}(type={self.type}, "

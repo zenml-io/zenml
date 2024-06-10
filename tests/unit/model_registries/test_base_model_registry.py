@@ -41,8 +41,8 @@ class TestModelRegistryModelMetadata:
             "custom_attr_1": "foo",
             "zenml_workspace": "test_workspace",
         }
-        assert isinstance(metadata.dict()["zenml_version"], str)
-        assert metadata.dict() == expected
+        assert isinstance(metadata.model_dump()["zenml_version"], str)
+        assert metadata.model_dump() == expected
 
     def test_exclude_unset_none(self):
         metadata = ModelRegistryModelMetadata(
@@ -66,7 +66,7 @@ class TestModelRegistryModelMetadata:
             "custom_attr_2": None,
         }
         assert (
-            metadata.dict(exclude_unset=False, exclude_none=False) == expected
+            metadata.model_dump(exclude_unset=False, exclude_none=False) == expected
         )
 
         # Test exclude_unset and exclude_none both True
@@ -75,7 +75,7 @@ class TestModelRegistryModelMetadata:
             "zenml_workspace": "test_workspace",
             "custom_attr_1": "foo",
         }
-        assert metadata.dict(exclude_unset=True, exclude_none=True) == expected
+        assert metadata.model_dump(exclude_unset=True, exclude_none=True) == expected
 
         # Test exclude_unset False and exclude_none True
         expected = {
@@ -84,7 +84,7 @@ class TestModelRegistryModelMetadata:
             "custom_attr_1": "foo",
         }
         assert (
-            metadata.dict(exclude_unset=False, exclude_none=True) == expected
+            metadata.model_dump(exclude_unset=False, exclude_none=True) == expected
         )
 
         # Test exclude_unset True and exclude_none False
@@ -96,5 +96,5 @@ class TestModelRegistryModelMetadata:
             "custom_attr_2": None,
         }
         assert (
-            metadata.dict(exclude_unset=True, exclude_none=False) == expected
+            metadata.model_dump(exclude_unset=True, exclude_none=False) == expected
         )

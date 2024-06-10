@@ -128,7 +128,9 @@ class HubClient:
             The plugin response model.
         """
         route = "/plugins"
-        response = self._request("POST", route, data=plugin_request.json())
+        response = self._request(
+            "POST", route, data=plugin_request.model_dump_json()
+        )
         return HubPluginResponseModel.model_validate(response)
 
     # TODO: Potentially reenable this later if hub adds logs streaming endpoint

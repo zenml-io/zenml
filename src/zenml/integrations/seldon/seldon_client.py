@@ -288,7 +288,7 @@ class SeldonDeployment(BaseModel):
         Returns:
             A string representation of the Seldon Deployment.
         """
-        return json.dumps(self.dict(exclude_none=True), indent=4)
+        return json.dumps(self.model_dump(exclude_none=True), indent=4)
 
     @classmethod
     def build(
@@ -636,7 +636,7 @@ class SeldonClient:
             # are not
             deployment.mark_as_managed_by_zenml()
 
-            body_deploy = deployment.dict(exclude_none=True)
+            body_deploy = deployment.model_dump(exclude_none=True)
             response = (
                 self._custom_objects_api.create_namespaced_custom_object(
                     group="machinelearning.seldon.io",
@@ -773,7 +773,7 @@ class SeldonClient:
                 namespace=self._namespace,
                 plural="seldondeployments",
                 name=deployment.name,
-                body=deployment.dict(exclude_none=True),
+                body=deployment.model_dump(exclude_none=True),
                 _request_timeout=poll_timeout or None,
             )
             logger.debug("Seldon Core API response: %s", response)

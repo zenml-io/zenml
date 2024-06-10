@@ -74,7 +74,7 @@ class APIKey(BaseModel):
         Returns:
             The encoded API key.
         """
-        encoded_key = b64_encode(self.json())
+        encoded_key = b64_encode(self.model_dump_json())
         return f"{ZENML_API_KEY_PREFIX}{encoded_key}"
 
 

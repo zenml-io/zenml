@@ -19,7 +19,6 @@ from datetime import datetime
 from typing import Any, List, Optional, cast
 from uuid import UUID
 
-from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
@@ -37,6 +36,7 @@ from zenml.models import (
     TriggerResponseResources,
     TriggerUpdate,
 )
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -121,7 +121,7 @@ class TriggerSchema(NamedSchema, table=True):
         Returns:
             The updated TriggerSchema.
         """
-        for field, value in trigger_update.dict(
+        for field, value in trigger_update.model_dump(
             exclude_unset=True,
             exclude_none=True,
         ).items():

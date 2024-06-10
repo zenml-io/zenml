@@ -190,7 +190,7 @@ class ServiceSchema(NamedSchema, table=True):
         Returns:
             The updated `ServiceSchema`.
         """
-        for field, value in update.dict(
+        for field, value in update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
             if field == "labels":

@@ -242,7 +242,7 @@ def get_pipeline_configuration(
     run = verify_permissions_and_get_entity(
         id=run_id, get_method=zen_store().get_run, hydrate=True
     )
-    return run.config.dict()
+    return run.config.model_dump()
 
 
 @router.get(

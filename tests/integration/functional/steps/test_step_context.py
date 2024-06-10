@@ -41,7 +41,7 @@ class ComplexObjectMaterializer(BaseMaterializer):
         # here we need access to the step context
         data.pipeline_name = get_step_context().pipeline.name
         with fileio.open(os.path.join(self.uri, "data.json"), "w") as f:
-            f.write(data.json())
+            f.write(data.model_dump_json())
 
 
 @step(

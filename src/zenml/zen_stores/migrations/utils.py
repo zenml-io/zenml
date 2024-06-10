@@ -29,7 +29,6 @@ from typing import (
 
 import pymysql
 from pydantic import BaseModel, ConfigDict
-from pydantic.json import pydantic_encoder
 from sqlalchemy import MetaData, func, text
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
@@ -42,6 +41,7 @@ from sqlmodel import (
 )
 
 from zenml.logger import get_logger
+from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
 

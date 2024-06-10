@@ -168,7 +168,7 @@ class LineageGraph(BaseModel):
             step: The step to add a node for.
             id: The id of the step node.
         """
-        step_config = step.config.dict()
+        step_config = step.config.model_dump()
         if step_config:
             step_config = {
                 key: value

@@ -17,7 +17,7 @@ import base64
 import json
 from typing import Any, Dict
 
-from pydantic.json import pydantic_encoder
+from zenml.utils.json_utils import pydantic_encoder
 
 
 def recursive_update(

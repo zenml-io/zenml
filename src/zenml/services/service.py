@@ -152,7 +152,7 @@ class ServiceConfig(BaseTypedModel):
             a dictionary of service labels.
         """
         labels = {}
-        for k, v in self.dict().items():
+        for k, v in self.model_dump().items():
             label = f"zenml_{k}".upper()
             labels[label] = str(v)
         return labels

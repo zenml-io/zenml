@@ -142,7 +142,14 @@ def main() -> None:
         )
         logger.info(f"Pod of step `{step_name}` completed.")
 
-    ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_kubernetes).run()
+    parallel_node_startup_waiting_period = (
+        orchestrator.config.parallel_step_startup_waiting_period or 0.0
+    )
+    ThreadedDagRunner(
+        dag=pipeline_dag,
+        run_fn=run_step_on_kubernetes,
+        parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
+    ).run()
 
     logger.info("Orchestration pod completed.")
 

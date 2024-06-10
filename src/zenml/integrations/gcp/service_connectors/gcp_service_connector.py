@@ -119,11 +119,11 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 
     @field_validator("user_account_json")
     @classmethod
-    def validate_user_account_json(cls, v: SecretStr) -> SecretStr:
+    def validate_user_account_json(cls, value: SecretStr) -> SecretStr:
         """Validate the user account credentials JSON.
 
         Args:
-            v: The user account credentials JSON.
+            value: The user account credentials JSON.
 
         Returns:
             The validated user account credentials JSON.
@@ -132,7 +132,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
             ValueError: If the user account credentials JSON is invalid.
         """
         try:
-            user_account_info = json.loads(v.get_secret_value())
+            user_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP user account credentials is not a valid JSON: {e}"
@@ -160,7 +160,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
                 "instead of 'authorized_user'."
             )
 
-        return v
+        return value
 
 
 class GCPServiceAccountCredentials(AuthenticationConfig):
@@ -200,11 +200,11 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
 
     @field_validator("service_account_json")
     @classmethod
-    def validate_service_account_json(cls, v: SecretStr) -> SecretStr:
+    def validate_service_account_json(cls, value: SecretStr) -> SecretStr:
         """Validate the service account credentials JSON.
 
         Args:
-            v: The service account credentials JSON.
+            value: The service account credentials JSON.
 
         Returns:
             The validated service account credentials JSON.
@@ -213,7 +213,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
             ValueError: If the service account credentials JSON is invalid.
         """
         try:
-            service_account_info = json.loads(v.get_secret_value())
+            service_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP service account credentials is not a valid JSON: {e}"
@@ -249,7 +249,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
                 "instead of 'service_account'."
             )
 
-        return v
+        return value
 
 
 class GCPExternalAccountCredentials(AuthenticationConfig):
@@ -289,11 +289,11 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
 
     @field_validator("external_account_json")
     @classmethod
-    def validate_external_account_json(cls, v: SecretStr) -> SecretStr:
+    def validate_external_account_json(cls, value: SecretStr) -> SecretStr:
         """Validate the external account credentials JSON.
 
         Args:
-            v: The external account credentials JSON.
+            value: The external account credentials JSON.
 
         Returns:
             The validated external account credentials JSON.
@@ -302,7 +302,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
             ValueError: If the external account credentials JSON is invalid.
         """
         try:
-            external_account_info = json.loads(v.get_secret_value())
+            external_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP external account credentials is not a valid JSON: {e}"
@@ -331,7 +331,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
                 "instead of 'external_account'."
             )
 
-        return v
+        return value
 
 
 class GCPOAuth2Token(AuthenticationConfig):

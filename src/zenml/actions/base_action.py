@@ -256,7 +256,7 @@ class BaseActionHandler(BasePlugin, ABC):
         # before it is sent to the database
         self._validate_trigger_request(trigger=trigger, config=config)
         # Serialize the configuration back into the request
-        trigger.action = config.dict(exclude_none=True)
+        trigger.action = config.model_dump(exclude_none=True)
         # Create the trigger in the database
         trigger_response = self.zen_store.create_trigger(trigger=trigger)
         try:
@@ -286,7 +286,7 @@ class BaseActionHandler(BasePlugin, ABC):
             raise
 
         # Serialize the configuration back into the response
-        trigger_response.set_action(config.dict(exclude_none=True))
+        trigger_response.set_action(config.model_dump(exclude_none=True))
         # Return the response to the user
         return trigger_response
 
@@ -326,7 +326,7 @@ class BaseActionHandler(BasePlugin, ABC):
             config_update=config_update,
         )
         # Serialize the configuration update back into the update request
-        trigger_update.action = config_update.dict(exclude_none=True)
+        trigger_update.action = config_update.model_dump(exclude_none=True)
 
         # Update the trigger in the database
         trigger_response = self.zen_store.update_trigger(
@@ -369,7 +369,9 @@ class BaseActionHandler(BasePlugin, ABC):
             raise
 
         # Serialize the configuration back into the response
-        trigger_response.set_action(response_config.dict(exclude_none=True))
+        trigger_response.set_action(
+            response_config.model_dump(exclude_none=True)
+        )
         # Return the response to the user
         return trigger_response
 
@@ -432,7 +434,7 @@ class BaseActionHandler(BasePlugin, ABC):
             # Call the implementation specific method to process the response
             self._process_trigger_response(trigger=trigger, config=config)
             # Serialize the configuration back into the response
-            trigger.set_action(config.dict(exclude_none=True))
+            trigger.set_action(config.model_dump(exclude_none=True))
             # Add any implementation specific related resources to the trigger
             # response
             self._populate_trigger_response_resources(

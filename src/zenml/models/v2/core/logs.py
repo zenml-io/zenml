@@ -42,11 +42,11 @@ class LogsRequest(BaseRequest):
 
     @field_validator("uri")
     @classmethod
-    def text_field_max_length_check(cls, v: Any) -> Any:
+    def text_field_max_length_check(cls, value: Any) -> Any:
         """Checks if the length of the value exceeds the maximum text length.
 
         Args:
-            v: the value set in the field
+            value: the value set in the field
 
         Returns:
             the value itself.
@@ -55,19 +55,19 @@ class LogsRequest(BaseRequest):
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
         """
-        assert len(str(v)) < TEXT_FIELD_MAX_LENGTH, (
+        assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
             "The length of the value for this field can not "
             f"exceed {TEXT_FIELD_MAX_LENGTH}"
         )
-        return v
+        return value
 
     @field_validator("artifact_store_id")
     @classmethod
-    def str_field_max_length_check(cls, v: Any) -> Any:
+    def str_field_max_length_check(cls, value: Any) -> Any:
         """Checks if the length of the value exceeds the maximum text length.
 
         Args:
-            v: the value set in the field
+            value: the value set in the field
 
         Returns:
             the value itself.
@@ -76,11 +76,11 @@ class LogsRequest(BaseRequest):
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
         """
-        assert len(str(v)) < STR_FIELD_MAX_LENGTH, (
+        assert len(str(value)) < STR_FIELD_MAX_LENGTH, (
             "The length of the value for this field can not "
             f"exceed {STR_FIELD_MAX_LENGTH}"
         )
-        return v
+        return value
 
 
 # ------------------ Update Model ------------------
@@ -121,11 +121,11 @@ class LogsResponseMetadata(BaseResponseMetadata):
 
     @field_validator("artifact_store_id")
     @classmethod
-    def str_field_max_length_check(cls, v: Any) -> Any:
+    def str_field_max_length_check(cls, value: Any) -> Any:
         """Checks if the length of the value exceeds the maximum text length.
 
         Args:
-            v: the value set in the field
+            value: the value set in the field
 
         Returns:
             the value itself.
@@ -134,8 +134,8 @@ class LogsResponseMetadata(BaseResponseMetadata):
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
         """
-        assert len(str(v)) < STR_FIELD_MAX_LENGTH
-        return v
+        assert len(str(value)) < STR_FIELD_MAX_LENGTH
+        return value
 
 
 class LogsResponseResources(BaseResponseResources):
