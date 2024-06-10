@@ -30,11 +30,11 @@ from pydantic import (
     validate_call,
 )
 from pydantic._internal import _repr as pydantic_repr
-from pydantic.json import pydantic_encoder
 from pydantic.v1.utils import sequence_like
 
 from zenml.logger import get_logger
 from zenml.utils import dict_utils, typing_utils, yaml_utils
+from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
 

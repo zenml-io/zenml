@@ -16,11 +16,10 @@
 import json
 from typing import Any, Dict, List, Optional
 
-from pydantic.json import pydantic_encoder
-
 from zenml.config.source import Source
 from zenml.config.step_configurations import StepSpec
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.utils.json_utils import pydantic_encoder
 
 
 class PipelineSpec(StrictBaseModel):

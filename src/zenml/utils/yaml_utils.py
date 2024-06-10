@@ -193,7 +193,7 @@ def is_json_serializable(obj: Any) -> bool:
     Returns:
         Whether the object is JSON serializable using pydantics encoder class.
     """
-    from pydantic.json import pydantic_encoder
+    from zenml.utils.json_utils import pydantic_encoder
 
     try:
         json.dumps(obj, default=pydantic_encoder)
