@@ -191,7 +191,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if value is None:
             return value
 
-        if not isinstance(value.parse(value), value.Version):
+        if not isinstance(version.parse(value), version.Version):
             # If the version parsing fails, it returns a `LegacyVersion`
             # instead. Check to make sure it's an actual `Version` object
             # which represents a valid version.
