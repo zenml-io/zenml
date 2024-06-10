@@ -1,5 +1,153 @@
 <!-- markdown-link-check-disable -->
 
+# 0.58.2
+
+The 0.58.2 minor release is packed with a set of improvements to the ZenML logging and ZenML Server.
+
+With this release ZenML logging will:
+- Offer pagination of the logs during fetching via REST API
+- Store the full logs history on GCS Artifact Stores
+- Be performant running logging-heavy tasks, like TQDM logging or logging of training in any Deep Learning framework (also TQDM-backed)
+
+## What's Changed
+* update test-migrations.sh with latest versions by @safoinme in https://github.com/zenml-io/zenml/pull/2757
+* Fix overriding expiration date for api tokens by @schustmi in https://github.com/zenml-io/zenml/pull/2753
+* Step logs pagination by @schustmi in https://github.com/zenml-io/zenml/pull/2731
+* Fix broken links (round 2) by @strickvl in https://github.com/zenml-io/zenml/pull/2760
+* Remove default system flag in docker UV by @avishniakov in https://github.com/zenml-io/zenml/pull/2764
+* Another batch of small fixes and expansions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2762
+* Server scalability improvements by @stefannica in https://github.com/zenml-io/zenml/pull/2752
+* Add option to start parallel kubernetes steps with delay by @schustmi in https://github.com/zenml-io/zenml/pull/2758
+* Move `thread_limiter` to app startup event by @avishniakov in https://github.com/zenml-io/zenml/pull/2765
+* Logging performance improvements and GCP logging fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2755
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.58.1...0.58.2
+
+# 0.58.1
+
+The 0.58.1 release brings a set of minor enhancement and bugfix to the ZenML framework, such as the ability to delete all versions of a pipeline using the Client/CLI, providing greater flexibility and control over pipeline management. Users can now specify Python package installer arguments. Furthermore, a fix has been implemented for the Sentencepiece tokenizer materializer.
+
+We are also excited to announce the introduction of breadcrumbs to our dashboard to improve your navigation experience. This new feature allows you to easily visualize the path of your Pipelines, Models, and Artifacts, providing clear orientation, quick return to any section with a single click, and effortless navigation.
+
+We’d like to give a special thanks to @eltociear for their first contribution.
+
+## Docs re-work
+
+We reworked the structure of our documentation pages to make it easier to find answers to your practical questions. Please do let us know if you have any feedback on the structure or the new style of the 'How To' section!
+
+## What's Changed
+* Add 0.58.0 to migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2730
+* Print step names in color, again by @avishniakov in https://github.com/zenml-io/zenml/pull/2728
+* Workflow to create JIRA tickets when Github Issues are created by @strickvl in https://github.com/zenml-io/zenml/pull/2724
+* Allow specifying python package installer args by @schustmi in https://github.com/zenml-io/zenml/pull/2727
+* Send workflow dispatch event to Cloud Plugins repo on release by @wjayesh in https://github.com/zenml-io/zenml/pull/2633
+* Fix Nightly Release by @safoinme in https://github.com/zenml-io/zenml/pull/2711
+* Fix `zenml go` images visibility in notebook by @strickvl in https://github.com/zenml-io/zenml/pull/2742
+* Handle error when using `zenml info` with missing dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/2725
+* Add Discord Alerter into TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2735
+* Allow deleting all versions of a pipeline using the Client/CLI by @schustmi in https://github.com/zenml-io/zenml/pull/2745
+* Misc fixes by @schustmi in https://github.com/zenml-io/zenml/pull/2732
+* Move full SQLite DB migration test to slow CI by @strickvl in https://github.com/zenml-io/zenml/pull/2743
+* Add system flag as default for uv by @schustmi in https://github.com/zenml-io/zenml/pull/2748
+* Add how-to section & restructure/update documentation by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2705
+* Fix typo in help text by @eltociear in https://github.com/zenml-io/zenml/pull/2750
+* Add support for function types in source utils by @schustmi in https://github.com/zenml-io/zenml/pull/2738
+* Fix Sentencepiece tokenizer materializer by @safoinme in https://github.com/zenml-io/zenml/pull/2751
+
+## New Contributors
+* @eltociear made their first contribution in https://github.com/zenml-io/zenml/pull/2750
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.58.0...0.58.1
+
+# 0.58.0
+
+## New Annotators
+This release brings in three new integrations for our annotator stack component: [Prodigy](https://prodi.gy/), [Argilla](https://github.com/argilla-io/argilla) and [Pigeon](https://github.com/agermanidis/pigeon).
+* Pigeon works within Jupyter notebooks and supports a limited feature set but is great for 
+experimentation and demos.
+* Argilla works both locally-deployed and when the annotation instance lives in the cloud 
+(i.e. in the Hugging Face Spaces deployment which they recommend).
+* Prodigy is a powerful closed-source annotation tool that allows for efficient data labeling. With this 
+integration, users can now connect ZenML with Prodigy and leverage its annotation capabilities 
+in their ML pipelines.
+
+## Retry configuration for steps
+This release also includes new `retry` configuration for the steps. The following parameters 
+can be set:
+
+- _**max_retries**_: The maximum number of times the step should be retried in case of failure.
+- _**delay**_: The initial delay in seconds before the first retry attempt.
+- _**backoff**_: The factor by which the delay should be multiplied after each retry attempt.
+
+To use this in your code:
+
+```python
+from zenml.config.retry_config import StepRetryConfig
+
+@step(retry=StepRetryConfig(max_retries=3, delay=10, backoff=2))
+def step_3() -> None:
+    # Step implementation
+    raise Exception("This is a test exception")
+```
+
+or using a `config.yaml`:
+
+```yaml
+steps:
+  my_step:
+    retry:
+      max_retries: 3
+      delay: 10
+      backoff: 2
+ ```
+
+In addition, this release includes a number of bug fixes and documentation updates, such
+as a new LLM finetuning template powered by PEFT and BitsAndBytes and instructions for the
+new annotators.
+
+
+## Breaking changes
+* The interface for the base class of the annotator stack component has been updated to 
+account for the fact that not all annotators will launch with a specific URL. So there is 
+no longer an url argument passed in.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot who contributed to this release 
+by bumping the `mlflow` version to 2.12.2
+
+## What's Changed
+* Add more failure logs for code repositories and build reuse by @schustmi in https://github.com/zenml-io/zenml/pull/2697
+* Prodigy annotator by @strickvl in https://github.com/zenml-io/zenml/pull/2655
+* Bump mlflow support to version 2.12.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2693
+* add 0.57.1 to migration test scripts by @safoinme in https://github.com/zenml-io/zenml/pull/2702
+* Pigeon annotator by @strickvl in https://github.com/zenml-io/zenml/pull/2641
+* Allow credentials expiry to be configured for service connectors by @stefannica in https://github.com/zenml-io/zenml/pull/2704
+* Argilla annotator by @strickvl in https://github.com/zenml-io/zenml/pull/2687
+* Add `MySQL` and `mariadb` migration tests to Slow CI by @safoinme in https://github.com/zenml-io/zenml/pull/2686
+* Misc small fixes by @schustmi in https://github.com/zenml-io/zenml/pull/2712
+* Allow resetting server and user metadata by @schustmi in https://github.com/zenml-io/zenml/pull/2666
+* Fix Docker failures in the CI by @avishniakov in https://github.com/zenml-io/zenml/pull/2716
+* Add note about helm dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/2709
+* Add retry config for failing steps by @safoinme in https://github.com/zenml-io/zenml/pull/2627
+* Update pyparsing version by @strickvl in https://github.com/zenml-io/zenml/pull/2710
+* New ruff issue by @avishniakov in https://github.com/zenml-io/zenml/pull/2718
+* PEFT LLM Template by @avishniakov in https://github.com/zenml-io/zenml/pull/2719
+* Add `model_version_id` as part of the Model config by @avishniakov in https://github.com/zenml-io/zenml/pull/2703
+* Add more runners to fast CI by @safoinme in https://github.com/zenml-io/zenml/pull/2706
+* Fail faster on notebook installation and only clone / download the branch we need for `zenml go` by @strickvl in https://github.com/zenml-io/zenml/pull/2721
+* Make a clear separation between server and dashboard API in the server configuration by @stefannica in https://github.com/zenml-io/zenml/pull/2722
+* Update pymysql to fix CVE-2024-36039 by @stefannica in https://github.com/zenml-io/zenml/pull/2714
+* Allow specifying privileged mode for Kubernetes orchestrator containers by @schustmi in https://github.com/zenml-io/zenml/pull/2717
+* Don't use pod resources/affinity for kubernetes orchestrator pod by @schustmi in https://github.com/zenml-io/zenml/pull/2707
+* Extra test for artifact listing by @avishniakov in https://github.com/zenml-io/zenml/pull/2715
+* Pipeline run not tracked in cached artifact version by @avishniakov in https://github.com/zenml-io/zenml/pull/2713
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.57.1...0.58.0
+
+
 # 0.57.1
 
 This a minor release that brings a variety of enhancements for
@@ -1732,7 +1880,7 @@ This is a minor ZenML release that introduces a couple of new features:
 
 In addition to that, this release also contains a couple of bug fixes and improvements, including:
 
-* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/vertex)
+* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/stack-components/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/stack-components/step-operators/vertex)
 * adjust Seldon and BentoML Steps and Examples to new pipeline interface
 
 ## What's Changed

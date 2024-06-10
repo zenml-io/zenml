@@ -38,7 +38,7 @@ def data_loader(
     In this example, the step can be configured with number of rows and logic
     to drop target column or not. See the documentation for more information:
 
-        https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
+        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
 
     Args:
         random_state: Random state for sampling

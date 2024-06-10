@@ -47,7 +47,7 @@ def promote_with_metric_compare(
     and target environment stage for promotion.
     See the documentation for more information:
 
-        https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
+        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
 
     Args:
         latest_metric: Recently trained model metric results.

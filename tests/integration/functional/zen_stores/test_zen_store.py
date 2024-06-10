@@ -48,7 +48,6 @@ from tests.unit.pipelines.test_build_utils import (
 )
 from zenml.artifacts.utils import (
     _load_artifact_store,
-    _load_file_from_artifact_store,
 )
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -79,7 +78,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     StackExistsError,
 )
-from zenml.logging.step_logging import prepare_logs_uri
+from zenml.logging.step_logging import fetch_logs, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
@@ -2966,6 +2965,40 @@ def test_list_unused_artifacts():
         assert artifact_versions.total == num_unused_artifact_versions_before
 
 
+def test_list_custom_named_artifacts():
+    """Tests listing with `has_custom_name=True` only returns custom named artifacts with proper filtering."""
+    client = Client()
+    store = client.zen_store
+
+    num_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
+    num_matching_named_before = store.list_artifact_versions(
+        ArtifactVersionFilter(
+            has_custom_name=True, name="contains:test_step_output"
+        )
+    ).total
+    num_runs = 1
+
+    with PipelineRunContext(num_runs):
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter()
+        )
+        assert (
+            artifact_versions.total
+            == num_artifact_versions_before + num_runs * 2
+        )
+
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter(
+                has_custom_name=True, name="contains:test_step_output"
+            )
+        )
+        assert (
+            artifact_versions.total - num_matching_named_before == num_runs * 2
+        )
+
+
 def test_artifacts_are_not_deleted_with_run(clean_client: "Client"):
     """Tests listing with `unused=True` only returns unused artifacts."""
     store = clean_client.zen_store
@@ -3033,14 +3066,11 @@ def test_logs_are_recorded_properly(clean_client):
         steps = run_context.steps
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
-        artifact_store = _load_artifact_store(
-            step1_logs.artifact_store_id, store
+        step1_logs_content = fetch_logs(
+            store, step1_logs.artifact_store_id, step1_logs.uri
         )
-        step1_logs_content = _load_file_from_artifact_store(
-            step1_logs.uri, artifact_store=artifact_store, mode="r"
-        )
-        step2_logs_content = _load_file_from_artifact_store(
-            step2_logs.uri, artifact_store=artifact_store, mode="r"
+        step2_logs_content = fetch_logs(
+            store, step1_logs.artifact_store_id, step2_logs.uri
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
@@ -3083,14 +3113,10 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
         )
 
         with pytest.raises(DoesNotExistException):
-            _load_file_from_artifact_store(
-                logs_uri_1, artifact_store=artifact_store, mode="r"
-            )
+            fetch_logs(store, artifact_store_id, logs_uri_1)
 
         with pytest.raises(DoesNotExistException):
-            _load_file_from_artifact_store(
-                logs_uri_2, artifact_store=artifact_store, mode="r"
-            )
+            fetch_logs(store, artifact_store_id, logs_uri_2)
 
 
 # .--------------------.

@@ -409,7 +409,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 command=command,
                 args=args,
                 service_account_name=service_account_name,
-                settings=settings,
+                privileged=False,
+                pod_settings=settings.orchestrator_pod_settings,
                 env=environment,
                 mount_local_stores=self.config.is_local,
             )
@@ -432,8 +433,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             image_name=image,
             command=command,
             args=args,
+            privileged=False,
+            pod_settings=settings.orchestrator_pod_settings,
             service_account_name=service_account_name,
-            settings=settings,
             env=environment,
             mount_local_stores=self.config.is_local,
         )

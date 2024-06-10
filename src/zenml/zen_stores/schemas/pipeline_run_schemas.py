@@ -30,6 +30,7 @@ from zenml.models import (
     PipelineRunResponseMetadata,
     PipelineRunUpdate,
 )
+from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -310,11 +311,22 @@ class PipelineRunSchema(NamedSchema, table=True):
                 orchestrator_environment=orchestrator_environment,
                 orchestrator_run_id=self.orchestrator_run_id,
             )
+
+        resources = None
+        if include_resources:
+            model_version = None
+            if config.model and config.model.model_version_id:
+                model_version = config.model._get_model_version(hydrate=False)
+            resources = PipelineRunResponseResources(
+                model_version=model_version
+            )
+
         return PipelineRunResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, run_update: "PipelineRunUpdate") -> "PipelineRunSchema":

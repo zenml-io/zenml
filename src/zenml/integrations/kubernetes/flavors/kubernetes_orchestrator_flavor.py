@@ -43,14 +43,19 @@ class KubernetesOrchestratorSettings(BaseSettings):
             permissions will be created.
         step_pod_service_account_name: Name of the service account to use for the
             step pods. If not provided, the default service account will be used.
-        pod_settings: Pod settings to apply.
+        privileged: If the container should be run in privileged mode.
+        pod_settings: Pod settings to apply to pods executing the steps.
+        orchestrator_pod_settings: Pod settings to apply to the pod which is
+            launching the actual steps.
     """
 
     synchronous: bool = True
     timeout: int = 0
     service_account_name: Optional[str] = None
     step_pod_service_account_name: Optional[str] = None
+    privileged: bool = False
     pod_settings: Optional[KubernetesPodSettings] = None
+    orchestrator_pod_settings: Optional[KubernetesPodSettings] = None
 
 
 class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
@@ -77,6 +82,9 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
             containers).
         skip_local_validations: If `True`, the local validations will be
             skipped.
+        parallel_step_startup_waiting_period: How long to wait in between
+            starting parallel steps. This can be used to distribute server
+            load when running pipelines with a huge amount of parallel steps.
     """
 
     incluster: bool = False
@@ -84,6 +92,7 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False
+    parallel_step_startup_waiting_period: Optional[float] = None
 
     @property
     def is_remote(self) -> bool:

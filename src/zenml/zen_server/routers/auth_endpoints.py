@@ -44,6 +44,7 @@ from zenml.enums import (
     OAuthDeviceStatus,
     OAuthGrantTypes,
 )
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
     APIKeyInternalResponse,
@@ -458,10 +459,10 @@ def device_authorization(
             ),
         )
 
-    if config.dashboard_url:
-        verification_uri = (
-            config.dashboard_url.lstrip("/") + DEVICES + DEVICE_VERIFY
-        )
+    dashboard_url = config.dashboard_url or config.server_url
+
+    if dashboard_url:
+        verification_uri = dashboard_url.lstrip("/") + DEVICES + DEVICE_VERIFY
     else:
         verification_uri = DEVICES + DEVICE_VERIFY
 
@@ -510,6 +511,8 @@ def api_token(
 
     Raises:
         HTTPException: If the user is not authenticated.
+        AuthorizationException: If trying to scope the API token to a different
+            pipeline/schedule than the token used to authorize this request.
     """
     token = auth_context.access_token
     if not token or not auth_context.encoded_access_token:
@@ -522,6 +525,20 @@ def api_token(
     verify_permission(
         resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
     )
+
+    if pipeline_id and token.pipeline_id and pipeline_id != token.pipeline_id:
+        raise AuthorizationException(
+            f"Unable to scope API token to pipeline {pipeline_id}. The "
+            f"token used to authorize this request is already scoped to "
+            f"pipeline {token.pipeline_id}."
+        )
+
+    if schedule_id and token.schedule_id and schedule_id != token.schedule_id:
+        raise AuthorizationException(
+            f"Unable to scope API token to schedule {schedule_id}. The "
+            f"token used to authorize this request is already scoped to "
+            f"schedule {token.schedule_id}."
+        )
 
     if not token.device_id and not token.api_key_id:
         # If not authenticated with a device or a service account, the current

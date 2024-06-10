@@ -42,8 +42,7 @@ def is_cloud_server(server_info: ServerModel) -> bool:
     """
     return (
         "organization_id" in server_info.metadata
-        and server_info.base_url is not None
-        and "cloud.zenml.io" in server_info.base_url
+        and "cloud.zenml.io" in server_info.dashboard_url
     )
 
 
@@ -59,7 +58,7 @@ def get_cloud_dashboard_url() -> Optional[str]:
         server_info = client.zen_store.get_store_info()
 
         if is_cloud_server(server_info):
-            return server_info.base_url
+            return server_info.dashboard_url
 
     return None
 
@@ -80,11 +79,8 @@ def get_server_dashboard_url() -> Tuple[Optional[str], bool]:
         else:
             suffix = ""
 
-        if server_info.base_url and not is_cloud_server(server_info):
-            # For cloud the base URL is set to the cloud dashboard, but in this
-            # function we want the URL of the dashboard provided by the server
-            # deployment, which for cloud is just the ZenStore URL
-            url = server_info.base_url
+        if server_info.server_url:
+            url = server_info.server_url
         else:
             url = client.zen_store.url
 
