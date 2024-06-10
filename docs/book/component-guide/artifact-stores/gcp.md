@@ -2,6 +2,11 @@
 description: Storing artifacts using GCP Cloud Storage.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Google Cloud Storage (GCS)
 
 The GCS Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction) to store ZenML artifacts in a GCP Cloud Storage bucket.

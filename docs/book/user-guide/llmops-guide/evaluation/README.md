@@ -2,6 +2,11 @@
 description: Track how your RAG pipeline improves using evaluation and metrics.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Evaluation and metrics
 
 In this section, we'll explore how to evaluate the performance of your RAG pipeline using metrics and visualizations. Evaluating your RAG pipeline is crucial to understanding how well it performs and identifying areas for improvement. With language models in particular, it's hard to evaluate their performance using traditional metrics like accuracy, precision, and recall. This is because language models generate text, which is inherently subjective and difficult to evaluate quantitatively.

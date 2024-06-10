@@ -2,6 +2,11 @@
 description: Setting your team up for success with a project repository.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 😸 Setting up a project repository
 
 ZenML code typically lives in a `git` repository. Setting this repository up correctly can make a huge impact on collaboration and

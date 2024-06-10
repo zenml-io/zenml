@@ -2,6 +2,11 @@
 description: Creating your own visualizations.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Creating Custom Visualizations
 
 There are two ways how you can add custom visualizations to the dashboard:

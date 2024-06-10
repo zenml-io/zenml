@@ -2,6 +2,11 @@
 description: Level up your skills in a production setting.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🐔 Production guide
 
 The ZenML production guide builds upon the [Starter guide](../starter-guide/README.md) and is the next step in the MLOps Engineer journey with ZenML. If you're an ML practitioner hoping to implement a proof of concept within your workplace to showcase the importance of MLOps, this is the place for you.

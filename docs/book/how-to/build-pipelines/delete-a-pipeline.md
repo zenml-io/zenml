@@ -2,6 +2,11 @@
 description: Learn how to delete pipelines.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Delete a pipeline
 
 ## Delete the latest version of a pipeline
