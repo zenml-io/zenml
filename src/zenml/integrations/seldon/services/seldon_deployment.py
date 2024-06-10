@@ -113,7 +113,7 @@ class SeldonDeploymentConfig(ServiceConfig):
             The annotations for the Seldon Core deployment.
         """
         annotations = {
-            "zenml.service_config": self.json(),
+            "zenml.service_config": self.model_dump_json(),
             "zenml.version": __version__,
         }
         return annotations

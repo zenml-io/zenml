@@ -71,7 +71,7 @@ class AuthenticationConfig(BaseModel):
         """
         return {
             k: v
-            for k, v in self.dict(exclude_none=True).items()
+            for k, v in self.model_dump(exclude_none=True).items()
             if isinstance(v, SecretStr)
         }
 
@@ -84,7 +84,7 @@ class AuthenticationConfig(BaseModel):
         """
         return {
             k: v
-            for k, v in self.dict(exclude_none=True).items()
+            for k, v in self.model_dump(exclude_none=True).items()
             if not isinstance(v, SecretStr)
         }
 
@@ -95,7 +95,7 @@ class AuthenticationConfig(BaseModel):
         Returns:
             A dictionary of all values in the configuration.
         """
-        return self.dict(exclude_none=True)
+        return self.model_dump(exclude_none=True)
 
 
 class ServiceConnectorMeta(ModelMetaclass):

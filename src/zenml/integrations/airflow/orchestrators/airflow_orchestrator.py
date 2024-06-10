@@ -339,7 +339,8 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             with zipfile.ZipFile(path, mode="w") as z:
                 z.write(dag_generator_values.file, arcname="dag.py")
                 z.writestr(
-                    dag_generator_values.config_file_name, dag_config.json()
+                    dag_generator_values.config_file_name,
+                    dag_config.model_dump_json(),
                 )
 
             logger.info("Writing DAG definition to `%s`.", path)

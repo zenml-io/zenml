@@ -502,7 +502,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._prepare_if_possible()
         integration_registry.activate_integrations()
 
-        if self.configuration.dict(exclude_defaults=True, exclude={"name"}):
+        if self.configuration.model_dump(
+            exclude_defaults=True, exclude={"name"}
+        ):
             logger.warning(
                 f"The pipeline `{self.name}` that you're registering has "
                 "custom configurations applied to it. These will not be "

@@ -101,7 +101,7 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
                 "Content-Type": "application/x-www-form-urlencoded",
                 "User-Agent": user_agent_header.encode(),
             },
-            data=auth_request.dict(),
+            data=auth_request.model_dump(),
             verify=verify_ssl,
             timeout=DEFAULT_HTTP_TIMEOUT,
         )
@@ -152,7 +152,7 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
         response = requests.post(
             login_url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data=token_request.dict(),
+            data=token_request.model_dump(),
             verify=verify_ssl,
             timeout=DEFAULT_HTTP_TIMEOUT,
         )

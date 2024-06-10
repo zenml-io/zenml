@@ -59,7 +59,7 @@ def test_stack_component_dict_only_contains_public_attributes(
     assert stub_component_config._some_private_attribute_name == "Also Aria"
 
     expected_dict_keys = {"some_public_attribute_name"}
-    assert set(stub_component_config.dict().keys()) == expected_dict_keys
+    assert set(stub_component_config.model_dump().keys()) == expected_dict_keys
 
 
 def test_stack_component_public_attributes_are_immutable(
@@ -178,7 +178,7 @@ def test_stack_component_secret_reference_resolving(
     new_artifact_store = (
         client_with_stub_orchestrator_flavor.create_stack_component(
             name="local",
-            configuration=LocalArtifactStoreConfig().dict(),
+            configuration=LocalArtifactStoreConfig().model_dump(),
             flavor="local",
             component_type=StackComponentType.ARTIFACT_STORE,
         )
@@ -189,7 +189,7 @@ def test_stack_component_secret_reference_resolving(
             component_type=StackComponentType.ORCHESTRATOR,
             configuration=StubOrchestratorConfig(
                 attribute_without_validator="{{secret.key}}"
-            ).dict(),
+            ).model_dump(),
             flavor="TEST",
         )
     )
@@ -237,7 +237,7 @@ def test_stack_component_serialization_does_not_resolve_secrets(
             component_type=StackComponentType.ORCHESTRATOR,
             configuration=StubOrchestratorConfig(
                 attribute_without_validator=secret_ref,
-            ).dict(),
+            ).model_dump(),
             flavor="TEST",
         )
     )

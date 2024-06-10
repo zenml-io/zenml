@@ -176,7 +176,7 @@ class TerraformService(BaseService):
         assert self.status.config_file is not None
 
         with open(self.status.config_file, "w") as f:
-            f.write(self.json(indent=4))
+            f.write(self.model_dump_json(indent=4))
 
     def _write_vars_to_file(self, vars: Dict[str, Any]) -> None:
         """Write variables to the variables file.

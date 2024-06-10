@@ -312,7 +312,9 @@ def print_pydantic_models(
 
             else:
                 include_columns = [
-                    k for k in model.dict().keys() if k not in exclude_columns
+                    k
+                    for k in model.model_dump().keys()
+                    if k not in exclude_columns
                 ]
         else:
             include_columns = columns
@@ -447,7 +449,9 @@ def print_pydantic_model(
 
         else:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns
+                k
+                for k in model.model_dump().keys()
+                if k not in exclude_columns
             ]
     else:
         include_columns = list(columns)
@@ -1272,7 +1276,7 @@ def pretty_print_model_version_table(
             "NAME": model_version.registered_model.name,
             "MODEL_VERSION": model_version.version,
             "VERSION_DESCRIPTION": model_version.description,
-            "METADATA": model_version.metadata.dict()
+            "METADATA": model_version.metadata.model_dump()
             if model_version.metadata
             else {},
         }
@@ -1314,7 +1318,7 @@ def pretty_print_model_version_details(
             if model_version.last_updated_at
             else "N/A"
         ),
-        "METADATA": model_version.metadata.dict()
+        "METADATA": model_version.metadata.model_dump()
         if model_version.metadata
         else {},
         "MODEL_SOURCE_URI": model_version.model_source_uri,

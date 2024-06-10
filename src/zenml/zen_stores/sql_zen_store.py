@@ -1642,7 +1642,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             settings = self._get_server_settings(session=session)
 
-            analytics_metadata = settings_update.dict(
+            analytics_metadata = settings_update.model_dump(
                 include={
                     "enable_analytics",
                     "display_announcements",

@@ -72,9 +72,9 @@ def test_secret_reference_mixin_serialization_does_not_resolve_secrets():
     doesn't resolve secret references."""
     secret_ref = "{{name.key}}"
 
-    assert MixinSubclass(value=secret_ref).dict()["value"] == secret_ref
+    assert MixinSubclass(value=secret_ref).model_dump()["value"] == secret_ref
     assert (
-        json.loads(MixinSubclass(value=secret_ref).json())["value"]
+        json.loads(MixinSubclass(value=secret_ref).model_dump_json())["value"]
         == secret_ref
     )
 

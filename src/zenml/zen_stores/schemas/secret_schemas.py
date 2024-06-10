@@ -201,7 +201,7 @@ class SecretSchema(NamedSchema, table=True):
         # Don't update the secret values implicitly in the secret. The
         # SQL secret store will call `set_secret_values` to update the
         # values separately if SQL is used as the secrets store.
-        for field, value in secret_update.dict(
+        for field, value in secret_update.model_dump(
             exclude_unset=True, exclude={"workspace", "user", "values"}
         ).items():
             if field == "scope":

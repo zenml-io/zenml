@@ -385,7 +385,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     f"Registering a new version for the model `'{name}'` "
                     f"a version will be assigned automatically."
                 )
-            metadata_dict = metadata.dict() if metadata else {}
+            metadata_dict = metadata.model_dump() if metadata else {}
             # Set the run ID and link.
             run_id = metadata_dict.get("mlflow_run_id", None)
             run_link = metadata_dict.get("mlflow_run_link", None)
@@ -477,7 +477,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         # Update the model tags.
         if metadata:
             try:
-                for key, value in metadata.dict().items():
+                for key, value in metadata.model_dump().items():
                     self.mlflow_client.set_model_version_tag(
                         name=name,
                         version=version,
@@ -593,7 +593,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 filter_string += " AND "
             filter_string += f"run_id='{kwargs['mlflow_run_id']}'"
         if metadata:
-            for tag, value in metadata.dict().items():
+            for tag, value in metadata.model_dump().items():
                 if value:
                     if filter_string:
                         filter_string += " AND "

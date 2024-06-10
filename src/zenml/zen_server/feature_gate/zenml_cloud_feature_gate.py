@@ -109,7 +109,7 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
                 "tenant_id": str(server_config.external_server_id),
                 "resource_id": str(resource_id),
             },
-        ).dict()
+        ).model_dump()
         response = self._post(endpoint=USAGE_EVENT_ENDPOINT, data=data)
         if response.status_code != 200:
             logger.error(

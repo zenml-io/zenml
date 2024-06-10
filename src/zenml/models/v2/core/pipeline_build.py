@@ -241,7 +241,7 @@ class PipelineBuildResponse(
         """
         # Get the base attributes
         yaml_dict: Dict[str, Any] = json.loads(
-            self.json(
+            self.model_dump_json(
                 exclude={
                     "body",
                     "metadata",
@@ -249,7 +249,7 @@ class PipelineBuildResponse(
             )
         )
         images = json.loads(
-            self.get_metadata().json(
+            self.get_metadata().model_dump_json(
                 exclude={
                     "pipeline",
                     "stack",

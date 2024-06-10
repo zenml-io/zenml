@@ -121,7 +121,7 @@ class TriggerSchema(NamedSchema, table=True):
         Returns:
             The updated TriggerSchema.
         """
-        for field, value in trigger_update.dict(
+        for field, value in trigger_update.model_dump(
             exclude_unset=True,
             exclude_none=True,
         ).items():

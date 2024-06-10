@@ -207,7 +207,7 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The updated `ModelSchema`.
         """
-        for field, value in model_update.dict(
+        for field, value in model_update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
             setattr(self, field, value)

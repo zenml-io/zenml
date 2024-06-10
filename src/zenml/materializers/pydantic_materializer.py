@@ -54,7 +54,7 @@ class PydanticMaterializer(BaseMaterializer):
             data: The data to store.
         """
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
-        yaml_utils.write_json(data_path, data.json())
+        yaml_utils.write_json(data_path, data.model_dump_json())
 
     def extract_metadata(self, data: BaseModel) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given BaseModel object.

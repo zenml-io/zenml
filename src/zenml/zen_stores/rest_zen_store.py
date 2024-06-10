@@ -3929,7 +3929,7 @@ class RestZenStore(BaseZenStore):
         return self._request(
             "POST",
             self.url + API + VERSION_1 + path,
-            data=body.json(),
+            data=body.model_dump_json(),
             params=params,
             **kwargs,
         )
@@ -3953,7 +3953,7 @@ class RestZenStore(BaseZenStore):
             The response body.
         """
         logger.debug(f"Sending PUT request to {path}...")
-        data = body.json(exclude_unset=True) if body else None
+        data = body.model_dump_json(exclude_unset=True) if body else None
         return self._request(
             "PUT",
             self.url + API + VERSION_1 + path,
@@ -4132,7 +4132,7 @@ class RestZenStore(BaseZenStore):
         """
         # leave out filter params that are not supplied
         params = params or {}
-        params.update(filter_model.dict(exclude_none=True))
+        params.update(filter_model.model_dump(exclude_none=True))
         body = self.get(f"{route}", params=params)
         if not isinstance(body, dict):
             raise ValueError(

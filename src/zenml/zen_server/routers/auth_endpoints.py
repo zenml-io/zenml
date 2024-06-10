@@ -436,7 +436,7 @@ def device_authorization(
                 city=city,
                 region=region,
                 country=country,
-                **device_details.dict(exclude_none=True),
+                **device_details.model_dump(exclude_none=True),
             )
         )
     else:
@@ -455,7 +455,7 @@ def device_authorization(
                 city=city,
                 region=region,
                 country=country,
-                **device_details.dict(exclude_none=True),
+                **device_details.model_dump(exclude_none=True),
             ),
         )
 

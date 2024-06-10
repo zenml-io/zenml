@@ -149,6 +149,6 @@ class SecretReferenceMixin(BaseModel):
         """
         return {
             secret_utils.parse_secret_reference(v)
-            for v in self.dict().values()
+            for v in self.model_dump().values()
             if secret_utils.is_secret_reference(v)
         }

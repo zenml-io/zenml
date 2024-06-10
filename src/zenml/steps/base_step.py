@@ -800,7 +800,7 @@ class BaseStep(metaclass=BaseStepMeta):
             success_hook_source = resolve_and_validate_hook(on_success)
 
         if isinstance(parameters, BaseParameters):
-            parameters = parameters.dict()
+            parameters = parameters.model_dump()
 
         values = dict_utils.remove_none_values(
             {
@@ -1201,7 +1201,7 @@ To avoid this consider setting step parameters only in one place (config or code
                 # Make sure we have all necessary values to instantiate the
                 # pydantic model later
                 model = annotation(**value)
-                params[key] = model.dict()
+                params[key] = model.model_dump()
             else:
                 params[key] = value
 

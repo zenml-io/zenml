@@ -39,7 +39,7 @@ class BaseSecretSchema(BaseModel):
         Returns:
             A dictionary of all attribute names and their corresponding values.
         """
-        return self.dict(exclude_none=True)
+        return self.model_dump(exclude_none=True)
 
     model_config = ConfigDict(
         # validate attribute assignments

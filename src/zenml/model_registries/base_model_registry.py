@@ -107,12 +107,12 @@ class ModelRegistryModelMetadata(BaseModel):
             return {
                 k: v
                 for k, v in super()
-                .dict(exclude_unset=exclude_unset, **kwargs)
+                .model_dump(exclude_unset=exclude_unset, **kwargs)
                 .items()
                 if v is not None
             }
         else:
-            return super().dict(exclude_unset=exclude_unset, **kwargs)
+            return super().model_dump(exclude_unset=exclude_unset, **kwargs)
 
     model_config = ConfigDict(extra="allow")
 
