@@ -325,7 +325,7 @@ class BaseTestDeployment(ABC):
         store_config = self.get_store_config()
         if store_config is not None:
             store_type = BaseZenStore.get_store_type(store_config.url)
-            store_config_dict = store_config.dict()
+            store_config_dict = store_config.model_dump()
             if store_type == StoreType.REST:
                 if custom_username is not None:
                     store_config_dict["username"] = custom_username
