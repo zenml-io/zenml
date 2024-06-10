@@ -225,7 +225,7 @@ def _link_cached_artifacts_to_model(
         if output_name_ in output_annotations:
             annotation = output_annotations.get(output_name_, None)
             if annotation and annotation.artifact_config is not None:
-                artifact_config_ = annotation.artifact_config.copy()
+                artifact_config_ = annotation.artifact_config.model_copy()
         # no artifact config found or artifact was produced by `save_artifact`
         # inside the step body, so was never in annotations
         if artifact_config_ is None:
