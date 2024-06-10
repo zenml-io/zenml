@@ -1,5 +1,11 @@
 # Specify pip dependencies and apt packages
 
+{% hint style="warning" %}
+The configuration for specifying pip and apt dependencies only works in the remote pipeline case, and is disregarded for local pipelines (i.e. pipelines that run locally without having to build a Docker image).
+{% endhint %}
+
+When a [pipeline is run with a remote orchestrator](../configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](../configure-python-environments/README.md#-configure-python-environments) component of your stack.
+
 By default, ZenML automatically installs all packages required by your active ZenML stack. However, you can specify additional packages to be installed in various ways:
 
 * Install all the packages in your local Python environment (This will use the `pip` or `poetry` package manager to get a list of your local packages):

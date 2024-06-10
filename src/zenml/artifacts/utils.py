@@ -745,6 +745,8 @@ def _load_file_from_artifact_store(
     uri: str,
     artifact_store: "BaseArtifactStore",
     mode: str = "rb",
+    offset: int = 0,
+    length: Optional[int] = None,
 ) -> Any:
     """Load the given uri from the given artifact store.
 
@@ -752,6 +754,8 @@ def _load_file_from_artifact_store(
         uri: The uri of the file to load.
         artifact_store: The artifact store from which to load the file.
         mode: The mode in which to open the file.
+        offset: The offset from which to start reading.
+        length: The amount of bytes that should be read.
 
     Returns:
         The loaded file.
@@ -763,7 +767,19 @@ def _load_file_from_artifact_store(
     """
     try:
         with artifact_store.open(uri, mode) as text_file:
-            return text_file.read()
+            if offset < 0:
+                # If the offset is negative, we seek backwards from the end of
+                # the file
+                try:
+                    text_file.seek(offset, os.SEEK_END)
+                except OSError:
+                    # The negative offset was too large for the file, we seek
+                    # to the start of the file
+                    text_file.seek(0, os.SEEK_SET)
+            elif offset > 0:
+                text_file.seek(offset, os.SEEK_SET)
+
+            return text_file.read(length)
     except FileNotFoundError:
         raise DoesNotExistException(
             f"File '{uri}' does not exist in artifact store "

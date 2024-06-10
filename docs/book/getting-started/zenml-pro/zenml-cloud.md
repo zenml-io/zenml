@@ -51,7 +51,7 @@ information in a secure and isolated environment, offering an extra degree of
 protection. If desired, you can
 even [supply your own secret store](../deploying-zenml/manage-the-deployed-services/custom-secret-stores.md).
 
-Click [here](system-architectures) to understand about the ZenML Cloud system
+Click [here](./system-architectures.md) to understand about the ZenML Cloud system
 architecture.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

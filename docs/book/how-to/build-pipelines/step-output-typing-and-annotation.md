@@ -108,4 +108,36 @@ def divide(a: int, b: int) -> Tuple[
 If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](../../user-guide/starter-guide/manage-artifacts.md) for more information.
 {% endhint %}
 
+
+***
+
+### See Also:
+
+
+<table data-view="cards">
+    <thead>
+    <tr>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th data-hidden data-card-target data-type="content-ref"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>Learn more about output annotation here</td>
+        <td></td>
+        <td></td>
+        <td><a href="../handle-data-artifacts/return-multiple-outputs-from-a-step.md">return-multiple-outputs-from-a-step.md</a></td>
+    </tr>
+    <tr>
+        <td>For custom data types you should check these docs out</td>
+        <td></td>
+        <td></td>
+        <td><a href="../handle-data-artifacts/handle-custom-data-types.md">handle-custom-data-types.md</a></td>
+    </tr>
+    </tbody>
+</table>
+
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
