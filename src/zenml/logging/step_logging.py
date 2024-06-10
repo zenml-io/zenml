@@ -234,11 +234,11 @@ class StepLogsStorage:
         self.buffer: List[str] = []
         self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
-        self.last_merge_time = time.time()
         self.disabled = False
         self._artifact_store: Optional["BaseArtifactStore"] = None
 
         # Immutable filesystems state
+        self.last_merge_time = time.time()
         self.log_files_not_merged: List[str] = []
         self.next_merged_file_name: str = f"{time.time()}{LOGS_EXTENSION}"
 
