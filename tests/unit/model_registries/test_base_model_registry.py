@@ -66,7 +66,8 @@ class TestModelRegistryModelMetadata:
             "custom_attr_2": None,
         }
         assert (
-            metadata.model_dump(exclude_unset=False, exclude_none=False) == expected
+            metadata.model_dump(exclude_unset=False, exclude_none=False)
+            == expected
         )
 
         # Test exclude_unset and exclude_none both True
@@ -75,7 +76,10 @@ class TestModelRegistryModelMetadata:
             "zenml_workspace": "test_workspace",
             "custom_attr_1": "foo",
         }
-        assert metadata.model_dump(exclude_unset=True, exclude_none=True) == expected
+        assert (
+            metadata.model_dump(exclude_unset=True, exclude_none=True)
+            == expected
+        )
 
         # Test exclude_unset False and exclude_none True
         expected = {
@@ -84,7 +88,8 @@ class TestModelRegistryModelMetadata:
             "custom_attr_1": "foo",
         }
         assert (
-            metadata.model_dump(exclude_unset=False, exclude_none=True) == expected
+            metadata.model_dump(exclude_unset=False, exclude_none=True)
+            == expected
         )
 
         # Test exclude_unset True and exclude_none False
@@ -96,5 +101,6 @@ class TestModelRegistryModelMetadata:
             "custom_attr_2": None,
         }
         assert (
-            metadata.model_dump(exclude_unset=True, exclude_none=False) == expected
+            metadata.model_dump(exclude_unset=True, exclude_none=False)
+            == expected
         )
