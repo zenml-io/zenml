@@ -69,7 +69,6 @@
   * [Use pipeline/step parameters](how-to/build-pipelines/use-pipeline-step-parameters.md)
   * [Step output typing and annotation](how-to/build-pipelines/step-output-typing-and-annotation.md)
   * [Control caching behavior](how-to/build-pipelines/control-caching-behavior.md)
-  * [Specify pip or apt requirements](how-to/build-pipelines/specify-pip-or-apt-requirements.md)
   * [Schedule a pipeline](how-to/build-pipelines/schedule-a-pipeline.md)
   * [Deleting a pipeline](how-to/build-pipelines/delete-a-pipeline.md)
   * [Trigger a pipeline from another](how-to/build-pipelines/trigger-a-pipeline-from-another.md)
