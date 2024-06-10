@@ -81,11 +81,6 @@ from zenml.zen_server.utils import (
     server_config,
 )
 
-# Set the maximum number of worker threads
-to_thread.current_default_thread_limiter().total_tokens = (
-    server_config().thread_pool_size
-)
-
 if server_config().use_legacy_dashboard:
     DASHBOARD_DIRECTORY = "dashboard_legacy"
 else:
@@ -196,6 +191,10 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
 @app.on_event("startup")
 def initialize() -> None:
     """Initialize the ZenML server."""
+    # Set the maximum number of worker threads
+    to_thread.current_default_thread_limiter().total_tokens = (
+        server_config().thread_pool_size
+    )
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
