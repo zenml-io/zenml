@@ -155,7 +155,7 @@ def fetch_logs(
             )
         else:
             is_negative_offset = offset < 0
-            files.sort()
+            files.sort(reverse=is_negative_offset)
 
             # search for the first file we need to read
             latest_file_id = 0
@@ -178,6 +178,7 @@ def fetch_logs(
                         offset -= file_size
 
             # read the files according to pre-filtering
+            files.sort()
             ret = []
             for file in files[latest_file_id:]:
                 ret.append(

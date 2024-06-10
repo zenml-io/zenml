@@ -108,8 +108,8 @@ def test_that_fetch_logs_works_with_multiple_files(clean_client: Client):
     """Create multiple files in the artifact store and fetch them in different combinations."""
     artifact_store = clean_client.active_stack.artifact_store
     zen_store = clean_client.zen_store
-    data_len = 10
-    data = ["1" * data_len, "2" * data_len, "3" * data_len]
+    data_lens = [10, 20, 12, 14]
+    data = [str(i) * dl for i, dl in enumerate(data_lens)]
     logs_dir = Path(os.path.join(artifact_store.path, "fake_logs"))
     artifact_store.makedirs(logs_dir)
     logs_dir = str(logs_dir.absolute())
@@ -122,27 +122,33 @@ def test_that_fetch_logs_works_with_multiple_files(clean_client: Client):
     # read data from each file separately using offset and length
     for i in range(len(data)):
         data_ = fetch_logs(
-            zen_store, artifact_store.id, logs_dir, 0 + data_len * i, data_len
+            zen_store,
+            artifact_store.id,
+            logs_dir,
+            0 + sum(data_lens[:i]),
+            data_lens[i],
         )
         assert data_ == data[i]
 
     # read data on intersection of 2 files using offset and length
     data_ = fetch_logs(
-        zen_store, artifact_store.id, logs_dir, data_len // 2, data_len
+        zen_store,
+        artifact_store.id,
+        logs_dir,
+        data_lens[0] // 2,
+        (data_lens[0] + data_lens[1]) // 2,
     )
-    assert data_.count(data[0][0]) == data_len // 2
-    assert data_.count(data[1][0]) == data_len // 2
+    assert data_.count(data[0][0]) == data_lens[0] // 2
+    assert data_.count(data[1][0]) == data_lens[1] // 2
 
     # read data from all files using offset and length
-    data_ = fetch_logs(
-        zen_store, artifact_store.id, logs_dir, 0, data_len * len(data)
-    )
-    for d in data:
-        assert data_.count(d[0]) == data_len
+    data_ = fetch_logs(zen_store, artifact_store.id, logs_dir)
+    for i, d in enumerate(data):
+        assert data_.count(d[0]) == data_lens[i]
 
     # read data from last file using negative offset
     data_ = fetch_logs(
-        zen_store, artifact_store.id, logs_dir, -data_len, data_len
+        zen_store, artifact_store.id, logs_dir, -data_lens[-1], data_lens[-1]
     )
     assert data_ == data[-1]
 
@@ -151,11 +157,11 @@ def test_that_fetch_logs_works_with_multiple_files(clean_client: Client):
         zen_store,
         artifact_store.id,
         logs_dir,
-        -data_len - (data_len // 2),
-        data_len,
+        -data_lens[-1] - data_lens[-2] - (data_lens[-3] // 2),
+        (data_lens[-2] // 2) + (data_lens[-3] // 2),
     )
-    assert data_.count(data[-2][0]) == data_len // 2
-    assert data_.count(data[-1][0]) == data_len // 2
+    assert data_.count(data[-3][0]) == data_lens[-3] // 2
+    assert data_.count(data[-2][0]) == data_lens[-2] // 2
 
 
 def test_that_fetch_logs_works_with_one_file(clean_client: Client):
