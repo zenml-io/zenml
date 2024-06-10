@@ -131,7 +131,7 @@ class DockerSettings(BaseSettings):
         build_context_root: Build context root for the Docker build, only used
             when the `dockerfile` attribute is set. If this is left empty, the
             build context will only contain the Dockerfile.
-        parent_build_config: Configuration for the parent image build.
+        parent_image_build_config: Configuration for the parent image build.
         build_options: DEPRECATED, use parent_build_config.build_options
             instead.
         skip_build: If set to `True`, the parent image will be used directly to
@@ -196,7 +196,7 @@ class DockerSettings(BaseSettings):
     dockerfile: Optional[str] = None
     build_context_root: Optional[str] = None
     build_options: Dict[str, Any] = {}
-    parent_build_config: Optional[DockerBuildConfig] = None
+    parent_image_build_config: Optional[DockerBuildConfig] = None
     skip_build: bool = False
     target_repository: str = "zenml"
     python_package_installer: PythonPackageInstaller = (

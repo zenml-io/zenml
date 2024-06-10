@@ -205,7 +205,8 @@ class PipelineDockerImageBuilder:
                 user_image_name = target_image_name
 
             build_config = (
-                docker_settings.parent_build_config or DockerBuildConfig()
+                docker_settings.parent_image_build_config
+                or DockerBuildConfig()
             )
             build_context = build_context_class(
                 root=docker_settings.build_context_root,
