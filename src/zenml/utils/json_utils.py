@@ -41,16 +41,16 @@ from pydantic.color import Color
 __all__ = "pydantic_encoder"
 
 
-def isoformat(o: Union[datetime.date, datetime.time]) -> str:
+def isoformat(obj: Union[datetime.date, datetime.time]) -> str:
     """Function to convert a datetime into iso format.
 
     Args:
-        o: input datetime
+        obj: input datetime
 
     Returns:
         the corresponding time in iso format.
     """
-    return o.isoformat()
+    return obj.isoformat()
 
 
 def decimal_encoder(dec_value: Decimal) -> Union[int, float]:
@@ -80,14 +80,14 @@ def decimal_encoder(dec_value: Decimal) -> Union[int, float]:
 
 
 ENCODERS_BY_TYPE: Dict[Type[Any], Callable[[Any], Any]] = {
-    bytes: lambda o: o.decode(),
+    bytes: lambda obj: obj.decode(),
     Color: str,
     datetime.date: isoformat,
     datetime.datetime: isoformat,
     datetime.time: isoformat,
     datetime.timedelta: lambda td: td.total_seconds(),
     Decimal: decimal_encoder,
-    Enum: lambda o: o.value,
+    Enum: lambda obj: obj.value,
     frozenset: list,
     deque: list,
     GeneratorType: list,
@@ -99,7 +99,7 @@ ENCODERS_BY_TYPE: Dict[Type[Any], Callable[[Any], Any]] = {
     IPv6Network: str,
     NameEmail: str,
     Path: str,
-    Pattern: lambda o: o.pattern,
+    Pattern: lambda obj: obj.pattern,
     SecretBytes: str,
     SecretStr: str,
     set: list,
