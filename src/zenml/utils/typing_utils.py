@@ -85,7 +85,7 @@ if sys.version_info < (3, 10):
         Returns:
             boolean indicating whether the type is union type.
         """
-        return type_ is Union
+        return type_ is Union  # type: ignore[comparison-overlap]
 
 
 else:
