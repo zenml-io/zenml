@@ -14,6 +14,7 @@
 """DAG (Directed Acyclic Graph) Runners."""
 
 import threading
+import time
 from collections import defaultdict
 from enum import Enum
 from typing import Any, Callable, Dict, List
@@ -66,7 +67,10 @@ class ThreadedDagRunner:
     """
 
     def __init__(
-        self, dag: Dict[str, List[str]], run_fn: Callable[[str], Any]
+        self,
+        dag: Dict[str, List[str]],
+        run_fn: Callable[[str], Any],
+        parallel_node_startup_waiting_period: float = 0.0,
     ) -> None:
         """Define attributes and initialize all nodes in waiting state.
 
@@ -75,7 +79,12 @@ class ThreadedDagRunner:
                 E.g.: [(1->2), (1->3), (2->4), (3->4)] should be represented as
                 `dag={2: [1], 3: [1], 4: [2, 3]}`
             run_fn: A function `run_fn(node)` that runs a single node
+            parallel_node_startup_waiting_period: Delay in seconds to wait in
+                between starting parallel nodes.
         """
+        self.parallel_node_startup_waiting_period = (
+            parallel_node_startup_waiting_period
+        )
         self.dag = dag
         self.reversed_dag = reverse_dag(dag)
         self.run_fn = run_fn
@@ -154,9 +163,12 @@ class ThreadedDagRunner:
             self.node_states[node] = NodeStatus.COMPLETED
 
         # Run downstream nodes.
-        threads = []
+        threads: List[threading.Thread] = []
         for downstram_node in self.reversed_dag[node]:
             if self._can_run(downstram_node):
+                if threads and self.parallel_node_startup_waiting_period > 0:
+                    time.sleep(self.parallel_node_startup_waiting_period)
+
                 thread = self._run_node_in_thread(downstram_node)
                 threads.append(thread)
 
@@ -173,9 +185,12 @@ class ThreadedDagRunner:
         # Run all nodes that can be started immediately.
         # These will, in turn, start other nodes once all of their respective
         # upstream nodes have completed.
-        threads = []
+        threads: List[threading.Thread] = []
         for node in self.nodes:
             if self._can_run(node):
+                if threads and self.parallel_node_startup_waiting_period > 0:
+                    time.sleep(self.parallel_node_startup_waiting_period)
+
                 thread = self._run_node_in_thread(node)
                 threads.append(thread)
 
