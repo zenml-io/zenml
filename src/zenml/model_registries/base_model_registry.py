@@ -92,7 +92,7 @@ class ModelRegistryModelMetadata(BaseModel):
     ) -> Dict[str, str]:
         """Returns a dictionary representation of the metadata.
 
-        This method overrides the default Pydantic `dict` method to allow
+        This method overrides the default Pydantic `model_dump` method to allow
         for the exclusion of fields with a value of None.
 
         Args:
