@@ -35,9 +35,11 @@ from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCPArtifactStoreConfig,
 )
 from zenml.io.fileio import convert_to_str
+from zenml.logger import get_logger
 from zenml.secret.schemas import GCPSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 
+logger = get_logger(__name__)
 PathType = Union[bytes, str]
 
 
@@ -109,6 +111,10 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             A file-like object that can be used to read or write to the file.
         """
+        if mode in ("a", "ab"):
+            logger.warning(
+                "GCS Filesystem is immutable, so append mode will overwrite existing files."
+            )
         return self.filesystem.open(path=path, mode=mode)
 
     def copyfile(
