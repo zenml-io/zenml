@@ -38,7 +38,7 @@ simple_ml_pipeline()
 ```
 
 When this pipeline is executed, the run of the pipeline gets logged to the ZenML dashboard where you can now go to look
-at its dag and all the associated metadata. To access the dashboard you need to have a ZenML server either running
+at its DAG and all the associated metadata. To access the dashboard you need to have a ZenML server either running
 locally or remotely. See our documentation on this [here](../../getting-started/deploying-zenml/README.md).
 
 <figure><img src="../../.gitbook/assets/SimplePipelineDag.png" alt=""><figcaption><p>DAG representation in the ZenML Dahboard.</p></figcaption></figure>
