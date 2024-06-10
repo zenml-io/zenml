@@ -21,8 +21,6 @@ from pydantic_core import CoreSchema, core_schema
 from zenml.utils.enum_utils import StrEnum
 
 
-# TODO: Revisit this idea and investigate how to use custom types in Pydantic
-#   v2, refine the docstrings.
 class Uri(str):
     """Special string class to indicate a URI."""
 
@@ -96,7 +94,7 @@ class StorageSize(int):
         Returns:
             the schema for the custom type.
         """
-        return core_schema.no_info_after_validator_function(cls, handler(str))
+        return core_schema.no_info_after_validator_function(cls, handler(int))
 
 
 # Union of all types that can be used as metadata. Used for type annotations.
