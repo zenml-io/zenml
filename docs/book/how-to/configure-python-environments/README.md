@@ -2,6 +2,11 @@
 description: Navigating multiple development environments.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🐍 Configure python environments
 
 ZenML deployments often involve multiple environments. This guide helps you manage dependencies and configurations across these environments.

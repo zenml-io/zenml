@@ -4,6 +4,11 @@ description: >-
   data with whylogs/WhyLabs profiling.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Whylogs
 
 The whylogs/WhyLabs [Data Validator](./data-validators.md) flavor provided with the ZenML integration uses [whylogs](https://whylabs.ai/whylogs) and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation.

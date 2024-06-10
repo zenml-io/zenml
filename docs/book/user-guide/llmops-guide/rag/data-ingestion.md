@@ -2,6 +2,11 @@
 description: Understand how to ingest and preprocess data for RAG pipelines with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The first step in setting up a RAG pipeline is to ingest the data that will be
 used to train and evaluate the retriever and generator models. This data can
 include a large corpus of documents, as well as any relevant metadata or

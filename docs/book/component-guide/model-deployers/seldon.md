@@ -2,6 +2,11 @@
 description: Deploying models to Kubernetes with Seldon Core.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Seldon
 
 [Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade source-available model serving platform. It packs a wide range of features built around deploying models to REST/GRPC microservices that include monitoring and logging, model explainers, outlier detectors and various continuous deployment strategies such as A/B testing, canary deployments and more.

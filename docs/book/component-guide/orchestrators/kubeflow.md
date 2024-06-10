@@ -2,6 +2,11 @@
 description: Orchestrating your pipelines to run on Kubeflow.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Kubeflow Orchestrator
 
 The Kubeflow orchestrator is an [orchestrator](./orchestrators.md) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.

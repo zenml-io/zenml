@@ -2,6 +2,11 @@
 description: Storing container images locally.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Default Container Registry
 
 The Default container registry is a [container registry](./container-registries.md) flavor that comes built-in with ZenML and allows container registry URIs of any format.

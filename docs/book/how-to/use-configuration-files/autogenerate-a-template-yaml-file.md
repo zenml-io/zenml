@@ -4,6 +4,11 @@ description: >-
   autogenerate a template.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Autogenerate a template yaml file
 
 If you want to generate a template yaml file of your specific pipeline, you can do so by using the `.write_run_configuration_template()` method. This will generate a yaml file with all options commented out. This way you can pick and choose the settings that are relevant to you.

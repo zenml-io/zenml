@@ -2,6 +2,11 @@
 description: How to control ZenML behavior with environmental variables.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🌎 Environment Variables
 
 There are a few pre-defined environmental variables that can be used to control the behavior of ZenML. See the list below with default values and options:

@@ -2,6 +2,11 @@
 description: Logging and visualizing experiments with Weights & Biases.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Weights & Biases
 
 The Weights & Biases Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Weights & Biases ZenML integration that uses [the Weights & Biases experiment tracking platform](https://wandb.ai/site/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
