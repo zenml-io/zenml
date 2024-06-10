@@ -66,6 +66,12 @@ def decimal_encoder(dec_value: Decimal) -> Union[int, float]:
 
     >>> decimal_encoder(Decimal("1"))
     1
+
+    Args:
+        dec_value: The input Decimal value
+
+    Returns:
+        the encoded result
     """
     if dec_value.as_tuple().exponent >= 0:  # type: ignore[operator]
         return int(dec_value)
