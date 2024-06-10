@@ -44,7 +44,7 @@ You will be prompted to provide a name for your deployment and details like what
 In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 {% endhint %}
 
-To learn more about different options for [deploying ZenML, visit the deployment documentation](../../getting-started/deploying-zenml/).
+To learn more about different options for [deploying ZenML, visit the deployment documentation](../../getting-started/deploying-zenml/README.md).
 
 ## Connecting to a deployed ZenML
 
@@ -57,7 +57,7 @@ zenml connect --url <SERVER_URL>
 where SERVER\_URL is the host address of your ZenML deployment (e.g. `https://mydeployment.zenml.com`)
 
 {% hint style="info" %}
-Having trouble connecting with a browser? There are other ways to connect. Read [here](../../how-to/connecting-to-zenml/) for more details.
+Having trouble connecting with a browser? There are other ways to connect. Read [here](../../how-to/connecting-to-zenml/README.md) for more details.
 {% endhint %}
 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. After that, you're now locally connected to a remote ZenML. Nothing of your experience changes, except that all metadata that you produce will be tracked centrally in one place from now on.

@@ -25,6 +25,9 @@ Returns:
 {{- define "zenml.serverConfigurationAttrs" -}}
 auth_scheme: {{ .ZenML.authType | default .ZenML.auth.authType | quote }}
 deployment_type: {{ .ZenML.deploymentType | default "kubernetes" }}
+{{- if .ZenML.threadPoolSize }}
+thread_pool_size: {{ .ZenML.threadPoolSize | quote }}
+{{- end }}
 {{- if .ZenML.auth.jwtTokenAlgorithm }}
 jwt_token_algorithm: {{ .ZenML.auth.jwtTokenAlgorithm | quote }}
 {{- end }}

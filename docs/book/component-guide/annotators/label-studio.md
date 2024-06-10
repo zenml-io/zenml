@@ -86,7 +86,7 @@ ZenML supports access to your data and annotations via the `zenml annotator ...`
 
 You can access information about the datasets you're using with the `zenml annotator dataset list`. To work on annotation for a particular dataset, you can run `zenml annotator dataset annotate <dataset_name>`.
 
-[Our computer vision end to end example](https://github.com/zenml-io/zenml-projects/tree/main/cv-webinar/end-to-end-computer-vision) is the best place to see how all the pieces of making this integration work fit together. What follows is an overview of some key components to the Label Studio integration and how it can be used.
+[Our computer vision end to end example](https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision) is the best place to see how all the pieces of making this integration work fit together. What follows is an overview of some key components to the Label Studio integration and how it can be used.
 
 #### Label Studio Annotator Stack Component
 

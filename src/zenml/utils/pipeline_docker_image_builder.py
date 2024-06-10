@@ -71,10 +71,7 @@ PIP_DEFAULT_ARGS = {
     "no-cache-dir": None,
     "default-timeout": 60,
 }
-UV_DEFAULT_ARGS = {
-    "no-cache-dir": None,
-    "system": None,
-}
+UV_DEFAULT_ARGS = {"no-cache-dir": None}
 
 
 class PipelineDockerImageBuilder:
