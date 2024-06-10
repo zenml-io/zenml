@@ -171,6 +171,7 @@ class BaseArtifactStoreConfig(StackComponentConfig):
     path: str
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
+    IS_IMMUTABLE_FILESYSTEM: ClassVar[bool] = False
 
     @root_validator(skip_on_failure=True)
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
