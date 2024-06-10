@@ -30,7 +30,7 @@ We also build and maintain [the `mlstacks` package](https://mlstacks.zenml.io/) 
 
 * **deploy ZenML** on my internal company cluster?
 
-Read [the documentation on self-hosted ZenML deployments](../getting-started/deploying-zenml/zenml-self-hosted/README.md) in which several options are presented.
+Read [the documentation on self-hosted ZenML deployments](../getting-started/deploying-zenml/README.md) in which several options are presented.
 
 * **hyperparameter tuning**?
 
@@ -50,7 +50,7 @@ Please read our [general information on how to compose steps + pipelines togethe
 
 * **upgrade** my ZenML client and/or server?
 
-Upgrading your ZenML client package is as simple as running `pip install --upgrade zenml` in your terminal. For upgrading your ZenML server, please refer to [the dedicated documentation section](../getting-started/deploying-zenml/zenml-self-hosted/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md) which covers most of the ways you might do this as well as common troubleshooting steps.
+Upgrading your ZenML client package is as simple as running `pip install --upgrade zenml` in your terminal. For upgrading your ZenML server, please refer to [the dedicated documentation section](../getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md) which covers most of the ways you might do this as well as common troubleshooting steps.
 
 * use a \<YOUR\_COMPONENT\_GOES\_HERE> stack component?
 
