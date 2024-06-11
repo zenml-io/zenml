@@ -23,7 +23,7 @@ class TensorBoardIntegration(Integration):
     """Definition of TensorBoard integration for ZenML."""
 
     NAME = TENSORBOARD
-    REQUIREMENTS = []
+    REQUIREMENTS = ["tensorboard>=2.12"]
 
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
@@ -35,18 +35,7 @@ class TensorBoardIntegration(Integration):
         Returns:
             A list of requirements.
         """
-        if sys.version_info > (3, 11):
-            tf_version = "2.13"
-        else:
-            # Capping tensorflow to 2.11 for Python 3.10 and below because it
-            # is not compatible with Pytorch
-            # (see https://github.com/pytorch/pytorch/issues/99637).
-            tf_version = "2.11"
-
-        requirements = [
-            f"tensorboard>={tf_version}",
-        ]
-        return requirements
+        return cls.REQUIREMENTS
 
     @classmethod
     def activate(cls) -> None:
