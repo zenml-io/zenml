@@ -52,11 +52,11 @@ class TensorflowIntegration(Integration):
         target_os = target_os or platform.system()
         if target_os == "Darwin" and platform.machine() == "arm64":
             requirements = [
-                f"tensorflow-macos==2.14",
+                f"tensorflow-macos==2.12",
             ]
         else:
             requirements = [
-                f"tensorflow==2.14",
+                f"tensorflow==2.12",
                 "tensorflow_io>=0.24.0",
             ]
         return requirements
