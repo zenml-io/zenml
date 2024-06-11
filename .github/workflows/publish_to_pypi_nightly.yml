@@ -6,7 +6,7 @@ on:
       test_env:
         description: Set to true if running in a test environment
         required: false
-        default: true
+        default: false
         type: boolean
 jobs:
   publish_to_pypi:
