@@ -1147,7 +1147,7 @@ class GCPServiceConnector(ServiceConnector):
         # domain format with the project ID as the first part of the URL path
         # and the registry name as the second part of the URL path
         if match := re.match(
-            r"^(https://)?(([a-z0-9-]+)-docker.pkg.dev/([a-z0-9-]+)/([a-z0-9-.]+))(/.+)*$",
+            r"^(https://)?(([a-z0-9-]+)-docker\.pkg\.dev/([a-z0-9-]+)/([a-z0-9-.]+))(/.+)*$",
             resource_id,
         ):
             # The resource ID is a Google Artifact Registry URI
@@ -1181,7 +1181,7 @@ class GCPServiceConnector(ServiceConnector):
         # us.gcr.io, eu.gcr.io, asia.gcr.io) and the project ID is the
         # first part of the URL path
         elif match := re.match(
-            r"^(https://)?(((us|eu|asia)\.)?gcr.io/[a-z0-9-]+)(/.+)*$",
+            r"^(https://)?(((us|eu|asia)\.)?gcr\.io/[a-z0-9-]+)(/.+)*$",
             resource_id,
         ):
             # The resource ID is a legacy GCR repository URI.
