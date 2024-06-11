@@ -1858,7 +1858,7 @@ class GCPServiceConnector(ServiceConnector):
             except google.api_core.exceptions.GoogleAPIError as e:
                 msg = f"Failed to list Google Artifact Registries: {e}"
                 logger.error(msg)
-                # TODO: enable when GCR is no longer suported:
+                # TODO: enable when GCR is no longer supported:
                 # raise AuthorizationException(msg) from e
 
             return resource_ids
