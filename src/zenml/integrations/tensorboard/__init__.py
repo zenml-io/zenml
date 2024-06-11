@@ -23,7 +23,7 @@ class TensorBoardIntegration(Integration):
     """Definition of TensorBoard integration for ZenML."""
 
     NAME = TENSORBOARD
-    REQUIREMENTS = ["tensorboard>=2.12"]
+    REQUIREMENTS = []
 
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
@@ -35,7 +35,8 @@ class TensorBoardIntegration(Integration):
         Returns:
             A list of requirements.
         """
-        return cls.REQUIREMENTS
+        requirements = ["tensorboard>=2.12,<=2.15"]
+        return requirements
 
     @classmethod
     def activate(cls) -> None:
