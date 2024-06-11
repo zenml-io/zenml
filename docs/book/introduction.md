@@ -4,83 +4,8 @@ description: Docs of previous ZenML versions are can be found with the following
 
 # 🧙‍♂️ Find older version our docs
 
-<table>
-    <thead>
-    <tr>
-        <th width="210">Version</th>
-        <th></th>
-    </tr>
-    </thead>
-    <tbody>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.58.0-legacy">0.58.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.57.1-legacy">0.57.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.57.0-legacy">0.57.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.56.4-legacy">0.56.4</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.56.3-legacy">0.56.3</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.56.2-legacy">0.56.2</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.56.1-legacy">0.56.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.5-legacy">0.55.5</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.4-legacy">0.55.4</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.3-legacy">0.55.3</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.2-legacy">0.55.2</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.1-legacy">0.55.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.0-legacy">0.55.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.54.1-legacy">0.54.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.54.0-legacy">0.54.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.53.1-legacy">0.53.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.53.0-legacy">0.53.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.52.0-legacy">0.52.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.51.0-legacy">0.51.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.50.0-legacy">0.50.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.47.0-legacy">0.47.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.46.1-legacy">0.46.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.46.0-legacy">0.46.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.6-legacy">0.45.6</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.5-legacy">0.45.5</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.4-legacy">0.45.4</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.3-legacy">0.45.3</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.2-legacy">0.45.2</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.44.4-legacy">0.44.4</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.44.3-legacy">0.44.3</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.44.2-legacy">0.44.2</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.44.1-legacy">0.44.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.43.1-legacy">0.43.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.43.0-legacy">0.43.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.42.2-legacy">0.42.2</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.42.1-legacy">0.42.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.42.0-legacy">0.42.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.41.0-legacy">0.41.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.40.3-legacy">0.40.3</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.40.2-legacy">0.40.2</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.40.1-legacy">0.40.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.40.0-legacy">0.40.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.39.1-legacy">0.39.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.39.0-legacy">0.39.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.38.0-legacy">0.38.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.37.0-legacy">0.37.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.36.1-legacy">0.36.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.36.0-legacy">0.36.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.35.1-legacy">0.35.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.35.0-legacy">0.35.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.34.0-legacy">0.34.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.33.0-legacy">0.33.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.32.1-legacy">0.32.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.32.0-legacy">0.32.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.31.1-legacy">0.31.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.31.0-legacy">0.31.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.30.0-legacy">0.30.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.5-legacy">0.20.5</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.4-legacy">0.20.4</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.3-legacy">0.20.3</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.2-legacy">0.20.2</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.0-legacy">0.20.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.13.2-legacy">0.13.2</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.13.1-legacy">0.13.1</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.13.0-legacy">0.13.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.12.0-legacy">0.12.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.11.0-legacy">0.11.0</a></td><td></td></tr>
-        <tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.10.0-legacy">0.10.0</a></td><td></td></tr>
-    </tbody>
-</table>
+<table data-full-width="false"><thead><tr><th width="210">Version</th></tr></thead><tbody><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.58.0-legacy">0.58.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.57.1-legacy">0.57.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.57.0-legacy">0.57.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.56.4-legacy">0.56.4</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.56.3-legacy">0.56.3</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.56.2-legacy">0.56.2</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.56.1-legacy">0.56.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.5-legacy">0.55.5</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.4-legacy">0.55.4</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.3-legacy">0.55.3</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.2-legacy">0.55.2</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.1-legacy">0.55.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.55.0-legacy">0.55.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.54.1-legacy">0.54.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.54.0-legacy">0.54.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.53.1-legacy">0.53.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.53.0-legacy">0.53.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.52.0-legacy">0.52.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.51.0-legacy">0.51.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.50.0-legacy">0.50.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.47.0-legacy">0.47.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.46.1-legacy">0.46.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.46.0-legacy">0.46.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.6-legacy">0.45.6</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.5-legacy">0.45.5</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.4-legacy">0.45.4</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.3-legacy">0.45.3</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.45.2-legacy">0.45.2</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.44.4-legacy">0.44.4</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.44.3-legacy">0.44.3</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.44.2-legacy">0.44.2</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.44.1-legacy">0.44.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.43.1-legacy">0.43.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.43.0-legacy">0.43.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.42.2-legacy">0.42.2</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.42.1-legacy">0.42.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.42.0-legacy">0.42.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.41.0-legacy">0.41.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.40.3-legacy">0.40.3</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.40.2-legacy">0.40.2</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.40.1-legacy">0.40.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.40.0-legacy">0.40.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.39.1-legacy">0.39.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.39.0-legacy">0.39.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.38.0-legacy">0.38.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.37.0-legacy">0.37.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.36.1-legacy">0.36.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.36.0-legacy">0.36.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.35.1-legacy">0.35.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.35.0-legacy">0.35.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.34.0-legacy">0.34.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.33.0-legacy">0.33.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.32.1-legacy">0.32.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.32.0-legacy">0.32.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.31.1-legacy">0.31.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.31.0-legacy">0.31.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.30.0-legacy">0.30.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.5-legacy">0.20.5</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.4-legacy">0.20.4</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.3-legacy">0.20.3</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.2-legacy">0.20.2</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.20.0-legacy">0.20.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.13.2-legacy">0.13.2</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.13.1-legacy">0.13.1</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.13.0-legacy">0.13.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.12.0-legacy">0.12.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.11.0-legacy">0.11.0</a></td></tr><tr><td><a href="https://zenml-io.gitbook.io/zenml-legacy-documentation/v/0.10.0-legacy">0.10.0</a></td></tr></tbody></table>
 
 
+
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>0.58.0</td><td></td><td></td><td><a href="https://www.docs.zenml.io">www.docs.zenml.io</a></td></tr><tr><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td></tr></tbody></table>
