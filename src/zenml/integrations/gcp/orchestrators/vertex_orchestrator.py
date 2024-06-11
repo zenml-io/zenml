@@ -39,6 +39,7 @@ from google.cloud import aiplatform
 from kfp import dsl
 from kfp.compiler import Compiler as KFPCOmpiler
 
+from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
 )
@@ -250,7 +251,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         arguments: List[str],
         component_name: str,
     ) -> dsl.PipelineTask:
-        """Creates a dynamic container component for a Tekton pipeline.
+        """Creates a dynamic container component for a Vertex pipeline.
 
         Args:
             image: The image to use for the component.
@@ -383,23 +384,23 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         )
                     if pod_settings.affinity:
                         logger.warning(
-                            "Affinity is set but not supported in Tekton with "
+                            "Affinity is set but not supported in Vertex with "
                             "Kubeflow Pipelines 2.x. Ignoring..."
                         )
                     if pod_settings.tolerations:
                         logger.warning(
                             "Tolerations are set but not supported in "
-                            "Tekton with Kubeflow Pipelines 2.x. Ignoring..."
+                            "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
                         )
                     if pod_settings.volumes:
                         logger.warning(
-                            "Volumes are set but not supported in Tekton with "
+                            "Volumes are set but not supported in Vertex with "
                             "Kubeflow Pipelines 2.x. Ignoring..."
                         )
                     if pod_settings.volume_mounts:
                         logger.warning(
                             "Volume mounts are set but not supported in "
-                            "Tekton with Kubeflow Pipelines 2.x. Ignoring..."
+                            "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
                         )
 
                     # apply pod settings
@@ -408,51 +409,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                             label_name=key, value=value
                         )
 
-                # add resource requirements
-                if step.config.resource_settings:
-                    cpu_limit = (
-                        step.config.resource_settings.cpu_count
-                        or self.config.cpu_limit
+                step_name_to_dynamic_component[step_name] = (
+                    self._configure_container_resources(
+                        dynamic_component,
+                        step.config.resource_settings,
+                        step_settings.node_selector_constraint,
                     )
-
-                if cpu_limit is not None:
-                    dynamic_component = dynamic_component.set_cpu_limit(
-                        str(cpu_limit)
-                    )
-
-                memory_limit = (
-                    step.config.resource_settings.memory[:-1]
-                    if step.config.resource_settings.memory
-                    else self.config.memory_limit
                 )
-                if memory_limit is not None:
-                    dynamic_component = dynamic_component.set_memory_limit(
-                        memory_limit
-                    )
-
-                gpu_limit = (
-                    step.config.resource_settings.gpu_count
-                    if step.config.resource_settings.gpu_count is not None
-                    else self.config.gpu_limit
-                )
-                if gpu_limit is not None and gpu_limit > 0:
-                    dynamic_component = dynamic_component.set_gpu_limit(
-                        gpu_limit
-                    )
-
-                if step_settings.node_selector_constraint:
-                    (constraint_label, value) = (
-                        step_settings.node_selector_constraint
-                    )
-                    if not (
-                        constraint_label
-                        == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                        and gpu_limit == 0
-                    ):
-                        dynamic_component.add_node_selector_constraint(
-                            constraint_label, value
-                        )
-                step_name_to_dynamic_component[step_name] = dynamic_component
 
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
@@ -700,3 +663,57 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         return {
             METADATA_ORCHESTRATOR_URL: Uri(run_url),
         }
+
+    def _configure_container_resources(
+        self,
+        dynamic_component: dsl.PipelineTask,
+        resource_settings: "ResourceSettings",
+        node_selector_constraint: Optional[Tuple[str, str]] = None,
+    ) -> dsl.PipelineTask:
+        """Adds resource requirements to the container.
+
+        Args:
+            dynamic_component: The dynamic component to add the resource
+                settings to.
+            resource_settings: The resource settings to use for this
+                container.
+            node_selector_constraint: Node selector constraint to apply to
+                the container.
+        """
+        # Set optional CPU, RAM and GPU constraints for the pipeline
+        if resource_settings:
+            cpu_limit = resource_settings.cpu_count or self.config.cpu_limit
+
+        if cpu_limit is not None:
+            dynamic_component = dynamic_component.set_cpu_limit(str(cpu_limit))
+
+        memory_limit = (
+            resource_settings.memory[:-1]
+            if resource_settings.memory
+            else self.config.memory_limit
+        )
+        if memory_limit is not None:
+            dynamic_component = dynamic_component.set_memory_limit(
+                memory_limit
+            )
+
+        gpu_limit = (
+            resource_settings.gpu_count
+            if resource_settings.gpu_count is not None
+            else self.config.gpu_limit
+        )
+        if gpu_limit is not None and gpu_limit > 0:
+            dynamic_component = dynamic_component.set_gpu_limit(gpu_limit)
+
+        if node_selector_constraint:
+            (constraint_label, value) = node_selector_constraint
+            if not (
+                constraint_label
+                == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                and gpu_limit == 0
+            ):
+                gpu_limit = gpu_limit or 1
+                dynamic_component.set_accelerator_limit(gpu_limit)
+                dynamic_component.set_accelerator_type(value)
+
+        return dynamic_component

@@ -26,6 +26,7 @@ from typing import (
 )
 
 import kfp
+import requests
 import urllib3
 from kfp import dsl
 from kfp.client import Client as KFPClient
@@ -34,6 +35,7 @@ from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
+from zenml.config.resource_settings import ResourceSettings
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -57,6 +59,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ENV_ZENML_TEKTON_RUN_ID = "ZENML_TEKTON_RUN_ID"
+KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL = "accelerator"
 
 
 class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
@@ -177,7 +180,76 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         "Cookie already set in `client_args`, ignoring "
                         "`client_username` and `client_password`..."
                     )
+                else:
+                    session_cookie = self._get_session_cookie(
+                        username=settings.client_username,
+                        password=settings.client_password,
+                    )
+
+                    client_args["cookies"] = session_cookie
         return KFPClient(**client_args)
+
+    def _get_session_cookie(self, username: str, password: str) -> str:
+        """Gets session cookie from username and password.
+
+        Args:
+            username: Username for kubeflow host.
+            password: Password for kubeflow host.
+
+        Raises:
+            RuntimeError: If the cookie fetching failed.
+
+        Returns:
+            Cookie with the prefix `authsession=`.
+        """
+        if self.config.tekton_hostname is None:
+            raise RuntimeError(
+                "You must configure the Kubeflow orchestrator "
+                "with the `tekton_hostname` parameter which usually ends "
+                "with `/pipeline` (e.g. `https://mykubeflow.com/pipeline`). "
+                "Please update the current kubeflow orchestrator with: "
+                f"`zenml orchestrator update {self.name} "
+                "--tekton_hostname=<MY_KUBEFLOW_HOST>`"
+            )
+
+        # Get cookie
+        logger.info(
+            f"Attempting to fetch session cookie from {self.config.tekton_hostname} "
+            "with supplied username and password..."
+        )
+        session = requests.Session()
+        try:
+            response = session.get(self.config.tekton_hostname)
+            response.raise_for_status()
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as e:
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {e}"
+            )
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        data = {"login": username, "password": password}
+        try:
+            response = session.post(response.url, headers=headers, data=data)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {errh}"
+            )
+        cookie_dict = session.cookies.get_dict()  # type: ignore[no-untyped-call]
+
+        if "authservice_session" not in cookie_dict:
+            raise RuntimeError("Invalid username and/or password!")
+
+        logger.info("Session cookie fetched successfully!")
+
+        return "authservice_session=" + str(cookie_dict["authservice_session"])
 
     @property
     def config(self) -> TektonOrchestratorConfig:
@@ -468,34 +540,24 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         )
 
                     # apply pod settings
-                    for key, value in pod_settings.node_selectors.items():
-                        dynamic_component.add_node_selector_constraint(
-                            label_name=key, value=value
+                    if (
+                        KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                        in pod_settings.node_selectors.keys()
+                    ):
+                        node_selector_constraint = (
+                            KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            pod_settings.node_selectors[
+                                KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                            ],
                         )
 
-                # add resource requirements
-                if step.config.resource_settings:
-                    if step.config.resource_settings.cpu_count is not None:
-                        dynamic_component = dynamic_component.set_cpu_limit(
-                            step.config.resource_settings.cpu_count
-                        )
-
-                    if step.config.resource_settings.gpu_count is not None:
-                        dynamic_component = (
-                            dynamic_component.set_accelerator_limit(
-                                step.config.resource_settings.gpu_count
-                            )
-                        )
-
-                    if step.config.resource_settings.memory is not None:
-                        memory_limit = step.config.resource_settings.memory[
-                            :-1
-                        ]
-                        dynamic_component = dynamic_component.set_memory_limit(
-                            memory_limit
-                        )
-
-                step_name_to_dynamic_component[step_name] = dynamic_component
+                step_name_to_dynamic_component[step_name] = (
+                    self._configure_container_resources(
+                        dynamic_component,
+                        step.config.resource_settings,
+                        node_selector_constraint,
+                    )
+                )
 
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
@@ -774,3 +836,45 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             Path of the daemon log file.
         """
         return os.path.join(self.root_directory, "tekton_daemon.log")
+
+    def _configure_container_resources(
+        self,
+        dynamic_component: dsl.PipelineTask,
+        resource_settings: "ResourceSettings",
+        node_selector_constraint: Optional[Tuple[str, str]] = None,
+    ) -> dsl.PipelineTask:
+        """Adds resource requirements to the container.
+
+        Args:
+            dynamic_component: The dynamic component to add the resource
+                settings to.
+            resource_settings: The resource settings to use for this
+                container.
+            node_selector_constraint: Node selector constraint to apply to
+                the container.
+        """
+        # Set optional CPU, RAM and GPU constraints for the pipeline
+        if resource_settings:
+            cpu_limit = resource_settings.cpu_count or None
+
+        if cpu_limit is not None:
+            dynamic_component = dynamic_component.set_cpu_limit(str(cpu_limit))
+
+        memory_limit = resource_settings.get_memory() or None
+        if memory_limit is not None:
+            dynamic_component = dynamic_component.set_memory_limit(
+                memory_limit
+            )
+
+        gpu_limit = resource_settings.gpu_count or None
+        if gpu_limit is not None and gpu_limit > 0:
+            dynamic_component = dynamic_component.set_gpu_limit(gpu_limit)
+
+        if node_selector_constraint:
+            (constraint_label, value) = node_selector_constraint
+            if not gpu_limit == 0 and constraint_label == "accelerator":
+                gpu_limit = gpu_limit or 1
+                dynamic_component.set_accelerator_limit(gpu_limit)
+                dynamic_component.set_accelerator_type(value)
+
+        return dynamic_component
