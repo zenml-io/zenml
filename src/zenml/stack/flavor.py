@@ -209,9 +209,9 @@ class Flavor:
             is_latest = True
 
         if is_latest:
-            base = f"https://zenml-io.gitbook.io/zenml-legacy-documentation/v/{__version__}"
-        else:
             base = "https://docs.zenml.io/"
+        else:
+            base = f"https://zenml-io.gitbook.io/zenml-legacy-documentation/v/{__version__}"
         return f"{base}/stack-components/{component_type}/{name}"
 
     def generate_default_sdk_docs_url(self) -> str:
