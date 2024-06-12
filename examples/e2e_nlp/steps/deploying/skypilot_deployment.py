@@ -15,11 +15,8 @@
 # limitations under the License.
 #
 
-
 import os
 import re
-
-import sky
 
 from zenml import step
 from zenml.client import Client
@@ -35,8 +32,10 @@ def deploy_to_skypilot():
     This step deploy the model to a VM using SkyPilot.
 
     This step requires `skypilot` to be installed.
-    aswell as a configured cloud account locally (e.g. AWS, GCP, Azure).
+    as well as a configured cloud account locally (e.g. AWS, GCP, Azure).
     """
+    import sky
+
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     zenml_repo_root = Client().root
     if not zenml_repo_root:
