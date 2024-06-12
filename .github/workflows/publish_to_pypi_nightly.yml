@@ -2,6 +2,12 @@
 name: Publish Nightly PyPI package
 on:
   workflow_call:
+    inputs:
+      test_env:
+        description: Set to true if running in a test environment
+        required: false
+        default: false
+        type: boolean
 jobs:
   publish_to_pypi:
     name: Publish Nightly Python 🐍 package 📦 to PyPI
@@ -63,11 +69,11 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             # Check if the VERSION file matches the tag
             if [ "$(cat src/zenml/VERSION)" = "$TAG" ]; then
-              poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}';
+              poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}' || ${{ inputs.test_env }}
             else
               echo "Version mismatch between src/zenml/VERSION and branch tag" && exit 1;
             fi
           else
             # For branches, publish the nightly version without version check
-            poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}';
+            poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}' || ${{ inputs.test_env }}
           fi
