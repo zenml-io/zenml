@@ -807,9 +807,33 @@ The configured credentials must have at least the following [GCP permissions](ht
 The Artifact Registry Create-on-Push Writer role includes all of the above
 permissions.
 
-This resource type also includes legacy GCR container registry support. When
-used with GCR registries, the configured credentials must have at least the
-following [GCP permissions](https://cloud.google.com/iam/docs/understanding-roles#storage-roles):
+This resource type also includes legacy GCR container registry support.
+
+**Important Notice: Google Container Registry** [**is being replaced by Artifact Registry**](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr).
+Please start using Artifact Registry for your containers. As per Google's
+documentation, *"after May 15, 2024, Artifact Registry will host images for the
+gcr.io domain in Google Cloud projects without previous Container Registry
+usage. After March 18, 2025, Container Registry will be shut down."*.
+
+Support for legacy GCR registries is still included in the GCP service
+connector. Users that already have GCP service connectors configured to access
+GCR registries may continue to use them without taking any action. However, it
+is recommended to transition to Google Artifact Registries as soon as possible
+by following [the GCP guide on this subject](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr)
+and making the following updates to ZenML GCP Service Connectors that are used
+to access GCR resources:
+
+* add the IAM permissions documented here to the GCP Service Connector
+credentials to enable them to access the Artifact Registries.
+* users may keep the gcr.io GCR URLs already configured in the GCP Service
+Connectors as well as those used in linked Container Registry stack components
+given that these domains are redirected by Google to GAR as covered in the GCR
+transition guide. Alternatively, users may update the GCP Service Connector
+configuration and/or the Container Registry stack components to use the
+replacement Artifact Registry URLs.
+
+When used with GCR registries, the configured credentials must have at least the
+following [GCP permissions](https://cloud.google.com/iam/docs/understanding-roles#cloud-storage-roles):
 
 - `storage.buckets.get`
 - `storage.multipartUploads.abort`
