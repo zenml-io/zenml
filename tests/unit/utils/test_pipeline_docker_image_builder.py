@@ -14,6 +14,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
@@ -170,3 +172,20 @@ def test_python_package_installer_args():
         "RUN pip install --no-cache-dir --default-timeout=99 --other-arg=value --option"
         in generated_dockerfile
     )
+
+
+def test_dockerfile_needs_to_exist():
+    """Tests that an error gets raised if the Dockerfile specified in the
+    DockerSettings does not exist."""
+    docker_settings = DockerSettings(
+        dockerfile="/a/file/that/does/not/exist.random"
+    )
+
+    with pytest.raises(ValueError):
+        PipelineDockerImageBuilder().build_docker_image(
+            docker_settings=docker_settings,
+            tag="tag",
+            stack=Client().active_stack,
+            include_files=True,
+            download_files=False,
+        )

@@ -134,6 +134,14 @@ class PipelineDockerImageBuilder:
             # pipeline?
             return docker_settings.parent_image, dockerfile, requirements
 
+        if docker_settings.dockerfile and not os.path.isfile(
+            docker_settings.dockerfile
+        ):
+            raise ValueError(
+                "Dockerfile at path "
+                f"{os.path.abspath(docker_settings.dockerfile)} not found."
+            )
+
         stack.validate()
         image_builder = stack.image_builder
         if not image_builder:
@@ -174,12 +182,6 @@ class PipelineDockerImageBuilder:
         )
 
         if docker_settings.dockerfile:
-            if not os.path.isfile(docker_settings.dockerfile):
-                raise ValueError(
-                    "Dockerfile at path "
-                    f"{os.path.abspath(docker_settings.dockerfile)} not found."
-                )
-
             if parent_image != DEFAULT_DOCKER_PARENT_IMAGE:
                 logger.warning(
                     "You've specified both a Dockerfile and a custom parent "
