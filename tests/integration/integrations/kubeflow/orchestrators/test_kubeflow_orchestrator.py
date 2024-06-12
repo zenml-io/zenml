@@ -57,7 +57,7 @@ def _get_kubeflow_orchestrator(
 
 
 @pytest.mark.skipif(
-    sys.version_info > (3, 10),
+    sys.version_info >= (3, 11),
     reason="Kubeflow integration not installed in Python 3.11",
 )
 def test_kubeflow_orchestrator_remote_stack(
@@ -104,7 +104,7 @@ def test_kubeflow_orchestrator_remote_stack(
 
 
 @pytest.mark.skipif(
-    sys.version_info > (3, 10),
+    sys.version_info >= (3, 11),
     reason="Kubeflow integration not installed in Python 3.11",
 )
 def test_kubeflow_orchestrator_local_stack(
@@ -136,19 +136,9 @@ def test_kubeflow_orchestrator_local_stack(
             artifact_store=local_artifact_store,
             container_registry=local_container_registry,
         ).validate()
-    orchestrator = _get_kubeflow_orchestrator(skip_local_validations=True)
-    with does_not_raise():
-        Stack(
-            id=uuid4(),
-            name="",
-            orchestrator=orchestrator,
-            artifact_store=local_artifact_store,
-            container_registry=local_container_registry,
-        ).validate()
 
-    # Test local stack with local orchestrator
-    orchestrator = _get_kubeflow_orchestrator(local=True)
-    with does_not_raise():
+    orchestrator = _get_kubeflow_orchestrator(skip_local_validations=True)
+    with pytest.raises(StackValidationError):
         Stack(
             id=uuid4(),
             name="",
