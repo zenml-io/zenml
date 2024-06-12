@@ -35,7 +35,7 @@ logger = get_logger(__name__)
 
 
 class TektonOrchestratorSettings(BaseSettings):
-    """Settings for the Kubeflow orchestrator.
+    """Settings for the Tekton orchestrator.
 
     Attributes:
         synchronous: If `True`, the client running a pipeline using this

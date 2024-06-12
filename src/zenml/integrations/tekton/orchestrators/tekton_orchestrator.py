@@ -193,8 +193,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         """Gets session cookie from username and password.
 
         Args:
-            username: Username for kubeflow host.
-            password: Password for kubeflow host.
+            username: Username for tekoton host.
+            password: Password for tekoton host.
 
         Raises:
             RuntimeError: If the cookie fetching failed.
@@ -204,10 +204,10 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         """
         if self.config.tekton_hostname is None:
             raise RuntimeError(
-                "You must configure the Kubeflow orchestrator "
+                "You must configure the tekoton orchestrator "
                 "with the `tekton_hostname` parameter which usually ends "
                 "with `/pipeline` (e.g. `https://mykubeflow.com/pipeline`). "
-                "Please update the current kubeflow orchestrator with: "
+                "Please update the current tekoton orchestrator with: "
                 f"`zenml orchestrator update {self.name} "
                 "--tekton_hostname=<MY_KUBEFLOW_HOST>`"
             )
@@ -228,7 +228,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             requests.exceptions.RequestException,
         ) as e:
             raise RuntimeError(
-                f"Error while trying to fetch kubeflow cookie: {e}"
+                f"Error while trying to fetch tekoton cookie: {e}"
             )
 
         headers = {
@@ -240,7 +240,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             response.raise_for_status()
         except requests.exceptions.HTTPError as errh:
             raise RuntimeError(
-                f"Error while trying to fetch kubeflow cookie: {errh}"
+                f"Error while trying to fetch tekoton cookie: {errh}"
             )
         cookie_dict = session.cookies.get_dict()  # type: ignore[no-untyped-call]
 
@@ -359,7 +359,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 # because we cannot mount the local path into the container.
                 # This may result in problems when running the pipeline, "
                 # because the local components will not be available inside
-                # theTekton containers.
+                # the Tekton containers.
 
                 # go through all stack components and identify those that
                 # advertise a local path where they persist information that
@@ -852,6 +852,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 container.
             node_selector_constraint: Node selector constraint to apply to
                 the container.
+
+        Returns:
+            The dynamic component with the resource settings applied.
         """
         # Set optional CPU, RAM and GPU constraints for the pipeline
         if resource_settings:

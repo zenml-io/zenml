@@ -39,7 +39,7 @@ import requests
 import urllib3
 from kfp import dsl
 from kfp.client import Client as KFPClient
-from kfp.compiler import Compiler as KFPCompiler
+from kfp.compiler import Compiler
 from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -653,7 +653,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         )
 
         # write the argo pipeline yaml
-        KFPCompiler().compile(
+        Compiler().compile(
             pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
             pipeline_name=orchestrator_run_name,
@@ -878,7 +878,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 f"Error while trying to fetch kubeflow cookie: {errh}"
             )
-        cookie_dict: Dict[str, str] = session.cookies.get_dict()
+        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call]
 
         if "authservice_session" not in cookie_dict:
             raise RuntimeError("Invalid username and/or password!")
@@ -943,6 +943,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 container.
             node_selector_constraint: Node selector constraint to apply to
                 the container.
+
+        Returns:
+            The dynamic component with the resource settings applied.
         """
         # Set optional CPU, RAM and GPU constraints for the pipeline
         if resource_settings:

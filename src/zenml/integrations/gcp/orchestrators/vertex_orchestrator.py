@@ -37,7 +37,7 @@ from uuid import UUID
 from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
 from kfp import dsl
-from kfp.compiler import Compiler as KFPCOmpiler
+from kfp.compiler import Compiler
 
 from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
@@ -487,7 +487,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
         # to generate a JSON representation of the pipeline that can be later
         # upload to Vertex AI Pipelines service.
-        KFPCOmpiler().compile(
+        Compiler().compile(
             pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
             pipeline_name=_clean_pipeline_name(
@@ -679,6 +679,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 container.
             node_selector_constraint: Node selector constraint to apply to
                 the container.
+
+        Returns:
+            The dynamic component with the resource settings applied.
         """
         # Set optional CPU, RAM and GPU constraints for the pipeline
         if resource_settings:
