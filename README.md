@@ -75,6 +75,14 @@
 
 ---
 
+## ⭐️ Show Your Support
+
+If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out. 
+
+Thank you for your support! 🌟
+
+[![Star this project](https://img.shields.io/github/stars/zenml-io/zenml?style=social)](https://github.com/zenml-io/zenml/stargazers)
+
 ## 🤸 Quickstart
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb)
 
@@ -259,14 +267,6 @@ the [core team](https://zenml.io/company) will respond.
 Or, if you
 prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
 our GitHub repo.
-
-## ⭐️ Show Your Support
-
-If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out. 
-
-Thank you for your support! 🌟
-
-[![Star this project](https://img.shields.io/github/stars/zenml-io/zenml?style=social)](https://github.com/zenml-io/zenml/stargazers)
 
 ## 📜 License
 
