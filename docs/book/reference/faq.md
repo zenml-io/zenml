@@ -36,7 +36,7 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
 This is a known issue with how forking works on Macs running on Apple Silicon
-and it will enable you to use ZenML and the server.
+and it will enable you to use ZenML and the server. This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
 
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
