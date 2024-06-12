@@ -119,6 +119,7 @@ class PipelineDockerImageBuilder:
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
                 image build.
+            ValueError: If the specified Dockerfile does not exist.
         """
         requirements: Optional[str] = None
         dockerfile: Optional[str] = None
@@ -173,6 +174,12 @@ class PipelineDockerImageBuilder:
         )
 
         if docker_settings.dockerfile:
+            if not os.path.isfile(docker_settings.dockerfile):
+                raise ValueError(
+                    "Dockerfile at path "
+                    f"{os.path.abspath(docker_settings.dockerfile)} not found."
+                )
+
             if parent_image != DEFAULT_DOCKER_PARENT_IMAGE:
                 logger.warning(
                     "You've specified both a Dockerfile and a custom parent "
