@@ -23,6 +23,8 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ inputs.zenml_nightly && 'develop' || github.ref }}
       - name: Determine version
         run: |-
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
@@ -45,7 +47,7 @@ jobs:
       # Cloudbuild
       - name: Build docker images
         run: |-
-          echo "Building Docker image with tag: $VERSION"
+          echo "Building Docker image with tag: ${{ env.VERSION }}"
           gcloud builds submit \
             --quiet \
             --config=${{inputs.config_file}} \
