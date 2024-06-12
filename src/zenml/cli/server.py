@@ -170,6 +170,12 @@ def up(
         else:
             pass
         provider = ServerProviderType.LOCAL
+    if cli_utils.requires_mac_env_var_warning():
+        cli_utils.error(
+            "The `OBJC_DISABLE_INITIALIZE_FORK_SAFETY` environment variable "
+            "is recommended to run the ZenML server locally on a Mac. "
+            "Please set it to `YES` and try again."
+        )
 
     os.environ[ENV_ZENML_LOCAL_SERVER] = str(True)
 

@@ -2752,3 +2752,19 @@ def is_jupyter_installed() -> bool:
         return True
     except pkg_resources.DistributionNotFound:
         return False
+
+
+def requires_mac_env_var_warning() -> bool:
+    """Checks if a warning needs to be shown for a local Mac server.
+
+    This is for the case where a user is on a MacOS system, trying to run a
+    local server but is missing the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY`
+    environment variable.
+
+    Returns:
+        bool: True if a warning needs to be shown, False otherwise.
+    """
+    return (
+        not os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY")
+        and sys.platform == "darwin"
+    )
