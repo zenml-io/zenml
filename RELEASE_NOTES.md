@@ -233,9 +233,9 @@ zenml up --legacy
 
 Note that you can’t use both the new and old dashboard at the same time.
 
-If you’re self-hosting ZenML instead of using ZenML Cloud, you can specify which dashboard you want to use by setting the `ZENML_SERVER_USE_LEGACY_DASHBOARD` environment variable pre-deployment. Specifying a boolean value for this variable will determine which dashboard gets served for your deployment. (There’s no dynamic switching between dashboards allowed, so if you wish to change which dashboard is used for a deployed server, you’ll need to redeploy the server after updating the environment variable.)
+If you’re self-hosting ZenML instead of using ZenML Pro, you can specify which dashboard you want to use by setting the `ZENML_SERVER_USE_LEGACY_DASHBOARD` environment variable pre-deployment. Specifying a boolean value for this variable will determine which dashboard gets served for your deployment. (There’s no dynamic switching between dashboards allowed, so if you wish to change which dashboard is used for a deployed server, you’ll need to redeploy the server after updating the environment variable.)
 
-If you’re using [ZenML Cloud](https://cloud.zenml.io/), your experience won’t change with this release and your use of the dashboard remains the same.
+If you’re using [SaaS ZenML Pro](https://cloud.zenml.io/), your experience won’t change with this release and your use of the dashboard remains the same.
 
 ## What's Changed
 * Add Comet to Experiment Trackers in TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2637
