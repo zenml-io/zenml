@@ -137,8 +137,8 @@ class EvidentlyDataValidator(BaseDataValidator):
         # Configure NLTK to use the current working directory to download and
         # lookup data. This is necessary because the default download directory
         # is not writable in some Docker containers.
-        nltk_path.append(os.getcwd())
         os.environ["NLTK_DATA"] = os.getcwd()
+        nltk_path.append(os.getcwd())
 
     @staticmethod
     def _download_nltk_data() -> None:
@@ -149,20 +149,11 @@ class EvidentlyDataValidator(BaseDataValidator):
         """
         try:
             import nltk  # type: ignore[import-untyped]
-            from nltk.data import (  # type: ignore[import-untyped]
-                path as nltk_path,
-            )
         except ImportError:
             raise ImportError(
                 "NLTK is not installed. Please install NLTK to use "
                 "Evidently text metrics and tests."
             )
-
-        # Configure NLTK to use the current working directory to download and
-        # lookup data. This is necessary because the default download directory
-        # is not writable in some Docker containers.
-        nltk_path.append(os.getcwd())
-
         # Download NLTK data. We need this later on for the Evidently text report.
         nltk.download("words", download_dir=os.getcwd())
         nltk.download("wordnet", download_dir=os.getcwd())
