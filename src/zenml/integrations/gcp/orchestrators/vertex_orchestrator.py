@@ -31,6 +31,7 @@
 
 import os
 import re
+import types
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
@@ -263,23 +264,29 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             The dynamic container component.
         """
 
-        @dsl.container_component  # type: ignore[misc]
         def dynamic_container_component() -> dsl.ContainerSpec:
             """Dynamic container component.
 
             Returns:
                 The dynamic container component.
             """
-            _component = dsl.ContainerSpec(
+            return dsl.ContainerSpec(
                 image=image,
                 command=command,
                 args=arguments,
             )
 
-            _component.__name__ = component_name
-            return _component
+        # Change the name of the function
+        new_container_spec_func = types.FunctionType(
+            dynamic_container_component.__code__,
+            dynamic_container_component.__globals__,
+            name=component_name,
+            argdefs=dynamic_container_component.__defaults__,
+            closure=dynamic_container_component.__closure__,
+        )
+        pipeline_task = dsl.container_component(new_container_spec_func)
 
-        return dynamic_container_component
+        return pipeline_task
 
     def prepare_or_run_pipeline(
         self,
@@ -408,7 +415,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         dynamic_component.add_node_selector_constraint(
                             label_name=key, value=value
                         )
-
                 step_name_to_dynamic_component[step_name] = (
                     self._configure_container_resources(
                         dynamic_component,
@@ -435,7 +441,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         step_name_to_dynamic_component[upstream_step_name]
                         for upstream_step_name in step.spec.upstream_steps
                     ]
-                    component().set_caching_options(
+                    component().set_display_name(
+                        name=component_name,
+                    ).set_caching_options(
                         enable_caching=False
                     ).set_env_variable(
                         name=ENV_ZENML_VERTEX_RUN_ID,
@@ -683,6 +691,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Returns:
             The dynamic component with the resource settings applied.
         """
+        breakpoint()
         # Set optional CPU, RAM and GPU constraints for the pipeline
         if resource_settings:
             cpu_limit = resource_settings.cpu_count or self.config.cpu_limit

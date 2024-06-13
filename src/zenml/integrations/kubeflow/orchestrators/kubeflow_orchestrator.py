@@ -32,6 +32,7 @@
 
 import os
 import sys
+import types
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
@@ -440,16 +441,23 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             Returns:
                 The dynamic container component.
             """
-            _component = dsl.ContainerSpec(
+            return dsl.ContainerSpec(
                 image=image,
                 command=command,
                 args=arguments,
             )
 
-            _component.__name__ = component_name
-            return _component
+        # Change the name of the function
+        new_container_spec_func = types.FunctionType(
+            dynamic_container_component.__code__,
+            dynamic_container_component.__globals__,
+            name=component_name,
+            argdefs=dynamic_container_component.__defaults__,
+            closure=dynamic_container_component.__closure__,
+        )
+        pipeline_task = dsl.container_component(new_container_spec_func)
 
-        return dynamic_container_component
+        return pipeline_task
 
     def prepare_or_run_pipeline(
         self,
@@ -516,6 +524,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 pipeline_func
             """
             step_name_to_dynamic_component: Dict[str, Any] = {}
+            node_selector_constraint: Optional[Tuple[str, str]] = None
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
@@ -605,9 +614,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                         step_name_to_dynamic_component[upstream_step_name]
                         for upstream_step_name in step.spec.upstream_steps
                     ]
-                    component().set_caching_options(
-                        enable_caching=False
-                    ).set_env_variable(
+                    component().set_display_name(
+                        name=component_name,
+                    ).set_caching_options().set_env_variable(
                         name=ENV_KFP_RUN_ID,
                         value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
                     ).after(*upstream_step_components)
