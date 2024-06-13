@@ -27,7 +27,7 @@ In Scenario 2, the `zenml up` command implicitly connects the client to the serv
 {% endhint %}
 
 {% hint style="warning" %}
-Currently the zenml server supports a legacy and a brand new version of the dashboard. To use legacy simply use the
+Currently the ZenML server supports a legacy and a brand new version of the dashboard. To use the legacy version simply use the
 following command `zenml up --legacy`
 {% endhint %}
 
