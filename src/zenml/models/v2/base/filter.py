@@ -79,7 +79,7 @@ class Filter(BaseModel, ABC):
 
     operation: GenericFilterOps
     column: str
-    value: Any = None
+    value: Optional[Any] = None
 
     @field_validator("operation", mode="before")
     @classmethod

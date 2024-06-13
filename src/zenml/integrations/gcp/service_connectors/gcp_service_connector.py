@@ -46,7 +46,7 @@ from google.auth.transport.requests import Request
 from google.cloud import container_v1, storage
 from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
@@ -119,7 +119,9 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 
     @field_validator("user_account_json")
     @classmethod
-    def validate_user_account_json(cls, value: SecretStr) -> SecretStr:
+    def validate_user_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the user account credentials JSON.
 
         Args:
@@ -200,7 +202,9 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
 
     @field_validator("service_account_json")
     @classmethod
-    def validate_service_account_json(cls, value: SecretStr) -> SecretStr:
+    def validate_service_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the service account credentials JSON.
 
         Args:
@@ -289,7 +293,9 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
 
     @field_validator("external_account_json")
     @classmethod
-    def validate_external_account_json(cls, value: SecretStr) -> SecretStr:
+    def validate_external_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the external account credentials JSON.
 
         Args:
