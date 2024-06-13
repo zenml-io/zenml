@@ -376,7 +376,7 @@ class StepLogsStorage:
                                     _load_file_from_artifact_store(
                                         os.path.join(self.logs_uri, str(file)),
                                         artifact_store=self.artifact_store,
-                                        mode="rb",
+                                        mode="r",
                                     )
                                 )
                             )
