@@ -89,10 +89,16 @@ def run_pipeline(
     placeholder_run = create_placeholder_run(deployment=new_deployment)
     assert placeholder_run
 
-    api_token = auth_context.encoded_access_token
-    if not api_token:
-        assert auth_context.access_token
-        api_token = auth_context.access_token.encode()
+    if auth_context.access_token:
+        token = auth_context.access_token
+        token.pipeline_id = deployment_request.pipeline
+
+        # We create a non-expiring token to make sure its active for the entire
+        # duration of the pipeline run
+        api_token = token.encode(expires=None)
+    else:
+        assert auth_context.encoded_access_token
+        api_token = auth_context.encoded_access_token
 
     server_url = server_config().server_url
     if not server_url:
