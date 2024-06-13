@@ -8,6 +8,7 @@ from uuid import UUID
 
 from fastapi import BackgroundTasks
 
+from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.step_configurations import Step, StepConfiguration
@@ -29,9 +30,8 @@ from zenml.models import (
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
 )
-from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.stack.flavor import Flavor
-from zenml.utils import dict_utils, pydantic_utils
+from zenml.utils import dict_utils, pydantic_utils, settings_utils
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.pipeline_deployment.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
@@ -79,6 +79,11 @@ def run_pipeline(
         run_config=run_config or PipelineRunConfiguration(),
         user_id=auth_context.user.id,
     )
+
+    ensure_async_orchestrator(
+        deployment_request=deployment_request, stack=stack
+    )
+
     new_deployment = zen_store().create_deployment(deployment_request)
     placeholder_run = create_placeholder_run(deployment=new_deployment)
     assert placeholder_run
@@ -169,8 +174,8 @@ def validate_stack(stack: StackResponse) -> None:
         stack: The stack to validate.
 
     Raises:
-        ValueError: If the stack has components of a custom flavor, local
-            components or a synchronous orchestrator.
+        ValueError: If the stack has components of a custom flavor or local
+            components.
     """
     for component_list in stack.components.values():
         assert len(component_list) == 1
@@ -190,11 +195,32 @@ def validate_stack(stack: StackResponse) -> None:
         if component_config.is_local:
             raise ValueError("No local stack components allowed.")
 
-        if flavor.type == StackComponentType.ORCHESTRATOR:
-            assert isinstance(component_config, BaseOrchestratorConfig)
 
-            if component_config.is_synchronous:
-                raise ValueError("No synchronous orchestrator allowed.")
+def ensure_async_orchestrator(
+    deployment_request: PipelineDeploymentRequest, stack: StackResponse
+) -> None:
+    """Ensures the orchestrator is configured to run async.
+
+    Args:
+        deployment_request: Deployment request in which the orchestrator
+            configuration should be updated to ensure the orchestrator is
+            running async.
+        stack: The stack on which the deployment will run.
+    """
+    orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
+    flavors = zen_store().list_flavors(
+        FlavorFilter(name=orchestrator.flavor, type=orchestrator.type)
+    )
+    flavor = Flavor.from_model(flavors[0])
+
+    if "synchronous" in flavor.config_class.__fields__:
+        key = settings_utils.get_flavor_setting_key(flavor)
+        settings = (
+            deployment_request.pipeline_configuration.settings.setdefault(
+                key, BaseSettings()
+            )
+        )
+        setattr(settings, "synchronous", False)
 
 
 def get_requirements_for_stack(
