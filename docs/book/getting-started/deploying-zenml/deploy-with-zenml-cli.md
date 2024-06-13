@@ -21,7 +21,7 @@ Once you have created your cluster, make sure that you configure your [kubectl](
 
 You're now ready to deploy ZenML! Run the following command:
 
-```bash
+```bash 
 zenml deploy
 ```
 
