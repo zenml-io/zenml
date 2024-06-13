@@ -81,9 +81,7 @@ def run_pipeline(
         user_id=auth_context.user.id,
     )
 
-    ensure_async_orchestrator(
-        deployment_request=deployment_request, stack=stack
-    )
+    ensure_async_orchestrator(deployment=deployment_request, stack=stack)
 
     new_deployment = zen_store().create_deployment(deployment_request)
     placeholder_run = create_placeholder_run(deployment=new_deployment)
@@ -211,12 +209,12 @@ def validate_stack(stack: StackResponse) -> None:
 
 
 def ensure_async_orchestrator(
-    deployment_request: PipelineDeploymentRequest, stack: StackResponse
+    deployment: PipelineDeploymentRequest, stack: StackResponse
 ) -> None:
     """Ensures the orchestrator is configured to run async.
 
     Args:
-        deployment_request: Deployment request in which the orchestrator
+        deployment: Deployment request in which the orchestrator
             configuration should be updated to ensure the orchestrator is
             running async.
         stack: The stack on which the deployment will run.
@@ -229,12 +227,16 @@ def ensure_async_orchestrator(
 
     if "synchronous" in flavor.config_class.__fields__:
         key = settings_utils.get_flavor_setting_key(flavor)
-        settings = (
-            deployment_request.pipeline_configuration.settings.setdefault(
-                key, BaseSettings()
-            )
+
+        if settings := deployment.pipeline_configuration.settings.get(key):
+            settings_dict = settings.dict()
+        else:
+            settings_dict = {}
+
+        settings_dict["synchronous"] = False
+        deployment.pipeline_configuration.settings[key] = (
+            BaseSettings.parse_obj(settings_dict)
         )
-        setattr(settings, "synchronous", False)
 
 
 def get_requirements_for_stack(
