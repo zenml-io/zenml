@@ -18,11 +18,11 @@ In order to move into production, you will need to deploy this server somewhere 
 
 While there are many options on how to [deploy ZenML](../../getting-started/deploying-zenml/README.md), the two simplest ones are:
 
-### Option 1: Sign up for a free ZenML Cloud Trial
+### Option 1: Sign up for a free ZenML Pro Trial
 
-[ZenML Cloud](https://zenml.io/cloud) is a managed SaaS solution that offers a one-click deployment for your ZenML server. Click [here](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) to start a free trial.
+[ZenML Pro](https://zenml.io/cloud) comes as a managed SaaS solution that offers a one-click deployment for your ZenML server. Click [here](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) to start a free trial.
 
-On top of the one-click experience, ZenML Cloud also comes built-in with additional features and a new dashboard that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
+On top of the one-click SaaS experience, ZenML Pro also comes built-in with additional features and a new dashboard that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
 
 ### Option 2: Self-host ZenML on your cloud provider
 
