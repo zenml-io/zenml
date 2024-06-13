@@ -3,7 +3,7 @@
 Registering models can be done in a number of ways depending on your specific needs. You can explicitly register models using the CLI or the Python SDK, or you can just allow ZenML to implicitly register your models as part of a pipeline run. 
 
 {% hint style="info" %}
-If you are using [ZenML Cloud](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link/), you already have access to a dashboard interface that allows you to register models.
+If you are using [ZenML Pro](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link/), you already have access to a dashboard interface that allows you to register models.
 {% endhint %}
 
 ## Explicit CLI registration
@@ -18,9 +18,9 @@ You can view some of the options of what can be passed into this command by runn
 
 ## Explicit dashboard registration
 
-[ZenML Cloud](https://zenml.io/cloud) can register their models directly from the cloud dashboard interface.
+[ZenML Pro](https://zenml.io/pro) can register their models directly from the cloud dashboard interface.
 
-<figure><img src="../../.gitbook/assets/mcp_model_register.png" alt="ZenML Cloud Register Model."><figcaption><p>Register a model on the [ZenML Cloud](https://zenml.io/cloud) dashboard</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp_model_register.png" alt="ZenML Pro Register Model."><figcaption><p>Register a model on the [ZenML Pro](https://zenml.io/pro) dashboard</p></figcaption></figure>
 
 ## Explicit Python SDK registration
 

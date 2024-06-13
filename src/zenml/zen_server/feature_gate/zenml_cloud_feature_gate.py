@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML Cloud implementation of the feature gate."""
+"""ZenML Pro implementation of the feature gate."""
 
 from typing import Any, Dict
 from uuid import UUID
