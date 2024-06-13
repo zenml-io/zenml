@@ -18,8 +18,8 @@ pass the CI and code review are then deployed automatically to production. Here 
 ## Breaking it down
 
 To illustrate this, let's walk through how this process could be set up with
-a GitHub Repository. Basically we'll be using gh actions in order to set up
-a proper CI/CD workflow. For this we will be using Github Action workflows.
+a GitHub Repository. Basically we'll be using Github Actions in order to set up
+a proper CI/CD workflow.
 
 To see this in action, check out the [ZenML Gitflow Repository](https://github.com/zenml-io/zenml-gitflow/). This
 repository showcases how ZenML can be used for machine learning with a GitHub workflow that automates CI/CD with
