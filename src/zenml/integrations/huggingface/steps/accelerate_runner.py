@@ -17,10 +17,10 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-import subprocess
 from typing import Any, Callable, Optional, TypeVar, cast
 
 import cloudpickle as pickle
+from accelerate.commands.launch import launch_command, launch_command_parser
 
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
@@ -95,45 +95,49 @@ def run_with_accelerate(
                 script_path,
                 output_path,
             ):
-                command = (
-                    f"accelerate launch --num_processes {_num_processes} "
-                )
+                commands = ["--num_processes", str(_num_processes)]
                 if use_cpu:
-                    command += "--cpu --num_cpu_threads_per_process 10 "
-                command += str(script_path.absolute()) + " "
+                    commands += [
+                        "--cpu",
+                        "--num_cpu_threads_per_process",
+                        "10",
+                    ]
+                commands.append(str(script_path.absolute()))
                 for k, v in kwargs.items():
                     k = _cli_arg_name(k)
                     if isinstance(v, bool):
                         if v:
-                            command += f"--{k} "
+                            commands.append(f"--{k}")
                     elif isinstance(v, str):
-                        command += f'--{k} "{v}" '
+                        commands += [f"--{k}", '"{v}"']
                     elif type(v) in (list, tuple, set):
                         for each in v:
-                            command += f"--{k} {each} "
+                            commands.append(f"--{k}")
+                            if isinstance(each, str):
+                                commands.append(f'"{each}"')
+                            else:
+                                commands.append(f"{each}")
                     else:
-                        command += f"--{k} {v} "
+                        commands += [f"--{k}", f"{v}"]
 
-                logger.info(command)
+                logger.debug(commands)
 
-                result = subprocess.run(
-                    command,
-                    shell=True,
-                    stdout=subprocess.PIPE,
-                    universal_newlines=True,
-                )
-                for stdout_line in result.stdout.split("\n"):
-                    logger.info(stdout_line)
-                if result.returncode == 0:
-                    logger.info("Accelerate training job finished.")
-                    return pickle.load(open(output_path, "rb"))
-                else:
+                parser = launch_command_parser()
+                args = parser.parse_args(commands)
+                try:
+                    launch_command(args)
+                except Exception as e:
                     logger.error(
-                        f"Accelerate training job failed. With return code {result.returncode}."
+                        f"Accelerate training job failed... See error message for details."
                     )
-                    raise subprocess.CalledProcessError(
-                        result.returncode, command
+                    raise RuntimeError(
+                        "Accelerate training job failed."
+                    ) from e
+                else:
+                    logger.info(
+                        "Accelerate training job finished successfully."
                     )
+                    return pickle.load(open(output_path, "rb"))
 
         return cast(F, inner)
 
