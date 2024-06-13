@@ -513,7 +513,6 @@ class StepRunner:
             )
 
         from zenml.steps.utils import get_args
-        from zenml.utils.typing_utils import get_origin, is_union
 
         validated_outputs: Dict[str, Any] = {}
         for return_value, (output_name, output_annotation) in zip(
