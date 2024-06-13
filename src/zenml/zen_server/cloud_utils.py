@@ -14,7 +14,7 @@ ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
 
 
 class ZenMLCloudConfiguration(BaseModel):
-    """ZenML Cloud RBAC configuration."""
+    """ZenML Pro RBAC configuration."""
 
     api_url: str
 
@@ -141,7 +141,7 @@ class ZenMLCloudSession:
             response.raise_for_status()
         except requests.HTTPError as e:
             raise RuntimeError(
-                f"Failed while trying to contact the central zenml cloud "
+                f"Failed while trying to contact the central zenml pro "
                 f"service: {e}"
             )
 
@@ -149,7 +149,7 @@ class ZenMLCloudSession:
 
     @property
     def session(self) -> requests.Session:
-        """Authenticate to the ZenML Cloud API.
+        """Authenticate to the ZenML Pro Management Plane.
 
         Returns:
             A requests session with the authentication token.

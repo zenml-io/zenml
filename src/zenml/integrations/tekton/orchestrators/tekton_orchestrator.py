@@ -15,6 +15,7 @@
 
 import os
 import sys
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -31,7 +32,7 @@ import requests
 import urllib3
 from kfp import dsl
 from kfp.client import Client as KFPClient
-from kfp.compiler import KFPCompiler
+from kfp.compiler import Compiler as KFPCompiler
 from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -435,7 +436,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             The dynamic container component.
         """
 
-        @dsl.container_component  # type: ignore[misc]
         def dynamic_container_component() -> dsl.ContainerSpec:
             """Dynamic container component.
 
@@ -451,7 +451,15 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             _component.__name__ = component_name
             return _component
 
-        return dynamic_container_component
+        dynamic_func = FunctionType(
+            dynamic_container_component.__code__,
+            dynamic_container_component.__globals__,
+            name=component_name,
+            argdefs=dynamic_container_component.__defaults__,
+            closure=dynamic_container_component.__closure__,
+        )
+
+        return dsl.container_component(dynamic_func)  # type: ignore[misc]
 
     def prepare_or_run_pipeline(
         self,
@@ -517,6 +525,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 step_settings = cast(
                     TektonOrchestratorSettings, self.get_settings(step)
                 )
+                node_selector_constraint: Optional[Tuple[str, str]] = None
                 pod_settings = step_settings.pod_settings
                 if pod_settings:
                     if pod_settings.host_ipc:
