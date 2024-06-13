@@ -75,6 +75,14 @@
 
 ---
 
+## ⭐️ Show Your Support
+
+If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out. 
+
+Thank you for your support! 🌟
+
+[![Star this project](https://img.shields.io/github/stars/zenml-io/zenml?style=social)](https://github.com/zenml-io/zenml/stargazers)
+
 ## 🤸 Quickstart
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb)
 
@@ -206,10 +214,11 @@ enable collaborative features as the central MLOps interface for teams.
 
 Currently, there are two main ways to deploy ZenML:
 
-- **ZenML Cloud**: With [ZenML Cloud](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link),
-you can make use of a control plane to create ZenML servers, also known as tenants.
-These tenants are managed and maintained by ZenML’s dedicated team, alleviating
-the burden of server management from your end.
+- **ZenML Pro**: [ZenML Pro](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link),
+offers a SaaS version which comes with a control plane to create and manage multiple ZenML servers.
+These servers are managed and maintained by ZenML’s dedicated team, alleviating
+the burden of server management from your end. They also come with additional features like RBAC, a Model Control Plane
+and [much more](https://zenml-io.gitbook.io/zenml-documentation/getting-started/zenml-pro.
 - **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy
 ZenML on your own self-hosted environment](https://docs.zenml.io/getting-started/deploying-zenml#deploying-a-zenml-server).
 This can be achieved through various methods, including using our CLI, Docker,
@@ -259,6 +268,14 @@ Or, if you
 prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
 our GitHub repo.
 
+## ⭐️ Show Your Support
+
+If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out. 
+
+Thank you for your support! 🌟
+
+[![Star this project](https://img.shields.io/github/stars/zenml-io/zenml?style=social)](https://github.com/zenml-io/zenml/stargazers)
+
 ## 📜 License
 
 ZenML is distributed under the terms of the Apache License Version 2.0.
@@ -280,7 +297,7 @@ the Apache License Version 2.0.
     ·
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
     ·
-    <a href="https://zenml.io/cloud">Sign up for Cloud</a>
+    <a href="https://zenml.io/cloud">Sign up for ZenML Pro</a>
     ·
     <a href="https://www.zenml.io/blog">Read Blog</a>
     ·
