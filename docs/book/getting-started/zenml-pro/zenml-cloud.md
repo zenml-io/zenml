@@ -5,7 +5,7 @@ description: Your one-stop MLOps control plane.
 # ZenML SaaS
 
 One of the most straightforward paths to start with a deployed ZenML server is
-to use [ZenML Pro](https://zenml.io/pro). The ZenML Pro SaaS offering eliminates the need
+to use [ZenML Pro](https://zenml.io/pro). The ZenML Pro offering eliminates the need
 for you to dedicate time and resources to deploy and manage a ZenML server,
 allowing you to focus primarily on your MLOps workflows.
 
