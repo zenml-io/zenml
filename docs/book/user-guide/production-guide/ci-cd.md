@@ -11,7 +11,7 @@ production it is often desirable to mediate runs through a central workflow engi
 
 This allows data scientists to experiment with data processing and model training locally and then have code changes
 automatically tested and validated through the standard pull request/merge request peer review process. Changes that
-pass the CI and code-review are then deployed automatically to production. Here is how this could look like:
+pass the CI and code review are then deployed automatically to production. Here is how this could look like:
 
 ![Pipeline being run on staging/production stack through ci/cd](../../.gitbook/assets/ci-cd-overall.png)
 
