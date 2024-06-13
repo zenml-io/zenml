@@ -17,7 +17,7 @@ pass the CI and code review are then deployed automatically to production. Here 
 
 ## Breaking it down
 
-To illustrate this, let's walk through how this process could be set up on
+To illustrate this, let's walk through how this process could be set up with
 a GitHub Repository. Basically we'll be using gh actions in order to set up
 a proper CI/CD workflow. For this we will be using Github Action workflows.
 
