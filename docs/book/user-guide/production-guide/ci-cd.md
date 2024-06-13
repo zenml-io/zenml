@@ -55,7 +55,7 @@ Specifically, you should use github secrets to store the `ZENML_API_KEY` that yo
 
 ![create_gh_secret.png](../../.gitbook/assets/create_gh_secret.png)
 
-The other values that are loaded from secrets into the environment [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pr.yaml#L14-L23)
+The other values that are loaded from secrets into the environment [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L14-L23)
 can also be set explicitly or as variables.
 
 ## Set up different stacks for Staging and Production
@@ -70,7 +70,7 @@ rest is up to you.
 One way to ensure only fully working code makes it into production, you should use a staging environment to test all
 the changes made to your code base and verify they work as intended. To do so automatically you should set up a
 github action workflow that runs your pipeline for you when you make changes to it. 
-[Here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pr.yaml) is an example that you can use.
+[Here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml) is an example that you can use.
 
 To only run the Github Action on a PR, you can configure the yaml like this 
 ```bash
