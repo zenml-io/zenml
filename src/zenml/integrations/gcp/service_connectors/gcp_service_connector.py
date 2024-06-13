@@ -200,7 +200,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
 
     @field_validator("service_account_json")
     @classmethod
-    def validate_service_account_json(cls, value: SecretStr) -> SecretStr:
+    def validate_service_account_json(cls, value: PlainSerializedSecretStr) -> PlainSerializedSecretStr:
         """Validate the service account credentials JSON.
 
         Args:
