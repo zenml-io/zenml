@@ -68,5 +68,5 @@ def test_sdk_docs_url():
 def test_docs_url():
     """Tests that Docs URLs are correct."""
     assert AriaOrchestratorFlavor().docs_url == (
-        f"https://docs.zenml.io/v/{zenml_version}/stack-components/orchestrators/aria"
+        f"https://docs.zenml.io/stack-components/orchestrators/aria"
     )
