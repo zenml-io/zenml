@@ -20,7 +20,10 @@ import functools
 from typing import Any, Callable, Optional, TypeVar, cast
 
 import cloudpickle as pickle
-from accelerate.commands.launch import launch_command, launch_command_parser
+from accelerate.commands.launch import (  # type: ignore[import-untyped]
+    launch_command,
+    launch_command_parser,
+)
 
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
