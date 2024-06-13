@@ -139,7 +139,7 @@ zenml model list
 
 This will show you a new `breast_cancer_classifier` model with two versions, `sgd` and `rf` created. You can find out how this was configured in the [YAML pipeline configuration files](configs/).
 
-If you are a [ZenML Pro](https://zenml.io/pro) user, you can see all of this visualized in the dashboard:
+If you are a [ZenML Cloud](https://zenml.io/cloud) user, you can see all of this visualized in the dashboard:
 
 <img src=".assets/cloud_mcp_screenshot.png" width="70%" alt="Model Control Plane">
 
@@ -165,7 +165,7 @@ While we've demonstrated a manual promotion process for clarity, a more in-depth
 
 <img src=".assets/cloud_mcp.png" width="60%" alt="Model Control Plane">
 
-Again, if you are a [ZenML Pro](https://zenml.io/cloud) user, you would be able to see all this in the models dashboard.
+Again, if you are a [ZenML Cloud](https://zenml.io/cloud) user, you would be able to see all this in the cloud dashboard.
 
 </details>
 
@@ -184,7 +184,7 @@ that were returned in the pipeline. This completes the MLOps loop of training to
 
 <img src=".assets/inference_pipeline.png" width="45%" alt="Inference pipeline">
 
-You can also see all predictions ever created as a complete history in the dashboard (Again only for [ZenML Pro](https://zenml.io/pro) users):
+You can also see all predictions ever created as a complete history in the dashboard (Again only for [ZenML Cloud](https://zenml.io/cloud) users):
 
 <img src=".assets/cloud_mcp_predictions.png" width="70%" alt="Model Control Plane">
 
@@ -203,7 +203,7 @@ If you want to learn more about ZenML as a tool, then the
 to get started. In particular, the [Production Guide](https://docs.zenml.io/user-guide/production-guide/)
 goes into more detail as to how to transition these same pipelines into production on the cloud.
 
-The best way to get a production ZenML instance up and running with all batteries included is the [ZenML Pro](https://zenml.io/pro). Check it out!
+The best way to get a production ZenML instance up and running with all batteries included is the [ZenML Cloud](https://zenml.io/cloud). Check it out!
 
 Also, make sure to join our <a href="https://zenml.io/slack" target="_blank">
     <img width="15" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
