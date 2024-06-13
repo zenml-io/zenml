@@ -23,15 +23,12 @@ from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTrackerFlavor,
 )
 from zenml.integrations.mlflow import MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
-from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.mlflow.experiment_trackers import (
         MLFlowExperimentTracker,
     )
-
-logger = get_logger(__name__)
 
 
 def is_remote_mlflow_tracking_uri(tracking_uri: str) -> bool:
