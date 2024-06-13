@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import json
-import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -49,10 +48,6 @@ def _get_vertex_orchestrator(**kwargs):
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info >= (3, 11),
-    reason="GCP integration not installed in Python 3.11",
-)
 def test_vertex_orchestrator_stack_validation(
     local_artifact_store,
     gcp_artifact_store,
@@ -137,10 +132,6 @@ def test_vertex_orchestrator_stack_validation(
         ).validate()
 
 
-@pytest.mark.skipif(
-    sys.version_info >= (3, 11),
-    reason="GCP integration not installed in Python 3.11",
-)
 @pytest.mark.parametrize(
     "resource_settings, orchestrator_resource_settings, expected_resources",
     [

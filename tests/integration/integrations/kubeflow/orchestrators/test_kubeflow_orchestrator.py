@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -56,10 +55,6 @@ def _get_kubeflow_orchestrator(
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info >= (3, 11),
-    reason="Kubeflow integration not installed in Python 3.11",
-)
 def test_kubeflow_orchestrator_remote_stack(
     mocker, s3_artifact_store, remote_container_registry
 ) -> None:
@@ -103,10 +98,6 @@ def test_kubeflow_orchestrator_remote_stack(
         ).validate()
 
 
-@pytest.mark.skipif(
-    sys.version_info >= (3, 11),
-    reason="Kubeflow integration not installed in Python 3.11",
-)
 def test_kubeflow_orchestrator_local_stack(
     mocker, local_artifact_store, local_container_registry
 ) -> None:
