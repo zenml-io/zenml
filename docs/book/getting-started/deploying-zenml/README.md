@@ -45,7 +45,7 @@ Currently, there are two main options to access a deployed ZenML server:
 2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](deploy-with-zenml-cli.md), [Docker](../../component-guide/model-registries/model-registries.md), [Helm](deploy-with-helm.md), or [HuggingFace Spaces](deploy-using-huggingface-spaces.md). We also offer our Pro version for self-hosted deployments, so you can use our full paid feature-set while staying fully in control with an airgapped solution on your infrastructure.
 
 {% hint style="warning" %}
-Currently the zenml server supports a new version of the dashboard. To use the legacy version which supports stack registration from teh dashboard simply set the following environment variable in the deployment environment `export ZEN_SERVER_USE_LEGACY_DASHBOARD=True`.
+Currently the ZenML server supports a legacy and a brand new version of the dashboard. To use the legacy version which supports stack registration from the dashboard simply set the following environment variable in the deployment environment: `export ZEN_SERVER_USE_LEGACY_DASHBOARD=True`.
 {% endhint %}
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
