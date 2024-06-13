@@ -119,7 +119,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 
     @field_validator("user_account_json")
     @classmethod
-    def validate_user_account_json(cls, value: SecretStr) -> SecretStr:
+    def validate_user_account_json(cls, value: PlainSerializedSecretStr) -> PlainSerializedSecretStr:
         """Validate the user account credentials JSON.
 
         Args:
