@@ -28,20 +28,20 @@ def is_latest_zenml_version() -> bool:
     from zenml import __version__
 
     # Get the current version of the package
-    current_version = __version__
+    current_local_version = __version__
 
     # Get the latest version from PyPI
     try:
         response = requests.get("https://pypi.org/pypi/zenml/json")
         response.raise_for_status()
-        latest_version = response.json()["info"]["version"]
+        latest_published_version = response.json()["info"]["version"]
     except Exception as e:
         raise RuntimeError(
             f"Failed to fetch the latest version from PyPI: {e}"
         )
 
     # Compare versions
-    if version.parse(latest_version) > version.parse(current_version):
+    if version.parse(latest_published_version) > version.parse(current_local_version):
         return False
     else:
         return True
