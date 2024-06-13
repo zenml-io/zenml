@@ -80,7 +80,7 @@ ZenML pipelines and the ZenML Pro to 3rd party services and infrastructure
 while ensuring that credentials are always stored on the customer side.
 
 Even though they are stored customer side, access to ZenML secrets is fully
-managed by ZenML Pro. The individual deployed ZenML Servers can also allowed to use some of those
+managed by ZenML Pro. The individually deployed ZenML Servers can also allowed to use some of those
 credentials to connect directly to customer infrastructure services to implement
 control plane features such as artifact visualization or triggering pipelines.
 This implies that the secret values are allowed to leave the customer
