@@ -31,7 +31,7 @@ import requests
 import urllib3
 from kfp import dsl
 from kfp.client import Client as KFPClient
-from kfp.compiler import KFPCompiler
+from kfp.compiler import Compiler as KFPCompiler
 from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -517,6 +517,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 step_settings = cast(
                     TektonOrchestratorSettings, self.get_settings(step)
                 )
+                node_selector_constraint: Optional[Tuple[str, str]] = None
                 pod_settings = step_settings.pod_settings
                 if pod_settings:
                     if pod_settings.host_ipc:
