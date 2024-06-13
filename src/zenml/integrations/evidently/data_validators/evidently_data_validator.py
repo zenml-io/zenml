@@ -118,6 +118,29 @@ class EvidentlyDataValidator(BaseDataValidator):
         return options
 
     @staticmethod
+    def _set_nltk_data_path() -> None:
+        """Set the NLTK data path to the current working directory.
+
+        This is necessary because the default download directory is not writable
+        in some Docker containers.
+        """
+        try:
+            from nltk.data import (  # type: ignore[import-untyped]
+                path as nltk_path,
+            )
+        except ImportError:
+            raise ImportError(
+                "NLTK is not installed. Please install NLTK to use "
+                "Evidently text metrics and tests."
+            )
+
+        # Configure NLTK to use the current working directory to download and
+        # lookup data. This is necessary because the default download directory
+        # is not writable in some Docker containers.
+        nltk_path.append(os.getcwd())
+        os.environ["NLTK_DATA"] = os.getcwd()
+
+    @staticmethod
     def _download_nltk_data() -> None:
         """Download NLTK data for text metrics and tests.
 
@@ -196,6 +219,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         Returns:
             The Evidently Report as JSON object and as HTML.
         """
+        self._set_nltk_data_path()
         if download_nltk_data:
             self._download_nltk_data()
 
