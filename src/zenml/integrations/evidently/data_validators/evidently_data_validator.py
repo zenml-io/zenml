@@ -123,7 +123,7 @@ class EvidentlyDataValidator(BaseDataValidator):
 
         This is necessary because the default download directory is not writable
         in some Docker containers.
-        
+
         Raises:
             ImportError: if NLTK is not installed.
         """
