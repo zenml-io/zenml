@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility functions for the package."""
+
 import requests
 from packaging import version
 
@@ -41,7 +42,9 @@ def is_latest_zenml_version() -> bool:
         )
 
     # Compare versions
-    if version.parse(latest_published_version) > version.parse(current_local_version):
+    if version.parse(latest_published_version) > version.parse(
+        current_local_version
+    ):
         return False
     else:
         return True
