@@ -78,7 +78,7 @@ def is_true_string_value(value: Any) -> bool:
     Returns:
         Whether the input value represents a string version of 'True'.
     """
-    return True if value in ["1", "y", "yes", "True", "true"] else False
+    return value in ["1", "y", "yes", "True", "true"]
 
 
 def is_false_string_value(value: Any) -> bool:
