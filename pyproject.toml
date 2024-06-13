@@ -207,6 +207,7 @@ connectors-azure = [
     "azure-mgmt-containerregistry",
     "azure-mgmt-storage",
     "azure-storage-blob",
+    "azure-mgmt-resource",
     "kubernetes",
 ]
 dev = [

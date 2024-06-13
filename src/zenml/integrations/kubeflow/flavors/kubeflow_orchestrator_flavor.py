@@ -53,8 +53,6 @@ class KubeflowOrchestratorSettings(BaseSettings):
         and `client_password` need to be set together.
         user_namespace: The user namespace to use when creating experiments
             and runs.
-        node_selectors: Deprecated: Node selectors to apply to KFP pods.
-        node_affinity: Deprecated: Node affinities to apply to KFP pods.
         pod_settings: Pod settings to apply.
     """
 
@@ -65,8 +63,6 @@ class KubeflowOrchestratorSettings(BaseSettings):
     client_username: Optional[str] = SecretField(default=None)
     client_password: Optional[str] = SecretField(default=None)
     user_namespace: Optional[str] = None
-    node_selectors: Dict[str, str] = {}
-    node_affinity: Dict[str, List[str]] = {}
     pod_settings: Optional[KubernetesPodSettings] = None
 
     @model_validator(mode="before")
@@ -84,63 +80,41 @@ class KubeflowOrchestratorSettings(BaseSettings):
             Validated settings.
 
         Raises:
-            AssertionError: If old and new settings are used together.
             ValueError: If username and password are not specified together.
         """
-        has_pod_settings = bool(data.get("pod_settings"))
-
         node_selectors = cast(Dict[str, str], data.get("node_selectors") or {})
         node_affinity = cast(
             Dict[str, List[str]], data.get("node_affinity") or {}
         )
 
-        has_old_settings = any([node_selectors, node_affinity])
-
-        if has_old_settings:
-            logger.warning(
-                "The attributes `node_selectors` and `node_affinity` of the "
-                "Kubeflow settings will be deprecated soon. Use the "
-                "attribute `pod_settings` instead.",
-            )
-
-        if has_pod_settings and has_old_settings:
-            raise AssertionError(
-                "Got Kubeflow pod settings using both the deprecated "
-                "attributes `node_selectors` and `node_affinity` as well as "
-                "the new attribute `pod_settings`. Please specify Kubeflow "
-                "pod settings only using the new `pod_settings` attribute."
-            )
-        elif has_old_settings:
+        affinity = {}
+        if node_affinity:
             from kubernetes import client as k8s_client
 
-            affinity = {}
-            if node_affinity:
-                match_expressions = [
-                    k8s_client.V1NodeSelectorRequirement(
-                        key=key,
-                        operator="In",
-                        values=values,
-                    )
-                    for key, values in node_affinity.items()
-                ]
+            match_expressions = [
+                k8s_client.V1NodeSelectorRequirement(
+                    key=key,
+                    operator="In",
+                    values=values,
+                )
+                for key, values in node_affinity.items()
+            ]
 
-                affinity = k8s_client.V1Affinity(
-                    node_affinity=k8s_client.V1NodeAffinity(
-                        required_during_scheduling_ignored_during_execution=k8s_client.V1NodeSelector(
-                            node_selector_terms=[
-                                k8s_client.V1NodeSelectorTerm(
-                                    match_expressions=match_expressions
-                                )
-                            ]
-                        )
+            affinity = k8s_client.V1Affinity(
+                node_affinity=k8s_client.V1NodeAffinity(
+                    required_during_scheduling_ignored_during_execution=k8s_client.V1NodeSelector(
+                        node_selector_terms=[
+                            k8s_client.V1NodeSelectorTerm(
+                                match_expressions=match_expressions
+                            )
+                        ]
                     )
                 )
-            pod_settings = KubernetesPodSettings(
-                node_selectors=node_selectors, affinity=affinity
             )
-            data["pod_settings"] = pod_settings
-            data["node_affinity"] = {}
-            data["node_selectors"] = {}
+        pod_settings = KubernetesPodSettings(
+            node_selectors=node_selectors, affinity=affinity
+        )
+        data["pod_settings"] = pod_settings
 
         # Validate username and password for auth cookie logic
         username = data.get("client_username")
@@ -171,21 +145,11 @@ class KubeflowOrchestratorConfig(
             Kubeflow Pipelines deployment (i.e. when `kubeflow_hostname` is
             set) or if the stack component is linked to a Kubernetes service
             connector.
-        local: If `True`, the orchestrator will assume it is connected to a
-            local kubernetes cluster and will perform additional validations and
-            operations to allow using the orchestrator in combination with other
-            local stack components that store data in the local filesystem
-            (i.e. it will mount the local stores directory into the pipeline
-            containers).
-        skip_local_validations: If `True`, the local validations will be
-            skipped.
     """
 
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
     kubernetes_context: Optional[str]  # TODO: Potential setting
-    local: bool = False
-    skip_local_validations: bool = False
 
     @model_validator(mode="before")
     @classmethod
@@ -229,7 +193,7 @@ class KubeflowOrchestratorConfig(
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return not self.local
+        return True
 
     @property
     def is_local(self) -> bool:
@@ -238,7 +202,7 @@ class KubeflowOrchestratorConfig(
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        return self.local
+        return False
 
     @property
     def is_synchronous(self) -> bool:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Tekton orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pydantic import model_validator
 
@@ -22,6 +22,7 @@ from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.tekton.orchestrators import TektonOrchestrator
@@ -37,10 +38,57 @@ class TektonOrchestratorSettings(BaseSettings):
     """Settings for the Tekton orchestrator.
 
     Attributes:
-        pod_settings: Pod settings to apply.
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`. This setting only
+            has an effect when specified on the pipeline and will be ignored if
+            specified on steps.
+        timeout: How many seconds to wait for synchronous runs.
+        client_args: Arguments to pass when initializing the KFP client.
+        client_username: Username to generate a session cookie for the kubeflow client. Both `client_username`
+        and `client_password` need to be set together.
+        client_password: Password to generate a session cookie for the kubeflow client. Both `client_username`
+        and `client_password` need to be set together.
+        user_namespace: The user namespace to use when creating experiments
+            and runs.
     """
 
+    synchronous: bool = True
+    timeout: int = 1200
+
+    client_args: Dict[str, Any] = {}
+    client_username: Optional[str] = SecretField(default=None)
+    client_password: Optional[str] = SecretField(default=None)
+    user_namespace: Optional[str] = None
+    node_selectors: Dict[str, str] = {}
+    node_affinity: Dict[str, List[str]] = {}
     pod_settings: Optional[KubernetesPodSettings] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _validate_and_migrate_pod_settings(
+        cls, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Validates settings and migrates pod settings from older version.
+
+        Args:
+            data: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+
+        Raises:
+            ValueError: If username and password are not specified together.
+        """
+        # Validate username and password for auth cookie logic
+        username = data.get("client_username")
+        password = data.get("client_password")
+        client_creds_error = "`client_username` and `client_password` both need to be set together."
+        if (username and password is None) or (password and username is None):
+            raise ValueError(client_creds_error)
+        return data
 
 
 class TektonOrchestratorConfig(
@@ -49,26 +97,18 @@ class TektonOrchestratorConfig(
     """Configuration for the Tekton orchestrator.
 
     Attributes:
+        tekton_hostname: Hostname of the Tekton server.
         kubernetes_context: Name of a kubernetes context to run
             pipelines in. If the stack component is linked to a Kubernetes
             service connector, this field is ignored. Otherwise, it is
             mandatory.
         kubernetes_namespace: Name of the kubernetes namespace in which the
             pods that run the pipeline steps should be running.
-        local: If `True`, the orchestrator will assume it is connected to a
-            local kubernetes cluster and will perform additional validations and
-            operations to allow using the orchestrator in combination with other
-            local stack components that store data in the local filesystem
-            (i.e. it will mount the local stores directory into the pipeline
-            containers).
-        skip_local_validations: If `True`, the local validations will be
-            skipped.
     """
 
+    tekton_hostname: Optional[str] = None
     kubernetes_context: Optional[str] = None
-    kubernetes_namespace: str = "zenml"
-    local: bool = False
-    skip_local_validations: bool = False
+    kubernetes_namespace: str = "kubeflow"
 
     @model_validator(mode="before")
     @classmethod
@@ -112,7 +152,7 @@ class TektonOrchestratorConfig(
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return not self.local
+        return True
 
     @property
     def is_local(self) -> bool:
@@ -121,7 +161,7 @@ class TektonOrchestratorConfig(
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        return self.local
+        return False
 
 
 class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
