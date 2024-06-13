@@ -101,7 +101,9 @@ def main() -> None:
 
         step_config = deployment_config.step_configurations[step_name].config
         settings = KubernetesOrchestratorSettings.model_validate(
-            step_config.settings.get("orchestrator.kubernetes", {}).model_dump()
+            step_config.settings.get(
+                "orchestrator.kubernetes", {}
+            ).model_dump()
         )
 
         env = get_config_environment_vars()
