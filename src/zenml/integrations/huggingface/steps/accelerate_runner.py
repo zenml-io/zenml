@@ -128,7 +128,7 @@ def run_with_accelerate(
                     launch_command(args)
                 except Exception as e:
                     logger.error(
-                        f"Accelerate training job failed... See error message for details."
+                        "Accelerate training job failed... See error message for details."
                     )
                     raise RuntimeError(
                         "Accelerate training job failed."
