@@ -7,6 +7,7 @@ from typing import List, Optional, Set, Tuple
 from uuid import UUID
 
 from fastapi import BackgroundTasks
+from packaging import version
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -116,7 +117,14 @@ def run_pipeline(
             stack=stack
         )
 
-        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+        if build.python_version:
+            version_info = version.parse(build.python_version)
+            python_version = f"{version_info.major}.{version_info.minor}"
+        else:
+            python_version = (
+                f"{sys.version_info.major}.{sys.version_info.minor}"
+            )
+
         dockerfile = generate_dockerfile(
             pypi_requirements=pypi_requirements,
             apt_packages=apt_packages,
