@@ -289,7 +289,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
 
     @field_validator("external_account_json")
     @classmethod
-    def validate_external_account_json(cls, value: SecretStr) -> SecretStr:
+    def validate_external_account_json(cls, value: PlainSerializedSecretStr) -> PlainSerializedSecretStr:
         """Validate the external account credentials JSON.
 
         Args:
