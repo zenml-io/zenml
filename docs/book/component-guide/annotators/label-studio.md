@@ -61,7 +61,7 @@ zenml secret create label_studio_secrets --api_key="<your_label_studio_api_key>"
 Then register your annotator with ZenML:
 
 ```shell
-zenml annotator register label_studio --flavor label_studio --api_key={{label_studio_secrets.api_key}}
+zenml annotator register label_studio --flavor label_studio --api_key="{{label_studio_secrets.api_key}}"
 
 # for deployed instances of Label Studio, you can also pass in the URL as follows, for example:
 # zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>" --instance_url="<your_label_studio_url>" --port=80
@@ -75,7 +75,7 @@ Label Studio), please read the [Hugging Face deployment documentation](https://h
 Finally, add all these components to a stack and set it as your active stack. For example:
 
 ```shell
-zenml stack copy annotation
+zenml stack copy default annotation
 zenml stack update annotation -a <YOUR_CLOUD_ARTIFACT_STORE>
 # this must be done separately so that the other required stack components are first registered
 zenml stack update annotation -an <YOUR_LABEL_STUDIO_ANNOTATOR>
