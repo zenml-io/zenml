@@ -254,5 +254,7 @@ def create_cli_wrapped_script(
 
         yield script_path, output_path
     finally:
-        script_path.unlink()
-        output_path.unlink()
+        if script_path.exists():
+            script_path.unlink()
+        if output_path.exists():
+            output_path.unlink()
