@@ -62,6 +62,7 @@ install_integrations() {
     echo "" >> integration-requirements.txt
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
     echo "pyopenssl" >> integration-requirements.txt
+    echo "typing-extensions" >> integration-requirements.txt
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]" >> integration-requirements.txt
 
     # TODO: remove after torch 2.3.0+ is released
