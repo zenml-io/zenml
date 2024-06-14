@@ -50,7 +50,7 @@ class TensorflowIntegration(Integration):
             A list of requirements.
         """
         if sys.version_info > (3, 11):
-            tf_version = "2.13"
+            tf_version = "2.14"
         else:
             # Capping tensorflow to 2.11 for Python 3.10 and below because it
             # is not compatible with Pytorch
