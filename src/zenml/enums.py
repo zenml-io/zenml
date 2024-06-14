@@ -375,6 +375,7 @@ class PluginType(StrEnum):
 
     EVENT_SOURCE = "event_source"
     ACTION = "action"
+    ASSISTANT = "assistant"
 
 
 class PluginSubType(StrEnum):
@@ -384,3 +385,5 @@ class PluginSubType(StrEnum):
     WEBHOOK = "webhook"
     # Action Subtypes
     PIPELINE_RUN = "pipeline_run"
+    # Assistant Subtypes
+    EXAMPLE = "example"

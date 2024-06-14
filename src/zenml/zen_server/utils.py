@@ -189,6 +189,13 @@ def initialize_workload_manager() -> None:
 
 def initialize_plugins() -> None:
     """Initialize the event plugins registry."""
+    # Import additional plugins from the zenml cloud plugins package
+    try:
+        import zenml_cloud_plugins.plugins
+    except ImportError as e:
+        logger.error(e)
+        pass
+
     plugin_flavor_registry().initialize_plugins()
 
 

@@ -228,6 +228,7 @@ class ServerConfiguration(BaseModel):
         auto_activate: Whether to automatically activate the server and create a
             default admin user account with an empty password during the initial
             deployment.
+        assistant_enabled: Whether to include the AI assistant endpoints.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -317,6 +318,8 @@ class ServerConfiguration(BaseModel):
     thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
 
     _deployment_id: Optional[UUID] = None
+
+    assistant_enabled: bool = False
 
     @model_validator(mode="before")
     @classmethod

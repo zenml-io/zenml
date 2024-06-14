@@ -42,6 +42,7 @@ from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
+    assistant_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
     devices_endpoints,
@@ -303,6 +304,10 @@ app.include_router(workspaces_endpoints.router)
 # API.
 if server_config().auth_scheme != AuthScheme.EXTERNAL:
     app.include_router(users_endpoints.activation_router)
+
+# If the server config contains
+if server_config().assistant_enabled:
+    app.include_router(assistant_endpoints.assistant_router)
 
 
 def get_root_static_files() -> List[str]:

@@ -203,3 +203,40 @@ def verify_permissions_and_prune_entities(
     """
     verify_permission(resource_type=resource_type, action=Action.PRUNE)
     prune_method(**kwargs)
+
+
+def verify_permissions_and_make_call(
+    request_model: AnyRequest,
+    destination_method: Callable[[AnyRequest], AnyResponse],
+) -> AnyResponse:
+    """Verify permissions and make call.
+
+    Args:
+        request_model: The entity request model.
+        destination_method: The method to create the entity.
+
+    Raises:
+        IllegalOperationError: If the request model has a different owner then
+            the currently authenticated user.
+
+    Returns:
+        A response from the destination method.
+    """
+    if isinstance(request_model, UserScopedRequest):
+        auth_context = get_auth_context()
+        assert auth_context
+
+        if request_model.user != auth_context.user.id:
+            raise IllegalOperationError(
+                "Not allowed to make a call on behalf of another user."
+            )
+    # verify_permission(action=Action.)  # TODO: Introduce this later
+
+    # TODO: If we need limits introduce an increment here later
+
+    response = destination_method(request_model)
+
+    # if needs_usage_increment:
+    #    report_usage(...)
+
+    return response
