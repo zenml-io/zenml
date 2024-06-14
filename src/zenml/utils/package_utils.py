@@ -33,7 +33,7 @@ def is_latest_zenml_version() -> bool:
 
     # Get the latest version from PyPI
     try:
-        response = requests.get("https://pypi.org/pypi/zenml/json", timeout=10)
+        response = requests.get("https://pypi.org/pypi/zenml/json", timeout=60)
         response.raise_for_status()
         latest_published_version = response.json()["info"]["version"]
     except Exception as e:
