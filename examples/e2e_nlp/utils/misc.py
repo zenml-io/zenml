@@ -35,13 +35,13 @@ def compute_metrics(
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     # calculate the mertic using the predicted and true value
-    accuracy = load_metric("accuracy").compute(
+    accuracy = load_metric("accuracy", trust_remote_code=True).compute(
         predictions=predictions, references=labels
     )
-    f1 = load_metric("f1").compute(
+    f1 = load_metric("f1", trust_remote_code=True).compute(
         predictions=predictions, references=labels, average="weighted"
     )
-    precision = load_metric("precision").compute(
+    precision = load_metric("precision", trust_remote_code=True).compute(
         predictions=predictions, references=labels, average="weighted"
     )
     return {
