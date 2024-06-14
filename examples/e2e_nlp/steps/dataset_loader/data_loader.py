@@ -44,7 +44,10 @@ def data_loader() -> Annotated[DatasetDict, "dataset"]:
     logger.info("Loading dataset airline_reviews... ")
 
     # Load dataset based on the dataset value
-    dataset = load_dataset("Shayanvsf/US_Airline_Sentiment")
+    dataset = load_dataset(
+        "Shayanvsf/US_Airline_Sentiment",
+        trust_remote_code=True,
+    )
     dataset = dataset.rename_column("airline_sentiment", "label")
     dataset = dataset.remove_columns(
         ["airline_sentiment_confidence", "negativereason_confidence"]
