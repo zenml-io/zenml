@@ -64,7 +64,7 @@ install_integrations() {
 
     # TODO: remove after torch 2.3.0+ is released
     # https://github.com/pytorch/pytorch/issues/124897
-    echo "torch<2.3.0" >> integration-requirements.txt
+    echo "torch>=2.2,<2.3.0" >> integration-requirements.txt
 
     uv pip install $PIP_ARGS -r integration-requirements.txt
     rm integration-requirements.txt
