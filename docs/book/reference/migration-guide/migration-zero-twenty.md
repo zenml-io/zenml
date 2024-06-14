@@ -16,7 +16,7 @@ If you have updated to ZenML 0.20.0 by mistake or are experiencing issues with t
 
 High-level overview of the changes:
 
-* [ZenML takes over the Metadata Store](migration-zero-twenty.md#zenml-takes-over-the-metadata-store-role) role. All information about your ZenML Stacks, pipelines, and artifacts is now tracked by ZenML itself directly. If you are currently using remote Metadata Stores (e.g. deployed in cloud) in your stacks, you will probably need to replace them with [ZenML cloud deployments](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md).
+* [ZenML takes over the Metadata Store](migration-zero-twenty.md#zenml-takes-over-the-metadata-store-role) role. All information about your ZenML Stacks, pipelines, and artifacts is tracked by ZenML itself directly. If you are currently using remote Metadata Stores (e.g. deployed in cloud) in your stacks, you will probably need to replace them with a [ZenML server deployment](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md).
 * the [new ZenML Dashboard](migration-zero-twenty.md#the-zenml-dashboard-is-now-available) is now available with all ZenML deployments.
 * [ZenML Profiles have been removed](migration-zero-twenty.md#removal-of-profiles-and-the-local-yaml-database) in favor of ZenML Projects. You need to [manually migrate your existing ZenML Profiles](migration-zero-twenty.md#-how-to-migrate-your-profiles) after the update.
 * the [configuration of Stack Components is now decoupled from their implementation](migration-zero-twenty.md#decoupling-stack-component-configuration-from-implementation). If you extended ZenML with custom stack component implementations, you may need to update the way they are registered in ZenML.
