@@ -5095,8 +5095,6 @@ class Client(metaclass=ClientMetaClass):
             expires_at=expires_at,
             expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
-            user=self.active_user.id,
-            workspace=self.active_workspace.id,
         )
 
         # Validate and configure the resources
@@ -5143,8 +5141,15 @@ class Client(metaclass=ClientMetaClass):
             # that the connector can be shared with other users or used
             # from other machines and because some auth methods rely on the
             # server-side authentication environment
+
+            # Convert the update model to a request model for validation
+            connector_request_dict = connector_update.model_dump()
+            connector_request_dict.update(
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+            )
             connector_request = ServiceConnectorRequest.model_validate(
-                connector_update.model_dump()
+                connector_request_dict
             )
 
             if connector.remote:

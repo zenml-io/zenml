@@ -223,5 +223,12 @@
     "prodigy",
     "prodigy.components",
     "prodigy.components.db",
-    "prodigy.errors"
+    "prodigy.errors",
+    "azure",
+    "azure.core",
+    "azure.core.credentials",
+    "azure.core.exceptions",
+    "azure.mgmt",
+    "azure.mgmt.resource",
+    "kfp.client"
 ]

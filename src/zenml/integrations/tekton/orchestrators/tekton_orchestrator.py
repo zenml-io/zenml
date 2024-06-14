@@ -459,7 +459,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             closure=dynamic_container_component.__closure__,
         )
 
-        return dsl.container_component(dynamic_func)  # type: ignore[misc]
+        return dsl.container_component(dynamic_func)
 
     def prepare_or_run_pipeline(
         self,
