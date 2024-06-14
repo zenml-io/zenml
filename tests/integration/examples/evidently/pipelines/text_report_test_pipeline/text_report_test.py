@@ -21,7 +21,6 @@ from zenml.config import DockerSettings
 from zenml.integrations.constants import SKLEARN
 
 docker_settings = DockerSettings(
-    parent_image="zenmldocker/zenml:pydantic2-dev",
     required_integrations=[SKLEARN],
     requirements=["pyarrow"],
 )
