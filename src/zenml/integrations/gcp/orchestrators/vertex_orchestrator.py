@@ -691,7 +691,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Returns:
             The dynamic component with the resource settings applied.
         """
-        breakpoint()
         # Set optional CPU, RAM and GPU constraints for the pipeline
         if resource_settings:
             cpu_limit = resource_settings.cpu_count or self.config.cpu_limit
