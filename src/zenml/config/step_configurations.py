@@ -219,6 +219,9 @@ class StepConfiguration(PartialStepConfiguration):
         model_or_dict: SettingsOrDict = self.settings.get(
             RESOURCE_SETTINGS_KEY, {}
         )
+
+        if isinstance(model_or_dict, BaseSettings):
+            model_or_dict = model_or_dict.model_dump()
         return ResourceSettings.model_validate(model_or_dict)
 
     @property
@@ -233,6 +236,8 @@ class StepConfiguration(PartialStepConfiguration):
         model_or_dict: SettingsOrDict = self.settings.get(
             DOCKER_SETTINGS_KEY, {}
         )
+        if isinstance(model_or_dict, BaseSettings):
+            model_or_dict = model_or_dict.model_dump()
         return DockerSettings.model_validate(model_or_dict)
 
 
