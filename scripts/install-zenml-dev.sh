@@ -40,13 +40,7 @@ install_integrations() {
     python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
 
     ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure pigeon prodigy"
-
-    # if python version is 3.11, exclude all integrations depending on kfp
-    # because they are not yet compatible with python 3.11
-    if [ "$python_version" = "3.11" ]; then
-        ignore_integrations="$ignore_integrations kubeflow tekton gcp"
-    fi
-
+    
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""
     for integration in $ignore_integrations; do

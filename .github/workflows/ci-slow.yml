@@ -209,8 +209,8 @@ jobs:
   #     matrix:
   #       os: [macos-latest]
   #       python-version: ['3.8', '3.9', '3.10', '3.11']
-  #       # Python 3.8 and 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
-  #       # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
+  #  # Python 3.8 and 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
+  #  # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
   #       exclude:
   #         - {python-version: '3.8', os: macos-latest}
   #         - {python-version: '3.9', os: macos-latest}
