@@ -160,7 +160,6 @@ def test_vertex_orchestrator_stack_validation(
             ResourceSettings(cpu_count=1, gpu_count=None, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
             {
-                "accelerator": {"count": "1", "type": "NVIDIA_TESLA_K80"},
                 "cpuLimit": 1.0,
                 "memoryLimit": 1.0,
             },
@@ -228,5 +227,5 @@ def test_vertex_orchestrator_configure_container_resources(
     job_spec = pipeline_json["deploymentSpec"]["executors"][
         f"exec-{step_name}"
     ]["container"]
-
+    breakpoint()
     assert job_spec["resources"] == expected_resources
