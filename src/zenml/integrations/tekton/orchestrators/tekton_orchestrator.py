@@ -553,7 +553,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                             "Volume mounts are set but not supported in "
                             "Tekton with Tekton Pipelines 2.x. Ignoring..."
                         )
-
                     # apply pod settings
                     if (
                         KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
@@ -566,13 +565,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                             ],
                         )
 
-                step_name_to_dynamic_component[step_name] = (
-                    self._configure_container_resources(
-                        dynamic_component,
-                        step.config.resource_settings,
-                        node_selector_constraint,
-                    )
-                )
+                step_name_to_dynamic_component[step_name] = dynamic_component
 
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
@@ -592,12 +585,23 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         step_name_to_dynamic_component[upstream_step_name]
                         for upstream_step_name in step.spec.upstream_steps
                     ]
-                    component().set_caching_options(
-                        enable_caching=False
-                    ).set_env_variable(
-                        name=ENV_ZENML_TEKTON_RUN_ID,
-                        value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
-                    ).after(*upstream_step_components)
+                    task = (
+                        component()
+                        .set_display_name(
+                            name=component_name,
+                        )
+                        .set_caching_options(enable_caching=False)
+                        .set_env_variable(
+                            name=ENV_ZENML_TEKTON_RUN_ID,
+                            value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
+                        )
+                        .after(*upstream_step_components)
+                    )
+                    self._configure_container_resources(
+                        task,
+                        step.config.resource_settings,
+                        node_selector_constraint,
+                    )
 
             return dynamic_pipeline
 
@@ -884,15 +888,23 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 memory_limit
             )
 
-        gpu_limit = resource_settings.gpu_count or None
-        if gpu_limit is not None and gpu_limit > 0:
-            dynamic_component = dynamic_component.set_gpu_limit(gpu_limit)
+        gpu_limit = (
+            resource_settings.gpu_count
+            if resource_settings.gpu_count is not None
+            else 0
+        )
 
         if node_selector_constraint:
             (constraint_label, value) = node_selector_constraint
-            if not gpu_limit == 0 and constraint_label == "accelerator":
-                gpu_limit = gpu_limit or 1
-                dynamic_component.set_accelerator_limit(gpu_limit)
-                dynamic_component.set_accelerator_type(value)
+            if gpu_limit is not None and gpu_limit > 0:
+                dynamic_component = (
+                    dynamic_component.set_accelerator_type(value)
+                    .set_accelerator_limit(gpu_limit)
+                    .set_gpu_limit(gpu_limit)
+                )
+            elif constraint_label == "accelerator" and gpu_limit == 0:
+                logger.warning(
+                    "GPU limit is set to 0 but a GPU type is specified. Ignoring GPU settings."
+                )
 
         return dynamic_component

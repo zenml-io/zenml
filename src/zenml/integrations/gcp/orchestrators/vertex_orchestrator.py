@@ -363,6 +363,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 pipeline_func
             """
             step_name_to_dynamic_component: Dict[str, Any] = {}
+            node_selector_constraint: Optional[Tuple[str, str]] = None
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
@@ -411,17 +412,23 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         )
 
                     # apply pod settings
-                    for key, value in pod_settings.node_selectors.items():
-                        dynamic_component.add_node_selector_constraint(
-                            label_name=key, value=value
+                    if (
+                        GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                        in pod_settings.node_selectors.keys()
+                    ):
+                        node_selector_constraint = (
+                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            pod_settings.node_selectors[
+                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                            ],
                         )
-                step_name_to_dynamic_component[step_name] = (
-                    self._configure_container_resources(
-                        dynamic_component,
-                        step.config.resource_settings,
-                        step_settings.node_selector_constraint,
-                    )
-                )
+                    elif step_settings.node_selector_constraint:
+                        node_selector_constraint = (
+                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            step_settings.node_selector_constraint[1],
+                        )
+
+                step_name_to_dynamic_component[step_name] = dynamic_component
 
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
@@ -441,14 +448,23 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         step_name_to_dynamic_component[upstream_step_name]
                         for upstream_step_name in step.spec.upstream_steps
                     ]
-                    component().set_display_name(
-                        name=component_name,
-                    ).set_caching_options(
-                        enable_caching=False
-                    ).set_env_variable(
-                        name=ENV_ZENML_VERTEX_RUN_ID,
-                        value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
-                    ).after(*upstream_step_components)
+                    task = (
+                        component()
+                        .set_display_name(
+                            name=component_name,
+                        )
+                        .set_caching_options(enable_caching=False)
+                        .set_env_variable(
+                            name=ENV_ZENML_VERTEX_RUN_ID,
+                            value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
+                        )
+                        .after(*upstream_step_components)
+                    )
+                    self._configure_container_resources(
+                        task,
+                        step.config.resource_settings,
+                        node_selector_constraint,
+                    )
 
             return dynamic_pipeline
 
@@ -713,18 +729,22 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             if resource_settings.gpu_count is not None
             else self.config.gpu_limit
         )
-        if gpu_limit is not None and gpu_limit > 0:
-            dynamic_component = dynamic_component.set_gpu_limit(gpu_limit)
 
         if node_selector_constraint:
             (constraint_label, value) = node_selector_constraint
-            if not (
+            if gpu_limit is not None and gpu_limit > 0:
+                dynamic_component = (
+                    dynamic_component.set_accelerator_type(value)
+                    .set_accelerator_limit(gpu_limit)
+                    .set_gpu_limit(gpu_limit)
+                )
+            elif (
                 constraint_label
                 == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
                 and gpu_limit == 0
             ):
-                gpu_limit = gpu_limit or 1
-                dynamic_component.set_accelerator_limit(gpu_limit)
-                dynamic_component.set_accelerator_type(value)
+                logger.warning(
+                    "GPU limit is set to 0 but a GPU type is specified. Ignoring GPU settings."
+                )
 
         return dynamic_component
