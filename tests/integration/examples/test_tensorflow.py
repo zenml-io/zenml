@@ -21,14 +21,14 @@ from tests.integration.examples.utils import run_example
 
 
 @pytest.mark.skipif(
-    sys.version_info > (3, 10),
-    reason="Kubeflow integration not installed in Python 3.11",
+    sys.version_info > (3, 10) or sys.version_info == 3.8,
+    reason="Tensorflow integration does not work as expected with python3.8.",
 )
 def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the kubeflow_pipelines_orchestration example.
+    """Runs the tensorflow example.
 
     Args:
-        tmp_path_factory: Factory to generate temporary test paths.
+        request: Factory to generate temporary test paths.
     """
     name = "tensorflow"
     with run_example(
