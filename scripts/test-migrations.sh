@@ -211,7 +211,7 @@ function test_upgrade_to_version() {
     else
         uv pip install "zenml[templates,server]==$VERSION"
         # handles unpinned sqlmodel dependency in older versions
-        uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0"
+        uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0" "numpy<2.0.0" "tenacity!=8.4.0"
     fi
 
     # Get the major and minor version of Python
