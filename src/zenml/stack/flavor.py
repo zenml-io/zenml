@@ -26,6 +26,7 @@ from zenml.models import (
 from zenml.models.v2.core.flavor import InternalFlavorRequest
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils import source_utils
+from zenml.utils.package_utils import is_latest_zenml_version
 
 
 class Flavor:
@@ -187,15 +188,11 @@ class Flavor:
         )
         return model
 
-    def generate_default_docs_url(self, component_name: str = "") -> str:
+    def generate_default_docs_url(self) -> str:
         """Generate the doc urls for all inbuilt and integration flavors.
 
         Note that this method is not going to be useful for custom flavors,
         which do not have any docs in the main zenml docs.
-
-        Args:
-            component_name: The name of the component for docs generation. Used
-                for legacy documentation before ZenML v0.34.0.
 
         Returns:
             The complete url to the zenml documentation
@@ -204,11 +201,18 @@ class Flavor:
 
         component_type = self.type.plural.replace("_", "-")
         name = self.name.replace("_", "-")
-        docs_component_name = component_name or name
-        base = f"https://docs.zenml.io/v/{__version__}"
-        return (
-            f"{base}/stack-components/{component_type}/{docs_component_name}"
-        )
+
+        try:
+            is_latest = is_latest_zenml_version()
+        except RuntimeError:
+            # We assume in error cases that we are on the latest version
+            is_latest = True
+
+        if is_latest:
+            base = "https://docs.zenml.io"
+        else:
+            base = f"https://zenml-io.gitbook.io/zenml-legacy-documentation/v/{__version__}"
+        return f"{base}/stack-components/{component_type}/{name}"
 
     def generate_default_sdk_docs_url(self) -> str:
         """Generate SDK docs url for a flavor.
