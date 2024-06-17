@@ -34,7 +34,7 @@ SERVER_ID = server_config().external_server_id
 
 
 def _convert_to_cloud_resource(resource: Resource) -> str:
-    """Convert a resource to a ZenML Cloud API resource.
+    """Convert a resource to a ZenML Pro Management Plane resource.
 
     Args:
         resource: The resource to convert.
@@ -75,7 +75,7 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
 
 
 class ZenMLCloudRBAC(RBACInterface, ZenMLCloudSession):
-    """RBAC implementation that uses the ZenML Cloud API as a backend."""
+    """RBAC implementation that uses the ZenML Pro Management Plane as a backend."""
 
     def check_permissions(
         self, user: "UserResponse", resources: Set[Resource], action: Action
@@ -99,7 +99,7 @@ class ZenMLCloudRBAC(RBACInterface, ZenMLCloudSession):
             # Service accounts have full permissions for now
             return {resource: True for resource in resources}
 
-        # At this point it's a regular user, which in the ZenML cloud with RBAC
+        # At this point it's a regular user, which in a ZenML Pro with RBAC
         # enabled is always authenticated using external authentication
         assert user.external_user_id
 
@@ -139,7 +139,7 @@ class ZenMLCloudRBAC(RBACInterface, ZenMLCloudSession):
             # Service accounts have full permissions for now
             return True, []
 
-        # At this point it's a regular user, which in the ZenML cloud with RBAC
+        # At this point it's a regular user, which in the ZenML Pro with RBAC
         # enabled is always authenticated using external authentication
         assert user.external_user_id
         params = {

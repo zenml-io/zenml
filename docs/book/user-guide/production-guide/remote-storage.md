@@ -195,7 +195,7 @@ zenml artifact version list --created="gte:$(date -d '15 minutes ago' '+%Y-%m-%d
 {% endtab %}
 
 {% tab title="Cloud Dashboard" %}
-The [ZenML Cloud](https://zenml.io/cloud) features an [Artifact Control Plane](../starter-guide/manage-artifacts.md) to visualize artifact versions:
+[ZenML Pro](https://zenml.io/pro) features an [Artifact Control Plane](../starter-guide/manage-artifacts.md) to visualize artifact versions:
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>See artifact versions in the cloud.</p></figcaption></figure>
 {% endtab %}
