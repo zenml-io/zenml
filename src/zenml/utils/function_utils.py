@@ -49,7 +49,7 @@ if __name__=="__main__":
     accelerator = Accelerator()
     ret = func(standalone_mode=False)
     if accelerator.is_main_process:
-        pickle.dump(ret, open("{output_file}", "wb"))
+        pickle.dump(ret, open(r"{output_file}", "wb"))
 """
 }
 _ALLOWED_TYPES = (str, int, float, bool, Path)
