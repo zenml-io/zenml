@@ -153,6 +153,9 @@ jobs:
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
         run: brew install graphviz libomp
+        env:
+          LDFLAGS: -L/usr/local/opt/libomp/lib
+          CPPFLAGS: -I/usr/local/opt/libomp/include
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
         run: choco install graphviz
