@@ -227,5 +227,4 @@ def test_vertex_orchestrator_configure_container_resources(
     job_spec = pipeline_json["deploymentSpec"]["executors"][
         f"exec-{step_name}"
     ]["container"]
-    breakpoint()
     assert job_spec["resources"] == expected_resources
