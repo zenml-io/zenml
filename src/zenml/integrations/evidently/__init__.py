@@ -54,9 +54,10 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently>0.2.6,<0.4.5",
-        "tenacity!=8.4.0", # https://github.com/jd/tenacity/issues/471
-                    ]  # supports pyyaml 6
+    REQUIREMENTS = [
+        "evidently>0.2.6,<0.4.5",
+        "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
+    ]  # supports pyyaml 6
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
