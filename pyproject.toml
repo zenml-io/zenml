@@ -418,7 +418,6 @@ module = [
     "IPython.core.*",
     "IPython.display.*",
     "plotly.*",
-    "graphviz.*",
     "dash.*",
     "dash_bootstrap_components.*",
     "dash_cytoscape",
