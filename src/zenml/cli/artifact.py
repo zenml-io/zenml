@@ -229,7 +229,7 @@ def update_artifact_version(
     is_flag=True,
     help="Don't ask for confirmation.",
 )
-@click.opion(
+@click.option(
     "--ignore-errors",
     "-i",
     is_flag=True,
