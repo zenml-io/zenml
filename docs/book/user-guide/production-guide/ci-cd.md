@@ -27,7 +27,7 @@ repository showcases how ZenML can be used for machine learning with a GitHub wo
 continuous model training and continuous model deployment to production. The repository is also meant to be used as a
 template: you can fork it and easily adapt it to your own MLOps stack, infrastructure, code and data.{% endhint %}
 
-## Configure an API Key in ZenML
+### Configure an API Key in ZenML
 
 In order to facilitate machine-to-machine connection you need to create an API key within ZenML. Learn more about those
 [here](https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account).
@@ -49,7 +49,7 @@ To configure a ZenML client to use this API key, run:
 ...
 ```
 
-## Set up your secrets in Github
+### Set up your secrets in Github
 
 For our Github Actions we will need to set up some
 secrets [for our repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
@@ -61,7 +61,7 @@ The other values that are loaded from secrets into the
 environment [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L14-L23)
 can also be set explicitly or as variables.
 
-## (Optional) Set up different stacks for Staging and Production
+### (Optional) Set up different stacks for Staging and Production
 
 You might not necessarily want to use the same stack with the same resources for your staging and production use.
 
@@ -72,7 +72,7 @@ for the different environments to configure the [Model](../../how-to/use-the-mod
 [DockerSettings](../../how-to/customize-docker-builds/docker-settings-on-a-pipeline.md), the [ResourceSettings like
 accelerators](../../how-to/training-with-gpus/training-with-gpus.md) differently for the different environments.
 
-## Run Pipeline for PRs
+### Trigger a pipeline on a Pull Request (Merge Request)
 
 One way to ensure only fully working code makes it into production, you should use a staging environment to test all
 the changes made to your code base and verify they work as intended. To do so automatically you should set up a
@@ -136,5 +136,14 @@ steps:
         --version ${{ env.ZENML_GITHUB_SHA }} \
         --github-pr-url ${{ env.ZENML_GITHUB_URL_PR }}
 ```
+
+When you push to a branch now, that is within a Pull Request, this action will run automatically.
+
+### (Optional) Comment Metrics onto the PR
+
+Finally you can configure your github action workflow to leave a report based on the pipeline that was run. 
+Check out the template for this [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L87-L99.
+
+![Comment left on Pull Request](../../.gitbook/assets/github-action-pr-comment.png)
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
