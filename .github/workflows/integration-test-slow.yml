@@ -147,16 +147,17 @@ jobs:
         run: |
           pip install uv
           uv pip install --system "pyyaml==5.3.1" docker-compose
-      - name: Install Linux System Dependencies
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
-        run: sudo apt install graphviz
+      # - name: Install Linux System Dependencies
+      #   if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
+      #   run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
         run: |
-          brew install graphviz libomp || brew link --overwrite python@3.12
-      - name: Install Windows System Dependencies
-        if: runner.os=='Windows'
-        run: choco install graphviz
+          brew install libomp
+      #    brew install graphviz libomp || brew link --overwrite python@3.12
+      # - name: Install Windows System Dependencies
+      #   if: runner.os=='Windows'
+      #   run: choco install graphviz
       - name: Unbreak Python in GHA for 3.8-3.10
         if: runner.os=='macOS' && inputs.python-version != '3.11'
         # github actions overwrites brew's python. Force it to reassert itself, by
