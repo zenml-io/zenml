@@ -25,7 +25,11 @@ class LangchainIntegration(Integration):
     """Definition of langchain integration for ZenML."""
 
     NAME = LANGCHAIN
-    REQUIREMENTS = ["langchain==0.0.325", "pyyaml>=6.0.1"]
+    REQUIREMENTS = [
+        "langchain==0.0.325",
+        "pyyaml>=6.0.1",
+        "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
+    ]
 
     @classmethod
     def activate(cls) -> None:
