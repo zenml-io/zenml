@@ -14,7 +14,6 @@
 """Implementation of the Tekton orchestrator."""
 
 import os
-import sys
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -244,12 +243,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 f"Error while trying to fetch tekoton cookie: {errh}"
             )
-        if sys.version_info < (3, 11):
-            # For Python 3.9 and 3.10
-            cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call]
-        else:
-            # For Python 3.11 and later
-            cookie_dict: Dict[str, str] = session.cookies.get_dict()
+        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call]
 
         if "authservice_session" not in cookie_dict:
             raise RuntimeError("Invalid username and/or password!")
