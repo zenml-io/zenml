@@ -61,7 +61,7 @@ The other values that are loaded from secrets into the
 environment [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L14-L23)
 can also be set explicitly or as variables.
 
-## Set up different stacks for Staging and Production
+## (Optional) Set up different stacks for Staging and Production
 
 You might not necessarily want to use the same stack with the same resources for your staging and production use.
 
