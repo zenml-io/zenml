@@ -32,7 +32,7 @@ _CLI_WRAPPED_SCRIPT_TEMPLATE_HEADER = """
 from zenml.utils.function_utils import _cli_wrapped_function
 
 import sys
-sys.path.append("{func_path}")
+sys.path.append(r"{func_path}")
 
 from {func_module} import {func_name} as func_to_wrap
 
