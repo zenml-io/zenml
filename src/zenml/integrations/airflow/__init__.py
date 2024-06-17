@@ -32,7 +32,11 @@ class AirflowIntegration(Integration):
     NAME = AIRFLOW
     # remove pendulum version requirement once Airflow supports
     # pendulum>-3.0.0
-    REQUIREMENTS = ["apache-airflow~=2.4.0", "pendulum<3.0.0"]
+    REQUIREMENTS = [
+        "apache-airflow~=2.4.0",
+        "pendulum<3.0.0",
+        "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
+    ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
