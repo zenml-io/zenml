@@ -245,6 +245,10 @@ class IllegalOperationError(ZenMLBaseException):
     """Raised when an illegal operation is attempted."""
 
 
+class MethodNotAllowedError(ZenMLBaseException):
+    """Raised when the server does not allow a request method."""
+
+
 class SettingsResolvingError(ZenMLBaseException):
     """Raised when resolving settings failed."""
 
