@@ -1671,7 +1671,7 @@ class SqlZenStore(BaseZenStore):
 
             return settings.to_model(include_metadata=True)
 
-    def get_onboarding_state(self) -> Set[str]:
+    def get_onboarding_state(self) -> List[str]:
         """Get the server onboarding state.
 
         Returns:
@@ -1682,7 +1682,7 @@ class SqlZenStore(BaseZenStore):
             if settings.onboarding_state:
                 return json.loads(settings.onboarding_state)
             else:
-                return set()
+                return []
 
     def _update_onboarding_state(
         self, completed_steps: Set[str], session: Session
@@ -2984,6 +2984,14 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(new_component)
 
+            if (
+                component.type == StackComponentType.ARTIFACT_STORE
+                and component.flavor != "local"
+            ):
+                self._update_onboarding_state(
+                    completed_steps={"remote_artifact_store_created"},
+                    session=session,
+                )
             return new_component.to_model(include_metadata=True)
 
     def get_stack_component(
@@ -5949,6 +5957,11 @@ class SqlZenStore(BaseZenStore):
 
             connector = new_service_connector.to_model(include_metadata=True)
             self._populate_connector_type(connector)
+
+            self._update_onboarding_state(
+                completed_steps={"service_connector_created"}, session=session
+            )
+
             return connector
 
     def get_service_connector(
@@ -6721,6 +6734,17 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_stack_schema)
 
+            for component in defined_components:
+                if component.type == StackComponentType.ARTIFACT_STORE:
+                    if component.flavor != "local":
+                        self._update_onboarding_state(
+                            completed_steps={
+                                "stack_with_remote_artifact_store_created"
+                            },
+                            session=session,
+                        )
+                    break
+
             return new_stack_schema.to_model(include_metadata=True)
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
@@ -7476,13 +7500,21 @@ class SqlZenStore(BaseZenStore):
                         **stack_metadata,
                     }
 
-            completed_onboarding_steps = {"pipeline_run"}
-            if stack_metadata["artifact_store"] != "default":
-                completed_onboarding_steps.add("remote_pipeline_run")
+                completed_onboarding_steps = {
+                    "pipeline_run",
+                    "starter_setup_completed",
+                }
+                if stack_metadata["artifact_store"] != "local":
+                    completed_onboarding_steps.add(
+                        "pipeline_run_with_remote_artifact_store"
+                    )
+                    completed_onboarding_steps.add(
+                        "production_setup_completed"
+                    )
 
-            self._update_onboarding_state(
-                completed_steps=completed_onboarding_steps, session=session
-            )
+                self._update_onboarding_state(
+                    completed_steps=completed_onboarding_steps, session=session
+                )
             pipeline_run.update(run_update)
             session.add(pipeline_run)
 

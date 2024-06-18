@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from typing import Optional, Set
+from typing import List, Optional
 
 from fastapi import APIRouter, Security
 
@@ -82,7 +82,7 @@ def server_info() -> ServerModel:
 @handle_exceptions
 def get_onboarding_state(
     _: AuthContext = Security(authorize),
-) -> Set[str]:
+) -> List[str]:
     """Get the onboarding state of the server.
 
     Returns:

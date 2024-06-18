@@ -69,11 +69,11 @@ class ServerSettingsSchema(SQLModel, table=True):
     def update_onboarding_state(
         self, completed_steps: Set[str]
     ) -> "ServerSettingsSchema":
-        onboarding_state = set(
+        old_state = set(
             json.loads(self.onboarding_state) if self.onboarding_state else []
         )
-        onboarding_state.union(completed_steps)
-        self.onboarding_state = json.dumps(onboarding_state)
+        new_state = old_state.union(completed_steps)
+        self.onboarding_state = json.dumps(list(new_state))
         self.updated = datetime.utcnow()
 
     def to_model(
