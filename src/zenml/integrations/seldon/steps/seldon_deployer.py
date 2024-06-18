@@ -76,7 +76,7 @@ def seldon_model_deployer_step(
     step_name = context.step_run.name
 
     # update the step configuration with the real pipeline runtime information
-    service_config = service_config.copy()
+    service_config = service_config.model_copy()
     service_config.pipeline_name = pipeline_name
     service_config.pipeline_step_name = step_name
 
@@ -141,7 +141,7 @@ def seldon_model_deployer_step(
     # fetch existing services with same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
-        config=service_config.dict()
+        config=service_config.model_dump()
     )
 
     # even when the deploy decision is negative, if an existing model server
@@ -240,7 +240,7 @@ def seldon_custom_model_deployer_step(
     # fetch existing services with the same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
-        config=service_config.dict()
+        config=service_config.model_dump()
     )
     # even when the deploy decision is negative if an existing model server
     # is not running for this pipeline/step, we still have to serve the
@@ -305,7 +305,7 @@ def seldon_custom_model_deployer_step(
     )
 
     # prepare the service configuration for the deployment
-    service_config = service_config.copy()
+    service_config = service_config.model_copy()
     service_config.model_uri = served_model_uri
 
     # create the specification for the custom deployment

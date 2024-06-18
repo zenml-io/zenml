@@ -27,7 +27,7 @@ from uuid import UUID
 from azure.core.credentials import TokenCredential
 from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
 from azure.keyvault.secrets import SecretClient
-from pydantic import root_validator
+from pydantic import ConfigDict, model_validator
 
 from zenml.enums import (
     SecretsStoreType,
@@ -40,6 +40,7 @@ from zenml.integrations.azure.service_connectors.azure_service_connector import 
     AzureAuthenticationMethods,
 )
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
@@ -65,12 +66,14 @@ class AzureSecretsStoreConfiguration(
     type: SecretsStoreType = SecretsStoreType.AZURE
     key_vault_name: str
 
-    @root_validator(pre=True)
-    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def populate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
         Args:
-            values: Dict representing user-specified runtime settings.
+            data: Dict representing user-specified runtime settings.
 
         Returns:
             Validated settings.
@@ -78,9 +81,9 @@ class AzureSecretsStoreConfiguration(
         # Search for legacy attributes and populate the connector configuration
         # from them, if they exist.
         if (
-            values.get("azure_client_id")
-            and values.get("azure_client_secret")
-            and values.get("azure_tenant_id")
+            data.get("azure_client_id")
+            and data.get("azure_client_secret")
+            and data.get("azure_tenant_id")
         ):
             logger.warning(
                 "The `azure_client_id`, `azure_client_secret` and "
@@ -88,22 +91,16 @@ class AzureSecretsStoreConfiguration(
                 "removed in a future version or ZenML. Please use the "
                 "`auth_method` and `auth_config` attributes instead."
             )
-            values["auth_method"] = (
-                AzureAuthenticationMethods.SERVICE_PRINCIPAL
-            )
-            values["auth_config"] = dict(
-                client_id=values.get("azure_client_id"),
-                client_secret=values.get("azure_client_secret"),
-                tenant_id=values.get("azure_tenant_id"),
+            data["auth_method"] = AzureAuthenticationMethods.SERVICE_PRINCIPAL
+            data["auth_config"] = dict(
+                client_id=data.get("azure_client_id"),
+                client_secret=data.get("azure_client_secret"),
+                tenant_id=data.get("azure_tenant_id"),
             )
 
-        return values
+        return data
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Forbid extra attributes set in the class.
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class AzureSecretsStore(ServiceConnectorSecretsStore):

@@ -188,7 +188,7 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         assert entity.metadata is not None
 
     # Test filtering by name if applicable
-    if "name" in created_entity.__fields__:
+    if "name" in created_entity.model_fields:
         entities_list = crud_test_config.list_method(
             crud_test_config.filter_model(name=created_entity.name)
         )
@@ -220,7 +220,10 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         # Ids should remain the same
         assert updated_entity.id == created_entity.id
         # Something in the Model should have changed
-        assert updated_entity.json() != created_entity.json()
+        assert (
+            updated_entity.model_dump_json()
+            != created_entity.model_dump_json()
+        )
 
         # Test that the update method returns a hydrated model, if applicable
         if hasattr(updated_entity, "metadata"):
@@ -502,7 +505,7 @@ class TestAdminUser:
                 response_body = zen_store.put(
                     f"{USERS}/{str(test_user2.id)}{DEACTIVATE}",
                 )
-                deactivated_user = UserResponse.parse_obj(response_body)
+                deactivated_user = UserResponse.model_validate(response_body)
                 assert deactivated_user.name == test_user2.name
 
     def test_delete_users(self):
@@ -989,7 +992,7 @@ def test_create_user_no_password():
                 is_admin=user.is_admin,
             ),
         )
-        activated_user = UserResponse.parse_obj(response_body)
+        activated_user = UserResponse.model_validate(response_body)
         assert activated_user.active
         assert activated_user.name == user.name
         assert activated_user.id == user.id
@@ -1018,7 +1021,7 @@ def test_reactivate_user():
         response_body = store.put(
             f"{USERS}/{str(user.id)}{DEACTIVATE}",
         )
-        deactivated_user = UserResponse.parse_obj(response_body)
+        deactivated_user = UserResponse.model_validate(response_body)
         assert not deactivated_user.active
         assert deactivated_user.activation_token is not None
 
@@ -1050,7 +1053,7 @@ def test_reactivate_user():
                 is_admin=user.is_admin,
             ),
         )
-        activated_user = UserResponse.parse_obj(response_body)
+        activated_user = UserResponse.model_validate(response_body)
         assert activated_user.active
         assert activated_user.name == user.name
         assert activated_user.id == user.id

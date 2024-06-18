@@ -44,7 +44,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
     client_id: UUID
     user_code: str
     device_code: str
-    status: OAuthDeviceStatus
+    status: str
     failed_auth_attempts: int = 0
     expires: Optional[datetime] = None
     last_login: Optional[datetime] = None
@@ -121,7 +121,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
                 client_id=request.client_id,
                 user_code=hashed_user_code,
                 device_code=hashed_device_code,
-                status=OAuthDeviceStatus.PENDING,
+                status=OAuthDeviceStatus.PENDING.value,
                 failed_auth_attempts=0,
                 expires=now + timedelta(seconds=request.expires_in),
                 os=request.os,
@@ -148,14 +148,16 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         Returns:
             The updated `OAuthDeviceSchema`.
         """
-        for field, value in device_update.dict(exclude_none=True).items():
+        for field, value in device_update.model_dump(
+            exclude_none=True
+        ).items():
             if hasattr(self, field):
                 setattr(self, field, value)
 
         if device_update.locked is True:
-            self.status = OAuthDeviceStatus.LOCKED
+            self.status = OAuthDeviceStatus.LOCKED.value
         elif device_update.locked is False:
-            self.status = OAuthDeviceStatus.ACTIVE
+            self.status = OAuthDeviceStatus.ACTIVE.value
 
         self.updated = datetime.utcnow()
         return self
@@ -233,7 +235,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             client_id=self.client_id,
             expires=self.expires,
             trusted_device=self.trusted_device,
-            status=self.status,
+            status=OAuthDeviceStatus(self.status),
             os=self.os,
             ip_address=self.ip_address,
             hostname=self.hostname,

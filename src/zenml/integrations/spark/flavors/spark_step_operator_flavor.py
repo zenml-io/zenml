@@ -43,7 +43,7 @@ class SparkStepOperatorSettings(BaseSettings):
     submit_kwargs: Optional[Dict[str, Any]] = None
 
 
-class SparkStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SparkStepOperatorConfig(
     BaseStepOperatorConfig, SparkStepOperatorSettings
 ):
     """Spark step operator config.

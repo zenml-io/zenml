@@ -173,7 +173,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         if as_plain_text:
             tracking_uri = self.config.tracking_uri
         else:
-            tracking_uri = self.config.dict()["tracking_uri"]
+            tracking_uri = self.config.model_dump()["tracking_uri"]
         return tracking_uri or self._local_mlflow_backend()
 
     def prepare_step_run(self, info: "StepRunInfo") -> None:

@@ -16,7 +16,6 @@
 from typing import Any, Dict, List, Union, cast
 
 import pandas as pd
-import redis
 from feast import FeatureStore  # type: ignore
 from feast.infra.registry.base_registry import BaseRegistry  # type: ignore
 
@@ -40,23 +39,6 @@ class FeastFeatureStore(BaseFeatureStore):
             The configuration.
         """
         return cast(FeastFeatureStoreConfig, self._config)
-
-    def _validate_connection(self) -> None:
-        """Validates the connection to the feature store.
-
-        Raises:
-            ConnectionError: If the online component (Redis) is not available.
-        """
-        client = redis.Redis(
-            host=self.config.online_host, port=self.config.online_port
-        )
-        try:
-            client.ping()
-        except redis.exceptions.ConnectionError as e:
-            raise redis.exceptions.ConnectionError(
-                "Could not connect to feature store's online component. "
-                "Please make sure that Redis is running."
-            ) from e
 
     def get_historical_features(
         self,
@@ -104,7 +86,6 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The latest online feature data as a dictionary.
         """
-        self._validate_connection()
         fs = FeatureStore(repo_path=self.config.feast_repo)
 
         return fs.get_online_features(  # type: ignore[no-any-return]
@@ -122,7 +103,6 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The data sources' names.
         """
-        self._validate_connection()
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_data_sources()]
 
@@ -135,7 +115,6 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The entity names.
         """
-        self._validate_connection()
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_entities()]
 
@@ -148,7 +127,6 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The feature service names.
         """
-        self._validate_connection()
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_feature_services()]
 
@@ -161,7 +139,6 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The feature view names.
         """
-        self._validate_connection()
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_feature_views()]
 
