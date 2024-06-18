@@ -69,6 +69,14 @@ class ServerSettingsSchema(SQLModel, table=True):
     def update_onboarding_state(
         self, completed_steps: Set[str]
     ) -> "ServerSettingsSchema":
+        """Update the onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+
+        Returns:
+            The updated schema.
+        """
         old_state = set(
             json.loads(self.onboarding_state) if self.onboarding_state else []
         )
@@ -88,7 +96,6 @@ class ServerSettingsSchema(SQLModel, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
-
 
         Returns:
             The created `SettingsResponse`.

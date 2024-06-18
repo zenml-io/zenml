@@ -384,3 +384,20 @@ class PluginSubType(StrEnum):
     WEBHOOK = "webhook"
     # Action Subtypes
     PIPELINE_RUN = "pipeline_run"
+
+
+class OnboardingStep(StrEnum):
+    """All onboarding steps."""
+
+    DEVICE_VERIFIED = "device_verified"
+    PIPELINE_RUN = "pipeline_run"
+    STARTER_SETUP_COMPLETED = "starter_setup_completed"
+    SERVICE_CONNECTOR_CREATED = "service_connector_created"
+    REMOTE_ARTIFACT_STORE_CREATED = "remote_artifact_store_created"
+    STACK_WITH_REMOTE_ARTIFACT_STORE_CREATED = (
+        "stack_with_remote_artifact_store_created"
+    )
+    PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE = (
+        "pipeline_run_with_remote_artifact_store"
+    )
+    PRODUCTION_SETUP_COMPLETED = "production_setup_completed"

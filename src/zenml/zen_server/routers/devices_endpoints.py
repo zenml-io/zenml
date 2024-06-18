@@ -27,7 +27,7 @@ from zenml.constants import (
     DEVICES,
     VERSION_1,
 )
-from zenml.enums import OAuthDeviceStatus
+from zenml.enums import OAuthDeviceStatus, OnboardingStep
 from zenml.models import (
     OAuthDeviceFilter,
     OAuthDeviceInternalUpdate,
@@ -270,7 +270,9 @@ def verify_authorized_device(
             update=update,
         )
 
-    store.update_onboarding_state(completed_steps={"device_verified"})
+    store.update_onboarding_state(
+        completed_steps={OnboardingStep.DEVICE_VERIFIED}
+    )
     return device_model
 
 

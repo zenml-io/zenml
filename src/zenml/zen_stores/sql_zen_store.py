@@ -106,6 +106,7 @@ from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
     ModelStages,
+    OnboardingStep,
     SecretScope,
     SecretsStoreType,
     SorterOps,
@@ -2989,7 +2990,9 @@ class SqlZenStore(BaseZenStore):
                 and component.flavor != "local"
             ):
                 self._update_onboarding_state(
-                    completed_steps={"remote_artifact_store_created"},
+                    completed_steps={
+                        OnboardingStep.REMOTE_ARTIFACT_STORE_CREATED
+                    },
                     session=session,
                 )
             return new_component.to_model(include_metadata=True)
@@ -5959,7 +5962,8 @@ class SqlZenStore(BaseZenStore):
             self._populate_connector_type(connector)
 
             self._update_onboarding_state(
-                completed_steps={"service_connector_created"}, session=session
+                completed_steps={OnboardingStep.SERVICE_CONNECTOR_CREATED},
+                session=session,
             )
 
             return connector
@@ -6739,7 +6743,7 @@ class SqlZenStore(BaseZenStore):
                     if component.flavor != "local":
                         self._update_onboarding_state(
                             completed_steps={
-                                "stack_with_remote_artifact_store_created"
+                                OnboardingStep.STACK_WITH_REMOTE_ARTIFACT_STORE_CREATED
                             },
                             session=session,
                         )
@@ -7501,15 +7505,15 @@ class SqlZenStore(BaseZenStore):
                     }
 
                 completed_onboarding_steps = {
-                    "pipeline_run",
-                    "starter_setup_completed",
+                    OnboardingStep.PIPELINE_RUN,
+                    OnboardingStep.STARTER_SETUP_COMPLETED,
                 }
                 if stack_metadata["artifact_store"] != "local":
-                    completed_onboarding_steps.add(
-                        "pipeline_run_with_remote_artifact_store"
-                    )
-                    completed_onboarding_steps.add(
-                        "production_setup_completed"
+                    completed_onboarding_steps.update(
+                        {
+                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
+                            OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                        }
                     )
 
                 self._update_onboarding_state(
