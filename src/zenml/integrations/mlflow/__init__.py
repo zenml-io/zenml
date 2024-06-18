@@ -31,15 +31,21 @@ class MlflowIntegration(Integration):
     """Definition of MLflow integration for ZenML."""
 
     NAME = MLFLOW
-    # We need to pin protobuf to a version <=4 here, as this mlflow release
-    # does not pin it. They fixed this in a later version, so we can probably
-    # remove this once we update the mlflow version.
+
     REQUIREMENTS = [
         "mlflow>=2.1.1,<=2.13.2",
         "mlserver>=1.3.3",
         "mlserver-mlflow>=1.3.3",
         # TODO: remove this requirement once rapidjson is fixed
         "python-rapidjson<1.15",
+        # When you do:
+        # pip install zenml
+        # You get all our required dependencies. However, if you follow it with:
+        # zenml integration install mlflow
+        # This downgrades pydantic to v1 even though mlflow does not have
+        # any issues with v2. This is why we have to pin it here so a downgrade
+        # will not happen.
+        "pydantic>=2.7.0,<2.8.0"
     ]
 
     @classmethod

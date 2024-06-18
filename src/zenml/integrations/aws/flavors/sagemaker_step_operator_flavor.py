@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
+from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import (
     AWS_RESOURCE_TYPE,
@@ -58,7 +60,9 @@ class SagemakerStepOperatorSettings(BaseSettings):
 
     instance_type: Optional[str] = None
     experiment_name: Optional[str] = None
-    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
+    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     estimator_args: Dict[str, Any] = {}
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
@@ -66,7 +70,7 @@ class SagemakerStepOperatorSettings(BaseSettings):
     )
 
 
-class SagemakerStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SagemakerStepOperatorConfig(
     BaseStepOperatorConfig, SagemakerStepOperatorSettings
 ):
     """Config for the Sagemaker step operator.

@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import Any, List, Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from pydantic import ConfigDict, Field
+from sqlalchemy.sql.elements import ColumnElement
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
@@ -43,6 +43,14 @@ class ModelVersionPipelineRunRequest(WorkspaceScopedRequest):
     model_version: UUID
     pipeline_run: UUID
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
 
 # ------------------ Update Model ------------------
 
@@ -57,6 +65,14 @@ class ModelVersionPipelineRunResponseBody(BaseDatedResponseBody):
     model: UUID
     model_version: UUID
     pipeline_run: PipelineRunResponse
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class ModelVersionPipelineRunResponseResources(BaseResponseResources):
@@ -123,28 +139,44 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
     ]
 
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="The workspace of the Model Version"
+        default=None,
+        description="The workspace of the Model Version",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="The user of the Model Version"
+        default=None,
+        description="The user of the Model Version",
+        union_mode="left_to_right",
     )
     model_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Filter by model ID"
+        default=None,
+        description="Filter by model ID",
+        union_mode="left_to_right",
     )
     model_version_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Filter by model version ID"
+        default=None,
+        description="Filter by model version ID",
+        union_mode="left_to_right",
     )
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Filter by pipeline run ID"
+        default=None,
+        description="Filter by pipeline run ID",
+        union_mode="left_to_right",
     )
     pipeline_run_name: Optional[str] = Field(
         default=None,
         description="Name of the pipeline run",
     )
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         Returns:
@@ -152,7 +184,7 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlalchemy import and_
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas.model_schemas import (
             ModelVersionPipelineRunSchema,
@@ -170,7 +202,7 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
                 column="name",
                 value=value,
             )
-            pipeline_run_name_filter = and_(  # type: ignore[type-var]
+            pipeline_run_name_filter = and_(
                 ModelVersionPipelineRunSchema.pipeline_run_id
                 == PipelineRunSchema.id,
                 filter_.generate_query_conditions(PipelineRunSchema),

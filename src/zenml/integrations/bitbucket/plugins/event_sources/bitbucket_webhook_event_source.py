@@ -16,7 +16,7 @@
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.enums import SecretScope
 from zenml.event_sources.base_event import (
@@ -59,9 +59,9 @@ class BitbucketEventType(StrEnum):
 class User(BaseModel):
     """Bitbucket User."""
 
-    name: Optional[str]
-    email: Optional[str]
-    username: Optional[str]
+    name: Optional[str] = None
+    email: Optional[str] = None
+    username: Optional[str] = None
 
 
 class Commit(BaseModel):
@@ -85,8 +85,8 @@ class Repository(BaseModel):
 class PushChange(BaseModel):
     """Bitbucket Push Change."""
 
-    new: Optional[Dict[str, Any]]
-    old: Optional[Dict[str, Any]]
+    new: Optional[Dict[str, Any]] = None
+    old: Optional[Dict[str, Any]] = None
     commits: List[Commit]
 
 
@@ -102,11 +102,7 @@ class BitbucketEvent(BaseEvent):
     actor: User
     repository: Repository
     push: Push
-
-    class Config:
-        """Pydantic configuration class."""
-
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
     @property
     def branch(self) -> Optional[str]:
@@ -418,7 +414,7 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         if config.rotate_secret:
             # In case the secret is being rotated
             secret_key_value = random_str(12)
-            webhook_secret = SecretUpdate(  # type: ignore[call-arg]
+            webhook_secret = SecretUpdate(
                 values={"webhook_secret": secret_key_value}
             )
             self.zen_store.update_secret(

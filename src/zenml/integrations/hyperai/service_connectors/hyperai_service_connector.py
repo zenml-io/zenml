@@ -22,7 +22,7 @@ import io
 from typing import Any, List, Optional, Type
 
 import paramiko
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.hyperai import (
@@ -40,6 +40,7 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -47,10 +48,10 @@ logger = get_logger(__name__)
 class HyperAICredentials(AuthenticationConfig):
     """HyperAI client authentication credentials."""
 
-    base64_ssh_key: SecretStr = Field(
+    base64_ssh_key: PlainSerializedSecretStr = Field(
         title="SSH key (base64)",
     )
-    ssh_passphrase: Optional[SecretStr] = Field(
+    ssh_passphrase: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="SSH key passphrase",
     )

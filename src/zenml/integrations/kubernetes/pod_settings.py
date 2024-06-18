@@ -13,21 +13,12 @@
 #  permissions and limitations under the License.
 """Kubernetes pod settings."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import Any, Dict, List
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import serialization_utils
-
-if TYPE_CHECKING:
-    from kubernetes.client.models import (
-        V1Affinity,
-        V1ResourceRequirements,
-        V1Toleration,
-        V1Volume,
-        V1VolumeMount,
-    )
 
 
 class KubernetesPodSettings(BaseSettings):
@@ -53,10 +44,9 @@ class KubernetesPodSettings(BaseSettings):
     volume_mounts: List[Dict[str, Any]] = []
     host_ipc: bool = False
 
-    @validator("volumes", pre=True)
-    def _convert_volumes(
-        cls, value: List[Union[Dict[str, Any], "V1Volume"]]
-    ) -> List[Dict[str, Any]]:
+    @field_validator("volumes", mode="before")
+    @classmethod
+    def _convert_volumes(cls, value: Any) -> Any:
         """Converts Kubernetes volumes to dicts.
 
         Args:
@@ -78,10 +68,9 @@ class KubernetesPodSettings(BaseSettings):
 
         return result
 
-    @validator("volume_mounts", pre=True)
-    def _convert_volume_mounts(
-        cls, value: List[Union[Dict[str, Any], "V1VolumeMount"]]
-    ) -> List[Dict[str, Any]]:
+    @field_validator("volume_mounts", mode="before")
+    @classmethod
+    def _convert_volume_mounts(cls, value: Any) -> Any:
         """Converts Kubernetes volume mounts to dicts.
 
         Args:
@@ -103,10 +92,9 @@ class KubernetesPodSettings(BaseSettings):
 
         return result
 
-    @validator("affinity", pre=True)
-    def _convert_affinity(
-        cls, value: Union[Dict[str, Any], "V1Affinity"]
-    ) -> Dict[str, Any]:
+    @field_validator("affinity", mode="before")
+    @classmethod
+    def _convert_affinity(cls, value: Any) -> Any:
         """Converts Kubernetes affinity to a dict.
 
         Args:
@@ -122,10 +110,9 @@ class KubernetesPodSettings(BaseSettings):
         else:
             return value
 
-    @validator("tolerations", pre=True)
-    def _convert_tolerations(
-        cls, value: List[Union[Dict[str, Any], "V1Toleration"]]
-    ) -> List[Dict[str, Any]]:
+    @field_validator("tolerations", mode="before")
+    @classmethod
+    def _convert_tolerations(cls, value: Any) -> Any:
         """Converts Kubernetes tolerations to dicts.
 
         Args:
@@ -147,10 +134,9 @@ class KubernetesPodSettings(BaseSettings):
 
         return result
 
-    @validator("resources", pre=True)
-    def _convert_resources(
-        cls, value: Union[Dict[str, Any], "V1ResourceRequirements"]
-    ) -> Dict[str, Any]:
+    @field_validator("resources", mode="before")
+    @classmethod
+    def _convert_resources(cls, value: Any) -> Any:
         """Converts Kubernetes resource requirements to a dict.
 
         Args:
