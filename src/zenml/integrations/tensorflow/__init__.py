@@ -52,11 +52,12 @@ class TensorflowIntegration(Integration):
         ]
         if sys.version_info.minor == 8:
             requirements.append("tensorflow==2.12")
-            requirements.append("tensorflow-io==0.31.0")
+            if target_os == "Darwin" or platform.machine() == "arm64":
+                requirements.append("tensorflow-io==0.32.0")
         else:
             requirements.append("tensorflow>=2.12,<=2.15")
-        if not (target_os == "Darwin" or platform.machine() == "arm64"):
-            requirements.append("tensorflow_io>=0.24.0")
+            if not (target_os == "Darwin" or platform.machine() == "arm64"):
+                requirements.append("tensorflow_io>=0.24.0")
         return requirements
 
 
