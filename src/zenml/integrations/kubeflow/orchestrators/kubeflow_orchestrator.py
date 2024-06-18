@@ -31,7 +31,7 @@
 """Implementation of the Kubeflow orchestrator."""
 
 import os
-import sys
+import types
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
@@ -39,15 +39,15 @@ import kfp
 import requests
 import urllib3
 from kfp import dsl
-from kfp.compiler import Compiler as KFPCompiler
+from kfp.client import Client as KFPClient
+from kfp.compiler import Compiler
 from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
+from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
-    ENV_ZENML_LOCAL_STORES_PATH,
     METADATA_ORCHESTRATOR_URL,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
@@ -57,19 +57,17 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
     KubeflowOrchestratorConfig,
     KubeflowOrchestratorSettings,
 )
-from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, settings_utils
+from zenml.utils import io_utils, settings_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
-    from zenml.steps import ResourceSettings
 
 
 logger = get_logger(__name__)
@@ -80,6 +78,7 @@ KFP_POD_LABELS = {
 }
 
 ENV_KFP_RUN_ID = "KFP_RUN_ID"
+KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL = "accelerator"
 
 
 class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
@@ -121,7 +120,7 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
         host = (
             kube_config.host
             + "/"
-            + self.KUBE_PROXY_PATH.format(kwargs.get("namespace", "kubeflow"))
+            + self._KUBE_PROXY_PATH.format(kwargs.get("namespace", "kubeflow"))
         )
 
         config = Configuration(
@@ -144,6 +143,70 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
 
 class KubeflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
+
+    _k8s_client: Optional[k8s_client.ApiClient] = None
+
+    def _get_kfp_client(
+        self,
+        settings: KubeflowOrchestratorSettings,
+    ) -> kfp.Client:
+        """Creates a KFP client instance.
+
+        Args:
+            settings: Settings which can be used to
+                configure the client instance.
+
+        Returns:
+            A KFP client instance.
+
+        Raises:
+            RuntimeError: If the linked Kubernetes connector behaves
+                unexpectedly.
+        """
+        connector = self.get_connector()
+        client_args = settings.client_args.copy()
+
+        # The kube_context, host and namespace are stack component
+        # configurations that refer to the Kubeflow deployment. We don't want
+        # these overwritten on a run by run basis by user settings
+        client_args["namespace"] = self.config.kubeflow_namespace
+
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
+                )
+            return KubeClientKFPClient(
+                client=client,
+                **client_args,
+            )
+
+        elif self.config.kubernetes_context:
+            client_args["kube_context"] = self.config.kubernetes_context
+
+        elif self.config.kubeflow_hostname:
+            client_args["host"] = self.config.kubeflow_hostname
+
+            # Handle username and password, ignore the case if one is passed and
+            # not the other. Also do not attempt to get cookie if cookie is
+            # already passed in client_args
+            if settings.client_username and settings.client_password:
+                # If cookie is already set, then ignore
+                if "cookie" in client_args:
+                    logger.warning(
+                        "Cookie already set in `client_args`, ignoring "
+                        "`client_username` and `client_password`..."
+                    )
+                else:
+                    session_cookie = self._get_session_cookie(
+                        username=settings.client_username,
+                        password=settings.client_password,
+                    )
+
+                    client_args["cookies"] = session_cookie
+        return KFPClient(**client_args)
 
     @property
     def config(self) -> KubeflowOrchestratorConfig:
@@ -272,10 +335,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if (
-                not self.config.skip_local_validations
-                and not self.config.is_local
-            ):
+            if not self.config.is_local:
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
@@ -354,114 +414,49 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         """
         return os.path.join(self.root_directory, "pipelines")
 
-    def _configure_container_op(
+    def _create_dynamic_component(
         self,
-        container_op: dsl.ContainerOp,
-        settings: KubeflowOrchestratorSettings,
-    ) -> None:
-        """Makes changes in place to the configuration of the container op.
-
-        Configures persistent mounted volumes for each stack component that
-        writes to a local path. Adds some labels to the container_op and applies
-        some functions to ir.
+        image: str,
+        command: List[str],
+        arguments: List[str],
+        component_name: str,
+    ) -> dsl.PipelineTask:
+        """Creates a dynamic container component for a Kubeflow pipeline.
 
         Args:
-            container_op: The kubeflow container operation to configure.
-            settings: Orchestrator settings for this step.
+            image: The image to use for the component.
+            command: The command to use for the component.
+            arguments: The arguments to use for the component.
+            component_name: The name of the component.
+
+        Returns:
+            The dynamic container component.
         """
-        volumes: Dict[str, k8s_client.V1Volume] = {}
 
-        stack = Client().active_stack
+        @dsl.container_component  # type: ignore[misc]
+        def dynamic_container_component() -> dsl.ContainerSpec:
+            """Dynamic container component.
 
-        if self.config.is_local:
-            stack.check_local_paths()
-
-            local_stores_path = GlobalConfiguration().local_stores_path
-
-            host_path = k8s_client.V1HostPathVolumeSource(
-                path=local_stores_path, type="Directory"
+            Returns:
+                The dynamic container component.
+            """
+            return dsl.ContainerSpec(
+                image=image,
+                command=command,
+                args=arguments,
             )
 
-            volumes[local_stores_path] = k8s_client.V1Volume(
-                name="local-stores",
-                host_path=host_path,
-            )
-            logger.debug(
-                "Adding host path volume for the local ZenML stores (path: %s) "
-                "in kubeflow pipelines container.",
-                local_stores_path,
-            )
-
-            if sys.platform == "win32":
-                # File permissions are not checked on Windows. This if clause
-                # prevents mypy from complaining about unused 'type: ignore'
-                # statements
-                pass
-            else:
-                # Run KFP containers in the context of the local UID/GID
-                # to ensure that the local stores can be shared
-                # with the local pipeline runs.
-                container_op.container.security_context = (
-                    k8s_client.V1SecurityContext(
-                        run_as_user=os.getuid(),
-                        run_as_group=os.getgid(),
-                    )
-                )
-                logger.debug(
-                    "Setting security context UID and GID to local user/group "
-                    "in kubeflow pipelines container."
-                )
-
-            container_op.container.add_env_variable(
-                k8s_client.V1EnvVar(
-                    name=ENV_ZENML_LOCAL_STORES_PATH,
-                    value=local_stores_path,
-                )
-            )
-
-        container_op.add_pvolumes(volumes)
-
-        # Add some pod labels to the container_op
-        for k, v in KFP_POD_LABELS.items():
-            container_op.add_pod_label(k, v)
-
-        if settings.pod_settings:
-            apply_pod_settings(
-                container_op=container_op, settings=settings.pod_settings
-            )
-
-        # Disable caching in KFP v1 only works like this, replace by the second
-        # line in the future
-        container_op.execution_options.caching_strategy.max_cache_staleness = (
-            "P0D"
+        # Change the name of the function
+        new_container_spec_func = types.FunctionType(
+            dynamic_container_component.__code__,
+            dynamic_container_component.__globals__,
+            name=component_name,
+            argdefs=dynamic_container_component.__defaults__,
+            closure=dynamic_container_component.__closure__,
         )
-        # container_op.set_caching_options(enable_caching=False)
+        pipeline_task = dsl.container_component(new_container_spec_func)
 
-    @staticmethod
-    def _configure_container_resources(
-        container_op: dsl.ContainerOp,
-        resource_settings: "ResourceSettings",
-    ) -> None:
-        """Adds resource requirements to the container.
-
-        Args:
-            container_op: The kubeflow container operation to configure.
-            resource_settings: The resource settings to use for this
-                container.
-        """
-        if resource_settings.cpu_count is not None:
-            container_op = container_op.set_cpu_limit(
-                str(resource_settings.cpu_count)
-            )
-
-        if resource_settings.gpu_count is not None:
-            container_op = container_op.set_gpu_limit(
-                resource_settings.gpu_count
-            )
-
-        if resource_settings.memory is not None:
-            memory_limit = resource_settings.memory[:-1]
-            container_op = container_op.set_memory_limit(memory_limit)
+        return pipeline_task
 
     def prepare_or_run_pipeline(
         self,
@@ -517,89 +512,149 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         assert stack.container_registry
 
         # Create a callable for future compilation into a dsl.Pipeline.
-        def _construct_kfp_pipeline() -> None:
-            """Create a container_op for each step.
+        orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline_configuration.name
+        ).replace("_", "-")
 
-            This should contain the name of the docker image and configures the
-            entrypoint of the docker image to run the step.
+        def _create_dynamic_pipeline() -> Any:
+            """Create a dynamic pipeline including each step.
 
-            Additionally, this gives each container_op information about its
-            direct downstream steps.
-
-            If this callable is passed to the `_create_and_write_workflow()`
-            method of a KFPCompiler all dsl.ContainerOp instances will be
-            automatically added to a singular dsl.Pipeline instance.
+            Returns:
+                pipeline_func
             """
-            # Dictionary of container_ops index by the associated step name
-            step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
+            step_name_to_dynamic_component: Dict[str, Any] = {}
+            node_selector_constraint: Optional[Tuple[str, str]] = None
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
-                    deployment=deployment, step_name=step_name
+                    deployment=deployment,
+                    step_name=step_name,
                 )
-
-                # The command will be needed to eventually call the python step
-                # within the docker container
                 command = StepEntrypointConfiguration.get_entrypoint_command()
-
-                # The arguments are passed to configure the entrypoint of the
-                # docker container when the step is called.
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
+                        step_name=step_name,
+                        deployment_id=deployment.id,
                     )
                 )
-
-                # Create a container_op - the kubeflow equivalent of a step. It
-                # contains the name of the step, the name of the docker image,
-                # the command to use to run the step entrypoint
-                # (e.g. `python -m zenml.entrypoints.step_entrypoint`)
-                # and the arguments to be passed along with the command. Find
-                # out more about how these arguments are parsed and used
-                # in the base entrypoint `run()` method.
-                container_op = dsl.ContainerOp(
-                    name=step_name,
-                    image=image,
-                    command=command,
-                    arguments=arguments,
+                dynamic_component = self._create_dynamic_component(
+                    image, command, arguments, step_name
                 )
-
-                settings = cast(
+                step_settings = cast(
                     KubeflowOrchestratorSettings, self.get_settings(step)
                 )
-                self._configure_container_op(
-                    container_op=container_op,
-                    settings=settings,
-                )
-
-                if self.requires_resources_in_orchestration_environment(step):
-                    self._configure_container_resources(
-                        container_op=container_op,
-                        resource_settings=step.config.resource_settings,
-                    )
-
-                for key, value in environment.items():
-                    container_op.container.add_env_variable(
-                        k8s_client.V1EnvVar(
-                            name=key,
-                            value=value,
+                pod_settings = step_settings.pod_settings
+                if pod_settings:
+                    if pod_settings.host_ipc:
+                        logger.warning(
+                            "Host IPC is set to `True` but not supported in "
+                            "this orchestrator. Ignoring..."
                         )
+                    if pod_settings.affinity:
+                        logger.warning(
+                            "Affinity is set but not supported in Kubeflow with "
+                            "Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.tolerations:
+                        logger.warning(
+                            "Tolerations are set but not supported in "
+                            "Kubeflow with Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.volumes:
+                        logger.warning(
+                            "Volumes are set but not supported in Kubeflow with "
+                            "Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.volume_mounts:
+                        logger.warning(
+                            "Volume mounts are set but not supported in "
+                            "Kubeflow with Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+
+                    # apply pod settings
+                    if (
+                        KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                        in pod_settings.node_selectors.keys()
+                    ):
+                        node_selector_constraint = (
+                            KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            pod_settings.node_selectors[
+                                KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                            ],
+                        )
+
+                step_name_to_dynamic_component[step_name] = dynamic_component
+
+            @dsl.pipeline(  # type: ignore[misc]
+                display_name=orchestrator_run_name,
+            )
+            def dynamic_pipeline() -> None:
+                """Dynamic pipeline."""
+                # iterate through the components one by one
+                # (from step_name_to_dynamic_component)
+                for (
+                    component_name,
+                    component,
+                ) in step_name_to_dynamic_component.items():
+                    # for each component, check to see what other steps are
+                    # upstream of it
+                    step = deployment.step_configurations[component_name]
+                    upstream_step_components = [
+                        step_name_to_dynamic_component[upstream_step_name]
+                        for upstream_step_name in step.spec.upstream_steps
+                    ]
+                    task = (
+                        component()
+                        .set_display_name(
+                            name=component_name,
+                        )
+                        .set_caching_options(enable_caching=False)
+                        .set_env_variable(
+                            name=ENV_KFP_RUN_ID,
+                            value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
+                        )
+                        .after(*upstream_step_components)
+                    )
+                    self._configure_container_resources(
+                        task,
+                        step.config.resource_settings,
+                        node_selector_constraint,
                     )
 
-                # Find the upstream container ops of the current step and
-                # configure the current container op to run after them
-                for upstream_step_name in step.spec.upstream_steps:
-                    upstream_container_op = step_name_to_container_op[
-                        upstream_step_name
+            return dynamic_pipeline
+
+        def _update_yaml_with_environment(
+            yaml_file_path: str, environment: Dict[str, str]
+        ) -> None:
+            """Updates the env section of the steps in the YAML file with the given environment variables.
+
+            Args:
+                yaml_file_path: The path to the YAML file to update.
+                environment: A dictionary of environment variables to add.
+            """
+            pipeline_definition = yaml_utils.read_yaml(pipeline_file_path)
+
+            # Iterate through each component and add the environment variables
+            for executor in pipeline_definition["deploymentSpec"]["executors"]:
+                if (
+                    "container"
+                    in pipeline_definition["deploymentSpec"]["executors"][
+                        executor
                     ]
-                    container_op.after(upstream_container_op)
+                ):
+                    container = pipeline_definition["deploymentSpec"][
+                        "executors"
+                    ][executor]["container"]
+                    if "env" not in container:
+                        container["env"] = []
+                    for key, value in environment.items():
+                        container["env"].append({"name": key, "value": value})
 
-                # Update dictionary of container ops with the current one
-                step_name_to_container_op[step_name] = container_op
+            yaml_utils.write_yaml(pipeline_file_path, pipeline_definition)
 
-        orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
-        )
+            print(
+                f"Updated YAML file with environment variables at {yaml_file_path}"
+            )
 
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
@@ -608,11 +663,15 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         )
 
         # write the argo pipeline yaml
-        KFPCompiler()._create_and_write_workflow(
-            pipeline_func=_construct_kfp_pipeline,
-            pipeline_name=deployment.pipeline_configuration.name,
+        Compiler().compile(
+            pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
+            pipeline_name=orchestrator_run_name,
         )
+
+        # Let's update the YAML file with the environment variables
+        _update_yaml_with_environment(pipeline_file_path, environment)
+
         logger.info(
             "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
         )
@@ -696,7 +755,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     else None
                 )
                 result = client.create_recurring_run(
-                    experiment_id=experiment.id,
+                    experiment_id=experiment.experiment_id,
                     job_name=run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=False,
@@ -707,7 +766,10 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     no_catchup=not deployment.schedule.catchup,
                 )
 
-                logger.info("Started recurring run with ID '%s'.", result.id)
+                logger.info(
+                    "Started recurring run with ID '%s'.",
+                    result.recurring_run_id,
+                )
             else:
                 logger.info(
                     "No schedule detected. Creating a one-off pipeline run.."
@@ -773,72 +835,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_KFP_RUN_ID}."
             )
 
-    def _get_kfp_client(
-        self,
-        settings: KubeflowOrchestratorSettings,
-    ) -> kfp.Client:
-        """Creates a KFP client instance.
-
-        Args:
-            settings: Settings which can be used to
-                configure the client instance.
-
-        Returns:
-            A KFP client instance.
-
-        Raises:
-            RuntimeError: If the linked Kubernetes connector behaves
-                unexpectedly.
-        """
-        connector = self.get_connector()
-        client_args = settings.client_args.copy()
-
-        # The kube_context, host and namespace are stack component
-        # configurations that refer to the Kubeflow deployment. We don't want
-        # these overwritten on a run by run basis by user settings
-        client_args["namespace"] = self.config.kubeflow_namespace
-
-        if connector:
-            client = connector.connect()
-            if not isinstance(client, k8s_client.ApiClient):
-                raise RuntimeError(
-                    f"Expected a k8s_client.ApiClient while trying to use the "
-                    f"linked connector, but got {type(client)}."
-                )
-
-            kfp_client = KubeClientKFPClient(
-                client=client,
-                **client_args,
-            )
-
-            return kfp_client
-
-        elif self.config.kubernetes_context:
-            client_args["kube_context"] = self.config.kubernetes_context
-
-        elif self.config.kubeflow_hostname:
-            client_args["host"] = self.config.kubeflow_hostname
-
-            # Handle username and password, ignore the case if one is passed and
-            # not the other. Also do not attempt to get cookie if cookie is
-            # already passed in client_args
-            if settings.client_username and settings.client_password:
-                # If cookie is already set, then ignore
-                if "cookie" in client_args:
-                    logger.warning(
-                        "Cookie already set in `client_args`, ignoring "
-                        "`client_username` and `client_password`..."
-                    )
-                else:
-                    session_cookie = self._get_session_cookie(
-                        username=settings.client_username,
-                        password=settings.client_password,
-                    )
-
-                    client_args["cookies"] = session_cookie
-
-        return kfp.Client(**client_args)
-
     def _get_session_cookie(self, username: str, password: str) -> str:
         """Gets session cookie from username and password.
 
@@ -892,7 +888,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 f"Error while trying to fetch kubeflow cookie: {errh}"
             )
-        cookie_dict = session.cookies.get_dict()  # type: ignore[no-untyped-call]
+
+        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call]
 
         if "authservice_session" not in cookie_dict:
             raise RuntimeError("Invalid username and/or password!")
@@ -924,8 +921,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         run = Client().get_pipeline_run(run_id)
 
         settings_key = settings_utils.get_stack_component_setting_key(self)
-        run_settings = self.settings_class.parse_obj(
-            run.config.dict().get(settings_key, self.config)
+        run_settings = self.settings_class.model_validate(
+            run.config.model_dump().get(settings_key, self.config)
         )
         user_namespace = run_settings.user_namespace
 
@@ -941,3 +938,56 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             return {
                 METADATA_ORCHESTRATOR_URL: Uri(f"{hostname}"),
             }
+
+    def _configure_container_resources(
+        self,
+        dynamic_component: dsl.PipelineTask,
+        resource_settings: "ResourceSettings",
+        node_selector_constraint: Optional[Tuple[str, str]] = None,
+    ) -> dsl.PipelineTask:
+        """Adds resource requirements to the container.
+
+        Args:
+            dynamic_component: The dynamic component to add the resource
+                settings to.
+            resource_settings: The resource settings to use for this
+                container.
+            node_selector_constraint: Node selector constraint to apply to
+                the container.
+
+        Returns:
+            The dynamic component with the resource settings applied.
+        """
+        # Set optional CPU, RAM and GPU constraints for the pipeline
+        if resource_settings:
+            cpu_limit = resource_settings.cpu_count or None
+
+        if cpu_limit is not None:
+            dynamic_component = dynamic_component.set_cpu_limit(str(cpu_limit))
+
+        memory_limit = resource_settings.get_memory() or None
+        if memory_limit is not None:
+            dynamic_component = dynamic_component.set_memory_limit(
+                memory_limit
+            )
+
+        gpu_limit = (
+            resource_settings.gpu_count
+            if resource_settings.gpu_count is not None
+            else 0
+        )
+
+        if node_selector_constraint:
+            (constraint_label, value) = node_selector_constraint
+            if gpu_limit is not None and gpu_limit > 0:
+                dynamic_component = (
+                    dynamic_component.set_accelerator_type(value)
+                    .set_accelerator_limit(gpu_limit)
+                    .set_gpu_limit(gpu_limit)
+                )
+            elif constraint_label == "accelerator" and gpu_limit == 0:
+                logger.warning(
+                    "GPU limit is set to 0 but a GPU type is specified. Ignoring GPU settings."
+                )
+
+        return dynamic_component

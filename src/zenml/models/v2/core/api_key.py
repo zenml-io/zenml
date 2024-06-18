@@ -31,9 +31,9 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
+    BaseUpdate,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
-from zenml.models.v2.base.update import update_model
 from zenml.utils.string_utils import b64_decode, b64_encode
 
 if TYPE_CHECKING:
@@ -64,7 +64,7 @@ class APIKey(BaseModel):
             encoded_key = encoded_key[len(ZENML_API_KEY_PREFIX) :]
         try:
             json_key = b64_decode(encoded_key)
-            return cls.parse_raw(json_key)
+            return cls.model_validate_json(json_key)
         except Exception:
             raise ValueError("Invalid API key.")
 
@@ -74,7 +74,7 @@ class APIKey(BaseModel):
         Returns:
             The encoded API key.
         """
-        encoded_key = b64_encode(self.json())
+        encoded_key = b64_encode(self.model_dump_json())
         return f"{ZENML_API_KEY_PREFIX}{encoded_key}"
 
 
@@ -109,13 +109,22 @@ class APIKeyRotateRequest(BaseModel):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class APIKeyUpdate(APIKeyRequest):
+class APIKeyUpdate(BaseUpdate):
     """Update model for API keys."""
 
+    name: Optional[str] = Field(
+        title="The name of the API Key.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    description: Optional[str] = Field(
+        title="The description of the API Key.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
+    )
     active: Optional[bool] = Field(
-        default=True,
         title="Whether the API key is active.",
+        default=None,
     )
 
 
@@ -349,12 +358,17 @@ class APIKeyFilter(BaseFilter):
     active: Optional[Union[bool, str]] = Field(
         default=None,
         title="Whether the API key is active.",
+        union_mode="left_to_right",
     )
     last_login: Optional[Union[datetime, str]] = Field(
-        default=None, title="Time when the API key was last used to log in."
+        default=None,
+        title="Time when the API key was last used to log in.",
+        union_mode="left_to_right",
     )
     last_rotated: Optional[Union[datetime, str]] = Field(
-        default=None, title="Time when the API key was last rotated."
+        default=None,
+        title="Time when the API key was last rotated.",
+        union_mode="left_to_right",
     )
 
     def set_service_account(self, service_account_id: UUID) -> None:

@@ -46,13 +46,13 @@ def upgrade() -> None:
 
     # Find all unique artifact names and create a new artifact entry for each
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("artifact", "artifact_version"))
+    meta = sa.MetaData()
+    meta.reflect(only=("artifact", "artifact_version"), bind=op.get_bind())
     artifacts = sa.Table("artifact", meta)
     artifact_versions = sa.Table("artifact_version", meta)
     artifact_names = conn.execute(
         sa.select(
-            [artifact_versions.c.name, artifact_versions.c.has_custom_name]
+            artifact_versions.c.name, artifact_versions.c.has_custom_name
         ).distinct()
     ).all()
     unique_artifact_names = {
@@ -72,7 +72,7 @@ def upgrade() -> None:
     # Set artifact_id column in artifact_version
     conn.execute(
         artifact_versions.update().values(
-            artifact_id=sa.select([artifacts.c.id])
+            artifact_id=sa.select(artifacts.c.id)
             .where(artifacts.c.name == artifact_versions.c.name)
             .scalar_subquery()
         )

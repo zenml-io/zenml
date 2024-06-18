@@ -331,7 +331,7 @@ class LocalDaemonService(BaseService):
         assert self.status.pid_file is not None
 
         with open(self.status.config_file, "w") as f:
-            f.write(self.json(indent=4))
+            f.write(self.model_dump_json(indent=4))
 
         # delete the previous PID file, in case a previous daemon process
         # crashed and left a stale PID file

@@ -34,7 +34,7 @@ class SkypilotAzureIntegration(Integration):
 
     NAME = SKYPILOT_AZURE
     REQUIREMENTS = ["skypilot[azure]<=0.5.0"]
-    APT_PACKAGES = ["openssh-client","rsync"]
+    APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

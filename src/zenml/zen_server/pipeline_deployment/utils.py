@@ -387,23 +387,23 @@ def apply_run_config(
             "Can't set DockerSettings when running pipeline via Rest API."
         )
 
-    pipeline_updates = run_config.dict(
-        exclude_none=True, include=set(PipelineConfiguration.__fields__)
+    pipeline_updates = run_config.model_dump(
+        exclude_none=True, include=set(PipelineConfiguration.model_fields)
     )
 
     pipeline_configuration = pydantic_utils.update_model(
         deployment.pipeline_configuration, update=pipeline_updates
     )
-    pipeline_configuration_dict = pipeline_configuration.dict(
+    pipeline_configuration_dict = pipeline_configuration.model_dump(
         exclude_none=True
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():
         step_config_dict = dict_utils.recursive_update(
             copy.deepcopy(pipeline_configuration_dict),
-            update=step.config.dict(exclude_none=True),
+            update=step.config.model_dump(exclude_none=True),
         )
-        step_config = StepConfiguration.parse_obj(step_config_dict)
+        step_config = StepConfiguration.model_validate(step_config_dict)
 
         if update := run_config.steps.get(invocation_id):
             if update.settings.get("docker"):

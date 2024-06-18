@@ -50,7 +50,7 @@ class CometExperimentTrackerSettings(BaseSettings):
     settings: Dict[str, Any] = {}
 
 
-class CometExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class CometExperimentTrackerConfig(
     BaseExperimentTrackerConfig, CometExperimentTrackerSettings
 ):
     """Config for the Comet experiment tracker.

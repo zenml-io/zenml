@@ -25,7 +25,7 @@ def upgrade() -> None:
             "images",
             existing_type=sa.TEXT(),
             type_=sa.String(length=16777215).with_variant(
-                mysql.MEDIUMTEXT(), "mysql"
+                mysql.MEDIUMTEXT, "mysql"
             ),
             existing_nullable=False,
         )
@@ -40,7 +40,7 @@ def downgrade() -> None:
         batch_op.alter_column(
             "images",
             existing_type=sa.String(length=16777215).with_variant(
-                mysql.MEDIUMTEXT(), "mysql"
+                mysql.MEDIUMTEXT, "mysql"
             ),
             type_=sa.TEXT(),
             existing_nullable=False,

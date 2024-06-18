@@ -100,15 +100,16 @@ def resolve_duplicate_names() -> None:
     """Resolve duplicate names for shareable entities."""
     connection = op.get_bind()
 
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
     meta.reflect(
+        bind=op.get_bind(),
         only=(
             "stack",
             "stack_component",
             "stack_composition",
             "service_connector",
             "workspace",
-        )
+        ),
     )
 
     stack_table = sa.Table("stack", meta)

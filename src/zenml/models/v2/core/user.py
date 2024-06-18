@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
@@ -171,15 +171,12 @@ class UserRequest(UserBase, BaseRequest):
     )
     active: bool = Field(default=False, title="Whether the account is active.")
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them
-        validate_assignment = True
-
+        validate_assignment=True,
         # Forbid extra attributes to prevent unexpected behavior
-        extra = "forbid"
-        underscore_attrs_are_private = True
+        extra="forbid",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -213,12 +210,9 @@ class UserUpdate(UserBase, BaseZenModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    @root_validator
-    def user_email_updates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def user_email_updates(self) -> "UserUpdate":
         """Validate that the UserUpdateModel conforms to the email-opt-in-flow.
-
-        Args:
-            values: The values to validate.
 
         Returns:
             The validated values.
@@ -229,18 +223,18 @@ class UserUpdate(UserBase, BaseZenModel):
         """
         # When someone sets the email, or updates the email and hasn't
         #  before explicitly opted out, they are opted in
-        if values["email"] is not None:
-            if values["email_opted_in"] is None:
-                values["email_opted_in"] = True
+        if self.email is not None:
+            if self.email_opted_in is None:
+                self.email_opted_in = True
 
         # It should not be possible to do opt in without an email
-        if values["email_opted_in"] is True:
-            if values["email"] is None:
+        if self.email_opted_in is True:
+            if self.email is None:
                 raise ValueError(
                     "Please provide an email, when you are opting-in with "
                     "your email."
                 )
-        return values
+        return self
 
     def create_copy(self, exclude: AbstractSet[str]) -> "UserUpdate":
         """Create a copy of the current instance.
@@ -252,9 +246,9 @@ class UserUpdate(UserBase, BaseZenModel):
             A copy of the current instance.
         """
         return UserUpdate(
-            **self.dict(
+            **self.model_dump(
+                exclude=set(exclude),
                 exclude_unset=True,
-                exclude=exclude,
             )
         )
 
@@ -483,14 +477,17 @@ class UserFilter(BaseFilter):
     active: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user is active",
+        union_mode="left_to_right",
     )
     email_opted_in: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user has opted in to emails",
+        union_mode="left_to_right",
     )
     external_user_id: Optional[Union[UUID, str]] = Field(
         default=None,
         title="The external user ID associated with the account.",
+        union_mode="left_to_right",
     )
 
     def apply_filter(
