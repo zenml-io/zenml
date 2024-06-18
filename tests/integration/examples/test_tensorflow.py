@@ -13,22 +13,11 @@
 #  permissions and limitations under the License.
 
 
-import sys
-
 import pytest
 
 from tests.integration.examples.utils import run_example
 
 
-@pytest.mark.skipif(
-    sys.version_info.major == 3
-    and (
-        sys.version_info.minor == 11
-        or sys.version_info.minor == 10
-        or sys.version_info.minor == 8
-    ),
-    reason="Tensorflow integration does not work as expected with python3.8.",
-)
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the tensorflow example.
 

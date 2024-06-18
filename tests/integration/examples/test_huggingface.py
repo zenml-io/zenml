@@ -18,17 +18,17 @@ import pytest
 
 from tests.integration.examples.utils import run_example
 
-# TODO: enable this once the token classification example is fixed
-# def test_token_classification(request: pytest.FixtureRequest) -> None:
-#     """Runs the huggingface token classification example."""
 
-#     with run_example(
-#         request=request,
-#         name="huggingface",
-#         example_args=["--nlp_task", "token-classification"],
-#         pipelines={"token_classifier_train_eval_pipeline": (1, 5)},
-#     ):
-#         pass
+def test_token_classification(request: pytest.FixtureRequest) -> None:
+    """Runs the huggingface token classification example."""
+
+    with run_example(
+        request=request,
+        name="huggingface",
+        example_args=["--nlp_task", "token-classification"],
+        pipelines={"token_classifier_train_eval_pipeline": (1, 5)},
+    ):
+        pass
 
 
 @pytest.mark.skipif(
