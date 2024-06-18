@@ -225,17 +225,17 @@ def ensure_async_orchestrator(
     )
     flavor = Flavor.from_model(flavors[0])
 
-    if "synchronous" in flavor.config_class.__fields__:
+    if "synchronous" in flavor.config_class.model_fields:
         key = settings_utils.get_flavor_setting_key(flavor)
 
         if settings := deployment.pipeline_configuration.settings.get(key):
-            settings_dict = settings.dict()
+            settings_dict = settings.model_dump()
         else:
             settings_dict = {}
 
         settings_dict["synchronous"] = False
         deployment.pipeline_configuration.settings[key] = (
-            BaseSettings.parse_obj(settings_dict)
+            BaseSettings.model_validate(settings_dict)
         )
 
 
