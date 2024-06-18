@@ -130,6 +130,9 @@ tests:
       - integrations: [huggingface, tensorflow]
       - capabilities:
           synchronized: true
+  - module: tests.integration.integrations.huggingface.steps
+    requirements:
+      - integrations: [huggingface]
   - module: tests.integration.examples.test_huggingface_deployment
     requirements:
       - integrations: [huggingface]

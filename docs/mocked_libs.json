@@ -1,5 +1,8 @@
 [
     "PIL",
+    "accelerate",
+    "accelerate.commands",
+    "accelerate.commands.launch",
     "adlfs",
     "aws_profile_manager",
     "azure.identity",
