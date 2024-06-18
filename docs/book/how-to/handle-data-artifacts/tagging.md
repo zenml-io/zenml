@@ -48,11 +48,11 @@ zenml artifacts versions update iris_dataset raw_2023 -t sklearn
 This will assign tags `sklearn` and `pre-training` to all artifacts created by
 this step, which can later be used to filter and organize these artifacts.
 
-Note that [ZenML Cloud](https://zenml.io/cloud) users can tag artifacts directly in the cloud dashboard.
+Note that [ZenML Pro](https://zenml.io/pro) users can tag artifacts directly in the cloud dashboard.
 
 ## Assigning tags to models
 
-Just like artifacts, you can also tag your models to organize them semantically. Here's how to use tags with models in the ZenML Python SDK and CLI (or in the [ZenML Cloud Dashboard directly](https://zenml.io/cloud)).
+Just like artifacts, you can also tag your models to organize them semantically. Here's how to use tags with models in the ZenML Python SDK and CLI (or in the [ZenML Pro Dashboard directly](https://zenml.io/cloud)).
 
 When creating a model using the `Model` object, you can specify tags as key-value pairs that will be attached to the model upon creation:
 

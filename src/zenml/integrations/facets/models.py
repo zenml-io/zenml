@@ -16,7 +16,7 @@
 from typing import Dict, List, Union
 
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class FacetsComparison(BaseModel):
@@ -31,8 +31,4 @@ class FacetsComparison(BaseModel):
     """
 
     datasets: List[Dict[str, Union[str, pd.DataFrame]]]
-
-    class Config:
-        """Pydantic config."""
-
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)

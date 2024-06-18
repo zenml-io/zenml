@@ -23,7 +23,7 @@ zenml model version update iris_logistic_regression --stage=...
 
 ### Promotion via Cloud Dashboard
 
-This feature is not yet available, but soon you will be able to promote your model versions directly from the ZenML Cloud dashboard. 
+This feature is not yet available, but soon you will be able to promote your model versions directly from the ZenML Pro dashboard. 
 
 ### Promotion via Python SDK
 

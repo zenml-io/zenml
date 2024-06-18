@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import pytest
+from pydantic import ValidationError
 
 from zenml.utils import filesync_model, yaml_utils
 
@@ -49,7 +50,7 @@ def test_missing_config_file():
     class TestModel(filesync_model.FileSyncModel):
         cat_name: str = SOFTCAT1
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         TestModel()
 
 

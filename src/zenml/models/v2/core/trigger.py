@@ -68,7 +68,6 @@ class TriggerBase(BaseModel):
     )
     action_subtype: PluginSubType = Field(
         title="The subtype of the action that is executed by this trigger.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     service_account_id: UUID = Field(
         title="The service account that is used to execute the action.",
@@ -164,7 +163,6 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     )
     action_subtype: PluginSubType = Field(
         title="The subtype of the action that is executed by this trigger.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     is_active: bool = Field(
         title="Whether the trigger is active.",
@@ -341,6 +339,7 @@ class TriggerFilter(WorkspaceScopedFilter):
     event_source_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the event source this trigger is attached to.",
+        union_mode="left_to_right",
     )
     is_active: Optional[bool] = Field(
         default=None,
@@ -358,6 +357,7 @@ class TriggerFilter(WorkspaceScopedFilter):
     resource_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the resource this trigger references.",
+        union_mode="left_to_right",
     )
     resource_type: Optional[str] = Field(
         default=None,

@@ -19,10 +19,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID
 
-from pydantic import Field
-from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
-from sqlmodel import Relationship
+from sqlmodel import Field, Relationship
 
 from zenml import EventSourceResponseMetadata
 from zenml.models import (
@@ -33,6 +31,7 @@ from zenml.models import (
     EventSourceUpdate,
     Page,
 )
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -174,7 +173,7 @@ class EventSourceSchema(NamedSchema, table=True):
         Returns:
             The updated `EventSourceSchema`.
         """
-        for field, value in update.dict(
+        for field, value in update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
             if field == "configuration":

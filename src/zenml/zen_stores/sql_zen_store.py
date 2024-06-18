@@ -31,17 +31,25 @@ from typing import (
     ForwardRef,
     List,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
     Union,
     cast,
+    get_origin,
 )
 from uuid import UUID
 
 from packaging import version
-from pydantic import Field, SecretStr, root_validator, validator
-from pydantic.json import pydantic_encoder
+from pydantic import (
+    ConfigDict,
+    Field,
+    SecretStr,
+    SerializeAsAny,
+    field_validator,
+    model_validator,
+)
 from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -49,7 +57,8 @@ from sqlalchemy.exc import (
     IntegrityError,
     NoResultFound,
 )
-from sqlalchemy.orm import noload
+from sqlalchemy.orm import Mapped, noload
+from sqlalchemy.util import immutabledict
 from sqlmodel import (
     Session,
     SQLModel,
@@ -87,6 +96,8 @@ from zenml.constants import (
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
+    is_false_string_value,
+    is_true_string_value,
 )
 from zenml.enums import (
     AuthScheme,
@@ -266,6 +277,7 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.string_utils import random_str, validate_name
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -384,8 +396,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
-    secrets_store: Optional[SecretsStoreConfiguration] = None
-    backup_secrets_store: Optional[SecretsStoreConfiguration] = None
+    secrets_store: Optional[SerializeAsAny[SecretsStoreConfiguration]] = None
+    backup_secrets_store: Optional[
+        SerializeAsAny[SecretsStoreConfiguration]
+    ] = None
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
@@ -409,7 +423,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     )
     backup_database: Optional[str] = None
 
-    @validator("secrets_store")
+    @field_validator("secrets_store")
+    @classmethod
     def validate_secrets_store(
         cls, secrets_store: Optional[SecretsStoreConfiguration]
     ) -> SecretsStoreConfiguration:
@@ -426,12 +441,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return secrets_store
 
-    @root_validator(pre=True)
-    def _remove_grpc_attributes(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _remove_grpc_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Removes old GRPC attributes.
 
         Args:
-            values: All model attribute values.
+            data: All model attribute values.
 
         Returns:
             The model attribute values
@@ -443,7 +460,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             "grpc_metadata_ssl_key",
             "grpc_metadata_ssl_cert",
         ]
-        grpc_values = [values.pop(key, None) for key in grpc_attribute_keys]
+        grpc_values = [data.pop(key, None) for key in grpc_attribute_keys]
         if any(grpc_values):
             logger.warning(
                 "The GRPC attributes %s are unused and will be removed soon. "
@@ -451,16 +468,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "become an error in future versions of ZenML."
             )
 
-        return values
+        return data
 
-    @root_validator
-    def _validate_backup_strategy(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _validate_backup_strategy(self) -> "SqlZenStoreConfiguration":
         """Validate the backup strategy.
-
-        Args:
-            values: All model attribute values.
 
         Returns:
             The model attribute values.
@@ -469,27 +481,24 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the backup database name is not set when the backup
                 database is requested.
         """
-        backup_strategy = values.get("backup_strategy")
-        if backup_strategy == DatabaseBackupStrategy.DATABASE and (
-            not values.get("backup_database")
+        if (
+            self.backup_strategy == DatabaseBackupStrategy.DATABASE
+            and not self.backup_database
         ):
             raise ValueError(
                 "The `backup_database` attribute must also be set if the "
                 "backup strategy is set to use a backup database."
             )
 
-        return values
+        return self
 
-    @root_validator
-    def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _validate_url(self) -> "SqlZenStoreConfiguration":
         """Validate the SQL URL.
 
         The validator also moves the MySQL username, password and database
         parameters from the URL into the other configuration arguments, if they
         are present in the URL.
-
-        Args:
-            values: The values to validate.
 
         Returns:
             The validated values.
@@ -498,14 +507,13 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-        url = values.get("url")
-        if url is None:
-            return values
+        if self.url is None:
+            return self
 
         # When running inside a container, if the URL uses localhost, the
         # target service will not be available. We try to replace localhost
         # with one of the special Docker or K3D internal hostnames.
-        url = replace_localhost_with_internal_hostname(url)
+        url = replace_localhost_with_internal_hostname(self.url)
 
         try:
             sql_url = make_url(url)
@@ -524,7 +532,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 url,
                 ", ".join(SQLDatabaseDriver.values()),
             )
-        values["driver"] = SQLDatabaseDriver(sql_url.drivername)
+        self.driver = SQLDatabaseDriver(sql_url.drivername)
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             if (
                 sql_url.username
@@ -537,33 +545,59 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     "format `sqlite:///path/to/database.db`.",
                     url,
                 )
-            if values.get("username") or values.get("password"):
+            if self.username or self.password:
                 raise ValueError(
                     "Invalid SQLite configuration: The username and password "
                     "must not be set",
                     url,
                 )
-            values["database"] = sql_url.database
+            self.database = sql_url.database
         elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
             if sql_url.username:
-                values["username"] = sql_url.username
+                self.username = sql_url.username
                 sql_url = sql_url._replace(username=None)
             if sql_url.password:
-                values["password"] = sql_url.password
+                self.password = sql_url.password
                 sql_url = sql_url._replace(password=None)
             if sql_url.database:
-                values["database"] = sql_url.database
+                self.database = sql_url.database
                 sql_url = sql_url._replace(database=None)
             if sql_url.query:
+
+                def _get_query_result(
+                    result: Union[str, Tuple[str, ...]],
+                ) -> Optional[str]:
+                    """Returns the only or the first result of a query.
+
+                    Args:
+                        result: The result of the query.
+
+                    Returns:
+                        The only or the first result, None otherwise.
+                    """
+                    if isinstance(result, str):
+                        return result
+                    elif isinstance(result, tuple) and len(result) > 0:
+                        return result[0]
+                    else:
+                        return None
+
                 for k, v in sql_url.query.items():
                     if k == "ssl_ca":
-                        values["ssl_ca"] = v
+                        if r := _get_query_result(v):
+                            self.ssl_ca = r
                     elif k == "ssl_cert":
-                        values["ssl_cert"] = v
+                        if r := _get_query_result(v):
+                            self.ssl_cert = r
                     elif k == "ssl_key":
-                        values["ssl_key"] = v
+                        if r := _get_query_result(v):
+                            self.ssl_key = r
                     elif k == "ssl_verify_server_cert":
-                        values["ssl_verify_server_cert"] = v
+                        if r := _get_query_result(v):
+                            if is_true_string_value(r):
+                                self.ssl_verify_server_cert = True
+                            elif is_false_string_value(r):
+                                self.ssl_verify_server_cert = False
                     else:
                         raise ValueError(
                             "Invalid MySQL URL query parameter `%s`: The "
@@ -571,14 +605,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                             "ssl_key, or ssl_verify_server_cert.",
                             k,
                         )
-                sql_url = sql_url._replace(query={})
+                sql_url = sql_url._replace(query=immutabledict())
 
-            database = values.get("database")
-            if (
-                not values.get("username")
-                or not values.get("password")
-                or not database
-            ):
+            database = self.database
+            if not self.username or not self.password or not database:
                 raise ValueError(
                     "Invalid MySQL configuration: The username, password and "
                     "database must be set in the URL or as configuration "
@@ -600,7 +630,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "certificates",
             )
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                content = values.get(key)
+                content = getattr(self, key)
                 if content and not os.path.isfile(content):
                     fileio.makedirs(str(secret_folder))
                     file_path = Path(secret_folder, f"{key}.pem")
@@ -611,10 +641,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         "w",
                     ) as f:
                         f.write(content)
-                    values[key] = str(file_path)
+                    setattr(self, key, str(file_path))
 
-        values["url"] = str(sql_url)
-        return values
+        self.url = str(sql_url)
+        return self
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -722,15 +752,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return sql_url, sqlalchemy_connect_args, engine_args
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Don't validate attributes when assigning them. This is necessary
         # because the certificate attributes can be expanded to the contents
         # of the certificate files.
-        validate_assignment = False
+        validate_assignment=False,
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra="forbid",
+    )
 
 
 class SqlZenStore(BaseZenStore):
@@ -893,7 +922,7 @@ class SqlZenStore(BaseZenStore):
                     Union[Select[Any], SelectOfScalar[Any]],
                     BaseFilter,
                 ],
-                List[Any],
+                Sequence[Any],
             ]
         ] = None,
         hydrate: bool = False,
@@ -928,28 +957,33 @@ class SqlZenStore(BaseZenStore):
         query = filter_model.apply_filter(query=query, table=table)
 
         # Get the total amount of items in the database for a given query
-        custom_fetch_result: Optional[List[Any]] = None
+        custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
         else:
-            total = session.scalar(
-                select([func.count("*")]).select_from(
+            result = session.scalar(
+                select(func.count()).select_from(
                     query.options(noload("*")).subquery()
                 )
             )
 
+            if result:
+                total = result
+            else:
+                total = 0
+
         # Sorting
         column, operand = filter_model.sorting_params
         if operand == SorterOps.DESCENDING:
-            sort_clause = desc(getattr(table, column))
+            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
         else:
             sort_clause = asc(getattr(table, column))
 
         # We always add the `id` column as a tiebreaker to ensure a stable,
         # repeatable order of items, otherwise subsequent pages might contain
         # the same items.
-        query = query.order_by(sort_clause, asc(table.id))
+        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
@@ -966,7 +1000,7 @@ class SqlZenStore(BaseZenStore):
             )
 
         # Get a page of the actual data
-        item_schemas: List[AnySchema]
+        item_schemas: Sequence[AnySchema]
         if custom_fetch:
             assert custom_fetch_result is not None
             item_schemas = custom_fetch_result
@@ -975,13 +1009,9 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            item_schemas = (
-                session.exec(
-                    query.limit(filter_model.size).offset(filter_model.offset)
-                )
-                .unique()
-                .all()
-            )
+            item_schemas = session.exec(
+                query.limit(filter_model.size).offset(filter_model.offset)
+            ).all()
 
         # Convert this page of items from schemas to models.
         items: List[AnyResponse] = []
@@ -1465,9 +1495,7 @@ class SqlZenStore(BaseZenStore):
             # the settings table with needed info.
             logger.info("Creating database tables")
             with self.engine.begin() as conn:
-                conn.run_callable(
-                    SQLModel.metadata.create_all  # type: ignore[arg-type]
-                )
+                SQLModel.metadata.create_all(conn)
             with Session(self.engine) as session:
                 server_config = ServerConfiguration.get_server_config()
 
@@ -1614,7 +1642,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             settings = self._get_server_settings(session=session)
 
-            analytics_metadata = settings_update.dict(
+            analytics_metadata = settings_update.model_dump(
                 include={
                     "enable_analytics",
                     "display_announcements",
@@ -2052,7 +2080,6 @@ class SqlZenStore(BaseZenStore):
         """
         # Check if service with the same domain key (name, config, workspace)
         # already exists
-
         existing_domain_service = session.exec(
             select(ServiceSchema).where(
                 ServiceSchema.config
@@ -2060,7 +2087,6 @@ class SqlZenStore(BaseZenStore):
                     json.dumps(
                         service_request.config,
                         sort_keys=False,
-                        default=pydantic_encoder,
                     ).encode("utf-8")
                 )
             )
@@ -2068,8 +2094,9 @@ class SqlZenStore(BaseZenStore):
 
         if existing_domain_service:
             raise EntityExistsError(
-                f"Unable to create service '{service_request.name}' with the given configuration: "
-                "A service with the same configuration already exists."
+                f"Unable to create service '{service_request.name}' with the "
+                "given configuration: A service with the same configuration "
+                "already exists."
             )
 
     def create_service(self, service: ServiceRequest) -> ServiceResponse:
@@ -3016,7 +3043,9 @@ class SqlZenStore(BaseZenStore):
                 if existing_component.name != component_update.name:
                     self._fail_if_component_with_name_type_exists(
                         name=component_update.name,
-                        component_type=existing_component.type,
+                        component_type=StackComponentType(
+                            existing_component.type
+                        ),
                         workspace_id=existing_component.workspace_id,
                         session=session,
                     )
@@ -3736,18 +3765,18 @@ class SqlZenStore(BaseZenStore):
             session: Session,
             query: Union[Select[Any], SelectOfScalar[Any]],
             filter: BaseFilter,
-        ) -> List[Any]:
-            return session.exec(query).unique().all()
+        ) -> Sequence[Any]:
+            return session.exec(query).all()
 
         with Session(self.engine) as session:
             max_date_subquery = (
-                select(  # type: ignore[call-overload]
+                select(
                     PipelineSchema.name,
                     func.max(PipelineRunSchema.created).label("max_created"),
                 )
                 .outerjoin(
                     PipelineRunSchema,
-                    PipelineSchema.id == PipelineRunSchema.pipeline_id,
+                    PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
                 )
                 .group_by(PipelineSchema.name)
                 .subquery()
@@ -3760,15 +3789,11 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.status,
                 )
                 .outerjoin(
-                    PipelineSchema,
-                    PipelineSchema.name == max_date_subquery.c.name,
-                )
-                .outerjoin(
                     PipelineRunSchema,
-                    PipelineRunSchema.created
+                    PipelineRunSchema.created  # type: ignore[arg-type]
                     == max_date_subquery.c.max_created,
                 )
-                .order_by(desc(PipelineRunSchema.updated))
+                .order_by(desc(PipelineRunSchema.updated))  # type: ignore[arg-type]
             )
 
             return self.filter_and_paginate(
@@ -5932,7 +5957,7 @@ class SqlZenStore(BaseZenStore):
                 SelectOfScalar[ServiceConnectorSchema],
             ],
             filter_model: BaseFilter,
-        ) -> List[ServiceConnectorSchema]:
+        ) -> Sequence[ServiceConnectorSchema]:
             """Custom fetch function for connector filtering and pagination.
 
             Applies resource type and label filters to the query.
@@ -6286,7 +6311,7 @@ class SqlZenStore(BaseZenStore):
             SelectOfScalar[ServiceConnectorSchema],
         ],
         filter_model: ServiceConnectorFilter,
-    ) -> List[ServiceConnectorSchema]:
+    ) -> Sequence[ServiceConnectorSchema]:
         """Refine a service connector query.
 
         Applies resource type and label filters to the query.
@@ -6299,9 +6324,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The filtered list of service connectors.
         """
-        items: List[ServiceConnectorSchema] = (
-            session.exec(query).unique().all()
-        )
+        items: Sequence[ServiceConnectorSchema] = session.exec(query).all()
 
         # filter out items that don't match the resource type
         if filter_model.resource_type:
@@ -6609,7 +6632,11 @@ class SqlZenStore(BaseZenStore):
         """
         validate_name(stack)
         with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists(stack=stack, session=session)
+            self._fail_if_stack_with_name_exists(
+                stack_name=stack.name,
+                workspace_id=stack.workspace,
+                session=session,
+            )
 
             # Get the Schemas of all components mentioned
             component_ids = (
@@ -6731,20 +6758,23 @@ class SqlZenStore(BaseZenStore):
             if stack_update.name:
                 if existing_stack.name != stack_update.name:
                     self._fail_if_stack_with_name_exists(
-                        stack=stack_update,
+                        stack_name=stack_update.name,
+                        workspace_id=existing_stack.workspace.id,
                         session=session,
                     )
 
-            components = []
+            components: List["StackComponentSchema"] = []
             if stack_update.components:
                 filters = [
                     (StackComponentSchema.id == component_id)
                     for list_of_component_ids in stack_update.components.values()
                     for component_id in list_of_component_ids
                 ]
-                components = session.exec(
-                    select(StackComponentSchema).where(or_(*filters))
-                ).all()
+                components = list(
+                    session.exec(
+                        select(StackComponentSchema).where(or_(*filters))
+                    ).all()
+                )
 
             existing_stack.update(
                 stack_update=stack_update,
@@ -6800,14 +6830,16 @@ class SqlZenStore(BaseZenStore):
 
     def _fail_if_stack_with_name_exists(
         self,
-        stack: StackRequest,
+        stack_name: str,
+        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a stack with same name exists.
 
         Args:
-            stack: The Stack
-            session: The Session
+            stack_name: The name of the stack
+            workspace_id: The ID of the workspace
+            session: The session
 
         Returns:
             None
@@ -6817,16 +6849,16 @@ class SqlZenStore(BaseZenStore):
         """
         existing_domain_stack = session.exec(
             select(StackSchema)
-            .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == stack.workspace)
+            .where(StackSchema.name == stack_name)
+            .where(StackSchema.workspace_id == workspace_id)
         ).first()
         if existing_domain_stack is not None:
             workspace = self._get_workspace_schema(
-                workspace_name_or_id=stack.workspace, session=session
+                workspace_name_or_id=workspace_id, session=session
             )
             raise StackExistsError(
                 f"Unable to register stack with name "
-                f"'{stack.name}': Found an existing stack with the same "
+                f"'{stack_name}': Found an existing stack with the same "
                 f"name in the active workspace, '{workspace.name}'."
             )
         return None
@@ -7251,7 +7283,7 @@ class SqlZenStore(BaseZenStore):
             step_id=run_step_id,
             artifact_id=artifact_version_id,
             name=name,
-            type=input_type,
+            type=input_type.value,
         )
         session.add(assignment)
 
@@ -7313,7 +7345,7 @@ class SqlZenStore(BaseZenStore):
             step_id=step_run_id,
             artifact_id=artifact_version_id,
             name=name,
-            type=output_type,
+            type=output_type.value,
         )
         session.add(assignment)
 
@@ -7345,7 +7377,9 @@ class SqlZenStore(BaseZenStore):
         assert pipeline_run.deployment
         num_steps = len(pipeline_run.deployment.to_model().step_configurations)
         new_status = get_pipeline_run_status(
-            step_statuses=[step_run.status for step_run in step_runs],
+            step_statuses=[
+                ExecutionStatus(step_run.status) for step_run in step_runs
+            ],
             num_steps=num_steps,
         )
 
@@ -7755,6 +7789,8 @@ class SqlZenStore(BaseZenStore):
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
             annotation = UserSchema.__annotations__[resource_attr]
+            if get_origin(annotation) == Mapped:
+                annotation = annotation.__args__[0]
 
             # The annotation must be of the form
             # `typing.List[ForwardRef('<schema-class>')]`
@@ -7812,11 +7848,13 @@ class SqlZenStore(BaseZenStore):
         resource_attrs = self._get_resource_references()
         for schema, resource_attr in resource_attrs:
             # Check if the user owns any resources of this type
-            count = session.scalar(
-                select([func.count("*")])
+            count = (
+                session.query(func.count())
                 .select_from(schema)
                 .where(getattr(schema, resource_attr) == account.id)
+                .scalar()
             )
+
             if count > 0:
                 logger.debug(
                     f"User {account.name} owns {count} resources of type "
@@ -8052,7 +8090,7 @@ class SqlZenStore(BaseZenStore):
             ):
                 # There must be at least one admin account configured
                 admin_accounts_count = session.scalar(
-                    select([func.count(UserSchema.id)]).where(
+                    select(func.count(UserSchema.id)).where(  # type: ignore[arg-type]
                         UserSchema.is_admin == True  # noqa: E712
                     )
                 )
@@ -8141,7 +8179,7 @@ class SqlZenStore(BaseZenStore):
             if user.is_admin:
                 # Don't allow the last admin to be deleted
                 admin_accounts_count = session.scalar(
-                    select([func.count(UserSchema.id)]).where(
+                    select(func.count(UserSchema.id)).where(  # type: ignore[arg-type]
                         UserSchema.is_admin == True  # noqa: E712
                     )
                 )
@@ -8351,7 +8389,7 @@ class SqlZenStore(BaseZenStore):
                 )
             if (
                 existing_workspace.name == self._default_workspace_name
-                and "name" in workspace_update.__fields_set__
+                and "name" in workspace_update.model_fields_set
                 and workspace_update.name != existing_workspace.name
             ):
                 raise IllegalOperationError(
@@ -8426,14 +8464,14 @@ class SqlZenStore(BaseZenStore):
             Count of the entity as integer.
         """
         with Session(self.engine) as session:
-            query = select([func.count(schema.id)])
+            query = select(func.count(schema.id))  # type: ignore[arg-type]
 
             if filter_model:
                 query = filter_model.apply_filter(query=query, table=schema)
 
             entity_count = session.scalar(query)
 
-        return int(entity_count)
+        return int(entity_count) if entity_count else 0
 
     def entity_exists(
         self, entity_id: UUID, schema_class: Type[AnySchema]
@@ -8956,7 +8994,7 @@ class SqlZenStore(BaseZenStore):
                 "`number` field  must be None during model version creation."
             )
         with Session(self.engine) as session:
-            model_version_ = model_version.copy()
+            model_version_ = model_version.model_copy()
             model = self.get_model(model_version_.model)
 
             def _check(tolerance: int = 0) -> None:
@@ -9345,7 +9383,7 @@ class SqlZenStore(BaseZenStore):
                 )
             session.execute(
                 delete(ModelVersionArtifactSchema).where(
-                    ModelVersionArtifactSchema.model_version_id
+                    ModelVersionArtifactSchema.model_version_id  # type: ignore[arg-type]
                     == model_version_id
                 )
             )

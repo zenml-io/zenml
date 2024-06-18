@@ -20,11 +20,10 @@ from typing import (
     List,
     Optional,
     Type,
-    Union,
     cast,
 )
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -35,8 +34,6 @@ from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from wandb import Settings
-
     from zenml.integrations.wandb.experiment_trackers import (
         WandbExperimentTracker,
     )
@@ -55,11 +52,9 @@ class WandbExperimentTrackerSettings(BaseSettings):
     tags: List[str] = []
     settings: Dict[str, Any] = {}
 
-    @validator("settings", pre=True)
-    def _convert_settings(
-        cls,
-        value: Union[Dict[str, Any], "Settings"],
-    ) -> Dict[str, Any]:
+    @field_validator("settings", mode="before")
+    @classmethod
+    def _convert_settings(cls, value: Any) -> Any:
         """Converts settings to a dictionary.
 
         Args:
@@ -81,7 +76,7 @@ class WandbExperimentTrackerSettings(BaseSettings):
             return value
 
 
-class WandbExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class WandbExperimentTrackerConfig(
     BaseExperimentTrackerConfig, WandbExperimentTrackerSettings
 ):
     """Config for the Wandb experiment tracker.
@@ -112,7 +107,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
 
     @property
     def docs_url(self) -> Optional[str]:
-        """A url to point at docs explaining this flavor.
+        """A URL to point at docs explaining this flavor.
 
         Returns:
             A flavor docs url.
@@ -121,7 +116,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
 
     @property
     def sdk_docs_url(self) -> Optional[str]:
-        """A url to point at SDK docs explaining this flavor.
+        """A URL to point at SDK docs explaining this flavor.
 
         Returns:
             A flavor SDK docs url.
@@ -130,7 +125,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
 
     @property
     def logo_url(self) -> str:
-        """A url to represent the flavor in the dashboard.
+        """A URL to represent the flavor in the dashboard.
 
         Returns:
             The flavor logo.
@@ -142,7 +137,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         """Returns `WandbExperimentTrackerConfig` config class.
 
         Returns:
-                The config class.
+            The config class.
         """
         return WandbExperimentTrackerConfig
 

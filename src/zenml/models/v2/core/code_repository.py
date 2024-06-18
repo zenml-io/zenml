@@ -20,6 +20,7 @@ from pydantic import Field
 
 from zenml.config.source import Source
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -27,9 +28,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-)
-from zenml.models.v2.base.update import (
-    update_model,
 )
 
 # ------------------ Request Model ------------------
@@ -48,20 +46,44 @@ class CodeRepositoryRequest(WorkspaceScopedRequest):
     source: Source = Field(description="The code repository source.")
     logo_url: Optional[str] = Field(
         description="Optional URL of a logo (png, jpg or svg) for the "
-        "code repository."
+        "code repository.",
+        default=None,
     )
     description: Optional[str] = Field(
         description="Code repository description.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
 
 
 # ------------------ Update Model ------------------
 
 
-@update_model
-class CodeRepositoryUpdate(CodeRepositoryRequest):
+class CodeRepositoryUpdate(BaseUpdate):
     """Update model for code repositories."""
+
+    name: Optional[str] = Field(
+        title="The name of the code repository.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    config: Optional[Dict[str, Any]] = Field(
+        description="Configuration for the code repository.",
+        default=None,
+    )
+    source: Optional[Source] = Field(
+        description="The code repository source.", default=None
+    )
+    logo_url: Optional[str] = Field(
+        description="Optional URL of a logo (png, jpg or svg) for the "
+        "code repository.",
+        default=None,
+    )
+    description: Optional[str] = Field(
+        description="Code repository description.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------
@@ -165,10 +187,15 @@ class CodeRepositoryFilter(WorkspaceScopedFilter):
 
     name: Optional[str] = Field(
         description="Name of the code repository.",
+        default=None,
     )
-    workspace_id: Union[UUID, str, None] = Field(
-        description="Workspace of the code repository."
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        description="Workspace of the code repository.",
+        default=None,
+        union_mode="left_to_right",
     )
-    user_id: Union[UUID, str, None] = Field(
-        description="User that created the code repository."
+    user_id: Optional[Union[UUID, str]] = Field(
+        description="User that created the code repository.",
+        default=None,
+        union_mode="left_to_right",
     )

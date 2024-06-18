@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML Cloud implementation of the feature gate."""
+"""ZenML Pro implementation of the feature gate."""
 
 from typing import Any, Dict
 from uuid import UUID
@@ -109,7 +109,7 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
                 "tenant_id": str(server_config.external_server_id),
                 "resource_id": str(resource_id),
             },
-        ).dict()
+        ).model_dump()
         response = self._post(endpoint=USAGE_EVENT_ENDPOINT, data=data)
         if response.status_code != 200:
             logger.error(

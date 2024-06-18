@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from typing import Dict
+from typing import Any, Dict
 
 from zenml import get_step_context, step
 from zenml.client import Client
@@ -28,8 +28,8 @@ model_registry = Client().active_stack.model_registry
 
 @step
 def promote_metric_compare_promoter(
-    latest_metrics: Dict[str, str],
-    current_metrics: Dict[str, str],
+    latest_metrics: Dict[str, Any],
+    current_metrics: Dict[str, Any],
     metric_to_compare: str = "accuracy",
 ):
     """Try to promote trained model.

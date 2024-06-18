@@ -298,6 +298,7 @@ def sample_step_run_info(
         pipeline_step_name=sample_step_run.name,
         config=sample_step_run.config,
         pipeline=sample_pipeline_run.config,
+        force_write_logs=lambda: None,
     )
 
 
@@ -401,14 +402,14 @@ def sample_workspace_model() -> WorkspaceResponse:
 @pytest.fixture
 def sample_step_request_model() -> StepRunRequest:
     """Return a sample step model for testing purposes."""
-    spec = StepSpec.parse_obj(
+    spec = StepSpec.model_validate(
         {
             "source": "module.step_class",
             "upstream_steps": [],
             "inputs": {},
         }
     )
-    config = StepConfiguration.parse_obj(
+    config = StepConfiguration.model_validate(
         {"name": "step_name", "enable_cache": True}
     )
 
@@ -507,7 +508,7 @@ def sample_artifact_version_model(
         id=uuid4(),
         body=ArtifactVersionResponseBody(
             artifact=sample_artifact_model,
-            version=1,
+            version="1",
             user=sample_user_model,
             created=datetime.now(),
             updated=datetime.now(),
@@ -553,10 +554,10 @@ def create_step_run(
         output_artifacts: Optional[Dict[str, ArtifactVersionResponse]] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
-        spec = StepSpec.parse_obj(
+        spec = StepSpec.model_validate(
             {"source": "module.step_class", "upstream_steps": []}
         )
-        config = StepConfiguration.parse_obj(
+        config = StepConfiguration.model_validate(
             {
                 "name": step_name,
                 "outputs": outputs or {},
@@ -735,6 +736,7 @@ updated_time = datetime(2024, 3, 14, 11, 45)
 
 @pytest.fixture
 def service_response(
+    sample_user_model: UserResponse,
     sample_workspace_model,
 ):
     body = ServiceResponseBody(
@@ -742,6 +744,7 @@ def service_response(
         labels=labels,
         created=created_time,
         updated=updated_time,
+        user=sample_user_model,
         state=admin_state,
     )
     metadata = ServiceResponseMetadata(

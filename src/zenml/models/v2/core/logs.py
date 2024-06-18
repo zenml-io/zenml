@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Models representing logs."""
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
@@ -33,14 +33,54 @@ from zenml.models.v2.base.base import (
 class LogsRequest(BaseRequest):
     """Request model for logs."""
 
-    uri: str = Field(
-        title="The uri of the logs file",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
+    uri: str = Field(title="The uri of the logs file")
+
     artifact_store_id: Union[str, UUID] = Field(
         title="The artifact store ID to associate the logs with.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        union_mode="left_to_right",
     )
+
+    @field_validator("uri")
+    @classmethod
+    def text_field_max_length_check(cls, value: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum text length.
+
+        Args:
+            value: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {TEXT_FIELD_MAX_LENGTH}"
+        )
+        return value
+
+    @field_validator("artifact_store_id")
+    @classmethod
+    def str_field_max_length_check(cls, value: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum text length.
+
+        Args:
+            value: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(value)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
+        return value
 
 
 # ------------------ Update Model ------------------
@@ -66,16 +106,36 @@ class LogsResponseMetadata(BaseResponseMetadata):
         title="Step ID to associate the logs with.",
         default=None,
         description="When this is set, pipeline_run_id should be set to None.",
+        union_mode="left_to_right",
     )
     pipeline_run_id: Optional[Union[str, UUID]] = Field(
         title="Pipeline run ID to associate the logs with.",
         default=None,
         description="When this is set, step_run_id should be set to None.",
+        union_mode="left_to_right",
     )
     artifact_store_id: Union[str, UUID] = Field(
         title="The artifact store ID to associate the logs with.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        union_mode="left_to_right",
     )
+
+    @field_validator("artifact_store_id")
+    @classmethod
+    def str_field_max_length_check(cls, value: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum text length.
+
+        Args:
+            value: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(value)) < STR_FIELD_MAX_LENGTH
+        return value
 
 
 class LogsResponseResources(BaseResponseResources):
