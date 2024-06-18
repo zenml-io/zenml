@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base ZenML Flavor implementation."""
 
-import json
 from abc import abstractmethod
 from typing import Any, Dict, Optional, Type, cast
 
@@ -102,10 +101,7 @@ class Flavor:
         Returns:
             The config schema.
         """
-        config_schema: Dict[str, Any] = json.loads(
-            self.config_class.schema_json()
-        )
-        return config_schema
+        return self.config_class.model_json_schema()
 
     @property
     def service_connector_requirements(

@@ -28,8 +28,6 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic.typing import get_origin, is_union
-
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.artifacts.utils import save_artifact
 from zenml.config.step_configurations import StepConfiguration
@@ -63,6 +61,7 @@ from zenml.steps.utils import (
     resolve_type_annotation,
 )
 from zenml.utils import materializer_utils, source_utils
+from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
@@ -396,7 +395,7 @@ class StepRunner:
 
             # Parse the parameters
             if issubclass(arg_type, BaseParameters):
-                step_params = arg_type.parse_obj(
+                step_params = arg_type.model_validate(
                     self.configuration.parameters[arg]
                 )
                 function_params[arg] = step_params
@@ -440,7 +439,7 @@ class StepRunner:
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact(
-                **artifact.get_hydrated_version().dict()
+                **artifact.get_hydrated_version().model_dump()
             )
 
         if data_type is Any or is_union(get_origin(data_type)):
@@ -512,8 +511,6 @@ class StepRunner:
                 f"but the function returned {len(return_values)} outputs"
                 f"(return values: {return_values})."
             )
-
-        from pydantic.typing import get_origin, is_union
 
         from zenml.steps.utils import get_args
 

@@ -14,7 +14,6 @@
 """Initialization of the Label Studio integration."""
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import LABEL_STUDIO
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -27,8 +26,7 @@ class LabelStudioIntegration(Integration):
 
     NAME = LABEL_STUDIO
     REQUIREMENTS = [
-        "label-studio>=1.6.0,<=1.9.1",
-        "label-studio-sdk>=0.0.17,<=0.0.32",
+        "label-studio-sdk>=1.0.0",
     ]
 
     @classmethod

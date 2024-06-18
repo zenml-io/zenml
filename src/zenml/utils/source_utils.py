@@ -83,11 +83,11 @@ def load(source: Union[Source, str]) -> Any:
 
     import_root = None
     if source.type == SourceType.CODE_REPOSITORY:
-        source = CodeRepositorySource.parse_obj(source)
+        source = CodeRepositorySource.model_validate(dict(source))
         _warn_about_potential_source_loading_issues(source=source)
         import_root = get_source_root()
     elif source.type == SourceType.DISTRIBUTION_PACKAGE:
-        source = DistributionPackageSource.parse_obj(source)
+        source = DistributionPackageSource.model_validate(dict(source))
         if source.version:
             current_package_version = _get_package_version(
                 package_name=source.package_name

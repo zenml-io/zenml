@@ -15,11 +15,11 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import validator
+from pydantic import SerializeAsAny, field_validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
-from zenml.config.source import Source, convert_source_validator
+from zenml.config.source import SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model import Model
 
@@ -38,17 +38,13 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
-    settings: Dict[str, BaseSettings] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[Source] = None
-    success_hook_source: Optional[Source] = None
+    failure_hook_source: Optional[SourceWithValidator] = None
+    success_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
-
-    _convert_source = convert_source_validator(
-        "failure_hook_source", "success_hook_source"
-    )
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):
@@ -56,7 +52,8 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
         """Ensures the pipeline name is allowed.
 
@@ -88,4 +85,4 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
         model_or_dict: SettingsOrDict = self.settings.get(
             DOCKER_SETTINGS_KEY, {}
         )
-        return DockerSettings.parse_obj(model_or_dict)
+        return DockerSettings.model_validate(model_or_dict)

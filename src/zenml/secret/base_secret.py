@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class BaseSecretSchema(BaseModel):
@@ -31,7 +31,7 @@ class BaseSecretSchema(BaseModel):
         Returns:
             A list of all attribute names that are part of the schema.
         """
-        return list(cls.__fields__.keys())
+        return list(cls.model_fields.keys())
 
     def get_values(self) -> Dict[str, Any]:
         """Get all values of the secret schema.
@@ -39,12 +39,11 @@ class BaseSecretSchema(BaseModel):
         Returns:
             A dictionary of all attribute names and their corresponding values.
         """
-        return self.dict(exclude_none=True)
+        return self.model_dump(exclude_none=True)
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # report extra attributes as validation failures
-        extra = "forbid"
+        extra="forbid",
+    )

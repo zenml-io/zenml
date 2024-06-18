@@ -220,17 +220,21 @@ def test_stack_component_settings_merging(
         run_configuration=run_config,
     )
 
-    compiled_pipeline_settings = StubSettings.parse_obj(
-        deployment.pipeline_configuration.settings["orchestrator.default"]
+    compiled_pipeline_settings = StubSettings.model_validate(
+        dict(
+            deployment.pipeline_configuration.settings["orchestrator.default"]
+        )
     )
     assert compiled_pipeline_settings.component_value == 1
     assert compiled_pipeline_settings.pipeline_value == 2
     assert compiled_pipeline_settings.step_value == 0
 
-    compiled_step_settings = StubSettings.parse_obj(
-        deployment.step_configurations["step_"].config.settings[
-            "orchestrator.default"
-        ]
+    compiled_step_settings = StubSettings.model_validate(
+        dict(
+            deployment.step_configurations["step_"].config.settings[
+                "orchestrator.default"
+            ]
+        )
     )
     assert compiled_pipeline_settings.component_value == 1
     assert compiled_step_settings.pipeline_value == 2
@@ -266,16 +270,20 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
         run_configuration=run_config,
     )
 
-    compiled_pipeline_settings = ResourceSettings.parse_obj(
-        deployment.pipeline_configuration.settings["resources"]
+    compiled_pipeline_settings = ResourceSettings.model_validate(
+        dict(deployment.pipeline_configuration.settings["resources"])
     )
 
     assert compiled_pipeline_settings.cpu_count == 100
     assert compiled_pipeline_settings.gpu_count is None
     assert compiled_pipeline_settings.memory == "1KB"
 
-    compiled_step_settings = ResourceSettings.parse_obj(
-        deployment.step_configurations["step_"].config.settings["resources"]
+    compiled_step_settings = ResourceSettings.model_validate(
+        dict(
+            deployment.step_configurations["step_"].config.settings[
+                "resources"
+            ]
+        )
     )
 
     assert compiled_step_settings.cpu_count == 100
@@ -500,7 +508,7 @@ def test_spec_compilation(local_stack):
     )
     other_spec = Compiler().compile_spec(pipeline=pipeline_instance)
 
-    expected_spec = PipelineSpec.parse_obj(
+    expected_spec = PipelineSpec.model_validate(
         {
             "steps": [
                 {

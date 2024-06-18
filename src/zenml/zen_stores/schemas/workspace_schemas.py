@@ -172,7 +172,9 @@ class WorkspaceSchema(NamedSchema, table=True):
         Returns:
             The updated `WorkspaceSchema`.
         """
-        for field, value in workspace_update.dict(exclude_unset=True).items():
+        for field, value in workspace_update.model_dump(
+            exclude_unset=True
+        ).items():
             setattr(self, field, value)
 
         self.updated = datetime.utcnow()

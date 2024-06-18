@@ -156,19 +156,18 @@ def training_pipeline(gamma: float = 0.002):
 if __name__ == "__main__":
     training_pipeline()
 
-    # Step one will use cache, step two will rerun due to caching
-    # being disabled on the @step decorator. Even if caching was
-    # enabled though, ZenML would detect a different value for the
-    # `gamma` input of the second step and disable caching
+    # Step one will use cache, step two will rerun. 
+    # ZenML will detect a different value for the
+    # `gamma` input of the second step and disable caching.
     logger.info("\n\nFirst step cached, second not due to parameter change")
     training_pipeline(gamma=0.0001)
 
-    # This will disable cache for all steps
+    # This will disable cache for the second step.
     logger.info("\n\nFirst step cached, second not due to settings")
     svc_trainer = svc_trainer.with_options(enable_cache=False)
     training_pipeline()
 
-    # This will disable cache for all steps
+    # This will disable cache for all steps.
     logger.info("\n\nCaching disabled for the entire pipeline")
     training_pipeline.with_options(enable_cache=False)()
 ```

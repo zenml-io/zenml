@@ -15,7 +15,6 @@
 
 from datetime import datetime
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -26,8 +25,8 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import SQLModel
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -43,9 +42,6 @@ from zenml.models.v2.base.scoped import (
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
-if TYPE_CHECKING:
-    pass
-
 # ------------------ Request Model ------------------
 
 
@@ -56,50 +52,46 @@ class ServiceRequest(WorkspaceScopedRequest):
         title="The name of the service.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
     service_type: ServiceType = Field(
         title="The type of the service.",
     )
-
     service_source: Optional[str] = Field(
         title="The class of the service.",
-        description="The fully qualified class name of the service implementation.",
+        description="The fully qualified class name of the service "
+        "implementation.",
+        default=None,
     )
-
     admin_state: Optional[ServiceState] = Field(
         title="The admin state of the service.",
-        description="The administrative state of the service, e.g., ACTIVE, INACTIVE.",
+        description="The administrative state of the service, e.g., ACTIVE, "
+        "INACTIVE.",
+        default=None,
     )
-
     config: Dict[str, Any] = Field(
         title="The service config.",
-        description="A dictionary containing configuration parameters for the service.",
+        description="A dictionary containing configuration parameters for the "
+        "service.",
     )
-
     labels: Optional[Dict[str, str]] = Field(
         default=None,
         title="The service labels.",
     )
-
     status: Optional[Dict[str, Any]] = Field(
+        default=None,
         title="The status of the service.",
     )
-
     endpoint: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The service endpoint.",
     )
-
     prediction_url: Optional[str] = Field(
         default=None,
         title="The service endpoint URL.",
     )
-
     health_check_url: Optional[str] = Field(
         default=None,
         title="The service health check URL.",
     )
-
     model_version_id: Optional[UUID] = Field(
         default=None,
         title="The model version id linked to the service.",
@@ -107,7 +99,16 @@ class ServiceRequest(WorkspaceScopedRequest):
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the event source this trigger is attached to.",
+        union_mode="left_to_right",
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Update Model ------------------
@@ -117,45 +118,54 @@ class ServiceUpdate(BaseModel):
     """Update model for stack components."""
 
     name: Optional[str] = Field(
+        None,
         title="The name of the service.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
     admin_state: Optional[ServiceState] = Field(
+        None,
         title="The admin state of the service.",
-        description="The administrative state of the service, e.g., ACTIVE, INACTIVE.",
+        description="The administrative state of the service, e.g., ACTIVE, "
+        "INACTIVE.",
     )
-
     service_source: Optional[str] = Field(
+        None,
         title="The class of the service.",
-        description="The fully qualified class name of the service implementation.",
+        description="The fully qualified class name of the service "
+        "implementation.",
     )
-
     status: Optional[Dict[str, Any]] = Field(
+        None,
         title="The status of the service.",
     )
-
     endpoint: Optional[Dict[str, Any]] = Field(
+        None,
         title="The service endpoint.",
     )
-
     prediction_url: Optional[str] = Field(
+        None,
         title="The service endpoint URL.",
     )
-
     health_check_url: Optional[str] = Field(
+        None,
         title="The service health check URL.",
     )
-
     labels: Optional[Dict[str, str]] = Field(
         default=None,
         title="The service labels.",
     )
-
     model_version_id: Optional[UUID] = Field(
         default=None,
         title="The model version id linked to the service.",
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
@@ -362,13 +372,19 @@ class ServiceFilter(WorkspaceScopedFilter):
     """
 
     name: Optional[str] = Field(
-        description="Name of the service. Use this to filter services by their name.",
+        default=None,
+        description="Name of the service. Use this to filter services by "
+        "their name.",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the service"
+        default=None,
+        description="Workspace of the service",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the service"
+        default=None,
+        description="User of the service",
+        union_mode="left_to_right",
     )
     type: Optional[str] = Field(
         default=None,
@@ -376,11 +392,13 @@ class ServiceFilter(WorkspaceScopedFilter):
     )
     flavor: Optional[str] = Field(
         default=None,
-        description="Flavor of the service. Use this to filter services by their flavor.",
+        description="Flavor of the service. Use this to filter services by "
+        "their flavor.",
     )
     config: Optional[bytes] = Field(
         default=None,
-        description="Config of the service. Use this to filter services by their config.",
+        description="Config of the service. Use this to filter services by "
+        "their config.",
     )
     pipeline_name: Optional[str] = Field(
         default=None,
@@ -396,11 +414,21 @@ class ServiceFilter(WorkspaceScopedFilter):
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the model version this service is attached to.",
+        union_mode="left_to_right",
     )
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the pipeline run this service is attached to.",
+        union_mode="left_to_right",
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     def set_type(self, type: str) -> None:
         """Set the type of the service.
@@ -441,7 +469,7 @@ class ServiceFilter(WorkspaceScopedFilter):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+    ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
         Services can be scoped by type to narrow the search.
@@ -452,7 +480,7 @@ class ServiceFilter(WorkspaceScopedFilter):
         Returns:
             The filter expression for the query.
         """
-        from sqlalchemy import and_
+        from sqlmodel import and_
 
         base_filter = super().generate_filter(table)
 
