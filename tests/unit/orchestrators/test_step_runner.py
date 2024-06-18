@@ -74,6 +74,7 @@ def test_running_a_successful_step(
         pipeline_step_name="step_name",
         config=step.config,
         pipeline=pipeline_config,
+        force_write_logs=lambda: None,
     )
 
     runner = StepRunner(step=step, stack=local_stack)
@@ -129,6 +130,7 @@ def test_running_a_failing_step(
         pipeline_step_name="step_name",
         config=step.config,
         pipeline=pipeline_config,
+        force_write_logs=lambda: None,
     )
 
     runner = StepRunner(step=step, stack=local_stack)

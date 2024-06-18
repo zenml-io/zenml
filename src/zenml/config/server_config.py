@@ -310,6 +310,8 @@ class ServerConfiguration(BaseModel):
     )
     use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
 
+    assistant_enabled: bool = False
+
     server_name: str = DEFAULT_ZENML_SERVER_NAME
     display_announcements: bool = True
     display_updates: bool = True
@@ -318,8 +320,6 @@ class ServerConfiguration(BaseModel):
     thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
 
     _deployment_id: Optional[UUID] = None
-
-    assistant_enabled: bool = False
 
     @model_validator(mode="before")
     @classmethod

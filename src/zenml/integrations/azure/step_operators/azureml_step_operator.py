@@ -297,4 +297,5 @@ class AzureMLStepOperator(BaseStepOperator):
         run = experiment.submit(config=run_config)
 
         run.display_name = info.run_name
+        info.force_write_logs()
         run.wait_for_completion(show_output=True)

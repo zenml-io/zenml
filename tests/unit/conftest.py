@@ -298,6 +298,7 @@ def sample_step_run_info(
         pipeline_step_name=sample_step_run.name,
         config=sample_step_run.config,
         pipeline=sample_pipeline_run.config,
+        force_write_logs=lambda: None,
     )
 
 
