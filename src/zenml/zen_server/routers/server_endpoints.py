@@ -13,12 +13,19 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from typing import Optional
+from typing import Optional, Set
 
 from fastapi import APIRouter, Security
 
 import zenml
-from zenml.constants import ACTIVATE, API, INFO, SERVER_SETTINGS, VERSION_1
+from zenml.constants import (
+    ACTIVATE,
+    API,
+    INFO,
+    ONBOARDING_STATE,
+    SERVER_SETTINGS,
+    VERSION_1,
+)
 from zenml.enums import AuthScheme
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
@@ -62,6 +69,26 @@ def server_info() -> ServerModel:
         Information about the server.
     """
     return zen_store().get_store_info()
+
+
+@router.get(
+    ONBOARDING_STATE,
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def get_onboarding_state(
+    _: AuthContext = Security(authorize),
+) -> Set[str]:
+    """Get the onboarding state of the server.
+
+    Returns:
+        The onboarding state of the server.
+    """
+    return zen_store().get_onboarding_state()
 
 
 # We don't have any concrete value that tells us whether a server is a cloud

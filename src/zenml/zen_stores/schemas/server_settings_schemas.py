@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Set
 from uuid import UUID
 
 from sqlmodel import Field, SQLModel
@@ -59,15 +59,22 @@ class ServerSettingsSchema(SQLModel, table=True):
         for field, value in settings_update.model_dump(
             exclude_unset=True
         ).items():
-            if field == "onboarding_state":
-                if value is not None:
-                    self.onboarding_state = json.dumps(value)
-            elif hasattr(self, field):
+            if hasattr(self, field):
                 setattr(self, field, value)
 
         self.updated = datetime.utcnow()
 
         return self
+
+    def update_onboarding_state(
+        self, completed_steps: Set[str]
+    ) -> "ServerSettingsSchema":
+        onboarding_state = set(
+            json.loads(self.onboarding_state) if self.onboarding_state else []
+        )
+        onboarding_state.union(completed_steps)
+        self.onboarding_state = json.dumps(onboarding_state)
+        self.updated = datetime.utcnow()
 
     def to_model(
         self,
@@ -101,11 +108,7 @@ class ServerSettingsSchema(SQLModel, table=True):
         resources = None
 
         if include_metadata:
-            metadata = ServerSettingsResponseMetadata(
-                onboarding_state=json.loads(self.onboarding_state)
-                if self.onboarding_state
-                else {},
-            )
+            metadata = ServerSettingsResponseMetadata()
 
         if include_resources:
             resources = ServerSettingsResponseResources()

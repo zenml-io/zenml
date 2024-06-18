@@ -270,6 +270,7 @@ def verify_authorized_device(
             update=update,
         )
 
+    store.update_onboarding_state(completed_steps={"device_verified"})
     return device_model
 
 

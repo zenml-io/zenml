@@ -32,6 +32,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -784,6 +785,7 @@ class SqlZenStore(BaseZenStore):
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
     _should_send_user_enriched_events: bool = False
+    _cached_onboarding_state: Optional[Set[str]] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1668,6 +1670,55 @@ class SqlZenStore(BaseZenStore):
             session.refresh(settings)
 
             return settings.to_model(include_metadata=True)
+
+    def get_onboarding_state(self) -> Set[str]:
+        """Get the server onboarding state.
+
+        Returns:
+            The server onboarding state.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+            if settings.onboarding_state:
+                return json.loads(settings.onboarding_state)
+            else:
+                return set()
+
+    def _update_onboarding_state(
+        self, completed_steps: Set[str], session: Session
+    ) -> None:
+        """Update the server onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+        """
+        if self._cached_onboarding_state and completed_steps.issubset(
+            self._cached_onboarding_state
+        ):
+            # All the onboarding steps are already completed, no need to query
+            # the DB
+            return
+
+        settings = self._get_server_settings(session=session)
+        settings.update_onboarding_state(completed_steps=completed_steps)
+        session.add(settings)
+        session.commit()
+        session.refresh(settings)
+
+        self._cached_onboarding_state = set(
+            json.loads(settings.onboarding_state)
+        )
+
+    def update_onboarding_state(self, completed_steps: Set[str]) -> None:
+        """Update the server onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+        """
+        with Session(self.engine) as session:
+            self._update_onboarding_state(
+                completed_steps=completed_steps, session=session
+            )
 
     def activate_server(
         self, request: ServerActivationRequest
@@ -7424,6 +7475,14 @@ class SqlZenStore(BaseZenStore):
                         "duration_seconds": duration_seconds,
                         **stack_metadata,
                     }
+
+            completed_onboarding_steps = {"pipeline_run"}
+            if stack_metadata["artifact_store"] != "default":
+                completed_onboarding_steps.add("remote_pipeline_run")
+
+            self._update_onboarding_state(
+                completed_steps=completed_onboarding_steps, session=session
+            )
             pipeline_run.update(run_update)
             session.add(pipeline_run)
 
