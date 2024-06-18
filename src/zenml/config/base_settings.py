@@ -16,7 +16,7 @@
 from enum import IntFlag, auto
 from typing import Any, ClassVar, Dict, Union
 
-from pydantic import Extra
+from pydantic import ConfigDict
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 
@@ -46,11 +46,10 @@ class BaseSettings(SecretReferenceMixin):
         ConfigurationLevel.PIPELINE | ConfigurationLevel.STEP
     )
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # public attributes are immutable
-        allow_mutation = False
+        frozen=True,
         # allow extra attributes so this class can be used to parse dicts
         # of arbitrary subclasses
-        extra = Extra.allow
+        extra="allow",
+    )

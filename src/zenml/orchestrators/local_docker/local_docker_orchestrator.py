@@ -206,7 +206,7 @@ class LocalDockerOrchestratorSettings(BaseSettings):
     run_args: Dict[str, Any] = {}
 
 
-class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class LocalDockerOrchestratorConfig(
     BaseOrchestratorConfig, LocalDockerOrchestratorSettings
 ):
     """Local Docker orchestrator config."""

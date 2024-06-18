@@ -86,6 +86,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             pipeline_step_name=self.entrypoint_args[STEP_NAME_OPTION],
             run_id=pipeline_run.id,
             step_run_id=step_run_id,
+            force_write_logs=lambda: None,
         )
 
         stack = Client().active_stack

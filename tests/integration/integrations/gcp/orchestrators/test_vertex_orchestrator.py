@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import json
-import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -49,10 +48,6 @@ def _get_vertex_orchestrator(**kwargs):
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info > (3, 10),
-    reason="GCP integration not installed in Python 3.11",
-)
 def test_vertex_orchestrator_stack_validation(
     local_artifact_store,
     gcp_artifact_store,
@@ -137,17 +132,13 @@ def test_vertex_orchestrator_stack_validation(
         ).validate()
 
 
-@pytest.mark.skipif(
-    sys.version_info > (3, 10),
-    reason="GCP integration not installed in Python 3.11",
-)
 @pytest.mark.parametrize(
     "resource_settings, orchestrator_resource_settings, expected_resources",
     [
         # ResourceSettings specified for the step, should take values from here
         (
             ResourceSettings(cpu_count=1, gpu_count=1, memory="1GB"),
-            {"cpu_limit": 4, "gpu_limit": 4, "memory_limit": "4G"},
+            {"cpu_limit": "4", "gpu_limit": 4, "memory_limit": "1G"},
             {
                 "accelerator": {"count": "1", "type": "NVIDIA_TESLA_K80"},
                 "cpuLimit": 1.0,
@@ -157,7 +148,7 @@ def test_vertex_orchestrator_stack_validation(
         # No ResourceSettings, should take values from the orchestrator
         (
             ResourceSettings(cpu_count=None, gpu_count=None, memory=None),
-            {"cpu_limit": 1, "gpu_limit": 1, "memory_limit": "1G"},
+            {"cpu_limit": "1", "gpu_limit": 1, "memory_limit": "1G"},
             {
                 "accelerator": {"count": "1", "type": "NVIDIA_TESLA_K80"},
                 "cpuLimit": 1.0,
@@ -169,7 +160,6 @@ def test_vertex_orchestrator_stack_validation(
             ResourceSettings(cpu_count=1, gpu_count=None, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
             {
-                "accelerator": {"count": "1", "type": "NVIDIA_TESLA_K80"},
                 "cpuLimit": 1.0,
                 "memoryLimit": 1.0,
             },
@@ -189,7 +179,7 @@ def test_vertex_orchestrator_configure_container_resources(
 ) -> None:
     """Tests that the vertex orchestrator sets the correct container resources for a step."""
     import kfp
-    from kfp.v2.compiler import Compiler as KFPV2Compiler
+    from kfp.compiler import Compiler
 
     accelerator = "NVIDIA_TESLA_K80"
     orchestrator = _get_vertex_orchestrator(
@@ -204,6 +194,9 @@ def test_vertex_orchestrator_configure_container_resources(
 
     step_name = "unit-test"
 
+    @kfp.dsl.pipeline(  # type: ignore[misc]
+        display_name="test-vertex-pipeline",
+    )
     def _build_kfp_pipeline() -> None:
         container_op = kfp.components.load_component_from_text(
             f"""
@@ -222,7 +215,7 @@ def test_vertex_orchestrator_configure_container_resources(
 
     package_path = "unit_test_pipeline.json"
 
-    KFPV2Compiler().compile(
+    Compiler().compile(
         pipeline_func=_build_kfp_pipeline,
         package_path=package_path,
         pipeline_name="unit-test",
@@ -231,8 +224,7 @@ def test_vertex_orchestrator_configure_container_resources(
     with open(package_path, "r") as f:
         pipeline_json = json.load(f)
 
-    job_spec = pipeline_json["pipelineSpec"]["deploymentSpec"]["executors"][
+    job_spec = pipeline_json["deploymentSpec"]["executors"][
         f"exec-{step_name}"
     ]["container"]
-
     assert job_spec["resources"] == expected_resources

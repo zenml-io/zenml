@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Step run info."""
 
+from typing import Any, Callable
 from uuid import UUID
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -30,6 +31,8 @@ class StepRunInfo(StrictBaseModel):
 
     config: StepConfiguration
     pipeline: PipelineConfiguration
+
+    force_write_logs: Callable[..., Any]
 
     def get_image(self, key: str) -> str:
         """Gets the Docker image for the given key.

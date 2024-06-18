@@ -178,13 +178,12 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             else:
                 api_key = settings.api_key
         except RuntimeError:
-            # Try to get from secret
-            secret = self.get_authentication_secret()
-            if not secret:
+            if secret := self.get_authentication_secret():
+                api_key = secret.secret_values.get("api_key", "")
+            else:
                 raise ValueError(
                     "Unable to access predefined secret to access Label Studio API key."
                 )
-            api_key = secret.secret_values.get("api_key", "")
         if not api_key:
             raise ValueError(
                 "Unable to access Label Studio API key from secret."

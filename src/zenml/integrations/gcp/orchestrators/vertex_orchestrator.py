@@ -31,16 +31,16 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+import types
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
-import kfp
 from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
 from kfp import dsl
-from kfp.v2 import dsl as dslv2
-from kfp.v2.compiler import Compiler as KFPV2Compiler
+from kfp.compiler import Compiler
 
+from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
 )
@@ -57,20 +57,19 @@ from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
-from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
+from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.models import PipelineDeploymentResponse, ScheduleResponse
     from zenml.stack import Stack
-    from zenml.steps import ResourceSettings
 
 logger = get_logger(__name__)
 ENV_ZENML_VERTEX_RUN_ID = "ZENML_VERTEX_RUN_ID"
@@ -246,54 +245,48 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     "schedule to a Vertex orchestrator."
                 )
 
-    def _configure_container_resources(
+    def _create_dynamic_component(
         self,
-        container_op: dsl.ContainerOp,
-        resource_settings: "ResourceSettings",
-        node_selector_constraint: Optional[Tuple[str, str]] = None,
-    ) -> None:
-        """Adds resource requirements to the container.
+        image: str,
+        command: List[str],
+        arguments: List[str],
+        component_name: str,
+    ) -> dsl.PipelineTask:
+        """Creates a dynamic container component for a Vertex pipeline.
 
         Args:
-            container_op: The kubeflow container operation to configure.
-            resource_settings: The resource settings to use for this
-                container.
-            node_selector_constraint: Node selector constraint to apply to
-                the container.
+            image: The image to use for the component.
+            command: The command to use for the component.
+            arguments: The arguments to use for the component.
+            component_name: The name of the component.
+
+        Returns:
+            The dynamic container component.
         """
-        # Set optional CPU, RAM and GPU constraints for the pipeline
 
-        cpu_limit = resource_settings.cpu_count or self.config.cpu_limit
+        def dynamic_container_component() -> dsl.ContainerSpec:
+            """Dynamic container component.
 
-        if cpu_limit is not None:
-            container_op = container_op.set_cpu_limit(str(cpu_limit))
+            Returns:
+                The dynamic container component.
+            """
+            return dsl.ContainerSpec(
+                image=image,
+                command=command,
+                args=arguments,
+            )
 
-        memory_limit = (
-            resource_settings.memory[:-1]
-            if resource_settings.memory
-            else self.config.memory_limit
+        # Change the name of the function
+        new_container_spec_func = types.FunctionType(
+            dynamic_container_component.__code__,
+            dynamic_container_component.__globals__,
+            name=component_name,
+            argdefs=dynamic_container_component.__defaults__,
+            closure=dynamic_container_component.__closure__,
         )
-        if memory_limit is not None:
-            container_op = container_op.set_memory_limit(memory_limit)
+        pipeline_task = dsl.container_component(new_container_spec_func)
 
-        gpu_limit = (
-            resource_settings.gpu_count
-            if resource_settings.gpu_count is not None
-            else self.config.gpu_limit
-        )
-        if gpu_limit is not None and gpu_limit > 0:
-            container_op = container_op.set_gpu_limit(gpu_limit)
-
-        if node_selector_constraint:
-            constraint_label, value = node_selector_constraint
-            if not (
-                constraint_label
-                == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                and gpu_limit == 0
-            ):
-                container_op.add_node_selector_constraint(
-                    constraint_label, value
-                )
+        return pipeline_task
 
     def prepare_or_run_pipeline(
         self,
@@ -363,77 +356,150 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         else:
             self._pipeline_root = self.config.pipeline_root
 
-        def _construct_kfp_pipeline() -> None:
-            """Create a `ContainerOp` for each step.
+        def _create_dynamic_pipeline() -> Any:
+            """Create a dynamic pipeline including each step.
 
-            This should contain the name of the Docker image and configures the
-            entrypoint of the Docker image to run the step.
-
-            Additionally, this gives each `ContainerOp` information about its
-            direct downstream steps.
-
-            If this callable is passed to the `compile()` method of
-            `KFPV2Compiler` all `dsl.ContainerOp` instances will be
-            automatically added to a singular `dsl.Pipeline` instance.
+            Returns:
+                pipeline_func
             """
-            command = StepEntrypointConfiguration.get_entrypoint_command()
-            step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
+            step_name_to_dynamic_component: Dict[str, Any] = {}
+            node_selector_constraint: Optional[Tuple[str, str]] = None
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
-                    deployment=deployment, step_name=step_name
+                    deployment=deployment,
+                    step_name=step_name,
                 )
+                command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
+                        step_name=step_name,
+                        deployment_id=deployment.id,
                     )
                 )
-
-                # Create the `ContainerOp` for the step. Using the
-                # `dsl.ContainerOp`
-                # class directly is deprecated when using the Kubeflow SDK v2.
-                container_op = kfp.components.load_component_from_text(
-                    f"""
-                    name: {step_name}
-                    implementation:
-                        container:
-                            image: {image}
-                            command: {command + arguments}"""
-                )()
-
-                container_op.set_env_variable(
-                    name=ENV_ZENML_VERTEX_RUN_ID,
-                    value=dslv2.PIPELINE_JOB_NAME_PLACEHOLDER,
+                dynamic_component = self._create_dynamic_component(
+                    image, command, arguments, step_name
                 )
+                step_settings = cast(
+                    VertexOrchestratorSettings, self.get_settings(step)
+                )
+                pod_settings = step_settings.pod_settings
+                if pod_settings:
+                    if pod_settings.host_ipc:
+                        logger.warning(
+                            "Host IPC is set to `True` but not supported in "
+                            "this orchestrator. Ignoring..."
+                        )
+                    if pod_settings.affinity:
+                        logger.warning(
+                            "Affinity is set but not supported in Vertex with "
+                            "Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.tolerations:
+                        logger.warning(
+                            "Tolerations are set but not supported in "
+                            "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.volumes:
+                        logger.warning(
+                            "Volumes are set but not supported in Vertex with "
+                            "Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.volume_mounts:
+                        logger.warning(
+                            "Volume mounts are set but not supported in "
+                            "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
+                        )
 
-                for key, value in environment.items():
-                    container_op.set_env_variable(name=key, value=value)
+                    # apply pod settings
+                    if (
+                        GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                        in pod_settings.node_selectors.keys()
+                    ):
+                        node_selector_constraint = (
+                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            pod_settings.node_selectors[
+                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                            ],
+                        )
+                    elif step_settings.node_selector_constraint:
+                        node_selector_constraint = (
+                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            step_settings.node_selector_constraint[1],
+                        )
 
-                # Set upstream tasks as a dependency of the current step
-                for upstream_step_name in step.spec.upstream_steps:
-                    upstream_container_op = step_name_to_container_op[
-                        upstream_step_name
+                step_name_to_dynamic_component[step_name] = dynamic_component
+
+            @dsl.pipeline(  # type: ignore[misc]
+                display_name=orchestrator_run_name,
+            )
+            def dynamic_pipeline() -> None:
+                """Dynamic pipeline."""
+                # iterate through the components one by one
+                # (from step_name_to_dynamic_component)
+                for (
+                    component_name,
+                    component,
+                ) in step_name_to_dynamic_component.items():
+                    # for each component, check to see what other steps are
+                    # upstream of it
+                    step = deployment.step_configurations[component_name]
+                    upstream_step_components = [
+                        step_name_to_dynamic_component[upstream_step_name]
+                        for upstream_step_name in step.spec.upstream_steps
                     ]
-                    container_op.after(upstream_container_op)
-
-                settings = cast(
-                    VertexOrchestratorSettings,
-                    self.get_settings(step),
-                )
-                if settings.pod_settings:
-                    apply_pod_settings(
-                        container_op=container_op,
-                        settings=settings.pod_settings,
+                    task = (
+                        component()
+                        .set_display_name(
+                            name=component_name,
+                        )
+                        .set_caching_options(enable_caching=False)
+                        .set_env_variable(
+                            name=ENV_ZENML_VERTEX_RUN_ID,
+                            value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
+                        )
+                        .after(*upstream_step_components)
+                    )
+                    self._configure_container_resources(
+                        task,
+                        step.config.resource_settings,
+                        node_selector_constraint,
                     )
 
-                self._configure_container_resources(
-                    container_op=container_op,
-                    resource_settings=step.config.resource_settings,
-                    node_selector_constraint=settings.node_selector_constraint,
-                )
-                container_op.set_caching_options(enable_caching=False)
+            return dynamic_pipeline
 
-                step_name_to_container_op[step_name] = container_op
+        def _update_json_with_environment(
+            yaml_file_path: str, environment: Dict[str, str]
+        ) -> None:
+            """Updates the env section of the steps in the YAML file with the given environment variables.
+
+            Args:
+                yaml_file_path: The path to the YAML file to update.
+                environment: A dictionary of environment variables to add.
+            """
+            pipeline_definition = yaml_utils.read_json(pipeline_file_path)
+
+            # Iterate through each component and add the environment variables
+            for executor in pipeline_definition["deploymentSpec"]["executors"]:
+                if (
+                    "container"
+                    in pipeline_definition["deploymentSpec"]["executors"][
+                        executor
+                    ]
+                ):
+                    container = pipeline_definition["deploymentSpec"][
+                        "executors"
+                    ][executor]["container"]
+                    if "env" not in container:
+                        container["env"] = []
+                    for key, value in environment.items():
+                        container["env"].append({"name": key, "value": value})
+
+            yaml_utils.write_json(pipeline_file_path, pipeline_definition)
+
+            print(
+                f"Updated YAML file with environment variables at {yaml_file_path}"
+            )
 
         # Save the generated pipeline to a file.
         fileio.makedirs(self.pipeline_directory)
@@ -445,13 +511,17 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
         # to generate a JSON representation of the pipeline that can be later
         # upload to Vertex AI Pipelines service.
-        KFPV2Compiler().compile(
-            pipeline_func=_construct_kfp_pipeline,
+        Compiler().compile(
+            pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
             pipeline_name=_clean_pipeline_name(
                 deployment.pipeline_configuration.name
             ),
         )
+
+        # Let's update the YAML file with the environment variables
+        _update_json_with_environment(pipeline_file_path, environment)
+
         logger.info(
             "Writing Vertex workflow definition to `%s`.", pipeline_file_path
         )
@@ -617,3 +687,64 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         return {
             METADATA_ORCHESTRATOR_URL: Uri(run_url),
         }
+
+    def _configure_container_resources(
+        self,
+        dynamic_component: dsl.PipelineTask,
+        resource_settings: "ResourceSettings",
+        node_selector_constraint: Optional[Tuple[str, str]] = None,
+    ) -> dsl.PipelineTask:
+        """Adds resource requirements to the container.
+
+        Args:
+            dynamic_component: The dynamic component to add the resource
+                settings to.
+            resource_settings: The resource settings to use for this
+                container.
+            node_selector_constraint: Node selector constraint to apply to
+                the container.
+
+        Returns:
+            The dynamic component with the resource settings applied.
+        """
+        # Set optional CPU, RAM and GPU constraints for the pipeline
+        if resource_settings:
+            cpu_limit = resource_settings.cpu_count or self.config.cpu_limit
+
+        if cpu_limit is not None:
+            dynamic_component = dynamic_component.set_cpu_limit(str(cpu_limit))
+
+        memory_limit = (
+            resource_settings.memory[:-1]
+            if resource_settings.memory
+            else self.config.memory_limit
+        )
+        if memory_limit is not None:
+            dynamic_component = dynamic_component.set_memory_limit(
+                memory_limit
+            )
+
+        gpu_limit = (
+            resource_settings.gpu_count
+            if resource_settings.gpu_count is not None
+            else self.config.gpu_limit
+        )
+
+        if node_selector_constraint:
+            (constraint_label, value) = node_selector_constraint
+            if gpu_limit is not None and gpu_limit > 0:
+                dynamic_component = (
+                    dynamic_component.set_accelerator_type(value)
+                    .set_accelerator_limit(gpu_limit)
+                    .set_gpu_limit(gpu_limit)
+                )
+            elif (
+                constraint_label
+                == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                and gpu_limit == 0
+            ):
+                logger.warning(
+                    "GPU limit is set to 0 but a GPU type is specified. Ignoring GPU settings."
+                )
+
+        return dynamic_component

@@ -398,7 +398,7 @@ def deploy(
 
         from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
-        server_config = ServerDeploymentConfig.parse_obj(config_dict)
+        server_config = ServerDeploymentConfig.model_validate(config_dict)
 
         from zenml.zen_server.deploy.deployer import ServerDeployer
 
@@ -691,7 +691,7 @@ def connect(
             )
 
         if raw_config:
-            store_config = StoreConfiguration.parse_obj(store_dict)
+            store_config = StoreConfiguration.model_validate(store_dict)
             GlobalConfiguration().set_store(store_config)
             return
 
@@ -762,7 +762,7 @@ def connect(
     store_config_class = BaseZenStore.get_store_config_class(store_type)
     assert store_config_class is not None
 
-    store_config = store_config_class.parse_obj(store_dict)
+    store_config = store_config_class.model_validate(store_dict)
     try:
         GlobalConfiguration().set_store(store_config)
     except IllegalOperationError:

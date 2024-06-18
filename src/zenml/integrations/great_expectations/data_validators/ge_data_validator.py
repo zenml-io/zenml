@@ -17,21 +17,25 @@ import os
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, cast
 
 import pandas as pd
-import yaml
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
     CheckpointResult,
 )
 from great_expectations.core import (  # type: ignore[import-untyped]
     ExpectationSuite,
 )
-from great_expectations.data_context.data_context import (  # type: ignore[import-untyped]
-    BaseDataContext,
-    DataContext,
+from great_expectations.data_context.data_context.abstract_data_context import (
+    AbstractDataContext,
 )
-from great_expectations.data_context.types.base import (  # type: ignore[import-untyped]
+from great_expectations.data_context.data_context.context_factory import (
+    get_context,
+)
+from great_expectations.data_context.data_context.ephemeral_data_context import (
+    EphemeralDataContext,
+)
+from great_expectations.data_context.types.base import (
     DataContextConfig,
 )
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import-untyped]
+from great_expectations.data_context.types.resource_identifiers import (
     ExpectationSuiteIdentifier,
 )
 from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import-untyped]
@@ -65,8 +69,8 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         GreatExpectationsDataValidatorFlavor
     )
 
-    _context: BaseDataContext = None
-    _context_config: Optional[Dict[str, Any]] = None
+    _context: Optional[AbstractDataContext] = None
+    _context_config: Optional[DataContextConfig] = None
 
     @property
     def config(self) -> GreatExpectationsDataValidatorConfig:
@@ -78,7 +82,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         return cast(GreatExpectationsDataValidatorConfig, self._config)
 
     @classmethod
-    def get_data_context(cls) -> BaseDataContext:
+    def get_data_context(cls) -> AbstractDataContext:
         """Get the Great Expectations data context managed by ZenML.
 
         Call this method to retrieve the data context managed by ZenML
@@ -94,15 +98,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         return data_validator.data_context
 
     @property
-    def context_config(self) -> Optional[Dict[str, Any]]:
+    def context_config(self) -> Optional[DataContextConfig]:
         """Get the Great Expectations data context configuration.
 
-        The first time the context config is loaded from the stack component
-        config, it is converted from JSON/YAML string format to a dict.
-
         Raises:
-            ValueError: If the context_config value is not a valid JSON/YAML or
-                if the GE configuration extracted from it fails GE validation.
+            ValueError: In case there is an invalid context_config value
 
         Returns:
             A dictionary with the GE data context configuration.
@@ -111,31 +111,18 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         if self._context_config is not None:
             return self._context_config
 
-        # Otherwise, load it from the stack component config
-        context_config = self.config.context_config
-        if context_config is None:
+        # Otherwise, use the configuration from the stack component config, if
+        # set
+        context_config_dict = self.config.context_config
+        if context_config_dict is None:
             return None
-        if isinstance(context_config, dict):
-            self._context_config = context_config
-            return self._context_config
-
-        # If the context config is a string, try to parse it as JSON/YAML
-        try:
-            context_config_dict = yaml.safe_load(context_config)
-        except yaml.parser.ParserError as e:
-            raise ValueError(
-                f"Malformed `context_config` value. Only JSON and YAML "
-                f"formats are supported: {str(e)}"
-            )
 
         # Validate that the context config is a valid GE config
         try:
-            context_config = DataContextConfig(**context_config_dict)
-            BaseDataContext(project_config=context_config)
+            self._context_config = DataContextConfig(**context_config_dict)
         except Exception as e:
             raise ValueError(f"Invalid `context_config` value: {str(e)}")
 
-        self._context_config = cast(Dict[str, Any], context_config_dict)
         return self._context_config
 
     @property
@@ -203,7 +190,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         }
 
     @property
-    def data_context(self) -> BaseDataContext:
+    def data_context(self) -> AbstractDataContext:
         """Returns the Great Expectations data context configured for this component.
 
         Returns:
@@ -216,7 +203,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             profiler_store_name = "zenml_profiler_store"
             evaluation_parameter_store_name = "evaluation_parameter_store"
 
-            zenml_context_config = dict(
+            # Define default configuration options that plug the GX stores
+            # in the active ZenML artifact store
+            zenml_context_config: Dict[str, Any] = dict(
                 stores={
                     expectations_store_name: self.get_store_config(
                         "ExpectationsStore", "expectations"
@@ -250,18 +239,29 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             if self.config.context_root_dir:
                 # initialize the local data context, if a local path was
                 # configured
-                self._context = DataContext(self.config.context_root_dir)
+                self._context = get_context(
+                    context_root_dir=self.config.context_root_dir
+                )
+
             else:
-                # create an in-memory data context configuration that is not
-                # backed by a local YAML file (see https://docs.greatexpectations.io/docs/guides/setup/configuring_data_contexts/how_to_instantiate_a_data_context_without_a_yml_file/).
+                # create an ephemeral in-memory data context that is not
+                # backed by a local YAML file (see https://docs.greatexpectations.io/docs/oss/guides/setup/configuring_data_contexts/instantiating_data_contexts/instantiate_data_context/).
                 if self.context_config:
-                    context_config = DataContextConfig(**self.context_config)
+                    # Use the data context configuration provided in the stack
+                    # component configuration
+                    context_config = self.context_config
                 else:
+                    # Initialize the data context with the default ZenML
+                    # configuration options effectively plugging the GX stores
+                    # into the ZenML artifact store
                     context_config = DataContextConfig(**zenml_context_config)
                     # skip adding the stores after initialization, as they are
                     # already baked in the initial configuration
                     configure_zenml_stores = False
-                self._context = BaseDataContext(project_config=context_config)
+
+                self._context = EphemeralDataContext(
+                    project_config=context_config
+                )
 
             if configure_zenml_stores:
                 self._context.config.expectations_store_name = (
@@ -277,14 +277,14 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 self._context.config.evaluation_parameter_store_name = (
                     evaluation_parameter_store_name
                 )
-                for store_name, store_config in zenml_context_config[  # type: ignore[attr-defined]
+                for store_name, store_config in zenml_context_config[
                     "stores"
                 ].items():
                     self._context.add_store(
                         store_name=store_name,
                         store_config=store_config,
                     )
-                for site_name, site_config in zenml_context_config[  # type: ignore[attr-defined]
+                for site_name, site_config in zenml_context_config[
                     "data_docs_sites"
                 ].items():
                     self._context.config.data_docs_sites[site_name] = (
@@ -509,7 +509,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             },
         ]
 
-        checkpoint_config = {
+        checkpoint_config: Dict[str, Any] = {
             "name": checkpoint_name,
             "run_name_template": run_name,
             "config_version": 1,
@@ -517,7 +517,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             "expectation_suite_name": expectation_suite_name,
             "action_list": action_list,
         }
-        context.add_checkpoint(**checkpoint_config)
+        context.add_checkpoint(**checkpoint_config)  # type: ignore[has-type]
 
         try:
             results = context.run_checkpoint(

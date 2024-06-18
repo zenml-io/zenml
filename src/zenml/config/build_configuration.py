@@ -60,7 +60,7 @@ class BuildConfiguration(BaseModel):
             The checksum.
         """
         hash_ = hashlib.md5()  # nosec
-        hash_.update(self.settings.json().encode())
+        hash_.update(self.settings.model_dump_json().encode())
         if self.entrypoint:
             hash_.update(self.entrypoint.encode())
 

@@ -177,14 +177,14 @@ class TestHarness(metaclass=TestHarnessMetaClass):
         Raises:
             ValueError: If a configuration file is invalid.
         """
-        config = Configuration(config_path)
+        config = Configuration(config_file=config_path)  # type: ignore[call-arg]
         for config_file in Path(config_path).glob("**/*.yaml"):
             with open(config_file, "r") as f:
                 try:
                     config_values = yaml.safe_load(f.read())
                     if config_values is None:
                         continue
-                    partial_config = Configuration(
+                    partial_config = Configuration(  # type: ignore[call-arg]
                         config_file=str(config_file), **config_values
                     )
                 except ValidationError as e:
