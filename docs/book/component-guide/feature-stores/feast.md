@@ -13,7 +13,10 @@ There are two core functions that feature stores enable:
 * access to data from an offline / batch store for training.
 * access to online data at inference time.
 
-Feast integration currently supports your choice of offline data sources and a [Redis](https://redis.com/) backend for your online feature serving. We encourage users to check out [Feast's documentation](https://docs.feast.dev/) and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your offline and online data sources via the configuration `yaml` file.
+Feast integration currently supports your choice of offline data sources for
+your online feature serving. We encourage users to check out [Feast's documentation](https://docs.feast.dev/)
+and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your 
+offline and online data sources via the configuration `yaml` file.
 
 {% hint style="info" %}
 COMING SOON: While the ZenML integration has an interface to access online feature store data, it currently is not usable in production settings with deployed models. We will update the docs when we enable this functionality.

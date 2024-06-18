@@ -37,7 +37,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from pydantic import SecretStr
+from pydantic import ConfigDict, SecretStr
 
 from zenml.client_lazy_loader import (
     client_lazy_loader,
@@ -249,18 +249,14 @@ class ClientConfiguration(FileSyncModel):
         self.active_stack_id = stack.id
         self._active_stack = stack
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        validate_assignment=True,
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        extra="allow",
+    )
 
 
 class ClientMetaClass(ABCMeta):
@@ -1306,7 +1302,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdate(  # type: ignore[call-arg]
+        update_model = StackUpdate(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             stack_spec_path=stack_spec_file,
@@ -1598,7 +1594,7 @@ class Client(metaclass=ClientMetaClass):
         service_request = ServiceRequest(
             name=config.service_name,
             service_type=service_type,
-            config=config.dict(),
+            config=config.model_dump(),
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             model_version_id=model_version_id,
@@ -2032,7 +2028,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdate(  # type: ignore[call-arg]
+        update_model = ComponentUpdate(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             component_spec_path=component_spec_path,
@@ -4439,7 +4435,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate=True,
         )
 
-        secret_update = SecretUpdate(name=new_name or secret.name)  # type: ignore[call-arg]
+        secret_update = SecretUpdate(name=new_name or secret.name)
 
         if new_scope:
             secret_update.scope = new_scope
@@ -4758,7 +4754,7 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdate(  # type: ignore[call-arg]
+        update = CodeRepositoryUpdate(
             name=name, description=description, logo_url=logo_url
         )
         return self.zen_store.update_code_repository(
@@ -5268,8 +5264,6 @@ class Client(metaclass=ClientMetaClass):
             expires_at=expires_at,
             expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
-            user=self.active_user.id,
-            workspace=self.active_workspace.id,
         )
 
         # Validate and configure the resources
@@ -5312,21 +5306,32 @@ class Client(metaclass=ClientMetaClass):
 
         if verify:
             # Prefer to verify the connector config server-side if the
-            # implementation if available there, because it ensures
+            # implementation, if available there, because it ensures
             # that the connector can be shared with other users or used
             # from other machines and because some auth methods rely on the
             # server-side authentication environment
+
+            # Convert the update model to a request model for validation
+            connector_request_dict = connector_update.model_dump()
+            connector_request_dict.update(
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+            )
+            connector_request = ServiceConnectorRequest.model_validate(
+                connector_request_dict
+            )
+
             if connector.remote:
                 connector_resources = (
                     self.zen_store.verify_service_connector_config(
-                        connector_update,
+                        service_connector=connector_request,
                         list_resources=list_resources,
                     )
                 )
             else:
                 connector_instance = (
                     service_connector_registry.instantiate_connector(
-                        model=connector_update
+                        model=connector_request,
                     )
                 )
                 connector_resources = connector_instance.verify(

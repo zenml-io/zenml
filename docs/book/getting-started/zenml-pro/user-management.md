@@ -5,7 +5,7 @@ framework. This document walks you through the key differences and new concepts 
 
 ## Organizations, Tenants, and Roles
 
-ZenML Cloud arranges various aspects of your work experience around the concept
+ZenML Pro arranges various aspects of your work experience around the concept
 of an **Organization**. This is the top-most level structure within the ZenML
 Cloud environment. Generally, an organization contains a group of users and one
 or more **tenants**. Tenants are individual, isolated deployments of the ZenML server.

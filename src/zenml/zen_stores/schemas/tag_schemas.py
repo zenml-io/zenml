@@ -107,8 +107,12 @@ class TagSchema(NamedSchema, table=True):
         Returns:
             The updated `TagSchema`.
         """
-        for field, value in update.dict(exclude_unset=True).items():
-            setattr(self, field, value)
+        for field, value in update.model_dump(exclude_unset=True).items():
+            if field == "color":
+                setattr(self, field, value.value)
+            else:
+                setattr(self, field, value)
+
         self.updated = datetime.utcnow()
         return self
 

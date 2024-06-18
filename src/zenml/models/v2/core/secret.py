@@ -26,6 +26,7 @@ from zenml.enums import (
     SecretScope,
     SorterOps,
 )
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -34,7 +35,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.update import update_model
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 # ------------------ Request Model ------------------
 
@@ -51,7 +52,7 @@ class SecretRequest(WorkspaceScopedRequest):
     scope: SecretScope = Field(
         SecretScope.WORKSPACE, title="The scope of the secret."
     )
-    values: Dict[str, Optional[SecretStr]] = Field(
+    values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 
@@ -77,12 +78,22 @@ class SecretRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class SecretUpdate(SecretRequest):
+class SecretUpdate(BaseUpdate):
     """Secret update model."""
 
-    scope: Optional[SecretScope] = Field(  # type: ignore[assignment]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+
+    name: Optional[str] = Field(
+        title="The name of the secret.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    scope: Optional[SecretScope] = Field(
         default=None, title="The scope of the secret."
+    )
+    values: Optional[Dict[str, Optional[PlainSerializedSecretStr]]] = Field(
+        title="The values stored in this secret.",
+        default=None,
     )
 
     def get_secret_values_update(self) -> Dict[str, Optional[str]]:
@@ -91,10 +102,13 @@ class SecretUpdate(SecretRequest):
         Returns:
             A dictionary with the secret values to update.
         """
-        return {
-            k: v.get_secret_value() if v is not None else None
-            for k, v in self.values.items()
-        }
+        if self.values is not None:
+            return {
+                k: v.get_secret_value() if v is not None else None
+                for k, v in self.values.items()
+            }
+
+        return {}
 
 
 # ------------------ Response Model ------------------
@@ -106,7 +120,7 @@ class SecretResponseBody(WorkspaceScopedResponseBody):
     scope: SecretScope = Field(
         SecretScope.WORKSPACE, title="The scope of the secret."
     )
-    values: Dict[str, Optional[SecretStr]] = Field(
+    values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 
@@ -243,14 +257,19 @@ class SecretFilter(WorkspaceScopedFilter):
     scope: Optional[Union[SecretScope, str]] = Field(
         default=None,
         description="Scope in which to filter secrets",
+        union_mode="left_to_right",
     )
 
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Secret"
+        default=None,
+        description="Workspace of the Secret",
+        union_mode="left_to_right",
     )
 
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that created the Secret"
+        default=None,
+        description="User that created the Secret",
+        union_mode="left_to_right",
     )
 
     @staticmethod

@@ -7,7 +7,9 @@ from typing import List, Optional, Set, Tuple
 from uuid import UUID
 
 from fastapi import BackgroundTasks
+from packaging import version
 
+from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.step_configurations import Step, StepConfiguration
@@ -15,7 +17,7 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
 )
-from zenml.enums import StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.integrations.utils import get_integration_for_module
 from zenml.models import (
     CodeReferenceRequest,
@@ -31,7 +33,8 @@ from zenml.new.pipelines.run_utils import (
     validate_run_config_is_runnable_from_server,
     validate_stack_is_runnable_from_server,
 )
-from zenml.utils import dict_utils, pydantic_utils
+from zenml.stack.flavor import Flavor
+from zenml.utils import dict_utils, pydantic_utils, settings_utils
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.pipeline_deployment.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
@@ -81,14 +84,23 @@ def run_pipeline(
         run_config=run_config or PipelineRunConfiguration(),
         user_id=auth_context.user.id,
     )
+
+    ensure_async_orchestrator(deployment=deployment_request, stack=stack)
+
     new_deployment = zen_store().create_deployment(deployment_request)
     placeholder_run = create_placeholder_run(deployment=new_deployment)
     assert placeholder_run
 
-    api_token = auth_context.encoded_access_token
-    if not api_token:
-        assert auth_context.access_token
-        api_token = auth_context.access_token.encode()
+    if auth_context.access_token:
+        token = auth_context.access_token
+        token.pipeline_id = deployment_request.pipeline
+
+        # We create a non-expiring token to make sure its active for the entire
+        # duration of the pipeline run
+        api_token = token.encode(expires=None)
+    else:
+        assert auth_context.encoded_access_token
+        api_token = auth_context.encoded_access_token
 
     server_url = server_config().server_url
     if not server_url:
@@ -118,7 +130,14 @@ def run_pipeline(
             stack=stack
         )
 
-        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+        if build.python_version:
+            version_info = version.parse(build.python_version)
+            python_version = f"{version_info.major}.{version_info.minor}"
+        else:
+            python_version = (
+                f"{sys.version_info.major}.{sys.version_info.minor}"
+            )
+
         dockerfile = generate_dockerfile(
             pypi_requirements=pypi_requirements,
             apt_packages=apt_packages,
@@ -162,6 +181,37 @@ def run_pipeline(
         _task()
 
     return placeholder_run
+
+
+def ensure_async_orchestrator(
+    deployment: PipelineDeploymentRequest, stack: StackResponse
+) -> None:
+    """Ensures the orchestrator is configured to run async.
+
+    Args:
+        deployment: Deployment request in which the orchestrator
+            configuration should be updated to ensure the orchestrator is
+            running async.
+        stack: The stack on which the deployment will run.
+    """
+    orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
+    flavors = zen_store().list_flavors(
+        FlavorFilter(name=orchestrator.flavor, type=orchestrator.type)
+    )
+    flavor = Flavor.from_model(flavors[0])
+
+    if "synchronous" in flavor.config_class.model_fields:
+        key = settings_utils.get_flavor_setting_key(flavor)
+
+        if settings := deployment.pipeline_configuration.settings.get(key):
+            settings_dict = settings.model_dump()
+        else:
+            settings_dict = {}
+
+        settings_dict["synchronous"] = False
+        deployment.pipeline_configuration.settings[key] = (
+            BaseSettings.model_validate(settings_dict)
+        )
 
 
 def get_requirements_for_stack(
@@ -288,25 +338,23 @@ def apply_run_config(
     Returns:
         The updated deployment.
     """
-    pipeline_updates = {}
-
-    pipeline_updates = run_config.dict(
-        exclude_none=True, include=set(PipelineConfiguration.__fields__)
+    pipeline_updates = run_config.model_dump(
+        exclude_none=True, include=set(PipelineConfiguration.model_fields)
     )
 
     pipeline_configuration = pydantic_utils.update_model(
         deployment.pipeline_configuration, update=pipeline_updates
     )
-    pipeline_configuration_dict = pipeline_configuration.dict(
+    pipeline_configuration_dict = pipeline_configuration.model_dump(
         exclude_none=True
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():
         step_config_dict = dict_utils.recursive_update(
             copy.deepcopy(pipeline_configuration_dict),
-            update=step.config.dict(exclude_none=True),
+            update=step.config.model_dump(exclude_none=True),
         )
-        step_config = StepConfiguration.parse_obj(step_config_dict)
+        step_config = StepConfiguration.model_validate(step_config_dict)
 
         if update := run_config.steps.get(invocation_id):
             step_config = pydantic_utils.update_model(

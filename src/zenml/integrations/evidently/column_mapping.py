@@ -16,7 +16,7 @@
 from typing import List, Optional, Sequence, Union
 
 from evidently import ColumnMapping  # type: ignore[import-untyped]
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class EvidentlyColumnMapping(BaseModel):
@@ -41,7 +41,9 @@ class EvidentlyColumnMapping(BaseModel):
     """
 
     target: Optional[str] = None
-    prediction: Optional[Union[str, Sequence[str]]] = "prediction"
+    prediction: Optional[Union[str, Sequence[str]]] = Field(
+        default="prediction", union_mode="left_to_right"
+    )
     datetime: Optional[str] = None
     id: Optional[str] = None
     numerical_features: Optional[List[str]] = None
@@ -49,8 +51,14 @@ class EvidentlyColumnMapping(BaseModel):
     datetime_features: Optional[List[str]] = None
     target_names: Optional[List[str]] = None
     task: Optional[str] = None
-    pos_label: Optional[Union[str, int]] = 1
+    pos_label: Optional[Union[str, int]] = Field(
+        default=1, union_mode="left_to_right"
+    )
     text_features: Optional[List[str]] = None
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
     def to_evidently_column_mapping(self) -> ColumnMapping:
         """Convert this Pydantic object to an Evidently ColumnMapping object.

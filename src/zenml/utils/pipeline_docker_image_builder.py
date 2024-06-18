@@ -70,10 +70,7 @@ PIP_DEFAULT_ARGS = {
     "no-cache-dir": None,
     "default-timeout": 60,
 }
-UV_DEFAULT_ARGS = {
-    "no-cache-dir": None,
-    "system": None,
-}
+UV_DEFAULT_ARGS = {"no-cache-dir": None}
 
 
 class PipelineDockerImageBuilder:
@@ -122,6 +119,7 @@ class PipelineDockerImageBuilder:
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
                 image build.
+            ValueError: If the specified Dockerfile does not exist.
         """
         requirements: Optional[str] = None
         dockerfile: Optional[str] = None
@@ -135,6 +133,14 @@ class PipelineDockerImageBuilder:
             # the stack to make sure it's always accessible when running the
             # pipeline?
             return docker_settings.parent_image, dockerfile, requirements
+
+        if docker_settings.dockerfile and not os.path.isfile(
+            docker_settings.dockerfile
+        ):
+            raise ValueError(
+                "Dockerfile at path "
+                f"{os.path.abspath(docker_settings.dockerfile)} not found."
+            )
 
         stack.validate()
         image_builder = stack.image_builder

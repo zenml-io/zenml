@@ -32,7 +32,7 @@ from typing import (
     cast,
 )
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
@@ -40,6 +40,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
 
@@ -171,16 +172,19 @@ class BaseArtifactStoreConfig(StackComponentConfig):
     path: str
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
+    IS_IMMUTABLE_FILESYSTEM: ClassVar[bool] = False
 
-    @root_validator(skip_on_failure=True)
-    def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _ensure_artifact_store(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validator function for the Artifact Stores.
 
         Checks whether supported schemes are defined and the given path is
         supported.
 
         Args:
-            values: The values to validate.
+            data: the input data to construct the artifact store.
 
         Returns:
             The validated values.
@@ -210,18 +214,20 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
-        values["path"] = values["path"].strip("'\"`")
-        if not any(
-            values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
-        ):
-            raise ArtifactStoreInterfaceError(
-                f"The path: '{values['path']}' you defined for your "
-                f"artifact store is not supported by the implementation of "
-                f"{cls.schema()['title']}, because it does not start with "
-                f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
-            )
 
-        return values
+        if "path" in data:
+            data["path"] = data["path"].strip("'\"`")
+            if not any(
+                data["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
+            ):
+                raise ArtifactStoreInterfaceError(
+                    f"The path: '{data['path']}' you defined for your "
+                    f"artifact store is not supported by the implementation of "
+                    f"{cls.schema()['title']}, because it does not start with "
+                    f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
+                )
+
+        return data
 
 
 class BaseArtifactStore(StackComponent):

@@ -17,13 +17,15 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from great_expectations.data_context.store.tuple_store_backend import (  # type: ignore[import-untyped]
+from great_expectations.data_context.store.tuple_store_backend import (
     TupleStoreBackend,
-    filter_properties_dict,
 )
 from great_expectations.exceptions import (  # type: ignore[import-untyped]
     InvalidKeyError,
     StoreBackendError,
+)
+from great_expectations.util import (  # type: ignore[import-untyped]
+    filter_properties_dict,
 )
 
 from zenml.client import Client
@@ -34,7 +36,7 @@ from zenml.utils import io_utils
 logger = get_logger(__name__)
 
 
-class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
+class ZenMLArtifactStoreBackend(TupleStoreBackend):
     """Great Expectations store backend that uses the active ZenML Artifact Store as a store."""
 
     def __init__(
@@ -105,7 +107,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         if not isinstance(key, tuple):
             key = key.to_tuple()
         if not is_prefix:
-            object_relative_path = self._convert_key_to_filepath(key)
+            object_relative_path = self._convert_key_to_filepath(key)  # type: ignore[no-untyped-call]
         elif key:
             object_relative_path = os.path.join(*key)
         else:
@@ -116,7 +118,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             object_key = object_relative_path
         return os.path.join(self.root_path, object_key)
 
-    def _get(self, key: Tuple[str, ...]) -> str:
+    def _get(self, key: Tuple[str, ...]) -> str:  # type: ignore[override]
         """Get the value of an object from the store.
 
         Args:
@@ -140,7 +142,18 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             )
         return contents
 
-    def _set(self, key: Tuple[str, ...], value: str, **kwargs: Any) -> str:
+    def _get_all(self) -> List[Any]:
+        """Get all objects in the store.
+
+        Raises:
+            NotImplementedError: if the method is not implemented for this store
+                backend.
+        """
+        raise NotImplementedError(
+            "Method `_get_all` is not implemented for this store backend."
+        )
+
+    def _set(self, key: Tuple[str, ...], value: str, **kwargs: Any) -> str:  # type: ignore[override]
         """Set the value of an object in the store.
 
         Args:
@@ -212,12 +225,12 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
                     self.filepath_suffix
                 ):
                     continue
-                key = self._convert_filepath_to_key(filepath)
-                if key and not self.is_ignored_key(key):
+                key = self._convert_filepath_to_key(filepath)  # type: ignore[no-untyped-call]
+                if key and not self.is_ignored_key(key):  # type: ignore[no-untyped-call]
                     key_list.append(key)
         return key_list
 
-    def remove_key(self, key: Tuple[str, ...]) -> bool:
+    def remove_key(self, key: Tuple[str, ...]) -> bool:  # type: ignore[override]
         """Delete an object from the store.
 
         Args:
@@ -250,7 +263,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         result = fileio.exists(filepath)
         return result
 
-    def get_url_for_key(
+    def get_url_for_key(  # type: ignore[override]
         self, key: Tuple[str, ...], protocol: Optional[str] = None
     ) -> str:
         """Get the URL of an object in the store.
@@ -292,7 +305,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
                 f"requested but `base_public_path` was not configured for the "
                 f"{self.__class__.__name__}"
             )
-        filepath = self._convert_key_to_filepath(key)
+        filepath = self._convert_key_to_filepath(key)  # type: ignore[no-untyped-call]
         public_url = self.base_public_path + filepath.replace(self.proto, "")
         return cast(str, public_url)
 

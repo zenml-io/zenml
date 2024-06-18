@@ -17,7 +17,6 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
@@ -31,6 +30,7 @@ from zenml.models import (
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
 )
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -178,7 +178,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             schedule_id=request.schedule,
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
-            pipeline_configuration=request.pipeline_configuration.json(),
+            pipeline_configuration=request.pipeline_configuration.model_dump_json(),
             step_configurations=json.dumps(
                 request.step_configurations,
                 sort_keys=False,
@@ -206,12 +206,12 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentResponse`.
         """
-        pipeline_configuration = PipelineConfiguration.parse_raw(
+        pipeline_configuration = PipelineConfiguration.model_validate_json(
             self.pipeline_configuration
         )
         step_configurations = json.loads(self.step_configurations)
         for s, c in step_configurations.items():
-            step_configurations[s] = Step.parse_obj(c)
+            step_configurations[s] = Step.model_validate(c)
 
         body = PipelineDeploymentResponseBody(
             user=self.user.to_model() if self.user else None,

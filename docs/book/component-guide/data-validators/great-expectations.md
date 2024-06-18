@@ -14,9 +14,9 @@ The Great Expectations [Data Validator](./data-validators.md) flavor provided wi
 
 You should use the Great Expectations Data Validator when you need the following data validation features that are possible with Great Expectations:
 
-* [Data Profiling](https://docs.greatexpectations.io/docs/guides/expectations/how\_to\_create\_and\_edit\_expectations\_with\_a\_profiler): generates a set of validation rules (Expectations) automatically by inferring them from the properties of an input dataset.
-* [Data Quality](https://docs.greatexpectations.io/docs/guides/validation/checkpoints/how\_to\_pass\_an\_in\_memory\_dataframe\_to\_a\_checkpoint): runs a set of predefined or inferred validation rules (Expectations) against an in-memory dataset.
-* [Data Docs](https://docs.greatexpectations.io/docs/terms/data\_docs): generate and maintain human-readable documentation of all your data validation rules, data quality checks and their results.
+* [Data Profiling](https://docs.greatexpectations.io/docs/oss/guides/expectations/creating_custom_expectations/how_to_add_support_for_the_auto_initializing_framework_to_a_custom_expectation/#build-a-custom-profiler-for-your-expectation): generates a set of validation rules (Expectations) automatically by inferring them from the properties of an input dataset.
+* [Data Quality](https://docs.greatexpectations.io/docs/oss/guides/validation/checkpoints/how_to_pass_an_in_memory_dataframe_to_a_checkpoint/): runs a set of predefined or inferred validation rules (Expectations) against an in-memory dataset.
+* [Data Docs](https://docs.greatexpectations.io/docs/reference/learn/terms/data_docs_store/): generate and maintain human-readable documentation of all your data validation rules, data quality checks and their results.
 
 You should consider one of the other [Data Validator flavors](./data-validators.md#data-validator-flavors) if you need a different set of data validation features.
 

@@ -58,7 +58,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     orchestrator_pod_settings: Optional[KubernetesPodSettings] = None
 
 
-class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class KubernetesOrchestratorConfig(
     BaseOrchestratorConfig, KubernetesOrchestratorSettings
 ):
     """Configuration for the Kubernetes orchestrator.
@@ -82,6 +82,9 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
             containers).
         skip_local_validations: If `True`, the local validations will be
             skipped.
+        parallel_step_startup_waiting_period: How long to wait in between
+            starting parallel steps. This can be used to distribute server
+            load when running pipelines with a huge amount of parallel steps.
     """
 
     incluster: bool = False
@@ -89,6 +92,7 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False
+    parallel_step_startup_waiting_period: Optional[float] = None
 
     @property
     def is_remote(self) -> bool:

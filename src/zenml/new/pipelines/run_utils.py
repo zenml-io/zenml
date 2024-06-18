@@ -19,7 +19,7 @@ from zenml import constants
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus, ModelStages, StackComponentType
+from zenml.enums import ExecutionStatus, ModelStages
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
@@ -30,7 +30,6 @@ from zenml.models import (
     StackResponse,
 )
 from zenml.new.pipelines.model_utils import NewModelRequest
-from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Flavor, Stack
 from zenml.utils import cloud_utils
@@ -261,7 +260,7 @@ def _validate_new_version_requests(
         )
     if not is_cloud_model:
         logger.info(
-            "Models can be viewed in the dashboard using ZenML Cloud. Sign up "
+            "Models can be viewed in the dashboard using ZenML Pro. Sign up "
             "for a free trial at https://www.zenml.io/cloud/"
         )
 
@@ -304,8 +303,8 @@ def validate_stack_is_runnable_from_server(
         stack: The stack to validate.
 
     Raises:
-        ValueError: If the stack has components of a custom flavor, local
-            components or a synchronous orchestrator.
+        ValueError: If the stack has components of a custom flavor or local
+            components.
     """
     for component_list in stack.components.values():
         assert len(component_list) == 1
@@ -324,12 +323,6 @@ def validate_stack_is_runnable_from_server(
 
         if component_config.is_local:
             raise ValueError("No local stack components allowed.")
-
-        if flavor.type == StackComponentType.ORCHESTRATOR:
-            assert isinstance(component_config, BaseOrchestratorConfig)
-
-            if component_config.is_synchronous:
-                raise ValueError("No synchronous orchestrator allowed.")
 
 
 def validate_run_config_is_runnable_from_server(

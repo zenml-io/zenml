@@ -11,27 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utility methods for internal models."""
 
-from typing import Type, TypeVar
+import os
 
-from zenml.models.v2.base.base import BaseRequest
-
-T = TypeVar("T", bound="BaseRequest")
+from zenml.client import Client
+from zenml.utils.string_utils import random_str
 
 
-def server_owned_request_model(_cls: Type[T]) -> Type[T]:
-    """Convert a request model to a model which does not require a user ID.
+def test_artifact_store_remove_on_folders(clean_client: Client):
+    """Tests that the artifact store removes artifacts on folders."""
+    artifact_store = clean_client.active_stack.artifact_store
+    folder = os.path.join(artifact_store.path, "test_folder_" + random_str(10))
+    artifact_store.makedirs(folder)
 
-    Args:
-        _cls: The class to decorate
+    with artifact_store.open(os.path.join(folder, "test.txt"), "w") as f:
+        f.write("test")
 
-    Returns:
-        The decorated class.
-    """
-    if user_field := _cls.__fields__.get("user", None):
-        user_field.required = False
-        user_field.allow_none = True
-        user_field.default = None
-
-    return _cls
+    artifact_store.rmtree(folder)
+    assert not artifact_store.exists(folder)
+    assert not os.path.exists(folder)

@@ -19,7 +19,7 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr, root_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
@@ -39,12 +39,14 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
+    DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ENV_ZENML_SERVER_PREFIX,
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
 from zenml.models import ServerDeploymentType
+from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
 
@@ -269,30 +271,41 @@ class ServerConfiguration(BaseModel):
     login_rate_limit_minute: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE
     login_rate_limit_day: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY
 
-    secure_headers_server: Union[bool, str] = True
-    secure_headers_hsts: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS
+    secure_headers_server: Union[bool, str] = Field(
+        default=True,
+        union_mode="left_to_right",
     )
-    secure_headers_xfo: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO
+    secure_headers_hsts: Union[bool, str] = Field(
+        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS,
+        union_mode="left_to_right",
     )
-    secure_headers_xxp: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP
+    secure_headers_xfo: Union[bool, str] = Field(
+        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
+        union_mode="left_to_right",
     )
-    secure_headers_content: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT
+    secure_headers_xxp: Union[bool, str] = Field(
+        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
+        union_mode="left_to_right",
     )
-    secure_headers_csp: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP
+    secure_headers_content: Union[bool, str] = Field(
+        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT,
+        union_mode="left_to_right",
     )
-    secure_headers_referrer: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER
+    secure_headers_csp: Union[bool, str] = Field(
+        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP,
+        union_mode="left_to_right",
     )
-    secure_headers_cache: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE
+    secure_headers_referrer: Union[bool, str] = Field(
+        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
+        union_mode="left_to_right",
     )
-    secure_headers_permissions: Union[bool, str] = (
-        DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
+    secure_headers_cache: Union[bool, str] = Field(
+        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
+        union_mode="left_to_right",
+    )
+    secure_headers_permissions: Union[bool, str] = Field(
+        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS,
+        union_mode="left_to_right",
     )
     use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
 
@@ -301,14 +314,18 @@ class ServerConfiguration(BaseModel):
     display_updates: bool = True
     auto_activate: bool = False
 
+    thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
+
     _deployment_id: Optional[UUID] = None
 
-    @root_validator(pre=True)
-    def _validate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _validate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the server configuration.
 
         Args:
-            values: The server configuration values.
+            data: The server configuration values.
 
         Returns:
             The validated server configuration values.
@@ -316,10 +333,10 @@ class ServerConfiguration(BaseModel):
         Raises:
             ValueError: If the server configuration is invalid.
         """
-        if values.get("auth_scheme") == AuthScheme.EXTERNAL:
+        if data.get("auth_scheme") == AuthScheme.EXTERNAL:
             # If the authentication scheme is set to `EXTERNAL`, the
             # external authenticator URLs must be specified.
-            if not values.get("external_login_url") or not values.get(
+            if not data.get("external_login_url") or not data.get(
                 "external_user_info_url"
             ):
                 raise ValueError(
@@ -330,22 +347,22 @@ class ServerConfiguration(BaseModel):
 
             # If the authentication scheme is set to `EXTERNAL`, the
             # external cookie name must be specified.
-            if not values.get("external_cookie_name"):
+            if not data.get("external_cookie_name"):
                 raise ValueError(
                     "The external cookie name must be specified when "
                     "using the EXTERNAL authentication scheme."
                 )
 
-        if cors_allow_origins := values.get("cors_allow_origins"):
+        if cors_allow_origins := data.get("cors_allow_origins"):
             origins = cors_allow_origins.split(",")
-            values["cors_allow_origins"] = origins
+            data["cors_allow_origins"] = origins
         else:
-            values["cors_allow_origins"] = ["*"]
+            data["cors_allow_origins"] = ["*"]
 
         # if metadata is a string, convert it to a dictionary
-        if isinstance(values.get("metadata"), str):
+        if isinstance(data.get("metadata"), str):
             try:
-                values["metadata"] = json.loads(values["metadata"])
+                data["metadata"] = json.loads(data["metadata"])
             except json.JSONDecodeError as e:
                 raise ValueError(
                     f"The server metadata is not a valid JSON string: {e}"
@@ -353,15 +370,15 @@ class ServerConfiguration(BaseModel):
 
         # if one of the secure headers options is set to a boolean value, set
         # the corresponding value
-        for k, v in values.copy().items():
+        for k, v in data.copy().items():
             if k.startswith("secure_headers_") and isinstance(v, str):
                 if v.lower() in ["disabled", "no", "none", "false", "off", ""]:
-                    values[k] = False
+                    data[k] = False
                 if v.lower() in ["enabled", "yes", "true", "on"]:
                     # Revert to the default value if the header is enabled
-                    del values[k]
+                    del data[k]
 
-        return values
+        return data
 
     @property
     def deployment_id(self) -> UUID:
@@ -487,18 +504,8 @@ class ServerConfiguration(BaseModel):
 
         return ServerConfiguration(**env_server_config)
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
-
-        # This is needed to allow correct handling of SecretStr values during
-        # serialization.
-        json_encoders = {
-            SecretStr: lambda v: v.get_secret_value() if v else None
-        }
+        extra="allow",
+    )
