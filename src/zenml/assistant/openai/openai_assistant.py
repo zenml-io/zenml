@@ -35,7 +35,7 @@ class OpenAIAssistantHandler(BaseAssistantHandler, ABC):
         super().__init__()
         if not os.getenv("OPENAI_API_KEY"):
             RuntimeError(
-                "Please set export the openai key in your env `export OPENAI_AI_KEY=xxxxxxxxxxxxxxx`"
+                "Please set the openai key in your env `export OPENAI_AI_KEY=xxxxxxxxxxxxxxx`"
             )
 
     @abstractmethod
