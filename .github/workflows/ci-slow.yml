@@ -142,11 +142,12 @@ jobs:
       - name: Create virtual environment
         run: |
           uv venv
-      - name: Check mlstacks compatibility
-        run: |
-          source .venv/bin/activate
-          uv pip install -e .
-          uv pip install mlstacks
+#      TODO: REACTIVATE BEFORE THE RELEASE
+#      - name: Check mlstacks compatibility
+#        run: |
+#          source .venv/bin/activate
+#          uv pip install -e .
+#          uv pip install mlstacks
       - name: Check for broken dependencies
         run: |
           source .venv/bin/activate

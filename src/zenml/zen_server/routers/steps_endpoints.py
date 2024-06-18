@@ -200,7 +200,7 @@ def get_step_configuration(
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.READ)
 
-    return step.config.dict()
+    return step.config.model_dump()
 
 
 @router.get(

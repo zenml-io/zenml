@@ -286,9 +286,9 @@ class Compiler:
         """
         assert stack_component.settings_class
         # Exclude additional config attributes that aren't part of the settings
-        field_names = set(stack_component.settings_class.__fields__)
-        default_settings = stack_component.settings_class.parse_obj(
-            stack_component.config.dict(
+        field_names = set(stack_component.settings_class.model_fields.keys())
+        default_settings = stack_component.settings_class.model_validate(
+            stack_component.config.model_dump(
                 include=field_names, exclude_unset=True, exclude_defaults=True
             )
         )

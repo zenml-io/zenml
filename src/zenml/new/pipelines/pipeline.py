@@ -38,7 +38,7 @@ from typing import (
 from uuid import UUID
 
 import yaml
-from pydantic import ValidationError
+from pydantic import ConfigDict, ValidationError
 
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
@@ -378,7 +378,7 @@ class Pipeline:
             to_be_reapplied = []
             for param_, value_ in values.items():
                 if (
-                    param_ in PipelineRunConfiguration.__fields__
+                    param_ in PipelineRunConfiguration.model_fields
                     and param_ in self._from_config_file
                     and value_ != self._from_config_file[param_]
                 ):
@@ -389,16 +389,17 @@ class Pipeline:
                 msg = ""
                 reapply_during_run_warning = (
                     "The value of parameter '{name}' has changed from "
-                    "'{file_value}' to '{new_value}' set in your configuration file.\n"
+                    "'{file_value}' to '{new_value}' set in your configuration "
+                    "file.\n"
                 )
                 for name, file_value, new_value in to_be_reapplied:
                     msg += reapply_during_run_warning.format(
                         name=name, file_value=file_value, new_value=new_value
                     )
                 msg += (
-                    "Configuration file value will be used during pipeline run, "
-                    "so you change will not be efficient. Consider updating your "
-                    "configuration file instead."
+                    "Configuration file value will be used during pipeline "
+                    "run, so you change will not be efficient. Consider "
+                    "updating your configuration file instead."
                 )
                 logger.warning(msg)
 
@@ -501,7 +502,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._prepare_if_possible()
         integration_registry.activate_integrations()
 
-        if self.configuration.dict(exclude_defaults=True, exclude={"name"}):
+        if self.configuration.model_dump(
+            exclude_defaults=True, exclude={"name"}
+        ):
             logger.warning(
                 f"The pipeline `{self.name}` that you're registering has "
                 "custom configurations applied to it. These will not be "
@@ -729,7 +732,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 build=build_id,
                 schedule=schedule_id,
                 code_reference=code_reference,
-                **deployment.dict(),
+                **deployment.model_dump(),
             )
             deployment_model = Client().zen_store.create_deployment(
                 deployment=deployment_request
@@ -1006,13 +1009,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         self._parse_config_file(
             config_path=config_path,
-            matcher=list(PipelineRunConfiguration.__fields__.keys()),
+            matcher=list(PipelineRunConfiguration.model_fields.keys()),
         )
 
         run_config = PipelineRunConfiguration(**self._from_config_file)
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
-        update = PipelineRunConfiguration.parse_obj(new_values)
+        update = PipelineRunConfiguration.model_validate(new_values)
 
         # Update with the values in code so they take precedence
         run_config = pydantic_utils.update_model(run_config, update=update)
@@ -1291,7 +1294,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 else:
                     from zenml.model.model import Model
 
-                    _from_config_file["model"] = Model.parse_obj(
+                    _from_config_file["model"] = Model.model_validate(
                         _from_config_file["model"]
                     )
         self._from_config_file = _from_config_file
@@ -1410,14 +1413,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         try:
             validated_args = pydantic_utils.validate_function_args(
                 self.entrypoint,
-                {"arbitrary_types_allowed": False, "smart_union": True},
+                ConfigDict(arbitrary_types_allowed=False),
                 *args,
                 **kwargs,
             )
         except ValidationError as e:
             raise ValueError(
-                "Invalid or missing inputs for pipeline entrypoint function. "
+                "Invalid or missing pipeline function entrypoint arguments. "
                 "Only JSON serializable inputs are allowed as pipeline inputs."
+                "Check out the pydantic error above for more details."
             ) from e
 
         self._parameters = validated_args

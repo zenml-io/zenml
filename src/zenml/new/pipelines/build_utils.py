@@ -62,7 +62,7 @@ def _create_deployment(
 
     Args:
         deployment: Base of the deployment to create.
-        pipeline_id: Pipeline ID to use for the deloyment.
+        pipeline_id: Pipeline ID to use for the deployment.
         code_repository: Code repository to use for the deployment.
 
     Returns:
@@ -93,7 +93,7 @@ def _create_deployment(
         stack=Client().active_stack.id,
         pipeline=pipeline_id,
         code_reference=code_reference,
-        **deployment.dict(),
+        **deployment.model_dump(),
     )
     return (
         Client().zen_store.create_deployment(deployment=deployment_request).id
@@ -184,7 +184,7 @@ def reuse_or_create_pipeline_build(
             workspace=Client().active_workspace.id,
             stack=Client().active_stack_model.id,
             pipeline=pipeline_id,
-            **build.dict(),
+            **build.model_dump(),
         )
         build_model = Client().zen_store.create_build(build=build_request)
 

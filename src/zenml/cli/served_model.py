@@ -29,7 +29,6 @@ from zenml.cli.utils import (
 )
 from zenml.console import console
 from zenml.enums import StackComponentType
-from zenml.model_deployers import BaseModelDeployer
 
 if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer

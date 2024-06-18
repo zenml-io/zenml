@@ -52,10 +52,10 @@ class PipelineBuildBase(BaseZenModel):
         title="Whether any image of the build contains user code.",
     )
     zenml_version: Optional[str] = Field(
-        title="The version of ZenML used for this build."
+        title="The version of ZenML used for this build.", default=None
     )
     python_version: Optional[str] = Field(
-        title="The Python version used for this build."
+        title="The Python version used for this build.", default=None
     )
 
     # Helper methods
@@ -156,13 +156,13 @@ class PipelineBuildBase(BaseZenModel):
 class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
     """Request model for pipelines builds."""
 
-    checksum: Optional[str] = Field(title="The build checksum.")
+    checksum: Optional[str] = Field(title="The build checksum.", default=None)
 
     stack: Optional[UUID] = Field(
-        title="The stack that was used for this build."
+        title="The stack that was used for this build.", default=None
     )
     pipeline: Optional[UUID] = Field(
-        title="The pipeline that was used for this build."
+        title="The pipeline that was used for this build.", default=None
     )
     template_deployment_id: Optional[UUID] = None
 
@@ -241,7 +241,7 @@ class PipelineBuildResponse(
         """
         # Get the base attributes
         yaml_dict: Dict[str, Any] = json.loads(
-            self.json(
+            self.model_dump_json(
                 exclude={
                     "body",
                     "metadata",
@@ -249,7 +249,7 @@ class PipelineBuildResponse(
             )
         )
         images = json.loads(
-            self.get_metadata().json(
+            self.get_metadata().model_dump_json(
                 exclude={
                     "pipeline",
                     "stack",
@@ -442,29 +442,41 @@ class PipelineBuildResponse(
 class PipelineBuildFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all pipeline builds."""
 
-    workspace_id: Union[UUID, str, None] = Field(
-        description="Workspace for this pipeline build."
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        description="Workspace for this pipeline build.",
+        default=None,
+        union_mode="left_to_right",
     )
-    user_id: Union[UUID, str, None] = Field(
-        description="User that produced this pipeline build."
+    user_id: Optional[Union[UUID, str]] = Field(
+        description="User that produced this pipeline build.",
+        default=None,
+        union_mode="left_to_right",
     )
-    pipeline_id: Union[UUID, str, None] = Field(
+    pipeline_id: Optional[Union[UUID, str]] = Field(
         description="Pipeline associated with the pipeline build.",
+        default=None,
+        union_mode="left_to_right",
     )
-    stack_id: Union[UUID, str, None] = Field(
-        description="Stack used for the Pipeline Run"
+    stack_id: Optional[Union[UUID, str]] = Field(
+        description="Stack used for the Pipeline Run",
+        default=None,
+        union_mode="left_to_right",
     )
     is_local: Optional[bool] = Field(
         description="Whether the build images are stored in a container "
         "registry or locally.",
+        default=None,
     )
     contains_code: Optional[bool] = Field(
         description="Whether any image of the build contains user code.",
+        default=None,
     )
     zenml_version: Optional[str] = Field(
-        description="The version of ZenML used for this build."
+        description="The version of ZenML used for this build.", default=None
     )
     python_version: Optional[str] = Field(
-        description="The Python version used for this build."
+        description="The Python version used for this build.", default=None
     )
-    checksum: Optional[str] = Field(description="The build checksum.")
+    checksum: Optional[str] = Field(
+        description="The build checksum.", default=None
+    )

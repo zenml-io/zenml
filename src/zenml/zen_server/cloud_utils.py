@@ -4,7 +4,7 @@ import os
 from typing import Any, Dict, Optional
 
 import requests
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.exceptions import SubscriptionUpgradeRequiredError
@@ -23,7 +23,8 @@ class ZenMLCloudConfiguration(BaseModel):
     oauth2_audience: str
     auth0_domain: str
 
-    @validator("api_url")
+    @field_validator("api_url")
+    @classmethod
     def _strip_trailing_slashes_url(cls, url: str) -> str:
         """Strip any trailing slashes on the API URL.
 
@@ -51,12 +52,11 @@ class ZenMLCloudConfiguration(BaseModel):
 
         return ZenMLCloudConfiguration(**env_config)
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
+        extra="allow"
+    )
 
 
 class ZenMLCloudSession:

@@ -252,7 +252,7 @@ class AzureMLStepOperator(BaseStepOperator):
             "source_files",
         ]
         docker_settings = info.config.docker_settings
-        ignored_docker_fields = docker_settings.__fields_set__.intersection(
+        ignored_docker_fields = docker_settings.model_fields_set.intersection(
             unused_docker_fields
         )
 

@@ -177,7 +177,7 @@ if server_config().workload_manager_enabled:
         deployment = zen_store().get_deployment(
             deployment_id=build.template_deployment_id, hydrate=True
         )
-        deployment.metadata.build = build  # type: ignore[union-attr]
+        deployment.get_metadata().build = build
 
         return run_pipeline(
             deployment=deployment,

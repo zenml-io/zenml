@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
@@ -24,9 +24,9 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
+    BaseUpdate,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
-from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from zenml.models.v2.base.filter import AnySchema
@@ -52,21 +52,33 @@ class ServiceAccountRequest(BaseRequest):
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     active: bool = Field(title="Whether the service account is active or not.")
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them
-        validate_assignment = True
-        extra = "ignore"
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
 # ------------------ Update Model ------------------
 
 
-@update_model
-class ServiceAccountUpdate(ServiceAccountRequest):
+class ServiceAccountUpdate(BaseUpdate):
     """Update model for service accounts."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["name", "active"]
+
+    name: Optional[str] = Field(
+        title="The unique name for the service account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    description: Optional[str] = Field(
+        title="A description of the service account.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    active: Optional[bool] = Field(
+        title="Whether the service account is active or not.",
+        default=None,
+    )
+
+    model_config = ConfigDict(validate_assignment=True)
 
 
 # ------------------ Response Model ------------------
@@ -189,6 +201,7 @@ class ServiceAccountFilter(BaseFilter):
     active: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user is active",
+        union_mode="left_to_right",
     )
 
     def apply_filter(
