@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import BackgroundTasks
 from packaging import version
 
+from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.step_configurations import Step, StepConfiguration
@@ -30,9 +31,8 @@ from zenml.models import (
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
 )
-from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.stack.flavor import Flavor
-from zenml.utils import dict_utils, pydantic_utils
+from zenml.utils import dict_utils, pydantic_utils, settings_utils
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.pipeline_deployment.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
@@ -80,14 +80,23 @@ def run_pipeline(
         run_config=run_config or PipelineRunConfiguration(),
         user_id=auth_context.user.id,
     )
+
+    ensure_async_orchestrator(deployment=deployment_request, stack=stack)
+
     new_deployment = zen_store().create_deployment(deployment_request)
     placeholder_run = create_placeholder_run(deployment=new_deployment)
     assert placeholder_run
 
-    api_token = auth_context.encoded_access_token
-    if not api_token:
-        assert auth_context.access_token
-        api_token = auth_context.access_token.encode()
+    if auth_context.access_token:
+        token = auth_context.access_token
+        token.pipeline_id = deployment_request.pipeline
+
+        # We create a non-expiring token to make sure its active for the entire
+        # duration of the pipeline run
+        api_token = token.encode(expires=None)
+    else:
+        assert auth_context.encoded_access_token
+        api_token = auth_context.encoded_access_token
 
     server_url = server_config().server_url
     if not server_url:
@@ -177,8 +186,8 @@ def validate_stack(stack: StackResponse) -> None:
         stack: The stack to validate.
 
     Raises:
-        ValueError: If the stack has components of a custom flavor, local
-            components or a synchronous orchestrator.
+        ValueError: If the stack has components of a custom flavor or local
+            components.
     """
     for component_list in stack.components.values():
         assert len(component_list) == 1
@@ -198,11 +207,36 @@ def validate_stack(stack: StackResponse) -> None:
         if component_config.is_local:
             raise ValueError("No local stack components allowed.")
 
-        if flavor.type == StackComponentType.ORCHESTRATOR:
-            assert isinstance(component_config, BaseOrchestratorConfig)
 
-            if component_config.is_synchronous:
-                raise ValueError("No synchronous orchestrator allowed.")
+def ensure_async_orchestrator(
+    deployment: PipelineDeploymentRequest, stack: StackResponse
+) -> None:
+    """Ensures the orchestrator is configured to run async.
+
+    Args:
+        deployment: Deployment request in which the orchestrator
+            configuration should be updated to ensure the orchestrator is
+            running async.
+        stack: The stack on which the deployment will run.
+    """
+    orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
+    flavors = zen_store().list_flavors(
+        FlavorFilter(name=orchestrator.flavor, type=orchestrator.type)
+    )
+    flavor = Flavor.from_model(flavors[0])
+
+    if "synchronous" in flavor.config_class.model_fields:
+        key = settings_utils.get_flavor_setting_key(flavor)
+
+        if settings := deployment.pipeline_configuration.settings.get(key):
+            settings_dict = settings.model_dump()
+        else:
+            settings_dict = {}
+
+        settings_dict["synchronous"] = False
+        deployment.pipeline_configuration.settings[key] = (
+            BaseSettings.model_validate(settings_dict)
+        )
 
 
 def get_requirements_for_stack(
