@@ -25,7 +25,7 @@ def test_token_classification(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="huggingface",
-        example_args=["--nlp_task", "token-classification"],
+        example_args=["--task", "token-classification"],
         pipelines={"token_classifier_train_eval_pipeline": (1, 5)},
     ):
         pass
