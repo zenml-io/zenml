@@ -64,3 +64,10 @@ def generate_log_failure_pattern_suggestions(
 ) -> str:
     prompt = f"Based on the following pipeline spec, stack config and logs, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Stack Config\n {stack_config}. \n ## Logs:\n {logs}\n\n If there are common failures in logs, then make suggestions for how the user can avoid these failures. Output your suggestions in Markdown markup format."
     return prompt_gemini(prompt)
+
+
+def generate_stats_summary(
+    stats: str
+) -> str:
+    prompt = f"Generate a summary of the following stats and metadata (provided as a JSON string here: {stats}). Generate the section using Markdown formatting and feel free to use tables if you feel they are appropriate."
+    return prompt_gemini(prompt)
