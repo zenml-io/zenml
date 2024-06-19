@@ -79,6 +79,7 @@ class ReportSchema(BaseSchema, table=True):
             model_version_ids=json.dumps(
                 [str(id_) for id_ in request.model_version_ids]
             ),
+            user_id=request.user,
             created=now,
             updated=now,
         )
