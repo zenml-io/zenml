@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing model versions."""
 
-from tkinter import ALL
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 

@@ -36,6 +36,7 @@ from zenml.model.gen_ai_helper import (
 from zenml.model.gen_ai_utils import (
     generate_code_improvement_suggestions,
     generate_log_failure_pattern_suggestions,
+    generate_model_report,
     generate_poem,
     generate_stack_improvement_suggestions,
     generate_stats_summary,
@@ -134,15 +135,15 @@ def list_models(**kwargs: Any) -> None:
     "model_version_id",
 )
 @click.option(
-    "-t",
     "--report-type",
+    "-t",
     type=click.Choice(
         ModelReportType.values(),
     ),
     default=ModelReportType.ALL.value,
     help="The type of report to generate.",
 )
-def generate_model_report(
+def generate_model_report_cmd(
     model_version_id: str, report_type: str, **kwargs: Any
 ) -> None:
     """Generate a report about a model.
