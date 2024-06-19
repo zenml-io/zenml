@@ -167,9 +167,13 @@ async def compare_model_versions(
     model_id = None
     versions = []
     for id_ in model_version_ids:
-        model_version = zen_store().get_model_version(model_version_id=id_)
+        model_version = (
+            zen_store()
+            .get_model_version(model_version_id=id_)
+            .to_model_class()
+        )
         versions.append(model_version)
-        if model_id and model_version.model.id != model_id:
+        if model_id and model_version.model_id != model_id:
             raise ValueError("Versions don't belong to same model")
 
     from litellm import completion

@@ -825,7 +825,7 @@ class Model(BaseModel):
         is_all: bool = False,
         is_metadata: bool = False,
         is_pipeline_runs: bool = False,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """Get essentials details of a model version for LLM assistants.
 
         Args:
@@ -860,7 +860,7 @@ class Model(BaseModel):
                 ("models", mv.model_artifacts),
                 ("deployments", mv.deployment_artifacts),
             ):
-                _composed_artifact_by_type = {}
+                _composed_artifact_by_type: Dict[str, Dict[str, Any]] = {}
                 raw_da = src
                 for each in raw_da:
                     current_da = raw_da[each][max(raw_da[each].keys())]
@@ -885,28 +885,33 @@ class Model(BaseModel):
 
                 composed_artifacts[t] = _composed_artifact_by_type
 
-        pipeline_runs = {}
+        pipeline_runs: Dict[str, List[str]] = {}
         if is_all or is_pipeline_runs:
             for pr in mv.pipeline_runs.values():
-                pipeline_runs[pr.pipeline.name] = pipeline_runs.get(
-                    pr.pipeline.name, []
-                )
-                pipeline_runs[pr.pipeline.name].append(pr.user.name)
+                if pr.pipeline is not None:
+                    pipeline_runs[pr.pipeline.name] = pipeline_runs.get(
+                        pr.pipeline.name, []
+                    )
+                    if pr.user is not None:
+                        pipeline_runs[pr.pipeline.name].append(pr.user.name)
 
-        model_version_info = {}
+        model_version_info: Dict[str, Any] = {}
         model_version_info["model_name"] = mv.model.name
-        model_version_info["version"] = mv.name
-        model_version_info["description"] = mv.description
+        model_version_info["version"] = mv.name or ""
+        model_version_info["description"] = mv.description or ""
         model_version_info["updated"] = str(mv.updated.date())
-        model_version_info["tags"] = sorted([t.name for t in mv.tags])
-        model_version_info["target_audience"] = mv.model.audience
-        model_version_info["use_cases"] = mv.model.use_cases
-        model_version_info["know_limitations"] = mv.model.limitations
-        model_version_info["trade_offs"] = mv.model.trade_offs
-        model_version_info["ethical_implications"] = mv.model.ethics
+        model_version_info["tags"] = str(sorted([t.name for t in mv.tags]))
+        model_version_info["target_audience"] = mv.model.audience or ""
+        model_version_info["use_cases"] = mv.model.use_cases or ""
+        model_version_info["know_limitations"] = mv.model.limitations or ""
+        model_version_info["trade_offs"] = mv.model.trade_offs or ""
+        model_version_info["ethical_implications"] = mv.model.ethics or ""
         model_version_info["metadata"] = {}
-        for k in mv.run_metadata:
-            model_version_info["metadata"][k] = str(mv.run_metadata[k].value)
+        if mv.run_metadata is not None:
+            for k in mv.run_metadata:
+                model_version_info["metadata"][k] = str(
+                    mv.run_metadata[k].value
+                )
         model_version_info["artifacts"] = composed_artifacts
         model_version_info["pipeline_runs"] = pipeline_runs
 
