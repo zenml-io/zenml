@@ -140,7 +140,6 @@ def generate_model_report(model_version_id: str, **kwargs: Any) -> None:
         **kwargs: Keyword arguments to filter models.
     """
     latest_run = str(get_model_version_latest_run(model_version_id))
-    pipeline_spec = get_pipeline_info(latest_run)
     pipeline_run_code = (
         construct_json_response_of_steps_code_from_pipeline_run(latest_run)
     )
@@ -149,6 +148,7 @@ def generate_model_report(model_version_id: str, **kwargs: Any) -> None:
             latest_run
         )
     )
+    pipeline_spec = get_pipeline_info(latest_run)
     model_version_stats = construct_json_response_of_model_version_stats(
         model_version_id
     )
@@ -182,7 +182,7 @@ def generate_model_report(model_version_id: str, **kwargs: Any) -> None:
     console.print(Markdown("# Log Failure Pattern Suggestions:\n\n"))
     console.print(Markdown(log_failure_pattern_suggestions))
     console.print(Markdown("# Model Version Stats:\n\n"))
-    console.print(Markdown(model_version_stats))
+    console.print(Markdown(stats_summary))
 
 
 @model.command("register", help="Register a new model.")

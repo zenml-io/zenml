@@ -62,7 +62,7 @@ def generate_stack_improvement_suggestions(
 def generate_log_failure_pattern_suggestions(
     logs: str, pipeline_spec: str, stack_config: str
 ) -> str:
-    prompt = f"Based on the following pipeline spec, stack config and logs, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Stack Config\n {stack_config}. \n ## Logs:\n {logs}\n\n If there are common failures in logs, then make suggestions for how the user can avoid these failures. Output your suggestions in Markdown markup format."
+    prompt = f"Based on the following pipeline spec, stack config and logs, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Stack Config\n {stack_config}. \n ## Logs:\n {logs}\n\n If there are common failures in logs, then first identity the specific failure patterns, and then (in a separate section) make suggestions for how the user can avoid these failures. Output your suggestions in Markdown markup format."
     return prompt_gemini(prompt)
 
 
