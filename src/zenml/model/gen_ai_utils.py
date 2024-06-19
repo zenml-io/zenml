@@ -1,11 +1,30 @@
+import os
 import litellm
 from litellm import image_generation
 
-litellm.vertex_project = "zenml-core"  # Your Project ID
-litellm.vertex_location = "europe-west4"  # proj location
+from zenml.model.gen_ai_helper import (
+    construct_json_response_of_stack_and_components_from_pipeline_run,
+    construct_json_response_of_steps_code_from_pipeline_run,
+    get_model_version_latest_run,
+    get_pipeline_info,
+)
+from zenml.models.v2.core.model_version import ModelReportType
 
 
 def prompt_gemini(prompt: str) -> str:
+    # Get credentials from the environment
+    vertex_credentials = os.environ.get("VERTEX_CREDENTIALS")
+    vertex_project = os.environ.get("VERTEX_PROJECT", "zenml-core")
+    vertex_location = os.environ.get("VERTEX_LOCATION", "europe-west4")
+
+    kwargs = {}
+    if vertex_credentials:
+        kwargs["credentials"] = vertex_credentials
+    if vertex_project:
+        kwargs["project"] = vertex_project
+    if vertex_location:
+        kwargs["location"] = vertex_location
+
     response = litellm.completion(
         model="gemini-1.5-flash",
         messages=[
@@ -14,6 +33,7 @@ def prompt_gemini(prompt: str) -> str:
                 "content": prompt,
             }
         ],
+        **kwargs,
     )
     return response.choices[0].message.content
 
@@ -64,3 +84,66 @@ def generate_log_failure_pattern_suggestions(
 ) -> str:
     prompt = f"Based on the following pipeline spec, stack config and logs, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Stack Config\n {stack_config}. \n ## Logs:\n {logs}\n\n If there are common failures in logs, then make suggestions for how the user can avoid these failures. Output your suggestions in Markdown markup format."
     return prompt_gemini(prompt)
+
+
+def generate_model_report(
+    report_type: ModelReportType, model_version_id: str
+) -> str:
+    latest_run = get_model_version_latest_run(model_version_id)
+    pipeline_spec = get_pipeline_info(latest_run)
+    pipeline_run_code = (
+        construct_json_response_of_steps_code_from_pipeline_run(latest_run)
+    )
+    stack_config = (
+        construct_json_response_of_stack_and_components_from_pipeline_run(
+            latest_run
+        )
+    )
+    if report_type in [ModelReportType.SUMMARY, ModelReportType.POEM, ModelReportType.ALL]:
+        summary_section = generate_summary_section(
+            pipeline_run_code=pipeline_run_code,
+            stack_config=stack_config,
+            pipeline_spec=pipeline_spec,
+        )
+
+    if report_type in [ModelReportType.POEM, ModelReportType.ALL]:
+        poem = generate_poem(summary_section)
+    if report_type in [ModelReportType.CODE_IMPROVEMENT, ModelReportType.ALL]:
+        code_improvement_suggestions = generate_code_improvement_suggestions(
+            pipeline_spec, pipeline_run_code, stack_config
+        )
+    if report_type in [ModelReportType.STACK_IMPROVEMENT, ModelReportType.ALL]:
+        stack_improvement_suggestions = generate_stack_improvement_suggestions(
+            pipeline_spec, stack_config
+        )
+    if report_type in [ModelReportType.LOG_FAILURE, ModelReportType.ALL]:
+        log_failure_pattern_suggestions = generate_log_failure_pattern_suggestions(
+            pipeline_spec, stack_config, pipeline_run_code
+        )
+
+    if report_type == ModelReportType.SUMMARY:
+        return summary_section
+    if report_type == ModelReportType.POEM:
+        return poem
+    if report_type == ModelReportType.CODE_IMPROVEMENT:
+        return code_improvement_suggestions
+    if report_type == ModelReportType.STACK_IMPROVEMENT:
+        return stack_improvement_suggestions
+    if report_type == ModelReportType.LOG_FAILURE:
+        return log_failure_pattern_suggestions
+    if report_type == ModelReportType.ALL:
+        return "\n".join(
+            [
+                summary_section,
+                "# Poem\n\n",
+                poem,
+                "# Code Improvement Suggestions:\n\n",
+                code_improvement_suggestions,
+                "# Stack Improvement Suggestions:\n\n",
+                stack_improvement_suggestions,
+                "# Log Failure Pattern Suggestions:\n\n",
+                log_failure_pattern_suggestions,
+            ]
+        )
+    
+    raise ValueError(f"Invalid report type: {report_type}")

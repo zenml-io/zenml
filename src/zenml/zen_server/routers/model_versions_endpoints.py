@@ -28,6 +28,7 @@ from zenml.constants import (
     RUNS,
     VERSION_1,
 )
+from zenml.model.gen_ai_utils import generate_model_report
 from zenml.models import (
     ModelVersionArtifactFilter,
     ModelVersionArtifactResponse,
@@ -209,30 +210,14 @@ def create_model_version_report(
     Returns:
         A string representation of the report.
     """
-    from litellm import completion
-
     model_version = zen_store().get_model_version(model_version_id)
 
     verify_permission_for_model(model_version, action=Action.UPDATE)
 
-    # Get credentials from the environment
-    vertex_credentials = os.environ.get("VERTEX_CREDENTIALS")
-    vertex_project = os.environ.get("VERTEX_PROJECT")
-
-    response = completion(
-        model="gemini-1.5-flash",
-        messages=[
-            {
-                "content": "You are a bot that generates machine learning model reports from ZenML metadata.",
-                "role": "system",
-            },
-            {"content": "Hello, what can you do?", "role": "user"},
-        ],
-        vertex_credentials=vertex_credentials,
-        vertex_project=vertex_project,
+    return generate_model_report(
+        report_type=model_report_request.report_type,
+        model_version_id=str(model_version_id),
     )
-
-    return response.choices[0].message.content
 
 
 ##########################

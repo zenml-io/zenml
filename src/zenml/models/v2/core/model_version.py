@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing model versions."""
 
+from tkinter import ALL
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
@@ -32,6 +33,7 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
     from zenml.model.model import Model
@@ -80,17 +82,27 @@ class ModelVersionRequest(WorkspaceScopedRequest):
         default=None,
     )
 
+
+class ModelReportType(StrEnum):
+    SUMMARY = "summary"
+    POEM = "poem"
+    CODE_IMPROVEMENT = "code_improvement"
+    STACK_IMPROVEMENT = "stack_improvement"
+    LOG_FAILURE = "log_failure"
+    ALL = "all"
+
+
 class ModelVersionReportRequest(BaseModel):
     """Model for model version report requests."""
 
-    report_type: str = Field(
+    report_type: ModelReportType = Field(
         description="The type of the report to generate",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     report_format: str = Field(
         description="The format of the report to generate",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+
 
 # ------------------ Update Model ------------------
 
