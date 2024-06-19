@@ -267,7 +267,7 @@ def get_failing_steps_for_runs(model_version_id: str) -> Dict[str, str]:
                 failing_step_details = {}
                 if str(step.status) == "failed":
                     failing_step_details["id"] = step.id
-                    try:
+                    if step.logs is not None:
                         failing_step_details["logs"] = fetch_logs(
                             zen_store=Client().zen_store,
                             artifact_store_id=run.stack.components[
@@ -275,14 +275,13 @@ def get_failing_steps_for_runs(model_version_id: str) -> Dict[str, str]:
                             ][0].id,
                             logs_uri=step.logs.uri,
                         )
-                    except Exception:
-                        failing_step_details["logs"] = "No logs available"
                     failing_step_details["code"] = get_step_code_reference(
                         step
                     )
                     failing_step_details["stack"] = (
                         get_stack_and_components_for_run(run_id)
                     )
-                    if step.name in failing_steps.keys():
-                        failing_steps[step.name].append(failing_step_details)
+                if step.name not in failing_steps.keys():
+                    failing_steps[step.name] = [failing_step_details]
+                failing_steps[step.name].append(failing_step_details)
     return failing_steps
