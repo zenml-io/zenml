@@ -266,7 +266,7 @@ def get_failing_steps_for_runs(model_version_id: str) -> Dict[str, str]:
             for step in steps:
                 failing_step_details = {}
                 if str(step.status) == "failed":
-                    failing_step_details["id"] = step.id
+                    failing_step_details["id"] = str(step.id)
                     if step.logs is not None:
                         failing_step_details["logs"] = fetch_logs(
                             zen_store=Client().zen_store,
@@ -285,3 +285,19 @@ def get_failing_steps_for_runs(model_version_id: str) -> Dict[str, str]:
                     failing_steps[step.name] = [failing_step_details]
                 failing_steps[step.name].append(failing_step_details)
     return failing_steps
+
+# Construct a JSON response of the failing steps for the runs
+def construct_json_response_of_failing_steps_for_runs(
+    model_version_id: str,
+) -> str:
+    """Construct a JSON response of the failing steps for the runs.
+
+    Args:
+        model_version_id (str): The model version ID.
+
+    Returns:
+        str: The JSON response of the failing steps for the runs.
+    """
+    failing_steps = get_failing_steps_for_runs(model_version_id)
+    response = json.dumps(failing_steps)
+    return response
