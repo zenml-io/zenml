@@ -51,6 +51,11 @@ def extract_prompts(
     versions: List[Model] = []
 
     if model_version_ids:
+        if len(model_version_ids) > 10:
+            raise HTTPException(
+                status_code=422,
+                detail="Too many model versions selected, please select less than 10.",
+            )
         for id_ in model_version_ids:
             model_version = (
                 zen_store()
