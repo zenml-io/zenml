@@ -54,6 +54,7 @@ from zenml.zen_server.routers import (
     pipeline_deployments_endpoints,
     pipelines_endpoints,
     plugin_endpoints,
+    report_endpoints,
     run_metadata_endpoints,
     runs_endpoints,
     schedule_endpoints,
@@ -299,6 +300,7 @@ app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(webhook_endpoints.router)
 app.include_router(workspaces_endpoints.router)
+app.include_router(report_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.

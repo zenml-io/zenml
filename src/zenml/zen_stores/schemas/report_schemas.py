@@ -12,10 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 from datetime import datetime
-from typing import Any, List
+from typing import Any, Optional
 from uuid import UUID
 
+from pydantic import ConfigDict
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlmodel import Field, Relationship
+
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
     ReportRequest,
     ReportResponse,
@@ -25,17 +32,38 @@ from zenml.models import (
     ReportUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class ReportSchema(BaseSchema, table=True):
     __tablename__ = "report"
 
-    content: str
+    content: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
     persona: str
     modified: bool
 
     model_id: UUID
-    model_version_ids: List[UUID]
+    model_version_ids: str
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship()
+
+    model_config = ConfigDict(protected_namespaces=())
 
     @classmethod
     def from_request(
@@ -48,7 +76,9 @@ class ReportSchema(BaseSchema, table=True):
             persona=request.persona,
             modified=False,
             model_id=request.model_id,
-            model_version_ids=request.model_version_ids,
+            model_version_ids=json.dumps(
+                [str(id_) for id_ in request.model_version_ids]
+            ),
             created=now,
             updated=now,
         )
@@ -71,8 +101,13 @@ class ReportSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             content=self.content,
+            persona=self.persona,
+            modified=self.modified,
             model_id=self.model_id,
-            model_version_ids=self.model_version_ids,
+            model_version_ids=[
+                UUID(id_) for id_ in json.loads(self.model_version_ids)
+            ],
+            user=self.user.to_model() if self.user else None,
         )
 
         return ReportResponse(

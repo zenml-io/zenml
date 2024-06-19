@@ -60,6 +60,8 @@ class ReportResponseBody(UserScopedResponseBody):
     model_id: UUID
     model_version_ids: List[UUID]
 
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
 
 class ReportResponseMetadata(UserScopedResponseMetadata):
     pass
