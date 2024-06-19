@@ -898,6 +898,8 @@ class Model(BaseModel):
         model_version_info: Dict[str, Any] = {}
         model_version_info["model_name"] = mv.model.name
         model_version_info["version"] = mv.name or ""
+        if mv.stage != "none":
+            model_version_info["version"] += f"[{mv.stage}]"
         model_version_info["description"] = mv.description or ""
         model_version_info["updated"] = str(mv.updated.date())
         model_version_info["tags"] = str(sorted([t.name for t in mv.tags]))

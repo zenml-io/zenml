@@ -18,7 +18,7 @@ import os
 from typing import Any, AsyncIterator, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, HTTPException, Security
 from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
@@ -26,6 +26,7 @@ from zenml.constants import (
     ASSISTANT,
     VERSION_1,
 )
+from zenml.enums import ModelStages
 from zenml.model.model import Model
 from zenml.models.v2.core.model_version import ModelVersionFilter
 from zenml.zen_server.auth import AuthContext, authorize
@@ -41,16 +42,33 @@ assistant_router = APIRouter(
 )
 
 
-@assistant_router.post("/compare-model-versions")
-async def compare_model_versions(
-    model_id: Optional[UUID],
-    model_version_ids: List[UUID],
+@assistant_router.post(
+    "/compare-model-versions",
+)
+def compare_model_versions(
+    model_id: Optional[UUID] = None,
+    model_version_ids: List[UUID] = [],
     persona: str = "",
     _: AuthContext = Security(authorize),
 ) -> StreamingResponse:
+    """Compare model versions using LLM assistant.
+
+    Args:
+        model_id: ID of the model to compare.
+        model_version_ids: IDs of the model versions to compare.
+        persona: The persona of the LLM assistant.
+
+    Returns:
+        The LLM assistant streaming response.
+
+    Raises:
+        HTTPException: If no model id is provided and no model versions are selected,
+            or too few versions found for comparison.
+    """
     # Fetch model versions, prepare data for LLM
     versions: List[Model] = []
-    if not model_version_ids:
+
+    if model_version_ids:
         for id_ in model_version_ids:
             model_version = (
                 zen_store()
@@ -59,23 +77,51 @@ async def compare_model_versions(
             )
             versions.append(model_version)
             if model_id and model_version.model_id != model_id:
-                raise ValueError("Versions don't belong to same model")
+                raise HTTPException(
+                    status_code=422,
+                    detail="Versions don't belong to same model",
+                )
             elif not model_id:
                 model_id = model_version.model_id
     else:
         if not model_id:
-            raise ValueError(
-                "No model id provided and no model versions selected."
+            raise HTTPException(
+                status_code=422,
+                detail="No model id provided and no model versions selected.",
             )
-        versions = [
-            mv.to_model_class()
-            for mv in zen_store()
+        versions = []
+        for stage in [
+            ModelStages.PRODUCTION,
+            ModelStages.STAGING,
+        ]:
+            if (
+                items := zen_store()
+                .list_model_versions(
+                    model_name_or_id=model_id,
+                    model_version_filter_model=ModelVersionFilter(stage=stage),
+                )
+                .items
+            ):
+                versions.append(items[0].to_model_class())
+        if (
+            items := zen_store()
             .list_model_versions(
                 model_name_or_id=model_id,
-                model_version_filter_model=ModelVersionFilter(size=5),
+                model_version_filter_model=ModelVersionFilter(
+                    size=1, sort_by="desc:created"
+                ),
             )
             .items
-        ]
+        ):
+            if items[0].id not in [
+                model_version.id for model_version in versions
+            ]:
+                versions.append(items[0].to_model_class())
+    if len(versions) < 2:
+        raise HTTPException(
+            status_code=422,
+            detail="Not enough model versions to compare, try selecting more.",
+        )
 
     from litellm import completion
     from litellm.types.utils import ModelResponse, StreamingChoices
