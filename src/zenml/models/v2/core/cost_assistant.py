@@ -38,15 +38,58 @@ class CostAssistantRequest(BaseRequest):
         title="The context to pass to the assistant.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-
+    orchestrator: str = Field(
+        default="",
+        title="The orchestrator to pass to the assistant.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    duration_minutes: str = Field(
+        default="60",
+        title="The duration to pass to the assistant.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    duration_minutes: str = Field(
+        default="60",
+        title="The duration to pass to the assistant.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    gpu_type: str = Field(
+        default="",
+        title="The type of GPU used.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    gpu_amount: str = Field(
+        default="",
+        title="The amount of GPUs used.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    cpu: str = Field(
+        default="",
+        title="The number of CPUs.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    memory: str = Field(
+        default="",
+        title="How much memory.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    location: str = Field(
+        default="us-east-1",
+        title="The location of the run.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    instance_type: str = Field(
+        default="n1-standard-4",
+        title="The instance type of the run.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 # ------------------ Response Model ------------------
 
 
 class CostAssistantResponse(BaseResponseBody):
     """ResponseBody for the assistant call."""
 
-    response: str = Field(
+    cost: str = Field(
         title="The assistant response.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
