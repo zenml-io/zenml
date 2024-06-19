@@ -387,12 +387,15 @@ class PluginSubType(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     # Assistant Subtypes
     EXAMPLE = "example"
+    # Assistant Subtypes
+    LOGS = "logs"
 
 
 class AssistantEntityType(StrEnum):
     """All possible types of Plugins."""
 
-    # Event Source Subtypes
     STEP = "step"
-    # Action Subtypes
+    STEP_RUN = "step_run"
+    PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
+    LOGS = "logs"
