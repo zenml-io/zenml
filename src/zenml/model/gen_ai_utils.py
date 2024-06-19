@@ -38,17 +38,17 @@ def prompt_gemini(prompt: str) -> str:
     return response.choices[0].message.content
 
 
-# TODO: requires a east-US deployment of dall-e
-def generate_image(prompt: str) -> str:
-    response = image_generation(
-        model="azure/dall-e-3",
-        api_base="https://zentestgpt4.openai.azure.com/",
-        api_version="2024-05-01-preview",
-        prompt=prompt,
-        api_key="9e696febb07e40619101a9184a6ccec6",
-    )
+# # TODO: requires a east-US deployment of dall-e
+# def generate_image(prompt: str) -> str:
+#     response = image_generation(
+#         model="azure/dall-e-3",
+#         api_base="https://zentestgpt4.openai.azure.com/",
+#         api_version="2024-05-01-preview",
+#         prompt=prompt,
+#         api_key="9e696febb07e40619101a9184a6ccec6",
+#     )
 
-    print(response)
+#     print(response)
 
 
 def generate_summary_section(
@@ -86,6 +86,11 @@ def generate_log_failure_pattern_suggestions(
     return prompt_gemini(prompt)
 
 
+def generate_stats_summary(stats: str) -> str:
+    prompt = f"Generate a summary of the following stats and metadata (provided as a JSON string here: {stats}). Generate the section using Markdown formatting and feel free to use tables if you feel they are appropriate."
+    return prompt_gemini(prompt)
+
+
 def generate_model_report(
     report_type: ModelReportType, model_version_id: str
 ) -> str:
@@ -99,7 +104,11 @@ def generate_model_report(
             latest_run
         )
     )
-    if report_type in [ModelReportType.SUMMARY, ModelReportType.POEM, ModelReportType.ALL]:
+    if report_type in [
+        ModelReportType.SUMMARY,
+        ModelReportType.POEM,
+        ModelReportType.ALL,
+    ]:
         summary_section = generate_summary_section(
             pipeline_run_code=pipeline_run_code,
             stack_config=stack_config,
@@ -117,8 +126,10 @@ def generate_model_report(
             pipeline_spec, stack_config
         )
     if report_type in [ModelReportType.LOG_FAILURE, ModelReportType.ALL]:
-        log_failure_pattern_suggestions = generate_log_failure_pattern_suggestions(
-            pipeline_spec, stack_config, pipeline_run_code
+        log_failure_pattern_suggestions = (
+            generate_log_failure_pattern_suggestions(
+                pipeline_spec, stack_config, pipeline_run_code
+            )
         )
 
     if report_type == ModelReportType.SUMMARY:
@@ -145,5 +156,5 @@ def generate_model_report(
                 log_failure_pattern_suggestions,
             ]
         )
-    
+
     raise ValueError(f"Invalid report type: {report_type}")
