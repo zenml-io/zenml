@@ -14,6 +14,7 @@
 import sys
 
 from zenml.model.gen_ai_helper import (
+    construct_json_response_of_failing_steps_for_runs,
     construct_json_response_of_model_version_stats,
     construct_json_response_of_stack_and_components_from_pipeline_run,
     construct_json_response_of_steps_code_from_pipeline_run,
@@ -42,7 +43,7 @@ def main(model_version_id: str):  # noqa: D103
     )
     print(model_version_stats)
     # Get the failing steps for the runs
-    failing_steps = get_failing_steps_for_runs(model_version_id)
+    failing_steps = construct_json_response_of_failing_steps_for_runs(model_version_id)
     print(failing_steps)
 
 
