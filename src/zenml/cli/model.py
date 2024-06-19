@@ -158,7 +158,7 @@ def generate_model_report_cmd(
         model_version_id=model_version_id,
     )
 
-    console.print(report)
+    console.print(Markdown(report))
 
 
 @model.command("register", help="Register a new model.")
