@@ -16,13 +16,16 @@
 from typing import Any, Dict, List, Optional
 
 import click
+from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
+from zenml.model.gen_ai_utils import generate_poem, generate_summary_section
 from zenml.models import (
     ModelFilter,
     ModelResponse,
@@ -107,6 +110,50 @@ def list_models(**kwargs: Any) -> None:
     for model in models:
         to_print.append(_model_to_print(model))
     cli_utils.print_table(to_print)
+
+
+from hackathon.main import (
+    construct_json_response_of_stack_and_components_from_pipeline_run,
+    construct_json_response_of_steps_code_from_pipeline_run,
+    get_model_version_latest_run,
+    get_pipeline_info,
+)
+
+
+@cli_utils.list_options(ModelFilter)
+@model.command("report", help="Generate a report about a model.")
+@click.argument(
+    "model_id",
+)
+def generate_model_report(model_id: str, **kwargs: Any) -> None:
+    """Generate a report about a model.
+
+    Args:
+        model_id: The ID of the model.
+        **kwargs: Keyword arguments to filter models.
+    """
+    latest_run = get_model_version_latest_run(model_id)
+    pipeline_spec = get_pipeline_info(latest_run)
+    pipeline_run_code = (
+        construct_json_response_of_steps_code_from_pipeline_run(latest_run)
+    )
+    stack_config = (
+        construct_json_response_of_stack_and_components_from_pipeline_run(
+            latest_run
+        )
+    )
+    summary_section = generate_summary_section(
+        pipeline_run_code=pipeline_run_code,
+        stack_config=stack_config,
+        pipeline_spec=pipeline_spec,
+    )
+    poem = generate_poem(summary_section)
+
+    summary_section_md = Markdown(summary_section)
+    console.print(summary_section_md)
+    console.print(Markdown("# Poem:\n\n"))
+    console.print(poem)
+    # console.print(generate_image("cute baby otter"))
 
 
 @model.command("register", help="Register a new model.")
