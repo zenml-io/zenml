@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, AsyncIterator, Dict, List
+from typing import Any, AsyncIterator, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Security
@@ -27,6 +27,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.model.model import Model
+from zenml.models.v2.core.model_version import ModelVersionFilter
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -42,25 +43,39 @@ assistant_router = APIRouter(
 
 @assistant_router.post("/compare-model-versions")
 async def compare_model_versions(
+    model_id: Optional[UUID],
     model_version_ids: List[UUID],
     persona: str = "",
     _: AuthContext = Security(authorize),
 ) -> StreamingResponse:
-    # Fetch model versions, prepare data
-
-    model_id = None
+    # Fetch model versions, prepare data for LLM
     versions: List[Model] = []
-    for id_ in model_version_ids:
-        model_version = (
-            zen_store()
-            .get_model_version(model_version_id=id_)
-            .to_model_class()
-        )
-        versions.append(model_version)
-        if model_id and model_version.model_id != model_id:
-            raise ValueError("Versions don't belong to same model")
-        elif not model_id:
-            model_id = model_version.model_id
+    if not model_version_ids:
+        for id_ in model_version_ids:
+            model_version = (
+                zen_store()
+                .get_model_version(model_version_id=id_)
+                .to_model_class()
+            )
+            versions.append(model_version)
+            if model_id and model_version.model_id != model_id:
+                raise ValueError("Versions don't belong to same model")
+            elif not model_id:
+                model_id = model_version.model_id
+    else:
+        if not model_id:
+            raise ValueError(
+                "No model id provided and no model versions selected."
+            )
+        versions = [
+            mv.to_model_class()
+            for mv in zen_store()
+            .list_model_versions(
+                model_name_or_id=model_id,
+                model_version_filter_model=ModelVersionFilter(size=5),
+            )
+            .items
+        ]
 
     from litellm import completion
     from litellm.types.utils import ModelResponse, StreamingChoices
