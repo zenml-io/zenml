@@ -377,7 +377,7 @@ from zenml.models.v2.core.server_settings import (
     ServerSettingsResponseMetadata,
     ServerSettingsUpdate,
 )
-from zenml.models.v2.core.report_models import ReportRequest, ReportUpdate, ReportResponseBody, ReportResponseMetadata, ReportResponseResources, ReportResponse
+from zenml.models.v2.core.report import ReportRequest, ReportUpdate, ReportResponseBody, ReportResponseMetadata, ReportResponseResources, ReportResponse, ReportFilter
 
 # ----------------------------- Forward References -----------------------------
 
@@ -712,5 +712,9 @@ __all__ = [
     "OAuthTokenResponse",
     "ReportResponseBody",
     "ReportResponseMetadata",
-    "ReportResponseResources"
+    "ReportResponseResources",
+    "ReportRequest",
+    "ReportUpdate",
+    "ReportFilter",
+    "ReportResponse"
 ]

@@ -204,6 +204,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ReportFilter,
     ReportRequest,
     ReportResponse,
     ReportUpdate,
@@ -9817,9 +9818,18 @@ class SqlZenStore(BaseZenStore):
 
     def list_reports(
         self,
+        filter_model: ReportFilter,
         hydrate: bool = False,
     ) -> Page[ReportResponse]:
-        pass
+        with Session(self.engine) as session:
+            query = select(ReportSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ReportSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
 
     def update_report(
         self,

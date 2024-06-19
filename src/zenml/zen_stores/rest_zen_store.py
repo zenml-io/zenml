@@ -177,6 +177,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ReportFilter,
     ReportRequest,
     ReportResponse,
     ReportUpdate,
@@ -4228,14 +4229,23 @@ class RestZenStore(BaseZenStore):
         self, report_id: UUID, hydrate: bool = True
     ) -> ReportResponse:
         return self._get_resource(
-            resource_id=report_id, route=REPORTS, response_model=ReportResponse
+            resource_id=report_id,
+            route=REPORTS,
+            response_model=ReportResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_reports(
         self,
+        filter_model: ReportFilter,
         hydrate: bool = False,
     ) -> Page[ReportResponse]:
-        pass
+        return self._list_paginated_resources(
+            route=REPORTS,
+            response_model=ReportResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
 
     def update_report(
         self,

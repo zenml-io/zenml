@@ -82,6 +82,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ReportFilter,
     ReportRequest,
     ReportResponse,
     ReportUpdate,
@@ -2879,6 +2880,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_reports(
         self,
+        filter_model: ReportFilter,
         hydrate: bool = False,
     ) -> Page[ReportResponse]:
         pass

@@ -15,7 +15,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -24,6 +24,7 @@ from zenml.constants import (
 )
 from zenml.models import (
     Page,
+    ReportFilter,
     ReportRequest,
     ReportResponse,
     ReportUpdate,
@@ -32,6 +33,7 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
+    make_dependable,
     zen_store,
 )
 
@@ -64,10 +66,11 @@ def create_report(
 )
 @handle_exceptions
 def list_reports(
+    filter_model: ReportFilter = Depends(make_dependable(ReportFilter)),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ReportResponse]:
-    return zen_store().list_reports(hydrate=hydrate)
+    return zen_store().list_reports(filter_model=filter_model, hydrate=hydrate)
 
 
 @router.get(

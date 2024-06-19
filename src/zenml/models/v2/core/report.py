@@ -18,6 +18,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.scoped import (
     UserScopedRequest,
     UserScopedResponse,
@@ -87,3 +88,26 @@ class ReportResponse(
     @property
     def content(self) -> str:
         return self.get_body().content
+
+    @property
+    def persona(self) -> str:
+        return self.get_body().persona
+
+    @property
+    def modified(self) -> bool:
+        return self.get_body().modified
+
+    @property
+    def model_id(self) -> UUID:
+        return self.get_body().model_id
+
+    @property
+    def model_version_ids(self) -> List[UUID]:
+        return self.get_body().model_version_ids
+
+
+# ------------------ Filter Model ------------------
+
+
+class ReportFilter(BaseFilter):
+    pass
