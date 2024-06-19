@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Security
@@ -43,31 +43,11 @@ assistant_router = APIRouter(
 )
 
 
-@assistant_router.post(
-    "/compare-model-versions",
-)
-def compare_model_versions(
+def extract_prompts(
     model_id: Optional[UUID] = None,
     model_version_ids: List[UUID] = [],
     persona: str = "",
-    auth_context: AuthContext = Security(authorize),
-) -> StreamingResponse:
-    """Compare model versions using LLM assistant.
-
-    Args:
-        model_id: ID of the model to compare.
-        model_version_ids: IDs of the model versions to compare.
-        persona: The persona of the LLM assistant.
-        auth_context: Auth context.
-
-    Returns:
-        The LLM assistant streaming response.
-
-    Raises:
-        HTTPException: If no model id is provided and no model versions are selected,
-            or too few versions found for comparison.
-    """
-    # Fetch model versions, prepare data for LLM
+) -> Tuple[List[Model], str, str]:
     versions: List[Model] = []
 
     if model_version_ids:
@@ -125,9 +105,6 @@ def compare_model_versions(
             detail="Not enough model versions to compare, try selecting more.",
         )
 
-    from litellm import completion
-    from litellm.types.utils import ModelResponse, StreamingChoices
-
     extracted_infos: List[Dict[str, Any]] = []
     for mv in versions:
         extracted_infos.append(mv._get_details_for_llm(is_all=True))
@@ -165,6 +142,40 @@ def compare_model_versions(
     query_pipelines = prompt_pipelines
     for info in extracted_infos:
         query_pipelines += f"\n\n\"{info['model_name']}/{info['version']}\". {json.dumps(info['pipeline_runs'])}"
+
+    return versions, query_metadata, query_pipelines
+
+
+@assistant_router.post(
+    "/compare-model-versions",
+)
+def compare_model_versions(
+    model_id: Optional[UUID] = None,
+    model_version_ids: List[UUID] = [],
+    persona: str = "",
+    auth_context: AuthContext = Security(authorize),
+) -> StreamingResponse:
+    """Compare model versions using LLM assistant.
+
+    Args:
+        model_id: ID of the model to compare.
+        model_version_ids: IDs of the model versions to compare.
+        persona: The persona of the LLM assistant.
+        auth_context: Auth context.
+
+    Returns:
+        The LLM assistant streaming response.
+
+    Raises:
+        HTTPException: If no model id is provided and no model versions are selected,
+            or too few versions found for comparison.
+    """
+    versions, query_metadata, query_pipelines = extract_prompts(
+        model_id=model_id, model_version_ids=model_version_ids, persona=persona
+    )
+
+    from litellm import completion
+    from litellm.types.utils import ModelResponse, StreamingChoices
 
     async def _iterator(
         queries: List[List[str]],
@@ -219,3 +230,74 @@ def compare_model_versions(
         ),
         media_type="text/event-stream",
     )
+
+
+@assistant_router.post(
+    "/compare-model-versions-sync",
+)
+def compare_model_versions_sync(
+    model_id: Optional[UUID] = None,
+    model_version_ids: List[UUID] = [],
+    persona: str = "",
+    auth_context: AuthContext = Security(authorize),
+) -> str:
+    """Compare model versions using LLM assistant.
+
+    Args:
+        model_id: ID of the model to compare.
+        model_version_ids: IDs of the model versions to compare.
+        persona: The persona of the LLM assistant.
+        auth_context: Auth context.
+
+    Returns:
+        The LLM assistant streaming response.
+
+    Raises:
+        HTTPException: If no model id is provided and no model versions are selected,
+            or too few versions found for comparison.
+    """
+    versions, query_metadata, query_pipelines = extract_prompts(
+        model_id=model_id, model_version_ids=model_version_ids, persona=persona
+    )
+
+    from litellm import completion
+    from litellm.types.utils import Choices, ModelResponse
+
+    result = ""
+    queries = [
+        ["Metadata analysis", query_metadata],
+        ["Usage analysis", query_pipelines],
+    ]
+    is_very_first = True
+
+    for header, query in queries:
+        response = completion(
+            model="azure/gpt-35-turbo",
+            api_base="https://zentestgpt4.openai.azure.com/",
+            api_version="2024-05-01-preview",
+            api_key=os.getenv("OPENAI_API_KEY"),
+            messages=[{"content": query, "role": "user"}],
+            max_tokens=4096,
+            stream=False,
+        )
+        if is_very_first:
+            is_very_first = False
+            result += f"# {header}\n\n"
+        else:
+            result += f"\n\n# {header}\n\n"
+
+        if isinstance(response, ModelResponse):
+            if isinstance(response.choices[0], Choices):
+                if content := response.choices[0].message.content:
+                    result += str(content)
+
+    report_request = ReportRequest(
+        user=auth_context.user.id,
+        content=result,
+        persona=persona,
+        model_id=versions[0].model_id,
+        model_version_ids=[version.model_version_id for version in versions],
+    )
+    zen_store().create_report(report_request)
+
+    return result
