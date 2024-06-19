@@ -45,6 +45,7 @@ from zenml.zen_server.routers import (
     assistant_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
+    cost_assistant_endpoints,
     devices_endpoints,
     event_source_endpoints,
     flavors_endpoints,
@@ -308,6 +309,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 # If the server config contains
 if server_config().assistant_enabled:
     app.include_router(assistant_endpoints.assistant_router)
+    app.include_router(cost_assistant_endpoints.assistant_router)
 
 
 def get_root_static_files() -> List[str]:

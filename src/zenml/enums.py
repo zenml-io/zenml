@@ -376,6 +376,7 @@ class PluginType(StrEnum):
     EVENT_SOURCE = "event_source"
     ACTION = "action"
     ASSISTANT = "assistant"
+    COST_ASSISTANT = "cost_assistant"
 
 
 class PluginSubType(StrEnum):
@@ -387,3 +388,4 @@ class PluginSubType(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     # Assistant Subtypes
     EXAMPLE = "example"
+    COST_ASSISTANT = "cost_assistant"
