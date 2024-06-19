@@ -25,7 +25,7 @@ from zenml.console import console
 from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.model.gen_ai_utils import generate_summary_section
+from zenml.model.gen_ai_utils import generate_poem, generate_summary_section
 from zenml.models import (
     ModelFilter,
     ModelResponse,
@@ -140,13 +140,16 @@ def generate_model_report(model_id: str, **kwargs: Any) -> None:
             latest_run
         )
     )
-    summary_section = Markdown(
-        generate_summary_section(
-            pipeline_run_code=pipeline_run_code,
-            stack_config=stack_config,
-        )
+    summary_section = generate_summary_section(
+        pipeline_run_code=pipeline_run_code,
+        stack_config=stack_config,
     )
-    console.print(summary_section)
+    poem = generate_poem(summary_section)
+
+    summary_section_md = Markdown(summary_section)
+    console.print(summary_section_md)
+    console.print("\n\n# Poem:\n\n")
+    console.print(poem)
     # console.print(generate_image("cute baby otter"))
 
 

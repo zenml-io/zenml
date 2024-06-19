@@ -33,6 +33,11 @@ def generate_image(prompt: str) -> str:
 
 def generate_summary_section(pipeline_run_code: str, stack_config: str) -> str:
     """Generate a summary section for a model."""
-    prompt = f"Write a report (formatted as Markdown markup) that summarises the following code: ##Pipeline Code (made up of step functions that are part of a pipeline)\n{pipeline_run_code}\n\n ## Stack Config\nThis code is run on the following stack: \n{stack_config}. Please write a brief overview section followed by sections on the code (i.e. how it works) and the stack on which it's run."
+    prompt = f"Write a report (formatted as Markdown markup) that summarises the following code: ##Pipeline Code (made up of step functions that are part of a pipeline)\n{pipeline_run_code}\n\n ## Stack Config\nThis code is run on the following stack: \n{stack_config}. Please write a brief overview section (explaining a summary of what the pipeline is doing) followed by sections on the code (i.e. how it works) and the stack on which it's run. There's no need for a conclusion section."
 
+    return prompt_gemini(prompt)
+
+
+def generate_poem(summary_section: str) -> str:
+    prompt = f"Write a short and delightful poem that is 5 lines long that is based on the following summary section: {summary_section}. Feel free to be creative! Please output the poem text as Markdown with newlines included in the markup."
     return prompt_gemini(prompt)
