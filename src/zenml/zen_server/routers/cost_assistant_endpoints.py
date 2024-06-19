@@ -22,7 +22,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PluginType
-from zenml.models.v2.core.assistant import AssistantRequest, AssistantResponse
+from zenml.models.v2.core.assistant import CostAssistantRequest, CostAssistantResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -42,14 +42,14 @@ assistant_router = APIRouter(
 
 @assistant_router.post(
     "",
-    response_model=AssistantResponse,
+    response_model=CostAssistantResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def make_assistant_call(
-    assistant: AssistantRequest,
+    assistant: CostAssistantRequest,
     _: AuthContext = Security(authorize),
-) -> AssistantResponse:
+) -> CostAssistantResponse:
     """Makes call to the assistant.
 
     Args:
@@ -63,7 +63,7 @@ def make_assistant_call(
     """
     assistant_handler = plugin_flavor_registry().get_plugin(
         name=assistant.flavor,
-        _type=PluginType.ASSISTANT,
+        _type=PluginType.COST_ASSISTANT,
         subtype=assistant.plugin_subtype,
     )
 

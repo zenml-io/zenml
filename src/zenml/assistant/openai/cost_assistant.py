@@ -22,7 +22,7 @@ from zenml.assistant.base_assistant import (
     BaseAssistantHandler,
 )
 from zenml.logger import get_logger
-from zenml.models.v2.core.assistant import AssistantRequest, AssistantResponse
+from zenml.models.v2.core.cost_assistant import CostAssistantResponse, CostAssistantRequest
 
 logger = get_logger(__name__)
 
@@ -40,8 +40,8 @@ class CostAssistantHandler(BaseAssistantHandler, ABC):
 
     @abstractmethod
     def make_assistant_call(
-        self, assistant_request: AssistantRequest
-    ) -> AssistantResponse:
+        self, assistant_request: CostAssistantRequest
+    ) -> CostAssistantResponse:
         """Make call to assistant backend.
 
         Args:
