@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for models."""
 
+import os
 from typing import Union
 from uuid import UUID
 
@@ -33,6 +34,7 @@ from zenml.models import (
     ModelVersionFilter,
     ModelVersionPipelineRunFilter,
     ModelVersionPipelineRunResponse,
+    ModelVersionReportRequest,
     ModelVersionResponse,
     ModelVersionUpdate,
 )
@@ -185,6 +187,52 @@ def delete_model_version(
     model_version = zen_store().get_model_version(model_version_id)
     verify_permission_for_model(model_version, action=Action.DELETE)
     zen_store().delete_model_version(model_version_id)
+
+
+@router.post(
+    "/{model_version_id}/reports",
+    response_model=str,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_report(
+    model_version_id: UUID,
+    model_report_request: ModelVersionReportRequest,
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get all model versions by filter.
+
+    Args:
+        model_version_id: The ID of model version to be updated.
+        model_report_request: The model version report request.
+
+    Returns:
+        A string representation of the report.
+    """
+    from litellm import completion
+
+    model_version = zen_store().get_model_version(model_version_id)
+
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
+    # Get credentials from the environment
+    vertex_credentials = os.environ.get("VERTEX_CREDENTIALS")
+    vertex_project = os.environ.get("VERTEX_PROJECT")
+
+    response = completion(
+        model="gemini-1.5-flash",
+        messages=[
+            {
+                "content": "You are a bot that generates machine learning model reports from ZenML metadata.",
+                "role": "system",
+            },
+            {"content": "Hello, what can you do?", "role": "user"},
+        ],
+        vertex_credentials=vertex_credentials,
+        vertex_project=vertex_project,
+    )
+
+    return response.choices[0].message.content
 
 
 ##########################

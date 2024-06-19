@@ -80,6 +80,17 @@ class ModelVersionRequest(WorkspaceScopedRequest):
         default=None,
     )
 
+class ModelVersionReportRequest(BaseModel):
+    """Model for model version report requests."""
+
+    report_type: str = Field(
+        description="The type of the report to generate",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    report_format: str = Field(
+        description="The format of the report to generate",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 # ------------------ Update Model ------------------
 
