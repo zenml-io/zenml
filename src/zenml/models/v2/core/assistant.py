@@ -69,7 +69,7 @@ class AssistantResponse(BaseResponseBody):
 
     response: str = Field(
         title="The assistant response.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
     links: List[LinkResponse] = Field(
         default=[],
