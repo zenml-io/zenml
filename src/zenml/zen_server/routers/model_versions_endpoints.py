@@ -55,6 +55,10 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
 #################
 # Model Versions
 #################
@@ -210,6 +214,9 @@ def create_model_version_report(
     Returns:
         A string representation of the report.
     """
+    logger.debug(
+        f"Creating {model_report_request} report for model version {model_version_id}"
+    )
     model_version = zen_store().get_model_version(model_version_id)
 
     verify_permission_for_model(model_version, action=Action.UPDATE)

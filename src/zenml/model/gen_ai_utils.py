@@ -22,16 +22,15 @@ def prompt_gemini(prompt: str) -> str:
 
     kwargs = {}
     if vertex_credentials:
-        kwargs["credentials"] = vertex_credentials
+        kwargs["vertex_credentials"] = vertex_credentials
     if vertex_project:
-        kwargs["project"] = vertex_project
+        kwargs["vertex_project"] = vertex_project
     else:
         litellm.vertex_project = "zenml-core"
     if vertex_location:
-        kwargs["location"] = vertex_location
+        kwargs["vertex_location"] = vertex_location
     else:
         litellm.vertex_location = "europe-west4"
-    
 
     response = litellm.completion(
         model="gemini-1.5-flash",
@@ -136,8 +135,10 @@ def generate_model_report(
         )
     if report_type in [ModelReportType.LOG_FAILURE, ModelReportType.ALL]:
         logs = get_failing_steps_for_runs(model_version_id)
-        log_failure_pattern_suggestions = generate_log_failure_pattern_suggestions(
-            logs, stack_config, pipeline_run_code
+        log_failure_pattern_suggestions = (
+            generate_log_failure_pattern_suggestions(
+                logs, stack_config, pipeline_run_code
+            )
         )
 
     if report_type in [ModelReportType.STATS_SUMMARY, ModelReportType.ALL]:
@@ -156,6 +157,8 @@ def generate_model_report(
         return stack_improvement_suggestions
     if report_type == ModelReportType.LOG_FAILURE:
         return log_failure_pattern_suggestions
+    if report_type == ModelReportType.STATS_SUMMARY:
+        return stats_summary
     if report_type == ModelReportType.ALL:
         return "\n".join(
             [
