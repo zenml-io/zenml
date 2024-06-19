@@ -118,7 +118,7 @@ def list_models(**kwargs: Any) -> None:
     cli_utils.print_table(to_print)
 
 
-from hackathon.main import (
+from zenml.model.gen_ai_helper import (
     construct_json_response_of_stack_and_components_from_pipeline_run,
     construct_json_response_of_steps_code_from_pipeline_run,
     get_model_version_latest_run,
