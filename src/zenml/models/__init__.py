@@ -165,6 +165,7 @@ from zenml.models.v2.core.model import (
 from zenml.models.v2.core.model_version import (
     ModelVersionResponse,
     ModelVersionRequest,
+    ModelVersionReportRequest,
     ModelVersionResponseBody,
     ModelVersionResponseMetadata,
     ModelVersionFilter,
@@ -539,6 +540,7 @@ __all__ = [
     "ModelUpdate",
     "ModelVersionFilter",
     "ModelVersionRequest",
+    "ModelVersionReportRequest",
     "ModelVersionResponse",
     "ModelVersionResponseBody",
     "ModelVersionResponseMetadata",
