@@ -116,6 +116,7 @@ from hackathon.main import (
     construct_json_response_of_stack_and_components_from_pipeline_run,
     construct_json_response_of_steps_code_from_pipeline_run,
     get_model_version_latest_run,
+    get_pipeline_info,
 )
 
 
@@ -132,6 +133,7 @@ def generate_model_report(model_id: str, **kwargs: Any) -> None:
         **kwargs: Keyword arguments to filter models.
     """
     latest_run = get_model_version_latest_run(model_id)
+    pipeline_spec = get_pipeline_info(latest_run)
     pipeline_run_code = (
         construct_json_response_of_steps_code_from_pipeline_run(latest_run)
     )
@@ -143,12 +145,13 @@ def generate_model_report(model_id: str, **kwargs: Any) -> None:
     summary_section = generate_summary_section(
         pipeline_run_code=pipeline_run_code,
         stack_config=stack_config,
+        pipeline_spec=pipeline_spec,
     )
     poem = generate_poem(summary_section)
 
     summary_section_md = Markdown(summary_section)
     console.print(summary_section_md)
-    console.print("\n\n# Poem:\n\n")
+    console.print(Markdown("# Poem:\n\n"))
     console.print(poem)
     # console.print(generate_image("cute baby otter"))
 

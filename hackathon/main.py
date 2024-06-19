@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from typing import Dict
 from zenml.client import Client
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.models.v2.core.step_run import StepRunResponse
 import json
 
@@ -57,6 +58,9 @@ def get_step_code_reference(step: "StepRunResponse") -> str:
     """
     return step.source_code
 
+def get_pipeline_info(run_id) -> str:
+    return Client().zen_store.get_run(run_id).pipeline.spec.model_dump_json()
+
 # Construct a JSON response of the steps code from a pipeline run
 def construct_json_response_of_steps_code_from_pipeline_run(run_id: str) -> str:
     """Construct a JSON response of the steps code from a pipeline run.
@@ -68,6 +72,7 @@ def construct_json_response_of_steps_code_from_pipeline_run(run_id: str) -> str:
         str: The JSON response of the steps code from the pipeline run.
     """
     steps = get_run_steps(run_id)
+    pipeline_info = get_pipeline_info(run_id)
     steps_code = {}
     for step_id, step in steps.items():
         steps_code[step_id] = get_step_code_reference(step)
