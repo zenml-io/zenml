@@ -74,6 +74,7 @@ from zenml.constants import (
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
+    REPORTS,
     RUN_METADATA,
     RUNS,
     SCHEDULES,
@@ -176,6 +177,9 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ReportRequest,
+    ReportResponse,
+    ReportUpdate,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -4212,3 +4216,38 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
         """
         self.delete(f"{route}/{str(resource_id)}")
+
+    def create_report(self, report: ReportRequest) -> ReportResponse:
+        return self._create_resource(
+            resource=report,
+            response_model=ReportResponse,
+            route=REPORTS,
+        )
+
+    def get_report(
+        self, report_id: UUID, hydrate: bool = True
+    ) -> ReportResponse:
+        return self._get_resource(
+            resource_id=report_id, route=REPORTS, response_model=ReportResponse
+        )
+
+    def list_reports(
+        self,
+        hydrate: bool = False,
+    ) -> Page[ReportResponse]:
+        pass
+
+    def update_report(
+        self,
+        report_id: UUID,
+        report_update_model: ReportUpdate,
+    ) -> ReportResponse:
+        return self._update_resource(
+            resource_id=report_id,
+            resource_update=report_update_model,
+            response_model=ReportResponse,
+            route=REPORTS,
+        )
+
+    def delete_report(self, report_id: UUID) -> None:
+        self._delete_resource(resource_id=report_id, route=REPORTS)

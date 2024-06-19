@@ -204,6 +204,9 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ReportRequest,
+    ReportResponse,
+    ReportUpdate,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -305,6 +308,7 @@ from zenml.zen_stores.schemas import (
     PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
+    ReportSchema,
     RunMetadataSchema,
     ScheduleSchema,
     SecretSchema,
@@ -9782,4 +9786,60 @@ class SqlZenStore(BaseZenStore):
                     "tag<>resource with these IDs found."
                 )
             session.delete(tag_model)
+            session.commit()
+
+    def _get_report_schema(
+        self, report_id: UUID, session: Session
+    ) -> ReportSchema:
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=report_id,
+            schema_class=ReportSchema,
+            schema_name=ReportSchema.__tablename__,
+            session=session,
+        )
+
+    def create_report(self, report: ReportRequest) -> ReportResponse:
+        with Session(self.engine) as session:
+            report_schema = ReportSchema.from_request(report)
+            session.add(report_schema)
+
+            session.commit()
+            return report_schema.to_model(include_metadata=True)
+
+    def get_report(
+        self, report_id: UUID, hydrate: bool = True
+    ) -> ReportResponse:
+        with Session(self.engine) as session:
+            report = self._get_report_schema(
+                report_id=report_id, session=session
+            )
+            return report.to_model(include_metadata=hydrate)
+
+    def list_reports(
+        self,
+        hydrate: bool = False,
+    ) -> Page[ReportResponse]:
+        pass
+
+    def update_report(
+        self,
+        report_id: UUID,
+        report_update_model: ReportUpdate,
+    ) -> ReportResponse:
+        with Session(self.engine) as session:
+            report = self._get_report_schema(
+                report_id=report_id, session=session
+            )
+            report.update(report_update_model)
+            session.add(report)
+            session.commit()
+            session.refresh(report)
+            return report.to_model(include_metadata=True)
+
+    def delete_report(self, report_id: UUID) -> None:
+        with Session(self.engine) as session:
+            report = self._get_report_schema(
+                report_id=report_id, session=session
+            )
+            session.delete(report)
             session.commit()

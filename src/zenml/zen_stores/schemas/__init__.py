@@ -69,6 +69,7 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionPipelineRunSchema,
 )
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
+from zenml.zen_stores.schemas.report_schemas import ReportSchema
 
 __all__ = [
     "APIKeySchema",
@@ -111,4 +112,5 @@ __all__ = [
     "ModelVersionArtifactSchema",
     "ModelVersionPipelineRunSchema",
     "WorkspaceSchema",
+    "ReportSchema"
 ]

@@ -82,6 +82,9 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ReportRequest,
+    ReportResponse,
+    ReportUpdate,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -2862,3 +2865,32 @@ class ZenStoreInterface(ABC):
         Raises:
             KeyError: If the tag is not found
         """
+
+    @abstractmethod
+    def create_report(self, report: ReportRequest) -> ReportResponse:
+        pass
+
+    @abstractmethod
+    def get_report(
+        self, report_id: UUID, hydrate: bool = True
+    ) -> ReportResponse:
+        pass
+
+    @abstractmethod
+    def list_reports(
+        self,
+        hydrate: bool = False,
+    ) -> Page[ReportResponse]:
+        pass
+
+    @abstractmethod
+    def update_report(
+        self,
+        report_id: UUID,
+        report_update_model: ReportUpdate,
+    ) -> ReportResponse:
+        pass
+
+    @abstractmethod
+    def delete_report(self, report_id: UUID) -> None:
+        pass

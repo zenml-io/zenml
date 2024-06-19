@@ -377,6 +377,7 @@ from zenml.models.v2.core.server_settings import (
     ServerSettingsResponseMetadata,
     ServerSettingsUpdate,
 )
+from zenml.models.v2.core.report_models import ReportRequest, ReportUpdate, ReportResponseBody, ReportResponseMetadata, ReportResponseResources, ReportResponse
 
 # ----------------------------- Forward References -----------------------------
 
@@ -437,8 +438,9 @@ TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
 TriggerResponseResources.model_rebuild()
 TriggerResponseResources.model_rebuild()
-
-
+ReportResponseBody.model_rebuild()
+ReportResponseMetadata.model_rebuild()
+ReportResponseResources.model_rebuild()
 __all__ = [
     # V2 Base
     "BaseRequest",
@@ -708,4 +710,7 @@ __all__ = [
     "OAuthDeviceVerificationRequest",
     "OAuthRedirectResponse",
     "OAuthTokenResponse",
+    "ReportResponseBody",
+    "ReportResponseMetadata",
+    "ReportResponseResources"
 ]
