@@ -59,6 +59,8 @@ async def compare_model_versions(
         versions.append(model_version)
         if model_id and model_version.model_id != model_id:
             raise ValueError("Versions don't belong to same model")
+        elif not model_id:
+            model_id = model_version.model_id
 
     from litellm import completion
     from litellm.types.utils import ModelResponse, StreamingChoices
