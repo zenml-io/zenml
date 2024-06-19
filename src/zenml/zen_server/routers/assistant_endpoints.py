@@ -28,6 +28,7 @@ from zenml.constants import (
 )
 from zenml.enums import ModelStages
 from zenml.model.model import Model
+from zenml.models import ReportRequest
 from zenml.models.v2.core.model_version import ModelVersionFilter
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -49,7 +50,7 @@ def compare_model_versions(
     model_id: Optional[UUID] = None,
     model_version_ids: List[UUID] = [],
     persona: str = "",
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> StreamingResponse:
     """Compare model versions using LLM assistant.
 
@@ -57,6 +58,7 @@ def compare_model_versions(
         model_id: ID of the model to compare.
         model_version_ids: IDs of the model versions to compare.
         persona: The persona of the LLM assistant.
+        auth_context: Auth context.
 
     Returns:
         The LLM assistant streaming response.
@@ -190,8 +192,26 @@ def compare_model_versions(
                         if content := res.choices[0].delta.content:
                             yield str(content)
 
+    async def _create_report_wrapper(*args, **kwargs) -> AsyncIterator[str]:
+        content = ""
+
+        async for res in _iterator(*args, **kwargs):
+            content += res
+            yield res
+
+        report_request = ReportRequest(
+            user=auth_context.user.id,
+            content=content,
+            persona=persona,
+            model_id=versions[0].model_id,
+            model_version_ids=[
+                version.model_version_id for version in versions
+            ],
+        )
+        zen_store().create_report(report_request)
+
     return StreamingResponse(
-        content=_iterator(
+        content=_create_report_wrapper(
             [
                 ["Metadata analysis", query_metadata],
                 ["Usage analysis", query_pipelines],
