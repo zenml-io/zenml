@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for plugin flavors."""
 
+import os
 from typing import List
 from uuid import UUID
 
@@ -157,7 +158,9 @@ async def dummy(_: AuthContext = Security(authorize)):
 
 @assistant_router.post("compare-model-versions")
 async def compare_model_versions(
-    model_version_ids: List[UUID], _: AuthContext = Security(authorize)
+    model_version_ids: List[UUID],
+    persona: str = "",
+    _: AuthContext = Security(authorize),
 ):
     # Fetch model versions, prepare data
 
@@ -169,22 +172,27 @@ async def compare_model_versions(
         if model_id and model_version.model.id != model_id:
             raise ValueError("Versions don't belong to same model")
 
-    # assistant_handler = plugin_flavor_registry().get_plugin(
-    #     name=assistant.flavor,
-    #     _type=PluginType.ASSISTANT,
-    #     subtype=assistant.plugin_subtype,
-    # )
+    from litellm import completion
 
-    # # Validate that the flavor and plugin_type correspond to an event source
-    # # implementation
-    # if not isinstance(assistant_handler, BaseAssistantHandler):
-    #     raise ValueError(
-    #         f"Assistant plugin {assistant.plugin_subtype} "
-    #         f"for flavor {assistant.flavor} is not a valid assistant "
-    #         "handler implementation."
-    #     )
+    # TODO: Switch this based on persona
+    prompt = "Make a haiku out of the following text:"
+    # TODO: Add context here
+    query = prompt
 
-    # return verify_permissions_and_make_call(
-    #     request_model=assistant,
-    #     destination_method=assistant_handler.make_assistant_call,
-    # )
+    async def _iterator():
+        # Send the query to the OpenAI API
+        response = completion(
+            model="azure/gpt-35-turbo",
+            api_base="https://zentestgpt4.openai.azure.com/",
+            api_version="2024-05-01-preview",
+            api_key=os.getenv("OPENAI_API_KEY"),
+            messages=[{"content": query, "role": "user"}],
+            max_tokens=50,
+            stream=True,
+        )
+        for res in response:
+            yield res
+
+    return StreamingResponse(
+        content=_iterator(), media_type="text/event-stream"
+    )
