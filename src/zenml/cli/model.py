@@ -16,13 +16,16 @@
 from typing import Any, Dict, List, Optional
 
 import click
+from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
+from zenml.model.gen_ai_utils import generate_image, generate_summary_section
 from zenml.models import (
     ModelFilter,
     ModelResponse,
@@ -107,6 +110,28 @@ def list_models(**kwargs: Any) -> None:
     for model in models:
         to_print.append(_model_to_print(model))
     cli_utils.print_table(to_print)
+
+
+@cli_utils.list_options(ModelFilter)
+@model.command("report", help="Generate a report about a model.")
+@click.argument(
+    "model_name_or_id",
+)
+def generate_model_report(model_name_or_id: str, **kwargs: Any) -> None:
+    """Generate a report about a model.
+
+    Args:
+        name: The name of the model.
+        **kwargs: Keyword arguments to filter models.
+    """
+    summary_section = Markdown(
+        generate_summary_section(
+            pipeline_run_code="Here's some code for the pipeline run",
+            stack_config="Here's some stack config",
+        )
+    )
+    # console.print(summary_section)
+    console.print(generate_image("cute baby otter"))
 
 
 @model.command("register", help="Register a new model.")
