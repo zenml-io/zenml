@@ -25,7 +25,13 @@ from zenml.console import console
 from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.model.gen_ai_utils import generate_poem, generate_summary_section
+from zenml.model.gen_ai_utils import (
+    generate_code_improvement_suggestions,
+    generate_log_failure_pattern_suggestions,
+    generate_poem,
+    generate_stack_improvement_suggestions,
+    generate_summary_section,
+)
 from zenml.models import (
     ModelFilter,
     ModelResponse,
@@ -142,6 +148,15 @@ def generate_model_report(model_id: str, **kwargs: Any) -> None:
             latest_run
         )
     )
+    code_improvement_suggestions = generate_code_improvement_suggestions(
+        pipeline_spec, pipeline_run_code, stack_config
+    )
+    stack_improvement_suggestions = generate_stack_improvement_suggestions(
+        pipeline_spec, stack_config
+    )
+    log_failure_pattern_suggestions = generate_log_failure_pattern_suggestions(
+        pipeline_spec, stack_config, pipeline_run_code
+    )
     summary_section = generate_summary_section(
         pipeline_run_code=pipeline_run_code,
         stack_config=stack_config,
@@ -153,6 +168,12 @@ def generate_model_report(model_id: str, **kwargs: Any) -> None:
     console.print(summary_section_md)
     console.print(Markdown("# Poem:\n\n"))
     console.print(poem)
+    console.print(Markdown("# Code Improvement Suggestions:\n\n"))
+    console.print(Markdown(code_improvement_suggestions))
+    console.print(Markdown("# Stack Improvement Suggestions:\n\n"))
+    console.print(Markdown(stack_improvement_suggestions))
+    console.print(Markdown("# Log Failure Pattern Suggestions:\n\n"))
+    console.print(Markdown(log_failure_pattern_suggestions))
     # console.print(generate_image("cute baby otter"))
 
 

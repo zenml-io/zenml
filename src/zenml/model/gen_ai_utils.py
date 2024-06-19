@@ -43,3 +43,24 @@ def generate_summary_section(
 def generate_poem(summary_section: str) -> str:
     prompt = f"Write a short and delightful poem that is 5 lines long that is based on the following summary section: {summary_section}. Feel free to be creative! Please output the poem text as Markdown with newlines included in the markup."
     return prompt_gemini(prompt)
+
+
+def generate_code_improvement_suggestions(
+    pipeline_spec: str, pipeline_run_code: str, stack_config: str
+) -> str:
+    prompt = f"Based on the following pipeline spec, pipeline code and stack config, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Pipeline Code\n{pipeline_run_code}\n\n## Stack Config\nThis code is run on the following stack: \n{stack_config}. \n Rules: Write a list of suggestions for improvement. Suggestions should be in the form of code changes that would make the pipeline more efficient, robust and maintainable. Focus on the big picture approaches that could be taken to improve the code, especially in the context of the stack the user is using. Output your suggestions in Markdown markup format."
+    return prompt_gemini(prompt)
+
+
+def generate_stack_improvement_suggestions(
+    pipeline_spec: str, stack_config: str
+) -> str:
+    prompt = f"Based on the following pipeline spec and stack config, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Stack Config\n {stack_config}. If a user isn't using an experiment tracker, for example, they might want to use CometML or Wandb. If they aren't using a model registry, they might want to use MLflow or Hugging Face, and if they're running on a local orchestrator then consider using a cloud orchestrator. Stick to recommendations for the infrastructure side of this stack. Output your suggestions in Markdown markup format."
+    return prompt_gemini(prompt)
+
+
+def generate_log_failure_pattern_suggestions(
+    logs: str, pipeline_spec: str, stack_config: str
+) -> str:
+    prompt = f"Based on the following pipeline spec, stack config and logs, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Stack Config\n {stack_config}. \n ## Logs:\n {logs}\n\n If there are common failures in logs, then make suggestions for how the user can avoid these failures. Output your suggestions in Markdown markup format."
+    return prompt_gemini(prompt)
