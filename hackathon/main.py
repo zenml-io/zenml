@@ -68,7 +68,9 @@ def construct_json_response_of_steps_code_from_pipeline_run(run_id: str) -> str:
         str: The JSON response of the steps code from the pipeline run.
     """
     steps = get_run_steps(run_id)
-    steps_code = {step_id: get_step_code_reference(step) for step_id, step in steps.items()}
+    steps_code = {}
+    for step_id, step in steps.items():
+        steps_code[step_id] = get_step_code_reference(step)
     response = json.dumps(steps_code)
     return response
 

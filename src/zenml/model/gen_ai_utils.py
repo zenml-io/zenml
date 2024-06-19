@@ -4,8 +4,6 @@ from litellm import image_generation
 litellm.vertex_project = "zenml-core"  # Your Project ID
 litellm.vertex_location = "europe-west4"  # proj location
 
-import os
-
 
 def prompt_gemini(prompt: str) -> str:
     response = litellm.completion(
@@ -18,6 +16,7 @@ def prompt_gemini(prompt: str) -> str:
         ],
     )
     return response.choices[0].message.content
+
 
 # TODO: requires a east-US deployment of dall-e
 def generate_image(prompt: str) -> str:
@@ -34,6 +33,6 @@ def generate_image(prompt: str) -> str:
 
 def generate_summary_section(pipeline_run_code: str, stack_config: str) -> str:
     """Generate a summary section for a model."""
-    prompt = f"Write a report (formatted as Markdown markup) that summarises the following: ## Summary\n{pipeline_run_code}\n{stack_config}"
+    prompt = f"Write a report (formatted as Markdown markup) that summarises the following code: ##Pipeline Code (made up of step functions that are part of a pipeline)\n{pipeline_run_code}\n\n ## Stack Config\nThis code is run on the following stack: \n{stack_config}. Please write a brief overview section followed by sections on the code (i.e. how it works) and the stack on which it's run."
 
     return prompt_gemini(prompt)
