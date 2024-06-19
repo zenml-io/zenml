@@ -51,6 +51,7 @@ class AssistantRequest(BaseRequest):
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     entities: List[AssistantEntities] = Field(
+        default=[],
         title="Related entities with their ids."
     )
     history: str = Field(
@@ -71,5 +72,6 @@ class AssistantResponse(BaseResponseBody):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     links: List[LinkResponse] = Field(
+        default=[],
         title="A link response.",
     )
