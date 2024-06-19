@@ -1,7 +1,6 @@
 import os
 from typing import Dict
 import litellm
-from litellm import image_generation
 
 from zenml.model.gen_ai_helper import (
     construct_json_response_of_model_version_stats,
@@ -39,19 +38,6 @@ def prompt_gemini(prompt: str) -> str:
         **kwargs,
     )
     return response.choices[0].message.content
-
-
-# # TODO: requires a east-US deployment of dall-e
-# def generate_image(prompt: str) -> str:
-#     response = image_generation(
-#         model="azure/dall-e-3",
-#         api_base="https://zentestgpt4.openai.azure.com/",
-#         api_version="2024-05-01-preview",
-#         prompt=prompt,
-#         api_key="9e696febb07e40619101a9184a6ccec6",
-#     )
-
-#     print(response)
 
 
 def generate_summary_section(
