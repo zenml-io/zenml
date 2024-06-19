@@ -819,3 +819,95 @@ class Model(BaseModel):
                 )
             )
         )
+
+    def _get_details_for_llm(
+        self,
+        is_all: bool = False,
+        is_metadata: bool = False,
+        is_pipeline_runs: bool = False,
+    ) -> dict:
+        """Get essentials details of a model version for LLM assistants.
+
+        Args:
+            is_all: if True, return all details
+            is_metadata: if True, return metadata
+            is_pipeline_runs: if True, return pipeline runs
+        Returns:
+            A dictionary of essential details
+        """
+        if not (is_all or is_metadata or is_pipeline_runs):
+            raise ValueError(
+                "At least one of `is_all`, `is_metadata`, `is_pipeline_runs` must be True."
+            )
+        if (
+            (is_all and is_metadata)
+            or (is_all and is_pipeline_runs)
+            or (is_metadata and is_pipeline_runs)
+        ):
+            raise ValueError(
+                "Only one of `is_all`, `is_metadata`, `is_pipeline_runs` can be True."
+            )
+
+        from zenml.client import Client
+
+        mv = Client().get_model_version(
+            model_version_name_or_number_or_id=self.model_version_id
+        )
+        composed_artifacts = {}
+        if is_all or is_metadata:
+            for t, src in (
+                ("data_artifacts", mv.data_artifacts),
+                ("models", mv.model_artifacts),
+                ("deployments", mv.deployment_artifacts),
+            ):
+                _composed_artifact_by_type = {}
+                raw_da = src
+                for each in raw_da:
+                    current_da = raw_da[each][max(raw_da[each].keys())]
+                    if current_da.artifact.has_custom_name:
+                        for k in current_da.run_metadata:
+                            if k not in {
+                                "storage_size",
+                                "dtype",
+                                "max",
+                                "mean",
+                                "min",
+                                "shape",
+                                "std",
+                                "string_representation",
+                            }:
+                                _composed_artifact_by_type[each] = (
+                                    _composed_artifact_by_type.get(each, {})
+                                )
+                                _composed_artifact_by_type[each][k] = str(
+                                    current_da.run_metadata[k].value
+                                )
+
+                composed_artifacts[t] = _composed_artifact_by_type
+
+        pipeline_runs = {}
+        if is_all or is_pipeline_runs:
+            for pr in mv.pipeline_runs.values():
+                pipeline_runs[pr.pipeline.name] = pipeline_runs.get(
+                    pr.pipeline.name, []
+                )
+                pipeline_runs[pr.pipeline.name].append(pr.user.name)
+
+        model_version_info = {}
+        model_version_info["model_name"] = mv.model.name
+        model_version_info["version"] = mv.name
+        model_version_info["description"] = mv.description
+        model_version_info["updated"] = str(mv.updated.date())
+        model_version_info["tags"] = sorted([t.name for t in mv.tags])
+        model_version_info["target_audience"] = mv.model.audience
+        model_version_info["use_cases"] = mv.model.use_cases
+        model_version_info["know_limitations"] = mv.model.limitations
+        model_version_info["trade_offs"] = mv.model.trade_offs
+        model_version_info["ethical_implications"] = mv.model.ethics
+        model_version_info["metadata"] = {}
+        for k in mv.run_metadata:
+            model_version_info["metadata"][k] = str(mv.run_metadata[k].value)
+        model_version_info["artifacts"] = composed_artifacts
+        model_version_info["pipeline_runs"] = pipeline_runs
+
+        return model_version_info
