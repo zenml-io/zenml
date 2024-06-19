@@ -156,7 +156,7 @@ async def dummy(_: AuthContext = Security(authorize)):
     )
 
 
-@assistant_router.post("compare-model-versions")
+@assistant_router.post("/compare-model-versions")
 async def compare_model_versions(
     model_version_ids: List[UUID],
     persona: str = "",
