@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 import litellm
 from litellm import image_generation
 
@@ -6,6 +7,7 @@ from zenml.model.gen_ai_helper import (
     construct_json_response_of_model_version_stats,
     construct_json_response_of_stack_and_components_from_pipeline_run,
     construct_json_response_of_steps_code_from_pipeline_run,
+    get_failing_steps_for_runs,
     get_model_version_latest_run,
     get_pipeline_info,
 )
@@ -81,9 +83,9 @@ def generate_stack_improvement_suggestions(
 
 
 def generate_log_failure_pattern_suggestions(
-    logs: str, pipeline_spec: str, stack_config: str
+    logs: Dict[str, str], pipeline_spec: str, stack_config: str
 ) -> str:
-    prompt = f"Based on the following pipeline spec, stack config and logs, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Stack Config\n {stack_config}. \n ## Logs:\n {logs}\n\n If there are common failures in logs, then make suggestions for how the user can avoid these failures. Output your suggestions in Markdown markup format."
+    prompt = f"Based on the following pipeline spec, stack config and logs, generate a list of suggestions for improvement. Context is: ## Pipeline Spec\n{pipeline_spec}\n\n## Stack Config\n {stack_config}. \n ## Logs:\n {logs}\n\n If there are common failures in logs, then first identity the specific failure patterns, and then (in a separate section) make suggestions for how the user can avoid these failures. Output your suggestions in Markdown markup format."
     return prompt_gemini(prompt)
 
 
@@ -105,6 +107,7 @@ def generate_model_report(
             latest_run
         )
     )
+
     if report_type in [
         ModelReportType.SUMMARY,
         ModelReportType.POEM,
@@ -127,10 +130,9 @@ def generate_model_report(
             pipeline_spec, stack_config
         )
     if report_type in [ModelReportType.LOG_FAILURE, ModelReportType.ALL]:
-        log_failure_pattern_suggestions = (
-            generate_log_failure_pattern_suggestions(
-                pipeline_spec, stack_config, pipeline_run_code
-            )
+        logs = get_failing_steps_for_runs(model_version_id)
+        log_failure_pattern_suggestions = generate_log_failure_pattern_suggestions(
+            logs, stack_config, pipeline_run_code
         )
 
     if report_type in [ModelReportType.STATS_SUMMARY, ModelReportType.ALL]:
