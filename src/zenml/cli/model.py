@@ -29,18 +29,13 @@ from zenml.model.gen_ai_helper import (
     construct_json_response_of_model_version_stats,
     construct_json_response_of_stack_and_components_from_pipeline_run,
     construct_json_response_of_steps_code_from_pipeline_run,
+    get_failing_steps_for_runs,
     get_model_version_latest_run,
     get_pipeline_info,
-    get_failing_steps_for_runs,
 )
 from zenml.model.gen_ai_utils import (
-    generate_code_improvement_suggestions,
-    generate_log_failure_pattern_suggestions,
     generate_model_report,
-    generate_poem,
-    generate_stack_improvement_suggestions,
-    generate_stats_summary,
-    generate_summary_section,
+    get_llm_metadata_query_response,
 )
 from zenml.models import (
     ModelFilter,
@@ -143,8 +138,18 @@ def list_models(**kwargs: Any) -> None:
     default=ModelReportType.ALL.value,
     help="The type of report to generate.",
 )
+@click.option(
+    "--query",
+    "-q",
+    help="The query to pass to the LLM.",
+    type=str,
+    required=False,
+)
 def generate_model_report_cmd(
-    model_version_id: str, report_type: str, **kwargs: Any
+    model_version_id: str,
+    report_type: str,
+    query: Optional[str],
+    **kwargs: Any,
 ) -> None:
     """Generate a report about a model.
 
@@ -153,12 +158,37 @@ def generate_model_report_cmd(
         report_type: The type of report to generate.
         **kwargs: Keyword arguments to filter models.
     """
-    report = generate_model_report(
-        report_type=ModelReportType(report_type),
-        model_version_id=model_version_id,
-    )
-
-    console.print(Markdown(report))
+    if not query:
+        report = generate_model_report(
+            report_type=ModelReportType(report_type),
+            model_version_id=model_version_id,
+            query=query,
+        )
+        console.print(Markdown(report))
+    else:
+        latest_run = get_model_version_latest_run(model_version_id)
+        pipeline_spec = get_pipeline_info(latest_run)
+        pipeline_run_code = (
+            construct_json_response_of_steps_code_from_pipeline_run(latest_run)
+        )
+        stack_config = (
+            construct_json_response_of_stack_and_components_from_pipeline_run(
+                latest_run
+            )
+        )
+        logs = get_failing_steps_for_runs(model_version_id)
+        model_version_stats = construct_json_response_of_model_version_stats(
+            model_version_id
+        )
+        query_response = get_llm_metadata_query_response(
+            query,
+            pipeline_spec,
+            pipeline_run_code,
+            stack_config,
+            logs,
+            model_version_stats,
+        )
+        console.print(Markdown(query_response))
 
 
 @model.command("register", help="Register a new model.")

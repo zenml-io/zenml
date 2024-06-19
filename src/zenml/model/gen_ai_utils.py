@@ -1,7 +1,7 @@
 import os
 from typing import Dict
+
 import litellm
-from litellm import image_generation
 
 from zenml.model.gen_ai_helper import (
     construct_json_response_of_model_version_stats,
@@ -45,19 +45,6 @@ def prompt_gemini(prompt: str) -> str:
     return response.choices[0].message.content
 
 
-# # TODO: requires a east-US deployment of dall-e
-# def generate_image(prompt: str) -> str:
-#     response = image_generation(
-#         model="azure/dall-e-3",
-#         api_base="https://zentestgpt4.openai.azure.com/",
-#         api_version="2024-05-01-preview",
-#         prompt=prompt,
-#         api_key="9e696febb07e40619101a9184a6ccec6",
-#     )
-
-#     print(response)
-
-
 def generate_summary_section(
     pipeline_run_code: str, stack_config: str, pipeline_spec: str
 ) -> str:
@@ -95,6 +82,18 @@ def generate_log_failure_pattern_suggestions(
 
 def generate_stats_summary(stats: str) -> str:
     prompt = f"Generate a summary of the following stats and metadata (provided as a JSON string here: {stats}). Generate the section using Markdown formatting and feel free to use tables if you feel they are appropriate."
+    return prompt_gemini(prompt)
+
+
+def get_llm_metadata_query_response(
+    query: str,
+    pipeline_spec: str,
+    pipeline_run_code: str,
+    stack_config: str,
+    logs: Dict[str, str],
+    model_version_stats: str,
+) -> str:
+    prompt = f"Based on the following query, pipeline spec, pipeline code, stack config, logs and model version stats, generate a response to the query. Context is: ## Query\n{query}\n\n## Pipeline Spec\n{pipeline_spec}\n\n## Pipeline Code\n{pipeline_run_code}\n\n## Stack Config\n{stack_config}\n\n## Logs\n{logs}\n\n## Model Version Stats\n{model_version_stats}"
     return prompt_gemini(prompt)
 
 
