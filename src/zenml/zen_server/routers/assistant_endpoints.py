@@ -173,6 +173,7 @@ async def compare_model_versions(
             raise ValueError("Versions don't belong to same model")
 
     from litellm import completion
+    from litellm.types.utils import ModelResponse
 
     # TODO: Switch this based on persona
     prompt = "Make a haiku out of the following text:"
@@ -191,7 +192,9 @@ async def compare_model_versions(
             stream=True,
         )
         for res in response:
-            yield res
+            if isinstance(res, ModelResponse):
+                if content:= res.choices[0].delta.content:
+                    yield content
 
     return StreamingResponse(
         content=_iterator(), media_type="text/event-stream"
