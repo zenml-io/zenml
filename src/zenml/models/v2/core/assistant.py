@@ -12,14 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning assistants."""
+from typing import Dict, Any, List
+from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 from zenml import BaseRequest, BaseResponseBody
-from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import PluginSubType
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.enums import PluginSubType, AssistantEntityType
+
 
 # ------------------ Request Model ------------------
+
+class AssistantEntities(BaseModel):
+    entity_type: AssistantEntityType
+    entity_id: UUID
+
+
+class LinkResponse(BaseModel):
+    display_name: str
+    link: str
 
 
 class AssistantRequest(BaseRequest):
@@ -36,7 +48,15 @@ class AssistantRequest(BaseRequest):
     context: str = Field(
         default="",
         title="The context to pass to the assistant.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    entities: List[AssistantEntities] = Field(
+        title="Related entities with their ids."
+    )
+    history: str = Field(
+        default="",
+        title="The history to pass to the assistant.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
 
@@ -49,4 +69,7 @@ class AssistantResponse(BaseResponseBody):
     response: str = Field(
         title="The assistant response.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    links: List[LinkResponse] = Field(
+        title="A link response.",
     )
