@@ -3,6 +3,7 @@ import litellm
 from litellm import image_generation
 
 from zenml.model.gen_ai_helper import (
+    construct_json_response_of_model_version_stats,
     construct_json_response_of_stack_and_components_from_pipeline_run,
     construct_json_response_of_steps_code_from_pipeline_run,
     get_model_version_latest_run,
@@ -132,6 +133,12 @@ def generate_model_report(
             )
         )
 
+    if report_type in [ModelReportType.STATS_SUMMARY, ModelReportType.ALL]:
+        model_version_stats = construct_json_response_of_model_version_stats(
+            model_version_id
+        )
+        stats_summary = generate_stats_summary(model_version_stats)
+
     if report_type == ModelReportType.SUMMARY:
         return summary_section
     if report_type == ModelReportType.POEM:
@@ -154,6 +161,8 @@ def generate_model_report(
                 stack_improvement_suggestions,
                 "# Log Failure Pattern Suggestions:\n\n",
                 log_failure_pattern_suggestions,
+                "# Model Version Stats:\n\n",
+                stats_summary,
             ]
         )
 

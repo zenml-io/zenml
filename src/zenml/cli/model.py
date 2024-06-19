@@ -31,7 +31,7 @@ from zenml.model.gen_ai_helper import (
     construct_json_response_of_steps_code_from_pipeline_run,
     get_model_version_latest_run,
     get_pipeline_info,
-    get_failing_steps_for_runs
+    get_failing_steps_for_runs,
 )
 from zenml.model.gen_ai_utils import (
     generate_code_improvement_suggestions,
@@ -49,6 +49,7 @@ from zenml.models import (
     ModelVersionPipelineRunFilter,
     ModelVersionResponse,
 )
+from zenml.models.v2.core.model_version import ModelReportType
 from zenml.utils.dict_utils import remove_none_values
 
 logger = get_logger(__name__)
@@ -132,57 +133,31 @@ def list_models(**kwargs: Any) -> None:
 @click.argument(
     "model_version_id",
 )
-def generate_model_report(model_version_id: str, **kwargs: Any) -> None:
+@click.option(
+    "-t",
+    "--report-type",
+    type=click.Choice(
+        ModelReportType.values(),
+    ),
+    default=ModelReportType.ALL.value,
+    help="The type of report to generate.",
+)
+def generate_model_report(
+    model_version_id: str, report_type: str, **kwargs: Any
+) -> None:
     """Generate a report about a model.
 
     Args:
         model_version_id: The ID of the model version.
+        report_type: The type of report to generate.
         **kwargs: Keyword arguments to filter models.
     """
-    latest_run = str(get_model_version_latest_run(model_version_id))
-    pipeline_spec = get_pipeline_info(latest_run)
-    pipeline_run_code = (
-        construct_json_response_of_steps_code_from_pipeline_run(latest_run)
-    )
-    stack_config = (
-        construct_json_response_of_stack_and_components_from_pipeline_run(
-            latest_run
-        )
-    )
-    model_version_stats = construct_json_response_of_model_version_stats(
-        model_version_id
-    )
-    stats_summary = generate_stats_summary(model_version_stats)
-    logs = get_failing_steps_for_runs(model_version_id)
-    log_failure_pattern_suggestions = generate_log_failure_pattern_suggestions(
-        logs, stack_config, pipeline_run_code
+    report = generate_model_report(
+        report_type=ModelReportType(report_type),
+        model_version_id=model_version_id,
     )
 
-    code_improvement_suggestions = generate_code_improvement_suggestions(
-        pipeline_spec, pipeline_run_code, stack_config
-    )
-    stack_improvement_suggestions = generate_stack_improvement_suggestions(
-        pipeline_spec, stack_config
-    )
-    summary_section = generate_summary_section(
-        pipeline_run_code=pipeline_run_code,
-        stack_config=stack_config,
-        pipeline_spec=pipeline_spec,
-    )
-    poem = generate_poem(summary_section)
-
-    summary_section_md = Markdown(summary_section)
-    console.print(summary_section_md)
-    console.print(Markdown("# Poem:\n\n"))
-    console.print(poem)
-    console.print(Markdown("# Code Improvement Suggestions:\n\n"))
-    console.print(Markdown(code_improvement_suggestions))
-    console.print(Markdown("# Stack Improvement Suggestions:\n\n"))
-    console.print(Markdown(stack_improvement_suggestions))
-    console.print(Markdown("# Log Failure Pattern Suggestions:\n\n"))
-    console.print(Markdown(log_failure_pattern_suggestions))
-    console.print(Markdown("# Model Version Stats:\n\n"))
-    console.print(Markdown(model_version_stats))
+    console.print(report)
 
 
 @model.command("register", help="Register a new model.")

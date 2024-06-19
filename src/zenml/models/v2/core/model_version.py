@@ -89,6 +89,7 @@ class ModelReportType(StrEnum):
     CODE_IMPROVEMENT = "code_improvement"
     STACK_IMPROVEMENT = "stack_improvement"
     LOG_FAILURE = "log_failure"
+    STATS_SUMMARY = "stats_summary"
     ALL = "all"
 
 
