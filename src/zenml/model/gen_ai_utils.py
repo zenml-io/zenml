@@ -17,16 +17,21 @@ from zenml.models.v2.core.model_version import ModelReportType
 def prompt_gemini(prompt: str) -> str:
     # Get credentials from the environment
     vertex_credentials = os.environ.get("VERTEX_CREDENTIALS")
-    vertex_project = os.environ.get("VERTEX_PROJECT", "zenml-core")
-    vertex_location = os.environ.get("VERTEX_LOCATION", "europe-west4")
+    vertex_project = os.environ.get("VERTEX_PROJECT")
+    vertex_location = os.environ.get("VERTEX_LOCATION")
 
     kwargs = {}
     if vertex_credentials:
         kwargs["credentials"] = vertex_credentials
     if vertex_project:
         kwargs["project"] = vertex_project
+    else:
+        litellm.vertex_project = "zenml-core"
     if vertex_location:
         kwargs["location"] = vertex_location
+    else:
+        litellm.vertex_location = "europe-west4"
+    
 
     response = litellm.completion(
         model="gemini-1.5-flash",
