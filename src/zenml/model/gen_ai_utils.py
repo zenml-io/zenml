@@ -1,5 +1,6 @@
 import os
 from typing import Dict
+
 import litellm
 
 from zenml.model.gen_ai_helper import (
@@ -30,7 +31,6 @@ def prompt_gemini(prompt: str) -> str:
         kwargs["location"] = vertex_location
     else:
         litellm.vertex_location = "europe-west4"
-    
 
     response = litellm.completion(
         model="gemini-1.5-flash",
@@ -85,6 +85,18 @@ def generate_stats_summary(stats: str) -> str:
     return prompt_gemini(prompt)
 
 
+def get_llm_metadata_query_response(
+    query: str,
+    pipeline_spec: str,
+    pipeline_run_code: str,
+    stack_config: str,
+    logs: Dict[str, str],
+    model_version_stats: str,
+) -> str:
+    prompt = f"Based on the following query, pipeline spec, pipeline code, stack config, logs and model version stats, generate a response to the query. Context is: ## Query\n{query}\n\n## Pipeline Spec\n{pipeline_spec}\n\n## Pipeline Code\n{pipeline_run_code}\n\n## Stack Config\n{stack_config}\n\n## Logs\n{logs}\n\n## Model Version Stats\n{model_version_stats}"
+    return prompt_gemini(prompt)
+
+
 def generate_model_report(
     report_type: ModelReportType, model_version_id: str
 ) -> str:
@@ -122,8 +134,10 @@ def generate_model_report(
         )
     if report_type in [ModelReportType.LOG_FAILURE, ModelReportType.ALL]:
         logs = get_failing_steps_for_runs(model_version_id)
-        log_failure_pattern_suggestions = generate_log_failure_pattern_suggestions(
-            logs, stack_config, pipeline_run_code
+        log_failure_pattern_suggestions = (
+            generate_log_failure_pattern_suggestions(
+                logs, stack_config, pipeline_run_code
+            )
         )
 
     if report_type in [ModelReportType.STATS_SUMMARY, ModelReportType.ALL]:

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for models."""
 
-import os
 from typing import Union
 from uuid import UUID
 
