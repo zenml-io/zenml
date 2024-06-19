@@ -22,7 +22,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PluginType
-from zenml.models.v2.core.assistant import CostAssistantRequest, CostAssistantResponse
+from zenml.models.v2.core.cost_assistant import CostAssistantRequest, CostAssistantResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -63,7 +63,7 @@ def make_assistant_call(
     """
     assistant_handler = plugin_flavor_registry().get_plugin(
         name=assistant.flavor,
-        _type=PluginType.COST_ASSISTANT,
+        _type=PluginType.ASSISTANT,
         subtype=assistant.plugin_subtype,
     )
 
