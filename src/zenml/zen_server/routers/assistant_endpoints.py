@@ -13,6 +13,9 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for plugin flavors."""
 
+from typing import List
+from uuid import UUID
+
 from fastapi import APIRouter, Security
 from fastapi.responses import StreamingResponse
 
@@ -32,6 +35,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     plugin_flavor_registry,
+    zen_store,
 )
 
 assistant_router = APIRouter(
@@ -138,10 +142,49 @@ et lumina tu Procne hostis promissae, in sua ritu eadem rubefecit Iuppiter, mihi
 qui parentis: sum.
 """
 
+
 async def markdown_generator():
     for line in MARKDOWN.splitlines():
         yield line + "\n"
 
+
 @assistant_router.get("dummy")
 async def dummy(_: AuthContext = Security(authorize)):
-    return StreamingResponse(markdown_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        markdown_generator(), media_type="text/event-stream"
+    )
+
+
+@assistant_router.post("compare-model-versions")
+async def compare_model_versions(
+    model_version_ids: List[UUID], _: AuthContext = Security(authorize)
+):
+    # Fetch model versions, prepare data
+
+    model_id = None
+    versions = []
+    for id_ in model_version_ids:
+        model_version = zen_store().get_model_version(model_version_id=id_)
+        versions.append(model_version)
+        if model_id and model_version.model.id != model_id:
+            raise ValueError("Versions don't belong to same model")
+
+    # assistant_handler = plugin_flavor_registry().get_plugin(
+    #     name=assistant.flavor,
+    #     _type=PluginType.ASSISTANT,
+    #     subtype=assistant.plugin_subtype,
+    # )
+
+    # # Validate that the flavor and plugin_type correspond to an event source
+    # # implementation
+    # if not isinstance(assistant_handler, BaseAssistantHandler):
+    #     raise ValueError(
+    #         f"Assistant plugin {assistant.plugin_subtype} "
+    #         f"for flavor {assistant.flavor} is not a valid assistant "
+    #         "handler implementation."
+    #     )
+
+    # return verify_permissions_and_make_call(
+    #     request_model=assistant,
+    #     destination_method=assistant_handler.make_assistant_call,
+    # )
