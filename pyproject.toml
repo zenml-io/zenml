@@ -125,6 +125,10 @@ gcsfs = { version = ">=2022.11.0", optional = true }
 # Optional dependencies for the Azure artifact store
 adlfs = { version = ">=2021.10.0", optional = true }
 
+# Optional dependencies for the Hackaton
+litellm = { version = ">=1.40.17", optional = true }
+google-cloud-aiplatform = { version = ">=1.55.0", optional = true }
+
 # Optional development dependencies
 bandit = { version = "^1.7.5", optional = true }
 coverage = { extras = ["toml"], version = "^5.5", optional = true }
@@ -211,6 +215,7 @@ connectors-azure = [
     "azure-mgmt-resource",
     "kubernetes",
 ]
+hackaton = ["litellm", "google-cloud-aiplatform"]
 dev = [
     "bandit",
     "ruff",
