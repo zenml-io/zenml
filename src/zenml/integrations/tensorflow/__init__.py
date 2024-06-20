@@ -18,6 +18,9 @@ import sys
 from typing import List, Optional
 from zenml.integrations.constants import TENSORFLOW
 from zenml.integrations.integration import Integration
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 from zenml.logger import get_logger
 
@@ -40,6 +43,15 @@ class TensorflowIntegration(Integration):
 
         from zenml.integrations.tensorflow import materializers  # noqa
 
+        if sys.version_info.minor == 8:
+            logger.warning(
+                "Python 3.8 with TensorFlow is not fully "
+                "compatible with Pydantic 2 requirements. "
+                "Consider upgrading to a higher Python "
+                "version, if you would like to use "
+                "Tensorflow integration."
+            )
+
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
         """Defines platform specific requirements for the integration.
@@ -51,21 +63,17 @@ class TensorflowIntegration(Integration):
             A list of requirements.
         """
         target_os = target_os or platform.system()
-        requirements = [
-            "typing-extensions>=4.6.1",
-            "tensorflow_io>=0.24.0"
-        ]
-        if sys.version_info.minor == 8:
-            requirements.append("tensorflow>=2.11,<2.12")
-            logger.warning(
-                "Python 3.8 works only with TensorFlow 2.11, "
-                "which is not fully compatible with Pydantic 2 "
-                "requirements. Consider upgrading to a higher "
-                "Python version, if you would like to use "
-                "Tensorflow integration."
-            )
+        if target_os == "Darwin" and platform.machine() == "arm64":
+            requirements = [
+                "tensorflow-macos>=2.12,<=2.15",
+            ]
         else:
-            requirements.append("tensorflow>=2.12,<=2.15")
+            requirements = [
+                "tensorflow>=2.12,<=2.15",
+                "tensorflow_io>=0.24.0",
+            ]
+        if sys.version_info.minor == 8:
+            requirements.append("typing-extensions>=4.6.1")
         return requirements
 
 

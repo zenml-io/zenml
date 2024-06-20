@@ -13,13 +13,9 @@
 #  permissions and limitations under the License.
 """Initialization for TensorBoard integration."""
 
-import sys
 from typing import List, Optional
 from zenml.integrations.constants import TENSORBOARD
 from zenml.integrations.integration import Integration
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 class TensorBoardIntegration(Integration):
@@ -38,17 +34,7 @@ class TensorBoardIntegration(Integration):
         Returns:
             A list of requirements.
         """
-        if sys.version_info.minor == 8:
-            requirements = ["tensorboard>=2.11,<2.12"]
-            logger.warning(
-                "Python 3.8 works only with Tensorboard 2.11, "
-                "which is not fully compatible with Pydantic 2 "
-                "requirements. Consider upgrading to a higher "
-                "Python version, if you would like to use "
-                "Tensorboard integration."
-            )
-        else:
-            requirements = ["tensorboard>=2.12,<=2.15"]
+        requirements = ["tensorboard>=2.12,<=2.15"]
         return requirements
 
     @classmethod
