@@ -16,11 +16,11 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from zenml.config.schedule import Schedule
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -33,7 +33,7 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.core.action import (
         ActionResponse,
@@ -74,33 +74,32 @@ class TriggerRequest(WorkspaceScopedRequest):
         "set if the trigger is activated by an event source.",
     )
 
-    @root_validator
-    def _validate_schedule_or_event_source(cls, values: Dict[str, Any]) -> Any:
+    @model_validator(mode="after")
+    def _validate_schedule_or_event_source(self) -> "TriggerRequest":
         """Validate that either a schedule or an event source is provided.
 
-        Args:
-            values: The values to validate.
-
         Returns:
-            The validated values.
+            The validated request.
 
         Raises:
             ValueError: If neither a schedule nor an event source is provided,
                 or if both are provided.
         """
-        if not values.get("schedule") and not values.get("event_source_id"):
+        if not self.schedule and not self.event_source_id:
             raise ValueError(
                 "Either a schedule or an event source is required."
             )
-        if values.get("schedule") and values.get("event_source_id"):
+
+        if self.schedule and self.event_source_id:
             raise ValueError("Only a schedule or an event source is allowed.")
-        return values
+
+        return self
 
 
 # ------------------ Update Model ------------------
 
 
-class TriggerUpdate(BaseZenModel):
+class TriggerUpdate(BaseUpdate):
     """Update model for triggers."""
 
     name: Optional[str] = Field(
@@ -330,6 +329,7 @@ class TriggerFilter(WorkspaceScopedFilter):
     event_source_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="The event source this trigger is attached to.",
+        union_mode="left_to_right",
     )
     action_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -359,7 +359,7 @@ class TriggerFilter(WorkspaceScopedFilter):
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         Returns:
@@ -376,28 +376,28 @@ class TriggerFilter(WorkspaceScopedFilter):
         custom_filters = super().get_custom_filters()
 
         if self.event_source_flavor:
-            event_source_flavor_filter = and_(  # type: ignore[type-var]
+            event_source_flavor_filter = and_(
                 EventSourceSchema.id == TriggerSchema.event_source_id,
                 EventSourceSchema.flavor == self.event_source_flavor,
             )
             custom_filters.append(event_source_flavor_filter)
 
         if self.event_source_subtype:
-            event_source_subtype_filter = and_(  # type: ignore[type-var]
+            event_source_subtype_filter = and_(
                 EventSourceSchema.id == TriggerSchema.event_source_id,
                 EventSourceSchema.plugin_subtype == self.event_source_subtype,
             )
             custom_filters.append(event_source_subtype_filter)
 
         if self.action_flavor:
-            action_flavor_filter = and_(  # type: ignore[type-var]
+            action_flavor_filter = and_(
                 ActionSchema.id == TriggerSchema.action_id,
                 ActionSchema.flavor == self.action_flavor,
             )
             custom_filters.append(action_flavor_filter)
 
         if self.action_subtype:
-            action_subtype_filter = and_(  # type: ignore[type-var]
+            action_subtype_filter = and_(
                 ActionSchema.id == TriggerSchema.action_id,
                 ActionSchema.plugin_subtype == self.action_subtype,
             )

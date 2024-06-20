@@ -27,7 +27,7 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -86,7 +86,7 @@ class ActionRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ActionUpdate(BaseZenModel):
+class ActionUpdate(BaseUpdate):
     """Update model for actions."""
 
     name: Optional[str] = Field(
