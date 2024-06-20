@@ -1,7 +1,7 @@
 """Separate actions and triggers [25155145c545].
 
 Revision ID: 25155145c545
-Revises: 0.57.1
+Revises: 0.58.2
 Create Date: 2024-05-16 11:29:53.341275
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "25155145c545"
-down_revision = "0.57.1"
+down_revision = "0.58.2"
 branch_labels = None
 depends_on = None
 
@@ -23,8 +23,8 @@ depends_on = None
 def migrate_actions() -> None:
     """Migrate actions from the trigger table."""
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("trigger", "action"))
+    meta = sa.MetaData()
+    meta.reflect(only=("trigger", "action"), bind=op.get_bind())
     trigger_table = sa.Table("trigger", meta)
     action_table = sa.Table("action", meta)
 
