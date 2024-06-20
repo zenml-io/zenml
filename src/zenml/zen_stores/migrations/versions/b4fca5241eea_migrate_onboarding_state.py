@@ -48,7 +48,7 @@ def upgrade() -> None:
     new_state = []
 
     if existing_onboarding_state:
-        # Case 1: There was already an existing onboarding state in the DB
+        # There was already an existing onboarding state in the DB
         # -> Migrate to the new server keys
         state = json.loads(existing_onboarding_state)
 
@@ -59,90 +59,134 @@ def upgrade() -> None:
         elif isinstance(state, List):
             # Somehow the state is already converted, probably shouldn't happen
             return
-    else:
-        # Case 2: There is no onboarding state in the DB. This is the case when
-        # updating from an old version or cloud tenants which previously used
-        # an external tool to store the onboarding progress
-        # -> Query the DB to figure out which steps are already completed
-        meta = sa.MetaData()
-        meta.reflect(
-            only=(
-                "pipeline_run",
-                "stack_component",
-                "stack",
-                "stack_composition",
-                "service_connector",
-                "pipeline_deployment",
-            ),
-            bind=connection,
+
+    # We now query the DB and complete all onboarding steps that we can detect
+    # from the database
+    meta = sa.MetaData()
+    meta.reflect(
+        only=(
+            "pipeline_run",
+            "stack_component",
+            "stack",
+            "stack_composition",
+            "service_connector",
+            "pipeline_deployment",
+        ),
+        bind=connection,
+    )
+
+    pipeline_run_table = sa.Table("pipeline_run", meta)
+    service_connector_table = sa.Table("service_connector", meta)
+    stack_component_table = sa.Table("stack_component", meta)
+    stack_table = sa.Table("stack", meta)
+    stack_composition_table = sa.Table("stack_composition", meta)
+    pipeline_deployment_table = sa.Table("pipeline_deployment", meta)
+
+    pipeline_run_count = connection.execute(
+        sa.select(sa.func.count(pipeline_run_table.c.id))
+    ).scalar()
+    if pipeline_run_count > 0:
+        new_state.extend(ONBOARDING_KEY_MAPPING["run_first_pipeline"])
+
+    service_connector_count = connection.execute(
+        sa.select(sa.func.count(service_connector_table.c.id))
+    ).scalar()
+    if service_connector_count > 0:
+        new_state.extend(ONBOARDING_KEY_MAPPING["create_service_connector"])
+
+    remote_artifact_store_count = connection.execute(
+        sa.select(sa.func.count(stack_component_table.c.id))
+        .where(stack_component_table.c.flavor != "local")
+        .where(stack_component_table.c.type == "artifact_store")
+    ).scalar()
+    if remote_artifact_store_count > 0:
+        new_state.extend(
+            ONBOARDING_KEY_MAPPING["create_remote_artifact_store"]
         )
 
-        pipeline_run_table = sa.Table("pipeline_run", meta)
-        service_connector_table = sa.Table("service_connector", meta)
-        stack_component_table = sa.Table("stack_component", meta)
-        stack_table = sa.Table("stack", meta)
-        stack_composition_table = sa.Table("stack_composition", meta)
-        pipeline_deployment_table = sa.Table("pipeline_deployment", meta)
+    remote_orchestrator_count = connection.execute(
+        sa.select(sa.func.count(stack_component_table.c.id))
+        .where(
+            stack_component_table.c.flavor.not_in(["local", "local_docker"])
+        )
+        .where(stack_component_table.c.type == "orchestrator")
+    ).scalar()
+    if remote_orchestrator_count > 0:
+        new_state.add("remote_orchestrator_created")
 
-        pipeline_run_count = connection.execute(
-            sa.select(sa.func.count(pipeline_run_table.c.id))
-        ).scalar()
-        if pipeline_run_count > 0:
-            new_state.extend(ONBOARDING_KEY_MAPPING["run_first_pipeline"])
+    stack_with_remote_artifact_store_count = connection.execute(
+        sa.select(sa.func.count(stack_table.c.id))
+        .where(stack_composition_table.c.stack_id == stack_table.c.id)
+        .where(
+            stack_composition_table.c.component_id
+            == stack_component_table.c.id
+        )
+        .where(stack_component_table.c.flavor != "local")
+        .where(stack_component_table.c.type == "artifact_store")
+    ).scalar()
+    if stack_with_remote_artifact_store_count > 0:
+        new_state.extend(ONBOARDING_KEY_MAPPING["create_remote_stack"])
 
-        service_connector_count = connection.execute(
-            sa.select(sa.func.count(service_connector_table.c.id))
-        ).scalar()
-        if service_connector_count > 0:
-            new_state.extend(
-                ONBOARDING_KEY_MAPPING["create_service_connector"]
-            )
+    stack_with_remote_orchestrator_count = connection.execute(
+        sa.select(sa.func.count(stack_table.c.id))
+        .where(stack_composition_table.c.stack_id == stack_table.c.id)
+        .where(
+            stack_composition_table.c.component_id
+            == stack_component_table.c.id
+        )
+        .where(
+            stack_component_table.c.flavor.not_in(["local", "local_docker"])
+        )
+        .where(stack_component_table.c.type == "orchestrator")
+    ).scalar()
+    if stack_with_remote_orchestrator_count > 0:
+        new_state.add("stack_with_remote_orchestrator_created")
 
-        remote_artifact_store_count = connection.execute(
-            sa.select(sa.func.count(stack_component_table.c.id))
-            .where(stack_component_table.c.flavor != "local")
-            .where(stack_component_table.c.type == "artifact_store")
-        ).scalar()
-        if remote_artifact_store_count > 0:
-            new_state.extend(
-                ONBOARDING_KEY_MAPPING["create_remote_artifact_store"]
-            )
+    pipeline_run_with_remote_artifact_store_count = connection.execute(
+        sa.select(sa.func.count(pipeline_run_table.c.id))
+        .where(
+            pipeline_run_table.c.deployment_id
+            == pipeline_deployment_table.c.id
+        )
+        .where(pipeline_deployment_table.c.stack_id == stack_table.c.id)
+        .where(stack_composition_table.c.stack_id == stack_table.c.id)
+        .where(
+            stack_composition_table.c.component_id
+            == stack_component_table.c.id
+        )
+        .where(stack_component_table.c.flavor != "local")
+        .where(stack_component_table.c.type == "artifact_store")
+    ).scalar()
+    if pipeline_run_with_remote_artifact_store_count > 0:
+        new_state.extend(ONBOARDING_KEY_MAPPING["run_remote_pipeline"])
 
-        remote_stack_count = connection.execute(
-            sa.select(sa.func.count(stack_table.c.id))
-            .where(stack_composition_table.c.stack_id == stack_table.c.id)
-            .where(
-                stack_composition_table.c.component_id
-                == stack_component_table.c.id
-            )
-            .where(stack_component_table.c.flavor != "local")
-            .where(stack_component_table.c.type == "artifact_store")
-        ).scalar()
-        if remote_stack_count > 0:
-            new_state.extend(ONBOARDING_KEY_MAPPING["create_remote_stack"])
+    pipeline_run_with_remote_orchestrator_count = connection.execute(
+        sa.select(sa.func.count(pipeline_run_table.c.id))
+        .where(
+            pipeline_run_table.c.deployment_id
+            == pipeline_deployment_table.c.id
+        )
+        .where(pipeline_deployment_table.c.stack_id == stack_table.c.id)
+        .where(stack_composition_table.c.stack_id == stack_table.c.id)
+        .where(
+            stack_composition_table.c.component_id
+            == stack_component_table.c.id
+        )
+        .where(
+            stack_component_table.c.flavor.not_in(["local", "local_docker"])
+        )
+        .where(stack_component_table.c.type == "orchestrator")
+    ).scalar()
+    if pipeline_run_with_remote_orchestrator_count > 0:
+        new_state.add("pipeline_run_with_remote_orchestrator")
 
-        remote_pipeline_run_count = connection.execute(
-            sa.select(sa.func.count(pipeline_run_table.c.id))
-            .where(
-                pipeline_run_table.c.deployment_id
-                == pipeline_deployment_table.c.id
-            )
-            .where(pipeline_deployment_table.c.stack_id == stack_table.c.id)
-            .where(stack_composition_table.c.stack_id == stack_table.c.id)
-            .where(
-                stack_composition_table.c.component_id
-                == stack_component_table.c.id
-            )
-            .where(stack_component_table.c.flavor != "local")
-            .where(stack_component_table.c.type == "artifact_store")
-        ).scalar()
-        if remote_pipeline_run_count > 0:
-            new_state.extend(ONBOARDING_KEY_MAPPING["run_remote_pipeline"])
+    if new_state:
+        # If any of the items are finished, we also complete the initial
+        # onboarding step which is not explicitly tracked in the database
+        new_state.append("device_verified")
 
-        if new_state:
-            # If any of the items are finished, we also complete the initial
-            # onboarding step which is not explicitly tracked in the database
-            new_state.append("device_verified")
+        # Remove duplicate keys
+        new_state = list(set(new_state))
 
     connection.execute(
         sa.update(server_settings_table).values(
