@@ -4,10 +4,6 @@ description: A simple guide to quickly set up a minimal stack on GCP.
 
 # Set up a minimal GCP stack
 
-{% hint style="warning" %}
-The GCP integration currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
-{% endhint %}
-
 This page aims to quickly set up a minimal production stack on GCP. With just a few simple steps you will set up a service account with specifically-scoped permissions that ZenML can use to authenticate with the relevant GCP resources.
 
 {% hint style="warning" %}
