@@ -84,6 +84,8 @@ class ServerSettingsSchema(SQLModel, table=True):
         self.onboarding_state = json.dumps(list(new_state))
         self.updated = datetime.utcnow()
 
+        return self
+
     def to_model(
         self,
         include_metadata: bool = False,

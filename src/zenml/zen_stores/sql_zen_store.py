@@ -1692,6 +1692,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             completed_steps: Newly completed onboarding steps.
+            session: DB session.
         """
         if self._cached_onboarding_state and completed_steps.issubset(
             self._cached_onboarding_state
