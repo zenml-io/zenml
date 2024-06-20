@@ -376,6 +376,7 @@ class PluginType(StrEnum):
     EVENT_SOURCE = "event_source"
     ACTION = "action"
     ASSISTANT = "assistant"
+    AGENT = "agent"
 
 
 class PluginSubType(StrEnum):

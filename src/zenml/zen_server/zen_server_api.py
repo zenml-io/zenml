@@ -42,7 +42,7 @@ from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
-    assistant_endpoints,
+    agent_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
     devices_endpoints,
