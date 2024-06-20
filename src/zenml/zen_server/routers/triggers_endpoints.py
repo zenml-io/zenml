@@ -84,6 +84,7 @@ def list_triggers(
         filter_model=trigger_filter_model,
         resource_type=ResourceType.TRIGGER,
         list_method=zen_store().list_triggers,
+        hydrate=hydrate,
     )
 
 

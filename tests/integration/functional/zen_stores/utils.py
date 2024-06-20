@@ -959,15 +959,6 @@ class CrudTestConfig:
             field_name,
             conditional_entity,
         ) in self.conditional_entities.items():
-            if hasattr(conditional_entity.create_model, "name"):
-                # Use a new name in case the cleanup fails for some reason to
-                # avoid issues with duplicate names
-                setattr(
-                    conditional_entity.create_model,
-                    "name",
-                    sample_name("conditional"),
-                )
-
             # Split the field name by '.' to handle nested fields
             field_names = field_name.split(".")
             parent_model = create_model
