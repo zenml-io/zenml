@@ -13,6 +13,15 @@
 #  permissions and limitations under the License.
 """Custom types that are used to indicate how to handle data."""
 
+from typing import TYPE_CHECKING, Callable, Union
+
+if TYPE_CHECKING:
+    from types import FunctionType
+
+    from zenml.config.source import Source
+
+    HookSpecification = Union[str, Source, FunctionType, Callable[..., None]]
+
 
 class HTMLString(str):
     """Special string class to indicate an HTML string."""
