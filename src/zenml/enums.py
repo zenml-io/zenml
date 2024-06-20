@@ -394,10 +394,17 @@ class OnboardingStep(StrEnum):
     STARTER_SETUP_COMPLETED = "starter_setup_completed"
     SERVICE_CONNECTOR_CREATED = "service_connector_created"
     REMOTE_ARTIFACT_STORE_CREATED = "remote_artifact_store_created"
+    REMOTE_ORCHESTRATOR_CREATED = "remote_orchestrator_created"
     STACK_WITH_REMOTE_ARTIFACT_STORE_CREATED = (
         "stack_with_remote_artifact_store_created"
     )
+    STACK_WITH_REMOTE_ORCHESTRATOR_CREATED = (
+        "stack_with_remote_orchestrator_created"
+    )
     PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE = (
         "pipeline_run_with_remote_artifact_store"
+    )
+    PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR = (
+        "pipeline_run_with_remote_orchestrator"
     )
     PRODUCTION_SETUP_COMPLETED = "production_setup_completed"

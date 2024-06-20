@@ -2995,6 +2995,17 @@ class SqlZenStore(BaseZenStore):
                     },
                     session=session,
                 )
+            elif (
+                component.type == StackComponentType.ORCHESTRATOR
+                and component.flavor not in {"local", "local_docker"}
+            ):
+                self._update_onboarding_state(
+                    completed_steps={
+                        OnboardingStep.REMOTE_ORCHESTRATOR_CREATED
+                    },
+                    session=session,
+                )
+
             return new_component.to_model(include_metadata=True)
 
     def get_stack_component(
@@ -6738,16 +6749,24 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_stack_schema)
 
+            completed_onboarding_steps = set()
             for component in defined_components:
                 if component.type == StackComponentType.ARTIFACT_STORE:
                     if component.flavor != "local":
-                        self._update_onboarding_state(
-                            completed_steps={
-                                OnboardingStep.STACK_WITH_REMOTE_ARTIFACT_STORE_CREATED
-                            },
-                            session=session,
+                        completed_onboarding_steps.add(
+                            OnboardingStep.STACK_WITH_REMOTE_ARTIFACT_STORE_CREATED
                         )
-                    break
+
+                if component.type == StackComponentType.ORCHESTRATOR:
+                    if component.flavor not in {"local", "local_docker"}:
+                        completed_onboarding_steps.add(
+                            OnboardingStep.STACK_WITH_REMOTE_ORCHESTRATOR_CREATED
+                        )
+
+            self._update_onboarding_state(
+                completed_steps=completed_onboarding_steps,
+                session=session,
+            )
 
             return new_stack_schema.to_model(include_metadata=True)
 
@@ -7514,6 +7533,13 @@ class SqlZenStore(BaseZenStore):
                             OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
                             OnboardingStep.PRODUCTION_SETUP_COMPLETED,
                         }
+                    )
+                if stack_metadata["orchestrator"] not in {
+                    "local",
+                    "local_docker",
+                }:
+                    completed_onboarding_steps.add(
+                        OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
                     )
 
                 self._update_onboarding_state(
