@@ -373,12 +373,13 @@ class StepLogsStorage:
                 files_.sort()
                 logger.debug("Log files count: %s", len(files_))
 
-                try:
-                    # dump all logs to a local file first
-                    with self.artifact_store.open(
-                        os.path.join(self.logs_uri, file_name_), "w"
-                    ) as merged_file:
-                        for file in files_:
+                missing_files = []
+                # dump all logs to a local file first
+                with self.artifact_store.open(
+                    os.path.join(self.logs_uri, file_name_), "w"
+                ) as merged_file:
+                    for file in files_:
+                        try:
                             merged_file.write(
                                 str(
                                     _load_file_from_artifact_store(
@@ -388,11 +389,12 @@ class StepLogsStorage:
                                     )
                                 )
                             )
-                except Exception as e:
-                    logger.warning(f"Failed to merge log files. {e}")
-                else:
-                    # clean up left over files
-                    for file in files_:
+                        except DoesNotExistException:
+                            missing_files.append(file)
+
+                # clean up left over files
+                for file in files_:
+                    if file not in missing_files:
                         self.artifact_store.remove(
                             os.path.join(self.logs_uri, str(file))
                         )
