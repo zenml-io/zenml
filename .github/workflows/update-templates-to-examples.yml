@@ -261,7 +261,7 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.06.06  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: feature/OSSK-569-accelerated-template  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
