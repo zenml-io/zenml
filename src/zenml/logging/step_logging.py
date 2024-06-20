@@ -237,8 +237,6 @@ class StepLogsStorage:
 
         # Immutable filesystems state
         self.last_merge_time = time.time()
-        self.log_files_not_merged: List[str] = []
-        self.next_merged_file_name: str = self._get_timestamped_filename()
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
@@ -299,12 +297,7 @@ class StepLogsStorage:
             try:
                 if self.buffer:
                     if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-                        if not self.log_files_not_merged:
-                            self.next_merged_file_name = (
-                                self._get_timestamped_filename()
-                            )
                         _logs_uri = self._get_timestamped_filename()
-                        self.log_files_not_merged.append(_logs_uri)
                         with self.artifact_store.open(
                             os.path.join(
                                 self.logs_uri,
@@ -343,32 +336,20 @@ class StepLogsStorage:
             and time.time() - self.last_merge_time > self.merge_files_interval
         ):
             try:
-                self.merge_log_files(
-                    self.next_merged_file_name, self.log_files_not_merged
-                )
+                self.merge_log_files()
             except (OSError, IOError) as e:
                 logger.error(f"Error while trying to roll up logs: {e}")
-            else:
-                self.log_files_not_merged = []
             finally:
                 self.last_merge_time = time.time()
 
-    def merge_log_files(
-        self,
-        file_name: Optional[str] = None,
-        files: Optional[List[str]] = None,
-    ) -> None:
+    def merge_log_files(self) -> None:
         """Merges all log files into one in the given URI.
 
         Called on the logging context exit.
-
-        Args:
-            file_name: The name of the merged log file.
-            files: The list of log files to merge.
         """
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-            files_ = files or self.artifact_store.listdir(self.logs_uri)
-            file_name_ = file_name or self._get_timestamped_filename()
+            files_ = self.artifact_store.listdir(self.logs_uri)
+            file_name_ = self._get_timestamped_filename()
             if len(files_) > 1:
                 files_.sort()
                 logger.debug("Log files count: %s", len(files_))
