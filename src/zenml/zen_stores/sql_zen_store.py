@@ -1681,7 +1681,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             settings = self._get_server_settings(session=session)
             if settings.onboarding_state:
-                return json.loads(settings.onboarding_state)
+                return cast(List[str], json.loads(settings.onboarding_state))
             else:
                 return []
 
@@ -1707,6 +1707,7 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         session.refresh(settings)
 
+        assert settings.onboarding_state
         self._cached_onboarding_state = set(
             json.loads(settings.onboarding_state)
         )
@@ -6750,7 +6751,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_stack_schema)
 
-            completed_onboarding_steps = set()
+            completed_onboarding_steps: Set[str] = set()
             for component in defined_components:
                 if component.type == StackComponentType.ARTIFACT_STORE:
                     if component.flavor != "local":
@@ -7524,7 +7525,7 @@ class SqlZenStore(BaseZenStore):
                         **stack_metadata,
                     }
 
-                completed_onboarding_steps = {
+                completed_onboarding_steps: Set[str] = {
                     OnboardingStep.PIPELINE_RUN,
                     OnboardingStep.STARTER_SETUP_COMPLETED,
                 }
