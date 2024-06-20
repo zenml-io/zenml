@@ -162,7 +162,6 @@ def generate_model_report_cmd(
         report = generate_model_report(
             report_type=ModelReportType(report_type),
             model_version_id=model_version_id,
-            query=query,
         )
         console.print(Markdown(report))
     else:
