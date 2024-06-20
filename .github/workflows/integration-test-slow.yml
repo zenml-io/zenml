@@ -223,7 +223,7 @@ jobs:
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Integration Tests - Slow CI
         run: |
-          bash scripts/test-coverage-xml.sh integration/examples ${{ inputs.test_environment }}
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17

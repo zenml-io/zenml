@@ -22,10 +22,6 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
-
 
 class TensorflowIntegration(Integration):
     """Definition of Tensorflow integration for ZenML."""
