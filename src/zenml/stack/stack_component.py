@@ -13,12 +13,15 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
 
+import json
 from abc import ABC
+from collections.abc import Mapping, Sequence
 from datetime import datetime
+from inspect import isclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
@@ -27,7 +30,12 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements, StepRunResponse
-from zenml.utils import secret_utils, settings_utils
+from zenml.utils import (
+    pydantic_utils,
+    secret_utils,
+    settings_utils,
+    typing_utils,
+)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -61,7 +69,8 @@ class StackComponentConfig(BaseModel, ABC):
         custom pydantic validation are set as secret references.
 
         Args:
-            warn_about_plain_text_secrets: If true, then warns about using plain-text secrets.
+            warn_about_plain_text_secrets: If true, then warns about using
+                plain-text secrets.
             **kwargs: Arguments to initialize this stack component.
 
         Raises:
@@ -71,7 +80,7 @@ class StackComponentConfig(BaseModel, ABC):
         """
         for key, value in kwargs.items():
             try:
-                field = self.__class__.__fields__[key]
+                field = self.__class__.model_fields[key]
             except KeyError:
                 # Value for a private attribute or non-existing field, this
                 # will fail during the upcoming pydantic validation
@@ -93,12 +102,13 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/user-guide/advanced-guide/secret-management"
+                        "https://docs.zenml.io/getting-started/deploying-zenml/manage-the-deployed-services/secret-management"
                     )
                 continue
 
-            requires_validation = field.pre_validators or field.post_validators
-            if requires_validation:
+            if pydantic_utils.has_validators(
+                pydantic_class=self.__class__, field_name=key
+            ):
                 raise ValueError(
                     f"Passing the stack component attribute `{key}` as a "
                     "secret reference is not allowed as additional validation "
@@ -116,7 +126,7 @@ class StackComponentConfig(BaseModel, ABC):
         """
         return {
             secret_utils.parse_secret_reference(v)
-            for v in self.dict().values()
+            for v in self.model_dump().values()
             if secret_utils.is_secret_reference(v)
         }
 
@@ -242,16 +252,70 @@ class StackComponentConfig(BaseModel, ABC):
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
 
-    class Config:
-        """Pydantic configuration class."""
+    @model_validator(mode="before")
+    @classmethod
+    @pydantic_utils.before_validator_handler
+    def _convert_json_strings(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Converts potential JSON strings.
 
+        Args:
+            data: The model data.
+
+        Returns:
+            The potentially converted data.
+
+        Raises:
+            ValueError: If any of the values is an invalid JSON string.
+        """
+        for key, field in cls.model_fields.items():
+            if not field.annotation:
+                continue
+
+            value = data.get(key, None)
+
+            if isinstance(value, str):
+                if typing_utils.is_optional(field.annotation):
+                    args = list(typing_utils.get_args(field.annotation))
+                    if str in args:
+                        # Don't do any type coercion in case str is in the
+                        # possible types of the field
+                        continue
+
+                    # Remove `NoneType` from the arguments
+                    NoneType = type(None)
+                    if NoneType in args:
+                        args.remove(NoneType)
+
+                    # We just choose the first arg and match against this
+                    annotation = args[0]
+                else:
+                    annotation = field.annotation
+
+                if typing_utils.get_origin(annotation) in {
+                    dict,
+                    list,
+                    Mapping,
+                    Sequence,
+                }:
+                    try:
+                        data[key] = json.loads(value)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(
+                            f"Invalid json string '{value}'"
+                        ) from e
+                elif isclass(annotation) and issubclass(annotation, BaseModel):
+                    data[key] = annotation.model_validate_json(
+                        value
+                    ).model_dump()
+
+        return data
+
+    model_config = ConfigDict(
         # public attributes are immutable
-        allow_mutation = False
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        frozen=True,
         # prevent extra attributes during model initialization
-        extra = Extra.forbid
+        extra="forbid",
+    )
 
 
 class StackComponent:
@@ -440,7 +504,7 @@ class StackComponent:
         )
 
         if key in all_settings:
-            return self.settings_class.parse_obj(all_settings[key])
+            return self.settings_class.model_validate(dict(all_settings[key]))
         else:
             return self.settings_class()
 
@@ -770,7 +834,7 @@ class StackComponent:
             A string representation of the stack component.
         """
         attribute_representation = ", ".join(
-            f"{key}={value}" for key, value in self.config.dict().items()
+            f"{key}={value}" for key, value in self.config.model_dump().items()
         )
         return (
             f"{self.__class__.__qualname__}(type={self.type}, "

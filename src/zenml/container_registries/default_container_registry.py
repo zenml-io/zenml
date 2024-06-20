@@ -35,7 +35,7 @@ class DefaultContainerRegistryFlavor(BaseContainerRegistryFlavor):
 
     @property
     def docs_url(self) -> Optional[str]:
-        """A url to point at docs explaining this flavor.
+        """A URL to point at docs explaining this flavor.
 
         Returns:
             A flavor docs url.
@@ -44,7 +44,7 @@ class DefaultContainerRegistryFlavor(BaseContainerRegistryFlavor):
 
     @property
     def sdk_docs_url(self) -> Optional[str]:
-        """A url to point at docs explaining this flavor.
+        """A URL to point at docs explaining this flavor.
 
         Returns:
             A flavor docs url.
@@ -53,7 +53,7 @@ class DefaultContainerRegistryFlavor(BaseContainerRegistryFlavor):
 
     @property
     def logo_url(self) -> str:
-        """A url to represent the flavor in the dashboard.
+        """A URL to represent the flavor in the dashboard.
 
         Returns:
             The flavor logo.

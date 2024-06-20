@@ -51,8 +51,8 @@ class TagRequest(BaseRequest):
 class TagUpdate(BaseModel):
     """Update model for tags."""
 
-    name: Optional[str]
-    color: Optional[ColorVariants]
+    name: Optional[str] = None
+    color: Optional[ColorVariants] = None
 
 
 # ------------------ Response Model ------------------
@@ -121,5 +121,9 @@ class TagResponse(
 class TagFilter(BaseFilter):
     """Model to enable advanced filtering of all tags."""
 
-    name: Optional[str]
-    color: Optional[ColorVariants]
+    name: Optional[str] = Field(
+        description="The unique title of the tag.", default=None
+    )
+    color: Optional[ColorVariants] = Field(
+        description="The color variant assigned to the tag.", default=None
+    )

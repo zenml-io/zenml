@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base implementation of actions."""
 
-import json
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Type
 
@@ -66,10 +65,7 @@ class BaseActionFlavor(BasePluginFlavor, ABC):
         Returns:
             The config schema.
         """
-        config_schema: Dict[str, Any] = json.loads(
-            cls.ACTION_CONFIG_CLASS.schema_json()
-        )
-        return config_schema
+        return cls.ACTION_CONFIG_CLASS.model_json_schema()
 
     @classmethod
     def get_flavor_response_model(cls, hydrate: bool) -> ActionFlavorResponse:
@@ -262,7 +258,7 @@ class BaseActionHandler(BasePlugin, ABC):
         # before it is sent to the database
         self._validate_action_request(action=action, config=config)
         # Serialize the configuration back into the request
-        action.configuration = config.dict(exclude_none=True)
+        action.configuration = config.model_dump(exclude_none=True)
         # Create the action in the database
         action_response = self.zen_store.create_action(action=action)
         try:
@@ -288,7 +284,7 @@ class BaseActionHandler(BasePlugin, ABC):
             raise
 
         # Serialize the configuration back into the response
-        action_response.set_configuration(config.dict(exclude_none=True))
+        action_response.set_configuration(config.model_dump(exclude_none=True))
         # Return the response to the user
         return action_response
 
@@ -330,7 +326,9 @@ class BaseActionHandler(BasePlugin, ABC):
             config_update=config_update,
         )
         # Serialize the configuration update back into the update request
-        action_update.configuration = config_update.dict(exclude_none=True)
+        action_update.configuration = config_update.model_dump(
+            exclude_none=True
+        )
 
         # Update the action in the database
         action_response = self.zen_store.update_action(
@@ -370,7 +368,7 @@ class BaseActionHandler(BasePlugin, ABC):
 
         # Serialize the configuration back into the response
         action_response.set_configuration(
-            response_config.dict(exclude_none=True)
+            response_config.model_dump(exclude_none=True)
         )
         # Return the response to the user
         return action_response
@@ -433,7 +431,7 @@ class BaseActionHandler(BasePlugin, ABC):
             # Call the implementation specific method to process the response
             self._process_action_response(action=action, config=config)
             # Serialize the configuration back into the response
-            action.set_configuration(config.dict(exclude_none=True))
+            action.set_configuration(config.model_dump(exclude_none=True))
             # Add any implementation specific related resources to the action
             # response
             self._populate_action_response_resources(

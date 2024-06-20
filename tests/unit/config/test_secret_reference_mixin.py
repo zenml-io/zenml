@@ -15,7 +15,7 @@ import json
 from contextlib import ExitStack as does_not_raise
 
 import pytest
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.client import Client
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
@@ -46,8 +46,9 @@ def test_secret_references_are_not_allowed_for_fields_with_validators():
     class C(SecretReferenceMixin):
         value: str
 
-        @validator("value")
-        def validate(value):
+        @field_validator("value")
+        @classmethod
+        def validate(cls, value):
             return value
 
     with pytest.raises(ValueError):
@@ -71,9 +72,9 @@ def test_secret_reference_mixin_serialization_does_not_resolve_secrets():
     doesn't resolve secret references."""
     secret_ref = "{{name.key}}"
 
-    assert MixinSubclass(value=secret_ref).dict()["value"] == secret_ref
+    assert MixinSubclass(value=secret_ref).model_dump()["value"] == secret_ref
     assert (
-        json.loads(MixinSubclass(value=secret_ref).json())["value"]
+        json.loads(MixinSubclass(value=secret_ref).model_dump_json())["value"]
         == secret_ref
     )
 

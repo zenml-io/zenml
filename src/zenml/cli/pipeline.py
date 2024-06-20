@@ -328,22 +328,35 @@ def list_pipelines(**kwargs: Any) -> None:
     required=False,
 )
 @click.option(
+    "--all-versions",
+    help="Delete all versions of the pipeline..",
+    is_flag=True,
+)
+@click.option(
     "--yes",
     "-y",
     is_flag=True,
     help="Don't ask for confirmation.",
 )
 def delete_pipeline(
-    pipeline_name_or_id: str, version: Optional[str] = None, yes: bool = False
+    pipeline_name_or_id: str,
+    version: Optional[str] = None,
+    all_versions: bool = False,
+    yes: bool = False,
 ) -> None:
     """Delete a pipeline.
 
     Args:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
         version: The version of the pipeline to delete.
+        all_versions: If set, delete all versions of the pipeline.
         yes: If set, don't ask for confirmation.
     """
-    version_suffix = f" (version {version})" if version else ""
+    version_suffix = ""
+    if all_versions:
+        version_suffix = " (all versions)"
+    elif version:
+        version_suffix = f" (version {version})"
 
     if not yes:
         confirmation = cli_utils.confirmation(
@@ -357,7 +370,9 @@ def delete_pipeline(
 
     try:
         Client().delete_pipeline(
-            name_id_or_prefix=pipeline_name_or_id, version=version
+            name_id_or_prefix=pipeline_name_or_id,
+            version=version,
+            all_versions=all_versions,
         )
     except KeyError as e:
         cli_utils.error(str(e))

@@ -218,7 +218,7 @@ class UserSchema(NamedSchema, table=True):
         Returns:
             The updated `UserSchema`.
         """
-        for field, value in user_update.dict(exclude_unset=True).items():
+        for field, value in user_update.model_dump(exclude_unset=True).items():
             if field == "old_password":
                 continue
 
@@ -249,7 +249,7 @@ class UserSchema(NamedSchema, table=True):
         Returns:
             The updated `UserSchema`.
         """
-        for field, value in service_account_update.dict(
+        for field, value in service_account_update.model_dump(
             exclude_none=True
         ).items():
             setattr(self, field, value)

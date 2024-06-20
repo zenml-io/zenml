@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -1256,6 +1257,22 @@ class ZenStoreInterface(ABC):
             KeyError: if the build doesn't exist.
         """
 
+    @abstractmethod
+    def run_build(
+        self,
+        build_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a build.
+
+        Args:
+            build_id: The ID of the build to run.
+            run_configuration: Configuration for the run.
+
+        Returns:
+            Model of the pipeline run.
+        """
+
     # -------------------- Pipeline deployments --------------------
 
     @abstractmethod
@@ -1321,6 +1338,22 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the deployment doesn't exist.
+        """
+
+    @abstractmethod
+    def run_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to run.
+            run_configuration: Configuration for the run.
+
+        Returns:
+            Model of the pipeline run.
         """
 
     # -------------------- Event Sources  --------------------

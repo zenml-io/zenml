@@ -15,8 +15,7 @@
 
 from typing import Generator, Generic, List, TypeVar
 
-from pydantic import SecretStr
-from pydantic.generics import GenericModel
+from pydantic import BaseModel
 from pydantic.types import NonNegativeInt, PositiveInt
 
 from zenml.models.v2.base.base import BaseResponse
@@ -25,7 +24,7 @@ from zenml.models.v2.base.filter import BaseFilter
 B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
 
 
-class Page(GenericModel, Generic[B]):
+class Page(BaseModel, Generic[B]):
     """Return Model for List Models to accommodate pagination."""
 
     index: PositiveInt
@@ -91,12 +90,3 @@ class Page(GenericModel, Generic[B]):
             Whether the item is in the page.
         """
         return item in self.items
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # This is needed to allow the REST API server to unpack SecretStr
-        # values correctly before sending them to the client.
-        json_encoders = {
-            SecretStr: lambda v: v.get_secret_value() if v else None
-        }

@@ -17,6 +17,7 @@ import functools
 import json
 import os
 from abc import ABCMeta
+from collections import Counter
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -36,13 +37,14 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from pydantic import SecretStr
+from pydantic import ConfigDict, SecretStr
 
 from zenml.client_lazy_loader import (
     client_lazy_loader,
     evaluate_all_lazy_load_args_in_client_methods,
 )
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -251,18 +253,14 @@ class ClientConfiguration(FileSyncModel):
         self.active_stack_id = stack.id
         self._active_stack = stack
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        validate_assignment=True,
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        extra="allow",
+    )
 
 
 class ClientMetaClass(ABCMeta):
@@ -1308,7 +1306,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdate(  # type: ignore[call-arg]
+        update_model = StackUpdate(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             stack_spec_path=stack_spec_file,
@@ -1600,7 +1598,7 @@ class Client(metaclass=ClientMetaClass):
         service_request = ServiceRequest(
             name=config.service_name,
             service_type=service_type,
-            config=config.dict(),
+            config=config.model_dump(),
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             model_version_id=model_version_id,
@@ -2034,7 +2032,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdate(  # type: ignore[call-arg]
+        update_model = ComponentUpdate(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             component_spec_path=component_spec_path,
@@ -2419,6 +2417,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
+        all_versions: bool = False,
     ) -> None:
         """Delete a pipeline.
 
@@ -2426,11 +2425,195 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
             version: The pipeline version. If left empty, will delete
                 the latest version.
+            all_versions: If `True`, delete all versions of the pipeline.
+
+        Raises:
+            ValueError: If an ID is supplied when trying to delete all versions
+                of a pipeline.
         """
-        pipeline = self.get_pipeline(
-            name_id_or_prefix=name_id_or_prefix, version=version
+        if all_versions:
+            if is_valid_uuid(name_id_or_prefix):
+                raise ValueError(
+                    "You need to supply a name (not an ID) when trying to "
+                    "delete all versions of a pipeline."
+                )
+
+            for pipeline in depaginate(
+                functools.partial(
+                    Client().list_pipelines, name=name_id_or_prefix
+                )
+            ):
+                Client().delete_pipeline(pipeline.id)
+        else:
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=name_id_or_prefix, version=version
+            )
+            self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
+
+    @_fail_for_sql_zen_store
+    def trigger_pipeline(
+        self,
+        pipeline_name_or_id: Union[str, UUID, None] = None,
+        pipeline_version: Optional[str] = None,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+        config_path: Optional[str] = None,
+        deployment_id: Optional[UUID] = None,
+        build_id: Optional[UUID] = None,
+        stack_name_or_id: Union[str, UUID, None] = None,
+        synchronous: bool = False,
+    ) -> PipelineRunResponse:
+        """Trigger a pipeline from the server.
+
+        Usage examples:
+        * Run the latest runnable build for the latest version of a pipeline:
+        ```python
+        Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
+        ```
+        * Run the latest runnable build for a specific version of a pipeline:
+        ```python
+        Client().trigger_pipeline(
+            pipeline_name_or_id=<NAME>,
+            pipeline_version=<VERSION>
         )
-        self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
+        ```
+        * Run a specific pipeline version on a specific stack:
+        ```python
+        Client().trigger_pipeline(
+            pipeline_name_or_id=<ID>,
+            stack_name_or_id=<ID>
+        )
+        ```
+        * Run a specific deployment:
+        ```python
+        Client().trigger_pipeline(deployment_id=<ID>)
+        ```
+        * Run a specific build:
+        ```python
+        Client().trigger_pipeline(build_id=<ID>)
+        ```
+
+        Args:
+            pipeline_name_or_id: Name or ID of the pipeline. If not given,
+                either the build or deployment that should be run needs to be
+                specified.
+            pipeline_version: Version of the pipeline. This is only used if a
+                pipeline name is given.
+            run_configuration: Configuration for the run. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `PipelineRunConfiguration` object. Either this or
+                the configuration in code can be specified.
+            deployment_id: ID of the deployment to run. Either this or a build
+                to run can be specified.
+            build_id: ID of the build to run. Either this or a deployment to
+                run can be specified.
+            stack_name_or_id: Name or ID of the stack on which to run the
+                pipeline. If not specified, this method will try to find a
+                runnable build on any stack.
+            synchronous: If `True`, this method will wait until the triggered
+                run is finished.
+
+        Raises:
+            RuntimeError: If triggering the pipeline failed.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        from zenml.new.pipelines.run_utils import (
+            validate_run_config_is_runnable_from_server,
+            validate_stack_is_runnable_from_server,
+            wait_for_pipeline_run_to_finish,
+        )
+
+        if Counter([build_id, deployment_id, pipeline_name_or_id])[None] != 2:
+            raise RuntimeError(
+                "You need to specify exactly one of pipeline, build or "
+                "deployment to trigger."
+            )
+
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
+        if deployment_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Deployment ID and stack specified, ignoring the stack and "
+                    "using stack from deployment instead."
+                )
+
+            run = self.zen_store.run_deployment(
+                deployment_id=deployment_id,
+                run_configuration=run_configuration,
+            )
+        elif build_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Build ID and stack specified, ignoring the stack and "
+                    "using stack from build instead."
+                )
+
+            run = self.zen_store.run_build(
+                build_id=build_id, run_configuration=run_configuration
+            )
+        else:
+            assert pipeline_name_or_id
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id, version=pipeline_version
+            )
+
+            stack = None
+            if stack_name_or_id:
+                stack = self.get_stack(
+                    stack_name_or_id, allow_name_prefix_match=False
+                )
+                validate_stack_is_runnable_from_server(
+                    zen_store=self.zen_store, stack=stack
+                )
+
+            builds = depaginate(
+                partial(
+                    self.list_builds,
+                    pipeline_id=pipeline.id,
+                    stack_id=stack.id if stack else None,
+                )
+            )
+
+            for build in builds:
+                if not build.template_deployment_id:
+                    continue
+
+                if not build.stack:
+                    continue
+
+                try:
+                    validate_stack_is_runnable_from_server(
+                        zen_store=self.zen_store, stack=build.stack
+                    )
+                except ValueError:
+                    continue
+
+                run = self.zen_store.run_build(
+                    build_id=build.id, run_configuration=run_configuration
+                )
+                break
+            else:
+                raise RuntimeError(
+                    "Unable to find a runnable build for the given stack and "
+                    "pipeline."
+                )
+
+        if synchronous:
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
 
     # -------------------------------- Builds ----------------------------------
 
@@ -3140,13 +3323,13 @@ class Client(metaclass=ClientMetaClass):
 
     def get_deployment(
         self,
-        id_or_prefix: str,
+        id_or_prefix: Union[str, UUID],
         hydrate: bool = True,
     ) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
 
         Args:
-            id_or_prefix: The id or id prefix of the build.
+            id_or_prefix: The id or id prefix of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3162,10 +3345,12 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            return self.zen_store.get_deployment(
-                UUID(id_or_prefix),
-                hydrate=hydrate,
+            id_ = (
+                UUID(id_or_prefix)
+                if isinstance(id_or_prefix, str)
+                else id_or_prefix
             )
+            return self.zen_store.get_deployment(id_, hydrate=hydrate)
 
         entity = self.list_deployments(
             id=f"startswith:{id_or_prefix}",
@@ -4421,7 +4606,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate=True,
         )
 
-        secret_update = SecretUpdate(name=new_name or secret.name)  # type: ignore[call-arg]
+        secret_update = SecretUpdate(name=new_name or secret.name)
 
         if new_scope:
             secret_update.scope = new_scope
@@ -4740,7 +4925,7 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdate(  # type: ignore[call-arg]
+        update = CodeRepositoryUpdate(
             name=name, description=description, logo_url=logo_url
         )
         return self.zen_store.update_code_repository(
@@ -5250,8 +5435,6 @@ class Client(metaclass=ClientMetaClass):
             expires_at=expires_at,
             expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
-            user=self.active_user.id,
-            workspace=self.active_workspace.id,
         )
 
         # Validate and configure the resources
@@ -5294,21 +5477,32 @@ class Client(metaclass=ClientMetaClass):
 
         if verify:
             # Prefer to verify the connector config server-side if the
-            # implementation if available there, because it ensures
+            # implementation, if available there, because it ensures
             # that the connector can be shared with other users or used
             # from other machines and because some auth methods rely on the
             # server-side authentication environment
+
+            # Convert the update model to a request model for validation
+            connector_request_dict = connector_update.model_dump()
+            connector_request_dict.update(
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+            )
+            connector_request = ServiceConnectorRequest.model_validate(
+                connector_request_dict
+            )
+
             if connector.remote:
                 connector_resources = (
                     self.zen_store.verify_service_connector_config(
-                        connector_update,
+                        service_connector=connector_request,
                         list_resources=list_resources,
                     )
                 )
             else:
                 connector_instance = (
                     service_connector_registry.instantiate_connector(
-                        model=connector_update
+                        model=connector_request,
                     )
                 )
                 connector_resources = connector_instance.verify(

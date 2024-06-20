@@ -142,7 +142,6 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     )
     action_subtype: str = Field(
         title="The subtype of the action that is executed by this trigger.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     event_source_flavor: Optional[str] = Field(
         default=None,
@@ -335,6 +334,7 @@ class TriggerFilter(WorkspaceScopedFilter):
     action_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="The action this trigger is attached to.",
+        union_mode="left_to_right",
     )
     is_active: Optional[bool] = Field(
         default=None,

@@ -15,6 +15,7 @@
 
 import functools
 import itertools
+import json
 import os
 from datetime import datetime
 from typing import (
@@ -481,7 +482,9 @@ class Stack:
             A dictionary containing the stack components.
         """
         component_dict = {
-            component_type.value: component.config.json(sort_keys=True)
+            component_type.value: json.dumps(
+                component.config.model_dump(mode="json"), sort_keys=True
+            )
             for component_type, component in self.components.items()
         }
         component_dict.update({"name": self.name})
@@ -801,7 +804,7 @@ class Stack:
                     f"Additionally, we are also providing a variety of "
                     f" deployment recipes for popular Kubernetes-based "
                     f"integrations such as Kubeflow, Tekton, and Seldon etc."
-                    f"Check out https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes"
+                    f"Check out https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-using-mlstacks"
                     f"for more information."
                 )
 
@@ -811,7 +814,7 @@ class Stack:
                 "and step operators require a remote "
                 "ZenML server. To run a pipeline with this stack you need to "
                 "connect to a remote ZenML server first. Check out "
-                "https://docs.zenml.io/user-guide/starter-guide/switch-to-production "
+                "https://docs.zenml.io/getting-started/deploying-zenml "
                 "for more information on how to deploy ZenML."
             )
 

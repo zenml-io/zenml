@@ -4,6 +4,8 @@ description: How to migrate from ZenML <=0.13.2 to 0.20.0.
 
 # Migration guide 0.13.2 → 0.20.0
 
+*Last updated: 2023-07-24*
+
 The ZenML 0.20.0 release brings a number of big changes to its architecture and its features, some of which are not backwards compatible with previous versions. This guide walks you through these changes and offers instructions on how to migrate your existing ZenML stacks and pipelines to the new version with minimal effort and disruption to your existing workloads.
 
 {% hint style="warning" %}
@@ -14,7 +16,7 @@ If you have updated to ZenML 0.20.0 by mistake or are experiencing issues with t
 
 High-level overview of the changes:
 
-* [ZenML takes over the Metadata Store](migration-zero-twenty.md#zenml-takes-over-the-metadata-store-role) role. All information about your ZenML Stacks, pipelines, and artifacts is now tracked by ZenML itself directly. If you are currently using remote Metadata Stores (e.g. deployed in cloud) in your stacks, you will probably need to replace them with [ZenML cloud deployments](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md).
+* [ZenML takes over the Metadata Store](migration-zero-twenty.md#zenml-takes-over-the-metadata-store-role) role. All information about your ZenML Stacks, pipelines, and artifacts is tracked by ZenML itself directly. If you are currently using remote Metadata Stores (e.g. deployed in cloud) in your stacks, you will probably need to replace them with a [ZenML server deployment](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md).
 * the [new ZenML Dashboard](migration-zero-twenty.md#the-zenml-dashboard-is-now-available) is now available with all ZenML deployments.
 * [ZenML Profiles have been removed](migration-zero-twenty.md#removal-of-profiles-and-the-local-yaml-database) in favor of ZenML Projects. You need to [manually migrate your existing ZenML Profiles](migration-zero-twenty.md#-how-to-migrate-your-profiles) after the update.
 * the [configuration of Stack Components is now decoupled from their implementation](migration-zero-twenty.md#decoupling-stack-component-configuration-from-implementation). If you extended ZenML with custom stack component implementations, you may need to update the way they are registered in ZenML.
@@ -279,7 +281,7 @@ The `zenml profile migrate` CLI command also provides command line flags for cas
 
 Stack components can now be registered without having the required integrations installed. As part of this change, we split all existing stack component definitions into three classes: an implementation class that defines the logic of the stack component, a config class that defines the attributes and performs input validations, and a flavor class that links implementation and config classes together. See [**component flavor models #895**](https://github.com/zenml-io/zenml/pull/895) for more details.
 
-If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md) for updated information on how to do this.
+If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../how-to/stack-deployment/implement-a-custom-stack-component.md) for updated information on how to do this.
 
 ## Shared ZenML Stacks and Stack Components
 
@@ -322,8 +324,6 @@ Alongside the architectural shift, Pipeline configuration has been completely re
 Configuring pipelines, steps, and stack components in ZenML
 {% endembed %}
 
-If you don't want to watch the video, you can read all about the changes here and we have a [dedicated page](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) in the docs describing the new ways to configure objects in ZenML.
-
 **What changed?**
 
 ZenML pipelines and steps could previously be configured in many different ways:
@@ -339,9 +339,9 @@ With ZenML 0.20.0, we introduce the `BaseSettings` class, a broad class that ser
 
 Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using the `@enable_xxx` decorators). The same configurations can also be defined in a YAML file.
 
-Read more about this paradigm in the [new docs section about settings](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+Read more about this paradigm in the [new docs section about settings](../../how-to/use-configuration-files/what-can-be-configured.md).
 
-Here is a list of changes that are the most obvious in consequence of the above code. Please note that this list is not exhaustive, and if we have missed something let us know via [Slack](https://zenml.io/slack-invite).
+Here is a list of changes that are the most obvious in consequence of the above code. Please note that this list is not exhaustive, and if we have missed something let us know via [Slack](https://zenml.io/slack).
 
 **Deprecating the `enable_xxx` decorators**
 
@@ -363,7 +363,7 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 **Deprecating `pipeline.with_config(...)`**
 
-**How to migrate**: Replaced with the new `pipeline.run(config_path=...)`. Check out the new YAML config file structure [here](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+**How to migrate**: Replaced with the new `pipeline.run(config_path=...)`.
 
 **Deprecating `step.with_return_materializer(...)`**
 
@@ -460,7 +460,7 @@ While this rehaul is big and will break previous releases, we do have some more 
 
 ## 🐞 Reporting Bugs
 
-While we have tried our best to document everything that has changed, we realize that mistakes can be made and smaller changes overlooked. If this is the case, or you encounter a bug at any time, the ZenML core team and community are available around the clock on the growing [Slack community](https://zenml.io/slack-invite).
+While we have tried our best to document everything that has changed, we realize that mistakes can be made and smaller changes overlooked. If this is the case, or you encounter a bug at any time, the ZenML core team and community are available around the clock on the growing [Slack community](https://zenml.io/slack).
 
 For bug reports, please also consider submitting a [GitHub Issue](https://github.com/zenml-io/zenml/issues/new/choose).
 

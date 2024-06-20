@@ -79,19 +79,19 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2024.04.05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.06",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.04.03",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.06",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
-        github_tag="2024.04.05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.14",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     llm_finetuning=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-llm-finetuning",
-        github_tag="2024.05.23",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.06",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -492,7 +492,10 @@ def go() -> None:
         input("Press ENTER to continue...")
 
     try:
-        subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+        subprocess.check_call(
+            ["jupyter", "notebook", "--ContentsManager.allow_hidden=True"],
+            cwd=zenml_tutorial_path,
+        )
     except subprocess.CalledProcessError as e:
         cli_utils.error(
             "An error occurred while launching Jupyter Notebook. "
@@ -653,7 +656,15 @@ def info(
         cli_utils.print_user_info(user_info)
 
     if stack:
-        cli_utils.print_debug_stack()
+        try:
+            cli_utils.print_debug_stack()
+        except ModuleNotFoundError as e:
+            cli_utils.warning(
+                "Could not print debug stack information. Please make sure "
+                "you have the necessary dependencies and integrations "
+                "installed for all your stack components."
+            )
+            cli_utils.warning(f"The missing package is: '{e.name}'")
 
 
 @cli.command(

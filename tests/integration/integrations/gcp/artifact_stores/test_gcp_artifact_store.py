@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 
-import sys
 from datetime import datetime
 from uuid import uuid4
 
@@ -44,10 +43,6 @@ def _get_gcp_artifact_store(**kwargs):
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info > (3, 10),
-    reason="GCP integration not installed in Python 3.11",
-)
 def test_must_be_gcs_path():
     """Checks that a gcp artifact store can only be initialized with a gcspath."""
     with pytest.raises(ArtifactStoreInterfaceError):

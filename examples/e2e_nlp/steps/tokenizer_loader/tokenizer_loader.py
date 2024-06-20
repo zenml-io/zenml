@@ -43,7 +43,7 @@ def tokenizer_loader(
     For more information on how to configure steps in a pipeline, refer to the
     following documentation:
 
-        https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
+        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
 
     Args:
         lower_case: A boolean value indicating whether to convert the input text to

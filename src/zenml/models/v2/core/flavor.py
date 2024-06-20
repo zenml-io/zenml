@@ -20,7 +20,7 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.internal import server_owned_request_model
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     UserScopedRequest,
     UserScopedResponse,
@@ -29,7 +29,6 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseResources,
     WorkspaceScopedFilter,
 )
-from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -104,19 +103,82 @@ class FlavorRequest(UserScopedRequest):
     )
 
 
-@server_owned_request_model
 class InternalFlavorRequest(FlavorRequest):
     """Internal flavor request model."""
 
-    pass
+    user: Optional[UUID] = Field(  # type: ignore[assignment]
+        title="The id of the user that created this resource.",
+        default=None,
+    )
 
 
 # ------------------ Update Model ------------------
 
 
-@update_model
-class FlavorUpdate(FlavorRequest):
+class FlavorUpdate(BaseUpdate):
     """Update model for flavors."""
+
+    name: Optional[str] = Field(
+        title="The name of the Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    type: Optional[StackComponentType] = Field(
+        title="The type of the Flavor.", default=None
+    )
+    config_schema: Optional[Dict[str, Any]] = Field(
+        title="The JSON schema of this flavor's corresponding configuration.",
+        default=None,
+    )
+    connector_type: Optional[str] = Field(
+        title="The type of the connector that this flavor uses.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    connector_resource_type: Optional[str] = Field(
+        title="The resource type of the connector that this flavor uses.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    connector_resource_id_attr: Optional[str] = Field(
+        title="The name of an attribute in the stack component configuration "
+        "that plays the role of resource ID when linked to a service "
+        "connector.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    source: Optional[str] = Field(
+        title="The path to the module which contains this Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    integration: Optional[str] = Field(
+        title="The name of the integration that the Flavor belongs to.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    logo_url: Optional[str] = Field(
+        title="Optionally, a url pointing to a png,"
+        "svg or jpg can be attached.",
+        default=None,
+    )
+    docs_url: Optional[str] = Field(
+        title="Optionally, a url pointing to docs, within docs.zenml.io.",
+        default=None,
+    )
+    sdk_docs_url: Optional[str] = Field(
+        title="Optionally, a url pointing to SDK docs,"
+        "within sdkdocs.zenml.io.",
+        default=None,
+    )
+    is_custom: Optional[bool] = Field(
+        title="Whether or not this flavor is a custom, user created flavor.",
+        default=None,
+    )
+    workspace: Optional[UUID] = Field(
+        title="The workspace to which this resource belongs.",
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------
@@ -367,8 +429,12 @@ class FlavorFilter(WorkspaceScopedFilter):
         description="Integration associated with the flavor",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the stack"
+        default=None,
+        description="Workspace of the stack",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the stack"
+        default=None,
+        description="User of the stack",
+        union_mode="left_to_right",
     )

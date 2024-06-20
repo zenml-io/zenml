@@ -89,7 +89,7 @@ class JWTToken(BaseModel):
         except jwt.PyJWTError as e:
             raise AuthorizationException(f"Invalid JWT token: {e}") from e
 
-        subject: str = claims.get("sub", "")
+        subject: str = claims.pop("sub", "")
         if not subject:
             raise AuthorizationException(
                 "Invalid JWT token: the subject claim is missing"
@@ -105,7 +105,7 @@ class JWTToken(BaseModel):
         device_id: Optional[UUID] = None
         if "device_id" in claims:
             try:
-                device_id = UUID(claims["device_id"])
+                device_id = UUID(claims.pop("device_id"))
             except ValueError:
                 raise AuthorizationException(
                     "Invalid JWT token: the device_id claim is not a valid "
@@ -115,7 +115,7 @@ class JWTToken(BaseModel):
         api_key_id: Optional[UUID] = None
         if "api_key_id" in claims:
             try:
-                api_key_id = UUID(claims["api_key_id"])
+                api_key_id = UUID(claims.pop("api_key_id"))
             except ValueError:
                 raise AuthorizationException(
                     "Invalid JWT token: the api_key_id claim is not a valid "
@@ -125,7 +125,7 @@ class JWTToken(BaseModel):
         pipeline_id: Optional[UUID] = None
         if "pipeline_id" in claims:
             try:
-                pipeline_id = UUID(claims["pipeline_id"])
+                pipeline_id = UUID(claims.pop("pipeline_id"))
             except ValueError:
                 raise AuthorizationException(
                     "Invalid JWT token: the pipeline_id claim is not a valid "
@@ -135,7 +135,7 @@ class JWTToken(BaseModel):
         schedule_id: Optional[UUID] = None
         if "schedule_id" in claims:
             try:
-                schedule_id = UUID(claims["schedule_id"])
+                schedule_id = UUID(claims.pop("schedule_id"))
             except ValueError:
                 raise AuthorizationException(
                     "Invalid JWT token: the schedule_id claim is not a valid "
@@ -165,14 +165,17 @@ class JWTToken(BaseModel):
         """
         config = server_config()
 
-        claims: Dict[str, Any] = dict(
-            sub=str(self.user_id),
-        )
+        claims: Dict[str, Any] = self.claims.copy()
+
+        claims["sub"] = str(self.user_id)
         claims["iss"] = config.get_jwt_token_issuer()
         claims["aud"] = config.get_jwt_token_audience()
 
         if expires:
             claims["exp"] = expires
+        else:
+            claims.pop("exp", None)
+
         if self.device_id:
             claims["device_id"] = str(self.device_id)
         if self.api_key_id:
@@ -181,9 +184,6 @@ class JWTToken(BaseModel):
             claims["pipeline_id"] = str(self.pipeline_id)
         if self.schedule_id:
             claims["schedule_id"] = str(self.schedule_id)
-
-        # Apply custom claims
-        claims.update(self.claims)
 
         return jwt.encode(
             claims,

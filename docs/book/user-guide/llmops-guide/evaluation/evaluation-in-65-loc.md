@@ -2,15 +2,9 @@
 description: Learn how to implement evaluation for RAG in just 65 lines of code.
 ---
 
-Our RAG guide included [a short example](../rag/rag-85-loc.md) for how to
-implement a basic RAG pipeline in just 85 lines of code. In this section, we'll
-build on that example to show how you can evaluate the performance of your RAG
-pipeline in just 65 lines. For the full code, please visit the project
-repository
-[here](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/most_basic_eval.py).
-The code that follows requires the functions from the earlier RAG pipeline code
-to work.
+# Evaluation in 65 lines of code
 
+Our RAG guide included [a short example](../rag-with-zenml/rag-85-loc.md) for how to implement a basic RAG pipeline in just 85 lines of code. In this section, we'll build on that example to show how you can evaluate the performance of your RAG pipeline in just 65 lines. For the full code, please visit the project repository [here](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/most\_basic\_eval.py). The code that follows requires the functions from the earlier RAG pipeline code to work.
 
 ```python
 # ...previous RAG pipeline code here...
@@ -83,23 +77,12 @@ print(f"Retrieval Accuracy: {retrieval_accuracy:.2f}")
 print(f"Generation Accuracy: {generation_accuracy:.2f}")
 ```
 
-As you can see, we've added two evaluation functions: `evaluate_retrieval` and
-`evaluate_generation`. The `evaluate_retrieval` function checks if the retrieved
-chunks contain any words from the expected answer. The `evaluate_generation`
-function uses OpenAI's chat completion LLM to evaluate the quality of the
-generated answer.
+As you can see, we've added two evaluation functions: `evaluate_retrieval` and `evaluate_generation`. The `evaluate_retrieval` function checks if the retrieved chunks contain any words from the expected answer. The `evaluate_generation` function uses OpenAI's chat completion LLM to evaluate the quality of the generated answer.
 
-We then loop through the evaluation data, which contains questions and expected
-answers, and evaluate the retrieval and generation components of our RAG
-pipeline. Finally, we calculate the accuracy of both components and print the
-results:
+We then loop through the evaluation data, which contains questions and expected answers, and evaluate the retrieval and generation components of our RAG pipeline. Finally, we calculate the accuracy of both components and print the results:
 
-![](/docs/book/.gitbook/assets/evaluation-65-loc.png)
+![](../../../.gitbook/assets/evaluation-65-loc.png)
 
-As you can see, we get 100% accuracy for both retrieval and generation in this
-example. Not bad! The sections that follow will provide a more detailed and
-sophisticated implementation of RAG evaluation, but this example shows how you
-can think about it at a high level!
+As you can see, we get 100% accuracy for both retrieval and generation in this example. Not bad! The sections that follow will provide a more detailed and sophisticated implementation of RAG evaluation, but this example shows how you can think about it at a high level!
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

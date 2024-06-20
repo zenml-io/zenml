@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML service connectors."""
 
-import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
@@ -141,7 +140,8 @@ class AuthenticationMethodModel(BaseModel):
             **values: The data to initialize the authentication method with.
         """
         if config_class:
-            values["config_schema"] = json.loads(config_class.schema_json())
+            values["config_schema"] = config_class.model_json_schema()
+
         super().__init__(**values)
         self._config_class = config_class
 
@@ -214,11 +214,6 @@ class AuthenticationMethodModel(BaseModel):
                 )
 
         return expiration_seconds
-
-    class Config:
-        """Pydantic config class."""
-
-        underscore_attrs_are_private = True
 
 
 class ServiceConnectorTypeModel(BaseModel):
@@ -333,7 +328,8 @@ class ServiceConnectorTypeModel(BaseModel):
         """
         self._connector_class = connector_class
 
-    @validator("resource_types")
+    @field_validator("resource_types")
+    @classmethod
     def validate_resource_types(
         cls, values: List[ResourceTypeModel]
     ) -> List[ResourceTypeModel]:
@@ -360,7 +356,8 @@ class ServiceConnectorTypeModel(BaseModel):
 
         return values
 
-    @validator("auth_methods")
+    @field_validator("auth_methods")
+    @classmethod
     def validate_auth_methods(
         cls, values: List[AuthenticationMethodModel]
     ) -> List[AuthenticationMethodModel]:
@@ -471,11 +468,6 @@ class ServiceConnectorTypeModel(BaseModel):
             )
 
         return auth_method_spec, resource_type_spec
-
-    class Config:
-        """Pydantic config class."""
-
-        underscore_attrs_are_private = True
 
 
 class ServiceConnectorRequirements(BaseModel):
@@ -600,8 +592,7 @@ class ServiceConnectorResourcesModel(BaseModel):
     )
 
     connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
-        title="The type of service connector.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        title="The type of service connector.", union_mode="left_to_right"
     )
 
     resources: List[ServiceConnectorTypedResourcesModel] = Field(
