@@ -368,27 +368,11 @@ def uninstall(
     for integration_name in integrations:
         try:
             if integration_registry.is_installed(integration_name):
-                # TODO: keep only `else` branch once 3.8 is deprecated
-                if (
-                    sys.version_info.minor == 8
-                    and integration_name == "tensorflow"
-                ):
-                    tf_requirements = (
-                        integration_registry.select_integration_requirements(
-                            integration_name
-                        )
+                requirements += (
+                    integration_registry.select_uninstall_requirements(
+                        integration_name
                     )
-                    for i in range(len(tf_requirements)):
-                        if "typing-extensions" in tf_requirements[i]:
-                            del tf_requirements[i]
-                            break
-                    requirements += tf_requirements
-                else:
-                    requirements += (
-                        integration_registry.select_integration_requirements(
-                            integration_name
-                        )
-                    )
+                )
             else:
                 warning(
                     f"Requirements for integration '{integration_name}' "

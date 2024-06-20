@@ -124,6 +124,43 @@ class IntegrationRegistry(object):
                 )
             ]
 
+    def select_uninstall_requirements(
+        self,
+        integration_name: Optional[str] = None,
+        target_os: Optional[str] = None,
+    ):
+        """Select the uninstall requirements for a given integration or all integrations.
+
+        Args:
+            integration_name: Name of the integration to check.
+            target_os: Target OS for the requirements.
+
+        Returns:
+            List of requirements for the integration uninstall.
+
+        Raises:
+            KeyError: If the integration is not found.
+        """
+        if integration_name:
+            if integration_name in self.list_integration_names:
+                return self._integrations[
+                    integration_name
+                ].get_uninstall_requirements(target_os=target_os)
+            else:
+                raise KeyError(
+                    f"Version {integration_name} does not exist. "
+                    f"Currently the following integrations are implemented. "
+                    f"{self.list_integration_names}"
+                )
+        else:
+            return [
+                requirement
+                for name in self.list_integration_names
+                for requirement in self._integrations[
+                    name
+                ].get_uninstall_requirements(target_os=target_os)
+            ]
+
     def is_installed(self, integration_name: Optional[str] = None) -> bool:
         """Checks if all requirements for an integration are installed.
 

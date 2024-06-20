@@ -28,6 +28,7 @@ class TensorflowIntegration(Integration):
 
     NAME = TENSORFLOW
     REQUIREMENTS = []
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["typing-extensions"]
 
     @classmethod
     def activate(cls) -> None:

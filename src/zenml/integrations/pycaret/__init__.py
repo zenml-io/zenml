@@ -28,6 +28,12 @@ class PyCaretIntegration(Integration):
         "catboost",
         "lightgbm",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = [
+        "scikit-learn",
+        "xgboost",
+        "catboost",
+        "lightgbm",
+    ]
 
     @classmethod
     def activate(cls) -> None:
