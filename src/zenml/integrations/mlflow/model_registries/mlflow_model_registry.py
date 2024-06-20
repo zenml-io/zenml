@@ -615,7 +615,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         for mlflow_model_version in mlflow_model_versions:
             # check if given MlFlow model version matches the given request
             # before casting it
-            if stage and not mlflow_model_version.current_stage == str(stage):
+            if stage and not ModelVersionStage(mlflow_model_version.current_stage) == stage:
                 continue
             if created_after and not (
                 mlflow_model_version.creation_timestamp
