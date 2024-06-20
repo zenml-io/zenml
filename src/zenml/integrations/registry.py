@@ -128,7 +128,7 @@ class IntegrationRegistry(object):
         self,
         integration_name: Optional[str] = None,
         target_os: Optional[str] = None,
-    ):
+    ) -> List[str]:
         """Select the uninstall requirements for a given integration or all integrations.
 
         Args:
