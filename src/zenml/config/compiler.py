@@ -211,9 +211,11 @@ class Compiler:
 
         for invocation_id in config.steps:
             if invocation_id not in pipeline.invocations:
-                raise KeyError(
-                    f"Configuration for step {invocation_id} cannot be applied to any pipeline step. Make sure that all configured steps are present in your pipeline."
+                logger.warning(
+                    f"Configuration for step invocation {invocation_id} cannot "
+                    "be applied to any pipeline step invocation, ignoring..."
                 )
+                config.steps.pop(invocation_id)
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
