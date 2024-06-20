@@ -112,7 +112,7 @@ def upgrade() -> None:
         .where(stack_component_table.c.type == "orchestrator")
     ).scalar()
     if remote_orchestrator_count > 0:
-        new_state.add("remote_orchestrator_created")
+        new_state.append("remote_orchestrator_created")
 
     stack_with_remote_artifact_store_count = connection.execute(
         sa.select(sa.func.count(stack_table.c.id))
@@ -140,7 +140,7 @@ def upgrade() -> None:
         .where(stack_component_table.c.type == "orchestrator")
     ).scalar()
     if stack_with_remote_orchestrator_count > 0:
-        new_state.add("stack_with_remote_orchestrator_created")
+        new_state.append("stack_with_remote_orchestrator_created")
 
     pipeline_run_with_remote_artifact_store_count = connection.execute(
         sa.select(sa.func.count(pipeline_run_table.c.id))
@@ -178,7 +178,7 @@ def upgrade() -> None:
         .where(stack_component_table.c.type == "orchestrator")
     ).scalar()
     if pipeline_run_with_remote_orchestrator_count > 0:
-        new_state.add("pipeline_run_with_remote_orchestrator")
+        new_state.append("pipeline_run_with_remote_orchestrator")
 
     if new_state:
         # If any of the items are finished, we also complete the initial
