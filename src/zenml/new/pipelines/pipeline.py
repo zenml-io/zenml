@@ -1319,10 +1319,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             run_name: Name of the pipeline run.
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
-            step_configurations: Configurations for steps of the pipeline. This
-                is equivalent to `steps`, and only one of the two can be set.
+            step_configurations: Configurations for steps of the pipeline.
             steps: Configurations for steps of the pipeline. This is equivalent
-                to `step_configurations`, and only one of the two can be set.
+                to `step_configurations`, and will be ignored if
+                `step_configurations` is set as well.
             config_path: Path to a yaml configuration file. This file will
                 be parsed as a
                 `zenml.config.pipeline_configurations.PipelineRunConfiguration`
