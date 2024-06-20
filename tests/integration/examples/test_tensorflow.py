@@ -13,11 +13,17 @@
 #  permissions and limitations under the License.
 
 
+import sys
+
 import pytest
 
 from tests.integration.examples.utils import run_example
 
 
+@pytest.mark.skipif(
+    sys.platform == "linux" and sys.version_info.minor == 8,
+    reason="TensorFlow is not fully compatible with Pydantic 2 requirements",
+)
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the tensorflow example.
 
