@@ -44,7 +44,7 @@ class TensorflowIntegration(Integration):
                 "Python 3.8 with TensorFlow is not fully "
                 "compatible with Pydantic 2 requirements. "
                 "Consider upgrading to a higher Python "
-                "version, if you would like to use "
+                "version if you would like to use the "
                 "Tensorflow integration."
             )
 
