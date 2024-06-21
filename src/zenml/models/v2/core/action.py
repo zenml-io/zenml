@@ -28,7 +28,6 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -37,7 +36,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.core.trigger import TriggerResponse
 from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
@@ -166,9 +164,6 @@ class ActionResponseMetadata(WorkspaceScopedResponseMetadata):
 class ActionResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the action entity."""
 
-    triggers: Page[TriggerResponse] = Field(
-        title="The triggers associated with the action.",
-    )
     service_account: UserResponse = Field(
         title="The service account that is used to execute the action.",
     )
@@ -251,15 +246,6 @@ class ActionResponse(
         self.get_metadata().configuration = configuration
 
     # Resource properties
-    @property
-    def triggers(self) -> Page[TriggerResponse]:
-        """The `triggers` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().triggers
-
     @property
     def service_account(self) -> "UserResponse":
         """The `service_account` property.
