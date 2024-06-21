@@ -119,7 +119,7 @@ runs:
       shell: bash
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        source $HOME/.cargo/env
+        export PATH="$HOME/.cargo/bin:$PATH"
     - name: Install Rust (Windows)
       if: ${{ inputs.os == 'windows-latest' }}
       shell: bash
@@ -127,6 +127,8 @@ runs:
         choco install rust -y
     - name: Install ZenML and dependencies
       shell: bash
+      env: 
+        RUSTFLAGS: -A invalid_reference_casting
       run: |
         scripts/install-zenml-dev.sh --system --integrations ${{ inputs.install_integrations }}
     - name: Check Python environment
