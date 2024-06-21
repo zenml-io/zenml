@@ -121,7 +121,7 @@ runs:
         toolchain: stable
     - name: Install ZenML and dependencies
       shell: bash
-      env: 
+      env:
         RUSTFLAGS: -A invalid_reference_casting
       run: |
         scripts/install-zenml-dev.sh --system --integrations ${{ inputs.install_integrations }}
