@@ -19,7 +19,6 @@ import os
 from typing import Optional
 
 import click
-from pipelines.train import llm_peft_full_finetune
 
 
 @click.command(
@@ -46,6 +45,12 @@ Examples:
     help="Path to the YAML config file.",
 )
 @click.option(
+    "--accelerate",
+    is_flag=True,
+    default=False,
+    help="Run the pipeline with Accelerate.",
+)
+@click.option(
     "--no-cache",
     is_flag=True,
     default=False,
@@ -53,11 +58,14 @@ Examples:
 )
 def main(
     config: Optional[str] = None,
+    accelerate: bool = False,
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
 
     Args:
+        config: Path to the YAML config file.
+        accelerate: If `True` Accelerate will be used.
         no_cache: If `True` cache will be disabled.
     """
     config_folder = os.path.join(
@@ -68,12 +76,16 @@ def main(
     if not config:
         raise RuntimeError("Config file is required to run a pipeline.")
 
-    if config in os.listdir(config_folder):
-        pipeline_args["config_path"] = os.path.join(config_folder, config)
-    else:
-        pipeline_args["config_path"] = config
+    pipeline_args["config_path"] = os.path.join(config_folder, config)
 
-    llm_peft_full_finetune.with_options(**pipeline_args)()
+    if accelerate:
+        from pipelines.train_accelerated import llm_peft_full_finetune
+
+        llm_peft_full_finetune.with_options(**pipeline_args)()
+    else:
+        from pipelines.train import llm_peft_full_finetune
+
+        llm_peft_full_finetune.with_options(**pipeline_args)()
 
 
 if __name__ == "__main__":
