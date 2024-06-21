@@ -114,17 +114,11 @@ runs:
       run: |
         brew tap hashicorp/tap
         brew install hashicorp/tap/terraform
-    - name: Install Rust (non-Windows)
-      if: ${{ inputs.os != 'windows-latest' }}
-      shell: bash
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        export PATH="$HOME/.cargo/bin:$PATH"
-    - name: Install Rust (Windows)
-      if: ${{ inputs.os == 'windows-latest' }}
-      shell: bash
-      run: |
-        choco install rust -y
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
     - name: Install ZenML and dependencies
       shell: bash
       env: 
