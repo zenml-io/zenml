@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 2024.06.06
+_commit: 2024.06.20
 _src_path: gh:zenml-io/template-llm-finetuning
 bf16: true
 cuda_version: cuda11.8
@@ -25,5 +25,6 @@ system_prompt: 'Given a target sentence construct the underlying meaning represe
     ''has_mac_release'', ''specifier'']
 
     '
+use_fast_tokenizer: false
 version: 0.1.0
 zenml_server_url: ''

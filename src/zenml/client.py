@@ -17,6 +17,7 @@ import functools
 import json
 import os
 from abc import ABCMeta
+from collections import Counter
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -43,6 +44,7 @@ from zenml.client_lazy_loader import (
     evaluate_all_lazy_load_args_in_client_methods,
 )
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -2444,6 +2446,171 @@ class Client(metaclass=ClientMetaClass):
             )
             self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
+    @_fail_for_sql_zen_store
+    def trigger_pipeline(
+        self,
+        pipeline_name_or_id: Union[str, UUID, None] = None,
+        pipeline_version: Optional[str] = None,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+        config_path: Optional[str] = None,
+        deployment_id: Optional[UUID] = None,
+        build_id: Optional[UUID] = None,
+        stack_name_or_id: Union[str, UUID, None] = None,
+        synchronous: bool = False,
+    ) -> PipelineRunResponse:
+        """Trigger a pipeline from the server.
+
+        Usage examples:
+        * Run the latest runnable build for the latest version of a pipeline:
+        ```python
+        Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
+        ```
+        * Run the latest runnable build for a specific version of a pipeline:
+        ```python
+        Client().trigger_pipeline(
+            pipeline_name_or_id=<NAME>,
+            pipeline_version=<VERSION>
+        )
+        ```
+        * Run a specific pipeline version on a specific stack:
+        ```python
+        Client().trigger_pipeline(
+            pipeline_name_or_id=<ID>,
+            stack_name_or_id=<ID>
+        )
+        ```
+        * Run a specific deployment:
+        ```python
+        Client().trigger_pipeline(deployment_id=<ID>)
+        ```
+        * Run a specific build:
+        ```python
+        Client().trigger_pipeline(build_id=<ID>)
+        ```
+
+        Args:
+            pipeline_name_or_id: Name or ID of the pipeline. If not given,
+                either the build or deployment that should be run needs to be
+                specified.
+            pipeline_version: Version of the pipeline. This is only used if a
+                pipeline name is given.
+            run_configuration: Configuration for the run. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `PipelineRunConfiguration` object. Either this or
+                the configuration in code can be specified.
+            deployment_id: ID of the deployment to run. Either this or a build
+                to run can be specified.
+            build_id: ID of the build to run. Either this or a deployment to
+                run can be specified.
+            stack_name_or_id: Name or ID of the stack on which to run the
+                pipeline. If not specified, this method will try to find a
+                runnable build on any stack.
+            synchronous: If `True`, this method will wait until the triggered
+                run is finished.
+
+        Raises:
+            RuntimeError: If triggering the pipeline failed.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        from zenml.new.pipelines.run_utils import (
+            validate_run_config_is_runnable_from_server,
+            validate_stack_is_runnable_from_server,
+            wait_for_pipeline_run_to_finish,
+        )
+
+        if Counter([build_id, deployment_id, pipeline_name_or_id])[None] != 2:
+            raise RuntimeError(
+                "You need to specify exactly one of pipeline, build or "
+                "deployment to trigger."
+            )
+
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
+        if deployment_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Deployment ID and stack specified, ignoring the stack and "
+                    "using stack from deployment instead."
+                )
+
+            run = self.zen_store.run_deployment(
+                deployment_id=deployment_id,
+                run_configuration=run_configuration,
+            )
+        elif build_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Build ID and stack specified, ignoring the stack and "
+                    "using stack from build instead."
+                )
+
+            run = self.zen_store.run_build(
+                build_id=build_id, run_configuration=run_configuration
+            )
+        else:
+            assert pipeline_name_or_id
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id, version=pipeline_version
+            )
+
+            stack = None
+            if stack_name_or_id:
+                stack = self.get_stack(
+                    stack_name_or_id, allow_name_prefix_match=False
+                )
+                validate_stack_is_runnable_from_server(
+                    zen_store=self.zen_store, stack=stack
+                )
+
+            builds = depaginate(
+                partial(
+                    self.list_builds,
+                    pipeline_id=pipeline.id,
+                    stack_id=stack.id if stack else None,
+                )
+            )
+
+            for build in builds:
+                if not build.template_deployment_id:
+                    continue
+
+                if not build.stack:
+                    continue
+
+                try:
+                    validate_stack_is_runnable_from_server(
+                        zen_store=self.zen_store, stack=build.stack
+                    )
+                except ValueError:
+                    continue
+
+                run = self.zen_store.run_build(
+                    build_id=build.id, run_configuration=run_configuration
+                )
+                break
+            else:
+                raise RuntimeError(
+                    "Unable to find a runnable build for the given stack and "
+                    "pipeline."
+                )
+
+        if synchronous:
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
+
     # -------------------------------- Builds ----------------------------------
 
     def get_build(
@@ -2985,13 +3152,13 @@ class Client(metaclass=ClientMetaClass):
 
     def get_deployment(
         self,
-        id_or_prefix: str,
+        id_or_prefix: Union[str, UUID],
         hydrate: bool = True,
     ) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
 
         Args:
-            id_or_prefix: The id or id prefix of the build.
+            id_or_prefix: The id or id prefix of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3007,10 +3174,12 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            return self.zen_store.get_deployment(
-                UUID(id_or_prefix),
-                hydrate=hydrate,
+            id_ = (
+                UUID(id_or_prefix)
+                if isinstance(id_or_prefix, str)
+                else id_or_prefix
             )
+            return self.zen_store.get_deployment(id_, hydrate=hydrate)
 
         entity = self.list_deployments(
             id=f"startswith:{id_or_prefix}",

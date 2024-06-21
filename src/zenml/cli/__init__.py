@@ -1746,6 +1746,12 @@ pipeline runs, use:
 zenml artifact prune
 ```
 
+You might find that some artifacts throw errors when you try to prune them,
+likely because they were stored locally and no longer exist. If you wish to
+continue pruning and to ignore these errors, please add the `--ignore-errors`
+flag. Warning messages will still be output to the terminal during this
+process.
+
 Each pipeline run that requires Docker images also stores a build which
 contains the image names used for this run. To list all builds, use:
 

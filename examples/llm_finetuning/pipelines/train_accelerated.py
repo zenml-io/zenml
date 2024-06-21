@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 from steps import (
     evaluate_model,
     finetune,
@@ -25,6 +24,7 @@ from steps import (
 )
 
 from zenml import pipeline
+from zenml.integrations.huggingface.steps import run_with_accelerate
 
 
 @pipeline
@@ -35,7 +35,7 @@ def llm_peft_full_finetune(
     load_in_8bit: bool = False,
     load_in_4bit: bool = False,
 ):
-    """Pipeline for finetuning an LLM with PEFT.
+    """Pipeline for finetuning an LLM with PEFT powered by Accelerate.
 
     It will run the following steps:
 
@@ -76,9 +76,9 @@ def llm_peft_full_finetune(
         id="log_metadata_evaluation_base",
     )
 
-    ft_model_dir = finetune(
-        base_model_id,
-        datasets_dir,
+    ft_model_dir = run_with_accelerate(finetune)(
+        base_model_id=base_model_id,
+        dataset_dir=datasets_dir,
         use_fast=use_fast,
         load_in_8bit=load_in_8bit,
         load_in_4bit=load_in_4bit,
