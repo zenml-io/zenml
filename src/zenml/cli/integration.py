@@ -279,6 +279,27 @@ def install(
                     f"{list(integration_registry.integrations.keys())}"
                 )
 
+    if sys.version_info.minor == 12:
+        has_skypilot = False
+        for integration in integrations:
+            if integration.startswith("skypilot"):
+                has_skypilot = True
+                break
+
+        if has_skypilot:
+            warning(
+                "We are aware of dependency resolution issues when using "
+                "Python 3.12.x with the Skypilot integrations. For now, please use "
+                "Python 3.11 or lower instead while we work on a fix."
+            )
+
+        if "mlflow" in integrations:
+            warning(
+                "MLFlow integration with Python 3.12.x is not fully functional due to "
+                "missing support of `mlserver`. For now, please use "
+                "Python 3.11 or lower instead while we work on a fix."
+            )
+
     requirements = []
     integrations_to_install = []
     for integration_name in integrations:

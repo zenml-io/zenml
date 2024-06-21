@@ -16,8 +16,8 @@
 The MLflow integrations currently enables you to use MLflow tracking as a
 convenient way to visualize your experiment runs within the MLflow UI.
 """
-from typing import List, Type
-
+from typing import List, Optional, Type
+import sys
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -32,21 +32,36 @@ class MlflowIntegration(Integration):
 
     NAME = MLFLOW
 
-    REQUIREMENTS = [
-        "mlflow>=2.1.1,<=2.12.2",
-        "mlserver>=1.3.3",
-        "mlserver-mlflow>=1.3.3",
-        # TODO: remove this requirement once rapidjson is fixed
-        "python-rapidjson<1.15",
-        # When you do:
-        # pip install zenml
-        # You get all our required dependencies. However, if you follow it with:
-        # zenml integration install mlflow
-        # This downgrades pydantic to v1 even though mlflow does not have
-        # any issues with v2. This is why we have to pin it here so a downgrade
-        # will not happen.
-        "pydantic>=2.7.0,<2.8.0"
-    ]
+    REQUIREMENTS = []
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Defines platform specific requirements for the integration.
+
+        Args:
+            target_os: The target operating system.
+
+        Returns:
+            A list of requirements.
+        """
+        requirements = [
+            "mlflow>=2.1.1,<=2.12.2",
+            # TODO: remove this requirement once rapidjson is fixed
+            "python-rapidjson<1.15",
+            # When you do:
+            # pip install zenml
+            # You get all our required dependencies. However, if you follow it with:
+            # zenml integration install mlflow
+            # This downgrades pydantic to v1 even though mlflow does not have
+            # any issues with v2. This is why we have to pin it here so a downgrade
+            # will not happen.
+            "pydantic>=2.7.0,<2.8.0",
+        ]
+        # TODO: simplify once mlserver supports 3.12
+        if sys.version_info.minor != 12:
+            requirements += ["mlserver>=1.3.3", "mlserver-mlflow>=1.3.3"]
+
+        return requirements
 
     @classmethod
     def activate(cls) -> None:

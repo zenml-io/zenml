@@ -16,37 +16,58 @@
 The Skypilot integration sub-module powers an alternative to the local
 orchestrator for a remote orchestration of ZenML pipelines on VMs.
 """
-from typing import List, Type
 
-from zenml.integrations.constants import (
+# TODO: reenable once Pydantic 2 incompatibility is sorted out
 
-    SKYPILOT_AZURE,
-)
-from zenml.integrations.integration import Integration
-from zenml.stack import Flavor
+# import sys
+# from typing import List, Optional, Type
+
+# from zenml.integrations.constants import (
+
+#     SKYPILOT_AZURE,
+# )
+# from zenml.integrations.integration import Integration
+# from zenml.stack import Flavor
 
 
-SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR = "vm_azure"
+# SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR = "vm_azure"
 
 
-class SkypilotAzureIntegration(Integration):
-    """Definition of Skypilot (Azure) Integration for ZenML."""
+# class SkypilotAzureIntegration(Integration):
+#     """Definition of Skypilot (Azure) Integration for ZenML."""
 
-    NAME = SKYPILOT_AZURE
-    REQUIREMENTS = ["skypilot[azure]<=0.5.0"]
-    APT_PACKAGES = ["openssh-client", "rsync"]
+#     NAME = SKYPILOT_AZURE
+#     REQUIREMENTS = []
+#     APT_PACKAGES = ["openssh-client", "rsync"]
 
-    @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Skypilot Azure integration.
+#     @classmethod
+#     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+#         """Defines platform specific requirements for the integration.
 
-        Returns:
-            List of stack component flavors for this integration.
-        """
-        from zenml.integrations.skypilot_azure.flavors import (
-            SkypilotAzureOrchestratorFlavor,
-        )
+#         Args:
+#             target_os: The target operating system.
 
-        return [SkypilotAzureOrchestratorFlavor]
+#         Returns:
+#             A list of requirements.
+#         """
+#         requirements = []
+#         # TODO: simplify once skypilot supports 3.12
+#         if sys.version_info.minor != 12:
+#             requirements = ["skypilot[azure]<=0.5.0"]
 
-SkypilotAzureIntegration.check_installation()
+#         return requirements
+
+#     @classmethod
+#     def flavors(cls) -> List[Type[Flavor]]:
+#         """Declare the stack component flavors for the Skypilot Azure integration.
+
+#         Returns:
+#             List of stack component flavors for this integration.
+#         """
+#         from zenml.integrations.skypilot_azure.flavors import (
+#             SkypilotAzureOrchestratorFlavor,
+#         )
+
+#         return [SkypilotAzureOrchestratorFlavor]
+
+# SkypilotAzureIntegration.check_installation()

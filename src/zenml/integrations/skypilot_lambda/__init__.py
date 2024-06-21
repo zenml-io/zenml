@@ -16,7 +16,8 @@
 The Skypilot integration sub-module powers an alternative to the local
 orchestrator for a remote orchestration of ZenML pipelines on VMs.
 """
-from typing import List, Type
+import sys
+from typing import List, Optional, Type
 
 from zenml.integrations.constants import (
     SKYPILOT_LAMBDA,
@@ -31,7 +32,24 @@ class SkypilotLambdaIntegration(Integration):
     """Definition of Skypilot Lambda Integration for ZenML."""
 
     NAME = SKYPILOT_LAMBDA
-    REQUIREMENTS = ["skypilot[lambda]<=0.5.0"]
+    REQUIREMENTS = []
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Defines platform specific requirements for the integration.
+
+        Args:
+            target_os: The target operating system.
+
+        Returns:
+            A list of requirements.
+        """
+        requirements = []
+        # TODO: simplify once skypilot supports 3.12
+        if sys.version_info.minor != 12:
+            requirements = ["skypilot[lambda]<=0.5.0"]
+
+        return requirements
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
