@@ -1533,14 +1533,14 @@ class RestZenStore(BaseZenStore):
         run_configuration = run_configuration or PipelineRunConfiguration()
         try:
             response_body = self.post(
-                f"{PIPELINE_BUILDS}/{build_id}/run", body=run_configuration
+                f"{PIPELINE_BUILDS}/{build_id}/runs", body=run_configuration
             )
         except MethodNotAllowedError as e:
             raise RuntimeError(
                 "Running a build is not supported for this server."
             ) from e
 
-        return PipelineRunResponse.parse_obj(response_body)
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------------- Pipeline Deployments --------------------------
 
@@ -1637,7 +1637,7 @@ class RestZenStore(BaseZenStore):
 
         try:
             response_body = self.post(
-                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/run",
+                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
                 body=run_configuration,
             )
         except MethodNotAllowedError as e:
@@ -1645,7 +1645,7 @@ class RestZenStore(BaseZenStore):
                 "Running a deployment is not supported for this server."
             ) from e
 
-        return PipelineRunResponse.parse_obj(response_body)
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------- Event Sources  --------------------
 
