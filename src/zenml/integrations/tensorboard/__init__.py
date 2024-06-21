@@ -35,7 +35,7 @@ class TensorBoardIntegration(Integration):
         Returns:
             A list of requirements.
         """
-        requirements = ["tensorboard>=2.12,<=2.16"]
+        requirements = ["tensorboard>=2.12,<2.17"]
         return requirements
 
     @classmethod
