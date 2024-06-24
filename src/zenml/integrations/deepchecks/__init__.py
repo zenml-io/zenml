@@ -66,7 +66,8 @@ class DeepchecksIntegration(Integration):
     @staticmethod
     def activate() -> None:
         """Activate the Deepchecks integration."""
-        from zenml.integrations.deepchecks import materializers  # noqa
+        if sys.version_info.minor != 12:
+            from zenml.integrations.deepchecks import materializers  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -75,11 +76,14 @@ class DeepchecksIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.deepchecks.flavors import (
-            DeepchecksDataValidatorFlavor,
-        )
+        if sys.version_info.minor != 12:
+            from zenml.integrations.deepchecks.flavors import (
+                DeepchecksDataValidatorFlavor,
+            )
 
-        return [DeepchecksDataValidatorFlavor]
+            return [DeepchecksDataValidatorFlavor]
+        else:
+            return []
 
 
 DeepchecksIntegration.check_installation()
