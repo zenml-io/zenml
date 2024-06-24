@@ -20,14 +20,6 @@ from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import Annotated
 
 from tests.integration.functional.utils import sample_name
-from zenml import (
-    EventSourceFilter,
-    EventSourceRequest,
-    EventSourceUpdate,
-    TriggerFilter,
-    TriggerRequest,
-    TriggerUpdate,
-)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -41,6 +33,9 @@ from zenml.enums import (
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionUpdate,
     APIKeyRequest,
     ArtifactFilter,
     ArtifactRequest,
@@ -58,6 +53,9 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentUpdate,
+    EventSourceFilter,
+    EventSourceRequest,
+    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     ModelFilter,
@@ -85,6 +83,9 @@ from zenml.models import (
     ServiceConnectorUpdate,
     StackRequest,
     StepRunFilter,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserUpdate,
@@ -1225,16 +1226,35 @@ event_source_crud_test_config = CrudTestConfig(
     entity_name="event_source",
     supported_zen_stores=(RestZenStore,),
 )
+action_crud_test_config = CrudTestConfig(
+    create_model=ActionRequest(
+        name=sample_name("blupus_feeder"),
+        description="Feeds blupus when he meows.",
+        service_account_id=uuid.uuid4(),  # will be overridden in create()
+        configuration={"pipeline_deployment_id": uuid.uuid4()},
+        plugin_subtype=PluginSubType.PIPELINE_RUN,
+        flavor="builtin",
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    update_model=ActionUpdate(name=sample_name("updated_blupus_feeder")),
+    filter_model=ActionFilter,
+    entity_name="action",
+    supported_zen_stores=(RestZenStore,),
+    conditional_entities={
+        "service_account_id": deepcopy(service_account_crud_test_config),
+        "configuration.pipeline_deployment_id": deepcopy(
+            deployment_crud_test_config
+        ),
+    },
+)
 trigger_crud_test_config = CrudTestConfig(
     create_model=TriggerRequest(
         name=sample_name("blupus_feeder"),
         description="Feeds blupus when he meows.",
+        action_id=uuid.uuid4(),  # will be overridden in create()
         event_filter={},
         event_source_id=uuid.uuid4(),  # will be overridden in create()
-        service_account_id=uuid.uuid4(),  # will be overridden in create()
-        action={"pipeline_deployment_id": uuid.uuid4()},
-        action_subtype=PluginSubType.PIPELINE_RUN,
-        action_flavor="builtin",
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
@@ -1243,9 +1263,8 @@ trigger_crud_test_config = CrudTestConfig(
     entity_name="trigger",
     supported_zen_stores=(RestZenStore,),
     conditional_entities={
+        "action_id": deepcopy(action_crud_test_config),
         "event_source_id": deepcopy(event_source_crud_test_config),
-        "service_account_id": deepcopy(service_account_crud_test_config),
-        "action.pipeline_deployment_id": deepcopy(deployment_crud_test_config),
     },
 )
 
@@ -1284,5 +1303,6 @@ list_of_entities = [
     service_connector_crud_test_config,
     model_crud_test_config,
     event_source_crud_test_config,
+    action_crud_test_config,
     trigger_crud_test_config,
 ]
