@@ -35,8 +35,8 @@ logic now uses Rust and it is much faster and more efficient in terms of
 performance. On top of it, the main concepts like model design, configuration,
 validation, or serialization now include a lot of new cool features. If you are
 using `pydantic` in your workflow and are interested in the new changes, you can
-check the brilliant migration guide provided by the `pydantic` team to see the
-full list of changes.
+check [the brilliant migration guide](https://docs.pydantic.dev/2.7/migration/) 
+provided by the `pydantic` team to see the full list of changes.
 
 ## Changes in our integrations changes
 
