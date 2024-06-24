@@ -266,5 +266,6 @@
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
   * [Migration guide 0.23.0 → 0.30.0](reference/migration-guide/migration-zero-thirty.md)
   * [Migration guide 0.39.1 → 0.41.0](reference/migration-guide/migration-zero-forty.md)
+  * [Migration guide 0.58.2 → 0.60.0](reference/migration-guide/migration-zero-sixty.md)
 * [💜 Community & content](reference/community-and-content.md)
 * [❓ FAQ](reference/faq.md)
