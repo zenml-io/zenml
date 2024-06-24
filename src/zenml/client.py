@@ -17,6 +17,7 @@ import functools
 import json
 import os
 from abc import ABCMeta
+from collections import Counter
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -43,6 +44,7 @@ from zenml.client_lazy_loader import (
     evaluate_all_lazy_load_args_in_client_methods,
 )
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -80,6 +82,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -199,7 +205,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
-T = TypeVar("T")
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 class ClientConfiguration(FileSyncModel):
@@ -305,11 +311,11 @@ class ClientMetaClass(ABCMeta):
         return cls._global_client
 
 
-def _fail_for_sql_zen_store(method: Callable[..., T]) -> Callable[..., T]:
-    """Decorator for all methods, that are disallowed when the client is not connected through REST API.
+def _fail_for_sql_zen_store(method: F) -> F:
+    """Decorator for methods that are not allowed with a SQLZenStore.
 
     Args:
-        method: The method
+        method: The method to decorate.
 
     Returns:
         The decorated method.
@@ -325,7 +331,7 @@ def _fail_for_sql_zen_store(method: Callable[..., T]) -> Callable[..., T]:
             )
         return method(self, *args, **kwargs)
 
-    return wrapper
+    return cast(F, wrapper)
 
 
 @evaluate_all_lazy_load_args_in_client_methods
@@ -2444,6 +2450,171 @@ class Client(metaclass=ClientMetaClass):
             )
             self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
+    @_fail_for_sql_zen_store
+    def trigger_pipeline(
+        self,
+        pipeline_name_or_id: Union[str, UUID, None] = None,
+        pipeline_version: Optional[str] = None,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+        config_path: Optional[str] = None,
+        deployment_id: Optional[UUID] = None,
+        build_id: Optional[UUID] = None,
+        stack_name_or_id: Union[str, UUID, None] = None,
+        synchronous: bool = False,
+    ) -> PipelineRunResponse:
+        """Trigger a pipeline from the server.
+
+        Usage examples:
+        * Run the latest runnable build for the latest version of a pipeline:
+        ```python
+        Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
+        ```
+        * Run the latest runnable build for a specific version of a pipeline:
+        ```python
+        Client().trigger_pipeline(
+            pipeline_name_or_id=<NAME>,
+            pipeline_version=<VERSION>
+        )
+        ```
+        * Run a specific pipeline version on a specific stack:
+        ```python
+        Client().trigger_pipeline(
+            pipeline_name_or_id=<ID>,
+            stack_name_or_id=<ID>
+        )
+        ```
+        * Run a specific deployment:
+        ```python
+        Client().trigger_pipeline(deployment_id=<ID>)
+        ```
+        * Run a specific build:
+        ```python
+        Client().trigger_pipeline(build_id=<ID>)
+        ```
+
+        Args:
+            pipeline_name_or_id: Name or ID of the pipeline. If not given,
+                either the build or deployment that should be run needs to be
+                specified.
+            pipeline_version: Version of the pipeline. This is only used if a
+                pipeline name is given.
+            run_configuration: Configuration for the run. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `PipelineRunConfiguration` object. Either this or
+                the configuration in code can be specified.
+            deployment_id: ID of the deployment to run. Either this or a build
+                to run can be specified.
+            build_id: ID of the build to run. Either this or a deployment to
+                run can be specified.
+            stack_name_or_id: Name or ID of the stack on which to run the
+                pipeline. If not specified, this method will try to find a
+                runnable build on any stack.
+            synchronous: If `True`, this method will wait until the triggered
+                run is finished.
+
+        Raises:
+            RuntimeError: If triggering the pipeline failed.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        from zenml.new.pipelines.run_utils import (
+            validate_run_config_is_runnable_from_server,
+            validate_stack_is_runnable_from_server,
+            wait_for_pipeline_run_to_finish,
+        )
+
+        if Counter([build_id, deployment_id, pipeline_name_or_id])[None] != 2:
+            raise RuntimeError(
+                "You need to specify exactly one of pipeline, build or "
+                "deployment to trigger."
+            )
+
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
+        if deployment_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Deployment ID and stack specified, ignoring the stack and "
+                    "using stack from deployment instead."
+                )
+
+            run = self.zen_store.run_deployment(
+                deployment_id=deployment_id,
+                run_configuration=run_configuration,
+            )
+        elif build_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Build ID and stack specified, ignoring the stack and "
+                    "using stack from build instead."
+                )
+
+            run = self.zen_store.run_build(
+                build_id=build_id, run_configuration=run_configuration
+            )
+        else:
+            assert pipeline_name_or_id
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id, version=pipeline_version
+            )
+
+            stack = None
+            if stack_name_or_id:
+                stack = self.get_stack(
+                    stack_name_or_id, allow_name_prefix_match=False
+                )
+                validate_stack_is_runnable_from_server(
+                    zen_store=self.zen_store, stack=stack
+                )
+
+            builds = depaginate(
+                partial(
+                    self.list_builds,
+                    pipeline_id=pipeline.id,
+                    stack_id=stack.id if stack else None,
+                )
+            )
+
+            for build in builds:
+                if not build.template_deployment_id:
+                    continue
+
+                if not build.stack:
+                    continue
+
+                try:
+                    validate_stack_is_runnable_from_server(
+                        zen_store=self.zen_store, stack=build.stack
+                    )
+                except ValueError:
+                    continue
+
+                run = self.zen_store.run_build(
+                    build_id=build.id, run_configuration=run_configuration
+                )
+                break
+            else:
+                raise RuntimeError(
+                    "Unable to find a runnable build for the given stack and "
+                    "pipeline."
+                )
+
+        if synchronous:
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
+
     # -------------------------------- Builds ----------------------------------
 
     def get_build(
@@ -2587,18 +2758,18 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         configuration: Dict[str, Any],
-        description: str,
         flavor: str,
         event_source_subtype: PluginSubType,
+        description: str = "",
     ) -> EventSourceResponse:
-        """Registers a event_source.
+        """Registers an event source.
 
         Args:
-            name: The name of the event_source to create.
-            configuration: Configuration for this event source
-            description: The description of the event_source
-            flavor: The flavor of event source
-            event_source_subtype: str
+            name: The name of the event source to create.
+            configuration: Configuration for this event source.
+            flavor: The flavor of event source.
+            event_source_subtype: The event source subtype.
+            description: The description of the event source.
 
         Returns:
             The model of the registered event source.
@@ -2768,52 +2939,218 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_event_source(event_source_id=event_source.id)
         logger.info("Deleted event_source with name '%s'.", event_source.name)
 
+    # --------------------------------- Actions -------------------------
+
+    @_fail_for_sql_zen_store
+    def create_action(
+        self,
+        name: str,
+        flavor: str,
+        action_type: PluginSubType,
+        configuration: Dict[str, Any],
+        service_account_id: UUID,
+        auth_window: Optional[int] = None,
+        description: str = "",
+    ) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            name: The name of the action.
+            flavor: The flavor of the action,
+            action_type: The action subtype.
+            configuration: The action configuration.
+            service_account_id: The service account that is used to execute the
+                action.
+            auth_window: The time window in minutes for which the service
+                account is authorized to execute the action. Set this to 0 to
+                authorize the service account indefinitely (not recommended).
+            description: The description of the action.
+
+        Returns:
+            The created action
+        """
+        action = ActionRequest(
+            name=name,
+            description=description,
+            flavor=flavor,
+            plugin_subtype=action_type,
+            configuration=configuration,
+            service_account_id=service_account_id,
+            auth_window=auth_window,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+
+        return self.zen_store.create_action(action=action)
+
+    @_fail_for_sql_zen_store
+    def get_action(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by name, ID or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the action.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_action,
+            list_method=self.list_actions,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
+
+    @_fail_for_sql_zen_store
+    def list_actions(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        flavor: Optional[str] = None,
+        action_type: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List actions.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of the action to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
+            name: The name of the action to filter by.
+            flavor: The flavor of the action to filter by.
+            action_type: The type of the action to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of actions.
+        """
+        filter_model = ActionFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            name=name,
+            id=id,
+            flavor=flavor,
+            plugin_subtype=action_type,
+            created=created,
+            updated=updated,
+        )
+        filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_actions(filter_model, hydrate=hydrate)
+
+    @_fail_for_sql_zen_store
+    def update_action(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        service_account_id: Optional[UUID] = None,
+        auth_window: Optional[int] = None,
+    ) -> ActionResponse:
+        """Update an action.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the action to update.
+            name: The new name of the action.
+            description: The new description of the action.
+            configuration: The new configuration of the action.
+            service_account_id: The new service account that is used to execute
+                the action.
+            auth_window: The new time window in minutes for which the service
+                account is authorized to execute the action. Set this to 0 to
+                authorize the service account indefinitely (not recommended).
+
+        Returns:
+            The updated action.
+        """
+        action = self.get_action(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        update_model = ActionUpdate(
+            name=name,
+            description=description,
+            configuration=configuration,
+            service_account_id=service_account_id,
+            auth_window=auth_window,
+        )
+
+        return self.zen_store.update_action(
+            action_id=action.id,
+            action_update=update_model,
+        )
+
+    @_fail_for_sql_zen_store
+    def delete_action(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Delete an action.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the action
+                to delete.
+        """
+        action = self.get_action(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        self.zen_store.delete_action(action_id=action.id)
+        logger.info("Deleted action with name '%s'.", action.name)
+
     # --------------------------------- Triggers -------------------------
 
     @_fail_for_sql_zen_store
     def create_trigger(
         self,
         name: str,
-        description: str,
         event_source_id: UUID,
         event_filter: Dict[str, Any],
-        action: Dict[str, Any],
-        action_flavor: str,
-        action_subtype: PluginSubType,
-        service_account: Union[str, UUID],
-        auth_window: Optional[int] = None,
+        action_id: UUID,
+        description: str = "",
     ) -> TriggerResponse:
         """Registers a trigger.
 
         Args:
             name: The name of the trigger to create.
-            description: The description of the trigger
             event_source_id: The id of the event source id
             event_filter: The event filter
-            action: The action
-            action_flavor: The action flavor
-            action_subtype: The action subtype
-            service_account: The service account
-            auth_window: The auth window
+            action_id: The ID of the action that should be triggered.
+            description: The description of the trigger
 
         Returns:
-            The model of the registered event source.
+            The created trigger.
         """
-        # Fetch the service account
-        service_account_model = self.get_service_account(
-            name_id_or_prefix=service_account, allow_name_prefix_match=False
-        )
-
         trigger = TriggerRequest(
             name=name,
             description=description,
             event_source_id=event_source_id,
             event_filter=event_filter,
-            action=action,
-            action_flavor=action_flavor,
-            action_subtype=action_subtype,
-            service_account_id=service_account_model.id,
-            auth_window=auth_window,
+            action_id=action_id,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
@@ -2827,10 +3164,10 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> TriggerResponse:
-        """Get a event source by name, ID or prefix.
+        """Get a trigger by name, ID or prefix.
 
         Args:
-            name_id_or_prefix: The name, ID or prefix of the stack.
+            name_id_or_prefix: The name, ID or prefix of the trigger.
             allow_name_prefix_match: If True, allow matching by name prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -2858,6 +3195,11 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[datetime] = None,
         name: Optional[str] = None,
         event_source_id: Optional[UUID] = None,
+        action_id: Optional[UUID] = None,
+        event_source_flavor: Optional[str] = None,
+        event_source_subtype: Optional[str] = None,
+        action_flavor: Optional[str] = None,
+        action_subtype: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -2875,7 +3217,14 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             name: The name of the trigger to filter by.
-            event_source_id: The event source associated with the Trigger
+            event_source_id: The event source associated with the trigger.
+            action_id: The action associated with the trigger.
+            event_source_flavor: Flavor of the event source associated with the
+                trigger.
+            event_source_subtype: Type of the event source associated with the
+                trigger.
+            action_flavor: Flavor of the action associated with the trigger.
+            action_subtype: Type of the action associated with the trigger.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2891,6 +3240,11 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             name=name,
             event_source_id=event_source_id,
+            action_id=action_id,
+            event_source_flavor=event_source_flavor,
+            event_source_subtype=event_source_subtype,
+            action_flavor=action_flavor,
+            action_subtype=action_subtype,
             id=id,
             created=created,
             updated=updated,
@@ -2907,10 +3261,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         description: Optional[str] = None,
         event_filter: Optional[Dict[str, Any]] = None,
-        action: Optional[Dict[str, Any]] = None,
         is_active: Optional[bool] = None,
-        service_account: Optional[Union[str, UUID]] = None,
-        auth_window: Optional[int] = None,
     ) -> TriggerResponse:
         """Updates a trigger.
 
@@ -2919,11 +3270,7 @@ class Client(metaclass=ClientMetaClass):
             name: the new name of the trigger.
             description: the new description of the trigger.
             event_filter: The event filter configuration.
-            action: The action configuration.
-            is_active: Optional[bool] = Allows for activation/deactivating the
-                event source
-            service_account: The service account
-            auth_window: The auth window
+            is_active: Whether the trigger is active or not.
 
         Returns:
             The model of the updated trigger.
@@ -2941,17 +3288,8 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             description=description,
             event_filter=event_filter,
-            action=action,
             is_active=is_active,
-            auth_window=auth_window,
         )
-        if service_account:
-            # Fetch the service account
-            service_account_model = self.get_service_account(
-                name_id_or_prefix=service_account,
-                allow_name_prefix_match=False,
-            )
-            update_model.service_account_id = service_account_model.id
 
         if name:
             if self.list_triggers(name=name):
@@ -2985,13 +3323,13 @@ class Client(metaclass=ClientMetaClass):
 
     def get_deployment(
         self,
-        id_or_prefix: str,
+        id_or_prefix: Union[str, UUID],
         hydrate: bool = True,
     ) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
 
         Args:
-            id_or_prefix: The id or id prefix of the build.
+            id_or_prefix: The id or id prefix of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3007,10 +3345,12 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            return self.zen_store.get_deployment(
-                UUID(id_or_prefix),
-                hydrate=hydrate,
+            id_ = (
+                UUID(id_or_prefix)
+                if isinstance(id_or_prefix, str)
+                else id_or_prefix
             )
+            return self.zen_store.get_deployment(id_, hydrate=hydrate)
 
         entity = self.list_deployments(
             id=f"startswith:{id_or_prefix}",

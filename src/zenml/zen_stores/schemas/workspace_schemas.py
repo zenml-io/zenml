@@ -29,6 +29,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        ActionSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
         EventSourceSchema,
@@ -101,6 +102,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     secrets: List["SecretSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    actions: List["ActionSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

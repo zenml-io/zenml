@@ -24,6 +24,7 @@ from zenml.exceptions import (
     DuplicateRunNameError,
     EntityExistsError,
     IllegalOperationError,
+    MethodNotAllowedError,
     SecretExistsError,
     StackComponentExistsError,
     StackExistsError,
@@ -93,6 +94,8 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     (RuntimeError, 500),
     # 501 Not Implemented,
     (NotImplementedError, 501),
+    # 405 Method Not Allowed
+    (MethodNotAllowedError, 405),
 ]
 
 

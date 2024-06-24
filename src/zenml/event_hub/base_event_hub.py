@@ -121,7 +121,7 @@ class BaseEventHub(ABC):
             trigger=trigger.id, event_metadata=event.model_dump()
         )
 
-        action_config = trigger.get_metadata().action
+        action_config = trigger.action.configuration
 
         trigger_execution = self.zen_store.create_trigger_execution(request)
 
@@ -130,16 +130,16 @@ class BaseEventHub(ABC):
         # is associated with the service account configured for the trigger
         # and has a validity defined by the trigger's authentication window.
         token = JWTToken(
-            user_id=trigger.service_account.id,
+            user_id=trigger.action.service_account.id,
         )
         expires: Optional[datetime] = None
-        if trigger.auth_window:
+        if trigger.action.auth_window:
             expires = datetime.utcnow() + timedelta(
-                minutes=trigger.auth_window
+                minutes=trigger.action.auth_window
             )
         encoded_token = token.encode(expires=expires)
         auth_context = AuthContext(
-            user=trigger.service_account,
+            user=trigger.action.service_account,
             access_token=token,
             encoded_access_token=encoded_token,
         )
