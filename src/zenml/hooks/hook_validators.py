@@ -14,14 +14,13 @@
 """Validation functions for hooks."""
 
 import inspect
-from types import FunctionType
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from zenml.config.source import Source
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-    HookSpecification = Union[str, Source, FunctionType]
+    from zenml.types import HookSpecification
 
 
 def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
