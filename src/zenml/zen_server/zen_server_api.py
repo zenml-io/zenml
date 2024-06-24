@@ -40,6 +40,7 @@ from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
+    actions_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
@@ -262,6 +263,7 @@ async def dashboard(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+app.include_router(actions_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
