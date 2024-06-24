@@ -109,7 +109,7 @@ find [the migration guide here](https://www.kubeflow.org/docs/components/pipelin
 We also are considering adding an alternative version of this integration so our
 users can keep using `kfp` V1 in their environment. Stay tuned for any updates.)
 
-### mlflow
+### MLflow
 
 `mlflow` is compatible with both Pydantic V1 and V2. However, due to a known
 issue, if you install `zenml` first and then
