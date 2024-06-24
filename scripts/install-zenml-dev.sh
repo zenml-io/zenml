@@ -31,7 +31,7 @@ install_zenml() {
     uv pip install $PIP_ARGS -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]"
 
     # TODO: Remove. Temporary installation from the upgrade branch.
-    uv pip install $PIP_ARGS git+https://github.com/zenml-io/mlstacks.git@feature/upgrade-to-pydantic-v2
+    uv pip install $PIP_ARGS git+https://github.com/zenml-io/mlstacks.git@develop
 }
 
 install_integrations() {
