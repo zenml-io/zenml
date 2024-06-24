@@ -19,7 +19,6 @@ import inspect
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -98,11 +97,11 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.types import HookSpecification
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
-    HookSpecification = Union[str, "Source", FunctionType]
 
 logger = get_logger(__name__)
 
@@ -1307,6 +1306,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]
         ] = None,
+        steps: Optional[Mapping[str, "StepConfigurationUpdateOrDict"]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
@@ -1319,6 +1319,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             step_configurations: Configurations for steps of the pipeline.
+            steps: Configurations for steps of the pipeline. This is equivalent
+                to `step_configurations`, and will be ignored if
+                `step_configurations` is set as well.
             config_path: Path to a yaml configuration file. This file will
                 be parsed as a
                 `zenml.config.pipeline_configurations.PipelineRunConfiguration`
@@ -1334,6 +1337,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The copied pipeline instance.
         """
+        if steps and step_configurations:
+            logger.warning(
+                "Step configurations were passed using both the "
+                "`step_configurations` and `steps` keywords, ignoring the "
+                "values passed using the `steps` keyword."
+            )
+
         pipeline_copy = self.copy()
 
         pipeline_copy._parse_config_file(
@@ -1353,7 +1363,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "run_name": run_name,
                 "schedule": schedule,
                 "build": build,
-                "step_configurations": step_configurations,
+                "step_configurations": step_configurations or steps,
                 "config_path": config_path,
                 "unlisted": unlisted,
                 "prevent_build_reuse": prevent_build_reuse,
