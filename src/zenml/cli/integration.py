@@ -300,6 +300,13 @@ def install(
                 "Python 3.11 or lower instead while we work on a fix."
             )
 
+        if "huggingface" in integrations:
+            warning(
+                "HuggingFace integration with Python 3.12.x is not fully functional due to "
+                "the need to build `transformers` from sources using Rust. For now, please use "
+                "Python 3.11 or lower, or install `transformers` and other dependencies manually."
+            )
+
     requirements = []
     integrations_to_install = []
     for integration_name in integrations:

@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Huggingface integration."""
-from typing import List, Type
+import sys
+from typing import List, Optional, Type
 
 from zenml.integrations.constants import HUGGINGFACE
 from zenml.integrations.integration import Integration
@@ -26,19 +27,34 @@ class HuggingfaceIntegration(Integration):
     """Definition of Huggingface integration for ZenML."""
 
     NAME = HUGGINGFACE
-    REQUIREMENTS = [
-        "transformers<=4.31",
-        "datasets",
-        "huggingface_hub>0.19.0",
-        "accelerate",
-        "bitsandbytes>=0.41.3",
-        "peft",
-        # temporary fix for CI issue similar to:
-        # - https://github.com/huggingface/datasets/issues/6737
-        # - https://github.com/huggingface/datasets/issues/6697
-        # TODO try relaxing it back going forward
-        "fsspec<=2023.12.0",
-    ]
+    REQUIREMENTS = []
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Defines platform specific requirements for the integration.
+        Args:
+            target_os: The target operating system.
+        Returns:
+            A list of requirements.
+        """
+        requirements = []
+        # TODO: simplify once tranformers are prebuilt for 3.12
+        if sys.version_info.minor != 12:
+            requirements = [
+                "transformers<=4.31",
+                "datasets",
+                "huggingface_hub>0.19.0",
+                "accelerate",
+                "bitsandbytes>=0.41.3",
+                "peft",
+                # temporary fix for CI issue similar to:
+                # - https://github.com/huggingface/datasets/issues/6737
+                # - https://github.com/huggingface/datasets/issues/6697
+                # TODO try relaxing it back going forward
+                "fsspec<=2023.12.0",
+            ]
+
+        return requirements
 
     @classmethod
     def activate(cls) -> None:

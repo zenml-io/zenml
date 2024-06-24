@@ -114,15 +114,8 @@ runs:
       run: |
         brew tap hashicorp/tap
         brew install hashicorp/tap/terraform
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
     - name: Install ZenML and dependencies
       shell: bash
-      env:
-        RUSTFLAGS: -A invalid_reference_casting
       run: |
         scripts/install-zenml-dev.sh --system --integrations ${{ inputs.install_integrations }}
     - name: Check Python environment
