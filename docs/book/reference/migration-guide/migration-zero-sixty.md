@@ -80,7 +80,7 @@ dependency is now removed and the `feast` integration is working as intended.
 
 ### GCP
 
-The previous version of the kubeflow dependency (`kfp==1.8.22`) in our GCP
+The previous version of the Kubeflow dependency (`kfp==1.8.22`) in our GCP
 integration required Pydantic V1 to be installed. While we were upgrading our
 Pydantic dependency, we saw this as an opportunity and wanted to use this chance
 to upgrade the `kfp` dependency to V2 (which has no dependencies on the Pydantic
