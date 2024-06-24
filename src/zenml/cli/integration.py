@@ -296,7 +296,7 @@ def install(
         if "mlflow" in integrations:
             warning(
                 "MLFlow integration with Python 3.12.x is not fully functional due to "
-                "missing support of `mlserver`. For now, please use "
+                "the missing support of `mlserver`. For now, please use "
                 "Python 3.11 or lower instead while we work on a fix."
             )
 
@@ -305,6 +305,13 @@ def install(
                 "HuggingFace integration with Python 3.12.x is not fully functional due to "
                 "the need to build `transformers` from sources using Rust. For now, please use "
                 "Python 3.11 or lower, or install `transformers` and other dependencies manually."
+            )
+
+        if "whylogs" in integrations:
+            warning(
+                "WhyLogs integration with Python 3.12.x is not fully functional due to "
+                "the missing support of `whylogs`. For now, please use "
+                "Python 3.11 or lower instead while we work on a fix."
             )
 
     requirements = []

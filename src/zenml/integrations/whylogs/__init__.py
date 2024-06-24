@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Initialization of the whylogs integration."""
 
-from typing import List, Type
+import sys
+from typing import List, Optional, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import WHYLOGS
@@ -27,7 +28,22 @@ class WhylogsIntegration(Integration):
     """Definition of [whylogs](https://github.com/whylabs/whylogs) integration for ZenML."""
 
     NAME = WHYLOGS
-    REQUIREMENTS = ["whylogs[viz]~=1.0.5", "whylogs[whylabs]~=1.0.5"]
+    REQUIREMENTS = []
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Defines platform specific requirements for the integration.
+        Args:
+            target_os: The target operating system.
+        Returns:
+            A list of requirements.
+        """
+        requirements = []
+        # TODO: simplify once whylogs support 3.12
+        if sys.version_info.minor != 12:
+            requirements = ["whylogs[viz]~=1.0.5", "whylogs[whylabs]~=1.0.5"]
+
+        return requirements
 
     @classmethod
     def activate(cls) -> None:
