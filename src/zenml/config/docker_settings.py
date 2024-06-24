@@ -16,11 +16,13 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Extra, root_validator
+from pydantic import BaseModel, Field, model_validator
+from pydantic_settings import SettingsConfigDict
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
 from zenml.utils import deprecation_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
 
@@ -87,7 +89,7 @@ class DockerSettings(BaseSettings):
     --------------
     * No `dockerfile` specified: If any of the options regarding
     requirements, environment variables or copying files require us to build an
-    image, ZenML will build this image. Otherwise the `parent_image` will be
+    image, ZenML will build this image. Otherwise, the `parent_image` will be
     used to run the pipeline.
     * `dockerfile` specified: ZenML will first build an image based on the
     specified Dockerfile. If any of the options regarding
@@ -132,7 +134,7 @@ class DockerSettings(BaseSettings):
             when the `dockerfile` attribute is set. If this is left empty, the
             build context will only contain the Dockerfile.
         parent_image_build_config: Configuration for the parent image build.
-        build_options: DEPRECATED, use parent_build_config.build_options
+        build_options: DEPRECATED, use parent_image_build_config.build_options
             instead.
         skip_build: If set to `True`, the parent image will be used directly to
             run the steps of your pipeline.
@@ -205,8 +207,10 @@ class DockerSettings(BaseSettings):
     python_package_installer_args: Dict[str, Any] = {}
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]
-    ] = None
-    requirements: Union[None, str, List[str]] = None
+    ] = Field(default=None, union_mode="left_to_right")
+    requirements: Union[None, str, List[str]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     required_integrations: List[str] = []
     required_hub_plugins: List[str] = []
     install_stack_requirements: bool = True
@@ -224,40 +228,39 @@ class DockerSettings(BaseSettings):
         "copy_files", "copy_global_config"
     )
 
-    @root_validator(pre=True)
-    def _migrate_copy_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _migrate_copy_files(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Migrates the value from the old copy_files attribute.
 
         Args:
-            values: The settings values.
+            data: The settings values.
 
         Returns:
             The migrated settings values.
         """
-        copy_files = values.get("copy_files", None)
+        copy_files = data.get("copy_files", None)
 
         if copy_files is None:
-            return values
+            return data
 
-        if values.get("source_files", None):
+        if data.get("source_files", None):
             # Ignore the copy files value in favor of the new source files
             logger.warning(
                 "Both `copy_files` and `source_files` specified for the "
                 "DockerSettings, ignoring the `copy_files` value."
             )
         elif copy_files is True:
-            values["source_files"] = SourceFileMode.INCLUDE
+            data["source_files"] = SourceFileMode.INCLUDE
         elif copy_files is False:
-            values["source_files"] = SourceFileMode.IGNORE
+            data["source_files"] = SourceFileMode.IGNORE
 
-        return values
+        return data
 
-    @root_validator
-    def _validate_skip_build(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _validate_skip_build(self) -> "DockerSettings":
         """Ensures that a parent image is passed when trying to skip the build.
-
-        Args:
-            values: The settings values.
 
         Returns:
             The validated settings values.
@@ -266,10 +269,7 @@ class DockerSettings(BaseSettings):
             ValueError: If the build should be skipped but no parent image
                 was specified.
         """
-        skip_build = values.get("skip_build", False)
-        parent_image = values.get("parent_image")
-
-        if skip_build and not parent_image:
+        if self.skip_build and not self.parent_image:
             raise ValueError(
                 "Docker settings that specify `skip_build=True` must always "
                 "contain a `parent_image`. This parent image will be used "
@@ -277,12 +277,11 @@ class DockerSettings(BaseSettings):
                 "Docker builds on top of it."
             )
 
-        return values
+        return self
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = SettingsConfigDict(
         # public attributes are immutable
-        allow_mutation = False
+        frozen=True,
         # prevent extra attributes during model initialization
-        extra = Extra.forbid
+        extra="forbid",
+    )

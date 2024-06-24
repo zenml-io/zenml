@@ -13,15 +13,11 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security
 
-from zenml.artifacts.utils import (
-    _load_artifact_store,
-    _load_file_from_artifact_store,
-)
 from zenml.constants import (
     API,
     LOGS,
@@ -31,6 +27,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
+from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     Page,
     StepRunFilter,
@@ -203,7 +200,7 @@ def get_step_configuration(
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.READ)
 
-    return step.config.dict()
+    return step.config.model_dump()
 
 
 @router.get(
@@ -240,7 +237,7 @@ def get_step_status(
 def get_step_logs(
     step_id: UUID,
     offset: int = 0,
-    length: Optional[int] = 1024 * 1024 * 16,  # Default to 16MiB of data
+    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
 ) -> str:
     """Get the logs of a specific step.
@@ -266,13 +263,10 @@ def get_step_logs(
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
-    artifact_store = _load_artifact_store(logs.artifact_store_id, store)
-    return str(
-        _load_file_from_artifact_store(
-            logs.uri,
-            artifact_store=artifact_store,
-            mode="rb",
-            offset=offset,
-            length=length,
-        ).decode()
+    return fetch_logs(
+        zen_store=store,
+        artifact_store_id=logs.artifact_store_id,
+        logs_uri=logs.uri,
+        offset=offset,
+        length=length,
     )

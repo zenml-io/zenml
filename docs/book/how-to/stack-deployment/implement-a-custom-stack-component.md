@@ -136,9 +136,9 @@ class MyS3ArtifactStoreConfig(BaseArtifactStoreConfig):
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
 
-    key: Optional[str] = SecretField()
-    secret: Optional[str] = SecretField()
-    token: Optional[str] = SecretField()
+    key: Optional[str] = SecretField(default=None)
+    secret: Optional[str] = SecretField(default=None)
+    token: Optional[str] = SecretField(default=None)
     client_kwargs: Optional[Dict[str, Any]] = None
     config_kwargs: Optional[Dict[str, Any]] = None
     s3_additional_kwargs: Optional[Dict[str, Any]] = None

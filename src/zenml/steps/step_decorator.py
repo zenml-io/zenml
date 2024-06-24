@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Step decorator function."""
 
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -37,9 +36,9 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model import Model
+    from zenml.types import HookSpecification
 
     MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
-    HookSpecification = Union[str, "Source", FunctionType]
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrSource",
         Sequence["MaterializerClassOrSource"],

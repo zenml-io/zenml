@@ -16,7 +16,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Type
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, ConfigDict
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginSubType, PluginType
@@ -29,16 +29,12 @@ if TYPE_CHECKING:
 class BasePluginConfig(BaseModel, ABC):
     """Allows configuring of Event Source and Filter configuration."""
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # public attributes are immutable
-        allow_mutation = True
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(
+        # public attributes are mutable
+        frozen=False,
         # ignore extra attributes during model initialization
-        extra = Extra.ignore
+        extra="ignore",
+    )
 
 
 class BasePlugin(ABC):

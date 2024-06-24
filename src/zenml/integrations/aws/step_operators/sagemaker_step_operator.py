@@ -261,7 +261,7 @@ class SagemakerStepOperator(BaseStepOperator):
                 "ExperimentName": settings.experiment_name,
                 "TrialName": sanitized_training_job_name,
             }
-
+        info.force_write_logs()
         estimator.fit(
             wait=True,
             inputs=inputs,

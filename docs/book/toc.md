@@ -72,6 +72,7 @@
   * [Schedule a pipeline](how-to/build-pipelines/schedule-a-pipeline.md)
   * [Deleting a pipeline](how-to/build-pipelines/delete-a-pipeline.md)
   * [Trigger a pipeline from another](how-to/build-pipelines/trigger-a-pipeline-from-another.md)
+  * [Automatically retry steps](how-to/build-pipelines/retry-steps.md)
   * [Run pipelines asynchronously](how-to/build-pipelines/run-pipelines-asynchronously.md)
   * [Control execution order of steps](how-to/build-pipelines/control-execution-order-of-steps.md)
   * [Using a custom step invocation ID](how-to/build-pipelines/using-a-custom-step-invocation-id.md)

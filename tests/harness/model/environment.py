@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class EnvironmentConfig(BaseTestConfigModel):
     """ZenML test environment settings."""
 
-    name: str = Field(regex="^[a-z][a-z0-9-_]+$")
+    name: str = Field(pattern="^[a-z][a-z0-9-_]+$")
     description: str = ""
     deployment: Union[str, DeploymentConfig]
     requirements: List[Union[str, TestRequirements]] = Field(
@@ -73,7 +73,7 @@ class EnvironmentConfig(BaseTestConfigModel):
                         f"'{self.name}' does not exist."
                     )
 
-                cfg = cfg.copy()
+                cfg = cfg.model_copy()
                 # Environment requirements are optional by default
                 cfg.mandatory = cfg.mandatory or False
                 self.requirements[i] = cfg
@@ -92,7 +92,7 @@ class EnvironmentConfig(BaseTestConfigModel):
                     )
 
                 # Set this requirement as mandatory
-                cfg = cfg.copy()
+                cfg = cfg.model_copy()
                 cfg.mandatory = True
                 self.mandatory_requirements[i] = cfg
             else:

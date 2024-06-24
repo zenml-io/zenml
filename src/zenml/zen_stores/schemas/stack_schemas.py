@@ -119,7 +119,7 @@ class StackSchema(NamedSchema, table=True):
         Returns:
             The updated StackSchema.
         """
-        for field, value in stack_update.dict(
+        for field, value in stack_update.model_dump(
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "components":

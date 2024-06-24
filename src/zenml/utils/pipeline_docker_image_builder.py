@@ -120,6 +120,7 @@ class PipelineDockerImageBuilder:
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
                 image build.
+            ValueError: If the specified Dockerfile does not exist.
         """
         requirements: Optional[str] = None
         dockerfile: Optional[str] = None
@@ -133,6 +134,14 @@ class PipelineDockerImageBuilder:
             # the stack to make sure it's always accessible when running the
             # pipeline?
             return docker_settings.parent_image, dockerfile, requirements
+
+        if docker_settings.dockerfile and not os.path.isfile(
+            docker_settings.dockerfile
+        ):
+            raise ValueError(
+                "Dockerfile at path "
+                f"{os.path.abspath(docker_settings.dockerfile)} not found."
+            )
 
         stack.validate()
         image_builder = stack.image_builder
@@ -308,9 +317,9 @@ class PipelineDockerImageBuilder:
                 )
 
             build_options = {
-                **build_config.build_options,
                 "pull": pull_parent_image,
                 "rm": False,
+                **build_config.build_options,
             }
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,

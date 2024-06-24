@@ -58,7 +58,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     orchestrator_pod_settings: Optional[KubernetesPodSettings] = None
 
 
-class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class KubernetesOrchestratorConfig(
     BaseOrchestratorConfig, KubernetesOrchestratorSettings
 ):
     """Configuration for the Kubernetes orchestrator.

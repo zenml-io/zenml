@@ -43,7 +43,7 @@ class GcpIntegration(Integration):
 
     NAME = GCP
     REQUIREMENTS = [
-        "kfp==1.8.22",  # Only 1.x version that supports pyyaml 6
+        "kfp>=1.8.22",
         "gcsfs",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
