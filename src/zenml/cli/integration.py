@@ -290,14 +290,14 @@ def install(
             warning(
                 "We are aware of dependency resolution issues when using "
                 "Python 3.12.x with the Skypilot integrations. For now, please use "
-                "Python 3.11 or lower instead while we work on a fix."
+                "Python 3.11 or lower instead."
             )
 
         if "mlflow" in integrations:
             warning(
                 "MLFlow integration with Python 3.12.x is not fully functional due to "
                 "the missing support of `mlserver`. For now, please use "
-                "Python 3.11 or lower instead while we work on a fix."
+                "Python 3.11 or lower instead."
             )
 
         if "huggingface" in integrations:
@@ -311,7 +311,14 @@ def install(
             warning(
                 "WhyLogs integration with Python 3.12.x is not fully functional due to "
                 "the missing support of `whylogs`. For now, please use "
-                "Python 3.11 or lower instead while we work on a fix."
+                "Python 3.11 or lower instead."
+            )
+
+        if "deepchecks" in integrations:
+            warning(
+                "Deepchecks integration with Python 3.12.x is not fully functional due to "
+                "the missing support of `pandas<2.0.0`. For now, please use "
+                "Python 3.11 or lower instead."
             )
 
     requirements = []

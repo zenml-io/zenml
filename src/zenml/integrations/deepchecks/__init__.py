@@ -21,7 +21,8 @@ The integration includes custom materializers to store and visualize Deepchecks
 `SuiteResults`.
 """
 
-from typing import List, Type
+import sys
+from typing import List, Optional, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import DEEPCHECKS
@@ -35,15 +36,32 @@ class DeepchecksIntegration(Integration):
     """Definition of [Deepchecks](https://github.com/deepchecks/deepchecks) integration for ZenML."""
 
     NAME = DEEPCHECKS
-    REQUIREMENTS = [
-        "deepchecks[vision]==0.8.0",
-        "torchvision>=0.14.0",
-        "pandas<2.0.0",
-        "opencv-python==4.5.5.64",  # pin to same version
-        "opencv-python-headless==4.5.5.64",  # pin to same version
-        "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
-    ]
+    REQUIREMENTS = []
     APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Defines platform specific requirements for the integration.
+
+        Args:
+            target_os: The target operating system.
+
+        Returns:
+            A list of requirements.
+        """
+        requirements = []
+        # TODO: simplify once skypilot supports 3.12
+        if sys.version_info.minor != 12:
+            requirements = [
+                "deepchecks[vision]==0.8.0",
+                "torchvision>=0.14.0",
+                "pandas<2.0.0",
+                "opencv-python==4.5.5.64",  # pin to same version
+                "opencv-python-headless==4.5.5.64",  # pin to same version
+                "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
+            ]
+
+        return requirements
 
     @staticmethod
     def activate() -> None:
