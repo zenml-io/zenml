@@ -37,7 +37,7 @@ class SkypilotAWSOrchestratorSettings(SkypilotBaseOrchestratorSettings):
     """Skypilot orchestrator settings."""
 
 
-class SkypilotAWSOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SkypilotAWSOrchestratorConfig(
     SkypilotBaseOrchestratorConfig, SkypilotAWSOrchestratorSettings
 ):
     """Skypilot orchestrator config."""

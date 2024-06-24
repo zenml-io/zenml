@@ -27,8 +27,6 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
-    StepRunInputArtifactType,
-    StepRunOutputArtifactType,
 )
 from zenml.models import (
     StepRunRequest,
@@ -37,6 +35,7 @@ from zenml.models import (
     StepRunResponseMetadata,
     StepRunUpdate,
 )
+from zenml.models.v2.core.step_run import StepRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
@@ -60,7 +59,7 @@ class StepRunSchema(NamedSchema, table=True):
     # Fields
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
-    status: ExecutionStatus = Field(nullable=False)
+    status: str = Field(nullable=False)
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
@@ -165,7 +164,7 @@ class StepRunSchema(NamedSchema, table=True):
             user_id=request.user,
             start_time=request.start_time,
             end_time=request.end_time,
-            status=request.status,
+            status=request.status.value,
             original_step_run_id=request.original_step_run_id,
             pipeline_run_id=request.pipeline_run_id,
             deployment_id=request.deployment,
@@ -207,16 +206,20 @@ class StepRunSchema(NamedSchema, table=True):
         }
 
         output_artifacts = {
-            artifact.name: artifact.artifact_version.to_model()
+            artifact.name: artifact.artifact_version.to_model(
+                pipeline_run_id_in_context=self.pipeline_run_id
+            )
             for artifact in self.output_artifacts
         }
 
         if self.deployment is not None:
-            full_step_config = Step.parse_obj(
+            full_step_config = Step.model_validate(
                 json.loads(self.deployment.step_configurations)[self.name]
             )
         elif self.step_configuration is not None:
-            full_step_config = Step.parse_raw(self.step_configuration)
+            full_step_config = Step.model_validate_json(
+                self.step_configuration
+            )
         else:
             raise RuntimeError(
                 "Step run model creation has failed. Each step run entry "
@@ -225,7 +228,7 @@ class StepRunSchema(NamedSchema, table=True):
 
         body = StepRunResponseBody(
             user=self.user.to_model() if self.user else None,
-            status=self.status,
+            status=ExecutionStatus(self.status),
             inputs=input_artifacts,
             outputs=output_artifacts,
             created=self.created,
@@ -250,11 +253,24 @@ class StepRunSchema(NamedSchema, table=True):
                 parent_step_ids=[p.parent_id for p in self.parents],
                 run_metadata=run_metadata,
             )
+
+        resources = None
+        if include_resources:
+            model_version = None
+            if full_step_config.config.model:
+                model_version = (
+                    full_step_config.config.model._get_model_version(
+                        hydrate=False
+                    )
+                )
+            resources = StepRunResponseResources(model_version=model_version)
+
         return StepRunResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, step_update: "StepRunUpdate") -> "StepRunSchema":
@@ -266,11 +282,11 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The updated step run schema.
         """
-        for key, value in step_update.dict(
+        for key, value in step_update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
             if key == "status":
-                self.status = value
+                self.status = value.value
             if key == "end_time":
                 self.end_time = value
 
@@ -312,7 +328,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str = Field(nullable=False, primary_key=True)
-    type: StepRunInputArtifactType
+    type: str
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(
@@ -348,7 +364,7 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str
-    type: StepRunOutputArtifactType
+    type: str
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(

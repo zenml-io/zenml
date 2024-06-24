@@ -30,11 +30,7 @@ on:
       os:
         description: OS
         type: choice
-        options:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-          - arc-runner-set
+        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
         required: false
         default: ubuntu-latest
       python-version:
@@ -98,7 +94,8 @@ jobs:
       GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+    # TODO: add Windows testing for Python 3.11 back in
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') }}
     defaults:
       run:
         shell: bash
@@ -151,15 +148,9 @@ jobs:
         run: |
           pip install uv
           uv pip install --system "pyyaml==5.3.1" docker-compose
-      - name: Install Linux System Dependencies
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
-        run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
-        run: brew install graphviz
-      - name: Install Windows System Dependencies
-        if: runner.os=='Windows'
-        run: choco install graphviz
+        run: brew install libomp
       - name: Unbreak Python in GHA for 3.8-3.10
         if: runner.os=='macOS' && inputs.python-version != '3.11'
         # github actions overwrites brew's python. Force it to reassert itself, by

@@ -17,15 +17,23 @@ import re
 from typing import List, Optional, cast
 
 import boto3
+from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 
+from zenml.client import Client
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
 from zenml.integrations.aws.flavors.aws_container_registry_flavor import (
     AWSContainerRegistryConfig,
 )
+from zenml.integrations.aws.service_connectors import (
+    AWSServiceConnector,
+)
 from zenml.logger import get_logger
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
+)
 
 logger = get_logger(__name__)
 
@@ -61,6 +69,35 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
         return match.group(1)
 
+    def _get_ecr_client(self) -> BaseClient:
+        """Get an ECR client.
+
+        If this container registry is configured with an AWS service connector,
+        we use that connector to create an authenticated client. Otherwise
+        local AWS credentials will be used.
+
+        Returns:
+            An ECR client.
+        """
+        if self.connector:
+            try:
+                model = Client().get_service_connector(self.connector)
+                connector = service_connector_registry.instantiate_connector(
+                    model=model
+                )
+                assert isinstance(connector, AWSServiceConnector)
+                return connector.get_ecr_client()
+            except Exception as e:
+                logger.error(
+                    "Unable to get ECR client from service connector: %s",
+                    str(e),
+                )
+
+        return boto3.Session().client(
+            "ecr",
+            region_name=self._get_region(),
+        )
+
     def prepare_image_push(self, image_name: str) -> None:
         """Logs warning message if trying to push an image for which no repository exists.
 
@@ -76,10 +113,9 @@ class AWSContainerRegistry(BaseContainerRegistry):
             raise ValueError(f"Invalid docker image name '{image_name}'.")
         repo_name = match.group(1)
 
+        client = self._get_ecr_client()
         try:
-            response = boto3.client(
-                "ecr", region_name=self._get_region()
-            ).describe_repositories()
+            response = client.describe_repositories()
         except (BotoCoreError, ClientError):
             logger.warning(
                 "Amazon ECR requires you to create a repository before you can "
@@ -123,9 +159,9 @@ class AWSContainerRegistry(BaseContainerRegistry):
         """
         return (
             "Amazon ECR requires you to create a repository before you can "
-            "push an image to it. If you want to for example run a pipeline "
-            "using our Kubeflow orchestrator, ZenML will automatically build a "
-            f"docker image called `{self.config.uri}/zenml-kubeflow:<PIPELINE_NAME>` "
-            f"and try to push it. This will fail unless you create the "
-            f"repository `zenml-kubeflow` inside your amazon registry."
+            "push an image to it. If you want to for run a pipeline "
+            "using a remote orchestrator, ZenML will automatically build a "
+            f"docker image called `{self.config.uri}/zenml:<PIPELINE_NAME>` "
+            f"and try to push it. This will fail unless you create a "
+            f"repository called `zenml` inside your Amazon ECR."
         )

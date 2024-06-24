@@ -16,7 +16,10 @@
 from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
+from pydantic import Field, SerializeAsAny
+
 from zenml.config.base_settings import BaseSettings
+from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
@@ -36,9 +39,12 @@ class PipelineRunConfiguration(
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     schedule: Optional[Schedule] = None
-    build: Union[PipelineBuildBase, UUID, None] = None
+    build: Union[PipelineBuildBase, UUID, None] = Field(
+        default=None, union_mode="left_to_right"
+    )
     steps: Dict[str, StepConfigurationUpdate] = {}
-    settings: Dict[str, BaseSettings] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
+    retry: Optional[StepRetryConfig] = None

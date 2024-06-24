@@ -25,7 +25,7 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import root_validator
+from pydantic import ConfigDict, model_validator
 
 from zenml.enums import (
     SecretsStoreType,
@@ -38,6 +38,7 @@ from zenml.integrations.aws.service_connectors.aws_service_connector import (
     AWSAuthenticationMethods,
 )
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
@@ -74,20 +75,22 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
 
         raise ValueError("AWS `region` must be specified in the auth_config.")
 
-    @root_validator(pre=True)
-    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def populate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
         Args:
-            values: Dict representing user-specified runtime settings.
+            data: Dict representing user-specified runtime settings.
 
         Returns:
             Validated settings.
         """
         # Search for legacy attributes and populate the connector configuration
         # from them, if they exist.
-        if values.get("region_name"):
-            if not values.get("aws_access_key_id") or not values.get(
+        if data.get("region_name"):
+            if not data.get("aws_access_key_id") or not data.get(
                 "aws_secret_access_key"
             ):
                 logger.warning(
@@ -96,9 +99,9 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
                     "the `auth_method` and `auth_config` attributes instead. "
                     "Using an implicit authentication method for AWS Secrets."
                 )
-                values["auth_method"] = AWSAuthenticationMethods.IMPLICIT
-                values["auth_config"] = dict(
-                    region=values.get("region_name"),
+                data["auth_method"] = AWSAuthenticationMethods.IMPLICIT
+                data["auth_config"] = dict(
+                    region=data.get("region_name"),
                 )
             else:
                 logger.warning(
@@ -107,20 +110,16 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
                     "will be removed in a future version of ZenML. Please use the "
                     "`auth_method` and `auth_config` attributes instead."
                 )
-                values["auth_method"] = AWSAuthenticationMethods.SECRET_KEY
-                values["auth_config"] = dict(
-                    aws_access_key_id=values.get("aws_access_key_id"),
-                    aws_secret_access_key=values.get("aws_secret_access_key"),
-                    region=values.get("region_name"),
+                data["auth_method"] = AWSAuthenticationMethods.SECRET_KEY
+                data["auth_config"] = dict(
+                    aws_access_key_id=data.get("aws_access_key_id"),
+                    aws_secret_access_key=data.get("aws_secret_access_key"),
+                    region=data.get("region_name"),
                 )
 
-        return values
+        return data
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extra attributes set in the class.
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class AWSSecretsStore(ServiceConnectorSecretsStore):

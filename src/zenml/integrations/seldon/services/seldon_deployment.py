@@ -113,7 +113,7 @@ class SeldonDeploymentConfig(ServiceConfig):
             The annotations for the Seldon Core deployment.
         """
         annotations = {
-            "zenml.service_config": self.json(),
+            "zenml.service_config": self.model_dump_json(),
             "zenml.version": __version__,
         }
         return annotations
@@ -133,7 +133,7 @@ class SeldonDeploymentConfig(ServiceConfig):
 
         Raises:
             ValueError: if the given deployment resource does not contain
-                the expected annotations or it contains an invalid or
+                the expected annotations, or it contains an invalid or
                 incompatible Seldon Core service configuration.
         """
         config_data = deployment.metadata.annotations.get(
@@ -145,7 +145,7 @@ class SeldonDeploymentConfig(ServiceConfig):
                 f"'zenml.service_config' annotation: {deployment}"
             )
         try:
-            service_config = cls.parse_raw(config_data)
+            service_config = cls.model_validate_json(config_data)
         except ValidationError as e:
             raise ValueError(
                 f"The loaded Seldon Core deployment resource contains an "

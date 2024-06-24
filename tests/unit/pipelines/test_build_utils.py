@@ -337,10 +337,10 @@ def test_custom_build_verification(
             deployment=sample_deployment_response_model,
         )
 
-    correct_build = missing_image_build.copy(deep=True)
-    correct_build.metadata = PipelineBuildResponseMetadata.parse_obj(
+    correct_build = missing_image_build.model_copy(deep=True)
+    correct_build.metadata = PipelineBuildResponseMetadata.model_validate(
         {
-            **missing_image_build.metadata.dict(),
+            **missing_image_build.metadata.model_dump(),
             "images": {"key": {"image": "docker_image_name"}},
         }
     )
@@ -352,11 +352,11 @@ def test_custom_build_verification(
             deployment=sample_deployment_response_model,
         )
 
-    build_that_requires_download = missing_image_build.copy(deep=True)
+    build_that_requires_download = missing_image_build.model_copy(deep=True)
     build_that_requires_download.metadata = (
-        PipelineBuildResponseMetadata.parse_obj(
+        PipelineBuildResponseMetadata.model_validate(
             {
-                **missing_image_build.metadata.dict(),
+                **missing_image_build.metadata.model_dump(),
                 "images": {
                     "key": {
                         "image": "docker_image_name",
@@ -461,6 +461,18 @@ def test_local_repo_verification(
         "requires_code_download",
         new_callable=mocker.PropertyMock,
         return_value=True,
+    )
+    mocker.patch.object(Stack, "get_docker_builds", return_value=[])
+
+    # Code download not required if no build is necessary
+    assert not build_utils.verify_local_repository_context(
+        deployment=deployment,
+        local_repo_context=None,
+    )
+
+    build_config = BuildConfiguration(key="key", settings=DockerSettings())
+    mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[build_config]
     )
 
     with pytest.raises(RuntimeError):

@@ -1,11 +1,11 @@
-# ☮️ Fine-tuning open source LLMs using MLOps pipelines
+# ☮️ Fine-tuning open source LLMs using MLOps pipelines with PEFT
 
-Welcome to your newly generated "ZenML LLM Finetuning project" project! This is
+Welcome to your newly generated "ZenML LLM PEFT Finetuning project" project! This is
 a great way to get hands-on with ZenML using production-like template. 
 The project contains a collection of ZenML steps, pipelines and other artifacts
 and useful resources that can serve as a solid starting point for finetuning open-source LLMs using ZenML.
 
-Using these pipelines, we can run the data-preparation and model finetuning with a single command while using YAML files for [configuration](https://docs.zenml.io/user-guide/production-guide/configure-pipeline) and letting ZenML take care of tracking our metadata and [containerizing our pipelines](https://docs.zenml.io/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline).
+Using these pipelines, we can run the data-preparation and model finetuning with a single command while using YAML files for [configuration](https://docs.zenml.io/user-guide/production-guide/configure-pipeline) and letting ZenML take care of tracking our metadata and [containerizing our pipelines](https://docs.zenml.io/how-to/customize-docker-builds).
 
 <div align="center">
   <br/>
@@ -15,13 +15,13 @@ Using these pipelines, we can run the data-preparation and model finetuning with
   <br/>
 </div>
 
-## :earth_americas: Inspiration and Credit
+## 🌎 Inspiration and Credit
 
-This project heavily relies on the [Lit-GPT project](https://github.com/Lightning-AI/litgpt) of the amazing people at Lightning AI. We used [this blogpost](https://lightning.ai/pages/community/lora-insights/#toc14) to get started with LoRA and QLoRA and modified the commands they recommend to make them work using ZenML.
+This project heavily relies on the [PEFT project](https://huggingface.co/docs/peft/en/index) by the amazing people at Hugging Face and the [`microsoft/phi-2`](https://huggingface.co/microsoft/phi-2) model from the amazing people at microsoft.
 
 ## 🏃 How to run
 
-In this project we provide a few predefined configuration files for finetuning models on the [Alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca) dataset. Before we're able to run any pipeline, we need to set up our environment as follows:
+In this project, we provide a predefined configuration file to finetune models on the [gem/viggo](https://huggingface.co/datasets/gem/viggo) dataset. Before we're able to run any pipeline, we need to set up our environment as follows:
 
 ```bash
 # Set up a Python virtual environment, if you haven't already
@@ -32,50 +32,47 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Combined feature engineering and finetuning pipeline
+### 👷 Combined feature engineering and finetuning pipeline
 
-The easiest way to get started with just a single command is to run the finetuning pipeline with the `finetune-alpaca.yaml` configuration file, which will do both feature engineering and finetuning:
+> [!WARNING]  
+> All steps of this pipeline have a `clean_gpu_memory(force=True)` at the beginning. This is used to ensure that the memory is properly cleared after previous steps.
+>
+> This functionality might affect other GPU processes running on the same environment, so if you don't want to clean the GPU memory between the steps, you can delete those utility calls from all steps.
 
-```shell
-python run.py --finetuning-pipeline --config finetune-alpaca.yaml
-```
-
-When running the pipeline like this, the trained adapter will be stored in the ZenML artifact store. You can optionally upload the adapter, the merged model or both by specifying the `adapter_output_repo` and `merged_output_repo` parameters in the configuration file.
-
-
-### Evaluation pipeline
-
-Before running this pipeline, you will need to fill in the `adapter_repo` in the `eval.yaml` configuration file. This should point to a huggingface repository that contains the finetuned adapter you got by running the finetuning pipeline.
+The easiest way to get started with just a single command is to run the finetuning pipeline with the `orchestrator_finetune.yaml` configuration file, which will do data preparation, model finetuning, evaluation with [Rouge](https://huggingface.co/spaces/evaluate-metric/rouge) and promotion:
 
 ```shell
-python run.py --eval-pipeline --config eval.yaml
+python run.py --config orchestrator_finetune.yaml
 ```
 
-### Merging pipeline
+When running the pipeline like this, the trained model will be stored in the ZenML artifact store.
 
-In case you have trained an adapter using the finetuning pipeline, you can merge it with the base model by filling in the `adapter_repo` and `output_repo` parameters in the `merge.yaml` file, and then running:
+<div align="center">
+  <br/>
+    <a href="https://cloud.zenml.io">
+      <img alt="Model version metadata" src=".assets/pipeline.png">
+    </a>
+  <br/>
+</div>
+
+### ⚡ Accelerate your finetuning
+
+Do you want to benefit from multi-GPU-training with Distributed Data Parallelism (DDP)? Then you can use other configuration files prepared for this purpose.
+For example, `orchestrator_finetune.yaml` can run a finetuning of the [`microsoft/phi-2`](https://huggingface.co/microsoft/phi-2) powered by [Hugging Face Accelerate](https://huggingface.co/docs/accelerate/en/index) on all GPUs available in the environment. To do so, just call:
 
 ```shell
-python run.py --merge-pipeline --config merge.yaml
+python run.py --config orchestrator_finetune.yaml --accelerate
 ```
 
-### Feature Engineering followed by Finetuning
+Under the hood, the finetuning step will spin up the accelerated job using the step code, which will run on all available GPUs.
 
-If you want to finetune your model on a different dataset, you can do so by running the feature engineering pipeline followed by the finetuning pipeline. To define your dataset, take a look at the `scripts/prepare_*` scripts and set the dataset name in the `feature-alpaca.yaml` config file.
-
-```shell
-python run.py --feature-pipeline --config feature-alpaca.yaml
-python run.py --finetuning-pipeline --config finetune-from-dataset.yaml
-```
-
-## ☁️ Running with a remote stack
+## ☁️ Running with a step operator in the stack
 
 To finetune an LLM on remote infrastructure, you can either use a remote orchestrator or a remote step operator. Follow these steps to set up a complete remote stack:
-- Register the [orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators) (or [step operator](https://docs.zenml.io/stacks-and-components/component-guide/step-operators)) and make sure to configure it in a way so that the finetuning step has access to a GPU with at least 24GB of VRAM. Check out our docs for more [details](https://docs.zenml.io/stacks-and-components/component-guide).
+- Register the [orchestrator](https://docs.zenml.io/stack-components/orchestrators) (or [step operator](https://docs.zenml.io/stack-components/step-operators)) and make sure to configure it in a way so that the finetuning step has access to a GPU with at least 24GB of VRAM. Check out our docs for more [details](https://docs.zenml.io/stack-components/component-guide).
     - To access GPUs with this amount of VRAM, you might need to increase your GPU quota ([AWS](https://docs.aws.amazon.com/servicequotas/latest/userguide/request-quota-increase.html), [GCP](https://console.cloud.google.com/iam-admin/quotas), [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-quotas?view=azureml-api-2#request-quota-and-limit-increases)).
     - The GPU instance that your finetuning will be running on will have CUDA drivers of a specific version installed. If that CUDA version is not compatible with the one provided by the default Docker image of the finetuning pipeline, you will need to modify it in the configuration file. See [here](https://hub.docker.com/r/pytorch/pytorch/tags) for a list of available PyTorch images.
-    - If you're running out of memory, you can experiment with quantized LoRA (QLoRA) by setting a different value for the `quantize` parameter in the configuration, or reduce the `global_batch_size`/`micro_batch_size`.
-- Register a remote [artifact store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores) and [container registry](https://docs.zenml.io/stacks-and-components/component-guide/container-registries).
+- Register a remote [artifact store](https://docs.zenml.io/stack-components/artifact-stores) and [container registry](https://docs.zenml.io/stack-components/container-registries).
 - Register a stack with all these components
     ```shell
     zenml stack register llm-finetuning-stack -o <ORCHESTRATOR_NAME> \
@@ -84,45 +81,41 @@ To finetune an LLM on remote infrastructure, you can either use a remote orchest
         [-s <STEP_OPERATOR_NAME>]
     ```
 
-## 💾 Running with custom data
+## 🗂️ Bring Your Own Data
 
-To finetune a model with your custom data, you will need to convert it to a CSV file with the columns described
-[here](https://github.com/Lightning-AI/litgpt/blob/main/tutorials/prepare_dataset.md#preparing-custom-datasets-from-a-csv-file).
-
-Next, update the `configs/feature-custom.yaml` file and set the value of the `csv_path` parameter to that CSV file.
-With all that in place, you can now run the feature engineering pipeline to convert your CSV into the correct format for training and then run the finetuning pipeline as follows:
-```shell
-python run.py --feature-pipeline --config feature-custom.yaml
-python run.py --finetuning-pipeline --config finetune-from-dataset.yaml
-```
+To fine-tune an LLM using your own datasets, consider adjusting the [`prepare_data` step](steps/prepare_datasets.py) to match your needs:
+- This step loads, tokenizes, and stores the dataset from an external source to the artifact store defined in the ZenML Stack.
+- The dataset can be loaded from Hugging Face by adjusting the `dataset_name` parameter in the configuration file. By default, the step code expects the dataset to have at least three splits: `train`, `validation`, and `test`. If your dataset uses different split naming, you'll need to make the necessary adjustments.
+- If you want to retrieve the dataset from other sources, you'll need to create the relevant code and prepare the splits in a Hugging Face dataset format for further processing.
+- Tokenization occurs in the utility function [`generate_and_tokenize_prompt`](utils/tokenizer.py). It has a default way of formatting the inputs before passing them into the model. If this default logic doesn't fit your use case, you'll also need to adjust this function.
+- The return value is the path to the stored datasets (by default, `train`, `val`, and `test_raw` splits). Note: The test set is not tokenized here and will be tokenized later during evaluation.
 
 ## 📜 Project Structure
 
-The project loosely follows [the recommended ZenML project structure](https://docs.zenml.io/user-guide/starter-guide/follow-best-practices):
+The project loosely follows [the recommended ZenML project structure](https://docs.zenml.io/how-to/setting-up-a-project-repository/best-practices):
 
 ```
 .
-├── configs                         # pipeline configuration files
-│   ├── eval.yaml                   # configuration for the evaluation pipeline
-│   ├── feature-alpaca.yaml         # configuration for the feature engineering pipeline
-│   ├── feature-custom.yaml         # configuration for the feature engineering pipeline
-│   ├── finetune-alpaca.yaml        # configuration for the finetuning pipeline
-│   ├── finetune-from-dataset.yaml  # configuration for the finetuning pipeline
-│   └── merge.yaml                  # configuration for the merging pipeline
-├── pipelines                       # `zenml.pipeline` implementations
-│   ├── evaluate.py                 # Evaluation pipeline
-│   ├── feature_engineering.py      # Feature engineering pipeline
-│   ├── finetuning.py               # Finetuning pipeline
-│   └── merge.py                    # Merging pipeline
-├── steps                           # logically grouped `zenml.steps` implementations
-│   ├── evaluate.py                 # evaluate model performance
-│   ├── feature_engineering.py      # preprocess data
-│   ├── finetune.py                 # finetune a model
-│   ├── merge.py                    # merge model and adapter
-│   ├── params.py                   # shared parameters for steps
-│   └── utils.py                    # utility functions
+├── configs                                       # pipeline configuration files
+│   ├── orchestrator_finetune.yaml                # default local or remote orchestrator configuration
+│   └── remote_finetune.yaml                      # default step operator configuration
+├── materializers
+│   └── directory_materializer.py                 # custom materializer to push whole directories to the artifact store and back
+├── pipelines                                     # `zenml.pipeline` implementations
+│   └── train.py                                  # Finetuning and evaluation pipeline
+├── steps                                         # logically grouped `zenml.steps` implementations
+│   ├── evaluate_model.py                         # evaluate base and finetuned models using Rouge metrics
+│   ├── finetune.py                               # finetune the base model
+│   ├── log_metadata.py                           # helper step to ensure that model metadata is always logged
+│   ├── prepare_datasets.py                       # load and tokenize dataset
+│   └── promote.py                                # promote good models to target environment
+├── utils                                         # utility functions
+│   ├── callbacks.py                              # custom callbacks
+│   ├── loaders.py                                # loaders for models and data
+│   ├── logging.py                                # logging helpers
+│   └── tokenizer.py                              # load and tokenize
 ├── .dockerignore
-├── README.md                       # this file
-├── requirements.txt                # extra Python dependencies 
-└── run.py                          # CLI tool to run pipelines on ZenML Stack
+├── README.md                                     # this file
+├── requirements.txt                              # extra Python dependencies 
+└── run.py                                        # CLI tool to run pipelines on ZenML Stack
 ```

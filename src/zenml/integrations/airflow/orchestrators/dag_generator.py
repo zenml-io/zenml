@@ -19,7 +19,7 @@ import os
 import zipfile
 from typing import Any, Dict, List, Optional, Type, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 ENV_ZENML_AIRFLOW_RUN_ID = "ZENML_AIRFLOW_RUN_ID"
 ENV_ZENML_LOCAL_STORES_PATH = "ZENML_LOCAL_STORES_PATH"
@@ -51,7 +51,9 @@ class DagConfiguration(BaseModel):
 
     local_stores_path: Optional[str] = None
 
-    schedule: Union[datetime.timedelta, str]
+    schedule: Union[datetime.timedelta, str] = Field(
+        union_mode="left_to_right"
+    )
     start_date: datetime.datetime
     end_date: Optional[datetime.datetime] = None
     catchup: bool = False
@@ -199,7 +201,7 @@ else:
     import airflow
 
     config_str = archive.read(CONFIG_FILENAME)
-    dag_config = DagConfiguration.parse_raw(config_str)
+    dag_config = DagConfiguration.model_validate_json(config_str)
 
     step_name_to_airflow_operator = {}
 

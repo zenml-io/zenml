@@ -16,6 +16,7 @@ from uuid import uuid4
 
 import pytest
 
+from zenml import save_artifact
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
@@ -54,7 +55,7 @@ def test_running_a_successful_step(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
     )
 
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "tests.unit.orchestrators.test_step_runner.successful_step",
@@ -73,6 +74,7 @@ def test_running_a_successful_step(
         pipeline_step_name="step_name",
         config=step.config,
         pipeline=pipeline_config,
+        force_write_logs=lambda: None,
     )
 
     runner = StepRunner(step=step, stack=local_stack)
@@ -109,7 +111,7 @@ def test_running_a_failing_step(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
     )
 
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "tests.unit.orchestrators.test_step_runner.failing_step",
@@ -128,6 +130,7 @@ def test_running_a_failing_step(
         pipeline_step_name="step_name",
         config=step.config,
         pipeline=pipeline_config,
+        force_write_logs=lambda: None,
     )
 
     runner = StepRunner(step=step, stack=local_stack)
@@ -147,12 +150,15 @@ def test_running_a_failing_step(
     mock_publish_successful_step_run.assert_not_called()
 
 
-def test_loading_unmaterialized_input_artifact(
-    local_stack, sample_artifact_version_model
-):
+def test_loading_unmaterialized_input_artifact(local_stack, clean_client):
     """Tests that having an input of type `UnmaterializedArtifact` does not
     materialize the artifact but instead returns the response model."""
-    step = Step.parse_obj(
+
+    artifact_response = save_artifact(
+        42, "main_answer", manual_save=False
+    ).get_hydrated_version()
+
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",
@@ -164,9 +170,7 @@ def test_loading_unmaterialized_input_artifact(
         }
     )
     runner = StepRunner(step=step, stack=local_stack)
-    artifact_response = sample_artifact_version_model
-
     artifact = runner._load_input_artifact(
         artifact=artifact_response, data_type=UnmaterializedArtifact
     )
-    assert artifact.dict() == artifact_response.dict()
+    assert artifact.model_dump() == artifact_response.model_dump()

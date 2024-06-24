@@ -35,7 +35,7 @@ class TensorflowIntegration(Integration):
             not platform.system() == "Darwin"
             or not platform.machine() == "arm64"
         ):
-            import tensorflow_io  # type: ignore [import-untyped]
+            import tensorflow_io  # type: ignore
 
         from zenml.integrations.tensorflow import materializers  # noqa
 
@@ -49,23 +49,15 @@ class TensorflowIntegration(Integration):
         Returns:
             A list of requirements.
         """
-        if sys.version_info > (3, 11):
-            tf_version = "2.13"
-        else:
-            # Capping tensorflow to 2.11 for Python 3.10 and below because it
-            # is not compatible with Pytorch
-            # (see https://github.com/pytorch/pytorch/issues/99637).
-            tf_version = "2.11"
         target_os = target_os or platform.system()
         if target_os == "Darwin" and platform.machine() == "arm64":
             requirements = [
-                f"tensorflow-macos=={tf_version}",
+                f"tensorflow-macos>=2.12,<=2.15",
             ]
         else:
             requirements = [
-                f"tensorflow=={tf_version}",
+                f"tensorflow>=2.12,<=2.15",
                 "tensorflow_io>=0.24.0",
-                "protobuf>=3.6.0,<4.0.0",
             ]
         return requirements
 

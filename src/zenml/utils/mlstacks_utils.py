@@ -422,9 +422,9 @@ def convert_mlstacks_primitives_to_dicts(
     verify_mlstacks_prerequisites_installation()
 
     # convert to json first to strip out Enums objects
-    stack_dict = json.loads(stack.json())
+    stack_dict = json.loads(stack.model_dump_json())
     components_dicts = [
-        json.loads(component.json()) for component in components
+        json.loads(component.model_dump_json()) for component in components
     ]
 
     return stack_dict, components_dicts

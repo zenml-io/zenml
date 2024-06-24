@@ -88,6 +88,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if incluster is None:
             incluster = self.config.incluster
 
+        if incluster:
+            kube_utils.load_kube_config(
+                incluster=incluster,
+                context=self.config.kubernetes_context,
+            )
+            self._k8s_client = k8s_client.ApiClient()
+            return self._k8s_client
+
         # Refresh the client also if the connector has expired
         if self._k8s_client and not self.connector_has_expired():
             return self._k8s_client
@@ -200,11 +208,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            connector = self.get_connector()
             kubernetes_context = self.config.kubernetes_context
             msg = f"'{self.name}' Kubernetes orchestrator error: "
 
-            if not connector:
+            if not self.connector:
                 if not kubernetes_context:
                     return False, (
                         f"{msg}you must either link this stack component to a "
@@ -402,7 +409,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 command=command,
                 args=args,
                 service_account_name=service_account_name,
-                settings=settings,
+                privileged=False,
+                pod_settings=settings.orchestrator_pod_settings,
                 env=environment,
                 mount_local_stores=self.config.is_local,
             )
@@ -425,8 +433,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             image_name=image,
             command=command,
             args=args,
+            privileged=False,
+            pod_settings=settings.orchestrator_pod_settings,
             service_account_name=service_account_name,
-            settings=settings,
             env=environment,
             mount_local_stores=self.config.is_local,
         )
@@ -440,7 +449,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if settings.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
-                core_api=self._k8s_core_api,
+                kube_client_fn=self.get_kube_client,
                 pod_name=pod_name,
                 namespace=self.config.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,

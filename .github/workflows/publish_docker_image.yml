@@ -8,6 +8,11 @@ on:
         required: false
         type: string
         default: release-cloudbuild.yaml
+      zenml_nightly:
+        description: Set to true for nightly builds
+        required: false
+        type: boolean
+        default: false
 jobs:
   publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub
@@ -18,10 +23,20 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v4.1.1
-      - name: Get the version from the github tag ref
-        id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-
+        with:
+          ref: ${{ inputs.zenml_nightly && 'develop' || github.ref }}
+      - name: Determine version
+        run: |-
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            CURRENT_VERSION=$(cat src/zenml/VERSION)
+            DATE=$(date +"%Y%m%d")
+            VERSION="${CURRENT_VERSION}.dev${DATE}"
+          fi
+          VERSION=$(echo $VERSION | sed 's/[^a-zA-Z0-9._-]/-/g')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Determined VERSION=$VERSION"
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@v0
         with:
@@ -32,7 +47,8 @@ jobs:
       # Cloudbuild
       - name: Build docker images
         run: |-
+          echo "Building Docker image with tag: ${{ env.VERSION }}"
           gcloud builds submit \
             --quiet \
             --config=${{inputs.config_file}} \
-            --substitutions=TAG_NAME=${{github.ref_name}} .
+            --substitutions=TAG_NAME=$VERSION

@@ -72,7 +72,7 @@ def dehydrate_page(page: Page[AnyResponse]) -> Page[AnyResponse]:
         for item in page.items
     ]
 
-    return page.copy(update={"items": new_items})
+    return page.model_copy(update={"items": new_items})
 
 
 def dehydrate_response_model(
@@ -103,15 +103,12 @@ def dehydrate_response_model(
         )
 
     dehydrated_values = {}
-    for key, value in model.__dict__.items():
-        if key in model.__private_attributes__:
-            dehydrated_values[key] = value
-        else:
-            dehydrated_values[key] = _dehydrate_value(
-                value, permissions=permissions
-            )
+    for key, value in dict(model).items():
+        dehydrated_values[key] = _dehydrate_value(
+            value, permissions=permissions
+        )
 
-    return type(model).parse_obj(dehydrated_values)
+    return type(model).model_validate(dehydrated_values)
 
 
 def _dehydrate_value(
@@ -144,6 +141,8 @@ def _dehydrate_value(
             return dehydrate_response_model(value, permissions=permissions)
         else:
             return get_permission_denied_model(value)
+    elif isinstance(value, Page):
+        return dehydrate_page(page=value)
     elif isinstance(value, BaseModel):
         return dehydrate_response_model(value, permissions=permissions)
     elif isinstance(value, Dict):
@@ -189,8 +188,13 @@ def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
     Returns:
         The permission denied model.
     """
-    return model.copy(
-        exclude={"body", "metadata"}, update={"permission_denied": True}
+    return model.model_copy(
+        update={
+            "body": None,
+            "metadata": None,
+            "resources": None,
+            "permission_denied": True,
+        }
     )
 
 
@@ -385,10 +389,12 @@ def get_resource_type_for_model(
         is not associated with any resource type.
     """
     from zenml.models import (
+        ActionResponse,
         ArtifactResponse,
         ArtifactVersionResponse,
         CodeRepositoryResponse,
         ComponentResponse,
+        EventSourceResponse,
         FlavorResponse,
         ModelResponse,
         ModelVersionResponse,
@@ -403,6 +409,8 @@ def get_resource_type_for_model(
         ServiceResponse,
         StackResponse,
         TagResponse,
+        TriggerExecutionResponse,
+        TriggerResponse,
         UserResponse,
         WorkspaceResponse,
     )
@@ -411,6 +419,8 @@ def get_resource_type_for_model(
         Any,
         ResourceType,
     ] = {
+        ActionResponse: ResourceType.ACTION,
+        EventSourceResponse: ResourceType.EVENT_SOURCE,
         FlavorResponse: ResourceType.FLAVOR,
         ServiceConnectorResponse: ResourceType.SERVICE_CONNECTOR,
         ComponentResponse: ResourceType.STACK_COMPONENT,
@@ -429,6 +439,8 @@ def get_resource_type_for_model(
         PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
         TagResponse: ResourceType.TAG,
+        TriggerResponse: ResourceType.TRIGGER,
+        TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
         ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
         ServiceResponse: ResourceType.SERVICE,
     }
@@ -472,9 +484,7 @@ def get_subresources_for_model(
     """
     resources = set()
 
-    for key, value in model.__dict__.items():
-        if key in model.__private_attributes__:
-            continue
+    for value in dict(model).values():
         resources.update(_get_subresources_for_value(value))
 
     return resources
@@ -525,9 +535,11 @@ def get_schema_for_resource_type(
         The database schema.
     """
     from zenml.zen_stores.schemas import (
+        ActionSchema,
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
@@ -542,6 +554,8 @@ def get_schema_for_resource_type(
         StackComponentSchema,
         StackSchema,
         TagSchema,
+        TriggerExecutionSchema,
+        TriggerSchema,
         UserSchema,
         WorkspaceSchema,
     )
@@ -567,6 +581,10 @@ def get_schema_for_resource_type(
         ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
         ResourceType.RUN_METADATA: RunMetadataSchema,
         ResourceType.USER: UserSchema,
+        ResourceType.ACTION: ActionSchema,
+        ResourceType.EVENT_SOURCE: EventSourceSchema,
+        ResourceType.TRIGGER: TriggerSchema,
+        ResourceType.TRIGGER_EXECUTION: TriggerExecutionSchema,
     }
 
     return mapping[resource_type]

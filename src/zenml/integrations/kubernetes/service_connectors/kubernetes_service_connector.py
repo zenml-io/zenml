@@ -25,7 +25,7 @@ from typing import Any, List, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.exceptions import AuthorizationException
@@ -40,6 +40,7 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -47,7 +48,7 @@ logger = get_logger(__name__)
 class KubernetesServerCredentials(AuthenticationConfig):
     """Kubernetes server authentication config."""
 
-    certificate_authority: Optional[SecretStr] = Field(
+    certificate_authority: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Kubernetes CA Certificate (base64 encoded)",
     )
@@ -68,10 +69,10 @@ class KubernetesServerConfig(KubernetesServerCredentials):
 class KubernetesUserPasswordCredentials(AuthenticationConfig):
     """Kubernetes user/pass authentication config."""
 
-    username: SecretStr = Field(
+    username: PlainSerializedSecretStr = Field(
         title="Kubernetes Username",
     )
-    password: SecretStr = Field(
+    password: PlainSerializedSecretStr = Field(
         title="Kubernetes Password",
     )
 
@@ -94,15 +95,15 @@ class KubernetesUserPasswordConfig(
 class KubernetesTokenCredentials(AuthenticationConfig):
     """Kubernetes token authentication config."""
 
-    client_certificate: Optional[SecretStr] = Field(
+    client_certificate: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Kubernetes Client Certificate (base64 encoded)",
     )
-    client_key: Optional[SecretStr] = Field(
+    client_key: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Kubernetes Client Key (base64 encoded)",
     )
-    token: Optional[SecretStr] = Field(
+    token: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         title="Kubernetes Token",
     )

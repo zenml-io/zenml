@@ -18,7 +18,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, cast
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -79,13 +79,11 @@ class ModelRegistryModelMetadata(BaseModel):
         """
         # Return all attributes that are not explicitly defined as Pydantic
         # fields in this class
-        return {
-            k: str(v)
-            for k, v in self.__dict__.items()
-            if k not in self.__fields__.keys()
-        }
+        if self.model_extra:
+            return {k: str(v) for k, v in self.model_extra.items()}
+        return {}
 
-    def dict(
+    def model_dump(
         self,
         *,
         exclude_unset: bool = False,
@@ -94,7 +92,7 @@ class ModelRegistryModelMetadata(BaseModel):
     ) -> Dict[str, str]:
         """Returns a dictionary representation of the metadata.
 
-        This method overrides the default Pydantic `dict` method to allow
+        This method overrides the default Pydantic `model_dump` method to allow
         for the exclusion of fields with a value of None.
 
         Args:
@@ -109,18 +107,14 @@ class ModelRegistryModelMetadata(BaseModel):
             return {
                 k: v
                 for k, v in super()
-                .dict(exclude_unset=exclude_unset, **kwargs)
+                .model_dump(exclude_unset=exclude_unset, **kwargs)
                 .items()
                 if v is not None
             }
         else:
-            return super().dict(exclude_unset=exclude_unset, **kwargs)
+            return super().model_dump(exclude_unset=exclude_unset, **kwargs)
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extra attributes to be set in the metadata
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class RegistryModelVersion(BaseModel):
@@ -164,6 +158,14 @@ class RegistryModelVersion(BaseModel):
     last_updated_at: Optional[datetime] = None
     stage: ModelVersionStage = ModelVersionStage.NONE
     metadata: Optional[ModelRegistryModelMetadata] = None
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class BaseModelRegistryConfig(StackComponentConfig):

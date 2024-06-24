@@ -131,7 +131,8 @@ def _disable_primary_key_requirement_if_necessary() -> None:
     Raises:
         NotImplementedError: If the database engine is not MySQL or mariadb.
     """
-    engine = op.get_bind().engine
+    conn = op.get_bind()
+    engine = conn.engine
     engine_name = engine.name.lower()
 
     if engine_name == "mysql":
@@ -141,7 +142,7 @@ def _disable_primary_key_requirement_if_necessary() -> None:
             0,
             13,
         ):
-            potential_session_var = engine.execute(
+            potential_session_var = conn.execute(
                 text('SHOW SESSION VARIABLES LIKE "sql_require_primary_key";')
             ).fetchone()
             if potential_session_var and potential_session_var[1] == "ON":

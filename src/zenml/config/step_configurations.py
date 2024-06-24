@@ -24,7 +24,12 @@ from typing import (
     Union,
 )
 
-from pydantic import root_validator, validator
+from pydantic import (
+    ConfigDict,
+    SerializeAsAny,
+    field_validator,
+    model_validator,
+)
 
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
@@ -32,12 +37,14 @@ from zenml.artifacts.external_artifact_config import (
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
-from zenml.config.source import Source, convert_source_validator
+from zenml.config.retry_config import StepRetryConfig
+from zenml.config.source import Source, SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
 from zenml.utils import deprecation_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
@@ -53,25 +60,30 @@ class PartialArtifactConfiguration(StrictBaseModel):
     # for all steps/outputs
     default_materializer_source: Optional[Source] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def _remove_deprecated_attributes(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Removes deprecated attributes from the values dict.
 
         Args:
-            values: The values dict used to instantiate the model.
+            data: The values dict used to instantiate the model.
 
         Returns:
             The values dict without deprecated attributes.
         """
         deprecated_attributes = ["artifact_source"]
-        for deprecated_attribute in deprecated_attributes:
-            if deprecated_attribute in values:
-                values.pop(deprecated_attribute)
-        return values
 
-    @validator("materializer_source", pre=True)
+        for deprecated_attribute in deprecated_attributes:
+            if deprecated_attribute in data:
+                data.pop(deprecated_attribute)
+
+        return data
+
+    @field_validator("materializer_source", mode="before")
+    @classmethod
     def _convert_source(
         cls,
         value: Union[None, Source, Dict[str, Any], str, Tuple[Source, ...]],
@@ -87,7 +99,7 @@ class PartialArtifactConfiguration(StrictBaseModel):
         if isinstance(value, str):
             value = (Source.from_import_path(value),)
         elif isinstance(value, dict):
-            value = (Source.parse_obj(value),)
+            value = (Source.model_validate(value),)
         elif isinstance(value, Source):
             value = (value,)
 
@@ -99,7 +111,8 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 
     materializer_source: Tuple[Source, ...]
 
-    @validator("materializer_source", pre=True)
+    @field_validator("materializer_source", mode="before")
+    @classmethod
     def _convert_source(
         cls, value: Union[Source, Dict[str, Any], str, Tuple[Source, ...]]
     ) -> Tuple[Source, ...]:
@@ -114,7 +127,7 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
         if isinstance(value, str):
             value = (Source.from_import_path(value),)
         elif isinstance(value, dict):
-            value = (Source.parse_obj(value),)
+            value = (Source.model_validate(value),)
         elif isinstance(value, Source):
             value = (value,)
 
@@ -132,17 +145,15 @@ class StepConfigurationUpdate(StrictBaseModel):
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None
     parameters: Dict[str, Any] = {}
-    settings: Dict[str, BaseSettings] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[Source] = None
-    success_hook_source: Optional[Source] = None
+    failure_hook_source: Optional[SourceWithValidator] = None
+    success_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
+    retry: Optional[StepRetryConfig] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
-    _convert_source = convert_source_validator(
-        "failure_hook_source", "success_hook_source"
-    )
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "name"
     )
@@ -158,27 +169,37 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
     # Override the deprecation validator as we do not want to deprecate the
     # `name`` attribute on this class.
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes()
 
-    @root_validator(pre=True)
-    def _remove_deprecated_attributes(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _remove_deprecated_attributes(cls, data: Any) -> Any:
         """Removes deprecated attributes from the values dict.
 
         Args:
-            values: The values dict used to instantiate the model.
+            data: The values dict used to instantiate the model.
 
         Returns:
             The values dict without deprecated attributes.
         """
         deprecated_attributes = ["docstring", "inputs"]
+
         for deprecated_attribute in deprecated_attributes:
-            if deprecated_attribute in values:
-                values.pop(deprecated_attribute)
-        return values
+            if deprecated_attribute in data:
+                data.pop(deprecated_attribute)
+
+        return data
 
 
 class StepConfiguration(PartialStepConfiguration):
@@ -198,7 +219,10 @@ class StepConfiguration(PartialStepConfiguration):
         model_or_dict: SettingsOrDict = self.settings.get(
             RESOURCE_SETTINGS_KEY, {}
         )
-        return ResourceSettings.parse_obj(model_or_dict)
+
+        if isinstance(model_or_dict, BaseSettings):
+            model_or_dict = model_or_dict.model_dump()
+        return ResourceSettings.model_validate(model_or_dict)
 
     @property
     def docker_settings(self) -> "DockerSettings":
@@ -212,7 +236,9 @@ class StepConfiguration(PartialStepConfiguration):
         model_or_dict: SettingsOrDict = self.settings.get(
             DOCKER_SETTINGS_KEY, {}
         )
-        return DockerSettings.parse_obj(model_or_dict)
+        if isinstance(model_or_dict, BaseSettings):
+            model_or_dict = model_or_dict.model_dump()
+        return DockerSettings.model_validate(model_or_dict)
 
 
 class InputSpec(StrictBaseModel):
@@ -225,13 +251,11 @@ class InputSpec(StrictBaseModel):
 class StepSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
-    source: Source
+    source: SourceWithValidator
     upstream_steps: List[str]
     inputs: Dict[str, InputSpec] = {}
     # The default value is to ensure compatibility with specs of version <0.2
     pipeline_parameter_name: str = ""
-
-    _convert_source = convert_source_validator("source")
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same step.

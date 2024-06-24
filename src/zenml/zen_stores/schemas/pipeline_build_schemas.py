@@ -17,7 +17,6 @@ import json
 from typing import Any, Optional
 from uuid import UUID
 
-from pydantic.json import pydantic_encoder
 from sqlalchemy import Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
@@ -29,6 +28,7 @@ from zenml.models import (
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
 )
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -84,14 +84,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
         back_populates="builds"
     )
 
-    template_deployment_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target="pipeline_deployment",
-        source_column="template_deployment_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
+    template_deployment_id: Optional[UUID] = None
     images: str = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(

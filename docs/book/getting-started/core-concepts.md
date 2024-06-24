@@ -6,7 +6,7 @@ description: Discovering the core concepts behind ZenML.
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. In order to achieve this goal, ZenML introduces various concepts for different aspects of an ML workflow and we can categorize these concepts under three different threads:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>1. Development</strong></mark></td><td>As a developer, how do I design my machine learning workflows?</td><td></td><td><a href="core-concepts.md#1-development">#artifact-store</a></td></tr><tr><td><mark style="color:purple;"><strong>2. Execution</strong></mark></td><td>While executing, how do my workflows utilize the large landscape of MLOps tooling/infrastructure?</td><td></td><td><a href="core-concepts.md#2-execution">#execution</a></td></tr><tr><td><mark style="color:purple;"><strong>3. Management</strong></mark></td><td>How do I establish and maintain a production-grade and efficient solution?</td><td></td><td><a href="core-concepts.md#3-management">#management</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>1. Development</strong></mark></td><td>As a developer, how do I design my machine learning workflows?</td><td></td><td><a href="core-concepts.md#1-development">#1-development</a></td></tr><tr><td><mark style="color:purple;"><strong>2. Execution</strong></mark></td><td>While executing, how do my workflows utilize the large landscape of MLOps tooling/infrastructure?</td><td></td><td><a href="core-concepts.md#2-execution">#2-execution</a></td></tr><tr><td><mark style="color:purple;"><strong>3. Management</strong></mark></td><td>How do I establish and maintain a production-grade and efficient solution?</td><td></td><td><a href="core-concepts.md#3-management">#3-management</a></td></tr></tbody></table>
 
 ## 1. Development
 
@@ -37,7 +37,6 @@ def step_2(input_one: str, input_two: str) -> str:
 
 At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case.
 
-
 ![Representation of a pipeline dag.](../.gitbook/assets/01\_pipeline.png)
 
 As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step is completed before starting. This is something you can keep in mind when organizing your steps.
@@ -64,22 +63,17 @@ if __name__ == "__main__":
 
 Artifacts represent the data that goes through your steps as inputs and outputs and they are automatically tracked and stored by ZenML in the artifact store. They are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather, when the execution of a step is completed they are written to storage, and when a new step gets executed they are loaded from storage.
 
-The serialization and deserialization logic of artifacts is defined by [Materializers](../user-guide/advanced-guide/data-management/handle-custom-data-types.md).
+The serialization and deserialization logic of artifacts is defined by [Materializers](../how-to/handle-data-artifacts/handle-custom-data-types.md).
 
 #### Models
 
-Models are used to represent the outputs of
-a training process along with all metadata associated with that output. In other
-words: models in ZenML are more broadly defined as the weights as well as any
-associated information. Models are first-class citizens in ZenML and as such
-viewing and using them is unified and centralized in the ZenML API, client as
-well as on the [ZenML Cloud](https://zenml.io/cloud) dashboard.
+Models are used to represent the outputs of a training process along with all metadata associated with that output. In other words: models in ZenML are more broadly defined as the weights as well as any associated information. Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, client as well as on the [ZenML Pro](https://zenml.io/cloud) dashboard.
 
 #### Materializers
 
 Materializers define how artifacts live in between steps. More precisely, they define how data of a particular type can be serialized/deserialized, so that the steps are able to load the input data and store the output data.
 
-All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../user-guide/advanced-guide/data-management/handle-custom-data-types.md) to ensure that your data can be passed from step to step.
+All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../how-to/handle-data-artifacts/handle-custom-data-types.md) to ensure that your data can be passed from step to step.
 
 #### Parameters & Settings
 
@@ -139,7 +133,7 @@ To use _stack components_ that are running remotely on a cloud infrastructure, y
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](../deploying-zenml/zenml-cloud/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
 
 #### Metadata Tracking
 
@@ -147,9 +141,9 @@ On top of the communication with the stack components, the **ZenML Server** also
 
 #### Secrets
 
-The **ZenML Server** also acts as a [centralized secrets store](../user-guide/advanced-guide/secret-management/secret-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
+The **ZenML Server** also acts as a [centralized secrets store](deploying-zenml/manage-the-deployed-services/secret-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
 
-Secrets are sensitive data that you don't want to store in your code or configure alongside your stacks and pipelines. ZenML includes a [centralized secrets store](../user-guide/advanced-guide/secret-management/secret-management.md) that you can use to store and access your secrets securely.
+Secrets are sensitive data that you don't want to store in your code or configure alongside your stacks and pipelines. ZenML includes a [centralized secrets store](deploying-zenml/manage-the-deployed-services/secret-management.md) that you can use to store and access your secrets securely.
 
 #### Collaboration
 
@@ -161,12 +155,10 @@ With a deployed **ZenML Server**, users have the ability to create their own tea
 
 The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_, and share your stacks with them.
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
+When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](deploying-zenml/README.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
 
-#### ZenML Hub
+#### VS Code Extension
 
-The **ZenML Hub** is a central platform that enables our users to search, share and discover community-contributed code, such as flavors, materializers, and steps, that can be used across organizations. The goal is to allow our users to extend their ZenML experience by leveraging the community's diverse range of implementations.
-
-The ZenML Hub revolves around the concept of **plugins**, which can be made up of one or multiple ZenML entities, including flavors, materializers, and steps. Aside from the implementation of these entities, every plugin in the hub is also equipped with
+ZenML also provides a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode) that allows you to interact with your ZenML stacks, runs and server directly from your VS Code editor. If you're working on code in your editor, you can easily switch and inspect the stacks you're using, delete and inspect pipelines as well as even switch stacks.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

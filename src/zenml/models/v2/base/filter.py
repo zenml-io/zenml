@@ -30,8 +30,12 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator, validator
-from pydantic.typing import get_args
+from pydantic import (
+    BaseModel,
+    Field,
+    field_validator,
+    model_validator,
+)
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -43,9 +47,11 @@ from zenml.constants import (
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.exceptions import ValidationError
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.typing_utils import get_args
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -73,14 +79,15 @@ class Filter(BaseModel, ABC):
 
     operation: GenericFilterOps
     column: str
-    value: Any
+    value: Optional[Any] = None
 
-    @validator("operation", pre=True)
-    def validate_operation(cls, op: str) -> str:
+    @field_validator("operation", mode="before")
+    @classmethod
+    def validate_operation(cls, value: Any) -> Any:
         """Validate that the operation is a valid op for the field type.
 
         Args:
-            op: The operation of this filter.
+            value: The operation of this filter.
 
         Returns:
             The operation if it is valid.
@@ -88,18 +95,18 @@ class Filter(BaseModel, ABC):
         Raises:
             ValueError: If the operation is not valid for this field type.
         """
-        if op not in cls.ALLOWED_OPS:
+        if value not in cls.ALLOWED_OPS:
             raise ValueError(
                 f"This datatype can not be filtered using this operation: "
-                f"'{op}'. The allowed operations are: {cls.ALLOWED_OPS}"
+                f"'{value}'. The allowed operations are: {cls.ALLOWED_OPS}"
             )
         else:
-            return op
+            return value
 
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+    ) -> Union["ColumnElement[bool]"]:
         """Generate the query conditions for the database.
 
         This method converts the Filter class into an appropriate SQLModel
@@ -204,7 +211,7 @@ class UUIDFilter(StrFilter):
 class NumericFilter(Filter):
     """Filter for all numeric fields."""
 
-    value: Union[float, datetime]
+    value: Union[float, datetime] = Field(union_mode="left_to_right")
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
@@ -286,25 +293,28 @@ class BaseFilter(BaseModel):
     )
 
     id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Id for this resource"
+        default=None,
+        description="Id for this resource",
+        union_mode="left_to_right",
     )
     created: Optional[Union[datetime, str]] = Field(
-        default=None, description="Created"
+        default=None, description="Created", union_mode="left_to_right"
     )
     updated: Optional[Union[datetime, str]] = Field(
-        default=None, description="Updated"
+        default=None, description="Updated", union_mode="left_to_right"
     )
 
     _rbac_configuration: Optional[
         Tuple[UUID, Dict[str, Optional[Set[UUID]]]]
     ] = None
 
-    @validator("sort_by", pre=True)
-    def validate_sort_by(cls, v: str) -> str:
+    @field_validator("sort_by", mode="before")
+    @classmethod
+    def validate_sort_by(cls, value: Any) -> Any:
         """Validate that the sort_column is a valid column with a valid operand.
 
         Args:
-            v: The sort_by field value.
+            value: The sort_by field value.
 
         Returns:
             The validated sort_by field value.
@@ -316,13 +326,13 @@ class BaseFilter(BaseModel):
         # Somehow pydantic allows you to pass in int values, which will be
         #  interpreted as string, however within the validator they are still
         #  integers, which don't have a .split() method
-        if not isinstance(v, str):
+        if not isinstance(value, str):
             raise ValidationError(
                 f"str type expected for the sort_by field. "
-                f"Received a {type(v)}"
+                f"Received a {type(value)}"
             )
-        column = v
-        split_value = v.split(":", 1)
+        column = value
+        split_value = value.split(":", 1)
         if len(split_value) == 2:
             column = split_value[1]
 
@@ -334,31 +344,33 @@ class BaseFilter(BaseModel):
                     SorterOps.values(),
                     column,
                 )
-                v = column
+                value = column
 
         if column in cls.FILTER_EXCLUDE_FIELDS:
             raise ValueError(
-                f"This resource can not be sorted by this field: '{v}'"
+                f"This resource can not be sorted by this field: '{value}'"
             )
-        elif column in cls.__fields__:
-            return v
+        elif column in cls.model_fields:
+            return value
         else:
             raise ValueError(
                 "You can only sort by valid fields of this resource"
             )
 
-    @root_validator(pre=True)
-    def filter_ops(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def filter_ops(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse incoming filters to ensure all filters are legal.
 
         Args:
-            values: The values of the class.
+            data: The values of the class.
 
         Returns:
             The values of the class.
         """
-        cls._generate_filter_list(values)
-        return values
+        cls._generate_filter_list(data)
+        return data
 
     @property
     def list_of_filters(self) -> List[Filter]:
@@ -368,7 +380,7 @@ class BaseFilter(BaseModel):
             A list of Filter models.
         """
         return self._generate_filter_list(
-            {key: getattr(self, key) for key in self.__fields__}
+            {key: getattr(self, key) for key in self.model_fields}
         )
 
     @property
@@ -403,14 +415,14 @@ class BaseFilter(BaseModel):
             column_allowed_ids: Set of IDs per column to limit the query to.
                 If given, the remaining filters will be applied to entities
                 within this set only. If `None`, the remaining filters will
-                applied to all entries in the table.
+                be applied to all entries in the table.
         """
         self._rbac_configuration = (authenticated_user_id, column_allowed_ids)
 
     def generate_rbac_filter(
         self,
         table: Type["AnySchema"],
-    ) -> Optional["BooleanClauseList[Any]"]:
+    ) -> Optional["ColumnElement[bool]"]:
         """Generates an optional RBAC filter.
 
         Args:
@@ -563,7 +575,7 @@ class BaseFilter(BaseModel):
 
         # Handle unsupported datatypes
         logger.warning(
-            f"The Datatype {cls.__fields__[column].type_} might not be "
+            f"The Datatype {cls.model_fields[column].annotation} might not be "
             "supported for filtering. Defaulting to a string filter."
         )
         return StrFilter(
@@ -571,6 +583,37 @@ class BaseFilter(BaseModel):
             column=column,
             value=str(value),
         )
+
+    @classmethod
+    def check_field_annotation(cls, k: str, type_: Any) -> bool:
+        """Checks whether a model field has a certain annotation.
+
+        Args:
+            k: The name of the field.
+            type_: The type to check.
+
+        Raises:
+            ValueError: if the model field within does not have an annotation.
+
+        Returns:
+            True if the annotation of the field matches the given type, False
+            otherwise.
+        """
+        try:
+            annotation = cls.model_fields[k].annotation
+
+            if annotation is not None:
+                return (
+                    issubclass(type_, get_args(annotation))
+                    or annotation is type_
+                )
+            else:
+                raise ValueError(
+                    f"The field '{k}' inside the model {cls.__name__} "
+                    "does not have an annotation."
+                )
+        except TypeError:
+            return False
 
     @classmethod
     def is_datetime_field(cls, k: str) -> bool:
@@ -582,40 +625,31 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a datetime field, False otherwise.
         """
-        return (
-            issubclass(datetime, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is datetime
-        )
+        return cls.check_field_annotation(k=k, type_=datetime)
 
     @classmethod
     def is_uuid_field(cls, k: str) -> bool:
-        """Checks if it's a uuid field.
+        """Checks if it's a UUID field.
 
         Args:
             k: The key to check.
 
         Returns:
-            True if the field is a uuid field, False otherwise.
+            True if the field is a UUID field, False otherwise.
         """
-        return (
-            issubclass(UUID, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is UUID
-        )
+        return cls.check_field_annotation(k=k, type_=UUID)
 
     @classmethod
     def is_int_field(cls, k: str) -> bool:
-        """Checks if it's a int field.
+        """Checks if it's an int field.
 
         Args:
             k: The key to check.
 
         Returns:
-            True if the field is a int field, False otherwise.
+            True if the field is an int field, False otherwise.
         """
-        return (
-            issubclass(int, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is int
-        )
+        return cls.check_field_annotation(k=k, type_=int)
 
     @classmethod
     def is_bool_field(cls, k: str) -> bool:
@@ -627,10 +661,7 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a bool field, False otherwise.
         """
-        return (
-            issubclass(bool, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is bool
-        )
+        return cls.check_field_annotation(k=k, type_=bool)
 
     @classmethod
     def is_str_field(cls, k: str) -> bool:
@@ -642,10 +673,7 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a string field, False otherwise.
         """
-        return (
-            issubclass(str, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is str
-        )
+        return cls.check_field_annotation(k=k, type_=str)
 
     @classmethod
     def is_sort_by_field(cls, k: str) -> bool:
@@ -657,10 +685,7 @@ class BaseFilter(BaseModel):
         Returns:
             True if the field is a sort by field, False otherwise.
         """
-        return (
-            issubclass(str, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ == str
-        ) and k == "sort_by"
+        return cls.check_field_annotation(k=k, type_=str) and k == "sort_by"
 
     @staticmethod
     def _define_datetime_filter(
@@ -772,7 +797,7 @@ class BaseFilter(BaseModel):
 
     def generate_filter(
         self, table: Type[SQLModel]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+    ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
         Args:
@@ -784,8 +809,7 @@ class BaseFilter(BaseModel):
         Raises:
             RuntimeError: If a valid logical operator is not supplied.
         """
-        from sqlalchemy import and_
-        from sqlmodel import or_
+        from sqlmodel import and_, or_
 
         filters = []
         for column_filter in self.list_of_filters:
@@ -801,9 +825,7 @@ class BaseFilter(BaseModel):
         else:
             raise RuntimeError("No valid logical operator was supplied.")
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         This can be overridden by subclasses to define custom filters that are
@@ -839,10 +861,3 @@ class BaseFilter(BaseModel):
             query = query.where(filters)
 
         return query
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True

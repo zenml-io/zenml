@@ -16,11 +16,13 @@
 import inspect
 import time
 from collections import defaultdict
+from contextlib import contextmanager
 from functools import wraps
 from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
     Optional,
     TypeVar,
@@ -133,6 +135,25 @@ class RequestLimiter:
 
             return request.client.host
 
+    @contextmanager
+    def limit_failed_requests(
+        self, request: Request
+    ) -> Generator[None, Any, Any]:
+        """Limits the number of failed requests.
+
+        Args:
+            request: Request object.
+
+        Yields:
+            None
+        """
+        self.hit_limiter(request)
+
+        yield
+
+        # if request was successful - reset limiter
+        self.reset_limiter(request)
+
 
 def rate_limit_requests(
     day_limit: Optional[int] = None,
@@ -171,13 +192,8 @@ def rate_limit_requests(
                 request = kwargs[request_kwarg]
             else:
                 request = args[request_arg]
-            limiter.hit_limiter(request)
-
-            ret = func(*args, **kwargs)
-
-            # if request was successful - reset limiter
-            limiter.reset_limiter(request)
-            return ret
+            with limiter.limit_failed_requests(request):
+                return func(*args, **kwargs)
 
         return cast(F, decorated)
 

@@ -11,18 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Zen Server API."""
+"""Zen Server API.
+
+To run this file locally, execute:
+
+    ```
+    uvicorn zenml.zen_server.zen_server_api:app --reload
+    ```
+"""
 
 import os
 from asyncio.log import logger
+from genericpath import isfile
 from typing import Any, List
 
+from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from genericpath import isfile
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
@@ -32,6 +40,7 @@ from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
+    actions_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
@@ -63,14 +72,20 @@ from zenml.zen_server.routers import (
     workspaces_endpoints,
 )
 from zenml.zen_server.utils import (
+    initialize_feature_gate,
     initialize_plugins,
     initialize_rbac,
+    initialize_secure_headers,
     initialize_workload_manager,
     initialize_zen_store,
+    secure_headers,
     server_config,
 )
 
-DASHBOARD_DIRECTORY = "dashboard"
+if server_config().use_legacy_dashboard:
+    DASHBOARD_DIRECTORY = "dashboard_legacy"
+else:
+    DASHBOARD_DIRECTORY = "dashboard"
 
 
 def relative_path(rel: str) -> str:
@@ -121,6 +136,28 @@ app.add_middleware(
 
 
 @app.middleware("http")
+async def set_secure_headers(request: Request, call_next: Any) -> Any:
+    """Middleware to set secure headers.
+
+    Args:
+        request: The incoming request.
+        call_next: The next function to be called.
+
+    Returns:
+        The response with secure headers set.
+    """
+    # If the request is for the openAPI docs, don't set secure headers
+    if request.url.path.startswith("/docs") or request.url.path.startswith(
+        "/redoc"
+    ):
+        return await call_next(request)
+
+    response = await call_next(request)
+    secure_headers().framework.fastapi(response)
+    return response
+
+
+@app.middleware("http")
 async def infer_source_context(request: Request, call_next: Any) -> Any:
     """A middleware to track the source of an event.
 
@@ -155,27 +192,46 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
 @app.on_event("startup")
 def initialize() -> None:
     """Initialize the ZenML server."""
+    # Set the maximum number of worker threads
+    to_thread.current_default_thread_limiter().total_tokens = (
+        server_config().thread_pool_size
+    )
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
     initialize_rbac()
+    initialize_feature_gate()
     initialize_workload_manager()
     initialize_plugins()
+    initialize_secure_headers()
 
 
-app.mount(
-    "/static",
-    StaticFiles(
-        directory=relative_path(os.path.join(DASHBOARD_DIRECTORY, "static")),
-        check_dir=False,
-    ),
-)
+if server_config().use_legacy_dashboard:
+    app.mount(
+        "/static",
+        StaticFiles(
+            directory=relative_path(
+                os.path.join(DASHBOARD_DIRECTORY, "static")
+            ),
+            check_dir=False,
+        ),
+    )
+else:
+    app.mount(
+        "/assets",
+        StaticFiles(
+            directory=relative_path(
+                os.path.join(DASHBOARD_DIRECTORY, "assets")
+            ),
+            check_dir=False,
+        ),
+    )
 
 
 # Basic Health Endpoint
 @app.head(HEALTH, include_in_schema=False)
 @app.get(HEALTH)
-def health() -> str:
+async def health() -> str:
     """Get health status of the server.
 
     Returns:
@@ -188,7 +244,7 @@ templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
 
 
 @app.get("/", include_in_schema=False)
-def dashboard(request: Request) -> Any:
+async def dashboard(request: Request) -> Any:
     """Dashboard endpoint.
 
     Args:
@@ -207,9 +263,7 @@ def dashboard(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-# to run this file locally, execute:
-# uvicorn zenml.zen_server.zen_server_api:app --reload
-
+app.include_router(actions_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
@@ -282,7 +336,7 @@ root_static_files = get_root_static_files()
 @app.get(
     API + "/{invalid_api_path:path}", status_code=404, include_in_schema=False
 )
-def invalid_api(invalid_api_path: str) -> None:
+async def invalid_api(invalid_api_path: str) -> None:
     """Invalid API endpoint.
 
     All API endpoints that are not defined in the API routers will be
@@ -299,7 +353,7 @@ def invalid_api(invalid_api_path: str) -> None:
 
 
 @app.get("/{file_path:path}", include_in_schema=False)
-def catch_all(request: Request, file_path: str) -> Any:
+async def catch_all(request: Request, file_path: str) -> Any:
     """Dashboard endpoint.
 
     Args:
@@ -308,10 +362,6 @@ def catch_all(request: Request, file_path: str) -> Any:
 
     Returns:
         The ZenML dashboard.
-
-    Raises:
-        HTTPException: 404 error if requested a non-existent static file or if
-            the dashboard files are not included.
     """
     # some static files need to be served directly from the root dashboard
     # directory
@@ -319,16 +369,6 @@ def catch_all(request: Request, file_path: str) -> Any:
         logger.debug(f"Returning static file: {file_path}")
         full_path = os.path.join(relative_path(DASHBOARD_DIRECTORY), file_path)
         return FileResponse(full_path)
-
-    tokens = file_path.split("/")
-    if len(tokens) == 1 and not request.query_params:
-        logger.debug(f"Requested non-existent static file: {file_path}")
-        raise HTTPException(status_code=404)
-
-    if not os.path.isfile(
-        os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
-    ):
-        raise HTTPException(status_code=404)
 
     # everything else is directed to the index.html file that hosts the
     # single-page application

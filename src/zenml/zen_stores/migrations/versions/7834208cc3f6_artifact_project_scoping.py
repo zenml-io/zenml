@@ -49,15 +49,16 @@ def upgrade() -> None:
     # ------------
 
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
     meta.reflect(
+        bind=op.get_bind(),
         only=(
             "pipeline_run",
             "step_run",
             "artifact",
             "step_run_output_artifact",
             "workspace",
-        )
+        ),
     )
     pipeline_runs = sa.Table("pipeline_run", meta)
     step_runs = sa.Table("step_run", meta)
@@ -67,12 +68,12 @@ def upgrade() -> None:
 
     # Use the first workspace as the default workspace in case an artifact or
     # step run has no associated pipeline run or producer step run.
-    default_workspace = conn.execute(select([workspace])).first()
+    default_workspace = conn.execute(select(workspace)).first()
 
     # For each step run, set user and project according to its pipeline run
-    for step_run in conn.execute(select([step_runs])).all():
+    for step_run in conn.execute(select(step_runs)).all():
         pipeline_run = conn.execute(
-            select([pipeline_runs]).where(
+            select(pipeline_runs).where(
                 pipeline_runs.c.id == step_run.pipeline_run_id
             )
         ).first()
@@ -90,9 +91,9 @@ def upgrade() -> None:
         )
 
     # For each artifact, set user and project according to its producer step run
-    for artifact in conn.execute(select([artifacts])).all():
+    for artifact in conn.execute(select(artifacts)).all():
         producer_step_run = conn.execute(
-            select([step_runs])
+            select(step_runs)
             .where(step_runs.c.status == "completed")
             .where(step_runs.c.id == step_run_output_artifacts.c.step_id)
             .where(step_run_output_artifacts.c.artifact_id == artifact.id)

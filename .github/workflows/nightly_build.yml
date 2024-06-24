@@ -15,6 +15,9 @@ jobs:
     secrets: inherit
     if: github.repository == 'zenml-io/zenml'
   publish-python-package:
+    permissions:
+      id-token: write
+      contents: read
     needs: setup-and-test
     uses: ./.github/workflows/publish_to_pypi_nightly.yml
     secrets: inherit
@@ -33,4 +36,5 @@ jobs:
     uses: ./.github/workflows/publish_docker_image.yml
     with:
       config_file: release-cloudbuild-nightly.yaml
+      zenml_nightly: true
     secrets: inherit

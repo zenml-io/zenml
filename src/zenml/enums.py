@@ -282,6 +282,7 @@ class SourceContextTypes(StrEnum):
     CLI = "cli"
     PYTHON = "python"
     DASHBOARD = "dashboard"
+    DASHBOARD_V2 = "dashboard-v2"
     API = "api"
     UNKNOWN = "unknown"
 

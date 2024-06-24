@@ -64,16 +64,21 @@ spec:
               mountPath: /backups
           {{- end }}
           env:
+            - name: ZENML_SERVER
+              value: "True"
             {{- if .Values.zenml.debug }}
             - name: ZENML_LOGGING_VERBOSITY
               value: "DEBUG"
             {{- end }}
+            {{- if .Values.zenml.analyticsOptIn }}
+            - name: ZENML_ANALYTICS_OPT_IN
+              value: "True"
+            {{- else if not .Values.zenml.analyticsOptIn }}
             - name: ZENML_ANALYTICS_OPT_IN
               value: "False"
+            {{- end }}
             - name: ZENML_DEFAULT_PROJECT_NAME
               value: {{ .Values.zenml.defaultProject | quote }}
-            - name: ZENML_DEFAULT_USER_NAME
-              value: {{ .Values.zenml.defaultUsername | quote }}
             - name: ZENML_STORE_TYPE
               value: sql
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT

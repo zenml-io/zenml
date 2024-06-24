@@ -95,6 +95,7 @@ class ScheduleSchema(NamedSchema, table=True):
     end_time: Optional[datetime] = Field(nullable=True)
     interval_second: Optional[float] = Field(nullable=True)
     catchup: bool
+    run_once_start_time: Optional[datetime] = Field(nullable=True)
 
     @classmethod
     def from_request(
@@ -124,6 +125,7 @@ class ScheduleSchema(NamedSchema, table=True):
             end_time=schedule_request.end_time,
             interval_second=interval_second,
             catchup=schedule_request.catchup,
+            run_once_start_time=schedule_request.run_once_start_time,
         )
 
     def update(self, schedule_update: ScheduleUpdate) -> "ScheduleSchema":
@@ -186,6 +188,7 @@ class ScheduleSchema(NamedSchema, table=True):
             catchup=self.catchup,
             updated=self.updated,
             created=self.created,
+            run_once_start_time=self.run_once_start_time,
         )
         metadata = None
         if include_metadata:
