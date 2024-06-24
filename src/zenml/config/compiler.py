@@ -192,10 +192,6 @@ class Compiler:
         Args:
             pipeline: The pipeline to configure.
             config: The run configurations.
-
-        Raises:
-            KeyError: If the run configuration contains options for a
-                non-existent step.
         """
         with pipeline.__suppress_configure_warnings__():
             pipeline.configure(
