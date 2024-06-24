@@ -5666,6 +5666,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             resource_type=resource_type,
             resource_id=resource_id,
+            verify=False,
         )
 
         connector_client.configure_local_client(
@@ -5679,6 +5680,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[UUID, str],
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        verify: bool = False,
     ) -> "ServiceConnector":
         """Get the client side of a service connector instance to use with a local client.
 
@@ -5694,6 +5696,8 @@ class Client(metaclass=ClientMetaClass):
                 equivalent to the one requested, a `ValueError` exception is
                 raised. May be omitted for connectors and resource types that do
                 not support multiple resource instances.
+            verify: Whether to verify that the service connector configuration
+                and credentials can be used to gain access to the resource.
 
         Returns:
             The client side of the indicated service connector instance that can
@@ -5731,9 +5735,10 @@ class Client(metaclass=ClientMetaClass):
                 )
             )
 
-            # Verify the connector client on the local machine, because the
-            # server-side implementation may not be able to do so
-            connector_client.verify()
+            if verify:
+                # Verify the connector client on the local machine, because the
+                # server-side implementation may not be able to do so
+                connector_client.verify()
         else:
             connector_instance = (
                 service_connector_registry.instantiate_connector(
