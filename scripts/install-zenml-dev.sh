@@ -32,9 +32,6 @@ install_zenml() {
 
     # TODO: Remove. Temporary installation from the upgrade branch.
     uv pip install $PIP_ARGS git+https://github.com/zenml-io/mlstacks.git@feature/upgrade-to-python-3.12
-
-    # TODO: Remove, once uv runs smooth on 3.12 building pandas in GHA
-    pip install "pandas==1.5.3"
 }
 
 install_integrations() {
