@@ -125,13 +125,8 @@ deprecation warnings.
 
 While we were working on updating our `pydantic` dependency,
 the `label-studio-sdk` has released its 1.0 version. In this new
-<<<<<<< Updated upstream
-version, `pydantic` V2 is also supported. The implementation and documentation
-of our Label Studio integration have been updated accordingly.
-=======
 version, `pydantic` v2 is also supported. The implementation and documentation
-of our label-studio integration have been updated accordingly.
->>>>>>> Stashed changes
+of our Label Studio integration have been updated accordingly.
 
 ### Skypilot
 
