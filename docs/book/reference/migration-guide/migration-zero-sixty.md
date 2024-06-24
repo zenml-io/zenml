@@ -4,11 +4,11 @@ description: How to migrate from ZenML 0.58.2 to 0.60.0 (Pydantic 2 edition).
 
 # Release Notes
 
-ZenML now uses Pydantic V2. 🥳
+ZenML now uses Pydantic v2. 🥳
 
 This upgrade comes with a set of critical updates. While your user experience
 mostly remains unaffected, you might see unexpected behavior due to the
-changes in our dependencies. Moreover, since Pydantic V2 provides a slightly
+changes in our dependencies. Moreover, since Pydantic v2 provides a slightly
 stricter validation process, you might end up bumping into some validation
 errors which was not caught before, but it is all for the better 🙂 If
 you run into any other errors, please let us know either on
@@ -19,10 +19,10 @@ our [Slack](https://zenml.io/slack-invite).
 
 - SQLModel is one of the core dependencies of ZenML and prior to this upgrade,
   we were utilizing version `0.0.8`. However, this version is relatively
-  outdated and incompatible with Pydantic V2. Within the scope of this upgrade, 
+  outdated and incompatible with Pydantic v2. Within the scope of this upgrade, 
   we upgraded it to `0.0.18`.
 - Due to the change in the SQLModel version, we also had to upgrade our
-  SQLAlchemy dependency from V1 to V2. While this does not affect the way
+  SQLAlchemy dependency from V1 to v2. While this does not affect the way
   that you are using ZenML, if you are using SQLAlchemy in your environment,
   you might have to migrate your code as well. For a detailed list of changes,
   feel free to
@@ -30,7 +30,7 @@ our [Slack](https://zenml.io/slack-invite).
 
 ## Changes in `pydantic`
 
-Pydantic V2 brings a lot of new and exciting changes to the table. The core
+Pydantic v2 brings a lot of new and exciting changes to the table. The core
 logic now uses Rust and it is much faster and more efficient in terms of
 performance. On top of it, the main concepts like model design, configuration,
 validation, or serialization now include a lot of new cool features. If you are
@@ -51,11 +51,12 @@ through the changes.
 
 As mentioned above upgrading our `pydantic` dependency meant we had to upgrade
 our `sqlmodel` dependency. Upgrading our `sqlmodel` dependency meant we had to
-upgrade our `sqlalchemy` dependency. Unfortunately, `apache-airflow` is still
-using `sqlalchemy` v1 and is incompatible with v2. As a solution, we have
-removed the dependencies of the `airflow` integration. Now, you can use ZenML to
-create your Airflow pipelines and use a separate environment to run them with
-Airflow.
+upgrade our `sqlalchemy` dependency as well. Unfortunately, `apache-airflow` 
+is still using `sqlalchemy` v1 and is incompatible with pydantic v2. As a 
+solution, we have removed the dependencies of the `airflow` integration. Now, 
+you can use ZenML to create your Airflow pipelines and use a separate 
+environment to run them with Airflow. You can check the updated docs 
+[right here](https://docs.zenml.io/stack-components/orchestrators/airflow).
 
 ### AWS
 
@@ -68,14 +69,14 @@ solved the compatibility issue.
 ### Evidently
 
 The old version of our `evidently` integration was not compatible with Pydantic
-V2. They started supporting it starting from version `0.4.16`. As their latest
+v2. They started supporting it starting from version `0.4.16`. As their latest
 version is `0.4.22`, the new dependency of the integration is limited between
 these two versions.
 
 ### Feast
 
 Our previous implementation of the `feast` integration was not compatible with
-Pydantic V2 due to the extra `redis` dependency we were using. This extra
+Pydantic v2 due to the extra `redis` dependency we were using. This extra
 dependency is now removed and the `feast` integration is working as intended.
 
 ### GCP
@@ -83,7 +84,7 @@ dependency is now removed and the `feast` integration is working as intended.
 The previous version of the Kubeflow dependency (`kfp==1.8.22`) in our GCP
 integration required Pydantic V1 to be installed. While we were upgrading our
 Pydantic dependency, we saw this as an opportunity and wanted to use this chance
-to upgrade the `kfp` dependency to V2 (which has no dependencies on the Pydantic
+to upgrade the `kfp` dependency to v2 (which has no dependencies on the Pydantic
 library). This is why you may see some functional changes in the vertex step
 operator and orchestrator. If you would like to go through the changes in
 the `kfp` library, you can
@@ -91,7 +92,7 @@ find [the migration guide here](https://www.kubeflow.org/docs/components/pipelin
 
 ### Great Expectations
 
-Great Expectations started supporting Pydantic V2 starting from
+Great Expectations started supporting Pydantic v2 starting from
 version `0.17.15` and they are closing in on their `1.0` release. Since this
 release might include a lot of big changes, we adjusted the dependency in our
 integration to `great-expectations>=0.17.15,<1.0`. We will try to keep it
@@ -103,7 +104,7 @@ Similar to the GCP integration, the previous version of the kubeflow
 dependency (`kfp==1.8.22`) in our `kubeflow` integration required Pydantic V1 to
 be installed. While we were upgrading our Pydantic dependency, we saw this as an
 opportunity and wanted to use this chance to upgrade the `kfp` dependency to
-V2 (which has no dependencies on the Pydantic library). If you would like to go
+v2 (which has no dependencies on the Pydantic library). If you would like to go
 through the changes in the `kfp` library, you can
 find [the migration guide here](https://www.kubeflow.org/docs/components/pipelines/v2/migration/). (
 We also are considering adding an alternative version of this integration so our
@@ -111,7 +112,7 @@ users can keep using `kfp` V1 in their environment. Stay tuned for any updates.)
 
 ### MLflow
 
-`mlflow` is compatible with both Pydantic V1 and V2. However, due to a known
+`mlflow` is compatible with both Pydantic V1 and v2. However, due to a known
 issue, if you install `zenml` first and then
 do `zenml integration install mlflow -y`, it downgrades `pydantic` to V1. This
 is why we manually added the same duplicated `pydantic` requirement in the
@@ -124,12 +125,17 @@ deprecation warnings.
 
 While we were working on updating our `pydantic` dependency,
 the `label-studio-sdk` has released its 1.0 version. In this new
+<<<<<<< Updated upstream
 version, `pydantic` V2 is also supported. The implementation and documentation
 of our Label Studio integration have been updated accordingly.
+=======
+version, `pydantic` v2 is also supported. The implementation and documentation
+of our label-studio integration have been updated accordingly.
+>>>>>>> Stashed changes
 
 ### Skypilot
 
-With the switch to `pydantic` V2, the implementation of our `skypilot`
+With the switch to `pydantic` v2, the implementation of our `skypilot`
 integration mostly remained untouched. However, due to an incompatibility
 between the new version `pydantic` and the `azurecli`, the `skypilot[azure]`
 flavor can not be installed at the same time, thus our `skypilot_azure`
@@ -141,7 +147,7 @@ previous version of ZenML until we can solve this issue.
 
 The new version of `pydantic` creates a drift between `tensorflow`
 and  `typing_extensions`  packages and relaxing the dependencies here resolves
-the issue. At the same time, the upgrade to `kfp` V2 (in integrations
+the issue. At the same time, the upgrade to `kfp` v2 (in integrations
 like `kubeflow`, `tekton`, or `gcp`) bumps our `protobuf` dependency from `3.X`
 to `4.X`. To stay compatible with this requirement, the installed version
 of `tensorflow` needs to be `>=2.12.0`. While this change solves the dependency
@@ -153,7 +159,7 @@ integration, please consider using a higher Python version.
 
 Similar to the `gcp` and `kubeflow` integrations, the old version of
 our `tekton` integration was not compatible with `pydantic` V1 due to its `kfp`
-dependency. With the switch from `kfp` V1 to V2, we have adapted our
+dependency. With the switch from `kfp` V1 to v2, we have adapted our
 implementation to use the new version of `kfp` library and updated our
 documentation accordingly.
 
