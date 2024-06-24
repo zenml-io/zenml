@@ -85,13 +85,13 @@ def upgrade() -> None:
     pipeline_run_count = connection.execute(
         sa.select(sa.func.count(pipeline_run_table.c.id))
     ).scalar()
-    if pipeline_run_count > 0:
+    if pipeline_run_count and pipeline_run_count > 0:
         new_state.extend(ONBOARDING_KEY_MAPPING["run_first_pipeline"])
 
     service_connector_count = connection.execute(
         sa.select(sa.func.count(service_connector_table.c.id))
     ).scalar()
-    if service_connector_count > 0:
+    if service_connector_count and service_connector_count > 0:
         new_state.extend(ONBOARDING_KEY_MAPPING["create_service_connector"])
 
     remote_artifact_store_count = connection.execute(
@@ -99,7 +99,7 @@ def upgrade() -> None:
         .where(stack_component_table.c.flavor != "local")
         .where(stack_component_table.c.type == "artifact_store")
     ).scalar()
-    if remote_artifact_store_count > 0:
+    if remote_artifact_store_count and remote_artifact_store_count > 0:
         new_state.extend(
             ONBOARDING_KEY_MAPPING["create_remote_artifact_store"]
         )
@@ -111,7 +111,7 @@ def upgrade() -> None:
         )
         .where(stack_component_table.c.type == "orchestrator")
     ).scalar()
-    if remote_orchestrator_count > 0:
+    if remote_orchestrator_count and remote_orchestrator_count > 0:
         new_state.append("remote_orchestrator_created")
 
     stack_with_remote_artifact_store_count = connection.execute(
@@ -124,7 +124,10 @@ def upgrade() -> None:
         .where(stack_component_table.c.flavor != "local")
         .where(stack_component_table.c.type == "artifact_store")
     ).scalar()
-    if stack_with_remote_artifact_store_count > 0:
+    if (
+        stack_with_remote_artifact_store_count
+        and stack_with_remote_artifact_store_count > 0
+    ):
         new_state.extend(ONBOARDING_KEY_MAPPING["create_remote_stack"])
 
     stack_with_remote_orchestrator_count = connection.execute(
@@ -139,7 +142,10 @@ def upgrade() -> None:
         )
         .where(stack_component_table.c.type == "orchestrator")
     ).scalar()
-    if stack_with_remote_orchestrator_count > 0:
+    if (
+        stack_with_remote_orchestrator_count
+        and stack_with_remote_orchestrator_count > 0
+    ):
         new_state.append("stack_with_remote_orchestrator_created")
 
     pipeline_run_with_remote_artifact_store_count = connection.execute(
@@ -157,7 +163,10 @@ def upgrade() -> None:
         .where(stack_component_table.c.flavor != "local")
         .where(stack_component_table.c.type == "artifact_store")
     ).scalar()
-    if pipeline_run_with_remote_artifact_store_count > 0:
+    if (
+        pipeline_run_with_remote_artifact_store_count
+        and pipeline_run_with_remote_artifact_store_count > 0
+    ):
         new_state.extend(ONBOARDING_KEY_MAPPING["run_remote_pipeline"])
 
     pipeline_run_with_remote_orchestrator_count = connection.execute(
@@ -177,7 +186,10 @@ def upgrade() -> None:
         )
         .where(stack_component_table.c.type == "orchestrator")
     ).scalar()
-    if pipeline_run_with_remote_orchestrator_count > 0:
+    if (
+        pipeline_run_with_remote_orchestrator_count
+        and pipeline_run_with_remote_orchestrator_count > 0
+    ):
         new_state.append("pipeline_run_with_remote_orchestrator")
 
     if new_state:
