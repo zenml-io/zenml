@@ -1,5 +1,5 @@
 ---
-description: How to migrate from ZenML 0.58.2 to 0.60.0.
+description: How to migrate from ZenML 0.58.2 to 0.60.0 (Pydantic 2 edition).
 ---
 
 # Release Notes
