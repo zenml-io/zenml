@@ -19,7 +19,7 @@ our [Slack](https://zenml.io/slack-invite).
 
 - SQLModel is one of the core dependencies of ZenML and prior to this upgrade,
   we were utilizing version `0.0.8`. However, this version is relatively
-  outdated and incompatible with Pydantic v2. Within the scope of this upgrade, 
+  outdated and incompatible with Pydantic v2. Within the scope of this upgrade,
   we upgraded it to `0.0.18`.
 - Due to the change in the SQLModel version, we also had to upgrade our
   SQLAlchemy dependency from V1 to v2. While this does not affect the way
@@ -35,7 +35,7 @@ logic now uses Rust and it is much faster and more efficient in terms of
 performance. On top of it, the main concepts like model design, configuration,
 validation, or serialization now include a lot of new cool features. If you are
 using `pydantic` in your workflow and are interested in the new changes, you can
-check [the brilliant migration guide](https://docs.pydantic.dev/2.7/migration/) 
+check [the brilliant migration guide](https://docs.pydantic.dev/2.7/migration/)
 provided by the `pydantic` team to see the full list of changes.
 
 ## Changes in our integrations changes
@@ -51,11 +51,11 @@ through the changes.
 
 As mentioned above upgrading our `pydantic` dependency meant we had to upgrade
 our `sqlmodel` dependency. Upgrading our `sqlmodel` dependency meant we had to
-upgrade our `sqlalchemy` dependency as well. Unfortunately, `apache-airflow` 
-is still using `sqlalchemy` v1 and is incompatible with pydantic v2. As a 
-solution, we have removed the dependencies of the `airflow` integration. Now, 
-you can use ZenML to create your Airflow pipelines and use a separate 
-environment to run them with Airflow. You can check the updated docs 
+upgrade our `sqlalchemy` dependency as well. Unfortunately, `apache-airflow`
+is still using `sqlalchemy` v1 and is incompatible with pydantic v2. As a
+solution, we have removed the dependencies of the `airflow` integration. Now,
+you can use ZenML to create your Airflow pipelines and use a separate
+environment to run them with Airflow. You can check the updated docs
 [right here](https://docs.zenml.io/stack-components/orchestrators/airflow).
 
 ### AWS
@@ -157,5 +157,12 @@ our `tekton` integration was not compatible with `pydantic` V1 due to its `kfp`
 dependency. With the switch from `kfp` V1 to v2, we have adapted our
 implementation to use the new version of `kfp` library and updated our
 documentation accordingly.
+
+{% hint style="warning" %}
+Due to all aforementioned changes, when you upgrade ZenML to 0.60.0, you might 
+run into some dependency issues, especially if you were previously using an 
+integration which was not supporting Pydantic v2 before. In such cases, we 
+highly recommend setting up a fresh Python environment.
+{% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
