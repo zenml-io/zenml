@@ -117,6 +117,7 @@ from zenml.enums import (
     TaggableResourceTypes,
 )
 from zenml.exceptions import (
+    ActionExistsError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
@@ -130,6 +131,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyInternalResponse,
     APIKeyInternalUpdate,
@@ -289,6 +294,7 @@ from zenml.zen_stores.migrations.alembic import (
 )
 from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
+    ActionSchema,
     APIKeySchema,
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -1738,6 +1744,205 @@ class SqlZenStore(BaseZenStore):
             )
 
         self.activate_server(request)
+
+    # -------------------- Actions  --------------------
+
+    def _fail_if_action_with_name_exists(
+        self, action_name: str, workspace_id: UUID, session: Session
+    ) -> None:
+        """Raise an exception if an action with same name exists.
+
+        Args:
+            action_name: The name of the action.
+            workspace_id: Workspace ID of the action.
+            session: DB Session.
+
+        Raises:
+            ActionExistsError: If an action with the given name already exists.
+        """
+        existing_domain_action = session.exec(
+            select(ActionSchema)
+            .where(ActionSchema.name == action_name)
+            .where(ActionSchema.workspace_id == workspace_id)
+        ).first()
+        if existing_domain_action is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=workspace_id, session=session
+            )
+            raise ActionExistsError(
+                f"Unable to register action with name "
+                f"'{action_name}': Found an existing action with "
+                f"the same name in the active workspace, '{workspace.name}'."
+            )
+
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+        with Session(self.engine) as session:
+            self._fail_if_action_with_name_exists(
+                action_name=action.name,
+                workspace_id=action.workspace,
+                session=session,
+            )
+
+            # Verify that the given service account exists
+            self._get_account_schema(
+                account_name_or_id=action.service_account_id,
+                session=session,
+                service_account=True,
+            )
+
+            new_action = ActionSchema.from_request(action)
+            session.add(new_action)
+            session.commit()
+            session.refresh(new_action)
+
+            return new_action.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _get_action(
+        self,
+        action_id: UUID,
+        session: Session,
+    ) -> ActionSchema:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            session: The DB session.
+
+        Returns:
+            The action schema.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=action_id,
+            schema_class=ActionSchema,
+            schema_name="action",
+            session=session,
+        )
+
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(action_id=action_id, session=session)
+
+            return action.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
+
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of actions matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ActionSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ActionSchema,
+                filter_model=action_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(session=session, action_id=action_id)
+
+            if action_update.service_account_id:
+                # Verify that the given service account exists
+                self._get_account_schema(
+                    account_name_or_id=action_update.service_account_id,
+                    session=session,
+                    service_account=True,
+                )
+
+            # In case of a renaming update, make sure no action already exists
+            # with that name
+            if action_update.name:
+                if action.name != action_update.name:
+                    self._fail_if_action_with_name_exists(
+                        action_name=action_update.name,
+                        workspace_id=action.workspace.id,
+                        session=session,
+                    )
+
+            action.update(action_update=action_update)
+            session.add(action)
+            session.commit()
+
+            session.refresh(action)
+
+            return action.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+
+        Raises:
+            IllegalOperationError: If the action can't be deleted
+                because it's used by triggers.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(action_id=action_id, session=session)
+
+            # Prevent deletion of action if it is used by a trigger
+            if action.triggers:
+                raise IllegalOperationError(
+                    f"Unable to delete action with ID `{action_id}` "
+                    f"as it is used by {len(action.triggers)} triggers."
+                )
+
+            session.delete(action)
+            session.commit()
 
     # ------------------------- API Keys -------------------------
 
@@ -4183,11 +4388,9 @@ class SqlZenStore(BaseZenStore):
             event_source: The event_source to create.
             session: The Session
 
-        Returns:
-            None
-
         Raises:
-            EventSourceExistsError: In case the event source already exists
+            EventSourceExistsError: If an event source with the given name
+                already exists.
         """
         existing_domain_event_source = session.exec(
             select(EventSourceSchema)
@@ -4203,7 +4406,6 @@ class SqlZenStore(BaseZenStore):
                 f"'{event_source.name}': Found an existing event source with "
                 f"the same name in the active workspace, '{workspace.name}'."
             )
-        return None
 
     def create_event_source(
         self, event_source: EventSourceRequest
@@ -4269,7 +4471,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_event_source(
                 event_source_id=event_source_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=True)
+            ).to_model(include_metadata=hydrate, include_resources=hydrate)
 
     def list_event_sources(
         self,
@@ -4333,6 +4535,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the event_source doesn't exist.
+            IllegalOperationError: If the event source can't be deleted
+                because it's used by triggers.
         """
         with Session(self.engine) as session:
             event_source = self._get_event_source(
@@ -4343,11 +4547,16 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to delete event_source with ID `{event_source_id}`: "
                     f"No event_source with this ID found."
                 )
+
+            # Prevent deletion of event source if it is used by a trigger
+            if event_source.triggers:
+                raise IllegalOperationError(
+                    f"Unable to delete event_source with ID `{event_source_id}`"
+                    f" as it is used by {len(event_source.triggers)} triggers."
+                )
+
             session.delete(event_source)
             session.commit()
-
-            # TODO: catch and throw proper error if it can't be deleted due to
-            #  not-null constraints on triggers
 
     # ----------------------------- Pipeline runs -----------------------------
 
@@ -7478,19 +7687,19 @@ class SqlZenStore(BaseZenStore):
             The newly created trigger.
         """
         with Session(self.engine) as session:
-            # Verify that the given event_source exists
-            self._get_event_source(
-                event_source_id=trigger.event_source_id, session=session
-            )
+            # Verify that the given action exists
+            self._get_action(action_id=trigger.action_id, session=session)
 
-            # Verify that the given service account exists
-            self._get_account_schema(
-                account_name_or_id=trigger.service_account_id,
-                session=session,
-                service_account=True,
-            )
+            if trigger.event_source_id:
+                # Verify that the given event_source exists
+                self._get_event_source(
+                    event_source_id=trigger.event_source_id, session=session
+                )
 
-            # Verify that the trigger won't validate Unique
+            # Verify that the action exists
+            self._get_action(action_id=trigger.action_id, session=session)
+
+            # Verify that the trigger name is unique
             self._fail_if_trigger_with_name_exists(
                 trigger_name=trigger.name,
                 workspace_id=trigger.workspace,
@@ -7520,7 +7729,7 @@ class SqlZenStore(BaseZenStore):
             The trigger with the given ID.
 
         Raises:
-            KeyError: if the trigger doesn't exist.
+            KeyError: If the trigger doesn't exist.
         """
         with Session(self.engine) as session:
             trigger = session.exec(
@@ -7573,7 +7782,8 @@ class SqlZenStore(BaseZenStore):
             The updated trigger.
 
         Raises:
-            KeyError: if the trigger doesn't exist.
+            KeyError: If the trigger doesn't exist.
+            ValueError: If both a schedule and an event source are provided.
         """
         with Session(self.engine) as session:
             # Check if trigger with the domain key (name, workspace, owner)
@@ -7583,16 +7793,16 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_trigger is None:
                 raise KeyError(
-                    f"Unable to update trigger with id '{trigger_id}': Found no"
-                    f"existing trigger with this id."
+                    f"Unable to update trigger with id '{trigger_id}': No "
+                    f"existing trigger with this id exists."
                 )
 
-            if trigger_update.service_account_id:
-                # Verify that the given service account exists
-                self._get_account_schema(
-                    account_name_or_id=trigger_update.service_account_id,
-                    session=session,
-                    service_account=True,
+            # Verify that either a schedule or an event source is provided, not
+            # both
+            if existing_trigger.event_source and trigger_update.schedule:
+                raise ValueError(
+                    "Unable to update trigger: A trigger cannot have both a "
+                    "schedule and an event source."
                 )
 
             # In case of a renaming update, make sure no trigger already exists

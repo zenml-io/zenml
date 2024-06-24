@@ -189,7 +189,12 @@ def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
         The permission denied model.
     """
     return model.model_copy(
-        update={"body": None, "metadata": None, "permission_denied": True}
+        update={
+            "body": None,
+            "metadata": None,
+            "resources": None,
+            "permission_denied": True,
+        }
     )
 
 
@@ -384,10 +389,12 @@ def get_resource_type_for_model(
         is not associated with any resource type.
     """
     from zenml.models import (
+        ActionResponse,
         ArtifactResponse,
         ArtifactVersionResponse,
         CodeRepositoryResponse,
         ComponentResponse,
+        EventSourceResponse,
         FlavorResponse,
         ModelResponse,
         ModelVersionResponse,
@@ -402,6 +409,8 @@ def get_resource_type_for_model(
         ServiceResponse,
         StackResponse,
         TagResponse,
+        TriggerExecutionResponse,
+        TriggerResponse,
         UserResponse,
         WorkspaceResponse,
     )
@@ -410,6 +419,8 @@ def get_resource_type_for_model(
         Any,
         ResourceType,
     ] = {
+        ActionResponse: ResourceType.ACTION,
+        EventSourceResponse: ResourceType.EVENT_SOURCE,
         FlavorResponse: ResourceType.FLAVOR,
         ServiceConnectorResponse: ResourceType.SERVICE_CONNECTOR,
         ComponentResponse: ResourceType.STACK_COMPONENT,
@@ -428,6 +439,8 @@ def get_resource_type_for_model(
         PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
         TagResponse: ResourceType.TAG,
+        TriggerResponse: ResourceType.TRIGGER,
+        TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
         ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
         ServiceResponse: ResourceType.SERVICE,
     }
@@ -522,9 +535,11 @@ def get_schema_for_resource_type(
         The database schema.
     """
     from zenml.zen_stores.schemas import (
+        ActionSchema,
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
@@ -539,6 +554,8 @@ def get_schema_for_resource_type(
         StackComponentSchema,
         StackSchema,
         TagSchema,
+        TriggerExecutionSchema,
+        TriggerSchema,
         UserSchema,
         WorkspaceSchema,
     )
@@ -564,6 +581,10 @@ def get_schema_for_resource_type(
         ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
         ResourceType.RUN_METADATA: RunMetadataSchema,
         ResourceType.USER: UserSchema,
+        ResourceType.ACTION: ActionSchema,
+        ResourceType.EVENT_SOURCE: EventSourceSchema,
+        ResourceType.TRIGGER: TriggerSchema,
+        ResourceType.TRIGGER_EXECUTION: TriggerExecutionSchema,
     }
 
     return mapping[resource_type]

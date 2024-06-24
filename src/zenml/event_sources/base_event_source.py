@@ -449,6 +449,13 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             event: The event to dispatch.
             event_source: The event source that produced the event.
         """
+        if not event_source.is_active:
+            logger.debug(
+                f"Event source {event_source.id} is not active. Skipping event "
+                f"dispatch."
+            )
+            return
+
         self.event_hub.publish_event(
             event=event,
             event_source=event_source,

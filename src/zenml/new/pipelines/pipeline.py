@@ -19,7 +19,6 @@ import inspect
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -98,11 +97,11 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.types import HookSpecification
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
-    HookSpecification = Union[str, "Source", FunctionType]
 
 logger = get_logger(__name__)
 
