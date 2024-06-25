@@ -158,6 +158,9 @@ documentation accordingly.
 
 ## Additional Changes
 
+* We have also released a new version of `mlstacks` with Pydantic v2 support. 
+If you are using it in your development environment, you have to upgrade your 
+`mlstacks` package as well.
 * Adding `zenml.integrations.huggingface.steps.run_with_accelerate` to be able 
 to run any step using Accelerate. This function is supported by a utility, 
 which wraps any step function into a CLI script (which is needed by most of 
@@ -186,7 +189,7 @@ for the parent image build, which was previously not possible.
 * Fixing the nlp template for the upcoming pydantic upgrade by @bcdurak in https://github.com/zenml-io/zenml/pull/2778
 * Full renaming away from cloud to pro by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2782
 * Adjust docs url for flavors by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2772
-* Fixed brokend unit test on develop and fixed duplicate / by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2785
+* Fixed broken unit test on develop and fixed duplicate / by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2785
 * Added timeout by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2786
 * Bump NLP template by @avishniakov in https://github.com/zenml-io/zenml/pull/2787
 * Raise error if Dockerfile does not exist by @schustmi in https://github.com/zenml-io/zenml/pull/2776
