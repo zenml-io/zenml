@@ -13,8 +13,8 @@ this:
 
 You can learn more about these options [here](../use-configuration-files/README.md).
 
-However, there is one exception: If you would like to trigger a pipeline from the client
-or another pipeline, you would need to pass the PipelineRunConfiguration object.
+However, there is one exception: if you would like to trigger a pipeline from the client
+or another pipeline, you would need to pass the `PipelineRunConfiguration` object.
 Learn more about this [here](../trigger-pipelines/trigger-a-pipeline-from-another.md).
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Using config files</td><td></td><td></td><td><a href="../use-configuration-files/README.md">../use-configuration-files/README.md</a></td></tr></tbody></table>

@@ -1,8 +1,8 @@
 ---
-description: Compose your ZenML pipelines.
+description: Reuse steps between pipelines.
 ---
 
-# Compose pipelines (reuse steps between pipelines)
+# Compose pipelines
 
 Sometimes it can be useful to extract some common functionality into separate functions
 in order to avoid code duplication. To facilitate this, ZenML allows you to compose your pipelines:
