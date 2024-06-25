@@ -5,8 +5,7 @@ description: Configuring a pipeline at runtime.
 # Runtime configuration of a pipeline run
 
 It is often the case that there is a need to run a pipeline with a different configuration.
-In this case, you should in most cases use the `pipeline.with_options` method.  You can do
-this:
+In this case, you should in most cases use the [`pipeline.with_options`](../use-configuration-files/README.md) method.  You can do this:
 
 1. Either by explicitly configuring options like `with_options(steps="trainer": {"parameters": {"param1": 1}})`
 2. Or by passing a YAML file using `with_options(config_file="path_to_yaml_file")`.
