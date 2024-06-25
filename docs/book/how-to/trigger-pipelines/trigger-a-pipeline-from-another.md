@@ -20,8 +20,6 @@ import pandas as pd
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.artifacts.utils import load_artifact
-from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 
 @step  
 def trainer(data_artifact_id: str):
@@ -36,8 +34,9 @@ def load_data() -> pd.Dataframe:
     ...
 
 @step  
-def trigger_pipeline(data_artifact_id: str):
-    run_config = PipelineRunConfiguration(steps={"trainer": {"parameters": {"data_artifact_id": data_artifact_id}}})
+def trigger_pipeline(df: UnmaterializedArtifact):
+    # By using UnmaterializedArtifact we can get the ID of the artifact
+    run_config = PipelineRunConfiguration(steps={"trainer": {"parameters": {"data_artifact_id": df.id}}})
     Client().trigger_pipeline("training_pipeline", run_configuration=run_config)
 
 @pipeline  
@@ -47,6 +46,8 @@ def loads_data_and_triggers_training():
 ```
 
 Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) object in the [SDK Docs](https://sdkdocs.zenml.io/).
+
+Read more about Unmaterialized Artifacts [here](../handle-data-artifacts/unmaterialized-artifacts.md).
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Learn how to run a pipeline directly from the Python Client</td><td></td><td></td><td><a href="trigger-a-pipeline-from-client.md">orchestrators.md</a></td></tr><tr><td>Learn how to run a pipeline from the REST API</td><td></td><td></td><td><a href="trigger-a-pipeline-from-rest-api.md">orchestrators.md</a></td></tr></tbody></table>
 
