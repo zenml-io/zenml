@@ -30,7 +30,7 @@ def training_pipeline():
 ```
 
 {% hint style="info" %}
-Here we are calling one pipeline from within another pipeline, so functionally the data_loading_pipeline is functioning as a step within the training_pipeline though when it runs it is executing as an entirely separate pipeline. These two pipelines will be visible as separate pipelines within the ZenML dashboard, but practically they are working together within the umbrella of the training_pipeline. In order to trigger a pipeline from another, see [here](../trigger-pipelines/trigger-a-pipeline-from-another.md)
+Here we are calling one pipeline from within another pipeline, so functionally the `data_loading_pipeline` is functioning as a step within the `training_pipeline` though when it runs it is executing as an entirely separate pipeline. These two pipelines will be visible as separate pipelines within the ZenML dashboard, but practically they are working together within the umbrella of the `training_pipeline`. In order to trigger a pipeline from another, see [here](../trigger-pipelines/trigger-a-pipeline-from-another.md)
 {% endhint %}
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Learn more about orchestrators here</td><td></td><td></td><td><a href="../../component-guide/orchestrators/orchestrators.md">orchestrators.md</a></td></tr></tbody></table>
