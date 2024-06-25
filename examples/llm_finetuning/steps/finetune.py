@@ -18,6 +18,7 @@
 from pathlib import Path
 
 import transformers
+from accelerate import Accelerator
 from datasets import load_from_disk
 from materializers.directory_materializer import DirectoryMaterializer
 from typing_extensions import Annotated
@@ -25,9 +26,10 @@ from utils.callbacks import ZenMLCallback
 from utils.loaders import load_base_model
 from utils.tokenizer import load_tokenizer
 
-from zenml import step
+from zenml import ArtifactConfig, step
 from zenml.logger import get_logger
 from zenml.materializers import BuiltInMaterializer
+from zenml.utils.cuda_utils import cleanup_gpu_memory
 
 logger = get_logger(__name__)
 
@@ -46,10 +48,13 @@ def finetune(
     gradient_accumulation_steps: int = 4,
     warmup_steps: int = 5,
     bf16: bool = True,
+    use_accelerate: bool = False,
     use_fast: bool = True,
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,
-) -> Annotated[Path, "ft_model_dir"]:
+) -> Annotated[
+    Path, ArtifactConfig(name="ft_model_dir", is_model_artifact=True)
+]:
     """Finetune the model using PEFT.
 
     Base model will be derived from configure step and finetuned model will
@@ -70,6 +75,7 @@ def finetune(
         gradient_accumulation_steps: The number of gradient accumulation steps.
         warmup_steps: The number of warmup steps.
         bf16: Whether to use bf16.
+        use_accelerate: Whether to use accelerate.
         use_fast: Whether to use the fast tokenizer.
         load_in_4bit: Whether to load the model in 4bit mode.
         load_in_8bit: Whether to load the model in 8bit mode.
@@ -77,19 +83,35 @@ def finetune(
     Returns:
         The path to the finetuned model directory.
     """
+    cleanup_gpu_memory(force=True)
+
+    ft_model_dir = Path("model_dir")
+    dataset_dir = Path(dataset_dir)
+
+    if use_accelerate:
+        accelerator = Accelerator()
+        should_print = accelerator.is_main_process
+    else:
+        accelerator = None
+        should_print = True
+
     project = "zenml-finetune"
-    base_model_name = "mistral"
-    run_name = base_model_name + "-" + project
+    run_name = base_model_id + "-" + project
     output_dir = "./" + run_name
 
-    logger.info("Loading datasets...")
+    if should_print:
+        logger.info("Loading datasets...")
     tokenizer = load_tokenizer(base_model_id, use_fast=use_fast)
     tokenized_train_dataset = load_from_disk(dataset_dir / "train")
     tokenized_val_dataset = load_from_disk(dataset_dir / "val")
 
-    logger.info("Loading base model...")
+    if should_print:
+        logger.info("Loading base model...")
+
     model = load_base_model(
         base_model_id,
+        use_accelerate=use_accelerate,
+        should_print=should_print,
         load_in_4bit=load_in_4bit,
         load_in_8bit=load_in_8bit,
     )
@@ -102,37 +124,56 @@ def finetune(
             output_dir=output_dir,
             warmup_steps=warmup_steps,
             per_device_train_batch_size=per_device_train_batch_size,
-            gradient_checkpointing=True,
+            gradient_checkpointing=(not use_accelerate),
             gradient_accumulation_steps=gradient_accumulation_steps,
             max_steps=max_steps,
             learning_rate=lr,
-            logging_steps=logging_steps,
+            logging_steps=(
+                min(logging_steps, max_steps)
+                if max_steps >= 0
+                else logging_steps
+            ),
             bf16=bf16,
             optim=optimizer,
             logging_dir="./logs",
             save_strategy="steps",
-            save_steps=save_steps,
+            save_steps=min(save_steps, max_steps)
+            if max_steps >= 0
+            else save_steps,
             evaluation_strategy="steps",
             eval_steps=eval_steps,
             do_eval=True,
+            label_names=["input_ids"],
         ),
         data_collator=transformers.DataCollatorForLanguageModeling(
             tokenizer, mlm=False
         ),
-        callbacks=[ZenMLCallback()],
+        callbacks=[ZenMLCallback(accelerator=accelerator)],
     )
+    if not use_accelerate:
+        model.config.use_cache = (
+            False  # silence the warnings. Please re-enable for inference!
+        )
 
-    model.config.use_cache = (
-        False  # silence the warnings. Please re-enable for inference!
-    )
-
-    logger.info("Training model...")
+    if should_print:
+        logger.info("Training model...")
     trainer.train()
 
-    logger.info("Saving model...")
-    model.config.use_cache = True
-    ft_model_dir = Path("model_dir")
-    ft_model_dir.mkdir(parents=True, exist_ok=True)
-    trainer.save_model(ft_model_dir)
+    if should_print:
+        logger.info("Saving model...")
+
+    ft_model_dir = Path(ft_model_dir)
+    if not use_accelerate or accelerator.is_main_process:
+        ft_model_dir.mkdir(parents=True, exist_ok=True)
+    if not use_accelerate:
+        model.config.use_cache = True
+        trainer.save_model(ft_model_dir)
+    else:
+        unwrapped_model = accelerator.unwrap_model(model)
+        unwrapped_model.save_pretrained(
+            ft_model_dir,
+            is_main_process=accelerator.is_main_process,
+            save_function=accelerator.save,
+        )
 
     return ft_model_dir

@@ -44,8 +44,10 @@ from requests.adapters import HTTPAdapter, Retry
 import zenml
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    ACTIONS,
     API,
     API_KEY_ROTATE,
     API_KEYS,
@@ -103,12 +105,14 @@ from zenml.enums import (
     OAuthGrantTypes,
     StoreType,
 )
-from zenml.exceptions import (
-    AuthorizationException,
-)
+from zenml.exceptions import AuthorizationException, MethodNotAllowedError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -480,6 +484,100 @@ class RestZenStore(BaseZenStore):
         """
         response_body = self.put(SERVER_SETTINGS, body=settings_update)
         return ServerSettingsResponse.model_validate(response_body)
+
+    # -------------------- Actions  --------------------
+
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+        return self._create_resource(
+            resource=action,
+            route=ACTIONS,
+            response_model=ActionResponse,
+        )
+
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+        """
+        return self._get_resource(
+            resource_id=action_id,
+            route=ACTIONS,
+            response_model=ActionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all actions matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=ACTIONS,
+            response_model=ActionResponse,
+            filter_model=action_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+        """
+        return self._update_resource(
+            resource_id=action_id,
+            resource_update=action_update,
+            route=ACTIONS,
+            response_model=ActionResponse,
+        )
+
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+        """
+        self._delete_resource(
+            resource_id=action_id,
+            route=ACTIONS,
+        )
 
     # ----------------------------- API Keys -----------------------------
 
@@ -1415,9 +1513,34 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
         )
 
-        # ----------------------
-        # Pipeline Deployments
-        # ----------------------
+    def run_build(
+        self,
+        build_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a build.
+
+        Args:
+            build_id: The ID of the build to run.
+            run_configuration: Configuration for the run.
+
+        Raises:
+            RuntimeError: If the server does not support running a build.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run_configuration = run_configuration or PipelineRunConfiguration()
+        try:
+            response_body = self.post(
+                f"{PIPELINE_BUILDS}/{build_id}/runs", body=run_configuration
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a build is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------------- Pipeline Deployments --------------------------
 
@@ -1492,6 +1615,37 @@ class RestZenStore(BaseZenStore):
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
         )
+
+    def run_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to run.
+            run_configuration: Configuration for the run.
+
+        Raises:
+            RuntimeError: If the server does not support running a deployment.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run_configuration = run_configuration or PipelineRunConfiguration()
+
+        try:
+            response_body = self.post(
+                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
+                body=run_configuration,
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a deployment is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------- Event Sources  --------------------
 

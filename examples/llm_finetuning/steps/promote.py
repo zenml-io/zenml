@@ -18,11 +18,12 @@
 from zenml import get_step_context, step
 from zenml.client import Client
 from zenml.logger import get_logger
+from zenml.utils.cuda_utils import cleanup_gpu_memory
 
 logger = get_logger(__name__)
 
 
-@step
+@step(enable_cache=False)
 def promote(
     metric: str = "rouge1",
     target_stage: str = "staging",
@@ -36,6 +37,7 @@ def promote(
         metric: The metric to use for promotion.
         target_stage: The target stage to promote to.
     """
+    cleanup_gpu_memory(force=True)
     context_model = get_step_context().model
     base_metrics = context_model.load_artifact("base_model_rouge_metrics")
     ft_metrics = context_model.load_artifact("finetuned_model_rouge_metrics")

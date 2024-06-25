@@ -51,6 +51,15 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
+from zenml.models.v2.core.action import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionResponseBody,
+    ActionResponseMetadata,
+    ActionResponseResources,
+    ActionUpdate,
+)
 from zenml.models.v2.core.action_flavor import (
     ActionFlavorResponse,
     ActionFlavorResponseBody,
@@ -381,6 +390,7 @@ from zenml.models.v2.core.server_settings import (
 # ----------------------------- Forward References -----------------------------
 
 # V2
+ActionResponseResources.model_rebuild()
 APIKeyResponseBody.model_rebuild()
 ArtifactVersionRequest.model_rebuild()
 ArtifactVersionResponseBody.model_rebuild()
@@ -470,6 +480,13 @@ __all__ = [
     "UUIDFilter",
     "Page",
     # V2 Core
+    "ActionFilter",
+    "ActionRequest",
+    "ActionResponse",
+    "ActionResponseBody",
+    "ActionResponseMetadata",
+    "ActionResponseResources",
+    "ActionUpdate",
     "ActionFlavorResponse",
     "ActionFlavorResponseBody",
     "ActionFlavorResponseMetadata",
