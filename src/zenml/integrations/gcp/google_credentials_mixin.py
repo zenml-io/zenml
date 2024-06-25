@@ -85,7 +85,7 @@ class GoogleCredentialsMixin(StackComponent):
                     "trying to use the linked connector, but got "
                     f"{type(credentials)}."
                 )
-            return credentials, connector.config.project_id
+            return credentials, connector.config.gcp_project_id
 
         if self.config.service_account_path:
             credentials, project_id = load_credentials_from_file(
