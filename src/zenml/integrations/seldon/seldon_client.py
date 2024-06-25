@@ -17,11 +17,11 @@ import base64
 import json
 import re
 import time
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Literal, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
@@ -29,9 +29,6 @@ from zenml.utils.enum_utils import StrEnum
 logger = get_logger(__name__)
 
 api = k8s_client.ApiClient()
-
-SELDON_DEPLOYMENT_KIND = "SeldonDeployment"
-SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
 
 
 class SeldonDeploymentPredictorParameter(BaseModel):
@@ -46,14 +43,12 @@ class SeldonDeploymentPredictorParameter(BaseModel):
     name: str = ""
     type: str = ""
     value: str = ""
-
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 class SeldonResourceRequirements(BaseModel):
@@ -82,14 +77,12 @@ class SeldonDeploymentMetadata(BaseModel):
     labels: Dict[str, str] = Field(default_factory=dict)
     annotations: Dict[str, str] = Field(default_factory=dict)
     creationTimestamp: Optional[str] = None
-
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 class SeldonDeploymentPredictiveUnitType(StrEnum):
@@ -130,14 +123,12 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     serviceAccountName: Optional[str] = None
     envSecretRefName: Optional[str] = None
     children: Optional[List["SeldonDeploymentPredictiveUnit"]] = None
-
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 class SeldonDeploymentComponentSpecs(BaseModel):
@@ -147,16 +138,13 @@ class SeldonDeploymentComponentSpecs(BaseModel):
         spec: the component spec.
     """
 
-    spec: Optional[Dict[str, Any]]
-    # TODO [HIGH]: Add graph field to ComponentSpecs. graph: Optional[SeldonDeploymentPredictiveUnit]
-
-    class Config:
-        """Pydantic configuration class."""
-
+    spec: Optional[Dict[str, Any]] = None
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 class SeldonDeploymentPredictor(BaseModel):
@@ -175,14 +163,12 @@ class SeldonDeploymentPredictor(BaseModel):
         default_factory=SeldonResourceRequirements
     )
     componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]] = None
-
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 class SeldonDeploymentSpec(BaseModel):
@@ -196,17 +182,15 @@ class SeldonDeploymentSpec(BaseModel):
     """
 
     name: str
-    protocol: Optional[str]
+    protocol: Optional[str] = None
     predictors: List[SeldonDeploymentPredictor]
     replicas: int = 1
-
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 class SeldonDeploymentStatusState(StrEnum):
@@ -242,8 +226,8 @@ class SeldonDeploymentStatusCondition(BaseModel):
 
     type: str
     status: bool
-    reason: Optional[str]
-    message: Optional[str]
+    reason: Optional[str] = None
+    message: Optional[str] = None
 
 
 class SeldonDeploymentStatus(BaseModel):
@@ -258,18 +242,16 @@ class SeldonDeploymentStatus(BaseModel):
     """
 
     state: SeldonDeploymentStatusState = SeldonDeploymentStatusState.UNKNOWN
-    description: Optional[str]
-    replicas: Optional[int]
-    address: Optional[SeldonDeploymentStatusAddress]
+    description: Optional[str] = None
+    replicas: Optional[int] = None
+    address: Optional[SeldonDeploymentStatusAddress] = None
     conditions: List[SeldonDeploymentStatusCondition]
-
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 class SeldonDeployment(BaseModel):
@@ -292,8 +274,10 @@ class SeldonDeployment(BaseModel):
         status: Seldon Deployment status.
     """
 
-    kind: str = Field(SELDON_DEPLOYMENT_KIND, const=True)
-    apiVersion: str = Field(SELDON_DEPLOYMENT_API_VERSION, const=True)
+    kind: Literal["SeldonDeployment"] = "SeldonDeployment"
+    apiVersion: Literal["machinelearning.seldon.io/v1"] = (
+        "machinelearning.seldon.io/v1"
+    )
     metadata: SeldonDeploymentMetadata
     spec: SeldonDeploymentSpec
     status: Optional[SeldonDeploymentStatus] = None
@@ -304,7 +288,7 @@ class SeldonDeployment(BaseModel):
         Returns:
             A string representation of the Seldon Deployment.
         """
-        return json.dumps(self.dict(exclude_none=True), indent=4)
+        return json.dumps(self.model_dump(exclude_none=True), indent=4)
 
     @classmethod
     def build(
@@ -339,8 +323,10 @@ class SeldonDeployment(BaseModel):
             annotations: A dictionary of annotations to apply to the Seldon
                 Deployment.
             spec: A Kubernetes pod spec to use for the Seldon Deployment.
-            is_custom_deployment: Whether the Seldon Deployment is a custom or a built-in one.
-            serviceAccountName: The name of the service account to associate with the predictive unit container.
+            is_custom_deployment: Whether the Seldon Deployment is a custom
+                or a built-in one.
+            serviceAccountName: The name of the service account to associate
+                with the predictive unit container.
 
         Returns:
             A minimal SeldonDeployment object built from the provided
@@ -495,13 +481,12 @@ class SeldonDeployment(BaseModel):
             return None
         return ready_condition_message[0]
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 class SeldonClientError(Exception):
@@ -651,7 +636,7 @@ class SeldonClient:
             # are not
             deployment.mark_as_managed_by_zenml()
 
-            body_deploy = deployment.dict(exclude_none=True)
+            body_deploy = deployment.model_dump(exclude_none=True)
             response = (
                 self._custom_objects_api.create_namespaced_custom_object(
                     group="machinelearning.seldon.io",
@@ -788,7 +773,7 @@ class SeldonClient:
                 namespace=self._namespace,
                 plural="seldondeployments",
                 name=deployment.name,
-                body=deployment.dict(exclude_none=True),
+                body=deployment.model_dump(exclude_none=True),
                 _request_timeout=poll_timeout or None,
             )
             logger.debug("Seldon Core API response: %s", response)

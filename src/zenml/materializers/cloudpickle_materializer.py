@@ -18,7 +18,6 @@ from typing import Any, ClassVar, Tuple, Type
 
 import cloudpickle
 
-from zenml.client import Client
 from zenml.enums import ArtifactType
 from zenml.environment import Environment
 from zenml.logger import get_logger
@@ -59,7 +58,6 @@ class CloudpickleMaterializer(BaseMaterializer):
             The loaded artifact data.
         """
         # validate python version
-        artifact_store = Client().active_stack.artifact_store
         source_python_version = self._load_python_version()
         current_python_version = Environment().python_version()
         if source_python_version != current_python_version:
@@ -73,7 +71,7 @@ class CloudpickleMaterializer(BaseMaterializer):
 
         # load data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        with artifact_store.open(filepath, "rb") as fid:
+        with self.artifact_store.open(filepath, "rb") as fid:
             data = cloudpickle.load(fid)
         return data
 
@@ -94,7 +92,6 @@ class CloudpickleMaterializer(BaseMaterializer):
         Args:
             data: The data to save.
         """
-        artifact_store = Client().active_stack.artifact_store
         # Log a warning if this materializer was not explicitly specified for
         # the given data type.
         if type(self) == CloudpickleMaterializer:
@@ -105,7 +102,7 @@ class CloudpickleMaterializer(BaseMaterializer):
                 "the artifacts cannot be loaded when running with a different "
                 "Python version. Please consider implementing a custom "
                 f"materializer for type `{type(data)}` according to the "
-                "instructions at https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types"
+                "instructions at https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types"
             )
 
         # save python version for validation on loading
@@ -113,7 +110,7 @@ class CloudpickleMaterializer(BaseMaterializer):
 
         # save data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        with artifact_store.open(filepath, "wb") as fid:
+        with self.artifact_store.open(filepath, "wb") as fid:
             cloudpickle.dump(data, fid)
 
     def _save_python_version(self) -> None:

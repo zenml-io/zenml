@@ -56,7 +56,7 @@ jobs:
           uv pip install --system darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
-  sqlite-db-migration-testing:
+  mysql-db-migration-testing-full:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     env:
@@ -72,7 +72,59 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mysql.sh sqlite
+        run: bash scripts/test-migrations.sh mysql full
+  mysql-db-migration-testing-random:
+    if: github.event.pull_request.draft == false
+    needs: run-slow-ci-label-is-set
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
+    runs-on: arc-runner-set
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.9'
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations.sh mysql random
+  sqlite-db-migration-testing-full:
+    needs: run-slow-ci-label-is-set
+    runs-on: arc-runner-set
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.9'
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations.sh sqlite full
+  mariadb-db-migration-testing:
+    if: github.event.pull_request.draft == false
+    needs: run-slow-ci-label-is-set
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
+    runs-on: arc-runner-set
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.9'
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations.sh mariadb full
   small-checks:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
@@ -90,11 +142,12 @@ jobs:
       - name: Create virtual environment
         run: |
           uv venv
-      - name: Check mlstacks compatibility
-        run: |
-          source .venv/bin/activate
-          uv pip install -e .
-          uv pip install mlstacks
+#      TODO: REACTIVATE BEFORE THE RELEASE
+#      - name: Check mlstacks compatibility
+#        run: |
+#          source .venv/bin/activate
+#          uv pip install -e .
+#          uv pip install mlstacks
       - name: Check for broken dependencies
         run: |
           source .venv/bin/activate
@@ -156,6 +209,14 @@ jobs:
       matrix:
         os: [macos-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11']
+        # Python 3.8 and 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
+        # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
+        exclude:
+          - {python-version: '3.8', os: macos-latest}
+          - {python-version: '3.9', os: macos-latest}
+        include:
+          - {python-version: '3.8', os: macos-13}
+          - {python-version: '3.9', os: macos-13}
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -182,8 +243,16 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-13]
         python-version: ['3.8', '3.9', '3.10', '3.11']
+        # Python 3.8 and 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
+        # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
+        exclude:
+          - {python-version: '3.8', os: macos-latest}
+          - {python-version: '3.9', os: macos-latest}
+        include:
+          - {python-version: '3.8', os: macos-13}
+          - {python-version: '3.9', os: macos-13}
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml

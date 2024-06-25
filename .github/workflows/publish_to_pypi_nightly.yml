@@ -2,6 +2,12 @@
 name: Publish Nightly PyPI package
 on:
   workflow_call:
+    inputs:
+      test_env:
+        description: Set to true if running in a test environment
+        required: false
+        default: false
+        type: boolean
 jobs:
   publish_to_pypi:
     name: Publish Nightly Python 🐍 package 📦 to PyPI
@@ -44,6 +50,9 @@ jobs:
 
           # Update the version to the nightly version
           poetry version $NIGHTLY_VERSION
+
+          # Update the src/zenml/VERSION file with the nightly version
+          echo $NIGHTLY_VERSION > src/zenml/VERSION
       - name: Include latest dashboard
         run: bash scripts/install-dashboard.sh
       - name: Build package
@@ -53,7 +62,18 @@ jobs:
         uses: tschm/token-mint-action@v1.0.2
       - name: Publish the package with poetry
         run: |-
-          if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ];
-          then poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}';
-          else echo "Version mismatch between src/zenml/VERSION and branch tag" && exit 1;
+          # Extract the tag from GITHUB_REF if it exists
+          TAG=$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')
+
+          # Check if the current ref is a tag
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            # Check if the VERSION file matches the tag
+            if [ "$(cat src/zenml/VERSION)" = "$TAG" ]; then
+              poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}' || ${{ inputs.test_env }}
+            else
+              echo "Version mismatch between src/zenml/VERSION and branch tag" && exit 1;
+            fi
+          else
+            # For branches, publish the nightly version without version check
+            poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}' || ${{ inputs.test_env }}
           fi

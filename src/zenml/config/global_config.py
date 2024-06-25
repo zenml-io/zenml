@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML GlobalConfiguration."""
 
-import json
 import os
 import uuid
 from pathlib import Path
@@ -21,11 +20,17 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from packaging import version
-from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
-from pydantic.main import ModelMetaclass
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializeAsAny,
+    ValidationError,
+    field_validator,
+)
+from pydantic._internal._model_construction import ModelMetaclass
 
 from zenml import __version__
-from zenml.analytics import group
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -109,17 +114,16 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         store: Store configuration.
         active_stack_id: The ID of the active stack.
         active_workspace_name: The name of the active workspace.
-        jwt_secret_key: The secret key used to sign and verify JWT tokens.
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
-    version: Optional[str]
-    store: Optional[StoreConfiguration]
-    active_stack_id: Optional[uuid.UUID]
-    active_workspace_name: Optional[str]
+    version: Optional[str] = None
+    store: Optional[SerializeAsAny[StoreConfiguration]] = None
+    active_stack_id: Optional[uuid.UUID] = None
+    active_workspace_name: Optional[str] = None
 
     _zen_store: Optional["BaseZenStore"] = None
     _active_workspace: Optional["WorkspaceResponse"] = None
@@ -170,12 +174,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if config:
             config._write_config()
 
-    @validator("version")
-    def _validate_version(cls, v: Optional[str]) -> Optional[str]:
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, value: Optional[str]) -> Optional[str]:
         """Validate the version attribute.
 
         Args:
-            v: The version attribute value.
+            value: The version attribute value.
 
         Returns:
             The version attribute value.
@@ -183,18 +188,18 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Raises:
             RuntimeError: If the version parsing fails.
         """
-        if v is None:
-            return v
+        if value is None:
+            return value
 
-        if not isinstance(version.parse(v), version.Version):
+        if not isinstance(version.parse(value), version.Version):
             # If the version parsing fails, it returns a `LegacyVersion`
             # instead. Check to make sure it's an actual `Version` object
             # which represents a valid version.
             raise RuntimeError(
-                f"Invalid version in global configuration: {v}."
+                f"Invalid version in global configuration: {value}."
             )
 
-        return v
+        return value
 
     def __setattr__(self, key: str, value: Any) -> None:
         """Sets an attribute and persists it in the global configuration.
@@ -223,7 +228,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             The attribute value.
         """
         value = super().__getattribute__(key)
-        if key.startswith("_") or key not in type(self).__fields__:
+        if key.startswith("_") or key not in type(self).model_fields:
             return value
 
         environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
@@ -261,7 +266,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
                     "Read more about this issue and how to solve it here: "
-                    "`https://docs.zenml.io/user-guide/advanced-guide/environment-management/global-settings-of-zenml#version-mismatch-downgrading`",
+                    "`https://docs.zenml.io/reference/global-settings#version-mismatch-downgrading`",
                     config_version,
                     curr_version,
                 )
@@ -322,7 +327,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             return
 
         config_file = self._config_file
-        yaml_dict = json.loads(self.json(exclude_none=True))
+        yaml_dict = self.model_dump(mode="json", exclude_none=True)
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
@@ -437,7 +442,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         environment_vars = {}
 
-        for key in self.__fields__.keys():
+        for key in self.model_fields.keys():
             if key == "store":
                 # The store configuration uses its own environment variable
                 # naming scheme
@@ -449,7 +454,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     value
                 )
 
-        store_dict = self.store_configuration.dict(exclude_none=True)
+        store_dict = self.store_configuration.model_dump(exclude_none=True)
 
         # The secrets store and backup secrets store configurations use their
         # own environment variables naming scheme
@@ -557,7 +562,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 logger.debug(
                     "Using environment variables to update the default store"
                 )
-                store = store.copy(update=env_store_config, deep=True)
+                store = store.model_copy(update=env_store_config, deep=True)
 
         # Step 3: Replace or update the baseline secrets store configuration
         # with the environment variables. This only applies to SQL stores.
@@ -587,7 +592,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                         "Using environment variables to update the secrets "
                         "store"
                     )
-                    store.secrets_store = store.secrets_store.copy(
+                    store.secrets_store = store.secrets_store.model_copy(
                         update=env_secrets_store_config, deep=True
                     )
 
@@ -606,7 +611,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                         "secrets store"
                     )
                     store.backup_secrets_store = (
-                        store.backup_secrets_store.copy(
+                        store.backup_secrets_store.model_copy(
                             update=env_backup_secrets_store_config, deep=True
                         )
                     )
@@ -683,23 +688,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         config = self._get_store_configuration(baseline=config)
         self._configure_store(config, skip_default_registrations, **kwargs)
         logger.info("Updated the global store configuration.")
-
-        if self.zen_store.type == StoreType.REST:
-            # Every time a client connects to a ZenML server, we want to
-            # group the client ID and the server ID together. This records
-            # only that a particular client has successfully connected to a
-            # particular server at least once, but no information about the
-            # user account is recorded here.
-            server_info = self.zen_store.get_store_info()
-
-            group(
-                group_id=server_info.id,
-                group_metadata={
-                    "version": server_info.version,
-                    "deployment_type": str(server_info.deployment_type),
-                    "database_type": str(server_info.database_type),
-                },
-            )
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -787,21 +775,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self.active_stack_id
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        validate_assignment=True,
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
-
-        # This is needed to allow correct handling of SecretStr values during
-        # serialization.
-        json_encoders = {
-            SecretStr: lambda v: v.get_secret_value() if v else None
-        }
+        extra="allow",
+    )

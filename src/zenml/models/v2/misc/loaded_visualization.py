@@ -15,7 +15,7 @@
 
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.enums import VisualizationType
 
@@ -24,4 +24,4 @@ class LoadedVisualization(BaseModel):
     """Model for loaded visualizations."""
 
     type: VisualizationType
-    value: Union[str, bytes]
+    value: Union[str, bytes] = Field(union_mode="left_to_right")

@@ -14,9 +14,9 @@
 """Class for defining a pipeline schedule."""
 
 import datetime
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 
 from zenml.logger import get_logger
 
@@ -43,6 +43,8 @@ class Schedule(BaseModel):
             schedules the latest interval if more than one interval is ready to
             be scheduled. Usually, if your pipeline handles backfill
             internally, you should turn catchup off to avoid duplicate backfill.
+        run_once_start_time: datetime object to indicate when to run the
+            pipeline once. This is useful for one-off runs.
     """
 
     name: Optional[str] = None
@@ -51,15 +53,11 @@ class Schedule(BaseModel):
     end_time: Optional[datetime.datetime] = None
     interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
+    run_once_start_time: Optional[datetime.datetime] = None
 
-    @root_validator
-    def _ensure_cron_or_periodic_schedule_configured(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _ensure_cron_or_periodic_schedule_configured(self) -> "Schedule":
         """Ensures that the cron expression or start time + interval are set.
-
-        Args:
-            values: All attributes of the schedule.
 
         Returns:
             All schedule attributes.
@@ -68,12 +66,9 @@ class Schedule(BaseModel):
             ValueError: If no cron expression or start time + interval were
                 provided.
         """
-        cron_expression = values.get("cron_expression")
-        periodic_schedule = values.get("start_time") and values.get(
-            "interval_second"
-        )
+        periodic_schedule = self.start_time and self.interval_second
 
-        if cron_expression and periodic_schedule:
+        if self.cron_expression and periodic_schedule:
             logger.warning(
                 "This schedule was created with a cron expression as well as "
                 "values for `start_time` and `interval_seconds`. The resulting "
@@ -81,12 +76,26 @@ class Schedule(BaseModel):
                 "but will usually ignore the interval and use the cron "
                 "expression."
             )
-            return values
-        elif cron_expression or periodic_schedule:
-            return values
+
+            return self
+        elif self.cron_expression and self.run_once_start_time:
+            logger.warning(
+                "This schedule was created with a cron expression as well as "
+                "a value for `run_once_start_time`. The resulting behavior "
+                "depends on the concrete orchestrator implementation but will "
+                "usually ignore the `run_once_start_time`."
+            )
+            return self
+        elif (
+            self.cron_expression
+            or periodic_schedule
+            or self.run_once_start_time
+        ):
+            return self
         else:
             raise ValueError(
-                "Either a cron expression or start time and interval seconds "
+                "Either a cron expression, a start time and interval seconds "
+                "or a run once start time "
                 "need to be set for a valid schedule."
             )
 

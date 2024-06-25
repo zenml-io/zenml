@@ -42,22 +42,22 @@ class HubUserResponseModel(BaseModel):
 
     id: UUID
     email: str
-    username: Optional[str]
+    username: Optional[str] = None
 
 
 class HubPluginBaseModel(BaseModel):
     """Base model for a ZenML Hub plugin."""
 
     name: str
-    description: Optional[str]
-    version: Optional[str]
-    release_notes: Optional[str]
+    description: Optional[str] = None
+    version: Optional[str] = None
+    release_notes: Optional[str] = None
     repository_url: str
-    repository_subdirectory: Optional[str]
-    repository_branch: Optional[str]
-    repository_commit: Optional[str]
-    tags: Optional[List[str]]
-    logo_url: Optional[str]
+    repository_subdirectory: Optional[str] = None
+    repository_branch: Optional[str] = None
+    repository_commit: Optional[str] = None
+    tags: Optional[List[str]] = None
+    logo_url: Optional[str] = None
 
 
 class HubPluginRequestModel(HubPluginBaseModel):

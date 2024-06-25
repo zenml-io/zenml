@@ -78,7 +78,7 @@ class BaseServerProvider(ABC):
         if isinstance(config, cls.CONFIG_TYPE):
             return config
         try:
-            return cls.CONFIG_TYPE(**config.dict())
+            return cls.CONFIG_TYPE(**config.model_dump())
         except ValidationError as e:
             raise ServerDeploymentConfigurationError(
                 f"Invalid configuration for provider {cls.TYPE.value}: {e}"

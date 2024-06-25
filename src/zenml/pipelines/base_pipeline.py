@@ -15,7 +15,6 @@
 
 import inspect
 from abc import ABC, abstractmethod
-from types import FunctionType
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Mapping, Optional, Union
 from uuid import UUID
 
@@ -35,7 +34,6 @@ if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
-    HookSpecification = Union[str, FunctionType]
 
 logger = get_logger(__name__)
 

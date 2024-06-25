@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
 
+from zenml.zen_stores.schemas.action_schemas import ActionSchema
 from zenml.zen_stores.schemas.api_key_schemas import APIKeySchema
 from zenml.zen_stores.schemas.artifact_schemas import (
     ArtifactSchema,
@@ -31,7 +32,7 @@ from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
-from zenml.zen_stores.schemas.identity_schemas import IdentitySchema
+from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
 )
@@ -68,8 +69,10 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
 )
+from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 
 __all__ = [
+    "ActionSchema",
     "APIKeySchema",
     "ArtifactSchema",
     "ArtifactVersionSchema",
@@ -79,7 +82,6 @@ __all__ = [
     "CodeRepositorySchema",
     "EventSourceSchema",
     "FlavorSchema",
-    "IdentitySchema",
     "LogsSchema",
     "NamedSchema",
     "OAuthDeviceSchema",
@@ -90,6 +92,7 @@ __all__ = [
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
+    "ServerSettingsSchema",
     "ServiceConnectorSchema",
     "ServiceSchema",
     "StackComponentSchema",

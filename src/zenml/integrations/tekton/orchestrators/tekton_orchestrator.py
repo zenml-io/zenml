@@ -14,25 +14,32 @@
 """Implementation of the Tekton orchestrator."""
 
 import os
-import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from types import FunctionType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
-import yaml
+import kfp
+import requests
+import urllib3
 from kfp import dsl
-from kfp_tekton.compiler import TektonCompiler
-from kfp_tekton.compiler.pipeline_utils import TektonPipelineConf
+from kfp.client import Client as KFPClient
+from kfp.compiler import Compiler as KFPCompiler
+from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
-from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import (
-    ENV_ZENML_LOCAL_STORES_PATH,
-)
+from zenml.config.resource_settings import ResourceSettings
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
     TektonOrchestratorConfig,
     TektonOrchestratorSettings,
@@ -42,18 +49,78 @@ from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils
+from zenml.utils import io_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
-    from zenml.steps import ResourceSettings
 
 
 logger = get_logger(__name__)
 
 ENV_ZENML_TEKTON_RUN_ID = "ZENML_TEKTON_RUN_ID"
+KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL = "accelerator"
+
+
+class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
+    """KFP client initialized from a Kubernetes client.
+
+    This is a workaround for the fact that the native KFP client does not
+    support initialization from an existing Kubernetes client.
+    """
+
+    def __init__(
+        self, client: k8s_client.ApiClient, *args: Any, **kwargs: Any
+    ) -> None:
+        """Initializes the KFP client from a Kubernetes client.
+
+        Args:
+            client: pre-configured Kubernetes client.
+            args: standard KFP client positional arguments.
+            kwargs: standard KFP client keyword arguments.
+        """
+        self._k8s_client = client
+        super().__init__(*args, **kwargs)
+
+    def _load_config(self, *args: Any, **kwargs: Any) -> Any:
+        """Loads the KFP configuration.
+
+        Initializes the KFP configuration from the Kubernetes client.
+
+        Args:
+            args: standard KFP client positional arguments.
+            kwargs: standard KFP client keyword arguments.
+
+        Returns:
+            The KFP configuration.
+        """
+        from kfp_server_api.configuration import Configuration
+
+        kube_config = self._k8s_client.configuration
+
+        host = (
+            kube_config.host
+            + "/"
+            + self._KUBE_PROXY_PATH.format(kwargs.get("namespace", "kubeflow"))
+        )
+
+        config = Configuration(
+            host=host,
+            api_key=kube_config.api_key,
+            api_key_prefix=kube_config.api_key_prefix,
+            username=kube_config.username,
+            password=kube_config.password,
+            discard_unknown_keys=kube_config.discard_unknown_keys,
+        )
+
+        # Extra attributes not present in the Configuration constructor
+        keys = ["ssl_ca_cert", "cert_file", "key_file", "verify_ssl"]
+        for key in keys:
+            if key in kube_config.__dict__:
+                setattr(config, key, getattr(kube_config, key))
+
+        return config
 
 
 class TektonOrchestrator(ContainerizedOrchestrator):
@@ -61,21 +128,31 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
-    @property
-    def kube_client(self) -> k8s_client.ApiClient:
-        """Getter for the Kubernetes API client.
+    def _get_kfp_client(
+        self,
+        settings: TektonOrchestratorSettings,
+    ) -> kfp.Client:
+        """Creates a KFP client instance.
+
+        Args:
+            settings: Settings which can be used to
+                configure the client instance.
 
         Returns:
-            The Kubernetes API client.
+            A KFP client instance.
 
         Raises:
-            RuntimeError: if the Kubernetes connector behaves unexpectedly.
+            RuntimeError: If the linked Kubernetes connector behaves
+                unexpectedly.
         """
-        # Refresh the client also if the connector has expired
-        if self._k8s_client and not self.connector_has_expired():
-            return self._k8s_client
-
         connector = self.get_connector()
+        client_args = settings.client_args.copy()
+
+        # The kube_context, host and namespace are stack component
+        # configurations that refer to the Tekton deployment. We don't want
+        # these overwritten on a run by run basis by user settings
+        client_args["namespace"] = self.config.kubernetes_namespace
+
         if connector:
             client = connector.connect()
             if not isinstance(client, k8s_client.ApiClient):
@@ -83,12 +160,97 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     f"Expected a k8s_client.ApiClient while trying to use the "
                     f"linked connector, but got {type(client)}."
                 )
-            self._k8s_client = client
-        else:
-            k8s_config.load_kube_config(context=self.config.kubernetes_context)
-            self._k8s_client = k8s_client.ApiClient()
+            return KubeClientKFPClient(
+                client=client,
+                **client_args,
+            )
 
-        return self._k8s_client
+        elif self.config.kubernetes_context:
+            client_args["kube_context"] = self.config.kubernetes_context
+
+        elif self.config.tekton_hostname:
+            client_args["host"] = self.config.tekton_hostname
+
+            # Handle username and password, ignore the case if one is passed and
+            # not the other. Also do not attempt to get cookie if cookie is
+            # already passed in client_args
+            if settings.client_username and settings.client_password:
+                # If cookie is already set, then ignore
+                if "cookie" in client_args:
+                    logger.warning(
+                        "Cookie already set in `client_args`, ignoring "
+                        "`client_username` and `client_password`..."
+                    )
+                else:
+                    session_cookie = self._get_session_cookie(
+                        username=settings.client_username,
+                        password=settings.client_password,
+                    )
+
+                    client_args["cookies"] = session_cookie
+        return KFPClient(**client_args)
+
+    def _get_session_cookie(self, username: str, password: str) -> str:
+        """Gets session cookie from username and password.
+
+        Args:
+            username: Username for tekoton host.
+            password: Password for tekoton host.
+
+        Raises:
+            RuntimeError: If the cookie fetching failed.
+
+        Returns:
+            Cookie with the prefix `authsession=`.
+        """
+        if self.config.tekton_hostname is None:
+            raise RuntimeError(
+                "You must configure the tekoton orchestrator "
+                "with the `tekton_hostname` parameter which usually ends "
+                "with `/pipeline` (e.g. `https://mykubeflow.com/pipeline`). "
+                "Please update the current tekoton orchestrator with: "
+                f"`zenml orchestrator update {self.name} "
+                "--tekton_hostname=<MY_KUBEFLOW_HOST>`"
+            )
+
+        # Get cookie
+        logger.info(
+            f"Attempting to fetch session cookie from {self.config.tekton_hostname} "
+            "with supplied username and password..."
+        )
+        session = requests.Session()
+        try:
+            response = session.get(self.config.tekton_hostname)
+            response.raise_for_status()
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as e:
+            raise RuntimeError(
+                f"Error while trying to fetch tekoton cookie: {e}"
+            )
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        data = {"login": username, "password": password}
+        try:
+            response = session.post(response.url, headers=headers, data=data)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            raise RuntimeError(
+                f"Error while trying to fetch tekoton cookie: {errh}"
+            )
+        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call]
+
+        if "authservice_session" not in cookie_dict:
+            raise RuntimeError("Invalid username and/or password!")
+
+        logger.info("Session cookie fetched successfully!")
+
+        return "authservice_session=" + str(cookie_dict["authservice_session"])
 
     @property
     def config(self) -> TektonOrchestratorConfig:
@@ -140,18 +302,17 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             assert container_registry is not None
 
             kubernetes_context = self.config.kubernetes_context
-            connector = self.get_connector()
             msg = f"'{self.name}' Tekton orchestrator error: "
 
-            if not connector:
+            if not self.connector:
                 if not kubernetes_context:
                     return False, (
                         f"{msg}you must either link this stack component to a "
                         "Kubernetes service connector (see the 'zenml "
                         "orchestrator connect' CLI command) or explicitly set "
-                        "the `kubernetes_context` attribute to the name of the "
-                        "Kubernetes config context pointing to the cluster "
-                        "where you would like to run pipelines."
+                        "the `kubernetes_context` attribute to the name of "
+                        "the Kubernetes config context pointing to the "
+                        "cluster where you would like to run pipelines."
                     )
 
                 contexts, active_context = self.get_kubernetes_contexts()
@@ -161,9 +322,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         f"{msg}could not find a Kubernetes context named "
                         f"'{kubernetes_context}' in the local "
                         "Kubernetes configuration. Please make sure that the "
-                        "Kubernetes cluster is running and that the kubeconfig "
-                        "file is configured correctly. To list all configured "
-                        "contexts, run:\n\n"
+                        "Kubernetes cluster is running and that the "
+                        "kubeconfig file is configured correctly. To list all "
+                        "configured contexts, run:\n\n"
                         "  `kubectl config get-contexts`\n"
                     )
                 if kubernetes_context != active_context:
@@ -193,16 +354,13 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if (
-                not self.config.skip_local_validations
-                and not self.config.is_local
-            ):
+            if not self.config.is_local:
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
-                # This may result in problems when running the pipeline, because
-                # the local components will not be available inside the
-                # Tekton containers.
+                # This may result in problems when running the pipeline, "
+                # because the local components will not be available inside
+                # the Tekton containers.
 
                 # go through all stack components and identify those that
                 # advertise a local path where they persist information that
@@ -253,95 +411,49 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate,
         )
 
-    def _configure_container_op(
+    def _create_dynamic_component(
         self,
-        container_op: dsl.ContainerOp,
-    ) -> None:
-        """Makes changes in place to the configuration of the container op.
-
-        Configures persistent mounted volumes for each stack component that
-        writes to a local path.
-
-        Args:
-            container_op: The Tekton container operation to configure.
-        """
-        volumes: Dict[str, k8s_client.V1Volume] = {}
-
-        stack = Client().active_stack
-
-        if self.config.is_local:
-            stack.check_local_paths()
-
-            local_stores_path = GlobalConfiguration().local_stores_path
-
-            host_path = k8s_client.V1HostPathVolumeSource(
-                path=local_stores_path, type="Directory"
-            )
-
-            volumes[local_stores_path] = k8s_client.V1Volume(
-                name="local-stores",
-                host_path=host_path,
-            )
-            logger.debug(
-                "Adding host path volume for the local ZenML stores (path: %s) "
-                "in Tekton pipelines container.",
-                local_stores_path,
-            )
-
-            if sys.platform == "win32":
-                # File permissions are not checked on Windows. This if clause
-                # prevents mypy from complaining about unused 'type: ignore'
-                # statements
-                pass
-            else:
-                # Run KFP containers in the context of the local UID/GID
-                # to ensure that the local stores can be shared
-                # with the local pipeline runs.
-                container_op.container.security_context = (
-                    k8s_client.V1SecurityContext(
-                        run_as_user=os.getuid(),
-                        run_as_group=os.getgid(),
-                    )
-                )
-                logger.debug(
-                    "Setting security context UID and GID to local user/group "
-                    "in Tekton pipelines container."
-                )
-
-            container_op.container.add_env_variable(
-                k8s_client.V1EnvVar(
-                    name=ENV_ZENML_LOCAL_STORES_PATH,
-                    value=local_stores_path,
-                )
-            )
-
-        container_op.add_pvolumes(volumes)
-
-    @staticmethod
-    def _configure_container_resources(
-        container_op: dsl.ContainerOp,
-        resource_settings: "ResourceSettings",
-    ) -> None:
-        """Adds resource requirements to the container.
+        image: str,
+        command: List[str],
+        arguments: List[str],
+        component_name: str,
+    ) -> dsl.PipelineTask:
+        """Creates a dynamic container component for a Tekton pipeline.
 
         Args:
-            container_op: The container operation to configure.
-            resource_settings: The resource settings to use for this
-                container.
+            image: The image to use for the component.
+            command: The command to use for the component.
+            arguments: The arguments to use for the component.
+            component_name: The name of the component.
+
+        Returns:
+            The dynamic container component.
         """
-        if resource_settings.cpu_count is not None:
-            container_op = container_op.set_cpu_limit(
-                str(resource_settings.cpu_count)
+
+        def dynamic_container_component() -> dsl.ContainerSpec:
+            """Dynamic container component.
+
+            Returns:
+                The dynamic container component.
+            """
+            _component = dsl.ContainerSpec(
+                image=image,
+                command=command,
+                args=arguments,
             )
 
-        if resource_settings.gpu_count is not None:
-            container_op = container_op.set_gpu_limit(
-                resource_settings.gpu_count
-            )
+            _component.__name__ = component_name
+            return _component
 
-        if resource_settings.memory is not None:
-            memory_limit = resource_settings.memory[:-1]
-            container_op = container_op.set_memory_limit(memory_limit)
+        dynamic_func = FunctionType(
+            dynamic_container_component.__code__,
+            dynamic_container_component.__globals__,
+            name=component_name,
+            argdefs=dynamic_container_component.__defaults__,
+            closure=dynamic_container_component.__closure__,
+        )
+
+        return dsl.container_component(dynamic_func)
 
     def prepare_or_run_pipeline(
         self,
@@ -379,83 +491,146 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
-        )
+        ).replace("_", "-")
 
-        def _construct_kfp_pipeline() -> None:
-            """Create a container_op for each step.
+        def _create_dynamic_pipeline() -> Any:
+            """Create a dynamic pipeline including each step.
 
-            This should contain the name of the docker image and configures the
-            entrypoint of the docker image to run the step.
-
-            Additionally, this gives each container_op information about its
-            direct downstream steps.
+            Returns:
+                pipeline_func
             """
-            # Dictionary of container_ops index by the associated step name
-            step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
+            step_name_to_dynamic_component: Dict[str, Any] = {}
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
-                    deployment=deployment, step_name=step_name
+                    deployment=deployment,
+                    step_name=step_name,
                 )
-
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
+                        step_name=step_name,
+                        deployment_id=deployment.id,
                     )
                 )
-
-                container_op = dsl.ContainerOp(
-                    name=step_name,
-                    image=image,
-                    command=command,
-                    arguments=arguments,
+                dynamic_component = self._create_dynamic_component(
+                    image, command, arguments, step_name
                 )
-
-                settings = cast(
+                step_settings = cast(
                     TektonOrchestratorSettings, self.get_settings(step)
                 )
-                self._configure_container_op(
-                    container_op=container_op,
-                )
-
-                if settings.pod_settings:
-                    apply_pod_settings(
-                        container_op=container_op,
-                        settings=settings.pod_settings,
-                    )
-
-                container_op.container.add_env_variable(
-                    k8s_client.V1EnvVar(
-                        name=ENV_ZENML_TEKTON_RUN_ID,
-                        value="$(context.pipelineRun.name)",
-                    )
-                )
-
-                for key, value in environment.items():
-                    container_op.container.add_env_variable(
-                        k8s_client.V1EnvVar(
-                            name=key,
-                            value=value,
+                node_selector_constraint: Optional[Tuple[str, str]] = None
+                pod_settings = step_settings.pod_settings
+                if pod_settings:
+                    if pod_settings.host_ipc:
+                        logger.warning(
+                            "Host IPC is set to `True` but not supported in "
+                            "this orchestrator. Ignoring..."
                         )
-                    )
+                    if pod_settings.affinity:
+                        logger.warning(
+                            "Affinity is set but not supported in Tekton with "
+                            "Tekton Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.tolerations:
+                        logger.warning(
+                            "Tolerations are set but not supported in "
+                            "Tekton with Tekton Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.volumes:
+                        logger.warning(
+                            "Volumes are set but not supported in Tekton with "
+                            "Tekton Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.volume_mounts:
+                        logger.warning(
+                            "Volume mounts are set but not supported in "
+                            "Tekton with Tekton Pipelines 2.x. Ignoring..."
+                        )
+                    # apply pod settings
+                    if (
+                        KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                        in pod_settings.node_selectors.keys()
+                    ):
+                        node_selector_constraint = (
+                            KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            pod_settings.node_selectors[
+                                KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                            ],
+                        )
 
-                if self.requires_resources_in_orchestration_environment(step):
-                    self._configure_container_resources(
-                        container_op=container_op,
-                        resource_settings=step.config.resource_settings,
-                    )
+                step_name_to_dynamic_component[step_name] = dynamic_component
 
-                # Find the upstream container ops of the current step and
-                # configure the current container op to run after them
-                for upstream_step_name in step.spec.upstream_steps:
-                    upstream_container_op = step_name_to_container_op[
-                        upstream_step_name
+            @dsl.pipeline(  # type: ignore[misc]
+                display_name=orchestrator_run_name,
+            )
+            def dynamic_pipeline() -> None:
+                """Dynamic pipeline."""
+                # iterate through the components one by one
+                # (from step_name_to_dynamic_component)
+                for (
+                    component_name,
+                    component,
+                ) in step_name_to_dynamic_component.items():
+                    # for each component, check to see what other steps are
+                    # upstream of it
+                    step = deployment.step_configurations[component_name]
+                    upstream_step_components = [
+                        step_name_to_dynamic_component[upstream_step_name]
+                        for upstream_step_name in step.spec.upstream_steps
                     ]
-                    container_op.after(upstream_container_op)
+                    task = (
+                        component()
+                        .set_display_name(
+                            name=component_name,
+                        )
+                        .set_caching_options(enable_caching=False)
+                        .set_env_variable(
+                            name=ENV_ZENML_TEKTON_RUN_ID,
+                            value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
+                        )
+                        .after(*upstream_step_components)
+                    )
+                    self._configure_container_resources(
+                        task,
+                        step.config.resource_settings,
+                        node_selector_constraint,
+                    )
 
-                # Update dictionary of container ops with the current one
-                step_name_to_container_op[step_name] = container_op
+            return dynamic_pipeline
+
+        def _update_yaml_with_environment(
+            yaml_file_path: str, environment: Dict[str, str]
+        ) -> None:
+            """Updates the env section of the steps in the YAML file with the given environment variables.
+
+            Args:
+                yaml_file_path: The path to the YAML file to update.
+                environment: A dictionary of environment variables to add.
+            """
+            pipeline_definition = yaml_utils.read_yaml(pipeline_file_path)
+
+            # Iterate through each component and add the environment variables
+            for executor in pipeline_definition["deploymentSpec"]["executors"]:
+                if (
+                    "container"
+                    in pipeline_definition["deploymentSpec"]["executors"][
+                        executor
+                    ]
+                ):
+                    container = pipeline_definition["deploymentSpec"][
+                        "executors"
+                    ][executor]["container"]
+                    if "env" not in container:
+                        container["env"] = []
+                    for key, value in environment.items():
+                        container["env"].append({"name": key, "value": value})
+
+            yaml_utils.write_yaml(pipeline_file_path, pipeline_definition)
+
+            print(
+                f"Updated YAML file with environment variables at {yaml_file_path}"
+            )
 
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
@@ -463,73 +638,158 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             self.pipeline_directory, f"{orchestrator_run_name}.yaml"
         )
 
-        # Set the run name, which Tekton reads from this attribute of the
-        # pipeline function
-        setattr(
-            _construct_kfp_pipeline,
-            "_component_human_name",
-            orchestrator_run_name,
+        KFPCompiler().compile(
+            pipeline_func=_create_dynamic_pipeline(),
+            package_path=pipeline_file_path,
+            pipeline_name=orchestrator_run_name,
         )
-        pipeline_config = TektonPipelineConf()
-        pipeline_config.add_pipeline_label(
-            "pipelines.kubeflow.org/cache_enabled", "false"
-        )
-        TektonCompiler().compile(
-            _construct_kfp_pipeline,
-            pipeline_file_path,
-            tekton_pipeline_conf=pipeline_config,
-        )
+
+        # Let's update the YAML file with the environment variables
+        _update_yaml_with_environment(pipeline_file_path, environment)
+
         logger.info(
             "Writing Tekton workflow definition to `%s`.", pipeline_file_path
         )
 
-        if deployment.schedule:
-            logger.warning(
-                "The Tekton Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
+        # using the kfp client uploads the pipeline to Tekton pipelines and
+        # runs it there
+        self._upload_and_run_pipeline(
+            deployment=deployment,
+            pipeline_file_path=pipeline_file_path,
+            run_name=orchestrator_run_name,
+        )
+
+    def _upload_and_run_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponse",
+        pipeline_file_path: str,
+        run_name: str,
+    ) -> None:
+        """Tries to upload and run a KFP pipeline.
+
+        Args:
+            deployment: The pipeline deployment.
+            pipeline_file_path: Path to the pipeline definition file.
+            run_name: The Tekton run name.
+
+        Raises:
+            RuntimeError: If Tekton API returns an error.
+        """
+        pipeline_name = deployment.pipeline_configuration.name
+        settings = cast(
+            TektonOrchestratorSettings, self.get_settings(deployment)
+        )
+        user_namespace = settings.user_namespace
 
         kubernetes_context = self.config.kubernetes_context
-        if kubernetes_context:
-            logger.info(
-                "Running Tekton pipeline in kubernetes context '%s' and "
-                "namespace '%s'.",
-                kubernetes_context,
-                self.config.kubernetes_namespace,
-            )
-        elif self.connector:
-            connector = self.get_connector()
-            assert connector is not None
-            logger.info(
-                "Running Tekton pipeline with Kubernetes credentials from "
-                "connector '%s'.",
-                connector.name or str(connector),
-            )
-
-        # Read the Tekton pipeline resource from the generated YAML file
-        with open(pipeline_file_path, "r") as f:
-            tekton_resource = yaml.safe_load(f)
-
-        # Upload the Tekton pipeline to the Kubernetes cluster
-        custom_objects_api = k8s_client.CustomObjectsApi(self.kube_client)
-
         try:
-            logger.debug("Creating Tekton resource ...")
-            response = custom_objects_api.create_namespaced_custom_object(
-                group=tekton_resource["apiVersion"].split("/")[0],
-                version=tekton_resource["apiVersion"].split("/")[1],
-                namespace=self.config.kubernetes_namespace,
-                plural=tekton_resource["kind"].lower() + "s",
-                body=tekton_resource,
-            )
-            logger.debug("Tekton API response: %s", response)
-        except k8s_client.rest.ApiException as e:
-            logger.error("Exception when creating Tekton resource: %s", str(e))
-            raise RuntimeError(
-                f"Failed to upload Tekton pipeline: {str(e)}. "
-                f"Please make sure your Kubernetes cluster is running and "
-                f"accessible.",
+            if kubernetes_context:
+                logger.info(
+                    "Running in kubernetes context '%s'.",
+                    kubernetes_context,
+                )
+            elif self.config.tekton_hostname:
+                logger.info(
+                    "Running on Tekton deployment '%s'.",
+                    self.config.tekton_hostname,
+                )
+            elif self.connector:
+                logger.info(
+                    "Running with Kubernetes credentials from connector '%s'.",
+                    str(self.connector),
+                )
+
+            # upload the pipeline to Tekton and start it
+
+            client = self._get_kfp_client(settings=settings)
+            if deployment.schedule:
+                try:
+                    experiment = client.get_experiment(
+                        pipeline_name, namespace=user_namespace
+                    )
+                    logger.info(
+                        "A recurring run has already been created with this "
+                        "pipeline. Creating new recurring run now.."
+                    )
+                except (ValueError, ApiException):
+                    experiment = client.create_experiment(
+                        pipeline_name, namespace=user_namespace
+                    )
+                    logger.info(
+                        "Creating a new recurring run for pipeline '%s'.. ",
+                        pipeline_name,
+                    )
+                logger.info(
+                    "You can see all recurring runs under the '%s' experiment.",
+                    pipeline_name,
+                )
+
+                interval_seconds = (
+                    deployment.schedule.interval_second.seconds
+                    if deployment.schedule.interval_second
+                    else None
+                )
+                result = client.create_recurring_run(
+                    experiment_id=experiment.experiment_id,
+                    job_name=run_name,
+                    pipeline_package_path=pipeline_file_path,
+                    enable_caching=False,
+                    cron_expression=deployment.schedule.cron_expression,
+                    start_time=deployment.schedule.utc_start_time,
+                    end_time=deployment.schedule.utc_end_time,
+                    interval_second=interval_seconds,
+                    no_catchup=not deployment.schedule.catchup,
+                )
+
+                logger.info(
+                    "Started recurring run with ID '%s'.",
+                    result.recurring_run_id,
+                )
+            else:
+                logger.info(
+                    "No schedule detected. Creating a one-off pipeline run.."
+                )
+                try:
+                    result = client.create_run_from_pipeline_package(
+                        pipeline_file_path,
+                        arguments={},
+                        run_name=run_name,
+                        enable_caching=False,
+                        namespace=user_namespace,
+                    )
+                except ApiException:
+                    raise RuntimeError(
+                        f"Failed to create {run_name} on Tekton! "
+                        "Please check stack component settings and "
+                        "configuration!"
+                    )
+
+                logger.info(
+                    "Started one-off pipeline run with ID '%s'.", result.run_id
+                )
+
+                if settings.synchronous:
+                    client.wait_for_run_completion(
+                        run_id=result.run_id, timeout=settings.timeout
+                    )
+        except urllib3.exceptions.HTTPError as error:
+            if kubernetes_context:
+                msg = (
+                    f"Please make sure your kubernetes config is present and "
+                    f"the '{kubernetes_context}' kubernetes context is "
+                    "configured correctly."
+                )
+            elif self.connector:
+                msg = (
+                    f"Please check that the '{self.connector}' connector "
+                    f"linked to this component is configured correctly with "
+                    "valid credentials."
+                )
+            else:
+                msg = ""
+
+            logger.warning(
+                f"Failed to upload Tekton pipeline: {error}. {msg}",
             )
 
     def get_orchestrator_run_id(self) -> str:
@@ -544,15 +804,15 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         """
         try:
             return os.environ[ENV_ZENML_TEKTON_RUN_ID]
-        except KeyError:
+        except KeyError as e:
             raise RuntimeError(
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_TEKTON_RUN_ID}."
-            )
+            ) from e
 
     @property
     def root_directory(self) -> str:
-        """Returns path to the root directory for all files concerning this orchestrator.
+        """Returns path to the root directory.
 
         Returns:
             Path to the root directory.
@@ -589,3 +849,56 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             Path of the daemon log file.
         """
         return os.path.join(self.root_directory, "tekton_daemon.log")
+
+    def _configure_container_resources(
+        self,
+        dynamic_component: dsl.PipelineTask,
+        resource_settings: "ResourceSettings",
+        node_selector_constraint: Optional[Tuple[str, str]] = None,
+    ) -> dsl.PipelineTask:
+        """Adds resource requirements to the container.
+
+        Args:
+            dynamic_component: The dynamic component to add the resource
+                settings to.
+            resource_settings: The resource settings to use for this
+                container.
+            node_selector_constraint: Node selector constraint to apply to
+                the container.
+
+        Returns:
+            The dynamic component with the resource settings applied.
+        """
+        # Set optional CPU, RAM and GPU constraints for the pipeline
+        if resource_settings:
+            cpu_limit = resource_settings.cpu_count or None
+
+        if cpu_limit is not None:
+            dynamic_component = dynamic_component.set_cpu_limit(str(cpu_limit))
+
+        memory_limit = resource_settings.get_memory() or None
+        if memory_limit is not None:
+            dynamic_component = dynamic_component.set_memory_limit(
+                memory_limit
+            )
+
+        gpu_limit = (
+            resource_settings.gpu_count
+            if resource_settings.gpu_count is not None
+            else 0
+        )
+
+        if node_selector_constraint:
+            (constraint_label, value) = node_selector_constraint
+            if gpu_limit is not None and gpu_limit > 0:
+                dynamic_component = (
+                    dynamic_component.set_accelerator_type(value)
+                    .set_accelerator_limit(gpu_limit)
+                    .set_gpu_limit(gpu_limit)
+                )
+            elif constraint_label == "accelerator" and gpu_limit == 0:
+                logger.warning(
+                    "GPU limit is set to 0 but a GPU type is specified. Ignoring GPU settings."
+                )
+
+        return dynamic_component

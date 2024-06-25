@@ -30,16 +30,16 @@ from typing import (
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from types import FunctionType
-
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model import Model
     from zenml.steps import BaseStep
+    from zenml.types import HookSpecification
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
-    HookSpecification = Union[str, Source, FunctionType]
+
     OutputMaterializersSpecification = Union[
         MaterializerClassOrSource,
         Sequence[MaterializerClassOrSource],
@@ -72,6 +72,7 @@ def step(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
+    retry: Optional["StepRetryConfig"] = None,
     model_version: Optional["Model"] = None,  # TODO: deprecate me
 ) -> Callable[["F"], "BaseStep"]: ...
 
@@ -92,6 +93,7 @@ def step(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
+    retry: Optional["StepRetryConfig"] = None,
     model_version: Optional["Model"] = None,  # TODO: deprecate me
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
@@ -123,6 +125,7 @@ def step(
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
+        retry: configuration of step retry in case of step failure.
         model_version: DEPRECATED, please use `model` instead.
 
     Returns:
@@ -162,6 +165,7 @@ def step(
             on_failure=on_failure,
             on_success=on_success,
             model=model or model_version,
+            retry=retry,
         )
 
         return step_instance

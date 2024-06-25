@@ -16,11 +16,7 @@ on:
       os:
         description: OS
         type: choice
-        options:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-          - arc-runner-set
+        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
         required: false
         default: ubuntu-latest
       python-version:
@@ -50,7 +46,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.01.22  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.06.06  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -122,7 +118,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.01.12  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.06.14  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -193,7 +189,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.01.22  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.06.06  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -264,9 +260,8 @@ jobs:
         uses: zenml-io/template-llm-finetuning/.github/actions/llm_finetuning_template_test@main
         with:
           python-version: ${{ inputs.python-version }}
-          stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.03.18  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.06.20  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout

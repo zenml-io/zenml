@@ -17,12 +17,6 @@ As visualized in the diagram above, there are two separate domains that are conn
 ### The `default` stack
 
 {% tabs %}
-{% tab title="Dashboard" %}
-You can explore all your stacks in the dashboard. When you click on a specific one you can see its configuration and all the pipeline runs that were executed using this stack.
-
-<figure><img src="../../.gitbook/assets/DefaultStack.png" alt=""><figcaption><p>The default stack on the Dashboard</p></figcaption></figure>
-{% endtab %}
-
 {% tab title="CLI" %}
 `zenml stack describe` lets you find out details about your active stack:
 
@@ -68,10 +62,6 @@ As you can see in the section above, a stack consists of multiple components. Al
 The **orchestrator** is responsible for executing the pipeline code. In the simplest case, this will be a simple Python thread on your machine. Let's explore this default orchestrator.
 
 {% tabs %}
-{% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/DefaultOrch.png" alt=""><figcaption><p>Default orchestrator in the dashboard.</p></figcaption></figure>
-{% endtab %}
-
 {% tab title="CLI" %}
 `zenml orchestrator list` lets you see all orchestrators that are registered in your zenml deployment.
 
@@ -90,10 +80,6 @@ The **orchestrator** is responsible for executing the pipeline code. In the simp
 The **artifact store** is responsible for persisting the step outputs. As we learned in the previous section, the step outputs are not passed along in memory, rather the outputs of each step are stored in the **artifact store** and then loaded from there when the next step needs them. By default this will also be on your own machine:
 
 {% tabs %}
-{% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/DefaultArtifactStore.png" alt=""><figcaption><p>Default artifact store in the dashboard.</p></figcaption></figure>
-{% endtab %}
-
 {% tab title="CLI" %}
 `zenml artifact-store list` lets you see all artifact stores that are registered in your zenml deployment.
 
@@ -109,9 +95,9 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 
 ### Other stack components
 
-There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../../stacks-and-components/component-guide/component-guide.md)
+There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../../component-guide/README.md)
 
-Perhaps the most important stack component after the orchestrator and the artifact store is the [container registry](../../stacks-and-components/component-guide/container-registries/). A container registry stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
+Perhaps the most important stack component after the orchestrator and the artifact store is the [container registry](../../component-guide/container-registries/container-registries.md). A container registry stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
 
 ## Registering a stack
 
@@ -120,10 +106,6 @@ Just to illustrate how to interact with stacks, let's create an alternate local 
 ### Create an artifact store
 
 {% tabs %}
-{% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/CreateArtifactStore.png" alt=""><figcaption><p>Creating an Artifact Store in the dashboard.</p></figcaption></figure>
-{% endtab %}
-
 {% tab title="CLI" %}
 ```bash
 zenml artifact-store register my_artifact_store --flavor=local 
@@ -158,10 +140,6 @@ zenml artifact-store describe my_artifact_store
 With the artifact store created, we can now create a new stack with this artifact store.
 
 {% tabs %}
-{% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
-{% endtab %}
-
 {% tab title="CLI" %}
 ```bash
 zenml stack register a_new_local_stack -o default -a my_artifact_store
@@ -204,6 +182,16 @@ Stack 'a_new_local_stack' with id '...' is owned by user default and is 'private
 {% endtab %}
 {% endtabs %}
 
+### Switch stacks with our VS Code extension
+
+![GIF of our VS code extension, showing some of the uses of the sidebar](../../.gitbook/assets/zenml-extension-shortened.gif)
+
+If you are using [our VS Code
+extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode),
+you can easily view and switch your stacks by opening the sidebar (click on the
+ZenML icon). You can then click on the stack you want to switch to as well as
+view the stack components it's made up of.
+
 ### Run a pipeline on the new local stack
 
 Let's use the pipeline in our starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action.
@@ -228,8 +216,8 @@ pip install -r requirements.txt
 The starter template is the same as the [ZenML quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). You can clone it like so:
 
 ```bash
-git clone git@github.com:zenml-io/zenml.git
-cd examples/quickstart
+git clone --depth 1 git@github.com:zenml-io/zenml.git
+cd zenml/examples/quickstart
 pip install -r requirements.txt
 zenml init
 ```
@@ -250,14 +238,5 @@ To run a pipeline using the new stack:
     ```
 
 Keep this code handy as we'll be using it in the next chapters!
-
-### Switch stacks with our VS Code extension
-
-![GIF of our VS code extension, showing some of the uses of the sidebar](/docs/book/.gitbook/assets/zenml-extension-shortened.gif)
-
-If you are using [our VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode), you can easily view and switch your
-stacks by opening the sidebar (click on the ZenML icon). You can then click on
-the stack you want to switch to as well as view the stack components it's made
-up of.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

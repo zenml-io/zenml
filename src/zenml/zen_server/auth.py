@@ -154,7 +154,7 @@ def _fetch_and_verify_api_key(
     # Update the "last used" timestamp of the API key
     store.update_internal_api_key(
         api_key.id,
-        APIKeyInternalUpdate(update_last_login=True),  # type: ignore[call-arg]
+        APIKeyInternalUpdate(update_last_login=True),
     )
 
     return api_key
@@ -238,8 +238,8 @@ def authenticate_credentials(
             decoded_token = JWTToken.decode_token(
                 token=access_token,
             )
-        except AuthorizationException:
-            error = "Authentication error: error decoding access token. You may need to rerun zenml connect."
+        except AuthorizationException as e:
+            error = f"Authentication error: error decoding access token: {e}."
             logger.exception(error)
             raise AuthorizationException(error)
 
@@ -544,7 +544,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
 
         if isinstance(payload, dict):
             try:
-                external_user = ExternalUserModel.parse_obj(payload)
+                external_user = ExternalUserModel.model_validate(payload)
             except Exception as e:
                 logger.exception(
                     f"Error parsing user information from external "

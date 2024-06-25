@@ -20,6 +20,7 @@ import sys
 from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
+    Any,
     DefaultDict,
     Dict,
     List,
@@ -31,6 +32,7 @@ from typing import (
 import zenml
 from zenml.config import DockerSettings
 from zenml.config.docker_settings import (
+    DockerBuildConfig,
     PythonEnvironmentExportMethod,
     PythonPackageInstaller,
 )
@@ -64,6 +66,12 @@ DEFAULT_DOCKER_PARENT_IMAGE = (
     f"zenmldocker/zenml:{zenml.__version__}-"
     f"py{sys.version_info.major}.{sys.version_info.minor}"
 )
+
+PIP_DEFAULT_ARGS = {
+    "no-cache-dir": None,
+    "default-timeout": 60,
+}
+UV_DEFAULT_ARGS = {"no-cache-dir": None}
 
 
 class PipelineDockerImageBuilder:
@@ -112,6 +120,7 @@ class PipelineDockerImageBuilder:
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
                 image build.
+            ValueError: If the specified Dockerfile does not exist.
         """
         requirements: Optional[str] = None
         dockerfile: Optional[str] = None
@@ -125,6 +134,14 @@ class PipelineDockerImageBuilder:
             # the stack to make sure it's always accessible when running the
             # pipeline?
             return docker_settings.parent_image, dockerfile, requirements
+
+        if docker_settings.dockerfile and not os.path.isfile(
+            docker_settings.dockerfile
+        ):
+            raise ValueError(
+                "Dockerfile at path "
+                f"{os.path.abspath(docker_settings.dockerfile)} not found."
+            )
 
         stack.validate()
         image_builder = stack.image_builder
@@ -196,8 +213,13 @@ class PipelineDockerImageBuilder:
                 # used directly, so we tag it with the requested target name.
                 user_image_name = target_image_name
 
+            build_config = (
+                docker_settings.parent_image_build_config
+                or DockerBuildConfig()
+            )
             build_context = build_context_class(
-                root=docker_settings.build_context_root
+                root=docker_settings.build_context_root,
+                dockerignore_file=build_config.dockerignore,
             )
             build_context.add_file(
                 source=docker_settings.dockerfile, destination="Dockerfile"
@@ -206,7 +228,8 @@ class PipelineDockerImageBuilder:
             image_name_or_digest = image_builder.build(
                 image_name=user_image_name,
                 build_context=build_context,
-                docker_build_options=docker_settings.build_options,
+                docker_build_options=build_config.build_options
+                or docker_settings.build_options,
                 container_registry=container_registry if push else None,
             )
 
@@ -231,13 +254,18 @@ class PipelineDockerImageBuilder:
 
         if requires_zenml_build:
             logger.info("Building Docker image `%s`.", target_image_name)
+            build_config = docker_settings.build_config or DockerBuildConfig()
+
             # Leave the build context empty if we don't want to include any files
             build_context_root = (
                 source_utils.get_source_root() if include_files else None
             )
+            dockerignore = (
+                build_config.dockerignore or docker_settings.dockerignore
+            )
             build_context = build_context_class(
                 root=build_context_root,
-                dockerignore_file=docker_settings.dockerignore,
+                dockerignore_file=dockerignore,
             )
 
             requirements_files = self.gather_requirements_files(
@@ -288,8 +316,11 @@ class PipelineDockerImageBuilder:
                     parent_image
                 )
 
-            build_options = {"pull": pull_parent_image, "rm": False}
-
+            build_options = {
+                "pull": pull_parent_image,
+                "rm": False,
+                **build_config.build_options,
+            }
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
@@ -636,22 +667,32 @@ class PipelineDockerImageBuilder:
             docker_settings.python_package_installer
             == PythonPackageInstaller.PIP
         ):
-            install_command = "pip install --default-timeout=60"
+            install_command = "pip install"
+            default_installer_args: Dict[str, Any] = PIP_DEFAULT_ARGS
         elif (
             docker_settings.python_package_installer
             == PythonPackageInstaller.UV
         ):
             lines.append("RUN pip install uv")
-            install_command = "uv pip install --system"
+            install_command = "uv pip install"
+            default_installer_args = UV_DEFAULT_ARGS
         else:
             raise ValueError("Unsupported python package installer.")
 
+        installer_args = {
+            **default_installer_args,
+            **docker_settings.python_package_installer_args,
+        }
+        installer_args_string = " ".join(
+            f"--{key}" if value is None else f"--{key}={value}"
+            for key, value in installer_args.items()
+        )
         for file, _, options in requirements_files:
             lines.append(f"COPY {file} .")
             option_string = " ".join(options)
 
             lines.append(
-                f"RUN {install_command} --no-cache-dir "
+                f"RUN {install_command} {installer_args_string}"
                 f"{option_string} -r {file}"
             )
 

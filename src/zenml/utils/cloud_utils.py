@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utilities for ZenML Cloud."""
+"""Utilities for ZenML Pro."""
 
 from zenml.logger import get_logger
 from zenml.models.v2.core.model_version import ModelVersionResponse
@@ -21,13 +21,13 @@ logger = get_logger(__name__)
 
 
 def is_cloud_model_version(model_version: ModelVersionResponse) -> bool:
-    """Check if a model version is from a ZenML Cloud server.
+    """Check if a model version is from a ZenML Pro server.
 
     Args:
         model_version: The model version to check.
 
     Returns:
-        True if the model version is from a ZenML Cloud server, else False.
+        True if the model version is from a ZenML Pro server, else False.
     """
     model_version_url = get_model_version_url(model_version.id)
     if model_version_url:

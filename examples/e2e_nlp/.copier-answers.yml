@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 2024.01.12
+_commit: 2024.06.14
 _src_path: gh:zenml-io/template-nlp
 accelerator: cpu
 cloud_of_choice: aws
@@ -7,7 +7,7 @@ dataset: airline_reviews
 deploy_locally: true
 deploy_to_huggingface: true
 deploy_to_skypilot: true
-email: ''
+email: info@zenml.io
 full_name: ZenML GmbH
 metric_compare_promotion: true
 model: distilbert-base-uncased

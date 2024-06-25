@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """External artifact definition."""
 
-from typing import Any, Dict, Optional
+from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 
 from zenml.logger import get_logger
 from zenml.model.model import Model
@@ -36,14 +36,22 @@ class ExternalArtifactConfiguration(BaseModel):
     version: Optional[str] = None
     model: Optional[Model] = None
 
-    @root_validator
-    def _validate_all_eac(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if values.get("version", None) and values.get("model", None):
+    @model_validator(mode="after")
+    def external_artifact_validator(self) -> "ExternalArtifactConfiguration":
+        """Model validator for the external artifact configuration.
+
+        Raises:
+            ValueError: if both version and model fields are set.
+
+        Returns:
+            the validated instance.
+        """
+        if self.version and self.model:
             raise ValueError(
                 "Cannot provide both `version` and `model` when "
                 "creating an external artifact."
             )
-        return values
+        return self
 
     def get_artifact_version_id(self) -> UUID:
         """Get the artifact.

@@ -16,7 +16,6 @@
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
-    Any,
     ClassVar,
     Dict,
     List,
@@ -25,7 +24,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -39,9 +38,10 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.model_version import ModelVersionResponse
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
@@ -72,7 +72,8 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         title="The deployment associated with the pipeline run."
     )
     pipeline: Optional[UUID] = Field(
-        title="The pipeline associated with the pipeline run."
+        title="The pipeline associated with the pipeline run.",
+        default=None,
     )
     orchestrator_run_id: Optional[str] = Field(
         title="The orchestrator run ID.",
@@ -196,6 +197,16 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class PipelineRunResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
+
+    model_version: Optional[ModelVersionResponse] = None
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class PipelineRunResponse(
@@ -394,6 +405,15 @@ class PipelineRunResponse(
         """
         return self.get_metadata().orchestrator_run_id
 
+    @property
+    def model_version(self) -> Optional[ModelVersionResponse]:
+        """The `model_version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().model_version
+
 
 # ------------------ Filter Model ------------------
 
@@ -419,48 +439,68 @@ class PipelineRunFilter(WorkspaceScopedFilter):
         description="Name of the Pipeline Run within the orchestrator",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Pipeline associated with the Pipeline Run"
+        default=None,
+        description="Pipeline associated with the Pipeline Run",
+        union_mode="left_to_right",
     )
     pipeline_name: Optional[str] = Field(
         default=None,
         description="Name of the pipeline associated with the run",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Pipeline Run"
+        default=None,
+        description="Workspace of the Pipeline Run",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that created the Pipeline Run"
+        default=None,
+        description="User that created the Pipeline Run",
+        union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Stack used for the Pipeline Run"
+        default=None,
+        description="Stack used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     schedule_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Schedule that triggered the Pipeline Run"
+        default=None,
+        description="Schedule that triggered the Pipeline Run",
+        union_mode="left_to_right",
     )
     build_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Build used for the Pipeline Run"
+        default=None,
+        description="Build used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     deployment_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Deployment used for the Pipeline Run"
+        default=None,
+        description="Deployment used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     code_repository_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Code repository used for the Pipeline Run"
+        default=None,
+        description="Code repository used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     status: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
     start_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="Start time for this run"
+        default=None,
+        description="Start time for this run",
+        union_mode="left_to_right",
     )
     end_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="End time for this run"
+        default=None,
+        description="End time for this run",
+        union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
 
     def get_custom_filters(
         self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         Returns:
@@ -468,7 +508,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlalchemy import and_
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
@@ -494,14 +534,14 @@ class PipelineRunFilter(WorkspaceScopedFilter):
                 column="name",
                 value=value,
             )
-            pipeline_name_filter = and_(  # type: ignore[type-var]
+            pipeline_name_filter = and_(
                 PipelineRunSchema.pipeline_id == PipelineSchema.id,
                 filter_.generate_query_conditions(PipelineSchema),
             )
             custom_filters.append(pipeline_name_filter)
 
         if self.code_repository_id:
-            code_repo_filter = and_(  # type: ignore[type-var]
+            code_repo_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.code_reference_id
                 == CodeReferenceSchema.id,
@@ -511,7 +551,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             custom_filters.append(code_repo_filter)
 
         if self.stack_id:
-            stack_filter = and_(  # type: ignore[type-var]
+            stack_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
                 StackSchema.id == self.stack_id,
@@ -519,7 +559,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             custom_filters.append(stack_filter)
 
         if self.schedule_id:
-            schedule_filter = and_(  # type: ignore[type-var]
+            schedule_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.schedule_id == ScheduleSchema.id,
                 ScheduleSchema.id == self.schedule_id,
@@ -527,7 +567,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             custom_filters.append(schedule_filter)
 
         if self.build_id:
-            pipeline_build_filter = and_(  # type: ignore[type-var]
+            pipeline_build_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.build_id == PipelineBuildSchema.id,
                 PipelineBuildSchema.id == self.build_id,

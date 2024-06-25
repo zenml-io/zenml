@@ -268,7 +268,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
             setup = (
-                f"docker login --username $DOCKER_USERNAME --password "
+                f"sudo docker login --username $DOCKER_USERNAME --password "
                 f"$DOCKER_PASSWORD {stack.container_registry.config.uri}"
             )
             task_envs = {
@@ -286,10 +286,14 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         try:
             task = sky.Task(
-                run=f"docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}",
+                run=f"sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}",
                 setup=setup,
                 envs=task_envs,
             )
+            logger.debug(
+                f"Running run: sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+            )
+            logger.debug(f"Running run: {setup}")
             task = task.set_resources(
                 sky.Resources(
                     cloud=self.cloud,

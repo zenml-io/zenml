@@ -54,7 +54,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mysql.sh mysql
+        run: bash scripts/test-migrations.sh mysql
   sqlite-db-migration-testing:
     runs-on: arc-runner-set
     env:
@@ -70,7 +70,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mysql.sh sqlite
+        run: bash scripts/test-migrations.sh sqlite
   mariadb-db-migration-testing:
     runs-on: arc-runner-set
     env:
@@ -86,7 +86,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mariadb.sh
+        run: bash scripts/test-migrations.sh mariadb
   publish-python-package:
     if: github.repository == 'zenml-io/zenml'
     needs:
@@ -114,3 +114,33 @@ jobs:
     needs: publish-docker-image
     uses: ./.github/workflows/publish_helm_chart.yml
     secrets: inherit
+  wait-for-package-release-again:
+    runs-on: arc-runner-set
+    needs: publish-helm-chart
+    steps:
+      - name: Sleep for 4 minutes
+        run: sleep 240
+        shell: bash
+  # create a tag on the ZenML cloud plugins repo
+  create_tag_on_cloud_plugins_repo:
+    runs-on: ubuntu-latest
+    needs: wait-for-package-release-again
+    steps:
+      - name: Get the sha of the latest commit on plugins/main
+        id: get_sha
+        run: |
+          echo "::set-output name=sha::$(curl -s -H "Authorization: token ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}" https://api.github.com/repos/zenml-io/zenml-cloud-plugins/commits/main | jq -r '.sha')"
+      - name: Get the version from the github tag ref
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - name: Create a tag on ZenML Cloud plugins repo
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}
+          script: |-
+            await github.rest.git.createRef({
+              owner: 'zenml-io',
+              repo: 'zenml-cloud-plugins',
+              ref: 'refs/tags/${{ steps.get_version.outputs.VERSION }}',
+              sha: '${{ steps.get_sha.outputs.sha }}'
+            })

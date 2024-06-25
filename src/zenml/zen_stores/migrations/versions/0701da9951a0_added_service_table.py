@@ -22,7 +22,7 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     # If the tables already exist, skip this migration.
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = Inspector.from_engine(conn.engine)
     tables = inspector.get_table_names()
     if "service" in tables:
         return

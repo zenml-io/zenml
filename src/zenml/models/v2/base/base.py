@@ -17,8 +17,7 @@ from datetime import datetime
 from typing import Any, Dict, Generic, Optional, TypeVar
 from uuid import UUID
 
-from pydantic import Extra, Field, SecretStr
-from pydantic.generics import GenericModel
+from pydantic import ConfigDict, Field
 
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 from zenml.enums import ResponseUpdateStrategy
@@ -35,26 +34,16 @@ class BaseZenModel(YAMLSerializationMixin, AnalyticsTrackedModelMixin):
     """Base model class for all ZenML models.
 
     This class is used as a base class for all ZenML models. It provides
-    functionality for tracking analytics events and proper encoding of
-    SecretStr values.
+    functionality for tracking analytics events.
     """
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # This is needed to allow the REST client and server to unpack SecretStr
-        # values correctly.
-        json_encoders = {
-            SecretStr: lambda v: v.get_secret_value()
-            if v is not None
-            else None
-        }
-
-        # Allow extras on all models to support forwards and backwards
+    model_config = ConfigDict(
+        # Ignore extras on all models to support forwards and backwards
         # compatibility (e.g. new fields in newer versions of ZenML servers
-        # are allowed to be present in older versions of ZenML clients and
-        # vice versa).
-        extra = "allow"
+        # are allowed to be passed to older versions of ZenML clients and
+        # vice versa but will be ignored).
+        extra="ignore",
+    )
 
 
 # -------------------- Request Model --------------------
@@ -65,6 +54,21 @@ class BaseRequest(BaseZenModel):
 
     Used as a base class for all request models.
     """
+
+
+# -------------------- Update Model --------------------
+
+
+class BaseUpdate(BaseZenModel):
+    """Base update model.
+
+    Used as a base class for all update models.
+    """
+
+    model_config = ConfigDict(
+        # Ignore extras on all update models.
+        extra="ignore",
+    )
 
 
 # -------------------- Response Model --------------------
@@ -87,10 +91,7 @@ class BaseResponseResources(BaseZenModel):
     Used as a base class for all resource models associated with responses.
     """
 
-    class Config:
-        """Allows additional resources to be added."""
-
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 AnyBody = TypeVar("AnyBody", bound=BaseResponseBody)
@@ -98,9 +99,7 @@ AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
 AnyResources = TypeVar("AnyResources", bound=BaseResponseResources)
 
 
-class BaseResponse(
-    GenericModel, Generic[AnyBody, AnyMetadata, AnyResources], BaseZenModel
-):
+class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
     """Base domain model for all responses."""
 
     # Body and metadata pair
@@ -140,7 +139,7 @@ class BaseResponse(
             )
 
         # Check if the name has changed
-        if "name" in self.__fields__:
+        if "name" in self.model_fields:
             original_name = getattr(self, "name")
             hydrated_name = getattr(hydrated_model, "name")
 
@@ -178,7 +177,7 @@ class BaseResponse(
                     )
 
         # Check all the fields in the body
-        for field in self.get_body().__fields__:
+        for field in self.get_body().model_fields:
             original_value = getattr(self.get_body(), field)
             hydrated_value = getattr(hydrated_model.get_body(), field)
 
@@ -253,9 +252,21 @@ class BaseResponse(
         """
         if self.metadata is None:
             # If the metadata is not there, check the class first.
-            metadata_type = self.__fields__["metadata"].type_
+            metadata_annotation = self.model_fields["metadata"].annotation
+            assert metadata_annotation is not None, (
+                "For each response model, an annotated metadata"
+                "field should exist."
+            )
 
-            if len(metadata_type.__fields__):
+            # metadata is defined as:
+            #   metadata: Optional[....ResponseMetadata] = Field(default=None)
+            # We need to find the actual class inside the Optional annotation.
+            from zenml.utils.typing_utils import get_args
+
+            metadata_type = get_args(metadata_annotation)[0]
+            assert issubclass(metadata_type, BaseResponseMetadata)
+
+            if len(metadata_type.model_fields):
                 # If the metadata class defines any fields, fetch the metadata
                 # through the hydrated version.
                 hydrated_version = self.get_hydrated_version()
@@ -281,9 +292,21 @@ class BaseResponse(
         """
         if self.resources is None:
             # If the resources are not there, check the class first.
-            resources_type = self.__fields__["resources"].type_
+            resources_annotation = self.model_fields["resources"].annotation
+            assert resources_annotation is not None, (
+                "For each response model, an annotated resources"
+                "field should exist."
+            )
 
-            if len(resources_type.__fields__):
+            # metadata is defined as:
+            #   metadata: Optional[....ResponseMetadata] = Field(default=None)
+            # We need to find the actual class inside the Optional annotation.
+            from zenml.utils.typing_utils import get_args
+
+            resources_type = get_args(resources_annotation)[0]
+            assert issubclass(resources_type, BaseResponseResources)
+
+            if len(resources_type.model_fields):
                 # If the resources class defines any fields, fetch the resources
                 # through the hydrated version.
                 hydrated_version = self.get_hydrated_version()
@@ -292,7 +315,7 @@ class BaseResponse(
             else:
                 # Otherwise, use the resources class to create an empty
                 # resources object.
-                self.metadata = resources_type()
+                self.resources = resources_type()
 
         if self.resources is None:
             raise RuntimeError(
@@ -327,17 +350,7 @@ class BaseIdentifiedResponse(
     """Base domain model for resources with DB representation."""
 
     id: UUID = Field(title="The unique resource id.")
-    body: Optional["AnyDatedBody"] = Field(
-        title="The body of the resource, "
-        "containing at the minimum "
-        "creation and updated fields."
-    )
-    metadata: Optional["AnyMetadata"] = Field(
-        title="The metadata related to this resource."
-    )
-    resources: Optional["AnyResources"] = Field(
-        title="The resources related to this resource."
-    )
+
     permission_denied: bool = False
 
     # Helper functions

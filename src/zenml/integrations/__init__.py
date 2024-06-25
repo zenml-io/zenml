@@ -17,14 +17,14 @@ The ZenML integrations module contains sub-modules for each integration that we
 support. This includes orchestrators like Apache Airflow, visualization tools
 like the ``facets`` library, as well as deep learning libraries like PyTorch.
 """
-import sys
-
 from zenml.integrations.airflow import AirflowIntegration  # noqa
+from zenml.integrations.argilla import ArgillaIntegration  # noqa
 from zenml.integrations.aws import AWSIntegration  # noqa
 from zenml.integrations.azure import AzureIntegration  # noqa
 from zenml.integrations.bentoml import BentoMLIntegration  # noqa
 from zenml.integrations.bitbucket import BitbucketIntegration  # noqa
 from zenml.integrations.databricks import DatabricksIntegration  # noqa
+from zenml.integrations.comet import CometIntegration  # noqa
 from zenml.integrations.deepchecks import DeepchecksIntegration  # noqa
 from zenml.integrations.discord import DiscordIntegration  # noqa
 from zenml.integrations.evidently import EvidentlyIntegration  # noqa
@@ -49,8 +49,10 @@ from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
 from zenml.integrations.openai import OpenAIIntegration  # noqa
+from zenml.integrations.pigeon import PigeonIntegration # noqa
 from zenml.integrations.pillow import PillowIntegration  # noqa
-from zenml.integrations.polars import PolarsIntegration
+from zenml.integrations.polars import PolarsIntegration  # noqa
+from zenml.integrations.prodigy import ProdigyIntegration  # noqa
 from zenml.integrations.pycaret import PyCaretIntegration  # noqa
 from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa
@@ -63,6 +65,7 @@ from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.skypilot_aws import SkypilotAWSIntegration  # noqa
 from zenml.integrations.skypilot_gcp import SkypilotGCPIntegration  # noqa
 from zenml.integrations.skypilot_azure import SkypilotAzureIntegration  # noqa
+from zenml.integrations.skypilot_lambda import SkypilotLambdaIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa

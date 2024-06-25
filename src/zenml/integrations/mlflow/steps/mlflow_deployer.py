@@ -130,7 +130,7 @@ def mlflow_model_deployer_step(
 
     # Fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
-        config=predictor_cfg.dict(),
+        config=predictor_cfg.model_dump(),
     )
 
     # Check whether to deploy a new service
@@ -166,7 +166,7 @@ def mlflow_model_deployer_step(
                 "was negative."
             )
         logger.info(
-            f"Reusing last model server deployed by step '{step_name}' of "
+            f"Reusing last model server deployed by step `{step_name}` of "
             f"pipeline '{pipeline_name}' for model '{model_name}'..."
         )
         service = cast(MLFlowDeploymentService, existing_services[0])

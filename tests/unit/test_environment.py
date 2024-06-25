@@ -77,6 +77,7 @@ def test_step_is_running():
         pipeline_step_name="step_name",
         run_id=uuid4(),
         step_run_id=uuid4(),
+        force_write_logs=lambda: None,
     )
     with StepEnvironment(
         step_run_info=step_run_info,

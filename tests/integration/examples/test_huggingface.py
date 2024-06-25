@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
+
 import pytest
 
 from tests.integration.examples.utils import run_example
@@ -29,6 +31,10 @@ from tests.integration.examples.utils import run_example
 #         pass
 
 
+@pytest.mark.skipif(
+    sys.version_info.major == 3 and sys.version_info.minor == 8,
+    reason="Tensorflow integration does not work as expected with python3.8.",
+)
 def test_sequence_classification(request: pytest.FixtureRequest) -> None:
     """Runs the huggingface sequence classification example."""
 

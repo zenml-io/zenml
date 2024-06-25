@@ -16,15 +16,28 @@
 import re
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from pydantic import Field
+from pydantic import Field, PlainSerializer, SecretStr
+from typing_extensions import Annotated
+
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from pydantic.fields import ModelField
+    from pydantic.fields import FieldInfo
 
 _secret_reference_expression = re.compile(r"\{\{\s*\S+?\.\S+\s*\}\}")
 
 PYDANTIC_SENSITIVE_FIELD_MARKER = "sensitive"
 PYDANTIC_CLEAR_TEXT_FIELD_MARKER = "prevent_secret_reference"
+
+PlainSerializedSecretStr = Annotated[
+    SecretStr,
+    PlainSerializer(
+        lambda v: v.get_secret_value() if v is not None else None,
+        when_used="json",
+    ),
+]
+
+logger = get_logger(__name__)
 
 
 def is_secret_reference(value: Any) -> bool:
@@ -87,8 +100,9 @@ def SecretField(*args: Any, **kwargs: Any) -> Any:
     Returns:
         Pydantic field info.
     """
-    kwargs[PYDANTIC_SENSITIVE_FIELD_MARKER] = True
-    return Field(*args, **kwargs)  # type: ignore[pydantic-field]
+    json_schema_extra = kwargs.get("json_schema_extra", {})
+    json_schema_extra.update({PYDANTIC_SENSITIVE_FIELD_MARKER: True})
+    return Field(json_schema_extra=json_schema_extra, *args, **kwargs)  # type: ignore[pydantic-field]
 
 
 def ClearTextField(*args: Any, **kwargs: Any) -> Any:
@@ -103,11 +117,12 @@ def ClearTextField(*args: Any, **kwargs: Any) -> Any:
     Returns:
         Pydantic field info.
     """
-    kwargs[PYDANTIC_CLEAR_TEXT_FIELD_MARKER] = True
-    return Field(*args, **kwargs)  # type: ignore[pydantic-field]
+    json_schema_extra = kwargs.get("json_schema_extra", {})
+    json_schema_extra.update({PYDANTIC_CLEAR_TEXT_FIELD_MARKER: True})
+    return Field(json_schema_extra=json_schema_extra, *args, **kwargs)  # type: ignore[pydantic-field]
 
 
-def is_secret_field(field: "ModelField") -> bool:
+def is_secret_field(field: "FieldInfo") -> bool:
     """Returns whether a pydantic field contains sensitive information or not.
 
     Args:
@@ -116,10 +131,29 @@ def is_secret_field(field: "ModelField") -> bool:
     Returns:
         `True` if the field contains sensitive information, `False` otherwise.
     """
-    return field.field_info.extra.get(PYDANTIC_SENSITIVE_FIELD_MARKER, False)  # type: ignore[no-any-return]
+    if field.json_schema_extra is not None:
+        if isinstance(field.json_schema_extra, dict):
+            if marker := field.json_schema_extra.get(
+                PYDANTIC_SENSITIVE_FIELD_MARKER
+            ):
+                assert isinstance(marker, bool), (
+                    f"The parameter `{PYDANTIC_SENSITIVE_FIELD_MARKER}` in the "
+                    f"field definition can only be a boolean value."
+                )
+                return marker
+
+        else:
+            logger.warning(
+                f"The 'json_schema_extra' of the field '{field.title}' is "
+                "not defined as a dict. This might lead to unexpected "
+                "behaviour as we are checking it is a secret text field. "
+                "Returning 'False' as default..."
+            )
+
+    return False
 
 
-def is_clear_text_field(field: "ModelField") -> bool:
+def is_clear_text_field(field: "FieldInfo") -> bool:
     """Returns whether a pydantic field prevents secret references or not.
 
     Args:
@@ -128,4 +162,23 @@ def is_clear_text_field(field: "ModelField") -> bool:
     Returns:
         `True` if the field prevents secret references, `False` otherwise.
     """
-    return field.field_info.extra.get(PYDANTIC_CLEAR_TEXT_FIELD_MARKER, False)  # type: ignore[no-any-return]
+    if field.json_schema_extra is not None:
+        if isinstance(field.json_schema_extra, dict):
+            if marker := field.json_schema_extra.get(
+                PYDANTIC_CLEAR_TEXT_FIELD_MARKER
+            ):
+                assert isinstance(marker, bool), (
+                    f"The parameter `{PYDANTIC_CLEAR_TEXT_FIELD_MARKER}` in the "
+                    f"field definition can only be a boolean value."
+                )
+                return marker
+
+        else:
+            logger.warning(
+                f"The 'json_schema_extra' of the field '{field.title}' is "
+                "not defined as a dict. This might lead to unexpected "
+                "behaviour as we are checking it is a clear text field. "
+                "Returning 'False' as default..."
+            )
+
+    return False

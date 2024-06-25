@@ -33,13 +33,13 @@ class BuildItem(BaseModel):
 
     image: str = Field(title="The image name or digest.")
     dockerfile: Optional[str] = Field(
-        title="The dockerfile used to build the image."
+        default=None, title="The dockerfile used to build the image."
     )
     requirements: Optional[str] = Field(
-        title="The pip requirements installed in the image."
+        default=None, title="The pip requirements installed in the image."
     )
     settings_checksum: Optional[str] = Field(
-        title="The checksum of the build settings."
+        default=None, title="The checksum of the build settings."
     )
     contains_code: bool = Field(
         default=True, title="Whether the image contains user files."

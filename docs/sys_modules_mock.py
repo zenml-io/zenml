@@ -108,6 +108,7 @@ if __name__ == "__main__":
                     # if failed - mocker is extended and we repeat
                     # by this iterative approach we ensure that all needed
                     # mocks would be suggested in CI
+                    something_added = False
                     while True:
                         try:
                             importlib.import_module(module_name)
@@ -120,11 +121,14 @@ if __name__ == "__main__":
                             modules_to_add.append(module)
                             sys.modules[module] = DocsMocker(name=module)
                             logger.warning(msg)
+                            something_added = True
                         except Exception as e:
                             logger.info("failed importing", module_name)
                             logger.error(e.args[0])
                         else:
                             break
+                        if not something_added:
+                            exit(1)
     # pretty print modules missing in mockers
     if modules_to_add:
         modules_to_add = set(modules_to_add)
