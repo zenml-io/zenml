@@ -18,7 +18,6 @@ import hashlib
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -76,10 +75,10 @@ if TYPE_CHECKING:
     )
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.types import HookSpecification
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
-    HookSpecification = Union[str, Source, FunctionType]
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrSource",
         Sequence["MaterializerClassOrSource"],

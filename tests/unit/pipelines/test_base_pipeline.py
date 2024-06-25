@@ -404,6 +404,49 @@ def test_run_configuration_from_code_and_file(
     )
 
 
+def test_pipeline_configuration_with_steps_argument(
+    mocker, clean_client: "Client", one_step_pipeline, empty_step
+):
+    """Tests that the `with_options` method allows configuring step configs with
+    the `steps` argument."""
+    mock_compile = mocker.patch.object(
+        Compiler, "compile", wraps=Compiler().compile
+    )
+    pipeline_instance = one_step_pipeline(empty_step())
+
+    step_configs = {"step_": {"enable_artifact_visualization": False}}
+    pipeline_instance.with_options(steps=step_configs)()
+
+    expected_run_config = PipelineRunConfiguration(steps=step_configs)
+    mock_compile.assert_called_once_with(
+        pipeline=ANY, stack=ANY, run_configuration=expected_run_config
+    )
+
+
+def test_pipeline_configuration_with_duplicate_step_configurations(
+    mocker, clean_client: "Client", one_step_pipeline, empty_step
+):
+    """Tests that the `with_options` method ignores the `steps` argument if a
+    value is also passed using the `step_configurations` argument."""
+
+    mock_compile = mocker.patch.object(
+        Compiler, "compile", wraps=Compiler().compile
+    )
+    pipeline_instance = one_step_pipeline(empty_step())
+
+    step_configs = {"step_": {"enable_artifact_visualization": False}}
+    ignored_step_configs = {"step_": {"enable_artifact_metadata": False}}
+
+    pipeline_instance.with_options(
+        step_configurations=step_configs, steps=ignored_step_configs
+    )()
+
+    expected_run_config = PipelineRunConfiguration(steps=step_configs)
+    mock_compile.assert_called_once_with(
+        pipeline=ANY, stack=ANY, run_configuration=expected_run_config
+    )
+
+
 @step(enable_cache=True)
 def step_with_cache_enabled() -> None:
     pass

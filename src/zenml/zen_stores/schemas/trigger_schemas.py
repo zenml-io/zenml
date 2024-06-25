@@ -22,13 +22,14 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml import TriggerExecutionResponseResources
+from zenml.config.schedule import Schedule
 from zenml.models import (
     Page,
     TriggerExecutionRequest,
     TriggerExecutionResponse,
     TriggerExecutionResponseBody,
     TriggerExecutionResponseMetadata,
+    TriggerExecutionResponseResources,
     TriggerRequest,
     TriggerResponse,
     TriggerResponseBody,
@@ -37,6 +38,7 @@ from zenml.models import (
     TriggerUpdate,
 )
 from zenml.utils.json_utils import pydantic_encoder
+from zenml.zen_stores.schemas.action_schemas import ActionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -78,36 +80,33 @@ class TriggerSchema(NamedSchema, table=True):
         target=EventSourceSchema.__tablename__,
         source_column="event_source_id",
         target_column="id",
-        ondelete="CASCADE",  # TODO: this should be set null and the trigger should be deactivated
+        # This won't happen because the SQL zen store prevents an event source
+        # from being deleted if it has associated triggers
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    event_source: Optional["EventSourceSchema"] = Relationship(
+        back_populates="triggers"
+    )
+
+    action_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ActionSchema.__tablename__,
+        source_column="action_id",
+        target_column="id",
+        # This won't happen because the SQL zen store prevents an action
+        # from being deleted if it has associated triggers
+        ondelete="CASCADE",
         nullable=False,
     )
-    event_source: "EventSourceSchema" = Relationship(back_populates="triggers")
+    action: "ActionSchema" = Relationship(back_populates="triggers")
 
     executions: List["TriggerExecutionSchema"] = Relationship(
         back_populates="trigger"
     )
 
-    service_account_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="service_account_id",
-        target_column="id",
-        ondelete="CASCADE",  # TODO: this should be set null and the trigger should be deactivated
-        nullable=False,
-    )
-    service_account: UserSchema = Relationship(
-        back_populates="auth_triggers",
-        sa_relationship_kwargs={
-            "foreign_keys": "[TriggerSchema.service_account_id]"
-        },
-    )
-    auth_window: int
-
     event_filter: bytes
-
-    action: bytes
-    action_flavor: str  # <- "builtin"
-    action_subtype: str  # <- "PipelineRun"
+    schedule: Optional[bytes] = Field(nullable=True)
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     is_active: bool = Field(nullable=False)
@@ -131,12 +130,6 @@ class TriggerSchema(NamedSchema, table=True):
                         trigger_update.event_filter, default=pydantic_encoder
                     ).encode("utf-8")
                 )
-            elif field == "action":
-                self.action = base64.b64encode(
-                    json.dumps(
-                        trigger_update.action, default=pydantic_encoder
-                    ).encode("utf-8")
-                )
             else:
                 setattr(self, field, value)
 
@@ -152,31 +145,21 @@ class TriggerSchema(NamedSchema, table=True):
 
         Returns:
             The converted schema.
-
-        Raises:
-            ValueError: If `auth_window` is not set.
         """
-        if request.auth_window is None:
-            raise ValueError("auth_window must be set")
         return cls(
             name=request.name,
             workspace_id=request.workspace,
             user_id=request.user,
-            action=base64.b64encode(
-                json.dumps(request.action, default=pydantic_encoder).encode(
-                    "utf-8"
-                ),
-            ),
-            action_flavor=request.action_flavor,
-            action_subtype=request.action_subtype,
+            action_id=request.action_id,
             event_source_id=request.event_source_id,
-            service_account_id=request.service_account_id,
-            auth_window=request.auth_window,
             event_filter=base64.b64encode(
                 json.dumps(
                     request.event_filter, default=pydantic_encoder
                 ).encode("utf-8")
             ),
+            schedule=base64.b64encode(request.schedule.json().encode("utf-8"))
+            if request.schedule
+            else None,
             description=request.description,
             is_active=True,  # Makes no sense for it to be created inactive
         )
@@ -205,9 +188,14 @@ class TriggerSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
-            action_flavor=self.action_flavor,
-            action_subtype=self.action_subtype,
-            event_source_flavor=self.event_source.flavor,
+            action_flavor=self.action.flavor,
+            action_subtype=self.action.plugin_subtype,
+            event_source_flavor=self.event_source.flavor
+            if self.event_source
+            else None,
+            event_source_subtype=self.event_source.plugin_subtype
+            if self.event_source
+            else None,
             is_active=self.is_active,
         )
         metadata = None
@@ -217,9 +205,12 @@ class TriggerSchema(NamedSchema, table=True):
                 event_filter=json.loads(
                     base64.b64decode(self.event_filter).decode()
                 ),
-                action=json.loads(base64.b64decode(self.action).decode()),
+                schedule=Schedule.parse_raw(
+                    base64.b64decode(self.schedule).decode()
+                )
+                if self.schedule
+                else None,
                 description=self.description,
-                auth_window=self.auth_window,
             )
         resources = None
         if include_resources:
@@ -228,13 +219,15 @@ class TriggerSchema(NamedSchema, table=True):
                 get_page_from_list(
                     items_list=self.executions,
                     response_model=TriggerExecutionResponse,
-                    include_resources=include_resources,
-                    include_metadata=include_metadata,
+                    include_resources=False,
+                    include_metadata=False,
                 ),
             )
             resources = TriggerResponseResources(
-                event_source=self.event_source.to_model(),
-                service_account=self.service_account.to_model(),
+                action=self.action.to_model(),
+                event_source=self.event_source.to_model()
+                if self.event_source
+                else None,
                 executions=executions,
             )
         return TriggerResponse(

@@ -23,10 +23,10 @@ from zenml.models import (
     ActionFlavorResponse,
     ActionFlavorResponseBody,
     ActionFlavorResponseMetadata,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     TriggerExecutionResponse,
-    TriggerRequest,
-    TriggerResponse,
-    TriggerUpdate,
 )
 from zenml.models.v2.base.base import BaseResponse
 from zenml.plugins.base_plugin_flavor import (
@@ -239,210 +239,207 @@ class BaseActionHandler(BasePlugin, ABC):
                 trigger's authentication window.
         """
 
-    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
-        """Process a trigger request and create the trigger in the database.
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Process a action request and create the action in the database.
 
         Args:
-            trigger: Trigger request.
+            action: Action request.
+
+        Raises:
+            Exception: If the implementation specific processing before creating
+                the action fails.
 
         Returns:
-            The created trigger.
-
-        # noqa: DAR401
+            The created action.
         """
         # Validate and instantiate the configuration from the request
-        config = self.validate_action_configuration(trigger.action)
+        config = self.validate_action_configuration(action.configuration)
         # Call the implementation specific method to validate the request
         # before it is sent to the database
-        self._validate_trigger_request(trigger=trigger, config=config)
+        self._validate_action_request(action=action, config=config)
         # Serialize the configuration back into the request
-        trigger.action = config.model_dump(exclude_none=True)
-        # Create the trigger in the database
-        trigger_response = self.zen_store.create_trigger(trigger=trigger)
+        action.configuration = config.model_dump(exclude_none=True)
+        # Create the action in the database
+        action_response = self.zen_store.create_action(action=action)
         try:
             # Instantiate the configuration from the response
-            config = self.validate_action_configuration(trigger.action)
+            config = self.validate_action_configuration(action.configuration)
             # Call the implementation specific method to process the created
-            # trigger
-            self._process_trigger_request(
-                trigger=trigger_response, config=config
-            )
-            # Add any implementation specific related resources to the trigger
+            # action
+            self._process_action_request(action=action_response, config=config)
+            # Add any implementation specific related resources to the action
             # response
-            self._populate_trigger_response_resources(
-                trigger=trigger_response, config=config
+            self._populate_action_response_resources(
+                action=action_response,
+                config=config,
             )
-            # Activate the trigger in the event hub to effectively start
-            # dispatching events to the action handler
-            self.event_hub.activate_trigger(trigger=trigger_response)
         except Exception:
-            # If the trigger creation fails, delete the trigger from
+            # If the action creation fails, delete the action from
             # the database
             logger.exception(
-                f"Failed to create trigger {trigger_response}. "
-                f"Deleting the trigger."
+                f"Failed to create action {action_response}. "
+                f"Deleting the action."
             )
-            self.zen_store.delete_trigger(trigger_id=trigger_response.id)
+            self.zen_store.delete_action(action_id=action_response.id)
             raise
 
         # Serialize the configuration back into the response
-        trigger_response.set_action(config.model_dump(exclude_none=True))
+        action_response.set_configuration(config.model_dump(exclude_none=True))
         # Return the response to the user
-        return trigger_response
+        return action_response
 
-    def update_trigger(
+    def update_action(
         self,
-        trigger: TriggerResponse,
-        trigger_update: TriggerUpdate,
-    ) -> TriggerResponse:
-        """Process a trigger update request and update the trigger in the database.
+        action: ActionResponse,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Process action update and update the action in the database.
 
         Args:
-            trigger: The trigger to update.
-            trigger_update: The update to be applied to the trigger.
+            action: The action to update.
+            action_update: The update to be applied to the action.
+
+        Raises:
+            Exception: If the implementation specific processing before updating
+                the action fails.
 
         Returns:
-            The updated trigger.
-
-        # noqa: DAR401
+            The updated action.
         """
         # Validate and instantiate the configuration from the original event
         # source
-        config = self.validate_action_configuration(trigger.action)
+        config = self.validate_action_configuration(action.configuration)
         # Validate and instantiate the configuration from the update request
         # NOTE: if supplied, the configuration update is a full replacement
         # of the original configuration
         config_update = config
-        if trigger_update.action is not None:
+        if action_update.configuration is not None:
             config_update = self.validate_action_configuration(
-                trigger_update.action
+                action_update.configuration
             )
         # Call the implementation specific method to validate the update request
         # before it is sent to the database
-        self._validate_trigger_update(
-            trigger=trigger,
+        self._validate_action_update(
+            action=action,
             config=config,
-            trigger_update=trigger_update,
+            action_update=action_update,
             config_update=config_update,
         )
         # Serialize the configuration update back into the update request
-        trigger_update.action = config_update.model_dump(exclude_none=True)
+        action_update.configuration = config_update.model_dump(
+            exclude_none=True
+        )
 
-        # Update the trigger in the database
-        trigger_response = self.zen_store.update_trigger(
-            trigger_id=trigger.id,
-            trigger_update=trigger_update,
+        # Update the action in the database
+        action_response = self.zen_store.update_action(
+            action_id=action.id,
+            action_update=action_update,
         )
         try:
             # Instantiate the configuration from the response
             response_config = self.validate_action_configuration(
-                trigger_response.action
+                action_response.configuration
             )
             # Call the implementation specific method to process the update
             # request before it is sent to the database
-            self._process_trigger_update(
-                trigger=trigger_response,
+            self._process_action_update(
+                action=action_response,
                 config=response_config,
-                previous_trigger=trigger,
+                previous_action=action,
                 previous_config=config,
             )
-            # Add any implementation specific related resources to the trigger
+            # Add any implementation specific related resources to the action
             # response
-            self._populate_trigger_response_resources(
-                trigger=trigger_response, config=response_config
+            self._populate_action_response_resources(
+                action=action_response, config=response_config
             )
-            # Deactivate the previous trigger and activate the updated trigger
-            # in the event hub
-            self.event_hub.deactivate_trigger(trigger=trigger)
-            self.event_hub.activate_trigger(trigger=trigger_response)
         except Exception:
-            # If the trigger update fails, roll back the trigger in
+            # If the action update fails, roll back the action in
             # the database to the original state
             logger.exception(
-                f"Failed to update trigger {trigger}. "
-                f"Rolling back the trigger to the previous state."
+                f"Failed to update action {action}. "
+                f"Rolling back the action to the previous state."
             )
-            self.zen_store.update_trigger(
-                trigger_id=trigger.id,
-                trigger_update=TriggerUpdate.from_response(trigger),
+            self.zen_store.update_action(
+                action_id=action.id,
+                action_update=ActionUpdate.from_response(action),
             )
             raise
 
         # Serialize the configuration back into the response
-        trigger_response.set_action(
+        action_response.set_configuration(
             response_config.model_dump(exclude_none=True)
         )
         # Return the response to the user
-        return trigger_response
+        return action_response
 
-    def delete_trigger(
+    def delete_action(
         self,
-        trigger: TriggerResponse,
+        action: ActionResponse,
         force: bool = False,
     ) -> None:
-        """Process a trigger delete request and delete the trigger in the database.
+        """Process action delete request and delete the action in the database.
 
         Args:
-            trigger: The trigger to delete.
-            force: Whether to force delete the trigger from the database
-                even if the trigger handler fails to delete the event
+            action: The action to delete.
+            force: Whether to force delete the action from the database
+                even if the action handler fails to delete the event
                 source.
 
-        # noqa: DAR401
+        Raises:
+            Exception: If the implementation specific processing before deleting
+                the action fails.
         """
         # Validate and instantiate the configuration from the original event
         # source
-        config = self.validate_action_configuration(trigger.action)
+        config = self.validate_action_configuration(action.configuration)
         try:
             # Call the implementation specific method to process the deleted
-            # trigger before it is deleted from the database
-            self._process_trigger_delete(
-                trigger=trigger,
+            # action before it is deleted from the database
+            self._process_action_delete(
+                action=action,
                 config=config,
                 force=force,
             )
         except Exception:
-            logger.exception(f"Failed to delete trigger {trigger}. ")
+            logger.exception(f"Failed to delete action {action}. ")
             if not force:
                 raise
 
-            logger.warning(f"Force deleting trigger {trigger}.")
+            logger.warning(f"Force deleting action {action}.")
 
-        # Deactivate the trigger in the event hub
-        self.event_hub.deactivate_trigger(trigger=trigger)
-
-        # Delete the trigger from the database
-        self.zen_store.delete_trigger(
-            trigger_id=trigger.id,
+        # Delete the action from the database
+        self.zen_store.delete_action(
+            action_id=action.id,
         )
 
-    def get_trigger(
-        self, trigger: TriggerResponse, hydrate: bool = False
-    ) -> TriggerResponse:
-        """Process a trigger response before it is returned to the user.
+    def get_action(
+        self, action: ActionResponse, hydrate: bool = False
+    ) -> ActionResponse:
+        """Process a action response before it is returned to the user.
 
         Args:
-            trigger: The trigger fetched from the database.
-            hydrate: Whether to hydrate the trigger.
+            action: The action fetched from the database.
+            hydrate: Whether to hydrate the action.
 
         Returns:
-            The trigger.
+            The action.
         """
         if hydrate:
             # Instantiate the configuration from the response
-            config = self.validate_action_configuration(trigger.action)
+            config = self.validate_action_configuration(action.configuration)
             # Call the implementation specific method to process the response
-            self._process_trigger_response(trigger=trigger, config=config)
+            self._process_action_response(action=action, config=config)
             # Serialize the configuration back into the response
-            trigger.set_action(config.model_dump(exclude_none=True))
-            # Add any implementation specific related resources to the trigger
+            action.set_configuration(config.model_dump(exclude_none=True))
+            # Add any implementation specific related resources to the action
             # response
-            self._populate_trigger_response_resources(
-                trigger=trigger, config=config
+            self._populate_action_response_resources(
+                action=action, config=config
             )
 
         # Return the response to the user
-        return trigger
+        return action
 
     def validate_action_configuration(
         self, action_config: Dict[str, Any]
@@ -450,7 +447,7 @@ class BaseActionHandler(BasePlugin, ABC):
         """Validate and return the action configuration.
 
         Args:
-            action_config: The actino configuration to validate.
+            action_config: The action configuration to validate.
 
         Returns:
             The validated action configuration.
@@ -466,214 +463,220 @@ class BaseActionHandler(BasePlugin, ABC):
     def extract_resources(
         self,
         action_config: ActionConfig,
+        hydrate: bool = False,
     ) -> Dict[ResourceType, BaseResponse[Any, Any, Any]]:
         """Extract related resources for this action.
 
         Args:
             action_config: Action configuration from which to extract related
                 resources.
+            hydrate: Whether to hydrate the resource models.
 
         Returns:
             List of resources related to the action.
         """
         return {}
 
-    def _validate_trigger_request(
-        self, trigger: TriggerRequest, config: ActionConfig
+    def _validate_action_request(
+        self, action: ActionRequest, config: ActionConfig
     ) -> None:
-        """Validate a trigger request before it is created in the database.
+        """Validate an action request before it is created in the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the validation of
-        a new trigger. The implementation may also modify the trigger
+        a new action. The implementation may also modify the action
         request and/or configuration in place to apply implementation specific
         changes before the request is stored in the database.
 
         If validation is required, the implementation should raise a
         ValueError if the configuration is invalid. If any exceptions are raised
-        during the validation, the trigger will not be created in the
+        during the validation, the action will not be created in the
         database.
 
-        The resulted action configuration is serialized back into the trigger
+        The resulted action configuration is serialized back into the action
         request before it is stored in the database.
 
         The implementation should not use this method to provision any external
-        resources, as the trigger may not be created in the database if
+        resources, as the action may not be created in the database if
         the database level validation fails.
 
         Args:
-            trigger: Trigger request.
+            action: Action request.
             config: Action configuration instantiated from the request.
         """
         pass
 
-    def _process_trigger_request(
-        self, trigger: TriggerResponse, config: ActionConfig
+    def _process_action_request(
+        self, action: ActionResponse, config: ActionConfig
     ) -> None:
-        """Process a trigger request after it is created in the database.
+        """Process an action request after it is created in the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the creation of
-        a new trigger. The implementation may also modify the trigger
+        a new action. The implementation may also modify the action
         response and/or configuration in place to apply implementation specific
         changes before the response is returned to the user.
 
-        The resulted configuration is serialized back into the trigger
+        The resulted configuration is serialized back into the action
         response before it is returned to the user.
 
         The implementation should use this method to provision any external
-        resources required for the trigger. If any of the provisioning
-        fails, the implementation should raise an exception and the trigger
+        resources required for the action. If any of the provisioning
+        fails, the implementation should raise an exception and the action
         will be deleted from the database.
 
         Args:
-            trigger: Newly created trigger
+            action: Newly created action
             config: Action configuration instantiated from the response.
         """
         pass
 
-    def _validate_trigger_update(
+    def _validate_action_update(
         self,
-        trigger: TriggerResponse,
+        action: ActionResponse,
         config: ActionConfig,
-        trigger_update: TriggerUpdate,
+        action_update: ActionUpdate,
         config_update: ActionConfig,
     ) -> None:
-        """Validate a trigger update before it is reflected in the database.
+        """Validate an action update before it is reflected in the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to validation of an
-        trigger update request. The implementation may also modify the
-        trigger update and/or configuration update in place to apply
+        action update request. The implementation may also modify the
+        action update and/or configuration update in place to apply
         implementation specific changes.
 
         If validation is required, the implementation should raise a
         ValueError if the configuration update is invalid. If any exceptions are
-        raised during the validation, the trigger will not be updated in
+        raised during the validation, the action will not be updated in
         the database.
 
         The resulted configuration update is serialized back into the event
         source update before it is stored in the database.
 
         The implementation should not use this method to provision any external
-        resources, as the trigger may not be updated in the database if
+        resources, as the action may not be updated in the database if
         the database level validation fails.
 
         Args:
-            trigger: Original trigger before the update.
+            action: Original action before the update.
             config: Action configuration instantiated from the original
                 trigger.
-            trigger_update: Trigger update request.
+            action_update: Action update request.
             config_update: Action configuration instantiated from the
-                updated trigger.
+                updated action.
         """
         pass
 
-    def _process_trigger_update(
+    def _process_action_update(
         self,
-        trigger: TriggerResponse,
+        action: ActionResponse,
         config: ActionConfig,
-        previous_trigger: TriggerResponse,
+        previous_action: ActionResponse,
         previous_config: ActionConfig,
     ) -> None:
-        """Process a trigger after it is updated in the database.
+        """Process an action after it is updated in the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to updating an existing
-        trigger. The implementation may also modify the trigger
+        action. The implementation may also modify the action
         and/or configuration in place to apply implementation specific
         changes before the response is returned to the user.
 
-        The resulted configuration is serialized back into the trigger
+        The resulted configuration is serialized back into the action
         response before it is returned to the user.
 
         The implementation should use this method to provision any external
-        resources required for the trigger update. If any of the
+        resources required for the action update. If any of the
         provisioning fails, the implementation should raise an exception and the
-        trigger will be rolled back to the previous state in the database.
+        action will be rolled back to the previous state in the database.
 
         Args:
-            trigger: Trigger after the update.
+            action: Action after the update.
             config: Action configuration instantiated from the updated
-                trigger.
-            previous_trigger: Original trigger before the update.
+                action.
+            previous_action: Original action before the update.
             previous_config: Action configuration instantiated from the
-                original trigger.
+                original action.
         """
         pass
 
-    def _process_trigger_delete(
+    def _process_action_delete(
         self,
-        trigger: TriggerResponse,
+        action: ActionResponse,
         config: ActionConfig,
         force: Optional[bool] = False,
     ) -> None:
-        """Process a trigger before it is deleted from the database.
+        """Process an action before it is deleted from the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the deletion of an
-        trigger.
+        action.
 
         The implementation should use this method to deprovision any external
-        resources required for the trigger. If any of the deprovisioning
+        resources required for the action. If any of the deprovisioning
         fails, the implementation should raise an exception and the
-        trigger will kept in the database (unless force is True, in which
-        case the trigger will be deleted from the database regardless of
+        action will kept in the database (unless force is True, in which
+        case the action will be deleted from the database regardless of
         any deprovisioning failures).
 
         Args:
-            trigger: Trigger before the deletion.
+            action: Action before the deletion.
             config: Action configuration before the deletion.
-            force: Whether to force deprovision the trigger.
+            force: Whether to force deprovision the action.
         """
         pass
 
-    def _process_trigger_response(
-        self, trigger: TriggerResponse, config: ActionConfig
+    def _process_action_response(
+        self, action: ActionResponse, config: ActionConfig
     ) -> None:
-        """Process a trigger response before it is returned to the user.
+        """Process an action response before it is returned to the user.
 
         Concrete action handlers should override this method to add
-        implementation specific functionality pertaining to how the trigger
+        implementation specific functionality pertaining to how the action
         response is returned to the user. The implementation may modify the
-        the trigger response and/or configuration in place.
+        the action response and/or configuration in place.
 
-        The resulted configuration is serialized back into the trigger
+        The resulted configuration is serialized back into the action
         response before it is returned to the user.
 
-        This method is applied to all trigger responses fetched from the
+        This method is applied to all action responses fetched from the
         database before they are returned to the user, with the exception of
-        those returned from the `create_trigger`, `update_trigger`,
-        and `delete_trigger` methods, which have their own specific
+        those returned from the `create_action`, `update_action`,
+        and `delete_action` methods, which have their own specific
         processing methods.
 
         Args:
-            trigger: Trigger response.
+            action: Action response.
             config: Action configuration instantiated from the response.
         """
         pass
 
-    def _populate_trigger_response_resources(
-        self, trigger: TriggerResponse, config: ActionConfig
+    def _populate_action_response_resources(
+        self,
+        action: ActionResponse,
+        config: ActionConfig,
+        hydrate: bool = False,
     ) -> None:
-        """Populate related resources for the trigger response.
+        """Populate related resources for the action response.
 
         Concrete action handlers should override this method to add
-        implementation specific related resources to the trigger response.
+        implementation specific related resources to the action response.
 
-        This method is applied to all trigger responses fetched from the
+        This method is applied to all action responses fetched from the
         database before they are returned to the user, including
-        those returned from the `create_trigger`, `update_trigger`,
-        and `delete_trigger` methods.
+        those returned from the `create_action`, `update_action`,
+        and `delete_action` methods.
 
         Args:
-            trigger: Trigger response.
+            action: Action response.
             config: Action configuration instantiated from the response.
+            hydrate: Whether to hydrate the resource models.
         """
-        if trigger.resources is None:
+        if action.resources is None:
             # We only populate the resources if the resources field is already
             # set by the database by means of hydration.
             return
-        extract_resources = self.extract_resources(config)
+        extract_resources = self.extract_resources(config, hydrate=hydrate)
         for resource_type, resource in extract_resources.items():
-            setattr(trigger.resources, str(resource_type), resource)
+            setattr(action.resources, str(resource_type), resource)
