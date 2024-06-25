@@ -161,21 +161,9 @@ documentation accordingly.
 * We have also released a new version of `mlstacks` with Pydantic v2 support. 
 If you are using it in your development environment, you have to upgrade your 
 `mlstacks` package as well.
-* Adding `zenml.integrations.huggingface.steps.run_with_accelerate` to be able 
-to run any step using Accelerate. This function is supported by a utility, 
-which wraps any step function into a CLI script (which is needed by most of 
-the Distributed train tools).
-* Fixing a memory leak was observed while using the ZenML dashboard to 
-view the logs of a pipeline or the visualization of an artifact that logged 
-through an S3 Artifact Store linked to an AWS Service Connector.
-* Previously, we had an option called `build_options` that allowed users to 
-pass arguments to the docker build command. These options however were only 
-applied when building the parent image. On MacOS with ARM architecture, one 
-needs to specify `platform=linux/amd64` to the build command in order to 
-leverage the local caching of Docker image layers. We added a way to specify 
-these build options also for the "main" ZenML build and not just the parent 
-image build. Additionally, users can now specify a `dockerignore` file 
-for the parent image build, which was previously not possible.
+* Added `zenml.integrations.huggingface.steps.run_with_accelerate` to enable running any step using [`accelerate`](https://huggingface.co/docs/accelerate/en/index). This function is supported by a utility that wraps any step function into a CLI script (which is required by most distributed training tools).
+* Fixed a memory leak that was observed while using the ZenML dashboard to view pipeline logs or artifact visualizations logged through an S3 Artifact Store linked to an AWS Service Connector.
+* Previously, we had an option called `build_options` that allowed users to pass arguments to the docker build command. However, these options were only applied when building the parent image. On macOS with ARM architecture, one needs to specify `platform=linux/amd64` to the build command to leverage local caching of Docker image layers. We have added a way to specify these build options for the "main" ZenML build as well, not just the parent image build. Additionally, users can now specify a `.dockerignore` file for the parent image build, which was previously not possible.
 
 ## What's Changed
 
