@@ -50,7 +50,7 @@ class DeepchecksIntegration(Integration):
             A list of requirements.
         """
         requirements = []
-        # TODO: simplify once skypilot supports 3.12
+        # TODO: simplify once we update deepchecks dependency to pandas>=2.0.0
         if sys.version_info.minor != 12:
             requirements = [
                 "deepchecks[vision]==0.8.0",
