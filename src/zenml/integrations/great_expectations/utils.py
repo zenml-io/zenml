@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """Great Expectations data profiling standard step."""
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import pandas as pd
 from great_expectations.core.batch import (  # type: ignore[import-untyped]
     RuntimeBatchRequest,
 )
-from great_expectations.data_context.data_context import (  # type: ignore[import-untyped]
-    BaseDataContext,
+from great_expectations.data_context.data_context.abstract_data_context import (
+    AbstractDataContext,
 )
 
 from zenml import get_step_context
@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 
 
 def create_batch_request(
-    context: BaseDataContext,
+    context: AbstractDataContext,
     dataset: pd.DataFrame,
     data_asset_name: Optional[str],
 ) -> RuntimeBatchRequest:
@@ -62,7 +62,7 @@ def create_batch_request(
     data_asset_name = data_asset_name or f"{pipeline_name}_{step_name}"
     batch_identifier = "default"
 
-    datasource_config = {
+    datasource_config: Dict[str, Any] = {
         "name": datasource_name,
         "class_name": "Datasource",
         "module_name": "great_expectations.datasource",

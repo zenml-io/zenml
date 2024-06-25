@@ -21,7 +21,7 @@ import site
 import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
-from types import ModuleType
+from types import BuiltinFunctionType, FunctionType, ModuleType
 from typing import (
     Any,
     Callable,
@@ -46,6 +46,16 @@ NoneType = type(None)
 NoneTypeSource = Source(
     module=NoneType.__module__, attribute="NoneType", type=SourceType.BUILTIN
 )
+FunctionTypeSource = Source(
+    module=FunctionType.__module__,
+    attribute=FunctionType.__name__,
+    type=SourceType.BUILTIN,
+)
+BuiltinFunctionTypeSource = Source(
+    module=BuiltinFunctionType.__module__,
+    attribute=BuiltinFunctionType.__name__,
+    type=SourceType.BUILTIN,
+)
 
 _CUSTOM_SOURCE_ROOT: Optional[str] = None
 
@@ -62,18 +72,22 @@ def load(source: Union[Source, str]) -> Any:
     if isinstance(source, str):
         source = Source.from_import_path(source)
 
+    # The types of some objects don't exist in the `builtin` module
+    # so we need to manually handle it here
     if source.import_path == NoneTypeSource.import_path:
-        # The class of the `None` object doesn't exist in the `builtin` module
-        # so we need to manually handle it here
         return NoneType
+    elif source.import_path == FunctionTypeSource.import_path:
+        return FunctionType
+    elif source.import_path == BuiltinFunctionTypeSource.import_path:
+        return BuiltinFunctionType
 
     import_root = None
     if source.type == SourceType.CODE_REPOSITORY:
-        source = CodeRepositorySource.parse_obj(source)
+        source = CodeRepositorySource.model_validate(dict(source))
         _warn_about_potential_source_loading_issues(source=source)
         import_root = get_source_root()
     elif source.type == SourceType.DISTRIBUTION_PACKAGE:
-        source = DistributionPackageSource.parse_obj(source)
+        source = DistributionPackageSource.model_validate(dict(source))
         if source.version:
             current_package_version = _get_package_version(
                 package_name=source.package_name
@@ -104,7 +118,14 @@ def load(source: Union[Source, str]) -> Any:
 
 
 def resolve(
-    obj: Union[Type[Any], Callable[..., Any], ModuleType, NoneType],
+    obj: Union[
+        Type[Any],
+        Callable[..., Any],
+        ModuleType,
+        FunctionType,
+        BuiltinFunctionType,
+        NoneType,
+    ],
     skip_validation: bool = False,
 ) -> Source:
     """Resolve an object.
@@ -120,10 +141,14 @@ def resolve(
     Returns:
         The source of the resolved object.
     """
-    if obj is NoneType:  # type: ignore[comparison-overlap]
-        # The class of the `None` object doesn't exist in the `builtin` module
-        # so we need to manually handle it here
+    # The types of some objects don't exist in the `builtin` module
+    # so we need to manually handle it here
+    if obj is NoneType:
         return NoneTypeSource
+    elif obj is FunctionType:
+        return FunctionTypeSource
+    elif obj is BuiltinFunctionType:
+        return BuiltinFunctionTypeSource
     elif isinstance(obj, ModuleType):
         module = obj
         attribute_name = None

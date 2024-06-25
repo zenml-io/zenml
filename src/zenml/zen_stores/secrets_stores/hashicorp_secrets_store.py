@@ -26,13 +26,14 @@ from hvac.exceptions import (  # type: ignore[import-untyped]
     InvalidPath,
     VaultError,
 )
-from pydantic import SecretStr
+from pydantic import ConfigDict
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.logger import get_logger
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -63,16 +64,11 @@ class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
     type: SecretsStoreType = SecretsStoreType.HASHICORP
 
     vault_addr: str
-    vault_token: Optional[SecretStr] = None
+    vault_token: Optional[PlainSerializedSecretStr] = None
     vault_namespace: Optional[str] = None
     mount_point: Optional[str] = None
     max_versions: int = 1
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class HashiCorpVaultSecretsStore(BaseSecretsStore):

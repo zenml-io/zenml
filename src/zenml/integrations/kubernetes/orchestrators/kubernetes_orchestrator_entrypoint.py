@@ -100,8 +100,17 @@ def main() -> None:
         )
 
         step_config = deployment_config.step_configurations[step_name].config
-        settings = KubernetesOrchestratorSettings.parse_obj(
-            step_config.settings.get("orchestrator.kubernetes", {})
+
+        kubernetes_settings = step_config.settings.get(
+            "orchestrator.kubernetes", None
+        )
+
+        orchestrator_settings = {}
+        if kubernetes_settings is not None:
+            orchestrator_settings = kubernetes_settings.model_dump()
+
+        settings = KubernetesOrchestratorSettings.model_validate(
+            orchestrator_settings
         )
 
         env = get_config_environment_vars()
@@ -142,7 +151,14 @@ def main() -> None:
         )
         logger.info(f"Pod of step `{step_name}` completed.")
 
-    ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_kubernetes).run()
+    parallel_node_startup_waiting_period = (
+        orchestrator.config.parallel_step_startup_waiting_period or 0.0
+    )
+    ThreadedDagRunner(
+        dag=pipeline_dag,
+        run_fn=run_step_on_kubernetes,
+        parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
+    ).run()
 
     logger.info("Orchestration pod completed.")
 

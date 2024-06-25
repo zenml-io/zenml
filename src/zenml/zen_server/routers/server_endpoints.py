@@ -122,7 +122,7 @@ if server_config().external_server_id is None:
         """
         if not server_config().rbac_enabled:
             will_update_admin_properties = bool(
-                settings_update.dict(
+                settings_update.model_dump(
                     exclude_none=True, exclude={"onboarding_state"}
                 )
             )

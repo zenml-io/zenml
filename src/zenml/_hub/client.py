@@ -76,7 +76,8 @@ class HubClient:
         if not isinstance(response, list):
             return []
         return [
-            HubPluginResponseModel.parse_obj(plugin) for plugin in response
+            HubPluginResponseModel.model_validate(plugin)
+            for plugin in response
         ]
 
     def get_plugin(
@@ -113,7 +114,7 @@ class HubClient:
             return None
         if not isinstance(response, list) or len(response) == 0:
             return None
-        return HubPluginResponseModel.parse_obj(response[0])
+        return HubPluginResponseModel.model_validate(response[0])
 
     def create_plugin(
         self, plugin_request: HubPluginRequestModel
@@ -127,8 +128,10 @@ class HubClient:
             The plugin response model.
         """
         route = "/plugins"
-        response = self._request("POST", route, data=plugin_request.json())
-        return HubPluginResponseModel.parse_obj(response)
+        response = self._request(
+            "POST", route, data=plugin_request.model_dump_json()
+        )
+        return HubPluginResponseModel.model_validate(response)
 
     # TODO: Potentially reenable this later if hub adds logs streaming endpoint
     # def stream_plugin_build_logs(
@@ -224,7 +227,7 @@ class HubClient:
         """
         try:
             response = self._request("GET", "/users/me")
-            return HubUserResponseModel.parse_obj(response)
+            return HubUserResponseModel.model_validate(response)
         except HubAPIError:
             return None
 

@@ -11,21 +11,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.text_report_test_pipeline.text_report_test import (
-    text_data_report_test_pipeline,
-)
-
-if __name__ == "__main__":
-    text_data_report_test_pipeline()
-
-    last_run = text_data_report_test_pipeline.model.last_run
-    text_analysis_step = last_run.steps["text_analyzer"]
-
-    print(
-        "Reference missing values: ",
-        text_analysis_step.outputs["ref_missing_values"].load(),
-    )
-    print(
-        "Comparison missing values: ",
-        text_analysis_step.outputs["comp_missing_values"].load(),
-    )
+# from pipelines.text_report_test_pipeline.text_report_test import (
+#     text_data_report_test_pipeline,
+# )
+#
+# if __name__ == "__main__":
+#     text_data_report_test_pipeline()
+#
+#     last_run = text_data_report_test_pipeline.model.last_run
+#     text_analysis_step = last_run.steps["text_analyzer"]
+#
+#     print(
+#         "Reference missing values: ",
+#         text_analysis_step.outputs["ref_missing_values"].load(),
+#     )
+#     print(
+#         "Comparison missing values: ",
+#         text_analysis_step.outputs["comp_missing_values"].load(),
+#     )

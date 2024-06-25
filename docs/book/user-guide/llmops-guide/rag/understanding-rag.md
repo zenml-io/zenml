@@ -74,9 +74,9 @@ all of these scenarios, making it easy to scale your RAG pipelines as needed.
 ZenML allows you to track all the artifacts associated with your RAG pipeline,
 from hyperparameters and model weights to metadata and performance metrics, as
 well as all the RAG or LLM-specific artifacts like chains, agents, tokenizers
-and vector stores. These can all be tracked in the [Model Control
-Plane](../advanced-guide/data-management/model-management.md) and thus
-visualized in the [ZenML Cloud](https://zenml.io/cloud) dashboard.
+and vector stores. These can all be tracked in the 
+[Model Control Plane](../../../how-to/use-the-model-control-plane/README.md) and thus
+visualized in the [ZenML Pro](https://zenml.io/pro) dashboard.
 
 By bringing all of the above into a simple ZenML
 pipeline we achieve a clearly delineated set of steps that can be run and rerun to set up

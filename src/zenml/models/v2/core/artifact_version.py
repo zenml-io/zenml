@@ -24,12 +24,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from zenml.config.source import Source, convert_source_validator
+from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
+from zenml.model.model import Model
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
@@ -43,9 +44,8 @@ from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.model.model import Model
     from zenml.models.v2.core.artifact_visualization import (
         ArtifactVisualizationRequest,
         ArtifactVisualizationResponse,
@@ -68,8 +68,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         title="ID of the artifact to which this version belongs.",
     )
     version: Union[str, int] = Field(
-        title="Version of the artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        title="Version of the artifact.", union_mode="left_to_right"
     )
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
@@ -83,10 +82,10 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
     uri: str = Field(
         title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
-    materializer: Source = Field(
+    materializer: SourceWithValidator = Field(
         title="Materializer class to use for this artifact.",
     )
-    data_type: Source = Field(
+    data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
     tags: Optional[List[str]] = Field(
@@ -98,7 +97,26 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         default=None, title="Visualizations of the artifact."
     )
 
-    _convert_source = convert_source_validator("materializer", "data_type")
+    @field_validator("version")
+    @classmethod
+    def str_field_max_length_check(cls, value: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum str length.
+
+        Args:
+            value: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(value)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
+        return value
 
 
 # ------------------ Update Model ------------------
@@ -121,28 +139,45 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     artifact: ArtifactResponse = Field(
         title="Artifact to which this version belongs."
     )
-    version: Union[str, int] = Field(
-        title="Version of the artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+    version: str = Field(title="Version of the artifact.")
     uri: str = Field(
         title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
     type: ArtifactType = Field(title="Type of the artifact.")
-    materializer: Source = Field(
+    materializer: SourceWithValidator = Field(
         title="Materializer class to use for this artifact.",
     )
-    data_type: Source = Field(
+    data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
     tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
     producer_pipeline_run_id: Optional[UUID] = Field(
-        title="The ID of the pipeline run that generated this artifact version."
+        title="The ID of the pipeline run that generated this artifact version.",
+        default=None,
     )
 
-    _convert_source = convert_source_validator("materializer", "data_type")
+    @field_validator("version")
+    @classmethod
+    def str_field_max_length_check(cls, value: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum str length.
+
+        Args:
+            value: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(value)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
+        return value
 
 
 class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -396,7 +431,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
     # `name` and `only_unused` refer to properties related to other entities
-    #  rather than a field in the db, hence they needs to be handled
+    #  rather than a field in the db, hence they need to be handled
     #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
@@ -407,6 +442,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="ID of the artifact to which this version belongs.",
+        union_mode="left_to_right",
     )
     name: Optional[str] = Field(
         default=None,
@@ -419,6 +455,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     version_number: Optional[Union[int, str]] = Field(
         default=None,
         description="Version of the artifact if it is an integer",
+        union_mode="left_to_right",
     )
     uri: Optional[str] = Field(
         default=None,
@@ -437,13 +474,19 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="Datatype of the artifact",
     )
     artifact_store_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Artifact store for this artifact"
+        default=None,
+        description="Artifact store for this artifact",
+        union_mode="left_to_right",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace for this artifact"
+        default=None,
+        description="Workspace for this artifact",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that produced this artifact"
+        default=None,
+        description="User that produced this artifact",
+        union_mode="left_to_right",
     )
     only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"
@@ -453,9 +496,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="Filter only artifacts with/without custom names.",
     )
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    def get_custom_filters(self) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
 
         Returns:
@@ -463,8 +504,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         """
         custom_filters = super().get_custom_filters()
 
-        from sqlalchemy import and_
-        from sqlmodel import select
+        from sqlmodel import and_, select
 
         from zenml.zen_stores.schemas.artifact_schemas import (
             ArtifactSchema,
@@ -482,7 +522,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
                 column="name",
                 value=value,
             )
-            artifact_name_filter = and_(  # type: ignore[type-var]
+            artifact_name_filter = and_(
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
                 filter_.generate_query_conditions(ArtifactSchema),
             )
@@ -500,7 +540,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             custom_filters.append(unused_filter)
 
         if self.has_custom_name is not None:
-            custom_name_filter = and_(  # type: ignore[type-var]
+            custom_name_filter = and_(
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
                 ArtifactSchema.has_custom_name == self.has_custom_name,
             )
@@ -520,9 +560,9 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
     """
 
     id: Optional[UUID] = None  # type: ignore[assignment]
-    _lazy_load_name: Optional[str] = None
-    _lazy_load_version: Optional[str] = None
-    _lazy_load_model: "Model"
+    lazy_load_name: Optional[str] = None
+    lazy_load_version: Optional[str] = None
+    lazy_load_model: Model
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
@@ -552,13 +592,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         from zenml.metadata.lazy_load import RunMetadataLazyGetter
 
         return RunMetadataLazyGetter(  # type: ignore[return-value]
-            self._lazy_load_model,
-            self._lazy_load_name,
-            self._lazy_load_version,
+            self.lazy_load_model,
+            self.lazy_load_name,
+            self.lazy_load_version,
         )
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extras to include the lazy load attributes
-        extra = "allow"

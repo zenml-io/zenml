@@ -14,10 +14,17 @@
 """Source classes."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    SerializeAsAny,
+    field_validator,
+)
+from typing_extensions import Annotated
 
 from zenml.logger import get_logger
 
@@ -130,10 +137,29 @@ class Source(BaseModel):
         """
         return self.attribute is None
 
-    class Config:
-        """Pydantic config class."""
+    model_config = ConfigDict(extra="allow")
 
-        extra = Extra.allow
+    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
+        """Dump the source as a dictionary.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            The source as a dictionary.
+        """
+        return super().model_dump(serialize_as_any=True, **kwargs)
+
+    def model_dump_json(self, **kwargs: Any) -> str:
+        """Dump the source as a JSON string.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            The source as a JSON string.
+        """
+        return super().model_dump_json(serialize_as_any=True, **kwargs)
 
 
 class DistributionPackageSource(Source):
@@ -148,7 +174,8 @@ class DistributionPackageSource(Source):
     version: Optional[str] = None
     type: SourceType = SourceType.DISTRIBUTION_PACKAGE
 
-    @validator("type")
+    @field_validator("type")
+    @classmethod
     def _validate_type(cls, value: SourceType) -> SourceType:
         """Validate the source type.
 
@@ -182,7 +209,8 @@ class CodeRepositorySource(Source):
     subdirectory: str
     type: SourceType = SourceType.CODE_REPOSITORY
 
-    @validator("type")
+    @field_validator("type")
+    @classmethod
     def _validate_type(cls, value: SourceType) -> SourceType:
         """Validate the source type.
 
@@ -201,39 +229,21 @@ class CodeRepositorySource(Source):
         return value
 
 
-def convert_source_validator(*attributes: str) -> "AnyClassMethod":
-    """Function to convert pydantic fields containing legacy class paths.
-
-    In older versions, sources (sometimes also called class paths) like
-    `zenml.materializers.BuiltInMaterializer` were stored as strings in our
-    configuration classes. These strings got replaced by a separate class, and
-    this function returns a validator to convert those old strings to the new
-    classes.
+def convert_source(source: Any) -> Any:
+    """Converts an old source string to a source object.
 
     Args:
-        *attributes: List of attributes to convert.
+        source: Source string or object.
 
     Returns:
-        Pydantic validator class method to be used on BaseModel subclasses
-        to convert source fields.
+        The converted source.
     """
+    if isinstance(source, str):
+        source = Source.from_import_path(source)
 
-    @validator(*attributes, pre=True, allow_reuse=True)
-    def _convert_source(
-        cls: Type[BaseModel], value: Union[Source, str, None]
-    ) -> Optional[Source]:
-        """Converts an old source string to a source object.
+    return source
 
-        Args:
-            cls: The class on which the attributes are defined.
-            value: Source string or object.
 
-        Returns:
-            The converted source.
-        """
-        if isinstance(value, str):
-            value = Source.from_import_path(value)
-
-        return value
-
-    return _convert_source
+SourceWithValidator = Annotated[
+    SerializeAsAny[Source], BeforeValidator(convert_source)
+]

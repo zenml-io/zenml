@@ -2,11 +2,11 @@
 description: Understand and adjust how ZenML versions your data.
 ---
 
-# Data artifact management with ZenML
+# Manage artifacts
 
 Data sits at the heart of every machine learning workflow. Managing and versioning this data correctly is essential for reproducibility and traceability within your ML pipelines. ZenML takes a proactive approach to data versioning, ensuring that every artifact—be it data, models, or evaluations—is automatically tracked and versioned upon pipeline execution.
 
-![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/dcp_walkthrough.gif)
+![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/dcp\_walkthrough.gif)
 
 This guide will delve into artifact versioning and management, showing you how to efficiently name, organize, and utilize your data with the ZenML framework.
 
@@ -50,33 +50,25 @@ Artifacts named `iris_dataset` can then be found swiftly using various ZenML int
 
 {% tabs %}
 {% tab title="OSS (CLI)" %}
-
 To list artifacts: `zenml artifact list`
-
 {% endtab %}
-{% tab title="Cloud (Dashboard)" %}
 
-The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration.
+{% tab title="Cloud (Dashboard)" %}
+The [ZenML Pro](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration.
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 
 {% hint style="info" %}
-To prevent visual clutter, make sure to assign names to your most
-important artifacts that you would like to explore visually.
+To prevent visual clutter, make sure to assign names to your most important artifacts that you would like to explore visually.
 {% endhint %}
-
 {% endtab %}
 {% endtabs %}
 
 ### Versioning artifacts manually
 
-ZenML automatically versions all created artifacts using auto-incremented
-numbering. I.e., if you have defined a step creating an artifact named
-`iris_dataset` as shown above, the first execution of the step will
-create an artifact with this name and version "1", the second execution will
-create version "2", and so on.
+ZenML automatically versions all created artifacts using auto-incremented numbering. I.e., if you have defined a step creating an artifact named `iris_dataset` as shown above, the first execution of the step will create an artifact with this name and version "1", the second execution will create version "2", and so on.
 
-While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model/#zenml.model.artifact_config.DataArtifactConfig). This may come into play during critical runs like production releases.
+While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-model/#zenml.model.artifact\_config.DataArtifactConfig). This may come into play during critical runs like production releases.
 
 ```python
 from zenml import step, ArtifactConfig
@@ -95,10 +87,7 @@ def training_data_loader() -> (
     ...
 ```
 
-The next execution of this step will then create an artifact with the name
-`iris_dataset` and version `raw_2023`. This is primarily useful if
-you are making a particularly important pipeline run (such as a release) whose
-artifacts you want to distinguish at a glance later.
+The next execution of this step will then create an artifact with the name `iris_dataset` and version `raw_2023`. This is primarily useful if you are making a particularly important pipeline run (such as a release) whose artifacts you want to distinguish at a glance later.
 
 {% hint style="warning" %}
 Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML config](../production-guide/configure-pipeline.md) for artifact versioning.
@@ -108,16 +97,13 @@ After execution, `iris_dataset` and its version `raw_2023` can be seen using:
 
 {% tabs %}
 {% tab title="OSS (CLI)" %}
-
 To list versions: `zenml artifact version list`
-
 {% endtab %}
-{% tab title="Cloud (Dashboard)" %}
 
+{% tab title="Cloud (Dashboard)" %}
 The Cloud dashboard visualizes version history for your review.
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>ZenML Data Versions List.</p></figcaption></figure>
-
 {% endtab %}
 {% endtabs %}
 
@@ -208,7 +194,7 @@ if __name__ == "__main__":
     printing_pipeline()
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts/#zenml.artifacts.external_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../../how-to/handle-data-artifacts/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifacts/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
@@ -216,7 +202,7 @@ Using an `ExternalArtifact` for your step automatically disables caching for the
 
 ### Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](../../how-to/build-pipelines/fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID
@@ -254,12 +240,10 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../advanced-guide/data-management/late-materialization.md) behind the scenes.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../../how-to/handle-data-artifacts/load-artifacts-into-memory.md) behind the scenes.
 {% endhint %}
 
-If you would like to bypass materialization entirely and just download the
-data or files associated with a particular artifact version, you can use the
-`.download_files` method:
+If you would like to bypass materialization entirely and just download the data or files associated with a particular artifact version, you can use the `.download_files` method:
 
 ```python
 from zenml.client import Client
@@ -269,9 +253,7 @@ artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset")
 artifact.download_files("path/to/save.zip")
 ```
 
-Take note that the path must have the `.zip` extension, as the artifact data
-will be saved as a zip file. Make sure to handle any exceptions that may arise
-from this operation.
+Take note that the path must have the `.zip` extension, as the artifact data will be saved as a zip file. Make sure to handle any exceptions that may arise from this operation.
 
 ## Managing artifacts **not** produced by ZenML pipelines
 
@@ -321,17 +303,14 @@ It is also possible to use these functions inside your ZenML steps. However, it 
 
 ## Logging metadata for an artifact
 
-One of the most useful ways of interacting with artifacts in ZenML is the ability
-to associate metadata with them. [As mentioned before](fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
+One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](../../how-to/build-pipelines/fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or the size of an image alongside a PNG file.
 
-For some artifacts, ZenML automatically logs metadata. As an example, for `pandas.Series`
-and `pandas.DataFrame` objects, ZenML logs the shape and size of the objects:
+For some artifacts, ZenML automatically logs metadata. As an example, for `pandas.Series` and `pandas.DataFrame` objects, ZenML logs the shape and size of the objects:
 
 {% tabs %}
 {% tab title="Python" %}
-
 ```python
 from zenml.client import Client
 
@@ -342,26 +321,22 @@ artifact = Client().get_artifact_version('50ce903f-faa6-41f6-a95f-ff8c0ec66010')
 artifact.run_metadata["storage_size"].value  # Size in bytes
 artifact.run_metadata["shape"].value  # Shape e.g. (500,20)
 ```
-
 {% endtab %}
-{% tab title="OSS (Dashboard)" %}
 
+{% tab title="OSS (Dashboard)" %}
 The information regarding the metadata of an artifact can be found within the DAG visualizer interface on the OSS dashboard:
 
 <figure><img src="../../.gitbook/assets/dashboard_artifact_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
-
 {% endtab %}
-{% tab title="Cloud (Dashboard)" %}
 
-The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
+{% tab title="Cloud (Dashboard)" %}
+The [ZenML Pro](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
 
 <figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
-
 {% endtab %}
 {% endtabs %}
 
-A user can also add metadata to an artifact within a step directly using the
-`log_artifact_metadata` method:
+A user can also add metadata to an artifact within a step directly using the `log_artifact_metadata` method:
 
 ```python
 from zenml import step, log_artifact_metadata
@@ -391,10 +366,9 @@ def model_finetuner_step(
     return model
 ```
 
-For further depth, there is an [advanced metadata logging guide](../advanced-guide/data-management/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](../../how-to/track-metrics-metadata/README.md) that goes more into detail about logging metadata in ZenML.
 
-Additionally, there is a lot more to learn about artifacts within ZenML. Please read
-the [dedicated data management guide](../advanced-guide/data-management/data-management.md) for more information.
+Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](../../how-to/handle-data-artifacts/) for more information.
 
 ## Code example
 
@@ -403,7 +377,6 @@ This section combines all the code from this section into one simple script that
 <details>
 
 <summary>Code Example of this Section</summary>
-
 
 ```python
 from typing import Optional, Tuple
@@ -497,15 +470,14 @@ if __name__ == "__main__":
 
 This would create the following pipeline run DAGs:
 
-#### Run 1:
+**Run 1:**
 
-<figure><img src="../../.gitbook/assets/artifact_management_1.png" alt=""><figcaption><p>Create a first version of my_dataset</p></figcaption></figure>
+<img src="../../.gitbook/assets/artifact_management_1.png" alt="Create a first version of my_dataset" data-size="original">
 
-#### Run 2:
+**Run 2:**
 
-<figure><img src="../../.gitbook/assets/artifact_management_2.png" alt=""><figcaption><p>Uses a second version of my_dataset</p></figcaption></figure>
+<img src="../../.gitbook/assets/artifact_management_2.png" alt="Uses a second version of my_dataset" data-size="original">
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

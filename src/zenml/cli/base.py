@@ -79,19 +79,19 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2024.04.05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.06",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.04.03",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.06",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
-        github_tag="2024.04.05",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.14",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     llm_finetuning=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-llm-finetuning",
-        github_tag="2024.05.23",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.20",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 

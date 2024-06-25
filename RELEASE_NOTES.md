@@ -1,5 +1,65 @@
 <!-- markdown-link-check-disable -->
 
+# 0.58.2
+
+The 0.58.2 minor release is packed with a set of improvements to the ZenML logging and ZenML Server.
+
+With this release ZenML logging will:
+- Offer pagination of the logs during fetching via REST API
+- Store the full logs history on GCS Artifact Stores
+- Be performant running logging-heavy tasks, like TQDM logging or logging of training in any Deep Learning framework (also TQDM-backed)
+
+## What's Changed
+* update test-migrations.sh with latest versions by @safoinme in https://github.com/zenml-io/zenml/pull/2757
+* Fix overriding expiration date for api tokens by @schustmi in https://github.com/zenml-io/zenml/pull/2753
+* Step logs pagination by @schustmi in https://github.com/zenml-io/zenml/pull/2731
+* Fix broken links (round 2) by @strickvl in https://github.com/zenml-io/zenml/pull/2760
+* Remove default system flag in docker UV by @avishniakov in https://github.com/zenml-io/zenml/pull/2764
+* Another batch of small fixes and expansions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2762
+* Server scalability improvements by @stefannica in https://github.com/zenml-io/zenml/pull/2752
+* Add option to start parallel kubernetes steps with delay by @schustmi in https://github.com/zenml-io/zenml/pull/2758
+* Move `thread_limiter` to app startup event by @avishniakov in https://github.com/zenml-io/zenml/pull/2765
+* Logging performance improvements and GCP logging fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2755
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.58.1...0.58.2
+
+# 0.58.1
+
+The 0.58.1 release brings a set of minor enhancement and bugfix to the ZenML framework, such as the ability to delete all versions of a pipeline using the Client/CLI, providing greater flexibility and control over pipeline management. Users can now specify Python package installer arguments. Furthermore, a fix has been implemented for the Sentencepiece tokenizer materializer.
+
+We are also excited to announce the introduction of breadcrumbs to our dashboard to improve your navigation experience. This new feature allows you to easily visualize the path of your Pipelines, Models, and Artifacts, providing clear orientation, quick return to any section with a single click, and effortless navigation.
+
+We’d like to give a special thanks to @eltociear for their first contribution.
+
+## Docs re-work
+
+We reworked the structure of our documentation pages to make it easier to find answers to your practical questions. Please do let us know if you have any feedback on the structure or the new style of the 'How To' section!
+
+## What's Changed
+* Add 0.58.0 to migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2730
+* Print step names in color, again by @avishniakov in https://github.com/zenml-io/zenml/pull/2728
+* Workflow to create JIRA tickets when Github Issues are created by @strickvl in https://github.com/zenml-io/zenml/pull/2724
+* Allow specifying python package installer args by @schustmi in https://github.com/zenml-io/zenml/pull/2727
+* Send workflow dispatch event to Cloud Plugins repo on release by @wjayesh in https://github.com/zenml-io/zenml/pull/2633
+* Fix Nightly Release by @safoinme in https://github.com/zenml-io/zenml/pull/2711
+* Fix `zenml go` images visibility in notebook by @strickvl in https://github.com/zenml-io/zenml/pull/2742
+* Handle error when using `zenml info` with missing dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/2725
+* Add Discord Alerter into TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2735
+* Allow deleting all versions of a pipeline using the Client/CLI by @schustmi in https://github.com/zenml-io/zenml/pull/2745
+* Misc fixes by @schustmi in https://github.com/zenml-io/zenml/pull/2732
+* Move full SQLite DB migration test to slow CI by @strickvl in https://github.com/zenml-io/zenml/pull/2743
+* Add system flag as default for uv by @schustmi in https://github.com/zenml-io/zenml/pull/2748
+* Add how-to section & restructure/update documentation by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2705
+* Fix typo in help text by @eltociear in https://github.com/zenml-io/zenml/pull/2750
+* Add support for function types in source utils by @schustmi in https://github.com/zenml-io/zenml/pull/2738
+* Fix Sentencepiece tokenizer materializer by @safoinme in https://github.com/zenml-io/zenml/pull/2751
+
+## New Contributors
+* @eltociear made their first contribution in https://github.com/zenml-io/zenml/pull/2750
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.58.0...0.58.1
+
 # 0.58.0
 
 ## New Annotators
@@ -173,9 +233,9 @@ zenml up --legacy
 
 Note that you can’t use both the new and old dashboard at the same time.
 
-If you’re self-hosting ZenML instead of using ZenML Cloud, you can specify which dashboard you want to use by setting the `ZENML_SERVER_USE_LEGACY_DASHBOARD` environment variable pre-deployment. Specifying a boolean value for this variable will determine which dashboard gets served for your deployment. (There’s no dynamic switching between dashboards allowed, so if you wish to change which dashboard is used for a deployed server, you’ll need to redeploy the server after updating the environment variable.)
+If you’re self-hosting ZenML instead of using ZenML Pro, you can specify which dashboard you want to use by setting the `ZENML_SERVER_USE_LEGACY_DASHBOARD` environment variable pre-deployment. Specifying a boolean value for this variable will determine which dashboard gets served for your deployment. (There’s no dynamic switching between dashboards allowed, so if you wish to change which dashboard is used for a deployed server, you’ll need to redeploy the server after updating the environment variable.)
 
-If you’re using [ZenML Cloud](https://cloud.zenml.io/), your experience won’t change with this release and your use of the dashboard remains the same.
+If you’re using [SaaS ZenML Pro](https://cloud.zenml.io/), your experience won’t change with this release and your use of the dashboard remains the same.
 
 ## What's Changed
 * Add Comet to Experiment Trackers in TOC by @strickvl in https://github.com/zenml-io/zenml/pull/2637
@@ -1820,7 +1880,7 @@ This is a minor ZenML release that introduces a couple of new features:
 
 In addition to that, this release also contains a couple of bug fixes and improvements, including:
 
-* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/vertex)
+* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/stack-components/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/stack-components/step-operators/vertex)
 * adjust Seldon and BentoML Steps and Examples to new pipeline interface
 
 ## What's Changed

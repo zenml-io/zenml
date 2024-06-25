@@ -192,10 +192,6 @@ class Compiler:
         Args:
             pipeline: The pipeline to configure.
             config: The run configurations.
-
-        Raises:
-            KeyError: If the run configuration contains options for a
-                non-existent step.
         """
         with pipeline.__suppress_configure_warnings__():
             pipeline.configure(
@@ -209,11 +205,16 @@ class Compiler:
                 parameters=config.parameters,
             )
 
-        for invocation_id in config.steps:
-            if invocation_id not in pipeline.invocations:
-                raise KeyError(
-                    f"Configuration for step {invocation_id} cannot be applied to any pipeline step. Make sure that all configured steps are present in your pipeline."
-                )
+        invalid_step_configs = set(config.steps) - set(pipeline.invocations)
+        if invalid_step_configs:
+            logger.warning(
+                f"Configuration for step invocations {invalid_step_configs} "
+                "cannot be applied to any pipeline step invocations, "
+                "ignoring..."
+            )
+
+        for key in invalid_step_configs:
+            config.steps.pop(key)
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
@@ -286,9 +287,9 @@ class Compiler:
         """
         assert stack_component.settings_class
         # Exclude additional config attributes that aren't part of the settings
-        field_names = set(stack_component.settings_class.__fields__)
-        default_settings = stack_component.settings_class.parse_obj(
-            stack_component.config.dict(
+        field_names = set(stack_component.settings_class.model_fields.keys())
+        default_settings = stack_component.settings_class.model_validate(
+            stack_component.config.model_dump(
                 include=field_names, exclude_unset=True, exclude_defaults=True
             )
         )

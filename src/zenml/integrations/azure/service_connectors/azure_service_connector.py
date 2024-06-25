@@ -28,7 +28,7 @@ from azure.mgmt.containerservice import ContainerServiceClient
 from azure.mgmt.resource import SubscriptionClient
 from azure.mgmt.storage import StorageManagementClient
 from azure.storage.blob import BlobServiceClient
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
@@ -56,6 +56,7 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -103,7 +104,7 @@ class AzureBaseConfig(AuthenticationConfig):
 class AzureClientSecret(AuthenticationConfig):
     """Azure client secret credentials."""
 
-    client_secret: SecretStr = Field(
+    client_secret: PlainSerializedSecretStr = Field(
         title="Service principal client secret",
         description="The client secret of the service principal",
     )
@@ -126,7 +127,7 @@ class AzureClientConfig(AzureBaseConfig):
 class AzureAccessToken(AuthenticationConfig):
     """Azure access token credentials."""
 
-    token: SecretStr = Field(
+    token: PlainSerializedSecretStr = Field(
         title="Azure Access Token",
         description="The Azure access token to use for authentication",
     )

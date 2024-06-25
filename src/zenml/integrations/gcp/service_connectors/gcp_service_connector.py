@@ -46,7 +46,7 @@ from google.auth.transport.requests import Request
 from google.cloud import container_v1, storage
 from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
-from pydantic import Field, SecretStr, root_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
@@ -74,6 +74,8 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -85,7 +87,7 @@ GCP_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
 class GCPUserAccountCredentials(AuthenticationConfig):
     """GCP user account credentials."""
 
-    user_account_json: SecretStr = Field(
+    user_account_json: PlainSerializedSecretStr = Field(
         title="GCP User Account Credentials JSON",
     )
 
@@ -97,30 +99,33 @@ class GCPUserAccountCredentials(AuthenticationConfig):
         "distribute the user account credentials JSON to clients instead.",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def validate_user_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the user account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("user_account_json"), dict):
-            values["user_account_json"] = json.dumps(
-                values["user_account_json"]
-            )
-        return values
+        if isinstance(data.get("user_account_json"), dict):
+            data["user_account_json"] = json.dumps(data["user_account_json"])
+        return data
 
-    @validator("user_account_json")
-    def validate_user_account_json(cls, v: SecretStr) -> SecretStr:
+    @field_validator("user_account_json")
+    @classmethod
+    def validate_user_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the user account credentials JSON.
 
         Args:
-            v: The user account credentials JSON.
+            value: The user account credentials JSON.
 
         Returns:
             The validated user account credentials JSON.
@@ -129,7 +134,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
             ValueError: If the user account credentials JSON is invalid.
         """
         try:
-            user_account_info = json.loads(v.get_secret_value())
+            user_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP user account credentials is not a valid JSON: {e}"
@@ -157,13 +162,13 @@ class GCPUserAccountCredentials(AuthenticationConfig):
                 "instead of 'authorized_user'."
             )
 
-        return v
+        return value
 
 
 class GCPServiceAccountCredentials(AuthenticationConfig):
     """GCP service account credentials."""
 
-    service_account_json: SecretStr = Field(
+    service_account_json: PlainSerializedSecretStr = Field(
         title="GCP Service Account Key JSON",
     )
 
@@ -175,30 +180,35 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
         "distribute the service account key JSON to clients instead.",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def validate_service_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the service account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("service_account_json"), dict):
-            values["service_account_json"] = json.dumps(
-                values["service_account_json"]
+        if isinstance(data.get("service_account_json"), dict):
+            data["service_account_json"] = json.dumps(
+                data["service_account_json"]
             )
-        return values
+        return data
 
-    @validator("service_account_json")
-    def validate_service_account_json(cls, v: SecretStr) -> SecretStr:
+    @field_validator("service_account_json")
+    @classmethod
+    def validate_service_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the service account credentials JSON.
 
         Args:
-            v: The service account credentials JSON.
+            value: The service account credentials JSON.
 
         Returns:
             The validated service account credentials JSON.
@@ -207,7 +217,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
             ValueError: If the service account credentials JSON is invalid.
         """
         try:
-            service_account_info = json.loads(v.get_secret_value())
+            service_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP service account credentials is not a valid JSON: {e}"
@@ -243,13 +253,13 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
                 "instead of 'service_account'."
             )
 
-        return v
+        return value
 
 
 class GCPExternalAccountCredentials(AuthenticationConfig):
     """GCP external account credentials."""
 
-    external_account_json: SecretStr = Field(
+    external_account_json: PlainSerializedSecretStr = Field(
         title="GCP External Account JSON",
     )
 
@@ -261,30 +271,35 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
         "distribute the external account JSON to clients instead.",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def validate_service_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the external account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("external_account_json"), dict):
-            values["external_account_json"] = json.dumps(
-                values["external_account_json"]
+        if isinstance(data.get("external_account_json"), dict):
+            data["external_account_json"] = json.dumps(
+                data["external_account_json"]
             )
-        return values
+        return data
 
-    @validator("external_account_json")
-    def validate_external_account_json(cls, v: SecretStr) -> SecretStr:
+    @field_validator("external_account_json")
+    @classmethod
+    def validate_external_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the external account credentials JSON.
 
         Args:
-            v: The external account credentials JSON.
+            value: The external account credentials JSON.
 
         Returns:
             The validated external account credentials JSON.
@@ -293,7 +308,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
             ValueError: If the external account credentials JSON is invalid.
         """
         try:
-            external_account_info = json.loads(v.get_secret_value())
+            external_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP external account credentials is not a valid JSON: {e}"
@@ -322,13 +337,13 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
                 "instead of 'external_account'."
             )
 
-        return v
+        return value
 
 
 class GCPOAuth2Token(AuthenticationConfig):
     """GCP OAuth 2.0 token credentials."""
 
-    token: SecretStr = Field(
+    token: PlainSerializedSecretStr = Field(
         title="GCP OAuth 2.0 Token",
     )
 

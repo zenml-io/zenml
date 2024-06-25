@@ -17,7 +17,7 @@ import hashlib
 import hmac
 import json
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
+from typing import Any, ClassVar, Dict, Optional, Type
 
 from zenml.enums import PluginSubType
 from zenml.event_sources.base_event import BaseEvent
@@ -32,9 +32,6 @@ from zenml.logger import get_logger
 from zenml.models import EventSourceResponse
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    pass
 
 
 # -------------------- Event Models -----------------------------------

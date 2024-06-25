@@ -36,6 +36,7 @@ class GCPArtifactStoreConfig(
     """Configuration for GCP Artifact Store."""
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {GCP_PATH_PREFIX}
+    IS_IMMUTABLE_FILESYSTEM: ClassVar[bool] = True
 
 
 class GCPArtifactStoreFlavor(BaseArtifactStoreFlavor):

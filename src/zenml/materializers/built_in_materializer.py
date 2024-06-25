@@ -339,11 +339,11 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # Cast the data to the correct type.
         if issubclass(data_type, dict) and not isinstance(outputs, dict):
             keys, values = outputs
-            return dict(zip(keys, values))
+            return data_type(zip(keys, values))
         if issubclass(data_type, tuple) and not isinstance(outputs, tuple):
-            return tuple(outputs)
+            return data_type(outputs)
         if issubclass(data_type, set) and not isinstance(outputs, set):
-            return set(outputs)
+            return data_type(outputs)
         return outputs
 
     def save(self, data: Any) -> None:

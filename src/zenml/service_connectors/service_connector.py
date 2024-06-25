@@ -34,7 +34,7 @@ from pydantic import (
     SecretStr,
     ValidationError,
 )
-from pydantic.main import ModelMetaclass
+from pydantic._internal._model_construction import ModelMetaclass
 
 from zenml.client import Client
 from zenml.constants import (
@@ -71,7 +71,7 @@ class AuthenticationConfig(BaseModel):
         """
         return {
             k: v
-            for k, v in self.dict(exclude_none=True).items()
+            for k, v in self.model_dump(exclude_none=True).items()
             if isinstance(v, SecretStr)
         }
 
@@ -84,7 +84,7 @@ class AuthenticationConfig(BaseModel):
         """
         return {
             k: v
-            for k, v in self.dict(exclude_none=True).items()
+            for k, v in self.model_dump(exclude_none=True).items()
             if not isinstance(v, SecretStr)
         }
 
@@ -95,7 +95,7 @@ class AuthenticationConfig(BaseModel):
         Returns:
             A dictionary of all values in the configuration.
         """
-        return self.dict(exclude_none=True)
+        return self.model_dump(exclude_none=True)
 
 
 class ServiceConnectorMeta(ModelMetaclass):
@@ -487,7 +487,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         ):
             return self
 
-        copy = self.copy()
+        copy = self.model_copy()
         copy.resource_type = resource_type
         copy.resource_id = resource_id
         return copy
@@ -1401,10 +1401,3 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         )
 
         return connector_client
-
-    class Config:
-        """Connector configuration."""
-
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True

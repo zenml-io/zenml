@@ -10,6 +10,17 @@ zenml:
 
   replicaCount: 1
 
+  # The number of ZenML server worker threads to use. This controls the number
+  # of concurrent requests that each ZenML server pod/replica can handle at a
+  # time. If not specified, the default value is 40.
+  #
+  # NOTE: this value should be coordinated with the `zenml.database.poolSize`
+  # and `zenml.database.maxOverflow` values to ensure that the ZenML server
+  # workers do not block on database connections (i.e. the sum of the pool size
+  # and max overflow should be greater than or equal to the thread pool size).
+  #
+  # threadPoolSize: 40
+
   image:
     repository: zenmldocker/zenml-server
     pullPolicy: Always
@@ -198,10 +209,20 @@ zenml:
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
 
+    # Connection pool settings (only relevant for MySQL databases).
+    #
+    # NOTE: these values should be coordinated with the `zenml.threadPoolSize`
+    # to ensure that the ZenML server workers do not block on database
+    # connections (i.e. the sum of the pool size and max overflow should be
+    # greater than or equal to the thread pool size).
+    #
+    # poolSize: 20
+    # maxOverflow: 20
+
     # ZenML supports backing up the database before DB migrations are performed
     # and restoring it in case of a DB migration failure. For more information,
     # see the following documentation:
-    # https://docs.zenml.io/deploying-zenml/zenml-self-hosted/deploy-with-helm#database-backup-and-recovery
+    # https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm#database-backup-and-recovery
     #
     # Several backup strategies are supported:
     #
@@ -301,7 +322,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/aws-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -374,7 +395,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/gcp-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -446,7 +467,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/azure-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -598,7 +619,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/aws-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -652,7 +673,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/gcp-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -717,7 +738,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/azure-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
