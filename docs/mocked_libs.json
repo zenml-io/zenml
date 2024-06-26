@@ -65,6 +65,8 @@
     "feast.infra",
     "feast.infra.registry",
     "feast.infra.registry.base_registry",
+    "fsspec",
+    "fsspec.asyn",
     "gcsfs",
     "github",
     "github.Repository",

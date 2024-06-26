@@ -14,6 +14,7 @@
 """The base interface to extend the ZenML artifact store."""
 
 import inspect
+import os
 import textwrap
 from abc import abstractmethod
 from pathlib import Path
@@ -34,6 +35,7 @@ from typing import (
 
 from pydantic import model_validator
 
+from zenml.constants import ENV_ZENML_SERVER
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.io import fileio
@@ -433,7 +435,11 @@ class BaseArtifactStore(StackComponent):
             **kwargs: The keyword arguments to pass to the Pydantic object.
         """
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
-        self._register()
+
+        # If running in a ZenML server environment, we don't register
+        # the filesystems. We always use the artifact stores directly.
+        if ENV_ZENML_SERVER not in os.environ:
+            self._register()
 
     def _register(self) -> None:
         """Create and register a filesystem within the filesystem registry."""
