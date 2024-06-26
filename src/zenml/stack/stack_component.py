@@ -827,6 +827,10 @@ class StackComponent:
             f"Suspending provisioned resources not implemented for {self}."
         )
 
+    def cleanup(self) -> None:
+        """Cleans up the component after it has been used."""
+        pass
+
     def __repr__(self) -> str:
         """String representation of the stack component.
 

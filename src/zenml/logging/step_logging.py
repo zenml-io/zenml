@@ -145,61 +145,64 @@ def fetch_logs(
         )
 
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
-    if not artifact_store.isdir(logs_uri):
-        return _read_file(logs_uri, offset, length)
-    else:
-        files = artifact_store.listdir(logs_uri)
-        if len(files) == 1:
-            return _read_file(
-                os.path.join(logs_uri, str(files[0])), offset, length
-            )
+    try:
+        if not artifact_store.isdir(logs_uri):
+            return _read_file(logs_uri, offset, length)
         else:
-            is_negative_offset = offset < 0
-            files.sort(reverse=is_negative_offset)
+            files = artifact_store.listdir(logs_uri)
+            if len(files) == 1:
+                return _read_file(
+                    os.path.join(logs_uri, str(files[0])), offset, length
+                )
+            else:
+                is_negative_offset = offset < 0
+                files.sort(reverse=is_negative_offset)
 
-            # search for the first file we need to read
-            latest_file_id = 0
-            for i, file in enumerate(files):
-                file_size: int = artifact_store.size(
-                    os.path.join(logs_uri, str(file))
-                )  # type: ignore[assignment]
+                # search for the first file we need to read
+                latest_file_id = 0
+                for i, file in enumerate(files):
+                    file_size: int = artifact_store.size(
+                        os.path.join(logs_uri, str(file))
+                    )  # type: ignore[assignment]
 
-                if is_negative_offset:
-                    if file_size >= -offset:
-                        latest_file_id = -(i + 1)
-                        break
+                    if is_negative_offset:
+                        if file_size >= -offset:
+                            latest_file_id = -(i + 1)
+                            break
+                        else:
+                            offset += file_size
                     else:
-                        offset += file_size
-                else:
-                    if file_size > offset:
-                        latest_file_id = i
-                        break
-                    else:
-                        offset -= file_size
+                        if file_size > offset:
+                            latest_file_id = i
+                            break
+                        else:
+                            offset -= file_size
 
-            # read the files according to pre-filtering
-            files.sort()
-            ret = []
-            for file in files[latest_file_id:]:
-                ret.append(
-                    _read_file(
-                        os.path.join(logs_uri, str(file)),
-                        offset,
-                        length,
+                # read the files according to pre-filtering
+                files.sort()
+                ret = []
+                for file in files[latest_file_id:]:
+                    ret.append(
+                        _read_file(
+                            os.path.join(logs_uri, str(file)),
+                            offset,
+                            length,
+                        )
                     )
-                )
-                offset = 0
-                length -= len(ret[-1])
-                if length <= 0:
-                    # stop further reading, if the whole length is already read
-                    break
+                    offset = 0
+                    length -= len(ret[-1])
+                    if length <= 0:
+                        # stop further reading, if the whole length is already read
+                        break
 
-            if not ret:
-                raise DoesNotExistException(
-                    f"Folder '{logs_uri}' is empty in artifact store "
-                    f"'{artifact_store.name}'."
-                )
-            return "".join(ret)
+                if not ret:
+                    raise DoesNotExistException(
+                        f"Folder '{logs_uri}' is empty in artifact store "
+                        f"'{artifact_store.name}'."
+                    )
+                return "".join(ret)
+    finally:
+        artifact_store.cleanup()
 
 
 class StepLogsStorage:

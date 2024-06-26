@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
 
+from zenml.zen_stores.schemas.action_schemas import ActionSchema
 from zenml.zen_stores.schemas.api_key_schemas import APIKeySchema
 from zenml.zen_stores.schemas.artifact_schemas import (
     ArtifactSchema,
@@ -71,6 +72,7 @@ from zenml.zen_stores.schemas.model_schemas import (
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 
 __all__ = [
+    "ActionSchema",
     "APIKeySchema",
     "ArtifactSchema",
     "ArtifactVersionSchema",

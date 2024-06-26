@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from contextlib import ExitStack as does_not_raise
+
 import pytest
 
 from tests.unit.conftest_new import empty_pipeline  # noqa: F401
@@ -120,17 +122,17 @@ def test_pipeline_and_steps_dont_get_modified_during_compilation(
     assert pipeline_instance.enable_cache is True
 
 
-def test_compiling_pipeline_with_invalid_run_configuration(
+def test_compiling_pipeline_with_extra_step_config_does_not_fail(
     empty_pipeline,  # noqa: F811
 ):
-    """Tests that compiling with a run configuration containing invalid steps
-    fails."""
+    """Tests that compiling with a run configuration containing extra steps
+    does not fail."""
     run_config = PipelineRunConfiguration(
         steps={
             "non_existent_step": StepConfigurationUpdate(enable_cache=False)
         }
     )
-    with pytest.raises(KeyError):
+    with does_not_raise():
         Compiler()._apply_run_configuration(
             pipeline=empty_pipeline, config=run_config
         )
