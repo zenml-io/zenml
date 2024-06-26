@@ -3,7 +3,7 @@ description: >-
   Trigger a pipeline from the rest API.
 ---
 
-# Trigger a pipeline from another
+# Trigger a pipeline from the REST API
 
 {% hint style="info" %}
 This is a [ZenML Pro](https://zenml.io/pro) only feature. Please [sign up here](https://cloud.zenml.io) get access.
