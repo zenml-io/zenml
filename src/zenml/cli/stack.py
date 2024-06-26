@@ -53,6 +53,8 @@ from zenml.exceptions import (
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import StackFilter
+from zenml.models.v2.core.component import ComponentResponse
+from zenml.models.v2.core.service_connector import ServiceConnectorResponse
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -93,7 +95,7 @@ def stack() -> None:
     "artifact_store",
     help="Name of the artifact store for this stack.",
     type=str,
-    required=True,
+    required=False,
 )
 @click.option(
     "-o",
@@ -101,7 +103,7 @@ def stack() -> None:
     "orchestrator",
     help="Name of the orchestrator for this stack.",
     type=str,
-    required=True,
+    required=False,
 )
 @click.option(
     "-c",
@@ -190,10 +192,24 @@ def stack() -> None:
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
+@click.option(
+    "-cp",
+    "--cloud",
+    help="Name of the cloud provider for this stack.",
+    type=click.Choice(["aws", "azure", "gcp"]),
+    required=False,
+)
+@click.option(
+    "-sc",
+    "--connector",
+    help="Name of the service connector for this stack.",
+    type=str,
+    required=False,
+)
 def register_stack(
     stack_name: str,
-    artifact_store: str,
-    orchestrator: str,
+    artifact_store: Optional[str] = None,
+    orchestrator: Optional[str] = None,
     container_registry: Optional[str] = None,
     model_registry: Optional[str] = None,
     step_operator: Optional[str] = None,
@@ -205,6 +221,8 @@ def register_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     set_stack: bool = False,
+    cloud: Optional[str] = None,
+    connector: Optional[str] = None,
 ) -> None:
     """Register a stack.
 
@@ -223,10 +241,139 @@ def register_stack(
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         set_stack: Immediately set this stack as active.
+        cloud: Name of the cloud provider for this stack.
+        connector: Name of the service connector for this stack.
     """
-    with console.status(f"Registering stack '{stack_name}'...\n"):
-        client = Client()
+    if (cloud is None and connector is None) and (
+        artifact_store is None or orchestrator is None
+    ):
+        cli_utils.error(
+            "Only stack using service connector can be registered "
+            "without specifying an artifact store and an orchestrator. "
+            "Please specify the artifact store and the orchestrator or "
+            "the service connector or cloud type settings."
+        )
 
+    client = Client()
+
+    # cloud flow
+    service_connector = None
+    if cloud is not None and connector is None:
+        # if more than 100 service connectors of given type exist this might be an issue
+        existing_connectors = client.list_service_connectors(
+            connector_type=cloud, size=100
+        )
+        selected_connector = 0
+        if existing_connectors.total:
+            selected_connector = int(
+                click.prompt(
+                    f"We found following {cloud.upper()} service connectors. "
+                    "Do you want to create a new one or use one of the existing ones?\n"
+                    "[0] - Create a new service connector\n"
+                    + "\n".join(
+                        [
+                            f"[{i+1}] - {sc.name}"
+                            for i, sc in enumerate(existing_connectors.items)
+                        ]
+                    )
+                    + "\n",
+                    type=click.Choice(
+                        [
+                            str(i)
+                            for i in range(
+                                0, len(existing_connectors.items) + 1
+                            )
+                        ]
+                    ),
+                    default="0",
+                    show_choices=False,
+                )
+            )
+
+        if selected_connector != 0:
+            service_connector = existing_connectors.items[
+                selected_connector - 1
+            ]
+        else:
+            service_connector = _create_service_connector(cloud_provider=cloud)
+    elif connector is not None:
+        service_connector = client.get_service_connector(connector)
+        if service_connector.type != cloud:
+            cli_utils.warning(
+                f"The service connector `{connector}` is not of type `{cloud}`."
+            )
+    if service_connector and _verify_service_connector(service_connector):
+        # create components
+        needed_components = {
+            ("artifact_store", artifact_store),
+            ("container_registry", container_registry),
+            ("orchestrator", orchestrator),  # for azure only k8s orchestrator
+        }
+        created_components: List[ComponentResponse] = []
+        for component_type, preset_name in needed_components:
+            if preset_name is not None:
+                component_response = client.get_stack_component(
+                    component_type, preset_name
+                )
+                if component_response.connector.id != service_connector.id:
+                    cli_utils.error(
+                        f"The {component_type.replace('_', ' ')} and service connector "
+                        "do not match. Please check your inputs and try again."
+                    )
+            else:
+                # find existing components under same connector
+                existing_components = client.list_stack_components(
+                    type=component_type, connector_id=service_connector.id
+                )
+                # if some existing components are found - prompt user what to do
+                selected_component = 0
+                if existing_components.total > 0:
+                    # explore rich for interactive components
+                    selected_component = int(
+                        click.prompt(
+                            f"We found following {component_type.replace('_', ' ')} "
+                            "connected using the current service connector. Do you "
+                            "want to create a new one or use existing one?\n"
+                            f"[0] - Create a new {component_type.replace('_', ' ')}\n"
+                            + "\n".join(
+                                [
+                                    f"[{i+1}] - {as_.name}"
+                                    for i, as_ in enumerate(
+                                        existing_components.items
+                                    )
+                                ]
+                            )
+                            + "\n",
+                            type=click.Choice(
+                                [
+                                    str(i)
+                                    for i in range(
+                                        0, len(existing_components.items) + 1
+                                    )
+                                ]
+                            ),
+                            default="0",
+                            show_choices=False,
+                        )
+                    )
+                if selected_component != 0:
+                    component_response = existing_components.items[
+                        selected_component - 1
+                    ]
+                else:
+                    component_response = _create_stack_component(
+                        component_type, service_connector
+                    )
+
+            if component_type == "orchestrator":
+                orchestrator = component_response.name
+            elif component_type == "artifact_store":
+                artifact_store = component_response.name
+            elif component_type == "container_registry":
+                container_registry = component_response.name
+
+    # normal flow once all components are defined
+    with console.status(f"Registering stack '{stack_name}'...\n"):
         components: Dict[StackComponentType, Union[str, UUID]] = dict()
 
         components[StackComponentType.ARTIFACT_STORE] = artifact_store
@@ -278,6 +425,8 @@ def register_stack(
         )
 
     print_model_url(get_stack_url(created_stack))
+
+    # TODO: print how to delete stack and how to run a pipeline on it
 
 
 @stack.command(
@@ -1727,3 +1876,98 @@ def connect_stack(
             interactive=interactive,
             no_verify=no_verify,
         )
+
+
+def _create_service_connector(cloud_provider: str) -> ServiceConnectorResponse:
+    """Create a service connector with given cloud provider.
+
+    Args:
+        cloud_provider: The cloud provider to use.
+
+    Returns:
+        The model of the created service connector.
+    """
+    # TODO: here we question user and fill the needed details:
+    # - which auth you going to use?
+    # - depends on auth type, ask for specific credentials
+    if cloud_provider == "aws":
+        return ServiceConnectorResponse()
+    elif cloud_provider == "azure":
+        return ServiceConnectorResponse()
+    elif cloud_provider == "gcp":
+        return ServiceConnectorResponse()
+    else:
+        raise ValueError(f"Unknown cloud provider {cloud_provider}")
+
+
+def _create_stack_component(
+    component_type: str, service_connector: ServiceConnectorResponse
+) -> ComponentResponse:
+    """Create a stack component with given type and service connector.
+
+    Args:
+        component_type: The type of component to create.
+        service_connector: The service connector to use.
+
+    Returns:
+        The model of the created component.
+    """
+    from zenml.cli.stack_components import (
+        connect_stack_component_with_service_connector,
+    )
+
+    client = Client()
+
+    # TODO: here we question user and fill the needed details
+    # - generic question will be the name
+    if component_type == "artifact_store":
+        # - here we list the available resources (buckets) to offer them to the user
+        # - user can select one of them
+        # - user can add suffix to the path, e.g. s3://bucket/suffix/path
+        component = ComponentResponse()
+    elif component_type == "container_registry":
+        # - here we list available registries and ask to pick one
+        component = ComponentResponse()
+    elif component_type == "orchestrator":
+        # - here we list available regions/locations and ask to pick one
+        # - ask for extra mandatory params, like Role ARN for AWS
+        component = ComponentResponse()
+    elif component_type == "image_builder":
+        # - only relevant for GCP and is fully optional
+        # - if on GCP - offer what we found, if none, go for local silently
+        component = ComponentResponse()
+    else:
+        raise ValueError(f"Unknown component type {component_type}")
+
+    connect_stack_component_with_service_connector(
+        component_type=component.type,
+        name_id_or_prefix=component.id,
+        connector=service_connector,
+        interactive=False,
+        no_verify=False,
+    )
+
+
+def _verify_service_connector(
+    service_connector: ServiceConnectorResponse,
+) -> bool:
+    """Verifies if a service connector has access to one or more resources.
+
+    Args:
+        service_connector: The service connector to verify.
+
+    Returns:
+        True if the service connector has proper permissions, False
+        otherwise.
+
+    Raises:
+        ValueError: If the service connector has unexpected type.
+    """
+    if service_connector.type == "aws":
+        return True
+    elif service_connector.type == "azure":
+        return True
+    elif service_connector.type == "gcp":
+        return True
+    else:
+        raise ValueError(f"Unknown cloud provider {service_connector.type}")
