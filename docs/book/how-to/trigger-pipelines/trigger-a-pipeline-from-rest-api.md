@@ -24,12 +24,17 @@ The above set of REST calls means that you can only trigger a pipeline that has 
 
 ## A worked example
 
+{% hint style="info" %}
+Learn how to get a bearer token for the curl commands [here](../../reference/api-reference.md#using-a-bearer-token-to-access-the-api-programatically).
+{% endhint %}
+
 Here is an example. Let's say would we like to re-run a pipeline called `training`. We first query the `/pipelines` endpoint:
 
 ```shell
 curl -X 'GET' \
   '<YOUR_ZENML_SERVER_URL>/api/v1/pipelines?hydrate=false&name=training&version=45' \
-  -H 'accept: application/json'
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <YOUR_TOKEN>'
 ```
 
 <figure><img src="../../.gitbook/assets/rest_api_step_1.png" alt=""><figcaption><p>Identifying the pipeline ID</p></figcaption></figure>
@@ -41,7 +46,8 @@ After this, we take the pipeline ID and call the `/pipeline_builds?pipeline_id=<
 ```shell
 curl -X 'GET' \
   '<YOUR_ZENML_SERVER_URL>/api/v1/pipeline_builds?hydrate=false&logical_operator=and&page=1&size=20&pipeline_id=b826b714-a9b3-461c-9a6e-1bde3df3241d' \
-  -H 'accept: application/json'
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <YOUR_TOKEN>'
 ```
 
 We can now take the <BUILD_ID> from this response. Here it is `b826b714-a9b3-461c-9a6e-1bde3df3241d`.
@@ -55,6 +61,7 @@ curl -X 'POST' \
   '<YOUR_ZENML_SERVER_URL>/api/v1/pipeline_builds/b826b714-a9b3-461c-9a6e-1bde3df3241d/runs' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <YOUR_TOKEN>' \
   -d '{
   "steps": {"model_trainer": {"parameters": {"model_type": "rf"}}}
 }'
