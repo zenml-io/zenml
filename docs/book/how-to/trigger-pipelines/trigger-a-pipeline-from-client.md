@@ -15,6 +15,7 @@ Triggering a pipeline from the Python client **only** works with pipelines that 
 
 ```python
 from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
 if __name__ == "__main__":
     run_config = PipelineRunConfiguration(steps={"trainer": {"parameters": {"data_artifact_id": data_artifact_id}}})
