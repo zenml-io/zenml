@@ -87,6 +87,7 @@
     "google.cloud.devtools",
     "google.cloud.functions_v2",
     "google.cloud.functions_v2.types",
+    "google.cloud.location",
     "google.cloud.scheduler_v1",
     "google.cloud.scheduler_v1.types",
     "google.cloud.secretmanager",
