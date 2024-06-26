@@ -355,8 +355,11 @@ class GCPBaseConfig(AuthenticationConfig):
     def gcp_project_id(self) -> str:
         """Get the GCP project ID.
 
-        Returns:
-            The GCP project ID.
+        This method must be implemented by subclasses to ensure that the GCP
+        project ID is always available.
+
+        Raises:
+            NotImplementedError: If the method is not implemented.
         """
         raise NotImplementedError
 
@@ -390,6 +393,9 @@ class GCPServiceAccountConfig(GCPBaseConfig, GCPServiceAccountCredentials):
     @property
     def gcp_project_id(self) -> str:
         """Get the GCP project ID.
+
+        When a service account JSON is provided, the project ID can be extracted
+        from it instead of being provided explicitly.
 
         Returns:
             The GCP project ID.
