@@ -1,0 +1,4045 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://sdkdocs.zenml.io/0.60.0/core_code_docs/core-plugins/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Plugins - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<script>
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  analytics.page();
+  }}();
+</script>
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plugins" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plugins
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Core code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Core code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-_hub/" class="md-nav__link">
+        Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-actions/" class="md-nav__link">
+        Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-alerter/" class="md-nav__link">
+        Alerter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-analytics/" class="md-nav__link">
+        Analytics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-annotators/" class="md-nav__link">
+        Annotators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-api/" class="md-nav__link">
+        Api
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client/" class="md-nav__link">
+        Client
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client_lazy_loader/" class="md-nav__link">
+        Client Lazy Loader
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-code_repositories/" class="md-nav__link">
+        Code Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-console/" class="md-nav__link">
+        Console
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-data_validators/" class="md-nav__link">
+        Data Validators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-entrypoints/" class="md-nav__link">
+        Entrypoints
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_hub/" class="md-nav__link">
+        Event Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_sources/" class="md-nav__link">
+        Event Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-experiment_trackers/" class="md-nav__link">
+        Experiment Trackers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-feature_stores/" class="md-nav__link">
+        Feature Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-hooks/" class="md-nav__link">
+        Hooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-image_builders/" class="md-nav__link">
+        Image Builders
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-lineage_graph/" class="md-nav__link">
+        Lineage Graph
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-metadata/" class="md-nav__link">
+        Metadata
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_deployers/" class="md-nav__link">
+        Model Deployers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_registries/" class="md-nav__link">
+        Model Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-new/" class="md-nav__link">
+        New
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Plugins
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Plugins
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.plugins" class="md-nav__link">
+    plugins
+  </a>
+  
+    <nav class="md-nav" aria-label="plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor" class="md-nav__link">
+    base_plugin_flavor
+  </a>
+  
+    <nav class="md-nav" aria-label="base_plugin_flavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePlugin" class="md-nav__link">
+    BasePlugin
+  </a>
+  
+    <nav class="md-nav" aria-label="BasePlugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePlugin.config_class" class="md-nav__link">
+    config_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePlugin.flavor_class" class="md-nav__link">
+    flavor_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePlugin.zen_store" class="md-nav__link">
+    zen_store
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePluginConfig" class="md-nav__link">
+    BasePluginConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePluginFlavor" class="md-nav__link">
+    BasePluginFlavor
+  </a>
+  
+    <nav class="md-nav" aria-label="BasePluginFlavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePluginFlavor.get_flavor_response_model" class="md-nav__link">
+    get_flavor_response_model()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry" class="md-nav__link">
+    plugin_flavor_registry
+  </a>
+  
+    <nav class="md-nav" aria-label="plugin_flavor_registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry" class="md-nav__link">
+    PluginFlavorRegistry
+  </a>
+  
+    <nav class="md-nav" aria-label="PluginFlavorRegistry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.get_flavor_class" class="md-nav__link">
+    get_flavor_class()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.get_plugin" class="md-nav__link">
+    get_plugin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.initialize_plugins" class="md-nav__link">
+    initialize_plugins()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_available_flavor_responses_for_type_and_subtype" class="md-nav__link">
+    list_available_flavor_responses_for_type_and_subtype()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_available_flavors_for_type_and_subtype" class="md-nav__link">
+    list_available_flavors_for_type_and_subtype()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_subtypes_within_type" class="md-nav__link">
+    list_subtypes_within_type()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.register_plugin_flavor" class="md-nav__link">
+    register_plugin_flavor()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.register_plugin_flavors" class="md-nav__link">
+    register_plugin_flavors()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.RegistryEntry" class="md-nav__link">
+    RegistryEntry
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-service_connectors/" class="md-nav__link">
+        Service Connectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-services/" class="md-nav__link">
+        Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-step_operators/" class="md-nav__link">
+        Step Operators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-types/" class="md-nav__link">
+        Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_server/" class="md-nav__link">
+        Zen Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_stores/" class="md-nav__link">
+        Zen Stores
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Integration code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Integration code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Integration code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-airflow/" class="md-nav__link">
+        Airflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-argilla/" class="md-nav__link">
+        Argilla
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-aws/" class="md-nav__link">
+        Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bentoml/" class="md-nav__link">
+        Bentoml
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bitbucket/" class="md-nav__link">
+        Bitbucket
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-comet/" class="md-nav__link">
+        Comet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-deepchecks/" class="md-nav__link">
+        Deepchecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-discord/" class="md-nav__link">
+        Discord
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-evidently/" class="md-nav__link">
+        Evidently
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-facets/" class="md-nav__link">
+        Facets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-feast/" class="md-nav__link">
+        Feast
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gcp/" class="md-nav__link">
+        Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-github/" class="md-nav__link">
+        Github
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gitlab/" class="md-nav__link">
+        Gitlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-great_expectations/" class="md-nav__link">
+        Great Expectations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-huggingface/" class="md-nav__link">
+        Huggingface
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-hyperai/" class="md-nav__link">
+        Hyperai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kaniko/" class="md-nav__link">
+        Kaniko
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubeflow/" class="md-nav__link">
+        Kubeflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubernetes/" class="md-nav__link">
+        Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-label_studio/" class="md-nav__link">
+        Label Studio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-langchain/" class="md-nav__link">
+        Langchain
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-lightgbm/" class="md-nav__link">
+        Lightgbm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-llama_index/" class="md-nav__link">
+        Llama Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-mlflow/" class="md-nav__link">
+        Mlflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neptune/" class="md-nav__link">
+        Neptune
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neural_prophet/" class="md-nav__link">
+        Neural Prophet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-openai/" class="md-nav__link">
+        Openai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pigeon/" class="md-nav__link">
+        Pigeon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pillow/" class="md-nav__link">
+        Pillow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-prodigy/" class="md-nav__link">
+        Prodigy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pycaret/" class="md-nav__link">
+        Pycaret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch/" class="md-nav__link">
+        Pytorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch_lightning/" class="md-nav__link">
+        Pytorch Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-registry/" class="md-nav__link">
+        Registry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-s3/" class="md-nav__link">
+        S3
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-scipy/" class="md-nav__link">
+        Scipy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-seldon/" class="md-nav__link">
+        Seldon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-sklearn/" class="md-nav__link">
+        Sklearn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot/" class="md-nav__link">
+        Skypilot
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_aws/" class="md-nav__link">
+        Skypilot Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_azure/" class="md-nav__link">
+        Skypilot Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_gcp/" class="md-nav__link">
+        Skypilot Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_lambda/" class="md-nav__link">
+        Skypilot Lambda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-slack/" class="md-nav__link">
+        Slack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-spark/" class="md-nav__link">
+        Spark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tekton/" class="md-nav__link">
+        Tekton
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorboard/" class="md-nav__link">
+        Tensorboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorflow/" class="md-nav__link">
+        Tensorflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-wandb/" class="md-nav__link">
+        Wandb
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-whylogs/" class="md-nav__link">
+        Whylogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-xgboost/" class="md-nav__link">
+        Xgboost
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.plugins" class="md-nav__link">
+    plugins
+  </a>
+  
+    <nav class="md-nav" aria-label="plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor" class="md-nav__link">
+    base_plugin_flavor
+  </a>
+  
+    <nav class="md-nav" aria-label="base_plugin_flavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePlugin" class="md-nav__link">
+    BasePlugin
+  </a>
+  
+    <nav class="md-nav" aria-label="BasePlugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePlugin.config_class" class="md-nav__link">
+    config_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePlugin.flavor_class" class="md-nav__link">
+    flavor_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePlugin.zen_store" class="md-nav__link">
+    zen_store
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePluginConfig" class="md-nav__link">
+    BasePluginConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePluginFlavor" class="md-nav__link">
+    BasePluginFlavor
+  </a>
+  
+    <nav class="md-nav" aria-label="BasePluginFlavor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.base_plugin_flavor.BasePluginFlavor.get_flavor_response_model" class="md-nav__link">
+    get_flavor_response_model()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry" class="md-nav__link">
+    plugin_flavor_registry
+  </a>
+  
+    <nav class="md-nav" aria-label="plugin_flavor_registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry" class="md-nav__link">
+    PluginFlavorRegistry
+  </a>
+  
+    <nav class="md-nav" aria-label="PluginFlavorRegistry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.get_flavor_class" class="md-nav__link">
+    get_flavor_class()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.get_plugin" class="md-nav__link">
+    get_plugin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.initialize_plugins" class="md-nav__link">
+    initialize_plugins()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_available_flavor_responses_for_type_and_subtype" class="md-nav__link">
+    list_available_flavor_responses_for_type_and_subtype()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_available_flavors_for_type_and_subtype" class="md-nav__link">
+    list_available_flavors_for_type_and_subtype()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_subtypes_within_type" class="md-nav__link">
+    list_subtypes_within_type()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.register_plugin_flavor" class="md-nav__link">
+    register_plugin_flavor()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.register_plugin_flavors" class="md-nav__link">
+    register_plugin_flavors()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.plugins.plugin_flavor_registry.RegistryEntry" class="md-nav__link">
+    RegistryEntry
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/zenml-io/zenml/docs/core_code_docs/core-plugins.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="plugins">Plugins</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.plugins" class="doc doc-heading">
+        <code>zenml.plugins</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.plugins.base_plugin_flavor" class="doc doc-heading">
+        <code>base_plugin_flavor</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Base implementation for all Plugin Flavors.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.plugins.base_plugin_flavor.BasePlugin" class="doc doc-heading">
+        <code>
+BasePlugin            (<span title="abc.ABC">ABC</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base Class for all Plugins.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/base_plugin_flavor.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasePlugin</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base Class for all Plugins.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">zen_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseZenStore&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active zen store.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The active zen store.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginConfig</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BasePluginConfig` config.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Type[BasePluginFlavor]&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The flavor class of the plugin.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.plugins.base_plugin_flavor.BasePlugin.config_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">config_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">zenml</span><span class="o">.</span><span class="n">plugins</span><span class="o">.</span><span class="n">base_plugin_flavor</span><span class="o">.</span><span class="n">BasePluginConfig</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the <code>BasePluginConfig</code> config.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[zenml.plugins.base_plugin_flavor.BasePluginConfig]</code></td>
+      <td><p>The configuration.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.plugins.base_plugin_flavor.BasePlugin.flavor_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">flavor_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the flavor class of the plugin.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[BasePluginFlavor]</code></td>
+      <td><p>The flavor class of the plugin.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.plugins.base_plugin_flavor.BasePlugin.zen_store" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">zen_store</span><span class="p">:</span> <span class="n">BaseZenStore</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the active zen store.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>BaseZenStore</code></td>
+      <td><p>The active zen store.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.plugins.base_plugin_flavor.BasePluginConfig" class="doc doc-heading">
+        <code>
+BasePluginConfig            (<span title="pydantic.main.BaseModel">BaseModel</span>, <span title="abc.ABC">ABC</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Allows configuring of Event Source and Filter configuration.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/base_plugin_flavor.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasePluginConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Allows configuring of Event Source and Filter configuration.&quot;&quot;&quot;</span>
+
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
+        <span class="c1"># public attributes are mutable</span>
+        <span class="n">frozen</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="c1"># ignore extra attributes during model initialization</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.plugins.base_plugin_flavor.BasePluginFlavor" class="doc doc-heading">
+        <code>
+BasePluginFlavor            (<span title="abc.ABC">ABC</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base Class for all PluginFlavors.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/base_plugin_flavor.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasePluginFlavor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base Class for all PluginFlavors.&quot;&quot;&quot;</span>
+
+    <span class="n">TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">PluginType</span><span class="p">]</span>
+    <span class="n">SUBTYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">]</span>
+    <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">PLUGIN_CLASS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePlugin</span><span class="p">]]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_flavor_response_model</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePluginFlavorResponse</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the Flavor into a Response Model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hydrate: Whether the model should be hydrated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.base_plugin_flavor.BasePluginFlavor.get_flavor_response_model" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_flavor_response_model</span><span class="p">(</span><span class="n">hydrate</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-classmethod"><code>classmethod</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Convert the Flavor into a Response Model.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>hydrate</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the model should be hydrated.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/base_plugin_flavor.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">get_flavor_response_model</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePluginFlavorResponse</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the Flavor into a Response Model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hydrate: Whether the model should be hydrated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.plugins.plugin_flavor_registry" class="doc doc-heading">
+        <code>plugin_flavor_registry</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Registry for all plugins.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry" class="doc doc-heading">
+        <code>
+PluginFlavorRegistry        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Registry for plugin flavors.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PluginFlavorRegistry</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registry for plugin flavors.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the event flavor registry.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
+            <span class="n">PluginType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">RegistryEntry</span><span class="p">]]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavors</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PluginType</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all available types.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of all available plugin types.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">list_subtypes_within_type</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all available subtypes for a given type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _type: The type of plugin</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of available plugin subtypes for this plugin type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">[</span><span class="n">_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_flavor_entries</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span> <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">RegistryEntry</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a list of all subtypes for a specific flavor and type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _type: The type of Plugin</span>
+<span class="sd">            subtype: The subtype of the plugin</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict of Registry entries sorted by flavor name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span>
+            <span class="ow">and</span> <span class="n">subtype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">[</span><span class="n">_type</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">[</span><span class="n">_type</span><span class="p">][</span><span class="n">subtype</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">list_available_flavors_for_type_and_subtype</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+        <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a list of all subtypes for a specific flavor and type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _type: The type of Plugin</span>
+<span class="sd">            subtype: The subtype of the plugin</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of flavors for the given type/subtype combination.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">flavors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">flavor_class</span>
+                <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flavor_entries</span><span class="p">(</span>
+                    <span class="n">_type</span><span class="o">=</span><span class="n">_type</span><span class="p">,</span> <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">flavors</span>
+
+    <span class="k">def</span> <span class="nf">list_available_flavor_responses_for_type_and_subtype</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+        <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+        <span class="n">page</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="s2">&quot;BasePluginFlavorResponse[Any, Any, Any]&quot;</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a list of all subtypes for a specific flavor and type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _type: The type of Plugin</span>
+<span class="sd">            subtype: The subtype of the plugin</span>
+<span class="sd">            page: Page for pagination (offset +1)</span>
+<span class="sd">            size: Page size for pagination</span>
+<span class="sd">            hydrate: Whether to hydrate the response bodies</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A page of flavors.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the page is out of range.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">flavors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_available_flavors_for_type_and_subtype</span><span class="p">(</span>
+            <span class="n">_type</span><span class="o">=</span><span class="n">_type</span><span class="p">,</span>
+            <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">flavors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">total_pages</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">total_pages</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">total</span> <span class="o">/</span> <span class="n">size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">page</span> <span class="o">&gt;</span> <span class="n">total_pages</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid page </span><span class="si">{</span><span class="n">page</span><span class="si">}</span><span class="s2">. The requested page size is &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size</span><span class="si">}</span><span class="s2"> and there are a total of </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> items &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;for this query. The maximum page value therefore is &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_pages</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="p">(</span><span class="n">page</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">size</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">size</span>
+
+        <span class="n">page_items</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">flavor</span><span class="o">.</span><span class="n">get_flavor_response_model</span><span class="p">(</span><span class="n">hydrate</span><span class="o">=</span><span class="n">hydrate</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="n">flavors</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">Page</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">page</span><span class="p">,</span>
+            <span class="n">max_size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span>
+            <span class="n">total_pages</span><span class="o">=</span><span class="n">total_pages</span><span class="p">,</span>
+            <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span>
+            <span class="n">items</span><span class="o">=</span><span class="n">page_items</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_builtin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BasePluginFlavor&quot;</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A list of all default in-built flavors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of builtin flavors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">zenml.actions.pipeline_run.pipeline_run_action</span> <span class="kn">import</span> <span class="p">(</span>
+            <span class="n">PipelineRunActionFlavor</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">flavors</span> <span class="o">=</span> <span class="p">[</span><span class="n">PipelineRunActionFlavor</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">flavors</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_integration_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BasePluginFlavor&quot;</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A list of all integration event flavors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of integration flavors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Only load active integrations</span>
+        <span class="n">integrated_flavors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">integration</span> <span class="ow">in</span> <span class="n">integration_registry</span><span class="o">.</span><span class="n">integrations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="n">integration</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">():</span>
+                <span class="n">integrated_flavors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flavor</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">integrated_flavors</span>
+
+    <span class="k">def</span> <span class="nf">_get_registry_entry</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+        <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+        <span class="n">flavor_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegistryEntry</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get registry entry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _type: Type of the entry.</span>
+<span class="sd">            subtype: Subtype of the entry.</span>
+<span class="sd">            flavor_name: Flavor of the entry.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The registry entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">[</span><span class="n">_type</span><span class="p">][</span><span class="n">subtype</span><span class="p">][</span><span class="n">flavor_name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">register_plugin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers all flavors.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_builtin_flavors</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavor</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_integration_flavors</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavor</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">register_plugin_flavor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">flavor_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a new event_source.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            flavor_class: The flavor to register</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_registry_entry</span><span class="p">(</span>
+                <span class="n">_type</span><span class="o">=</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">TYPE</span><span class="p">,</span>
+                <span class="n">subtype</span><span class="o">=</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">SUBTYPE</span><span class="p">,</span>
+                <span class="n">flavor_name</span><span class="o">=</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">FLAVOR</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">TYPE</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">SUBTYPE</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+                    <span class="n">flavor_class</span><span class="o">.</span><span class="n">FLAVOR</span><span class="p">,</span>
+                    <span class="n">RegistryEntry</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor_class</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Registered built in plugin </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">FLAVOR</span><span class="si">}</span><span class="s2"> for &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;plugin type </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">TYPE</span><span class="si">}</span><span class="s2"> and &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;subtype </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">SUBTYPE</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">flavor_class</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Found existing flavor </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">FLAVOR</span><span class="si">}</span><span class="s2"> already &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;registered for this type </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">TYPE</span><span class="si">}</span><span class="s2"> and subtype &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">SUBTYPE</span><span class="si">}</span><span class="s2">. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Skipping registration for </span><span class="si">{</span><span class="n">flavor_class</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_flavor_class</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+        <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single event_source based on the key.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _type: The type of plugin.</span>
+<span class="sd">            subtype: The subtype of plugin.</span>
+<span class="sd">            name: Indicates the name of the plugin flavor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `BaseEventConfiguration` subclass that was registered for this key.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If there is no entry at this type, subtype, flavor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_registry_entry</span><span class="p">(</span>
+                <span class="n">_type</span><span class="o">=</span><span class="n">_type</span><span class="p">,</span>
+                <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">,</span>
+                <span class="n">flavor_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">flavor_class</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;No flavor class found for flavor name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> at type &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_type</span><span class="si">}</span><span class="s2"> and subtype </span><span class="si">{</span><span class="n">subtype</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_plugin</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+        <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BasePlugin&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the plugin based on the flavor, type and subtype.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the plugin flavor.</span>
+<span class="sd">            _type: The type of plugin.</span>
+<span class="sd">            subtype: The subtype of plugin.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Plugin instance associated with the flavor, type and subtype.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If no plugin is found for the given flavor, type and</span>
+<span class="sd">                subtype.</span>
+<span class="sd">            RuntimeError: If the plugin was not initialized.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plugin_entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_registry_entry</span><span class="p">(</span>
+                <span class="n">_type</span><span class="o">=</span><span class="n">_type</span><span class="p">,</span>
+                <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">,</span>
+                <span class="n">flavor_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">plugin_entry</span><span class="o">.</span><span class="n">plugin_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Plugin </span><span class="si">{</span><span class="n">plugin_entry</span><span class="o">.</span><span class="n">flavor_class</span><span class="si">}</span><span class="s2"> was not initialized.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">plugin_entry</span><span class="o">.</span><span class="n">plugin_instance</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;No flavor found for flavor name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> and type &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_type</span><span class="si">}</span><span class="s2"> and subtype </span><span class="si">{</span><span class="n">subtype</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">initialize_plugins</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes all registered plugins.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">subtypes_dict</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">flavor_dict</span> <span class="ow">in</span> <span class="n">subtypes_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">registry_entry</span> <span class="ow">in</span> <span class="n">flavor_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="c1"># TODO: Only initialize if the integration is active</span>
+                    <span class="n">registry_entry</span><span class="o">.</span><span class="n">plugin_instance</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">registry_entry</span><span class="o">.</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">PLUGIN_CLASS</span><span class="p">()</span>
+                    <span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Initialize the event flavor registry.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the event flavor registry.&quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
+        <span class="n">PluginType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">RegistryEntry</span><span class="p">]]</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavors</span><span class="p">()</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.get_flavor_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">,</span> <span class="n">subtype</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Get a single event_source based on the key.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>_type</code></td>
+        <td><code>PluginType</code></td>
+        <td><p>The type of plugin.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>subtype</code></td>
+        <td><code>PluginSubType</code></td>
+        <td><p>The subtype of plugin.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>Indicates the name of the plugin flavor.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Type[zenml.plugins.base_plugin_flavor.BasePluginFlavor]</code></td>
+      <td><p><code>BaseEventConfiguration</code> subclass that was registered for this key.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If there is no entry at this type, subtype, flavor</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_flavor_class</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+    <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a single event_source based on the key.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        _type: The type of plugin.</span>
+<span class="sd">        subtype: The subtype of plugin.</span>
+<span class="sd">        name: Indicates the name of the plugin flavor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        `BaseEventConfiguration` subclass that was registered for this key.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If there is no entry at this type, subtype, flavor</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_registry_entry</span><span class="p">(</span>
+            <span class="n">_type</span><span class="o">=</span><span class="n">_type</span><span class="p">,</span>
+            <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">,</span>
+            <span class="n">flavor_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">flavor_class</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;No flavor class found for flavor name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> at type &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_type</span><span class="si">}</span><span class="s2"> and subtype </span><span class="si">{</span><span class="n">subtype</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.get_plugin" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">,</span> <span class="n">subtype</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Get the plugin based on the flavor, type and subtype.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the plugin flavor.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>_type</code></td>
+        <td><code>PluginType</code></td>
+        <td><p>The type of plugin.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>subtype</code></td>
+        <td><code>PluginSubType</code></td>
+        <td><p>The subtype of plugin.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>BasePlugin</code></td>
+      <td><p>Plugin instance associated with the flavor, type and subtype.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If no plugin is found for the given flavor, type and
+subtype.</p></td>
+      </tr>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If the plugin was not initialized.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_plugin</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+    <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BasePlugin&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the plugin based on the flavor, type and subtype.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the plugin flavor.</span>
+<span class="sd">        _type: The type of plugin.</span>
+<span class="sd">        subtype: The subtype of plugin.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Plugin instance associated with the flavor, type and subtype.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If no plugin is found for the given flavor, type and</span>
+<span class="sd">            subtype.</span>
+<span class="sd">        RuntimeError: If the plugin was not initialized.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">plugin_entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_registry_entry</span><span class="p">(</span>
+            <span class="n">_type</span><span class="o">=</span><span class="n">_type</span><span class="p">,</span>
+            <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">,</span>
+            <span class="n">flavor_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">plugin_entry</span><span class="o">.</span><span class="n">plugin_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Plugin </span><span class="si">{</span><span class="n">plugin_entry</span><span class="o">.</span><span class="n">flavor_class</span><span class="si">}</span><span class="s2"> was not initialized.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">plugin_entry</span><span class="o">.</span><span class="n">plugin_instance</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;No flavor found for flavor name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> and type &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_type</span><span class="si">}</span><span class="s2"> and subtype </span><span class="si">{</span><span class="n">subtype</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.initialize_plugins" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">initialize_plugins</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Initializes all registered plugins.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">initialize_plugins</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes all registered plugins.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">subtypes_dict</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">flavor_dict</span> <span class="ow">in</span> <span class="n">subtypes_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">registry_entry</span> <span class="ow">in</span> <span class="n">flavor_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c1"># TODO: Only initialize if the integration is active</span>
+                <span class="n">registry_entry</span><span class="o">.</span><span class="n">plugin_instance</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">registry_entry</span><span class="o">.</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">PLUGIN_CLASS</span><span class="p">()</span>
+                <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_available_flavor_responses_for_type_and_subtype" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">list_available_flavor_responses_for_type_and_subtype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">,</span> <span class="n">subtype</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">hydrate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Get a list of all subtypes for a specific flavor and type.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>_type</code></td>
+        <td><code>PluginType</code></td>
+        <td><p>The type of Plugin</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>subtype</code></td>
+        <td><code>PluginSubType</code></td>
+        <td><p>The subtype of the plugin</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>page</code></td>
+        <td><code>int</code></td>
+        <td><p>Page for pagination (offset +1)</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>size</code></td>
+        <td><code>int</code></td>
+        <td><p>Page size for pagination</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>hydrate</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to hydrate the response bodies</p></td>
+        <td><code>False</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Page[BasePluginFlavorResponse[Any, Any, Any]]</code></td>
+      <td><p>A page of flavors.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>ValueError</code></td>
+        <td><p>If the page is out of range.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_available_flavor_responses_for_type_and_subtype</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+    <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+    <span class="n">page</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="s2">&quot;BasePluginFlavorResponse[Any, Any, Any]&quot;</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a list of all subtypes for a specific flavor and type.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        _type: The type of Plugin</span>
+<span class="sd">        subtype: The subtype of the plugin</span>
+<span class="sd">        page: Page for pagination (offset +1)</span>
+<span class="sd">        size: Page size for pagination</span>
+<span class="sd">        hydrate: Whether to hydrate the response bodies</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A page of flavors.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the page is out of range.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">flavors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_available_flavors_for_type_and_subtype</span><span class="p">(</span>
+        <span class="n">_type</span><span class="o">=</span><span class="n">_type</span><span class="p">,</span>
+        <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">flavors</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">total</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">total_pages</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">total_pages</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">total</span> <span class="o">/</span> <span class="n">size</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">page</span> <span class="o">&gt;</span> <span class="n">total_pages</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Invalid page </span><span class="si">{</span><span class="n">page</span><span class="si">}</span><span class="s2">. The requested page size is &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size</span><span class="si">}</span><span class="s2"> and there are a total of </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> items &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;for this query. The maximum page value therefore is &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_pages</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="p">(</span><span class="n">page</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">size</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">size</span>
+
+    <span class="n">page_items</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">flavor</span><span class="o">.</span><span class="n">get_flavor_response_model</span><span class="p">(</span><span class="n">hydrate</span><span class="o">=</span><span class="n">hydrate</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="n">flavors</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+    <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">Page</span><span class="p">(</span>
+        <span class="n">index</span><span class="o">=</span><span class="n">page</span><span class="p">,</span>
+        <span class="n">max_size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span>
+        <span class="n">total_pages</span><span class="o">=</span><span class="n">total_pages</span><span class="p">,</span>
+        <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span>
+        <span class="n">items</span><span class="o">=</span><span class="n">page_items</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_available_flavors_for_type_and_subtype" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">list_available_flavors_for_type_and_subtype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">,</span> <span class="n">subtype</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Get a list of all subtypes for a specific flavor and type.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>_type</code></td>
+        <td><code>PluginType</code></td>
+        <td><p>The type of Plugin</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>subtype</code></td>
+        <td><code>PluginSubType</code></td>
+        <td><p>The subtype of the plugin</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List[Type[zenml.plugins.base_plugin_flavor.BasePluginFlavor]]</code></td>
+      <td><p>List of flavors for the given type/subtype combination.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_available_flavors_for_type_and_subtype</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
+    <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a list of all subtypes for a specific flavor and type.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        _type: The type of Plugin</span>
+<span class="sd">        subtype: The subtype of the plugin</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of flavors for the given type/subtype combination.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">flavors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">entry</span><span class="o">.</span><span class="n">flavor_class</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flavor_entries</span><span class="p">(</span>
+                <span class="n">_type</span><span class="o">=</span><span class="n">_type</span><span class="p">,</span> <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">flavors</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.list_subtypes_within_type" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">list_subtypes_within_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns all available subtypes for a given type.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>_type</code></td>
+        <td><code>PluginType</code></td>
+        <td><p>The type of plugin</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List[zenml.enums.PluginSubType]</code></td>
+      <td><p>A list of available plugin subtypes for this plugin type.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_subtypes_within_type</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns all available subtypes for a given type.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        _type: The type of plugin</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of available plugin subtypes for this plugin type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">[</span><span class="n">_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.register_plugin_flavor" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">register_plugin_flavor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flavor_class</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Registers a new event_source.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>flavor_class</code></td>
+        <td><code>Type[zenml.plugins.base_plugin_flavor.BasePluginFlavor]</code></td>
+        <td><p>The flavor to register</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_plugin_flavor</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">flavor_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a new event_source.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        flavor_class: The flavor to register</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_registry_entry</span><span class="p">(</span>
+            <span class="n">_type</span><span class="o">=</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">TYPE</span><span class="p">,</span>
+            <span class="n">subtype</span><span class="o">=</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">SUBTYPE</span><span class="p">,</span>
+            <span class="n">flavor_name</span><span class="o">=</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">FLAVOR</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">TYPE</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">SUBTYPE</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+                <span class="n">flavor_class</span><span class="o">.</span><span class="n">FLAVOR</span><span class="p">,</span>
+                <span class="n">RegistryEntry</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor_class</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Registered built in plugin </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">FLAVOR</span><span class="si">}</span><span class="s2"> for &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;plugin type </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">TYPE</span><span class="si">}</span><span class="s2"> and &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;subtype </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">SUBTYPE</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">flavor_class</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Found existing flavor </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">FLAVOR</span><span class="si">}</span><span class="s2"> already &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;registered for this type </span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">TYPE</span><span class="si">}</span><span class="s2"> and subtype &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flavor_class</span><span class="o">.</span><span class="n">SUBTYPE</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Skipping registration for </span><span class="si">{</span><span class="n">flavor_class</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.plugins.plugin_flavor_registry.PluginFlavorRegistry.register_plugin_flavors" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">register_plugin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Registers all flavors.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_plugin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers all flavors.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_builtin_flavors</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavor</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_integration_flavors</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavor</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.plugins.plugin_flavor_registry.RegistryEntry" class="doc doc-heading">
+        <code>
+RegistryEntry            (<span title="pydantic.main.BaseModel">BaseModel</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Registry Entry Class for the Plugin Registry.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RegistryEntry</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registry Entry Class for the Plugin Registry.&quot;&quot;&quot;</span>
+
+    <span class="n">flavor_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]</span>
+    <span class="n">plugin_instance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BasePlugin</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">arbitrary_types_allowed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../core-pipelines/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Pipelines" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Pipelines
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../core-post_execution/" class="md-footer__link md-footer__link--next" aria-label="Next: Post Execution" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Post Execution
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH – <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+    
+  
+
+
+
+
+<h4>This website uses cookies</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        <label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout(function(){document.querySelector("[data-md-component=consent]").hidden=!1},250);var action,form=document.forms.consent;for(action of["submit","reset"])form.addEventListener(action,function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map(function(e){return[e,!0]}))),location.hash="",location.reload()})</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>
