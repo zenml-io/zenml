@@ -1,6 +1,6 @@
 ---
 description: >-
-  Trigger a pipeline from the rest API.
+  Trigger a pipeline from the Python Client.
 ---
 
 # Trigger a pipeline from another
