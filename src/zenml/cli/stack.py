@@ -55,6 +55,9 @@ from zenml.logger import get_logger
 from zenml.models import StackFilter
 from zenml.models.v2.core.component import ComponentResponse
 from zenml.models.v2.core.service_connector import ServiceConnectorResponse
+from zenml.models.v2.misc.service_connector_type import (
+    ServiceConnectorResourcesModel,
+)
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -383,6 +386,7 @@ def register_stack(
     )
 
     if service_connector:
+        service_connector_resource_model = None
         # create components
         needed_components = (
             ("artifact_store", artifact_store),
@@ -421,8 +425,16 @@ def register_stack(
                         selected_component - 1
                     ]
                 else:
+                    if service_connector_resource_model is None:
+                        service_connector_resource_model = (
+                            client.verify_service_connector(
+                                service_connector.id
+                            )
+                        )
                     component_response = _create_stack_component(
-                        component_type, service_connector
+                        component_type,
+                        service_connector,
+                        service_connector_resource_model,
                     )
 
             if component_type == "orchestrator":
@@ -1954,21 +1966,89 @@ def _create_service_connector(cloud_provider: str) -> ServiceConnectorResponse:
     Returns:
         The model of the created service connector.
     """
-    # TODO: here we question user and fill the needed details:
-    # - which auth you going to use?
-    # - depends on auth type, ask for specific credentials
-    if cloud_provider == "aws":
-        return ServiceConnectorResponse()
-    elif cloud_provider == "azure":
-        return ServiceConnectorResponse()
-    elif cloud_provider == "gcp":
-        return ServiceConnectorResponse()
-    else:
+    from rich import print
+    from rich.console import Console
+    from rich.markdown import Markdown
+    from rich.prompt import Confirm, Prompt
+    from rich.table import Table
+
+    if cloud_provider not in {"aws", "azure", "gcp"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
+
+    client = Client()
+    auth_methods = client.get_service_connector_type(
+        cloud_provider
+    ).auth_method_dict
+    auth_methods_table = Table(
+        title=f"Available authentication methods for {cloud_provider}",
+        expand=True,
+        show_lines=True,
+    )
+    auth_methods_table.add_column("Choice", justify="left", width=1)
+    auth_methods_table.add_column("Name", justify="left", width=10)
+    auth_methods_table.add_column("Required", justify="left", width=10)
+
+    fixed_auth_methods = list(enumerate(auth_methods.items()))
+    for i, (_, value) in fixed_auth_methods:
+        schema = value.config_schema
+        required = ""
+        for each_req in schema["required"]:
+            field = schema["properties"][each_req]
+            required += f"[bold]{each_req}[/bold]  [italic]({field.get('title','no description')})[/italic]\n"
+        auth_methods_table.add_row(str(i), value.name, required)
+    auth_selected = False
+    selected_auth_model = None
+    while not auth_selected:
+        Console().clear()
+        print(auth_methods_table)
+        selected_auth_idx = int(
+            Prompt.ask(
+                "Please choose one of the authentication option above to see detailed description:",
+                choices=[str(i) for i in range(len(auth_methods))],
+            )
+        )
+        selected_auth_model = fixed_auth_methods[selected_auth_idx][1][1]
+        print(
+            Markdown(
+                f"## {selected_auth_model.name}\n"
+                + selected_auth_model.description
+            )
+        )
+
+        auth_selected = Confirm.ask(
+            "Do you want to continue or go back to authentication methods selection?",
+            default=True,
+        )
+    if not selected_auth_model:
+        raise ValueError("No authentication method selected")
+    required_fields = selected_auth_model.config_schema["required"]
+    data_entered = False
+    while not data_entered:
+        answers = {}
+        for req_field in required_fields:
+            answers[req_field] = Prompt.ask(
+                f"Please enter value for `{req_field}`:"
+            )
+        data_entered = Confirm.ask(
+            "Please confirm the values you entered:\n" + str(answers),
+            default=True,
+        )
+
+    connector_name = Prompt.ask(
+        "Please enter a name for the service connector:"
+    )
+    return client.create_service_connector(
+        name=connector_name,
+        connector_type=cloud_provider,
+        auth_method=fixed_auth_methods[selected_auth_idx][1][0],
+        configuration=answers,
+    )[0]
 
 
 def _create_stack_component(
-    component_type: str, service_connector: ServiceConnectorResponse
+    component_type: str,
+    service_connector: ServiceConnectorResponse,
+    service_connector_resource_model: ServiceConnectorResourcesModel,
 ) -> ComponentResponse:
     """Create a stack component with given type and service connector.
 
@@ -1979,6 +2059,10 @@ def _create_stack_component(
     Returns:
         The model of the created component.
     """
+    from rich import print
+    from rich.prompt import Confirm, Prompt
+    from rich.table import Table
+
     from zenml.cli.stack_components import (
         connect_stack_component_with_service_connector,
     )
@@ -1988,17 +2072,132 @@ def _create_stack_component(
     # TODO: here we question user and fill the needed details
     # - generic question will be the name
     if component_type == "artifact_store":
-        # - here we list the available resources (buckets) to offer them to the user
-        # - user can select one of them
-        # - user can add suffix to the path, e.g. s3://bucket/suffix/path
-        component = ComponentResponse()
+        config_confirmed = False
+        while not config_confirmed:
+            if service_connector.type == "aws":
+                for each in service_connector_resource_model.resources:
+                    if each.resource_type == "s3-bucket":
+                        available_buckets = each.resource_ids
+                available_buckets_table = Table(
+                    title="Available S3 buckets:", expand=True
+                )
+                available_buckets_table.add_column(
+                    "Choice", justify="left", width=1
+                )
+                available_buckets_table.add_column(
+                    "Bucket", justify="left", width=10
+                )
+                for i, bucket in enumerate(available_buckets):
+                    available_buckets_table.add_row(str(i), bucket)
+                print(available_buckets_table)
+                selected_bucket = available_buckets[
+                    int(
+                        Prompt.ask(
+                            "Please choose one of the buckets for new artifact store:",
+                            choices=[
+                                str(i) for i in range(len(available_buckets))
+                            ],
+                        )
+                    )
+                ]
+                extra_path = Prompt.ask(
+                    f"Please enter any further path inside the bucket, if needed ({selected_bucket}/...):",
+                    default="",
+                )
+                flavor = "s3"
+                config = {
+                    "path": f"{selected_bucket.strip('/')}/{extra_path.strip('/')}"
+                }
+
+                as_name = Prompt.ask(
+                    "Please enter a name for the artifact store:"
+                )
+
+            print({"name": as_name, "config": config})
+            config_confirmed = Confirm.ask(
+                "Please confirm the values you entered:", default=True
+            )
+        component = client.create_stack_component(
+            name=as_name,
+            flavor=flavor,
+            component_type=StackComponentType.ARTIFACT_STORE,
+            configuration=config,
+        )
     elif component_type == "container_registry":
         # - here we list available registries and ask to pick one
         component = ComponentResponse()
     elif component_type == "orchestrator":
-        # - here we list available regions/locations and ask to pick one
-        # - ask for extra mandatory params, like Role ARN for AWS
-        component = ComponentResponse()
+        config_confirmed = False
+        while not config_confirmed:
+            if service_connector.type == "aws":
+                available_orchestrators = {}
+                for each in service_connector_resource_model.resources:
+                    if each.resource_type == "aws-generic":
+                        available_orchestrators["Sagemaker"] = (
+                            each.resource_ids or []
+                        )
+
+                    if each.resource_type == "kubernetes-cluster":
+                        available_orchestrators["K8S"] = (
+                            each.resource_ids or []
+                        )
+                available_orchestrators_table = Table(
+                    title="Available orchestrators on AWS:", expand=True
+                )
+                available_orchestrators_table.add_column(
+                    "Choice", justify="left", width=1
+                )
+                available_orchestrators_table.add_column(
+                    "Orchestrator details", justify="left", width=10
+                )
+                choice_number = 0
+                choices_mapper = {}
+                for type_ in available_orchestrators:
+                    for i, orchestrator in enumerate(
+                        available_orchestrators[type_]
+                    ):
+                        available_orchestrators_table.add_row(
+                            str(choice_number), f"{type_} - {orchestrator}"
+                        )
+                        choices_mapper[choice_number] = (type_, i)
+                        choice_number += 1
+                print(available_orchestrators_table)
+                orchestrator_choice = int(
+                    Prompt.ask(
+                        "Please choose one of the options for the new orchestrator:",
+                        choices=[str(i) for i in range(choice_number)],
+                    )
+                )
+                selected_orchestrator = available_orchestrators[
+                    choices_mapper[orchestrator_choice][0]
+                ][choices_mapper[orchestrator_choice][1]]
+
+                if choices_mapper[orchestrator_choice][0] == "Sagemaker":
+                    flavor = "sagemaker"
+                    execution_role = Prompt.ask(
+                        "Please enter an execution role ARN:"
+                    )
+                    config = {"execution_role": execution_role}
+                elif choices_mapper[orchestrator_choice][0] == "K8S":
+                    flavor = "kubernetes"
+                    config = {}
+                else:
+                    raise ValueError(
+                        f"Unknown orchestrator type {choices_mapper[orchestrator_choice][0]}"
+                    )
+            orchestrator_name = Prompt.ask(
+                "Please enter a name for the orchestrator:"
+            )
+            print({"name": orchestrator_name, "config": config})
+            config_confirmed = Confirm.ask(
+                "Please confirm the values you entered:", default=True
+            )
+            component = client.create_stack_component(
+                name=orchestrator_name,
+                flavor=flavor,
+                component_type=StackComponentType.ORCHESTRATOR,
+                configuration=config,
+            )
     elif component_type == "image_builder":
         # - only relevant for GCP and is fully optional
         # - if on GCP - offer what we found, if none, go for local silently
@@ -2009,7 +2208,9 @@ def _create_stack_component(
     connect_stack_component_with_service_connector(
         component_type=component.type,
         name_id_or_prefix=component.id,
-        connector=service_connector,
+        connector=service_connector.id,
         interactive=False,
         no_verify=False,
     )
+
+    return component
