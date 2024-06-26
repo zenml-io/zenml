@@ -25,7 +25,7 @@ The above set of REST calls means that you can only trigger a pipeline that has 
 ## A worked example
 
 {% hint style="info" %}
-Learn how to get a bearer token for the curl commands [here](../../reference/api-reference.md#using-a-bearer-token-to-access-the-api-programatically).
+Learn how to get a bearer token for the curl commands [here](../../reference/api-reference.md#using-a-bearer-token-to-access-the-api-programmatically).
 {% endhint %}
 
 Here is an example. Let's say would we like to re-run a pipeline called `training`. We first query the `/pipelines` endpoint:

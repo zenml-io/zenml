@@ -15,10 +15,10 @@ In the local case (i.e. using `zenml up`, the docs are available on `http://127.
 
 ![ZenML API Redoc](../.gitbook/assets/zenml_api_redoc.png)
 
-## Using a bearer token to access the API programatically
+## Using a bearer token to access the API programmatically
 
 If you are using the ZenML server API using the above pages, it is enough to be logged in to your ZenML
-account in the same browser session. However, in order to do this programatically, the following steps
+account in the same browser session. However, in order to do this programmatically, the following steps
 need to be followed:
 
 1. Create a [service account](../how-to/connecting-to-zenml/connect-with-a-service-account.md):
