@@ -2,6 +2,11 @@
 description: The best way to trigger a pipeline run so that it runs in the background
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Run pipelines asynchronously
 
 By default your pipelines will run synchronously. This means your terminal will follow along the logs as the pipeline is being built/runs.&#x20;

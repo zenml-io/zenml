@@ -2,6 +2,11 @@
 description: Defining the image builder.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🐳 Define where an image is built
 
 ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../component-guide/orchestrators/orchestrators.md) or [step operators](../../component-guide/step-operators/step-operators.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
