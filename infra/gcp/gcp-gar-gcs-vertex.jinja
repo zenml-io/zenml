@@ -1,0 +1,159 @@
+{% set deployment = env['deployment'] %}
+{% set project = env['project'] %}
+{% set resourceNameSuffix = properties['resourceNameSuffix'] %}
+{% set region = properties['region'] %}
+{% set zenmlServerURL = properties['zenmlServerURL'] %}
+{% set zenmlServerAPIToken = properties['zenmlServerAPIToken'] %}
+
+resources:
+
+  - name: zenml-{{ resourceNameSuffix }}
+    type: storage.v1.bucket
+    properties:
+      name: "zenml-{{ resourceNameSuffix }}"
+      location: {{ region }}
+
+  - name: enable-iam-api
+    type: deploymentmanager.v2.virtual.enableService
+    properties:
+      consumerId: "project:{{ project }}"
+      serviceName: iam.googleapis.com
+
+  - name: zenml-service-account
+    type: iam.v1.serviceAccount
+    properties:
+      accountId: "zenml-{{ resourceNameSuffix }}"
+      displayName: ZenML Service Account
+
+  - name: zenml-gcs-iam-role-binding
+    type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    properties:
+      resource: {{ project }}
+      role: roles/storage.objectUser
+      member: serviceAccount:$(ref.zenml-service-account.email)
+      #condition:
+      #  title: TimeBoundAccess
+      #  description: "Grant access only during working hours"
+      #  grant only on bucket
+      #  expression: "
+
+  - name: zenml-gar-iam-role-binding
+    type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    properties:
+      resource: {{ project }}
+      role: roles/artifactregistry.writer
+      member: serviceAccount:$(ref.zenml-service-account.email)
+      #condition:
+      #  title: TimeBoundAccess
+      #  description: "Grant access only during working hours"
+      #  expression: "request.time < timestamp('2024-12-31T23:59:59Z')"
+
+  - name: zenml-vertex-user-iam-role-binding
+    type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    properties:
+      resource: {{ project }}
+      role: roles/aiplatform.user
+      member: serviceAccount:$(ref.zenml-service-account.email)
+
+  - name: zenml-vertex-agent-iam-role-binding
+    type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    properties:
+      resource: {{ project }}
+      role: roles/aiplatform.serviceAgent
+      member: serviceAccount:$(ref.zenml-service-account.email)
+
+  - name: zenml-service-account-key
+    type: iam.v1.serviceAccounts.key
+    properties:
+      parent: $(ref.zenml-service-account.name)
+
+  - name: enable-artifactregistry-api
+    type: deploymentmanager.v2.virtual.enableService
+    properties:
+      consumerId: "project:{{ project }}"
+      serviceName: artifactregistry.googleapis.com
+
+  - name: zenml-artifact-registry
+    type: gcp-types/artifactregistry-v1beta1:projects.locations.repositories
+    properties:
+      location: {{ region }}
+      repositoryId: zenml-{{ resourceNameSuffix }}
+      format: DOCKER
+
+  - name: zenml-cloud-function
+    type: gcp-types/cloudfunctions-v1:projects.locations.functions
+    properties:
+      parent: projects/{{ project }}/locations/{{ region }}
+      function: zenml-invoke-api-{{ resourceNameSuffix }}
+      entryPoint: run_script
+      runtime: python39
+      sourceArchiveUrl: gs://zenml-public-bucket/zenml-gcp-dm-templates/gcp-dm-stack-register.zip
+      httpsTrigger: {}
+      environmentVariables:
+        ZENML_SERVER_URL: {{ zenmlServerURL }}
+        ZENML_SERVER_API_TOKEN: {{ zenmlServerAPIToken }}
+
+  - name: zenml-cloud-function-call
+    type: gcp-types/cloudfunctions-v1:cloudfunctions.projects.locations.functions.call
+    metadata:
+      dependsOn:
+        - zenml-cloud-function
+        - zenml-service-account-key
+    properties:
+      name: projects/{{ project }}/locations/{{ region }}/functions/zenml-invoke-api-{{ resourceNameSuffix }}
+      data: |
+        {
+          "name": "{{ deployment }}",
+          "description": "Deployed by GCP Deployment Manager deployment {{ deployment }} in the {{ project }} and {{ region }} region.",
+          "labels": {
+            "zenml:provider": "gcp",
+            "zenml:deployment": "deployment-manager",
+          },
+          "service_connectors": [
+            {
+              "type": "gcp",
+              "auth_method": "service-account",
+              "configuration": {
+                "service_account_json": {{ ref.zenml-service-account-key.privateKeyData }}
+              }
+            }
+          ],
+          "components": {
+            "artifact_store": {
+              "flavor": "gcs",
+              "service_connector_index": 0,
+              "configuration": {
+                "path": "gs://zenml-{{ resourceNameSuffix }}"
+              }
+            },
+            "container_registry":{
+              "flavor": "gcp",
+              "service_connector_index": 0,
+              "configuration": {
+                "uri": "{{ region }}-docker.pkg.dev/{{ project }}/zenml-{{ resourceNameSuffix }}"
+              }
+            },
+            "orchestrator": {
+              "flavor": "vertex",
+              "service_connector_index": 0,
+              "configuration": {
+                "location": "{{ region }}",
+                "workload_service_account": "zenml-{{ resourceNameSuffix }}@{{ project }}.iam.gserviceaccount.com"
+              }
+            }
+          }
+        }
+
+
+outputs:
+#- name: GCSBucket
+#  value: $(ref.zenml-{{ resourceNameSuffix }}.name)
+#
+#- name: ServiceAccountEmail
+#  value: $(ref.service-account.email)
+#
+#- name: ServiceAccountKey
+#  value: $(ref.service-account-key.privateKeyData)
+
+#- name: ArtifactRegistry
+#  value: $(ref.zenml-artifact-registry.name)

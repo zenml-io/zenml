@@ -387,6 +387,10 @@ from zenml.models.v2.core.server_settings import (
     ServerSettingsResponseMetadata,
     ServerSettingsUpdate,
 )
+from zenml.models.v2.misc.stack_deployment import (
+    DeployedStack,
+    StackDeploymentInfo,
+)
 
 # ----------------------------- Forward References -----------------------------
 
@@ -703,6 +707,7 @@ __all__ = [
     "WorkspaceResponseMetadata",
     # V2 Misc
     "AuthenticationMethodModel",
+    "DeployedStack",
     "ServiceConnectorResourcesModel",
     "ServiceConnectorTypeModel",
     "ServiceConnectorTypedResourcesModel",
@@ -721,6 +726,7 @@ __all__ = [
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
+    "StackDeploymentInfo",
     "OAuthDeviceAuthorizationRequest",
     "OAuthDeviceAuthorizationResponse",
     "OAuthDeviceTokenRequest",
