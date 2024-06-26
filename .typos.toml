@@ -17,7 +17,6 @@ K_Scatch = "K_Scatch"
 MCAGA1UECgwZQW1hem9uIFdlYiBTZXJ2aWNlcywgSW5jLjETMBEGA1UECwwKQW1h = "MCAGA1UECgwZQW1hem9uIFdlYiBTZXJ2aWNlcywgSW5jLjETMBEGA1UECwwKQW1h"
 VQQGEwJVUzEQMA4GA1UEBwwHU2VhdHRsZTETMBEGA1UECAwKV2FzaGluZ3RvbjEi = "VQQGEwJVUzEQMA4GA1UEBwwHU2VhdHRsZTETMBEGA1UECAwKV2FzaGluZ3RvbjEi"
 MDEyOk9yZ2FuaXphdGlvbjg4Njc2OTU1 = "MDEyOk9yZ2FuaXphdGlvbjg4Njc2OTU1"
-OT = "OT"
 
 [default.extend-words]
 # Don't correct the surname "Teh"
@@ -35,6 +34,7 @@ ret = "ret"
 daa = "daa"
 arange = "arange"
 cachable = "cachable"
+OT = "OT"
 
 [default]
 locale = "en-us"
