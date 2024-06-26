@@ -244,6 +244,84 @@ def register_stack(
         cloud: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
     """
+    from rich import print
+    from rich.console import Console
+    from rich.prompt import Prompt
+    from rich.table import Table
+
+    def show_status(
+        cloud: str = None,
+        connector: str = None,
+        artifact_store: str = None,
+        orchestrator: str = None,
+        container_registry: str = None,
+    ) -> None:
+        status = []
+        for each in [
+            cloud,
+            connector,
+            artifact_store,
+            orchestrator,
+            container_registry,
+        ]:
+            if not each:
+                each = ":x:"
+            status.append(each)
+
+        status_table = Table(
+            title="New cloud stack registration progress",
+            show_header=True,
+            expand=True,
+        )
+        for c in [
+            "Cloud",
+            "Service Connector",
+            "Artifact Store",
+            "Orchestrator",
+            "Container Registry",
+        ]:
+            status_table.add_column(c, justify="center", width=1)
+
+        status_table.add_row(*status)
+        Console().clear()
+        print(status_table)
+
+    def multi_choice_prompt(
+        object_type: str, choices_nameable: List[Any], prompt_text: str
+    ) -> int:
+        table = Table(
+            title=f"Available {object_type}",
+            show_header=False,
+            border_style=None,
+            expand=True,
+        )
+        table.add_column("", justify="left", width=1)
+        for _ in range(min(len(choices_nameable) // 10, 3)):
+            table.add_column("", justify="left", width=1)
+
+        ins = [f"[bold][0] - Create a new {object_type}[/bold]"]
+        for i, one_choice in enumerate(choices_nameable):
+            if len(ins) == len(table.columns):
+                table.add_row(*ins)
+                ins = []
+            if len(ins) < len(table.columns):
+                ins.append(f"[{i+1}] - {one_choice.name}")
+        if ins:
+            while len(ins) < len(table.columns):
+                ins.append("")
+            table.add_row(*ins)
+
+        print(table)
+
+        return int(
+            Prompt.ask(
+                prompt_text,
+                choices=[str(i) for i in range(0, len(choices_nameable) + 1)],
+                default="0",
+                show_choices=False,
+            )
+        )
+
     if (cloud is None and connector is None) and (
         artifact_store is None or orchestrator is None
     ):
@@ -259,37 +337,24 @@ def register_stack(
     # cloud flow
     service_connector = None
     if cloud is not None and connector is None:
-        # if more than 100 service connectors of given type exist this might be an issue
+        show_status(
+            cloud=cloud,
+            connector=connector,
+            artifact_store=artifact_store,
+            orchestrator=orchestrator,
+            container_registry=container_registry,
+        )
         existing_connectors = client.list_service_connectors(
             connector_type=cloud, size=100
         )
         selected_connector = 0
         if existing_connectors.total:
-            selected_connector = int(
-                click.prompt(
-                    f"We found following {cloud.upper()} service connectors. "
-                    "Do you want to create a new one or use one of the existing ones?\n"
-                    "[0] - Create a new service connector\n"
-                    + "\n".join(
-                        [
-                            f"[{i+1}] - {sc.name}"
-                            for i, sc in enumerate(existing_connectors.items)
-                        ]
-                    )
-                    + "\n",
-                    type=click.Choice(
-                        [
-                            str(i)
-                            for i in range(
-                                0, len(existing_connectors.items) + 1
-                            )
-                        ]
-                    ),
-                    default="0",
-                    show_choices=False,
-                )
+            selected_connector = multi_choice_prompt(
+                object_type=f"{cloud.upper()} service connectors",
+                choices_nameable=existing_connectors.items,
+                prompt_text=f"We found these {cloud.upper()} service connectors. "
+                "Do you want to create a new one or use one of the existing ones?",
             )
-
         if selected_connector != 0:
             service_connector = existing_connectors.items[
                 selected_connector - 1
@@ -297,19 +362,33 @@ def register_stack(
         else:
             service_connector = _create_service_connector(cloud_provider=cloud)
     elif connector is not None:
+        show_status(
+            cloud=cloud,
+            connector=connector,
+            artifact_store=artifact_store,
+            orchestrator=orchestrator,
+            container_registry=container_registry,
+        )
         service_connector = client.get_service_connector(connector)
         if service_connector.type != cloud:
             cli_utils.warning(
                 f"The service connector `{connector}` is not of type `{cloud}`."
             )
-    if service_connector and _verify_service_connector(service_connector):
+    show_status(
+        cloud=cloud,
+        connector=service_connector.name,
+        artifact_store=artifact_store,
+        orchestrator=orchestrator,
+        container_registry=container_registry,
+    )
+
+    if service_connector:
         # create components
-        needed_components = {
+        needed_components = (
             ("artifact_store", artifact_store),
-            ("container_registry", container_registry),
             ("orchestrator", orchestrator),  # for azure only k8s orchestrator
-        }
-        created_components: List[ComponentResponse] = []
+            ("container_registry", container_registry),
+        )
         for component_type, preset_name in needed_components:
             if preset_name is not None:
                 component_response = client.get_stack_component(
@@ -323,38 +402,19 @@ def register_stack(
             else:
                 # find existing components under same connector
                 existing_components = client.list_stack_components(
-                    type=component_type, connector_id=service_connector.id
+                    type=component_type,
+                    connector_id=service_connector.id,
+                    size=100,
                 )
                 # if some existing components are found - prompt user what to do
                 selected_component = 0
                 if existing_components.total > 0:
-                    # explore rich for interactive components
-                    selected_component = int(
-                        click.prompt(
-                            f"We found following {component_type.replace('_', ' ')} "
-                            "connected using the current service connector. Do you "
-                            "want to create a new one or use existing one?\n"
-                            f"[0] - Create a new {component_type.replace('_', ' ')}\n"
-                            + "\n".join(
-                                [
-                                    f"[{i+1}] - {as_.name}"
-                                    for i, as_ in enumerate(
-                                        existing_components.items
-                                    )
-                                ]
-                            )
-                            + "\n",
-                            type=click.Choice(
-                                [
-                                    str(i)
-                                    for i in range(
-                                        0, len(existing_components.items) + 1
-                                    )
-                                ]
-                            ),
-                            default="0",
-                            show_choices=False,
-                        )
+                    selected_component = multi_choice_prompt(
+                        object_type=component_type.replace("_", " "),
+                        choices_nameable=existing_components.items,
+                        prompt_text=f"We found these {component_type.replace('_', ' ')} "
+                        "connected using the current service connector. Do you "
+                        "want to create a new one or use existing one?",
                     )
                 if selected_component != 0:
                     component_response = existing_components.items[
@@ -371,6 +431,13 @@ def register_stack(
                 artifact_store = component_response.name
             elif component_type == "container_registry":
                 container_registry = component_response.name
+            show_status(
+                cloud=cloud,
+                connector=service_connector.name,
+                artifact_store=artifact_store,
+                orchestrator=orchestrator,
+                container_registry=container_registry,
+            )
 
     # normal flow once all components are defined
     with console.status(f"Registering stack '{stack_name}'...\n"):
@@ -1946,28 +2013,3 @@ def _create_stack_component(
         interactive=False,
         no_verify=False,
     )
-
-
-def _verify_service_connector(
-    service_connector: ServiceConnectorResponse,
-) -> bool:
-    """Verifies if a service connector has access to one or more resources.
-
-    Args:
-        service_connector: The service connector to verify.
-
-    Returns:
-        True if the service connector has proper permissions, False
-        otherwise.
-
-    Raises:
-        ValueError: If the service connector has unexpected type.
-    """
-    if service_connector.type == "aws":
-        return True
-    elif service_connector.type == "azure":
-        return True
-    elif service_connector.type == "gcp":
-        return True
-    else:
-        raise ValueError(f"Unknown cloud provider {service_connector.type}")
