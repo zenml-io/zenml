@@ -1,9 +1,9 @@
 ---
 description: >-
-  Trigger a pipeline from the Python Client.
+  Trigger a pipeline using the ZenML Client.
 ---
 
-# Trigger a pipeline from another
+# Trigger a pipeline from the Python Client
 
 {% hint style="info" %}
 This is a [ZenML Pro](https://zenml.io/pro) only feature. Please [sign up here](https://cloud.zenml.io) get access.
