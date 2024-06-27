@@ -60,7 +60,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
     CLIENT_ID: str = os.getenv("DATABRICKS_CLIENT_ID")
     CLIENT_SECRET: str = os.getenv("DATABRICKS_CLIENT_SECRET")
-    databricks_host: str = os.getenv("DATABRICKS_HOST")
+    DATABRICKS_HOST: str = os.getenv("DATABRICKS_HOST")
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -154,7 +154,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         from databricks.sdk import WorkspaceClient
 
         return WorkspaceClient(
-            host=self.databricks_host,
+            host=self.DATABRICKS_HOST,
             client_id=self.CLIENT_ID,
             client_secret=self.CLIENT_SECRET
         )
