@@ -489,7 +489,7 @@ def update_stack(
     "-r",
     "--model_registry",
     "model_registry_flag",
-    help="Include this to remove the the model registry from this stack.",
+    help="Include this to remove the model registry from this stack.",
     is_flag=True,
     required=False,
 )

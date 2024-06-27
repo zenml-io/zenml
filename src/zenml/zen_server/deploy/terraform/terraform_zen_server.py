@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
+from pydantic import ConfigDict
+
 from zenml.logger import get_logger
 from zenml.services import ServiceType
 from zenml.services.terraform.terraform_service import (
@@ -81,8 +83,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     Attributes:
         log_level: The log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
-        username: The username for the default ZenML server account.
-        password: The password for the default ZenML server account.
         helm_chart: The path to the ZenML server helm chart to use for
             deployment.
         zenmlserver_image_repo: The repository to use for the zenml server.
@@ -118,8 +118,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
 
     log_level: str = "ERROR"
 
-    username: str
-    password: str
     helm_chart: str = get_helm_chart_path()
     zenmlserver_image_repo: str = "zenmldocker/zenml-server"
     zenmlserver_image_tag: str = "latest"
@@ -141,11 +139,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     database_ssl_key: str = ""
     database_ssl_verify_server_cert: bool = True
     analytics_opt_in: bool = True
-
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class TerraformZenServerConfig(TerraformServiceConfig):
@@ -203,7 +197,7 @@ class TerraformZenServer(TerraformService):
         # filter keys that are not modeled as terraform deployment vars
         vars = {
             k: str(v) if isinstance(v, UUID) else v
-            for k, v in self.config.server.dict().items()
+            for k, v in self.config.server.model_dump().items()
             if k not in filter_vars
         }
         assert self.status.runtime_path

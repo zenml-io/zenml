@@ -118,7 +118,7 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
     test_pipeline.prepare()
 
     # conflict 5 and 1
-    run_config = PipelineRunConfiguration.parse_obj(
+    run_config = PipelineRunConfiguration.model_validate(
         {"steps": {"step_with_int_input": {"parameters": {"input_": 5}}}}
     )
     with pytest.raises(
@@ -132,7 +132,7 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
         )
 
     # no conflict 1 and 1
-    run_config = PipelineRunConfiguration.parse_obj(
+    run_config = PipelineRunConfiguration.model_validate(
         {"steps": {"step_with_int_input": {"parameters": {"input_": 1}}}}
     )
     deployment, _ = Compiler().compile(
@@ -169,4 +169,21 @@ def test_step_allows_dict_list_annotations():
         step_with_non_generic_inputs(a={"key": 1}, b=[2.1])
 
     with does_not_raise():
+        test_pipeline()
+
+
+@step
+def step_with_single_output() -> int:
+    return 1
+
+
+def test_unpacking_step_artifact_raises_custom_exception():
+    """Tests that unpacking an artifact returned by a step inside a pipeline
+    raises a custom exception with explanation on how to solve the issue."""
+
+    @pipeline
+    def test_pipeline():
+        a, b = step_with_single_output()
+
+    with pytest.raises(StepInterfaceError):
         test_pipeline()

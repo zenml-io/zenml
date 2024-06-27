@@ -24,12 +24,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
 from zenml.utils import source_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
 )
@@ -57,6 +58,79 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
 
     TYPE: ClassVar[SecretsStoreType]
     CONFIG_TYPE: ClassVar[Type[SecretsStoreConfiguration]]
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def convert_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Method to infer the correct type of the config and convert.
+
+        Args:
+            data: The provided configuration object, can potentially be a
+                generic object
+
+        Raises:
+            ValueError: If the provided config object's type does not match
+                any of the current implementations.
+
+        Returns:
+            The converted configuration object.
+        """
+        if data["config"].type == SecretsStoreType.SQL:
+            from zenml.zen_stores.secrets_stores.sql_secrets_store import (
+                SqlSecretsStoreConfiguration,
+            )
+
+            data["config"] = SqlSecretsStoreConfiguration(
+                **data["config"].model_dump()
+            )
+
+        elif data["config"].type == SecretsStoreType.GCP:
+            from zenml.zen_stores.secrets_stores.gcp_secrets_store import (
+                GCPSecretsStoreConfiguration,
+            )
+
+            data["config"] = GCPSecretsStoreConfiguration(
+                **data["config"].model_dump()
+            )
+
+        elif data["config"].type == SecretsStoreType.AWS:
+            from zenml.zen_stores.secrets_stores.aws_secrets_store import (
+                AWSSecretsStoreConfiguration,
+            )
+
+            data["config"] = AWSSecretsStoreConfiguration(
+                **data["config"].model_dump()
+            )
+
+        elif data["config"].type == SecretsStoreType.AZURE:
+            from zenml.zen_stores.secrets_stores.azure_secrets_store import (
+                AzureSecretsStoreConfiguration,
+            )
+
+            data["config"] = AzureSecretsStoreConfiguration(
+                **data["config"].model_dump()
+            )
+
+        elif data["config"].type == SecretsStoreType.HASHICORP:
+            from zenml.zen_stores.secrets_stores.hashicorp_secrets_store import (
+                HashiCorpVaultSecretsStoreConfiguration,
+            )
+
+            data["config"] = HashiCorpVaultSecretsStoreConfiguration(
+                **data["config"].model_dump()
+            )
+        elif (
+            data["config"].type == SecretsStoreType.CUSTOM
+            or data["config"].type == SecretsStoreType.NONE
+        ):
+            pass
+        else:
+            raise ValueError(
+                f"Unknown type '{data['config'].type}' for the configuration."
+            )
+
+        return data
 
     # ---------------------------------
     # Initialization and configuration
@@ -297,14 +371,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
                 f"expected {secret_id}, got {stored_secret_id}"
             )
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
-        # Ignore extra attributes from configs of previous ZenML versions
-        extra = "ignore"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="ignore",
+    )

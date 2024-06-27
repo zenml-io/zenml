@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility class to help with interacting with the dashboard."""
 
-from typing import Optional
+from typing import Optional, Tuple
 from uuid import UUID
 
 from zenml import constants
@@ -21,38 +21,72 @@ from zenml.client import Client
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
-from zenml.models import ComponentResponse, PipelineRunResponse, StackResponse
+from zenml.models import (
+    ComponentResponse,
+    PipelineRunResponse,
+    ServerModel,
+    StackResponse,
+)
 
 logger = get_logger(__name__)
 
 
-def get_base_url() -> Optional[str]:
-    """Function to get the base workspace-scoped url.
+def is_cloud_server(server_info: ServerModel) -> bool:
+    """Checks whether the server info refers to a ZenML Pro server.
+
+    Args:
+        server_info: Info of the server.
 
     Returns:
-        the base url if the client is using a rest zen store, else None
+        Whether the server info refers to a ZenML Pro server.
+    """
+    return (
+        "organization_id" in server_info.metadata
+        and "cloud.zenml.io" in server_info.dashboard_url
+    )
+
+
+def get_cloud_dashboard_url() -> Optional[str]:
+    """Get the base url of the cloud dashboard if the server is a cloud tenant.
+
+    Returns:
+        The base url of the cloud dashboard.
     """
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
-        # if the server config has a base URL use that
-        server_model = client.zen_store.get_store_info()
-        if server_model.base_url:
-            url = server_model.base_url
-            # if the base url has cloud.zenml.io in it, then it is a cloud
-            # deployment and there isn't a workspace in the URL
-            if "cloud.zenml.io" in url:
-                return url
-            return (
-                url + f"{constants.WORKSPACES}/{client.active_workspace.name}"
-            )
-        url = (
-            client.zen_store.url
-            + f"{constants.WORKSPACES}/{client.active_workspace.name}"
-        )
-        return url
+        server_info = client.zen_store.get_store_info()
+
+        if is_cloud_server(server_info):
+            return server_info.dashboard_url
 
     return None
+
+
+def get_server_dashboard_url() -> Tuple[Optional[str], bool]:
+    """Get the base url of the dashboard deployed by the server.
+
+    Returns:
+        The server dashboard url and whether the dashboard is the legacy
+        dashboard or not.
+    """
+    client = Client()
+
+    if client.zen_store.type == StoreType.REST:
+        server_info = client.zen_store.get_store_info()
+        if server_info.use_legacy_dashboard:
+            suffix = f"{constants.WORKSPACES}/{client.active_workspace.name}"
+        else:
+            suffix = ""
+
+        if server_info.server_url:
+            url = server_info.server_url
+        else:
+            url = client.zen_store.url
+
+        return url + suffix, server_info.use_legacy_dashboard
+
+    return None, False
 
 
 def get_stack_url(stack: StackResponse) -> Optional[str]:
@@ -64,9 +98,14 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     Returns:
         the URL to the stack if the dashboard is available, else None.
     """
-    base_url = get_base_url()
+    base_url, is_legacy_dashboard = get_server_dashboard_url()
+
     if base_url:
-        return base_url + f"{constants.STACKS}/{stack.id}/configuration"
+        if is_legacy_dashboard:
+            return base_url + f"{constants.STACKS}/{stack.id}/configuration"
+        else:
+            return base_url + constants.STACKS
+
     return None
 
 
@@ -79,12 +118,17 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
     Returns:
         the URL to the component if the dashboard is available, else None.
     """
-    base_url = get_base_url()
+    base_url, is_legacy_dashboard = get_server_dashboard_url()
+
     if base_url:
-        return (
-            base_url
-            + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
-        )
+        if is_legacy_dashboard:
+            return (
+                base_url
+                + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
+            )
+        else:
+            return base_url + constants.STACKS
+
     return None
 
 
@@ -97,17 +141,20 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     Returns:
         the URL to the pipeline run if the dashboard is available, else None.
     """
-    client = Client()
-    base_url = get_base_url()
-    if base_url:
-        server_model = client.zen_store.get_store_info()
-        # if the server is a zenml cloud tenant, use a different URL
-        if server_model.metadata.get("organization_id"):
-            return f"{base_url}{constants.RUNS}/{run.id}"
-        if run.pipeline:
-            return f"{base_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
+    cloud_url = get_cloud_dashboard_url()
+    if cloud_url:
+        return f"{cloud_url}{constants.RUNS}/{run.id}"
+
+    dashboard_url, is_legacy_dashboard = get_server_dashboard_url()
+    if dashboard_url:
+        if is_legacy_dashboard:
+            if run.pipeline:
+                return f"{dashboard_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
+            else:
+                return f"{dashboard_url}/all-runs/{run.id}/dag"
         else:
-            return f"{base_url}/all-runs/{run.id}/dag"
+            return f"{dashboard_url}{constants.RUNS}/{run.id}"
+
     return None
 
 
@@ -120,16 +167,10 @@ def get_model_version_url(model_version_id: UUID) -> Optional[str]:
     Returns:
         the URL to the model version if the dashboard is available, else None.
     """
-    client = Client()
-    server_model = client.zen_store.get_store_info()
-    # if organization_id exists as key in server_config.metadata
-    # only then output a URL.
-    if server_model.metadata.get("organization_id"):
-        base_url = get_base_url()
-        if base_url:
-            # TODO MODEL_VERSIONS resolves to /model_versions but on the
-            # cloud, the URL is /model-versions. This should be fixed?
-            return f"{base_url}/model-versions/{str(model_version_id)}"
+    base_url = get_cloud_dashboard_url()
+    if base_url:
+        return f"{base_url}/model-versions/{str(model_version_id)}"
+
     return None
 
 

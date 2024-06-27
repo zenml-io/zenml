@@ -226,23 +226,38 @@ def export_requirements(
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
 )
+@click.option(
+    "--uv",
+    "uv",
+    is_flag=True,
+    help="Experimental: Use uv for package installation.",
+    default=False,
+)
 def install(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
     force: bool = False,
+    uv: bool = False,
 ) -> None:
     """Installs the required packages for a given integration.
 
     If no integration is specified all required packages for all integrations
-    are installed using pip.
+    are installed using pip or uv.
 
     Args:
         integrations: The name of the integration to install the requirements
             for.
         ignore_integration: Integrations to ignore explicitly (passed in separately).
         force: Force the installation of the required packages.
+        uv: Use uv for package installation (experimental).
     """
+    from zenml.cli.utils import is_uv_installed
     from zenml.integrations.registry import integration_registry
+
+    if uv and not is_uv_installed():
+        error(
+            "UV is not installed but the uv flag was passed in. Please install uv or remove the uv flag."
+        )
 
     if not integrations:
         # no integrations specified, use all registered integrations
@@ -294,7 +309,7 @@ def install(
         )
     ):
         with console.status("Installing integrations..."):
-            install_packages(requirements)
+            install_packages(requirements, use_uv=uv)
 
 
 @integration.command(
@@ -309,18 +324,32 @@ def install(
     help="Force the uninstallation of the required packages. This will skip "
     "the confirmation step",
 )
-def uninstall(integrations: Tuple[str], force: bool = False) -> None:
-    """Installs the required packages for a given integration.
+@click.option(
+    "--uv",
+    "uv",
+    is_flag=True,
+    help="Experimental: Use uv for package uninstallation.",
+    default=False,
+)
+def uninstall(
+    integrations: Tuple[str], force: bool = False, uv: bool = False
+) -> None:
+    """Uninstalls the required packages for a given integration.
 
     If no integration is specified all required packages for all integrations
-    are installed using pip.
+    are uninstalled using pip or uv.
 
     Args:
-        integrations: The name of the integration to install the requirements
+        integrations: The name of the integration to uninstall the requirements
             for.
         force: Force the uninstallation of the required packages.
+        uv: Use uv for package uninstallation (experimental).
     """
+    from zenml.cli.utils import is_uv_installed
     from zenml.integrations.registry import integration_registry
+
+    if uv and not is_uv_installed():
+        error("Package `uv` is not installed. Please install it and retry.")
 
     if not integrations:
         # no integrations specified, use all registered integrations
@@ -355,7 +384,7 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
             range(len(requirements)),
             description="Uninstalling integrations...",
         ):
-            uninstall_package(requirements[n])
+            uninstall_package(requirements[n], use_uv=uv)
 
 
 @integration.command(
@@ -370,21 +399,34 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
     help="Force the upgrade of the required packages. This will skip the "
     "confirmation step and re-upgrade existing packages as well",
 )
+@click.option(
+    "--uv",
+    "uv",
+    is_flag=True,
+    help="Experimental: Use uv for package upgrade.",
+    default=False,
+)
 def upgrade(
     integrations: Tuple[str],
     force: bool = False,
+    uv: bool = False,
 ) -> None:
     """Upgrade the required packages for a given integration.
 
     If no integration is specified all required packages for all integrations
-    are installed using pip.
+    are installed using pip or uv.
 
     Args:
         integrations: The name of the integration to install the requirements
             for.
         force: Force the installation of the required packages.
+        uv: Use uv for package installation (experimental).
     """
+    from zenml.cli.utils import is_uv_installed
     from zenml.integrations.registry import integration_registry
+
+    if uv and not is_uv_installed():
+        error("Package `uv` is not installed. Please install it and retry.")
 
     if not integrations:
         # no integrations specified, use all registered integrations
@@ -418,4 +460,4 @@ def upgrade(
         )
     ):
         with console.status("Upgrading integrations..."):
-            install_packages(requirements, upgrade=True)
+            install_packages(requirements, upgrade=True, use_uv=uv)

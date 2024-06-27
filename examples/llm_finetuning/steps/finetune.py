@@ -15,235 +15,165 @@
 # limitations under the License.
 #
 
-import shutil
 from pathlib import Path
-from typing import Literal, Optional
 
-import torch
-from finetune.lora import setup
-from huggingface_hub import upload_folder
-from lit_gpt.args import EvalArgs, IOArgs, TrainArgs
+import transformers
+from accelerate import Accelerator
+from datasets import load_from_disk
 from materializers.directory_materializer import DirectoryMaterializer
-from pydantic import BaseModel
-from scripts.convert_lit_checkpoint import convert_lit_checkpoint
-from scripts.download import download_from_hub
-from scripts.merge_lora import merge_lora
-from scripts.prepare_alpaca import prepare
 from typing_extensions import Annotated
+from utils.callbacks import ZenMLCallback
+from utils.loaders import load_base_model
+from utils.tokenizer import load_tokenizer
 
-from steps.params import LoraParameters
-from steps.utils import (
-    convert_to_lit_checkpoint_if_necessary,
-    get_huggingface_access_token,
-)
-from zenml import get_step_context, log_model_metadata, step
+from zenml import ArtifactConfig, step
 from zenml.logger import get_logger
 from zenml.materializers import BuiltInMaterializer
+from zenml.utils.cuda_utils import cleanup_gpu_memory
 
-logger = get_logger(__file__)
-
-
-class DataParameters(BaseModel):
-    """Data preprocessing parameters."""
-
-    seed: int = 42
-    test_split_fraction: float = 0.03865
-    mask_inputs: bool = False
-    ignore_index: int = -1
-    max_seq_length: Optional[int] = None
-
-
-class TrainingParameters(BaseModel):
-    """Training parameters."""
-
-    save_interval: int = 1000
-    log_interval: int = 1
-    global_batch_size: int = 64
-    micro_batch_size: int = 4
-    lr_warmup_steps: int = 100
-    epochs: Optional[int] = None
-    epoch_size: Optional[int] = None
-    max_tokens: Optional[int] = None
-    max_seq_length: Optional[int] = None
-
-    learning_rate: float = 1e-3
-    weight_decay: float = 0.02
-    beta1: float = 0.9
-    beta2: float = 0.95
-    max_norm: Optional[float] = None
-    min_lr: float = 6e-5
-
-
-class EvalParameters(BaseModel):
-    """Mid-training evaluation parameters."""
-
-    interval: int = 100
-    max_new_tokens: int = 100
-    max_iters: int = 100
-
-
-class FinetuningParameters(BaseModel):
-    """Parameters for the finetuning step."""
-
-    base_model_repo: str
-    from_safetensors: bool = False
-
-    adapter_output_repo: Optional[str] = None
-    merged_output_repo: Optional[str] = None
-    convert_to_hf_checkpoint: bool = False
-
-    precision: Optional[str] = None
-    quantize: Optional[
-        Literal[
-            "bnb.nf4",
-            "bnb.nf4-dq",
-            "bnb.fp4",
-            "bnb.fp4-dq",
-            "bnb.int8-training",
-        ]
-    ] = None
-
-    data: DataParameters = DataParameters()
-    training: TrainingParameters = TrainingParameters()
-    eval: EvalParameters = EvalParameters()
-    lora: LoraParameters = LoraParameters()
+logger = get_logger(__name__)
 
 
 @step(output_materializers=[DirectoryMaterializer, BuiltInMaterializer])
 def finetune(
-    config: FinetuningParameters, dataset_directory: Optional[Path] = None
-) -> Annotated[Optional[Path], "adapter"]:
-    """Finetune model using LoRA.
+    base_model_id: str,
+    dataset_dir: Path,
+    max_steps: int = 1000,
+    logging_steps: int = 50,
+    eval_steps: int = 50,
+    save_steps: int = 50,
+    optimizer: str = "paged_adamw_8bit",
+    lr: float = 2.5e-5,
+    per_device_train_batch_size: int = 2,
+    gradient_accumulation_steps: int = 4,
+    warmup_steps: int = 5,
+    bf16: bool = True,
+    use_accelerate: bool = False,
+    use_fast: bool = True,
+    load_in_4bit: bool = False,
+    load_in_8bit: bool = False,
+) -> Annotated[
+    Path, ArtifactConfig(name="ft_model_dir", is_model_artifact=True)
+]:
+    """Finetune the model using PEFT.
+
+    Base model will be derived from configure step and finetuned model will
+    be saved to the output directory.
+
+    Finetuning parameters can be found here: https://github.com/huggingface/peft#fine-tuning
 
     Args:
-        config: Configuration for this step.
+        base_model_id: The base model id to use.
+        dataset_dir: The path to the dataset directory.
+        max_steps: The maximum number of steps to train for.
+        logging_steps: The number of steps to log at.
+        eval_steps: The number of steps to evaluate at.
+        save_steps: The number of steps to save at.
+        optimizer: The optimizer to use.
+        lr: The learning rate to use.
+        per_device_train_batch_size: The batch size to use for training.
+        gradient_accumulation_steps: The number of gradient accumulation steps.
+        warmup_steps: The number of warmup steps.
+        bf16: Whether to use bf16.
+        use_accelerate: Whether to use accelerate.
+        use_fast: Whether to use the fast tokenizer.
+        load_in_4bit: Whether to load the model in 4bit mode.
+        load_in_8bit: Whether to load the model in 8bit mode.
+
+    Returns:
+        The path to the finetuned model directory.
     """
-    torch.set_float32_matmul_precision("high")
+    cleanup_gpu_memory(force=True)
 
-    access_token = get_huggingface_access_token()
+    ft_model_dir = Path("model_dir")
+    dataset_dir = Path(dataset_dir)
 
-    checkpoint_root_dir = Path("checkpoints")
-    checkpoint_dir = checkpoint_root_dir / config.base_model_repo
-
-    if checkpoint_dir.exists():
-        logger.info(
-            "Checkpoint directory already exists, skipping download..."
-        )
+    if use_accelerate:
+        accelerator = Accelerator()
+        should_print = accelerator.is_main_process
     else:
-        download_from_hub(
-            repo_id=config.base_model_repo,
-            from_safetensors=config.from_safetensors,
-            checkpoint_dir=checkpoint_root_dir,
-            access_token=access_token,
-        )
+        accelerator = None
+        should_print = True
 
-    convert_to_lit_checkpoint_if_necessary(checkpoint_dir=checkpoint_dir)
+    project = "zenml-finetune"
+    run_name = base_model_id + "-" + project
+    output_dir = "./" + run_name
 
-    if dataset_directory:
-        try:
-            dataset_name = (
-                get_step_context()
-                .inputs["dataset_directory"]
-                .run_metadata["dataset_name"]
-                .value
-            )
-        except KeyError:
-            dataset_name = "unknown_dataset"
-    else:
-        dataset_directory = Path("data/alpaca")
-        dataset_name = dataset_directory.name
-        prepare(
-            destination_path=dataset_directory,
-            checkpoint_dir=checkpoint_dir,
-            test_split_fraction=config.data.test_split_fraction,
-            seed=config.data.seed,
-            mask_inputs=config.data.mask_inputs,
-            ignore_index=config.data.ignore_index,
-            max_seq_length=config.data.max_seq_length,
-        )
+    if should_print:
+        logger.info("Loading datasets...")
+    tokenizer = load_tokenizer(base_model_id, use_fast=use_fast)
+    tokenized_train_dataset = load_from_disk(dataset_dir / "train")
+    tokenized_val_dataset = load_from_disk(dataset_dir / "val")
 
-    model_name = checkpoint_dir.name
+    if should_print:
+        logger.info("Loading base model...")
 
-    log_model_metadata(
-        metadata={"model_name": model_name, "dataset_name": dataset_name}
-    )
-    adapter_output_dir = Path("output/lora") / dataset_name / model_name
-
-    io_args = IOArgs(
-        train_data_dir=dataset_directory,
-        val_data_dir=dataset_directory,
-        checkpoint_dir=checkpoint_dir,
-        out_dir=adapter_output_dir,
-    )
-    train_args = TrainArgs(**config.training.dict())
-    eval_args = EvalArgs(**config.eval.dict())
-    setup(
-        devices=1,
-        io=io_args,
-        train=train_args,
-        eval=eval_args,
-        precision=config.precision,
-        quantize=config.quantize,
-        **config.lora.dict(),
+    model = load_base_model(
+        base_model_id,
+        use_accelerate=use_accelerate,
+        should_print=should_print,
+        load_in_4bit=load_in_4bit,
+        load_in_8bit=load_in_8bit,
     )
 
-    if config.merged_output_repo:
-        lora_path = adapter_output_dir / "lit_model_lora_finetuned.pth"
-
-        merge_output_dir = (
-            Path("output/lora_merged") / dataset_name / model_name
-        )
-        merge_lora(
-            lora_path=lora_path,
-            checkpoint_dir=checkpoint_dir,
-            out_dir=merge_output_dir,
-            precision=config.precision,
-            **config.lora.dict(),
-        )
-
-        for path in Path(checkpoint_dir).glob("*.json"):
-            destination = Path(merge_output_dir) / path.name
-            shutil.copy(src=path, dst=destination)
-
-        if config.convert_to_hf_checkpoint:
-            upload_dir = (
-                Path("output/lora_merged_hf") / dataset_name / model_name
-            )
-            upload_dir.mkdir(parents=True, exist_ok=True)
-            convert_lit_checkpoint(
-                checkpoint_path=config.merged_output_repo / "lit_model.pth",
-                config_path=config.merged_output_repo / "lit_config.json",
-                output_path=upload_dir / "pytorch_model",
-            )
-        else:
-            upload_dir = merge_output_dir
-
-        commit = upload_folder(
-            repo_id=config.merged_output_repo,
-            folder_path=upload_dir,
-            token=access_token,
-        )
-        log_model_metadata(
-            metadata={
-                "merged_model_huggingface_commit_hash": commit.oid,
-                "merged_model_huggingface_commit_url": commit.commit_url,
-            }
+    trainer = transformers.Trainer(
+        model=model,
+        train_dataset=tokenized_train_dataset,
+        eval_dataset=tokenized_val_dataset,
+        args=transformers.TrainingArguments(
+            output_dir=output_dir,
+            warmup_steps=warmup_steps,
+            per_device_train_batch_size=per_device_train_batch_size,
+            gradient_checkpointing=(not use_accelerate),
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            max_steps=max_steps,
+            learning_rate=lr,
+            logging_steps=(
+                min(logging_steps, max_steps)
+                if max_steps >= 0
+                else logging_steps
+            ),
+            bf16=bf16,
+            optim=optimizer,
+            logging_dir="./logs",
+            save_strategy="steps",
+            save_steps=min(save_steps, max_steps)
+            if max_steps >= 0
+            else save_steps,
+            evaluation_strategy="steps",
+            eval_steps=eval_steps,
+            do_eval=True,
+            label_names=["input_ids"],
+        ),
+        data_collator=transformers.DataCollatorForLanguageModeling(
+            tokenizer, mlm=False
+        ),
+        callbacks=[ZenMLCallback(accelerator=accelerator)],
+    )
+    if not use_accelerate:
+        model.config.use_cache = (
+            False  # silence the warnings. Please re-enable for inference!
         )
 
-    if config.adapter_output_repo:
-        commit = upload_folder(
-            repo_id=config.adapter_output_repo,
-            folder_path=adapter_output_dir,
-            token=access_token,
-        )
-        log_model_metadata(
-            metadata={
-                "adapter_huggingface_commit_hash": commit.oid,
-                "adapter_huggingface_commit_url": commit.commit_url,
-            }
-        )
-        return None
+    if should_print:
+        logger.info("Training model...")
+    trainer.train()
+
+    if should_print:
+        logger.info("Saving model...")
+
+    ft_model_dir = Path(ft_model_dir)
+    if not use_accelerate or accelerator.is_main_process:
+        ft_model_dir.mkdir(parents=True, exist_ok=True)
+    if not use_accelerate:
+        model.config.use_cache = True
+        trainer.save_model(ft_model_dir)
     else:
-        # If the adapter should not be uploaded to the HF Hub, we store it
-        # in the artifact store
-        return adapter_output_dir
+        unwrapped_model = accelerator.unwrap_model(model)
+        unwrapped_model.save_pretrained(
+            ft_model_dir,
+            is_main_process=accelerator.is_main_process,
+            save_function=accelerator.save,
+        )
+
+    return ft_model_dir

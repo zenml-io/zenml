@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML secrets store configurations."""
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
@@ -41,45 +41,38 @@ class SecretsStoreConfiguration(BaseModel):
     type: SecretsStoreType
     class_path: Optional[str] = None
 
-    @root_validator
-    def validate_custom(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def validate_custom(self) -> "SecretsStoreConfiguration":
         """Validate that class_path is set for custom secrets stores.
-
-        Args:
-            values: Dict representing user-specified runtime settings.
 
         Returns:
             Validated settings.
 
         Raises:
-            ValueError: If class_path is not set when using an custom secrets
+            ValueError: If class_path is not set when using a custom secrets
                 store.
         """
-        if not values.get("type"):
-            return values
-        if values["type"] == SecretsStoreType.CUSTOM:
-            if values["class_path"] is None:
+        if not self.type:
+            return self
+        if self.type == SecretsStoreType.CUSTOM:
+            if self.class_path is None:
                 raise ValueError(
                     "A class_path must be set when using a custom secrets "
                     "store implementation."
                 )
-        elif values["class_path"] is not None:
+        elif self.class_path is not None:
             raise ValueError(
                 f"The class_path attribute is not supported for the "
-                f"{values['type']} secrets store type."
+                f"{self.type} secrets store type."
             )
 
-        return values
+        return self
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        validate_assignment=True,
         # Allow extra attributes to be set in the base class. The concrete
         # classes are responsible for validating the attributes.
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        extra="allow",
+    )

@@ -28,7 +28,7 @@ from azure.mgmt.containerservice import ContainerServiceClient
 from azure.mgmt.resource import SubscriptionClient
 from azure.mgmt.storage import StorageManagementClient
 from azure.storage.blob import BlobServiceClient
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
@@ -56,12 +56,14 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
 
 AZURE_MANAGEMENT_TOKEN_SCOPE = "https://management.azure.com/.default"
 AZURE_SESSION_TOKEN_DEFAULT_EXPIRATION_TIME = 60 * 60  # 1 hour
+AZURE_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
 
 
 class AzureBaseConfig(AuthenticationConfig):
@@ -102,7 +104,7 @@ class AzureBaseConfig(AuthenticationConfig):
 class AzureClientSecret(AuthenticationConfig):
     """Azure client secret credentials."""
 
-    client_secret: SecretStr = Field(
+    client_secret: PlainSerializedSecretStr = Field(
         title="Service principal client secret",
         description="The client secret of the service principal",
     )
@@ -125,7 +127,7 @@ class AzureClientConfig(AzureBaseConfig):
 class AzureAccessToken(AuthenticationConfig):
     """Azure access token credentials."""
 
-    token: SecretStr = Field(
+    token: PlainSerializedSecretStr = Field(
         title="Azure Access Token",
         description="The Azure access token to use for authentication",
     )
@@ -600,7 +602,11 @@ class AzureServiceConnector(ServiceConnector):
             # Refresh expired sessions
             now = datetime.datetime.now(datetime.timezone.utc)
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
-            if expires_at > now:
+
+            # check if the token expires in the near future
+            if expires_at > now + datetime.timedelta(
+                minutes=AZURE_SESSION_EXPIRATION_BUFFER
+            ):
                 return session, expires_at
 
         logger.debug(

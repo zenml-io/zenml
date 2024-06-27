@@ -101,13 +101,13 @@ def test_external_artifact_by_name_and_version(clean_client: Client):
     # First artifact with value 42 should be version 1
     consumer_pipeline(
         name=ARTIFACT_NAME,
-        version=1,
+        version="1",
         expected_value=42,
     )
 
     # Second artifact with value 43 should be version 2
     consumer_pipeline(
         name=ARTIFACT_NAME,
-        version=2,
+        version="2",
         expected_value=43,
     )

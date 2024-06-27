@@ -25,10 +25,10 @@ from great_expectations.core import (  # type: ignore[import-untyped]
 from great_expectations.core.expectation_validation_result import (  # type: ignore[import-untyped]
     ExpectationSuiteValidationResult,
 )
-from great_expectations.data_context.types.base import (  # type: ignore[import-untyped]
+from great_expectations.data_context.types.base import (
     CheckpointConfig,
 )
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import-untyped]
+from great_expectations.data_context.types.resource_identifiers import (
     ExpectationSuiteIdentifier,
     ValidationResultIdentifier,
 )
@@ -86,7 +86,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         validation_dict = {}
         for result_ident, results in artifact_dict["run_results"].items():
             validation_ident = (
-                ValidationResultIdentifier.from_fixed_length_tuple(
+                ValidationResultIdentifier.from_fixed_length_tuple(  # type: ignore[no-untyped-call]
                     result_ident.split("::")[1].split("/")
                 )
             )

@@ -76,13 +76,18 @@ class AnalyticsContext:
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
 
-        gc = GlobalConfiguration()
-        self.analytics_opt_in = gc.analytics_opt_in
-
-        if not self.analytics_opt_in:
-            return self
-
         try:
+            gc = GlobalConfiguration()
+            store_info = gc.zen_store.get_store_info()
+
+            if self.in_server:
+                self.analytics_opt_in = store_info.analytics_enabled
+            else:
+                self.analytics_opt_in = gc.analytics_opt_in
+
+            if not self.analytics_opt_in:
+                return self
+
             # Fetch the `user_id`
             if self.in_server:
                 from zenml.zen_server.auth import get_auth_context
@@ -114,9 +119,6 @@ class AnalyticsContext:
             else:
                 # If the code is running on the client, attach the client id.
                 self.client_id = gc.user_id
-
-            # Fetch the store information including the `server_id`
-            store_info = gc.zen_store.get_store_info()
 
             self.server_id = store_info.id
             self.deployment_type = store_info.deployment_type
@@ -211,15 +213,10 @@ class AnalyticsContext:
         """
         success = False
         if self.analytics_opt_in and self.user_id is not None:
-            if traits is None:
-                traits = {}
-
-            traits.update({"group_id": group_id})
-
             success, _ = default_client.group(
                 user_id=self.user_id,
                 group_id=group_id,
-                traits=traits,
+                traits=traits or {},
             )
 
         return success

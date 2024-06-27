@@ -175,8 +175,9 @@ def update_secret(
         # the update to None, so that they are deleted.
         secret = zen_store().get_secret(secret_id=secret_id)
         for key in secret.values.keys():
-            if key not in secret_update.values:
-                secret_update.values[key] = None
+            if secret_update.values is not None:
+                if key not in secret_update.values:
+                    secret_update.values[key] = None
 
     return verify_permissions_and_update_entity(
         id=secret_id,

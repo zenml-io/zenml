@@ -101,14 +101,12 @@ def link_artifact_config_to_model(
         )
 
     if model:
-        model._get_or_create_model_version()
-        model_version_response = model._get_model_version()
         request = ModelVersionArtifactRequest(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             artifact_version=artifact_version_id,
-            model=model_version_response.model.id,
-            model_version=model_version_response.id,
+            model=model.model_id,
+            model_version=model.id,
             is_model_artifact=artifact_config.is_model_artifact,
             is_deployment_artifact=artifact_config.is_deployment_artifact,
         )

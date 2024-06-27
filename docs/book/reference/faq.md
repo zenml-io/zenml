@@ -10,16 +10,11 @@ We built it because we scratched our own itch while deploying multiple machine-l
 
 #### Is ZenML just another orchestrator like Airflow, Kubeflow, Flyte, etc?
 
-Not really! An orchestrator in MLOps is the system component that is responsible for executing and managing the execution of an ML pipeline. ZenML is a framework that allows you to run your pipelines on whatever orchestrator you like, and we coordinate with all the other parts of an ML system in production. There are [standard orchestrators](../stacks-and-components/component-guide/orchestrators/orchestrators.md) that ZenML supports out-of-the-box, but you are encouraged to [write your own orchestrator](../stacks-and-components/component-guide/orchestrators/custom.md) in order to gain more control as to exactly how your pipelines are executed!
+Not really! An orchestrator in MLOps is the system component that is responsible for executing and managing the execution of an ML pipeline. ZenML is a framework that allows you to run your pipelines on whatever orchestrator you like, and we coordinate with all the other parts of an ML system in production. There are [standard orchestrators](../component-guide/orchestrators/orchestrators.md) that ZenML supports out-of-the-box, but you are encouraged to [write your own orchestrator](../component-guide/orchestrators/custom.md) in order to gain more control as to exactly how your pipelines are executed!
 
 #### Can I use the tool `X`? How does the tool `Y` integrate with ZenML?
 
-Take a look at our [documentation](https://docs.zenml.io/) (in particular the
-[component guide](../stacks-and-components/component-guide/component-guide.md)), which contains
-instructions and sample code to support each integration that ZenML
-supports out-of-the-box. You can also check out [our integration test
-code](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples) to
-see active examples of many of our integrations in action.
+Take a look at our [documentation](https://docs.zenml.io) (in particular the [component guide](../component-guide/README.md)), which contains instructions and sample code to support each integration that ZenML supports out-of-the-box. You can also check out [our integration test code](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples) to see active examples of many of our integrations in action.
 
 The ZenML team and community are constantly working to include more tools and integrations to the above list (check out the [roadmap](https://zenml.io/roadmap) for more details). You can [upvote features](https://zenml.io/discussion) you'd like and add your ideas to the roadmap.
 
@@ -27,7 +22,7 @@ Most importantly, ZenML is extensible, and we encourage you to use it with whate
 
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
-This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md)!
+This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../how-to/stack-deployment/implement-a-custom-stack-component.md)!
 
 #### How can I contribute?
 
@@ -35,7 +30,7 @@ We develop ZenML together with our community! To get involved, the best way to g
 
 #### How can I speak with the community?
 
-The first point of the call should be [our Slack group](https://zenml.io/slack-invite/). Ask your questions about bugs or specific use cases and someone from the core team will respond.
+The first point of the call should be [our Slack group](https://zenml.io/slack/). Ask your questions about bugs or specific use cases and someone from the core team will respond.
 
 #### Which license does ZenML use?
 

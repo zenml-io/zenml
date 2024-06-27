@@ -55,7 +55,7 @@ class SecretSchema(NamedSchema, table=True):
 
     __tablename__ = "secret"
 
-    scope: SecretScope
+    scope: str
 
     values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
 
@@ -177,7 +177,7 @@ class SecretSchema(NamedSchema, table=True):
         assert secret.user is not None, "User must be set for secret creation."
         return cls(
             name=secret.name,
-            scope=secret.scope,
+            scope=secret.scope.value,
             workspace_id=secret.workspace,
             user_id=secret.user,
             # Don't store secret values implicitly in the secret. The
@@ -201,10 +201,13 @@ class SecretSchema(NamedSchema, table=True):
         # Don't update the secret values implicitly in the secret. The
         # SQL secret store will call `set_secret_values` to update the
         # values separately if SQL is used as the secrets store.
-        for field, value in secret_update.dict(
+        for field, value in secret_update.model_dump(
             exclude_unset=True, exclude={"workspace", "user", "values"}
         ).items():
-            setattr(self, field, value)
+            if field == "scope":
+                setattr(self, field, value.value)
+            else:
+                setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
@@ -239,7 +242,7 @@ class SecretSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
-            scope=self.scope,
+            scope=SecretScope(self.scope),
         )
         return SecretResponse(
             id=self.id,

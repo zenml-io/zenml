@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
@@ -48,10 +47,6 @@ def _get_gcp_image_builder(
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info > (3, 10),
-    reason="GCP integration not installed in Python 3.11",
-)
 def test_stack_validation(
     local_orchestrator,
     local_artifact_store,

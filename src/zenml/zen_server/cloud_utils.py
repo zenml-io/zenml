@@ -4,16 +4,17 @@ import os
 from typing import Any, Dict, Optional
 
 import requests
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.exceptions import SubscriptionUpgradeRequiredError
+from zenml.zen_server.utils import server_config
 
 ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
 
 
 class ZenMLCloudConfiguration(BaseModel):
-    """ZenML Cloud RBAC configuration."""
+    """ZenML Pro RBAC configuration."""
 
     api_url: str
 
@@ -22,7 +23,8 @@ class ZenMLCloudConfiguration(BaseModel):
     oauth2_audience: str
     auth0_domain: str
 
-    @validator("api_url")
+    @field_validator("api_url")
+    @classmethod
     def _strip_trailing_slashes_url(cls, url: str) -> str:
         """Strip any trailing slashes on the API URL.
 
@@ -50,12 +52,11 @@ class ZenMLCloudConfiguration(BaseModel):
 
         return ZenMLCloudConfiguration(**env_config)
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
-        extra = "allow"
+        extra="allow"
+    )
 
 
 class ZenMLCloudSession:
@@ -99,7 +100,7 @@ class ZenMLCloudSession:
                 raise SubscriptionUpgradeRequiredError(response.json())
             else:
                 raise RuntimeError(
-                    f"Failed with the following error {response.json()}"
+                    f"Failed with the following error {response} {response.text}"
                 )
 
         return response
@@ -140,7 +141,7 @@ class ZenMLCloudSession:
             response.raise_for_status()
         except requests.HTTPError as e:
             raise RuntimeError(
-                f"Failed while trying to contact the central zenml cloud "
+                f"Failed while trying to contact the central zenml pro "
                 f"service: {e}"
             )
 
@@ -148,18 +149,35 @@ class ZenMLCloudSession:
 
     @property
     def session(self) -> requests.Session:
-        """Authenticate to the ZenML Cloud API.
+        """Authenticate to the ZenML Pro Management Plane.
 
         Returns:
             A requests session with the authentication token.
         """
         if self._session is None:
+            # Set up the session's connection pool size to match the server's
+            # thread pool size. This allows the server to cache one connection
+            # per thread, which means we can keep connections open for longer
+            # and avoid the overhead of setting up a new connection for each
+            # request.
+            conn_pool_size = server_config().thread_pool_size
+
             self._session = requests.Session()
             token = self._fetch_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
 
             retries = Retry(total=5, backoff_factor=0.1)
-            self._session.mount("https://", HTTPAdapter(max_retries=retries))
+            self._session.mount(
+                "https://",
+                HTTPAdapter(
+                    max_retries=retries,
+                    # We only use one connection pool to be cached because we
+                    # only communicate with one remote server (the control
+                    # plane)
+                    pool_connections=1,
+                    pool_maxsize=conn_pool_size,
+                ),
+            )
 
         return self._session
 

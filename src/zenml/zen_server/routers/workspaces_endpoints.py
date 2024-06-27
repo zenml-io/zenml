@@ -863,7 +863,19 @@ def get_or_create_pipeline_run(
     verify_permission(
         resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
     )
-    return zen_store().get_or_create_run(pipeline_run=pipeline_run)
+
+    run, created = zen_store().get_or_create_run(
+        pipeline_run=pipeline_run,
+        pre_creation_hook=lambda: check_entitlement(
+            resource_type=ResourceType.PIPELINE_RUN
+        ),
+    )
+    if created:
+        report_usage(
+            resource_type=ResourceType.PIPELINE_RUN, resource_id=run.id
+        )
+
+    return run, created
 
 
 @router.post(
@@ -1055,7 +1067,7 @@ def create_code_repository(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + STATISTICS,
-    response_model=Dict[str, str],
+    response_model=Dict[str, int],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

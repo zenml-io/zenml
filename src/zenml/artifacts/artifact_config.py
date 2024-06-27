@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
@@ -63,32 +63,47 @@ class ArtifactConfig(BaseModel):
     """
 
     name: Optional[str] = None
-    version: Optional[Union[str, int]] = None
+    version: Optional[Union[str, int]] = Field(
+        default=None, union_mode="smart"
+    )
     tags: Optional[List[str]] = None
     run_metadata: Optional[Dict[str, MetadataType]] = None
 
     model_name: Optional[str] = None
-    model_version: Optional[Union[ModelStages, str, int]] = None
+    model_version: Optional[Union[ModelStages, str, int]] = Field(
+        default=None, union_mode="smart"
+    )
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
 
-    @root_validator
-    def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        model_name = values.get("model_name", None)
-        if model_name and values.get("model_version", None) is None:
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
+    @model_validator(mode="after")
+    def artifact_config_validator(self) -> "ArtifactConfig":
+        """Model validator for the artifact config.
+
+        Raises:
+            ValueError: If both model_name and model_version is set incorrectly.
+
+        Returns:
+            the validated instance.
+        """
+        if self.model_name is not None and self.model_version is None:
             raise ValueError(
-                f"Creation of new model version from `{cls}` is not allowed. "
-                "Please either keep `model_name` and `model_version` both "
-                "`None` to get the model version from the step context or "
-                "specify both at the same time. You can use `ModelStages.LATEST` "
-                "as `model_version` when latest model version is desired."
+                f"Creation of new model version from {self.__class__.__name__} "
+                "is not allowed. Please either keep `model_name` and "
+                "`model_version` both `None` to get the model version from the "
+                "step context or specify both at the same time. You can use "
+                "`ModelStages.LATEST` as `model_version` when latest model "
+                "version is desired."
             )
-        return values
-
-    class Config:
-        """Config class for ArtifactConfig."""
-
-        smart_union = True
+        return self
 
     @property
     def _model(self) -> Optional["Model"]:

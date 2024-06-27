@@ -19,72 +19,36 @@ import os
 from typing import Optional
 
 import click
-from pipelines import (
-    llm_lora_evaluation,
-    llm_lora_feature_engineering,
-    llm_lora_finetuning,
-    llm_lora_merging,
-)
-
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 @click.command(
     help="""
-ZenML LLM Finetuning project CLI v0.1.0.
+ZenML LLM Finetuning project CLI v0.2.0.
 
-Run the ZenML LLM Finetuning project LLM LoRA finetuning pipelines.
+Run the ZenML LLM Finetuning project LLM PEFT finetuning pipelines.
 
 Examples:
 
   \b
-  # Run the feature feature engineering pipeline
-    python run.py --feature-pipeline
+  # Run the pipeline
+    python run.py
   
   \b
-  # Run the finetuning pipeline
-    python run.py --finetuning-pipeline
-
-  \b 
-  # Run the merging pipeline
-    python run.py --merging-pipeline
-
-  \b
-  # Run the evaluation pipeline
-    python run.py --eval-pipeline
+  # Run the pipeline with custom config
+    python run.py --config custom_finetune.yaml
 """
 )
 @click.option(
     "--config",
     type=str,
-    default=None,
+    default="default_finetune.yaml",
     help="Path to the YAML config file.",
 )
 @click.option(
-    "--feature-pipeline",
+    "--accelerate",
     is_flag=True,
     default=False,
-    help="Whether to run the pipeline that creates the dataset.",
-)
-@click.option(
-    "--finetuning-pipeline",
-    is_flag=True,
-    default=False,
-    help="Whether to run the pipeline that finetunes the model.",
-)
-@click.option(
-    "--merging-pipeline",
-    is_flag=True,
-    default=False,
-    help="Whether to run the pipeline that merges the model and adapter.",
-)
-@click.option(
-    "--eval-pipeline",
-    is_flag=True,
-    default=False,
-    help="Whether to run the pipeline that evaluates the model.",
+    help="Run the pipeline with Accelerate.",
 )
 @click.option(
     "--no-cache",
@@ -94,15 +58,14 @@ Examples:
 )
 def main(
     config: Optional[str] = None,
-    feature_pipeline: bool = False,
-    finetuning_pipeline: bool = False,
-    merging_pipeline: bool = False,
-    eval_pipeline: bool = False,
+    accelerate: bool = False,
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
 
     Args:
+        config: Path to the YAML config file.
+        accelerate: If `True` Accelerate will be used.
         no_cache: If `True` cache will be disabled.
     """
     config_folder = os.path.join(
@@ -115,17 +78,14 @@ def main(
 
     pipeline_args["config_path"] = os.path.join(config_folder, config)
 
-    if feature_pipeline:
-        llm_lora_feature_engineering.with_options(**pipeline_args)()
+    if accelerate:
+        from pipelines.train_accelerated import llm_peft_full_finetune
 
-    if finetuning_pipeline:
-        llm_lora_finetuning.with_options(**pipeline_args)()
+        llm_peft_full_finetune.with_options(**pipeline_args)()
+    else:
+        from pipelines.train import llm_peft_full_finetune
 
-    if merging_pipeline:
-        llm_lora_merging.with_options(**pipeline_args)()
-
-    if eval_pipeline:
-        llm_lora_evaluation.with_options(**pipeline_args)()
+        llm_peft_full_finetune.with_options(**pipeline_args)()
 
 
 if __name__ == "__main__":

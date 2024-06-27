@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, Optional
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.secret import BaseTestSecretConfigModel
@@ -48,18 +48,13 @@ class DeploymentStoreConfig(BaseTestSecretConfigModel):
     """Configuration for the ZenML store required to connect to the deployment."""
 
     url: str
-
-    class Config:
-        """Pydantic configuration class."""
-
-        validate_assignment = True
-        extra = "allow"
+    model_config = ConfigDict(validate_assignment=True, extra="allow")
 
 
 class DeploymentConfig(BaseTestConfigModel):
     """ZenML deployment settings."""
 
-    name: str = Field(regex="^[a-z][a-z0-9-_]+$")
+    name: str = Field(pattern="^[a-z][a-z0-9-_]+$")
     description: str = ""
     server: ServerType = ServerType.LOCAL
     database: DatabaseType = DatabaseType.SQLITE

@@ -171,7 +171,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     # Fields
     version: str
     version_number: Optional[int]
-    type: ArtifactType
+    type: str
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -277,10 +277,10 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             artifact_store_id=artifact_version_request.artifact_store_id,
             workspace_id=artifact_version_request.workspace,
             user_id=artifact_version_request.user,
-            type=artifact_version_request.type,
+            type=artifact_version_request.type.value,
             uri=artifact_version_request.uri,
-            materializer=artifact_version_request.materializer.json(),
-            data_type=artifact_version_request.data_type.json(),
+            materializer=artifact_version_request.materializer.model_dump_json(),
+            data_type=artifact_version_request.data_type.model_dump_json(),
         )
 
     def to_model(
@@ -302,33 +302,39 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             The created `ArtifactVersionResponse`.
         """
         try:
-            materializer = Source.parse_raw(self.materializer)
+            materializer = Source.model_validate_json(self.materializer)
         except ValidationError:
             # This is an old source which was an importable source path
             materializer = Source.from_import_path(self.materializer)
 
         try:
-            data_type = Source.parse_raw(self.data_type)
+            data_type = Source.model_validate_json(self.data_type)
         except ValidationError:
             # This is an old source which was an importable source path
             data_type = Source.from_import_path(self.data_type)
 
         producer_step_run_id, producer_pipeline_run_id = None, None
         if self.output_of_step_runs:
-            step_run = self.output_of_step_runs[0].step_run
-            if step_run.status == ExecutionStatus.COMPLETED:
+            original_step_runs = [
+                sr
+                for sr in self.output_of_step_runs
+                if sr.step_run.status == ExecutionStatus.COMPLETED
+            ]
+            if len(original_step_runs) == 1:
+                step_run = original_step_runs[0].step_run
                 producer_step_run_id = step_run.id
                 producer_pipeline_run_id = step_run.pipeline_run_id
             else:
+                step_run = self.output_of_step_runs[0].step_run
                 producer_step_run_id = step_run.original_step_run_id
 
         # Create the body of the model
         body = ArtifactVersionResponseBody(
             artifact=self.artifact.to_model(),
-            version=self.version_number or self.version,
+            version=self.version or str(self.version_number),
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
-            type=self.type,
+            type=ArtifactType(self.type),
             materializer=materializer,
             data_type=data_type,
             created=self.created,
@@ -348,10 +354,13 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},
             )
 
+        resources = None
+
         return ArtifactVersionResponse(
             id=self.id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(

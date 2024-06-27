@@ -41,7 +41,7 @@ class WhylogsDataValidatorSettings(BaseSettings):
     dataset_id: Optional[str] = None
 
 
-class WhylogsDataValidatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class WhylogsDataValidatorConfig(
     BaseDataValidatorConfig,
     AuthenticationConfigMixin,
     WhylogsDataValidatorSettings,

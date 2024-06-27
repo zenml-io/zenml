@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.56.2"
+version = "0.58.2"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -50,32 +50,37 @@ distro = "^1.6.0"
 docker = "~6.1.0"
 httplib2 = "<0.20,>=0.19.1"
 gitpython = "^3.1.18"
+numpy = "<2.0.0"
 pandas = ">=1.1.5"
 passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
-pydantic = "<1.11, >=1.9.0"
-pymysql = { version = "~1.0.2" }
-pyparsing = "<3,>=2.4.0"
+pydantic = "~2.7"
+pydantic-settings = "~2.2.1"
+pymysql = { version = "~1.1.0,>=1.1.1" }
+pyparsing = ">=2.4.0"
 python = ">=3.8,<3.12"
 python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
+requests = "<2.32.0" # TODO: remove after https://github.com/docker/docker-py/issues/3256
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
-sqlalchemy_utils = "0.38.3"
-sqlmodel = "0.0.8"
+secure = "~0.3.0"
+sqlalchemy = "^2.0.0"
+sqlalchemy_utils = "*"
+sqlmodel = "0.0.18"
 importlib_metadata = { version = "<=7.0.0", python = "<3.10" }
 
 # Optional dependencies for the ZenServer
-fastapi = { version = ">=0.75,<0.100", optional = true }
+fastapi = { version = ">=0.100, <=0.110", optional = true }
 uvicorn = { extras = ["standard"], version = ">=0.17.5", optional = true }
-python-multipart = { version = "~0.0.5", optional = true }
+python-multipart = { version = "~0.0.9", optional = true }
 pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
-fastapi-utils = { version = "~0.2.1", optional = true }
-orjson = { version = "~3.8.3", optional = true }
+orjson = { version = "~3.10.0", optional = true }
 Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
+pyyaml-include = { version = "<2.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
 
 # Optional terraform dependency for stack recipes and ZenServer deployments
@@ -181,7 +186,7 @@ server = [
     "Jinja2",
     "ipinfo",
 ]
-templates = ["copier", "jinja2-time", "ruff"]
+templates = ["copier", "jinja2-time", "ruff", "pyyaml-include"]
 terraform = ["python-terraform"]
 secrets-aws = ["boto3"]
 secrets-gcp = ["google-cloud-secret-manager"]
@@ -203,6 +208,7 @@ connectors-azure = [
     "azure-mgmt-containerregistry",
     "azure-mgmt-storage",
     "azure-storage-blob",
+    "azure-mgmt-resource",
     "kubernetes",
 ]
 dev = [
@@ -414,7 +420,6 @@ module = [
     "IPython.core.*",
     "IPython.display.*",
     "plotly.*",
-    "graphviz.*",
     "dash.*",
     "dash_bootstrap_components.*",
     "dash_cytoscape",
@@ -446,7 +451,6 @@ module = [
     "bentoml.*",
     "multipart.*",
     "jose.*",
-    "fastapi_utils.*",
     "sqlalchemy_utils.*",
     "sky.*",
     "copier.*",
@@ -456,6 +460,12 @@ module = [
     "mlstacks.*",
     "matplotlib.*",
     "IPython.*",
-    "huggingface_hub.*"
+    "huggingface_hub.*",
+    "label_studio_sdk.*",
+    "argilla.*",
+    "peewee.*",
+    "prodigy.*",
+    "prodigy.components.*",
+    "prodigy.components.db.*",
 ]
 ignore_missing_imports = true
