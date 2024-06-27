@@ -16,7 +16,6 @@ This guide will focus on shifting gears from running pipelines _locally_ on your
 * [Orchestrating on the cloud](cloud-orchestration.md)
 * [Configuring the pipeline to scale compute](configure-pipeline.md)
 * [Configure a code repository](connect-code-repository.md)
-* [CI/CD](cicd.md)
 
 Like in the starter guide, make sure you have a Python environment ready and `virtualenv` installed to follow along with ease. As now we are dealing with cloud infrastructure, you'll also want to select one of the major cloud providers (AWS, GCP, Azure), and make sure the respective CLIs are installed and authorized.
 

@@ -484,6 +484,6 @@ Before creating your custom model class, you should take a look at the [custom P
 
 The built-in Seldon Core custom deployment step is a good starting point for deploying your custom models. However, if you want to deploy more than the trained model, you can create your own custom class and a custom step to achieve this.
 
-See the [ZenML custom Seldon model class](https://sdkdocs.zenml.io/latest/api\_docs/integrations/#zenml.integrations.seldon.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel) as a reference.
+See the [ZenML custom Seldon model class](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.custom_deployer.zenml_custom_model.ZenMLCustomModel) as a reference.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

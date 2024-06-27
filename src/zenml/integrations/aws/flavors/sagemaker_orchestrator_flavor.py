@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
+from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import (
     AWS_RESOURCE_TYPE,
@@ -80,13 +82,17 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
     processor_args: Dict[str, Any] = {}
     input_data_s3_mode: str = "File"
-    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
+    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
     output_data_s3_mode: str = "EndOfJob"
-    output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
+    output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
 
-class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SagemakerOrchestratorConfig(
     BaseOrchestratorConfig, SagemakerOrchestratorSettings
 ):
     """Config for the Sagemaker orchestrator.
@@ -124,8 +130,8 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
 
     synchronous: bool = True
     execution_role: str
-    aws_access_key_id: Optional[str] = SecretField()
-    aws_secret_access_key: Optional[str] = SecretField()
+    aws_access_key_id: Optional[str] = SecretField(default=None)
+    aws_secret_access_key: Optional[str] = SecretField(default=None)
     aws_profile: Optional[str] = None
     aws_auth_role_arn: Optional[str] = None
     region: Optional[str] = None

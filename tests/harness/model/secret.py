@@ -17,9 +17,10 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from tests.harness.model.base import BaseTestConfigModel
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 if TYPE_CHECKING:
     from tests.harness.harness import TestHarness
@@ -28,8 +29,8 @@ if TYPE_CHECKING:
 class Secret(BaseTestConfigModel):
     """Configuration secret."""
 
-    name: str = Field(regex="^[A-Z][A-Z0-9_]+$")
-    value: SecretStr
+    name: str = Field(pattern="^[A-Z][A-Z0-9_]+$")
+    value: PlainSerializedSecretStr
 
 
 class BaseTestSecretConfigModel(BaseTestConfigModel):
@@ -94,7 +95,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
             The attribute value.
         """
         value = super().__getattribute__(key)
-        if key.startswith("_") or key not in type(self).__fields__:
+        if key.startswith("_") or key not in type(self).model_fields:
             return value
 
         secret_name = self._get_secret_name(value)
@@ -117,7 +118,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
         Args:
             harness: The test harness to validate against.
         """
-        for field in type(self).__fields__.keys():
+        for field in type(self).model_fields.keys():
             secret_name = self._get_secret_name(getattr(self, field))
             if secret_name:
                 # Check that the secret is defined in the test harness
@@ -143,7 +144,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
         Returns:
             The dictionary representation of the model.
         """
-        d = super().dict(**kwargs)
+        d = super().model_dump(**kwargs)
         for key, value in d.items():
             secret_name = self._get_secret_name(value)
             if secret_name:

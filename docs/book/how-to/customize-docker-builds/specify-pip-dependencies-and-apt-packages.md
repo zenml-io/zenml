@@ -1,5 +1,11 @@
 # Specify pip dependencies and apt packages
 
+{% hint style="warning" %}
+The configuration for specifying pip and apt dependencies only works in the remote pipeline case, and is disregarded for local pipelines (i.e. pipelines that run locally without having to build a Docker image).
+{% endhint %}
+
+When a [pipeline is run with a remote orchestrator](../configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](../configure-python-environments/README.md#-configure-python-environments) component of your stack.
+
 By default, ZenML automatically installs all packages required by your active ZenML stack. However, you can specify additional packages to be installed in various ways:
 
 * Install all the packages in your local Python environment (This will use the `pip` or `poetry` package manager to get a list of your local packages):
@@ -96,9 +102,11 @@ You can combine these methods but do make sure that your list of requirements do
 
 Depending on the options specified in your Docker settings, ZenML installs the requirements in the following order (each step optional):
 
-* The packages installed in your local Python environment
-* The packages specified via the `requirements` attribute (step level overwrites pipeline level)
-* The packages specified via the `required_integrations` and potentially stack requirements
+* The packages installed in your local python environment
+* The packages specified via the `required_hub_plugins` attribute
+* The packages required by the stack unless this is disabled by setting `install_stack_requirements=False`.
+* The packages specified via the `required_integrations`
+* The packages specified via the `requirements` attribute
 * You can specify additional arguments for the installer used to install your Python packages as follows:
 ```python
 # This will result in a `pip install --timeout=1000 ...` call when installing packages in the

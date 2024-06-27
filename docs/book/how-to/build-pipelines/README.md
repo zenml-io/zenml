@@ -13,13 +13,14 @@ def load_data() -> dict:
     labels = [0, 1, 0]
     return {'features': training_data, 'labels': labels}
 
+
 @step
 def train_model(data: dict) -> None:
     total_features = sum(map(sum, data['features']))
     total_labels = sum(data['labels'])
-    
+
     # Train some model here
-    
+
     print(f"Trained model using {len(data['features'])} data points. "
           f"Feature sum is {total_features}, label sum is {total_labels}")
 
@@ -36,7 +37,9 @@ You can now run this pipeline by simply calling the function:
 simple_ml_pipeline()
 ```
 
-When this pipeline is executed, the run of the pipeline gets logged to the ZenML dashboard where you can now go to look at its dag and all the associated metadata. To access the dashboard you need to have a ZenML server either running locally or remotely. See our documentation on this [here](../../getting-started/deploying-zenml/README.md).
+When this pipeline is executed, the run of the pipeline gets logged to the ZenML dashboard where you can now go to look
+at its DAG and all the associated metadata. To access the dashboard you need to have a ZenML server either running
+locally or remotely. See our documentation on this [here](../../getting-started/deploying-zenml/README.md).
 
 <figure><img src="../../.gitbook/assets/SimplePipelineDag.png" alt=""><figcaption><p>DAG representation in the ZenML Dahboard.</p></figcaption></figure>
 

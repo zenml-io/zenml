@@ -92,7 +92,7 @@ Integrating and using a GCP Container Registry in your pipelines is not possible
 
 {% tabs %}
 {% tab title="Local Authentication" %}
-This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure a GCP Container Registry. You don't need to supply credentials explicitly when you register the GCP Container Registry, as it leverages the local credentials and configuration that the GCP CLI and Docker client store on your local machine. However, you will need to install and set up the GCP CLI on your machine as a prerequisite, as covered in [the GCP CLI documentation](https://docs.gcp.amazon.com/cli/latest/userguide/getting-started-install.html), before you register the GCP Container Registry.
+This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure a GCP Container Registry. You don't need to supply credentials explicitly when you register the GCP Container Registry, as it leverages the local credentials and configuration that the GCP CLI and Docker client store on your local machine. However, you will need to install and set up the GCP CLI on your machine as a prerequisite, as covered in [the GCP CLI documentation](https://cloud.google.com/sdk/docs/install-sdk), before you register the GCP Container Registry.
 
 With the GCP CLI installed and set up with credentials, we'll need to configure Docker, so it can pull and push images:
 
@@ -136,11 +136,19 @@ zenml service-connector register <CONNECTOR_NAME> --type gcp --resource-type doc
 $ zenml service-connector register gcp-zenml-core --type gcp --resource-type docker-registry --auto-configure
 ⠸ Registering service connector 'gcp-zenml-core'...
 Successfully registered service connector `gcp-zenml-core` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃   RESOURCE TYPE    │ RESOURCE NAMES    ┃
-┠────────────────────┼───────────────────┨
-┃ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   RESOURCE TYPE    │ RESOURCE NAMES                                  ┃
+┠────────────────────┼─────────────────────────────────────────────────┨
+┃ 🐳 docker-registry │ gcr.io/zenml-core                               ┃
+┃                    │ us.gcr.io/zenml-core                            ┃
+┃                    │ eu.gcr.io/zenml-core                            ┃
+┃                    │ asia.gcr.io/zenml-core                          ┃
+┃                    │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                    │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                    │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                    │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                    │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
+┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
 
@@ -155,13 +163,29 @@ zenml service-connector list-resources --connector-type gcp --resource-type dock
 {% code title="Example Command Output" %}
 ```text
 The following 'docker-registry' resources can be accessed by 'gcp' service connectors configured in your workspace:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-┠──────────────────────────────────────┼──────────────────┼────────────────┼────────────────────┼───────────────────┨
-┃ ffc01795-0c0a-4f1d-af80-b84aceabcfcf │ gcp-implicit     │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┠──────────────────────────────────────┼──────────────────┼────────────────┼────────────────────┼───────────────────┨
-┃ 561b776a-af8b-491c-a4ed-14349b440f30 │ gcp-zenml-core   │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
+┠──────────────────────────────────────┼──────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨
+┃ ffc01795-0c0a-4f1d-af80-b84aceabcfcf │ gcp-implicit     │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core                               ┃
+┃                                      │                  │                │                    │ us.gcr.io/zenml-core                            ┃
+┃                                      │                  │                │                    │ eu.gcr.io/zenml-core                            ┃
+┃                                      │                  │                │                    │ asia.gcr.io/zenml-core                          ┃
+┃                                      │                  │                │                    │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                                      │                  │                │                    │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                                      │                  │                │                    │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                                      │                  │                │                    │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                                      │                  │                │                    │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
+┠──────────────────────────────────────┼──────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨
+┃ 561b776a-af8b-491c-a4ed-14349b440f30 │ gcp-zenml-core   │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core                               ┃
+┃                                      │                  │                │                    │ us.gcr.io/zenml-core                            ┃
+┃                                      │                  │                │                    │ eu.gcr.io/zenml-core                            ┃
+┃                                      │                  │                │                    │ asia.gcr.io/zenml-core                          ┃
+┃                                      │                  │                │                    │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                                      │                  │                │                    │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                                      │                  │                │                    │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                                      │                  │                │                    │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                                      │                  │                │                    │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
 
@@ -206,11 +230,11 @@ The 'gcp-zenml-core' Docker Service Connector connector was used to successfully
 ```text
 $ zenml container-registry connect gcp-zenml-core --connector gcp-zenml-core 
 Successfully connected container registry `gcp-zenml-core` to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-┃ 561b776a-af8b-491c-a4ed-14349b440f30 │ gcp-zenml-core │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                              ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────┨
+┃ 561b776a-af8b-491c-a4ed-14349b440f30 │ gcp-zenml-core │ 🔵 gcp         │ 🐳 docker-registry │ europe-west1-docker.pkg.dev/zenml-core/test ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
 

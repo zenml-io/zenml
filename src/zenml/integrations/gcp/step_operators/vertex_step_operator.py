@@ -274,6 +274,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             custom_job["display_name"],
             parent,
         )
+        info.force_write_logs()
         response = client.create_custom_job(
             parent=parent, custom_job=custom_job
         )

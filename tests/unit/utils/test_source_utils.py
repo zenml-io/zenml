@@ -23,7 +23,12 @@ import pytest
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
-from zenml.config.source import CodeRepositorySource, Source, SourceType
+from zenml.config.source import (
+    CodeRepositorySource,
+    DistributionPackageSource,
+    Source,
+    SourceType,
+)
 from zenml.utils import code_repository_utils, source_utils
 
 CURRENT_MODULE_PARENT_DIR = str(pathlib.Path(__file__).resolve().parent)
@@ -133,7 +138,7 @@ def test_basic_source_resolving(mocker):
         attribute=None,
         type=SourceType.INTERNAL,
     )
-    assert source_utils.resolve(pytest) == Source(
+    assert source_utils.resolve(pytest) == DistributionPackageSource(
         module=pytest.__name__,
         attribute=None,
         package_name="pytest",

@@ -17,6 +17,7 @@ import contextlib
 import datetime
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -290,29 +291,31 @@ def print_pydantic_models(
             if isinstance(model, BaseIdentifiedResponse):
                 include_columns = ["id"]
 
-                if "name" in model.__fields__:
+                if "name" in model.model_fields:
                     include_columns.append("name")
 
                 include_columns.extend(
                     [
                         k
-                        for k in model.__fields__[
-                            "body"
-                        ].type_.__fields__.keys()
-                        if k not in exclude_columns
-                    ]
-                    + [
-                        k
-                        for k in model.__fields__[
-                            "metadata"
-                        ].type_.__fields__.keys()
+                        for k in model.get_body().model_fields.keys()
                         if k not in exclude_columns
                     ]
                 )
 
+                if model.metadata is not None:
+                    include_columns.extend(
+                        [
+                            k
+                            for k in model.get_metadata().model_fields.keys()
+                            if k not in exclude_columns
+                        ]
+                    )
+
             else:
                 include_columns = [
-                    k for k in model.dict().keys() if k not in exclude_columns
+                    k
+                    for k in model.model_dump().keys()
+                    if k not in exclude_columns
                 ]
         else:
             include_columns = columns
@@ -325,7 +328,7 @@ def print_pydantic_models(
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
             if isinstance(value, BaseIdentifiedResponse):
-                if "name" in value.__fields__:
+                if "name" in value.model_fields:
                     items[k] = str(getattr(value, "name"))
                 else:
                     items[k] = str(value.id)
@@ -335,7 +338,7 @@ def print_pydantic_models(
             elif isinstance(value, list):
                 for v in value:
                     if isinstance(v, BaseIdentifiedResponse):
-                        if "name" in v.__fields__:
+                        if "name" in v.model_fields:
                             items.setdefault(k, []).append(
                                 str(getattr(v, "name"))
                             )
@@ -425,27 +428,31 @@ def print_pydantic_model(
         if isinstance(model, BaseIdentifiedResponse):
             include_columns = ["id"]
 
-            if "name" in model.__fields__:
+            if "name" in model.model_fields:
                 include_columns.append("name")
 
             include_columns.extend(
                 [
                     k
-                    for k in model.__fields__["body"].type_.__fields__.keys()
-                    if k not in exclude_columns
-                ]
-                + [
-                    k
-                    for k in model.__fields__[
-                        "metadata"
-                    ].type_.__fields__.keys()
+                    for k in model.get_body().model_fields.keys()
                     if k not in exclude_columns
                 ]
             )
 
+            if model.metadata is not None:
+                include_columns.extend(
+                    [
+                        k
+                        for k in model.get_metadata().model_fields.keys()
+                        if k not in exclude_columns
+                    ]
+                )
+
         else:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns
+                k
+                for k in model.model_dump().keys()
+                if k not in exclude_columns
             ]
     else:
         include_columns = list(columns)
@@ -455,7 +462,7 @@ def print_pydantic_model(
     for k in include_columns:
         value = getattr(model, k)
         if isinstance(value, BaseIdentifiedResponse):
-            if "name" in value.__fields__:
+            if "name" in value.model_fields:
                 items[k] = str(getattr(value, "name"))
             else:
                 items[k] = str(value.id)
@@ -465,7 +472,7 @@ def print_pydantic_model(
         elif isinstance(value, list):
             for v in value:
                 if isinstance(v, BaseIdentifiedResponse):
-                    if "name" in v.__fields__:
+                    if "name" in v.model_fields:
                         items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:
                         items.setdefault(k, []).append(str(v.id))
@@ -1078,16 +1085,6 @@ def install_packages(
         else:
             raise e
 
-    if "label-studio" in packages:
-        warning(
-            "There is a known issue with Label Studio installations "
-            "via zenml. You might find that the Label Studio "
-            "installation breaks the ZenML CLI. In this case, please "
-            "run `pip install 'pydantic<1.11,>=1.9.0'` to fix the "
-            "issue or message us on Slack if you need help with this. "
-            "We are working on a more definitive fix."
-        )
-
 
 def uninstall_package(package: str, use_uv: bool = False) -> None:
     """Uninstalls pypi package from the current environment with pip or uv.
@@ -1280,7 +1277,7 @@ def pretty_print_model_version_table(
             "NAME": model_version.registered_model.name,
             "MODEL_VERSION": model_version.version,
             "VERSION_DESCRIPTION": model_version.description,
-            "METADATA": model_version.metadata.dict()
+            "METADATA": model_version.metadata.model_dump()
             if model_version.metadata
             else {},
         }
@@ -1322,7 +1319,7 @@ def pretty_print_model_version_details(
             if model_version.last_updated_at
             else "N/A"
         ),
-        "METADATA": model_version.metadata.dict()
+        "METADATA": model_version.metadata.model_dump()
         if model_version.metadata
         else {},
         "MODEL_SOURCE_URI": model_version.model_source_uri,
@@ -2256,7 +2253,7 @@ def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
         A configuration with secret values removed.
     """
     config_dict = {}
-    config_fields = dict(config.__class__.__fields__)
+    config_fields = config.__class__.model_fields
     for key, value in config_fields.items():
         if secret_utils.is_secret_field(value):
             config_dict[key] = "********"
@@ -2533,7 +2530,7 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     def inner_decorator(func: F) -> F:
         options = []
         data_type_descriptors = set()
-        for k, v in filter_model.__fields__.items():
+        for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
                 options.append(
                     click.option(
@@ -2752,3 +2749,31 @@ def is_jupyter_installed() -> bool:
         return True
     except pkg_resources.DistributionNotFound:
         return False
+
+
+def requires_mac_env_var_warning() -> bool:
+    """Checks if a warning needs to be shown for a local Mac server.
+
+    This is for the case where a user is on a MacOS system, trying to run a
+    local server but is missing the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY`
+    environment variable.
+
+    Returns:
+        bool: True if a warning needs to be shown, False otherwise.
+    """
+    if mac_version := platform.mac_ver()[0]:
+        try:
+            major, minor, _ = mac_version.split(".")
+            mac_version_tuple = (int(major), int(minor))
+        except (ValueError, IndexError):
+            # If the version string is not in the expected format,
+            # assume the warning should be shown
+            return True
+    else:
+        mac_version_tuple = (0, 0)
+
+    return (
+        not os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY")
+        and sys.platform == "darwin"
+        and mac_version_tuple >= (10, 13)
+    )

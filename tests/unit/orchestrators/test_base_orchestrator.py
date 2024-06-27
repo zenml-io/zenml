@@ -30,7 +30,7 @@ from zenml.orchestrators import BaseOrchestrator
 def test_resource_required(step_operator, settings, resources_required):
     """Tests whether the resource requirements detection method works as
     expected."""
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",

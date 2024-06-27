@@ -7,7 +7,9 @@ from typing import List, Optional, Set, Tuple
 from uuid import UUID
 
 from fastapi import BackgroundTasks
+from packaging import version
 
+from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.step_configurations import Step, StepConfiguration
@@ -28,10 +30,11 @@ from zenml.models import (
 )
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
+    validate_run_config_is_runnable_from_server,
+    validate_stack_is_runnable_from_server,
 )
-from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.stack.flavor import Flavor
-from zenml.utils import dict_utils, pydantic_utils
+from zenml.utils import dict_utils, pydantic_utils, settings_utils
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.pipeline_deployment.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
@@ -72,21 +75,32 @@ def run_pipeline(
     if not stack:
         raise ValueError("Unable to run deployment without associated stack.")
 
-    validate_stack(stack)
+    validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
+    if run_config:
+        validate_run_config_is_runnable_from_server(run_config)
 
     deployment_request = apply_run_config(
         deployment=deployment,
         run_config=run_config or PipelineRunConfiguration(),
         user_id=auth_context.user.id,
     )
+
+    ensure_async_orchestrator(deployment=deployment_request, stack=stack)
+
     new_deployment = zen_store().create_deployment(deployment_request)
     placeholder_run = create_placeholder_run(deployment=new_deployment)
     assert placeholder_run
 
-    api_token = auth_context.encoded_access_token
-    if not api_token:
-        assert auth_context.access_token
-        api_token = auth_context.access_token.encode()
+    if auth_context.access_token:
+        token = auth_context.access_token
+        token.pipeline_id = deployment_request.pipeline
+
+        # We create a non-expiring token to make sure its active for the entire
+        # duration of the pipeline run
+        api_token = token.encode(expires=None)
+    else:
+        assert auth_context.encoded_access_token
+        api_token = auth_context.encoded_access_token
 
     server_url = server_config().server_url
     if not server_url:
@@ -116,7 +130,14 @@ def run_pipeline(
             stack=stack
         )
 
-        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+        if build.python_version:
+            version_info = version.parse(build.python_version)
+            python_version = f"{version_info.major}.{version_info.minor}"
+        else:
+            python_version = (
+                f"{sys.version_info.major}.{sys.version_info.minor}"
+            )
+
         dockerfile = generate_dockerfile(
             pypi_requirements=pypi_requirements,
             apt_packages=apt_packages,
@@ -162,39 +183,35 @@ def run_pipeline(
     return placeholder_run
 
 
-def validate_stack(stack: StackResponse) -> None:
-    """Validate a stack model.
+def ensure_async_orchestrator(
+    deployment: PipelineDeploymentRequest, stack: StackResponse
+) -> None:
+    """Ensures the orchestrator is configured to run async.
 
     Args:
-        stack: The stack to validate.
-
-    Raises:
-        ValueError: If the stack has components of a custom flavor, local
-            components or a synchronous orchestrator.
+        deployment: Deployment request in which the orchestrator
+            configuration should be updated to ensure the orchestrator is
+            running async.
+        stack: The stack on which the deployment will run.
     """
-    for component_list in stack.components.values():
-        assert len(component_list) == 1
-        component = component_list[0]
-        flavors = zen_store().list_flavors(
-            FlavorFilter(name=component.flavor, type=component.type)
+    orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
+    flavors = zen_store().list_flavors(
+        FlavorFilter(name=orchestrator.flavor, type=orchestrator.type)
+    )
+    flavor = Flavor.from_model(flavors[0])
+
+    if "synchronous" in flavor.config_class.model_fields:
+        key = settings_utils.get_flavor_setting_key(flavor)
+
+        if settings := deployment.pipeline_configuration.settings.get(key):
+            settings_dict = settings.model_dump()
+        else:
+            settings_dict = {}
+
+        settings_dict["synchronous"] = False
+        deployment.pipeline_configuration.settings[key] = (
+            BaseSettings.model_validate(settings_dict)
         )
-        assert len(flavors) == 1
-        flavor_model = flavors[0]
-
-        if flavor_model.workspace is not None:
-            raise ValueError("No custom stack component flavors allowed.")
-
-        flavor = Flavor.from_model(flavor_model)
-        component_config = flavor.config_class(**component.configuration)
-
-        if component_config.is_local:
-            raise ValueError("No local stack components allowed.")
-
-        if flavor.type == StackComponentType.ORCHESTRATOR:
-            assert isinstance(component_config, BaseOrchestratorConfig)
-
-            if component_config.is_synchronous:
-                raise ValueError("No synchronous orchestrator allowed.")
 
 
 def get_requirements_for_stack(
@@ -318,57 +335,28 @@ def apply_run_config(
         run_config: The run configuration to apply.
         user_id: The ID of the user that wants to run the deployment.
 
-    Raises:
-        ValueError: If the run configuration contains values that can't be
-            updated when running a pipeline deployment.
-
     Returns:
         The updated deployment.
     """
-    pipeline_updates = {}
-
-    if run_config.parameters:
-        raise ValueError(
-            "Can't set parameters when running pipeline via Rest API."
-        )
-
-    if run_config.build:
-        raise ValueError("Can't set build when running pipeline via Rest API.")
-
-    if run_config.schedule:
-        raise ValueError(
-            "Can't set schedule when running pipeline via Rest API."
-        )
-
-    if run_config.settings.get("docker"):
-        raise ValueError(
-            "Can't set DockerSettings when running pipeline via Rest API."
-        )
-
-    pipeline_updates = run_config.dict(
-        exclude_none=True, include=set(PipelineConfiguration.__fields__)
+    pipeline_updates = run_config.model_dump(
+        exclude_none=True, include=set(PipelineConfiguration.model_fields)
     )
 
     pipeline_configuration = pydantic_utils.update_model(
         deployment.pipeline_configuration, update=pipeline_updates
     )
-    pipeline_configuration_dict = pipeline_configuration.dict(
+    pipeline_configuration_dict = pipeline_configuration.model_dump(
         exclude_none=True
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():
         step_config_dict = dict_utils.recursive_update(
             copy.deepcopy(pipeline_configuration_dict),
-            update=step.config.dict(exclude_none=True),
+            update=step.config.model_dump(exclude_none=True),
         )
-        step_config = StepConfiguration.parse_obj(step_config_dict)
+        step_config = StepConfiguration.model_validate(step_config_dict)
 
         if update := run_config.steps.get(invocation_id):
-            if update.settings.get("docker"):
-                raise ValueError(
-                    "Can't set DockerSettings when running pipeline via Rest API."
-                )
-
             step_config = pydantic_utils.update_model(
                 step_config, update=update
             )

@@ -29,6 +29,10 @@ settings:
     parent_image: pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime
     requirements: requirements.txt
     python_package_installer: uv
+    python_package_installer_args:
+      system: null
+    apt_packages: 
+      - git
     environment:
       PJRT_DEVICE: CUDA
       USE_TORCH_XLA: "false"
@@ -50,7 +54,6 @@ steps:
       dataset_name: gem/viggo
 
   finetune:
-    enable_step_logs: False
     parameters:
       max_steps: 300
       eval_steps: 30

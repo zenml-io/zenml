@@ -69,6 +69,30 @@ def handle_json_env_var(
         return default
 
 
+def is_true_string_value(value: Any) -> bool:
+    """Checks if the given value is a string representation of 'True'.
+
+    Args:
+        value: the value to check.
+
+    Returns:
+        Whether the input value represents a string version of 'True'.
+    """
+    return value in ["1", "y", "yes", "True", "true"]
+
+
+def is_false_string_value(value: Any) -> bool:
+    """Checks if the given value is a string representation of 'False'.
+
+    Args:
+        value: the value to check.
+
+    Returns:
+        Whether the input value represents a string version of 'False'.
+    """
+    return value in ["0", "n", "no", "False", "false"]
+
+
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
 
@@ -80,9 +104,9 @@ def handle_bool_env_var(var: str, default: bool = False) -> bool:
         The converted value.
     """
     value = os.getenv(var)
-    if value in ["1", "y", "yes", "True", "true"]:
+    if is_true_string_value(value):
         return True
-    elif value in ["0", "n", "no", "False", "false"]:
+    elif is_false_string_value(value):
         return False
     return default
 
@@ -230,6 +254,7 @@ STEP_SOURCE_PARAMETER_NAME = "step_source"
 
 # Server settings
 DEFAULT_ZENML_SERVER_NAME = "default"
+DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE = 40
 DEFAULT_ZENML_JWT_TOKEN_LEEWAY = 10
 DEFAULT_ZENML_JWT_TOKEN_ALGORITHM = "HS256"
 DEFAULT_ZENML_AUTH_SCHEME = AuthScheme.OAUTH2_PASSWORD_BEARER
@@ -301,7 +326,7 @@ REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline", "pipeline_run"]
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
-ACTIONS = "/action-flavors"
+ACTIONS = "/actions"
 API = "/api"
 API_KEYS = "/api_keys"
 API_KEY_ROTATE = "/rotate"

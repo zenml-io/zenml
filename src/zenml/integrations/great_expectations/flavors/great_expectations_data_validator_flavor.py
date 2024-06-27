@@ -16,7 +16,9 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import validator
+import yaml
+from pydantic import field_validator, model_validator
+from yaml.parser import ParserError
 
 from zenml.data_validators.base_data_validator import (
     BaseDataValidatorConfig,
@@ -26,6 +28,7 @@ from zenml.integrations.great_expectations import (
     GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR,
 )
 from zenml.io import fileio
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.integrations.great_expectations.data_validators import (
@@ -41,6 +44,8 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
             data context. If configured, the data validator will only be usable
             with local orchestrators.
         context_config: in-line Great Expectations data context configuration.
+            If the `context_root_dir` attribute is also set, this configuration
+            will be ignored.
         configure_zenml_stores: if set, ZenML will automatically configure
             stores that use the Artifact Store as a backend. If neither
             `context_root_dir` nor `context_config` are set, this is the default
@@ -54,7 +59,8 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
     configure_zenml_stores: bool = False
     configure_local_docs: bool = True
 
-    @validator("context_root_dir")
+    @field_validator("context_root_dir")
+    @classmethod
     def _ensure_valid_context_root_dir(
         cls, context_root_dir: Optional[str] = None
     ) -> Optional[str]:
@@ -77,6 +83,33 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
                     f"point to an existing data context path: {context_root_dir}"
                 )
         return context_root_dir
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def validate_context_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert the context configuration if given in JSON/YAML format.
+
+        Args:
+            data: The configuration values.
+
+        Returns:
+            The validated configuration values.
+
+        Raises:
+            ValueError: If the context configuration is not a valid
+                JSON/YAML object.
+        """
+        if isinstance(data.get("context_config"), str):
+            try:
+                data["context_config"] = yaml.safe_load(data["context_config"])
+            except ParserError as e:
+                raise ValueError(
+                    f"Malformed `context_config` value. Only JSON and YAML "
+                    f"formats are supported: {str(e)}"
+                )
+
+        return data
 
     @property
     def is_local(self) -> bool:

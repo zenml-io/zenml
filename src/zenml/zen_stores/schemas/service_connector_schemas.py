@@ -186,7 +186,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         Returns:
             The updated `ServiceConnectorSchema`.
         """
-        for field, value in connector_update.dict(
+        for field, value in connector_update.model_dump(
             exclude_unset=False,
             exclude={"workspace", "user", "secrets"},
         ).items():

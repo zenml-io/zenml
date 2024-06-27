@@ -188,7 +188,7 @@ class APIKeySchema(NamedSchema, table=True):
         Returns:
             The updated `APIKeySchema`.
         """
-        for field, value in update.dict(exclude_none=True).items():
+        for field, value in update.model_dump(exclude_none=True).items():
             if hasattr(self, field):
                 setattr(self, field, value)
 

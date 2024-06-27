@@ -27,7 +27,7 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseConfig, ValidationError, create_model
+from pydantic import ConfigDict, ValidationError, create_model
 
 from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
@@ -235,16 +235,14 @@ class EntrypointFunctionDefinition(NamedTuple):
             parameter: The function parameter for which the value was provided.
             value: The input value.
         """
-
-        class ModelConfig(BaseConfig):
-            arbitrary_types_allowed = False
+        config_dict = ConfigDict(arbitrary_types_allowed=False)
 
         # Create a pydantic model with just a single required field with the
         # type annotation of the parameter to verify the input type including
         # pydantics type coercion
         validation_model_class = create_model(
             "input_validation_model",
-            __config__=ModelConfig,
+            __config__=config_dict,
             value=(parameter.annotation, ...),
         )
         validation_model_class(value=value)

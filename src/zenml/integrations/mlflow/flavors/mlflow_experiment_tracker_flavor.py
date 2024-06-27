@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -72,7 +72,7 @@ class MLFlowExperimentTrackerSettings(BaseSettings):
     tags: Dict[str, Any] = {}
 
 
-class MLFlowExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class MLFlowExperimentTrackerConfig(
     BaseExperimentTrackerConfig, MLFlowExperimentTrackerSettings
 ):
     """Config for the MLflow experiment tracker.
@@ -101,69 +101,61 @@ class MLFlowExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/
     """
 
     tracking_uri: Optional[str] = None
-    tracking_username: Optional[str] = SecretField()
-    tracking_password: Optional[str] = SecretField()
-    tracking_token: Optional[str] = SecretField()
+    tracking_username: Optional[str] = SecretField(default=None)
+    tracking_password: Optional[str] = SecretField(default=None)
+    tracking_token: Optional[str] = SecretField(default=None)
     tracking_insecure_tls: bool = False
     databricks_host: Optional[str] = None
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode="after")
     def _ensure_authentication_if_necessary(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self,
+    ) -> "MLFlowExperimentTrackerConfig":
         """Ensures that credentials or a token for authentication exist.
 
         We make this check when running MLflow tracking with a remote backend.
-
-        Args:
-            values: The values to validate.
 
         Returns:
             The validated values.
 
         Raises:
-            ValueError: If neither credentials nor a token are provided.
+             ValueError: If neither credentials nor a token are provided.
         """
-        tracking_uri = values.get("tracking_uri")
-
-        if tracking_uri:
-            if is_databricks_tracking_uri(tracking_uri):
-                # If the tracking uri is "databricks", then we need the databricks
-                # host to be set.
-                databricks_host = values.get("databricks_host")
-
-                if not databricks_host:
+        if self.tracking_uri:
+            if is_databricks_tracking_uri(self.tracking_uri):
+                # If the tracking uri is "databricks", then we need the
+                # databricks host to be set.
+                if not self.databricks_host:
                     raise ValueError(
                         "MLflow experiment tracking with a Databricks MLflow "
-                        "managed tracking server requires the `databricks_host` "
-                        "to be set in your stack component. To update your "
-                        "component, run `zenml experiment-tracker update "
+                        "managed tracking server requires the "
+                        "`databricks_host` to be set in your stack component. "
+                        "To update your component, run "
+                        "`zenml experiment-tracker update "
                         "<NAME> --databricks_host=DATABRICKS_HOST` "
                         "and specify the hostname of your Databricks workspace."
                     )
 
-            if is_remote_mlflow_tracking_uri(tracking_uri):
-                # we need either username + password or a token to authenticate to
-                # the remote backend
-                basic_auth = values.get("tracking_username") and values.get(
-                    "tracking_password"
-                )
-                token_auth = values.get("tracking_token")
+            if is_remote_mlflow_tracking_uri(self.tracking_uri):
+                # we need either username + password or a token to authenticate
+                # to the remote backend
+                basic_auth = self.tracking_username and self.tracking_password
 
-                if not (basic_auth or token_auth):
+                if not (basic_auth or self.tracking_token):
                     raise ValueError(
                         f"MLflow experiment tracking with a remote backend "
-                        f"{tracking_uri} is only possible when specifying either "
-                        f"username and password or an authentication token in your "
-                        f"stack component. To update your component, run the "
-                        f"following command: `zenml experiment-tracker update "
+                        f"{self.tracking_uri} is only possible when specifying "
+                        f"either username and password or an authentication "
+                        f"token in your stack component. To update your "
+                        f"component, run the following command: "
+                        f"`zenml experiment-tracker update "
                         f"<NAME> --tracking_username=MY_USERNAME "
                         f"--tracking_password=MY_PASSWORD "
                         f"--tracking_token=MY_TOKEN` and specify either your "
                         f"username and password or token."
                     )
 
-        return values
+        return self
 
     @property
     def is_local(self) -> bool:

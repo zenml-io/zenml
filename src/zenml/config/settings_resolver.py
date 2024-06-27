@@ -122,7 +122,7 @@ class SettingsResolver:
         Returns:
             The converted settings.
         """
-        settings_dict = self._settings.dict()
+        settings_dict = dict(self._settings)
         try:
             return target_class(**settings_dict)
         except ValidationError:

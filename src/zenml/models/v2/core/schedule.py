@@ -14,13 +14,14 @@
 """Models representing schedules."""
 
 import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -29,7 +30,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.update import update_model
 
 logger = get_logger(__name__)
 
@@ -53,14 +53,11 @@ class ScheduleRequest(WorkspaceScopedRequest):
     orchestrator_id: Optional[UUID]
     pipeline_id: Optional[UUID]
 
-    @root_validator
+    @model_validator(mode="after")
     def _ensure_cron_or_periodic_schedule_configured(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self,
+    ) -> "ScheduleRequest":
         """Ensures that the cron expression or start time + interval are set.
-
-        Args:
-            values: All attributes of the schedule.
 
         Returns:
             All schedule attributes.
@@ -69,11 +66,9 @@ class ScheduleRequest(WorkspaceScopedRequest):
             ValueError: If no cron expression or start time + interval were
                 provided.
         """
-        cron_expression = values.get("cron_expression")
-        periodic_schedule = values.get("start_time") and values.get(
-            "interval_second"
-        )
-        run_once_starts_at = values.get("run_once_start_time")
+        cron_expression = self.cron_expression
+        periodic_schedule = self.start_time and self.interval_second
+        run_once_starts_at = self.run_once_start_time
 
         if cron_expression and periodic_schedule:
             logger.warning(
@@ -83,7 +78,7 @@ class ScheduleRequest(WorkspaceScopedRequest):
                 "but will usually ignore the interval and use the cron "
                 "expression."
             )
-            return values
+            return self
         elif cron_expression and run_once_starts_at:
             logger.warning(
                 "This schedule was created with a cron expression as well as "
@@ -91,9 +86,9 @@ class ScheduleRequest(WorkspaceScopedRequest):
                 "depends on the concrete orchestrator implementation but will "
                 "usually ignore the `run_once_start_time`."
             )
-            return values
+            return self
         elif cron_expression or periodic_schedule or run_once_starts_at:
-            return values
+            return self
         else:
             raise ValueError(
                 "Either a cron expression, a start time and interval seconds "
@@ -105,9 +100,19 @@ class ScheduleRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class ScheduleUpdate(ScheduleRequest):
+class ScheduleUpdate(BaseUpdate):
     """Update model for schedules."""
+
+    name: Optional[str] = None
+    active: Optional[bool] = None
+    cron_expression: Optional[str] = None
+    start_time: Optional[datetime.datetime] = None
+    end_time: Optional[datetime.datetime] = None
+    interval_second: Optional[datetime.timedelta] = None
+    catchup: Optional[bool] = None
+    run_once_start_time: Optional[datetime.datetime] = None
+    orchestrator_id: Optional[UUID] = None
+    pipeline_id: Optional[UUID] = None
 
 
 # ------------------ Response Model ------------------
@@ -275,17 +280,24 @@ class ScheduleFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Users."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace scope of the schedule."
+        default=None,
+        description="Workspace scope of the schedule.",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that created the schedule"
+        default=None,
+        description="User that created the schedule",
+        union_mode="left_to_right",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Pipeline that the schedule is attached to."
+        default=None,
+        description="Pipeline that the schedule is attached to.",
+        union_mode="left_to_right",
     )
     orchestrator_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Orchestrator that the schedule is attached to.",
+        union_mode="left_to_right",
     )
     active: Optional[bool] = Field(
         default=None,
@@ -296,10 +308,10 @@ class ScheduleFilter(WorkspaceScopedFilter):
         description="The cron expression, describing the schedule",
     )
     start_time: Optional[Union[datetime.datetime, str]] = Field(
-        default=None, description="Start time"
+        default=None, description="Start time", union_mode="left_to_right"
     )
     end_time: Optional[Union[datetime.datetime, str]] = Field(
-        default=None, description="End time"
+        default=None, description="End time", union_mode="left_to_right"
     )
     interval_second: Optional[Optional[float]] = Field(
         default=None,
@@ -317,4 +329,5 @@ class ScheduleFilter(WorkspaceScopedFilter):
     run_once_start_time: Optional[Union[datetime.datetime, str]] = Field(
         default=None,
         description="The time at which the schedule should run once",
+        union_mode="left_to_right",
     )

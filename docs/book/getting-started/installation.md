@@ -26,6 +26,18 @@ pip install "zenml[server]"
 We highly encourage you to install ZenML in a virtual environment. At ZenML, We like to use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) or [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) to manage our Python virtual environments.
 {% endhint %}
 
+## Installing onto MacOS with Apple Silicon (M1, M2)
+
+A change in how forking works on Macs running on Apple Silicon means that you
+should set the following environment variable which will ensure that your
+connections to the server remain unbroken:
+
+```bash
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+```
+
+You can read more about this [here](http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html). This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
+
 ## Nightly builds
 
 ZenML also publishes nightly builds under the [`zenml-nightly` package name](https://pypi.org/project/zenml-nightly/). These are built from the latest [`develop` branch](https://github.com/zenml-io/zenml/tree/develop) (to which work ready for release is published) and are not guaranteed to be stable. To install the nightly build, run:
@@ -70,6 +82,6 @@ docker run -it -d -p 8080:8080 zenmldocker/zenml-server
 
 ## Deploying the server
 
-Though ZenML can run entirely as a pip package on a local system, its advanced features are dependent on a centrally-deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](why-deploy-zenml/).
+Though ZenML can run entirely as a pip package on a local system, its advanced features are dependent on a centrally-deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](../getting-started/deploying-zenml/README.md).
 
-For the deployment of ZenML, you have the option to either [self-host](why-deploy-zenml/zenml-self-hosted/) it or register for a free account on [ZenML Cloud](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link).
+For the deployment of ZenML, you have the option to either [self-host](why-deploy-zenml/zenml-self-hosted/) it or register for a free [ZenML Pro](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) account.

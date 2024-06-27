@@ -20,7 +20,7 @@ The ECR registry is automatically activated once you create an AWS account. Howe
 * Go to the [ECR website](https://console.aws.amazon.com/ecr).
 * Make sure the correct region is selected on the top right.
 * Click on `Create repository`.
-* Create a private repository. The name of the repository depends on the \[orchestrator] (../orchestrators/orchestrators.md or [step operator](../step-operators/step-operators.md) you're using in your stack.
+* Create a private repository. The name of the repository depends on the [orchestrator](../orchestrators/orchestrators.md) or [step operator](../step-operators/step-operators.md) you're using in your stack.
 
 ### URI format
 

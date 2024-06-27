@@ -20,6 +20,24 @@ The ZenML team and community are constantly working to include more tools and in
 
 Most importantly, ZenML is extensible, and we encourage you to use it with whatever other tools you require as part of your ML process and system(s). Check out [our documentation on how to get started](../introduction.md) with extending ZenML to learn more!
 
+#### Do you support Windows?
+
+ZenML officially supports Windows if you're using WSL. Much of ZenML will also
+work on Windows outside a WSL environment, but we don't officially support it
+and some features don't work (notably anything that requires spinning up a
+server process).
+
+#### Do you support Macs running on Apple Silicon?
+
+Yes, ZenML does support Macs running on Apple Silicon. You just need to make sure that you set the following environment variable:
+
+```bash
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+```
+
+This is a known issue with how forking works on Macs running on Apple Silicon
+and it will enable you to use ZenML and the server. This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
+
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
 This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../how-to/stack-deployment/implement-a-custom-stack-component.md)!

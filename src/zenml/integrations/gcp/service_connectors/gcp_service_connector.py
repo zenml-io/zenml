@@ -43,10 +43,11 @@ from google.auth._default import (
     _get_external_account_credentials,
 )
 from google.auth.transport.requests import Request
-from google.cloud import container_v1, storage
+from google.cloud import artifactregistry_v1, container_v1, storage
+from google.cloud.location import locations_pb2
 from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
-from pydantic import Field, SecretStr, root_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
@@ -74,6 +75,8 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -85,7 +88,7 @@ GCP_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
 class GCPUserAccountCredentials(AuthenticationConfig):
     """GCP user account credentials."""
 
-    user_account_json: SecretStr = Field(
+    user_account_json: PlainSerializedSecretStr = Field(
         title="GCP User Account Credentials JSON",
     )
 
@@ -97,30 +100,33 @@ class GCPUserAccountCredentials(AuthenticationConfig):
         "distribute the user account credentials JSON to clients instead.",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def validate_user_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the user account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("user_account_json"), dict):
-            values["user_account_json"] = json.dumps(
-                values["user_account_json"]
-            )
-        return values
+        if isinstance(data.get("user_account_json"), dict):
+            data["user_account_json"] = json.dumps(data["user_account_json"])
+        return data
 
-    @validator("user_account_json")
-    def validate_user_account_json(cls, v: SecretStr) -> SecretStr:
+    @field_validator("user_account_json")
+    @classmethod
+    def validate_user_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the user account credentials JSON.
 
         Args:
-            v: The user account credentials JSON.
+            value: The user account credentials JSON.
 
         Returns:
             The validated user account credentials JSON.
@@ -129,7 +135,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
             ValueError: If the user account credentials JSON is invalid.
         """
         try:
-            user_account_info = json.loads(v.get_secret_value())
+            user_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP user account credentials is not a valid JSON: {e}"
@@ -157,13 +163,13 @@ class GCPUserAccountCredentials(AuthenticationConfig):
                 "instead of 'authorized_user'."
             )
 
-        return v
+        return value
 
 
 class GCPServiceAccountCredentials(AuthenticationConfig):
     """GCP service account credentials."""
 
-    service_account_json: SecretStr = Field(
+    service_account_json: PlainSerializedSecretStr = Field(
         title="GCP Service Account Key JSON",
     )
 
@@ -175,30 +181,35 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
         "distribute the service account key JSON to clients instead.",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def validate_service_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the service account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("service_account_json"), dict):
-            values["service_account_json"] = json.dumps(
-                values["service_account_json"]
+        if isinstance(data.get("service_account_json"), dict):
+            data["service_account_json"] = json.dumps(
+                data["service_account_json"]
             )
-        return values
+        return data
 
-    @validator("service_account_json")
-    def validate_service_account_json(cls, v: SecretStr) -> SecretStr:
+    @field_validator("service_account_json")
+    @classmethod
+    def validate_service_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the service account credentials JSON.
 
         Args:
-            v: The service account credentials JSON.
+            value: The service account credentials JSON.
 
         Returns:
             The validated service account credentials JSON.
@@ -207,7 +218,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
             ValueError: If the service account credentials JSON is invalid.
         """
         try:
-            service_account_info = json.loads(v.get_secret_value())
+            service_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP service account credentials is not a valid JSON: {e}"
@@ -243,13 +254,13 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
                 "instead of 'service_account'."
             )
 
-        return v
+        return value
 
 
 class GCPExternalAccountCredentials(AuthenticationConfig):
     """GCP external account credentials."""
 
-    external_account_json: SecretStr = Field(
+    external_account_json: PlainSerializedSecretStr = Field(
         title="GCP External Account JSON",
     )
 
@@ -261,30 +272,35 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
         "distribute the external account JSON to clients instead.",
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def validate_service_account_dict(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Convert the external account credentials to JSON if given in dict format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
         """
-        if isinstance(values.get("external_account_json"), dict):
-            values["external_account_json"] = json.dumps(
-                values["external_account_json"]
+        if isinstance(data.get("external_account_json"), dict):
+            data["external_account_json"] = json.dumps(
+                data["external_account_json"]
             )
-        return values
+        return data
 
-    @validator("external_account_json")
-    def validate_external_account_json(cls, v: SecretStr) -> SecretStr:
+    @field_validator("external_account_json")
+    @classmethod
+    def validate_external_account_json(
+        cls, value: PlainSerializedSecretStr
+    ) -> PlainSerializedSecretStr:
         """Validate the external account credentials JSON.
 
         Args:
-            v: The external account credentials JSON.
+            value: The external account credentials JSON.
 
         Returns:
             The validated external account credentials JSON.
@@ -293,7 +309,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
             ValueError: If the external account credentials JSON is invalid.
         """
         try:
-            external_account_info = json.loads(v.get_secret_value())
+            external_account_info = json.loads(value.get_secret_value())
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"GCP external account credentials is not a valid JSON: {e}"
@@ -322,13 +338,13 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
                 "instead of 'external_account'."
             )
 
-        return v
+        return value
 
 
 class GCPOAuth2Token(AuthenticationConfig):
     """GCP OAuth 2.0 token credentials."""
 
-    token: SecretStr = Field(
+    token: PlainSerializedSecretStr = Field(
         title="GCP OAuth 2.0 Token",
     )
 
@@ -336,24 +352,72 @@ class GCPOAuth2Token(AuthenticationConfig):
 class GCPBaseConfig(AuthenticationConfig):
     """GCP base configuration."""
 
+    @property
+    def gcp_project_id(self) -> str:
+        """Get the GCP project ID.
+
+        This method must be implemented by subclasses to ensure that the GCP
+        project ID is always available.
+
+        Raises:
+            NotImplementedError: If the method is not implemented.
+        """
+        raise NotImplementedError
+
+
+class GCPBaseProjectIDConfig(GCPBaseConfig):
+    """GCP base configuration with included project ID."""
+
     project_id: str = Field(
         title="GCP Project ID where the target resource is located.",
     )
 
+    @property
+    def gcp_project_id(self) -> str:
+        """Get the GCP project ID.
 
-class GCPUserAccountConfig(GCPBaseConfig, GCPUserAccountCredentials):
+        Returns:
+            The GCP project ID.
+        """
+        return self.project_id
+
+
+class GCPUserAccountConfig(GCPBaseProjectIDConfig, GCPUserAccountCredentials):
     """GCP user account configuration."""
 
 
 class GCPServiceAccountConfig(GCPBaseConfig, GCPServiceAccountCredentials):
     """GCP service account configuration."""
 
+    _project_id: Optional[str] = None
 
-class GCPExternalAccountConfig(GCPBaseConfig, GCPExternalAccountCredentials):
+    @property
+    def gcp_project_id(self) -> str:
+        """Get the GCP project ID.
+
+        When a service account JSON is provided, the project ID can be extracted
+        from it instead of being provided explicitly.
+
+        Returns:
+            The GCP project ID.
+        """
+        if self._project_id is None:
+            self._project_id = json.loads(
+                self.service_account_json.get_secret_value()
+            )["project_id"]
+            # Guaranteed by the field validator
+            assert self._project_id is not None
+
+        return self._project_id
+
+
+class GCPExternalAccountConfig(
+    GCPBaseProjectIDConfig, GCPExternalAccountCredentials
+):
     """GCP external account configuration."""
 
 
-class GCPOAuth2TokenConfig(GCPBaseConfig, GCPOAuth2Token):
+class GCPOAuth2TokenConfig(GCPBaseProjectIDConfig, GCPOAuth2Token):
     """GCP OAuth 2.0 configuration."""
 
     service_account_email: Optional[str] = Field(
@@ -525,7 +589,7 @@ resources in the specified project. When used remotely in a GCP workload, the
 configured project has to be the same as the project of the attached service
 account.
 """,
-            config_class=GCPBaseConfig,
+            config_class=GCPBaseProjectIDConfig,
         ),
         AuthenticationMethodModel(
             name="GCP User Account",
@@ -771,14 +835,53 @@ GKE clusters in the GCP project that it is configured to use.
             emoji=":cyclone:",
         ),
         ResourceTypeModel(
-            name="GCP GCR container registry",
+            name="GCP GAR container registry",
             resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             description="""
-Allows Stack Components to access a GCR registry as a standard
+Allows Stack Components to access a Google Artifact Registry as a standard
 Docker registry resource. When used by Stack Components, they are provided a
 pre-authenticated Python Docker client instance.
 
-The configured credentials must have at least the following [GCP permissions](https://cloud.google.com/iam/docs/permissions-reference):
+The configured credentials must have at least the following [GCP permissions](https://cloud.google.com/iam/docs/understanding-roles#artifact-registry-roles):
+
+- `artifactregistry.repositories.createOnPush`
+- `artifactregistry.repositories.downloadArtifacts`
+- `artifactregistry.repositories.get`
+- `artifactregistry.repositories.list`
+- `artifactregistry.repositories.readViaVirtualRepository`
+- `artifactregistry.repositories.uploadArtifacts`
+- `artifactregistry.locations.list`
+
+The Artifact Registry Create-on-Push Writer role includes all of the above
+permissions.
+
+This resource type also includes legacy GCR container registry support.
+
+**Important Notice: Google Container Registry** [**is being replaced by Artifact Registry**](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr).
+Please start using Artifact Registry for your containers. As per Google's
+documentation, *"after May 15, 2024, Artifact Registry will host images for the
+gcr.io domain in Google Cloud projects without previous Container Registry
+usage. After March 18, 2025, Container Registry will be shut down."*.
+
+Support for legacy GCR registries is still included in the GCP service
+connector. Users that already have GCP service connectors configured to access
+GCR registries may continue to use them without taking any action. However, it
+is recommended to transition to Google Artifact Registries as soon as possible
+by following [the GCP guide on this subject](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr)
+and making the following updates to ZenML GCP Service Connectors that are used
+to access GCR resources:
+
+* add the IAM permissions documented here to the GCP Service Connector
+credentials to enable them to access the Artifact Registries.
+* users may keep the gcr.io GCR URLs already configured in the GCP Service
+Connectors as well as those used in linked Container Registry stack components
+given that these domains are redirected by Google to GAR as covered in the GCR
+transition guide. Alternatively, users may update the GCP Service Connector
+configuration and/or the Container Registry stack components to use the
+replacement Artifact Registry URLs.
+
+When used with GCR registries, the configured credentials must have at least the
+following [GCP permissions](https://cloud.google.com/iam/docs/understanding-roles#cloud-storage-roles):
 
 - `storage.buckets.get`
 - `storage.multipartUploads.abort`
@@ -792,17 +895,21 @@ The configured credentials must have at least the following [GCP permissions](ht
 The Storage Legacy Bucket Writer role includes all of the above permissions
 while at the same time restricting access to only the GCR buckets.
 
-The resource name associated with this resource type identifies the GCR
-container registry associated with the GCP project (the repository name is
-optional):
+If set, the resource name must identify a GAR or GCR registry using one of the
+following formats:
 
-- GCR repository URI: `[https://]gcr.io/{project-id}[/{repository-name}]
+- Google Artifact Registry repository URI: `[https://]<region>-docker.pkg.dev/<project-id>/<registry-id>[/<repository-name>]`
+- Google Artifact Registry name: `projects/<project-id>/locations/<location>/repositories/<repository-id>`
+- (legacy) GCR repository URI: `[https://][us.|eu.|asia.]gcr.io/<project-id>[/<repository-name>]`
+
+The connector can only be used to access GAR and GCR registries in the GCP
+project that it is configured to use.
 """,
             auth_methods=GCPAuthenticationMethods.values(),
-            # Does not support instances, given that the connector
-            # provides access to the entire GCR container registry
-            # for the configured GCP project.
-            supports_instances=False,
+            # The connector provides access to the entire GCR container registry
+            # for the configured GCP project as well as any number of artifact
+            # registry repositories.
+            supports_instances=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
             emoji=":whale:",
         ),
@@ -991,6 +1098,7 @@ class GCPServiceConnector(ServiceConnector):
                 # service account authentication)
 
                 assert isinstance(cfg, GCPServiceAccountConfig)
+
                 credentials = (
                     gcp_service_account.Credentials.from_service_account_info(
                         json.loads(
@@ -1078,60 +1186,101 @@ class GCPServiceConnector(ServiceConnector):
 
         return bucket_name
 
-    def _parse_gcr_resource_id(
+    def _parse_gar_resource_id(
         self,
         resource_id: str,
-    ) -> str:
-        """Validate and convert an GCR resource ID to an GCR registry ID.
+    ) -> Tuple[str, Optional[str]]:
+        """Validate and convert a GAR resource ID to a Google Artifact Registry ID and name.
 
         Args:
             resource_id: The resource ID to convert.
 
         Returns:
-            The GCR registry ID.
+            The Google Artifact Registry ID and name. The name is omitted if the
+            resource ID is a GCR repository URI.
 
         Raises:
-            ValueError: If the provided resource ID is not a valid GCR
-                repository URI.
+            ValueError: If the provided resource ID is not a valid GAR
+                or GCR repository URI.
         """
         # The resource ID could mean different things:
         #
-        # - an GCR repository URI
+        # - a GAR repository URI
+        # - a GAR repository name
+        # - a GCR repository URI (backwards-compatibility)
         #
         # We need to extract the project ID and registry ID from
         # the provided resource ID
-        config_project_id = self.config.project_id
+        config_project_id = self.config.gcp_project_id
         project_id: Optional[str] = None
-        # A GCR repository URI uses one of several hostnames (gcr.io, us.gcr.io,
-        # eu.gcr.io, asia.gcr.io etc.) and the project ID is the first part of
-        # the URL path
-        if re.match(
-            r"^(https://)?([a-z]+.)*gcr.io/[a-z0-9-]+(/.+)*$",
+        canonical_url: str
+        registry_name: Optional[str] = None
+
+        # A Google Artifact Registry URI uses the <location>-docker-pkg.dev
+        # domain format with the project ID as the first part of the URL path
+        # and the registry name as the second part of the URL path
+        if match := re.match(
+            r"^(https://)?(([a-z0-9-]+)-docker\.pkg\.dev/([a-z0-9-]+)/([a-z0-9-.]+))(/.+)*$",
             resource_id,
         ):
-            # The resource ID is a GCR repository URI
-            if resource_id.startswith("https://"):
-                project_id = resource_id.split("/")[3]
-            else:
-                project_id = resource_id.split("/")[1]
+            # The resource ID is a Google Artifact Registry URI
+            project_id = match[4]
+            location = match[3]
+            repository = match[5]
+
+            # Return the GAR URL without the image name and without the protocol
+            canonical_url = match[2]
+            registry_name = f"projects/{project_id}/locations/{location}/repositories/{repository}"
+
+        # Alternatively, the Google Artifact Registry name uses the
+        # projects/<project-id>/locations/<location>/repositories/<repository-id>
+        # format
+        elif match := re.match(
+            r"^projects/([a-z0-9-]+)/locations/([a-z0-9-]+)/repositories/([a-z0-9-.]+)$",
+            resource_id,
+        ):
+            # The resource ID is a Google Artifact Registry name
+            project_id = match[1]
+            location = match[2]
+            repository = match[3]
+
+            # Return the GAR URL
+            canonical_url = (
+                f"{location}-docker.pkg.dev/{project_id}/{repository}"
+            )
+            registry_name = resource_id
+
+        # A legacy GCR repository URI uses one of several hostnames (gcr.io,
+        # us.gcr.io, eu.gcr.io, asia.gcr.io) and the project ID is the
+        # first part of the URL path
+        elif match := re.match(
+            r"^(https://)?(((us|eu|asia)\.)?gcr\.io/[a-z0-9-]+)(/.+)*$",
+            resource_id,
+        ):
+            # The resource ID is a legacy GCR repository URI.
+            # Return the GAR URL without the image name and without the protocol
+            canonical_url = match[2]
+
         else:
             raise ValueError(
-                f"Invalid resource ID for a GCR registry: {resource_id}. "
-                f"Supported formats are:\n"
+                f"Invalid resource ID for a Google Artifact Registry: "
+                f"{resource_id}. Supported formats are:\n"
+                f"Google Artifact Registry URI: [https://]<region>-docker.pkg.dev/<project-id>/<registry-id>[/<repository-name>]\n"
+                f"Google Artifact Registry name: projects/<project-id>/locations/<location>/repositories/<repository-id>\n"
                 f"GCR repository URI: [https://][us.|eu.|asia.]gcr.io/<project-id>[/<repository-name>]"
             )
 
         # If the connector is configured with a project and the resource ID
-        # is an GCR repository URI that specifies a different project,
+        # is a GAR repository URI that specifies a different project,
         # we raise an error
         if project_id and project_id != config_project_id:
             raise ValueError(
-                f"The GCP project for the {resource_id} GCR repository "
-                f"'{project_id}' does not match the project configured in "
-                f"the connector: '{config_project_id}'."
+                f"The GCP project for the {resource_id} Google Artifact "
+                f"Registry '{project_id}' does not match the project "
+                f"configured in the connector: '{config_project_id}'."
             )
 
-        return f"gcr.io/{project_id}"
+        return canonical_url, registry_name
 
     def _parse_gke_resource_id(self, resource_id: str) -> str:
         """Validate and convert an GKE resource ID to a GKE cluster name.
@@ -1180,7 +1329,7 @@ class GCPServiceConnector(ServiceConnector):
             cluster_name = self._parse_gke_resource_id(resource_id)
             return cluster_name
         elif resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
-            registry_id = self._parse_gcr_resource_id(
+            registry_id, _ = self._parse_gar_resource_id(
                 resource_id,
             )
             return registry_id
@@ -1204,9 +1353,7 @@ class GCPServiceConnector(ServiceConnector):
                 authorized.
         """
         if resource_type == GCP_RESOURCE_TYPE:
-            return self.config.project_id
-        elif resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
-            return f"gcr.io/{self.config.project_id}"
+            return self.config.gcp_project_id
 
         raise RuntimeError(
             f"Default resource ID not supported for '{resource_type}' resource "
@@ -1263,7 +1410,7 @@ class GCPServiceConnector(ServiceConnector):
 
             # Create an GCS client for the bucket
             client = storage.Client(
-                project=self.config.project_id, credentials=credentials
+                project=self.config.gcp_project_id, credentials=credentials
             )
             return client
 
@@ -1369,7 +1516,7 @@ class GCPServiceConnector(ServiceConnector):
                             "config",
                             "set",
                             "project",
-                            self.config.project_id,
+                            self.config.gcp_project_id,
                         ],
                         check=True,
                         stderr=subprocess.STDOUT,
@@ -1473,7 +1620,7 @@ class GCPServiceConnector(ServiceConnector):
             )
 
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
-            auth_config = GCPBaseConfig(
+            auth_config = GCPBaseProjectIDConfig(
                 project_id=project_id,
             )
         elif auth_method == GCPAuthenticationMethods.OAUTH2_TOKEN:
@@ -1682,7 +1829,7 @@ class GCPServiceConnector(ServiceConnector):
 
         if resource_type == GCS_RESOURCE_TYPE:
             gcs_client = storage.Client(
-                project=self.config.project_id, credentials=credentials
+                project=self.config.gcp_project_id, credentials=credentials
             )
             if not resource_id:
                 # List all GCS buckets
@@ -1707,11 +1854,87 @@ class GCPServiceConnector(ServiceConnector):
                     raise AuthorizationException(msg) from e
 
         if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
-            assert resource_id is not None
+            # Get a GAR client
+            gar_client = artifactregistry_v1.ArtifactRegistryClient(
+                credentials=credentials
+            )
 
-            # No way to verify a GCR registry without attempting to
-            # connect to it via Docker/OCI, so just return the resource ID.
-            return [resource_id]
+            if resource_id:
+                registry_id, registry_name = self._parse_gar_resource_id(
+                    resource_id
+                )
+
+                if registry_name is None:
+                    # This is a legacy GCR repository URI. We can't verify
+                    # the repository access without attempting to connect to it
+                    # via Docker/OCI, so just return the resource ID.
+                    return [registry_id]
+
+                # Check if the specified GAR registry exists
+                try:
+                    repository = gar_client.get_repository(
+                        name=registry_name,
+                    )
+                    if repository.format_.name != "DOCKER":
+                        raise AuthorizationException(
+                            f"Google Artifact Registry '{resource_id}' is not a "
+                            "Docker registry."
+                        )
+                    return [registry_id]
+                except google.api_core.exceptions.GoogleAPIError as e:
+                    msg = f"Failed to fetch Google Artifact Registry '{registry_id}': {e}"
+                    logger.error(msg)
+                    raise AuthorizationException(msg) from e
+
+            # For backwards compatibility, we initialize the list of resource
+            # IDs with all GCR supported registries for the configured GCP
+            # project
+            resource_ids: List[str] = [
+                f"{location}gcr.io/{self.config.gcp_project_id}"
+                for location in ["", "us.", "eu.", "asia."]
+            ]
+
+            # List all Google Artifact Registries
+            try:
+                # First, we need to fetch all the Artifact Registry supported
+                # locations
+                locations = gar_client.list_locations(
+                    request=locations_pb2.ListLocationsRequest(
+                        name=f"projects/{self.config.gcp_project_id}"
+                    )
+                )
+                location_names = [
+                    locations.locations[i].location_id
+                    for i in range(len(locations.locations))
+                ]
+
+                # Then, we need to fetch all the repositories in each location
+                repository_names: List[str] = []
+                for location in location_names:
+                    repositories = gar_client.list_repositories(
+                        parent=f"projects/{self.config.gcp_project_id}/locations/{location}"
+                    )
+                    repository_names.extend(
+                        [
+                            repository.name
+                            for repository in repositories
+                            if repository.format_.name == "DOCKER"
+                        ]
+                    )
+
+                for repository_name in repository_names:
+                    # Convert the repository name to a canonical GAR URL
+                    resource_ids.append(
+                        self._parse_gar_resource_id(repository_name)[0]
+                    )
+
+            except google.api_core.exceptions.GoogleAPIError as e:
+                msg = f"Failed to list Google Artifact Registries: {e}"
+                logger.error(msg)
+                # TODO: enable when GCR is no longer supported:
+                # raise AuthorizationException(msg) from e
+
+            return resource_ids
 
         if resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
             gke_client = container_v1.ClusterManagerClient(
@@ -1721,7 +1944,7 @@ class GCPServiceConnector(ServiceConnector):
             # List all GKE clusters
             try:
                 clusters = gke_client.list_clusters(
-                    parent=f"projects/{self.config.project_id}/locations/-"
+                    parent=f"projects/{self.config.gcp_project_id}/locations/-"
                 )
                 cluster_names = [cluster.name for cluster in clusters.clusters]
             except google.api_core.exceptions.GoogleAPIError as e:
@@ -1795,7 +2018,7 @@ class GCPServiceConnector(ServiceConnector):
             # object
             auth_method: str = GCPAuthenticationMethods.OAUTH2_TOKEN
             config: GCPBaseConfig = GCPOAuth2TokenConfig(
-                project_id=self.config.project_id,
+                project_id=self.config.gcp_project_id,
                 token=credentials.token,
                 service_account_email=credentials.signer_email
                 if hasattr(credentials, "signer_email")
@@ -1840,7 +2063,7 @@ class GCPServiceConnector(ServiceConnector):
         if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             assert resource_id is not None
 
-            registry_id = self._parse_gcr_resource_id(resource_id)
+            registry_id, _ = self._parse_gar_resource_id(resource_id)
 
             # Create a client-side Docker connector instance with the temporary
             # Docker credentials
@@ -1869,7 +2092,7 @@ class GCPServiceConnector(ServiceConnector):
             # List all GKE clusters
             try:
                 clusters = gke_client.list_clusters(
-                    parent=f"projects/{self.config.project_id}/locations/-"
+                    parent=f"projects/{self.config.gcp_project_id}/locations/-"
                 )
                 cluster_map = {
                     cluster.name: cluster for cluster in clusters.clusters
@@ -1913,7 +2136,7 @@ class GCPServiceConnector(ServiceConnector):
                 auth_method=KubernetesAuthenticationMethods.TOKEN,
                 resource_type=resource_type,
                 config=KubernetesTokenConfig(
-                    cluster_name=f"gke_{self.config.project_id}_{cluster_name}",
+                    cluster_name=f"gke_{self.config.gcp_project_id}_{cluster_name}",
                     certificate_authority=cluster_ca_cert,
                     server=f"https://{cluster_server}",
                     token=bearer_token,

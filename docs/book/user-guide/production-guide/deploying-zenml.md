@@ -18,11 +18,11 @@ In order to move into production, you will need to deploy this server somewhere 
 
 While there are many options on how to [deploy ZenML](../../getting-started/deploying-zenml/README.md), the two simplest ones are:
 
-### Option 1: Sign up for a free ZenML Cloud Trial
+### Option 1: Sign up for a free ZenML Pro Trial
 
-[ZenML Cloud](https://zenml.io/cloud) is a managed SaaS solution that offers a one-click deployment for your ZenML server. Click [here](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) to start a free trial.
+[ZenML Pro](https://zenml.io/cloud) comes as a managed SaaS solution that offers a one-click deployment for your ZenML server. Click [here](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link) to start a free trial.
 
-On top of the one-click experience, ZenML Cloud also comes built-in with additional features and a new dashboard that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
+On top of the one-click SaaS experience, ZenML Pro also comes built-in with additional features and a new dashboard that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
 
 ### Option 2: Self-host ZenML on your cloud provider
 
@@ -44,7 +44,7 @@ You will be prompted to provide a name for your deployment and details like what
 In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 {% endhint %}
 
-To learn more about different options for [deploying ZenML, visit the deployment documentation](../../getting-started/deploying-zenml/).
+To learn more about different options for [deploying ZenML, visit the deployment documentation](../../getting-started/deploying-zenml/README.md).
 
 ## Connecting to a deployed ZenML
 
@@ -57,7 +57,7 @@ zenml connect --url <SERVER_URL>
 where SERVER\_URL is the host address of your ZenML deployment (e.g. `https://mydeployment.zenml.com`)
 
 {% hint style="info" %}
-Having trouble connecting with a browser? There are other ways to connect. Read [here](../../how-to/connecting-to-zenml/) for more details.
+Having trouble connecting with a browser? There are other ways to connect. Read [here](../../how-to/connecting-to-zenml/README.md) for more details.
 {% endhint %}
 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. After that, you're now locally connected to a remote ZenML. Nothing of your experience changes, except that all metadata that you produce will be tracked centrally in one place from now on.

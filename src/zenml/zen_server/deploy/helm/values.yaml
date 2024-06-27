@@ -10,6 +10,17 @@ zenml:
 
   replicaCount: 1
 
+  # The number of ZenML server worker threads to use. This controls the number
+  # of concurrent requests that each ZenML server pod/replica can handle at a
+  # time. If not specified, the default value is 40.
+  #
+  # NOTE: this value should be coordinated with the `zenml.database.poolSize`
+  # and `zenml.database.maxOverflow` values to ensure that the ZenML server
+  # workers do not block on database connections (i.e. the sum of the pool size
+  # and max overflow should be greater than or equal to the thread pool size).
+  #
+  # threadPoolSize: 40
+
   image:
     repository: zenmldocker/zenml-server
     pullPolicy: Always
@@ -197,6 +208,16 @@ zenml:
     # sslCert: /path/to/client-cert.pem
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
+
+    # Connection pool settings (only relevant for MySQL databases).
+    #
+    # NOTE: these values should be coordinated with the `zenml.threadPoolSize`
+    # to ensure that the ZenML server workers do not block on database
+    # connections (i.e. the sum of the pool size and max overflow should be
+    # greater than or equal to the thread pool size).
+    #
+    # poolSize: 20
+    # maxOverflow: 20
 
     # ZenML supports backing up the database before DB migrations are performed
     # and restoring it in case of a DB migration failure. For more information,
