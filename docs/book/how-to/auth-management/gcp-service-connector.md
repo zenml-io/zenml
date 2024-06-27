@@ -6,7 +6,7 @@ description: >-
 
 # GCP Service Connector
 
-The ZenML GCP Service Connector facilitates the authentication and access to managed GCP services and resources. These encompass a range of resources, including GCS buckets, GCR container repositories, and GKE clusters. The connector provides support for various authentication methods, including GCP user accounts, service accounts, short-lived OAuth 2.0 tokens, and implicit authentication.
+The ZenML GCP Service Connector facilitates the authentication and access to managed GCP services and resources. These encompass a range of resources, including GCS buckets, GAR and GCR container repositories, and GKE clusters. The connector provides support for various authentication methods, including GCP user accounts, service accounts, short-lived OAuth 2.0 tokens, and implicit authentication.
 
 To ensure heightened security measures, this connector always issues [short-lived OAuth 2.0 tokens to clients instead of long-lived credentials](best-security-practices.md#generating-temporary-and-down-scoped-credentials) unless explicitly configured to do otherwise. Furthermore, it includes [automatic configuration and detection of credentials locally configured through the GCP CLI](service-connectors-guide.md#auto-configuration).
 
@@ -91,11 +91,34 @@ If set, the resource name must identify a GKE cluster using one of the following
 
 GKE cluster names are project scoped. The connector can only be used to access GKE clusters in the GCP project that it is configured to use.
 
-### GCR container registry
+### GAR container registry (including legacy GCR support)
 
-Allows Stack Components to access a GCR registry as a standard Docker registry resource. When used by Stack Components, they are provided a pre-authenticated Python Docker client instance.
+{% hint style="warning" %}
+**Important Notice: Google Container Registry** [**is being replaced by Artifact Registry**](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr)**. Please start using Artifact Registry for your containers. As per Google's documentation, "after May 15, 2024, Artifact Registry will host images for the gcr.io domain in Google Cloud projects without previous Container Registry usage. After March 18, 2025, Container Registry will be shut down.".
 
-The configured credentials must have at least the following [GCP permissions](https://cloud.google.com/iam/docs/permissions-reference):
+Support for legacy GCR registries is still included in the GCP service connector. Users that already have GCP service connectors configured to access GCR registries may continue to use them without taking any action. However, it is recommended to transition to Google Artifact Registries as soon as possible by following [the GCP guide on this subject](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr) and making the following updates to ZenML GCP Service Connectors that are used to access GCR resources:
+
+* add the IAM permissions documented here to the GCP Service Connector credentials to enable them to access the Artifact Registries.
+* users may keep the gcr.io GCR URLs already configured in the GCP Service Connectors as well as those used in linked Container Registry stack components given that these domains are redirected by Google to GAR as covered in the GCR transition guide. Alternatively, users may update the GCP Service Connector configuration and/or the Container Registry stack components to use the replacement Artifact Registry URLs.
+
+The GCP Service Connector will list the legacy GCR registries as accessible for a GCP project even if the GCP Service Connector credentials do not grant access to GCR registries. This is required for backwards-compatibility and will be removed in a future release.
+{% endhint %}
+
+Allows Stack Components to access a Google Artifact Registry as a standard Docker registry resource. When used by Stack Components, they are provided a pre-authenticated Python Docker client instance.
+
+The configured credentials must have at least the following [GCP permissions](https://cloud.google.com/iam/docs/understanding-roles#artifact-registry-roles):
+
+* `artifactregistry.repositories.createOnPush`
+* `artifactregistry.repositories.downloadArtifacts`
+* `artifactregistry.repositories.get`
+* `artifactregistry.repositories.list`
+* `artifactregistry.repositories.readViaVirtualRepository`
+* `artifactregistry.repositories.uploadArtifacts`
+* `artifactregistry.locations.list`
+
+The Artifact Registry Create-on-Push Writer role includes all of the above permissions.
+
+This resource type also includes legacy GCR container registry support. When used with GCR registries, the configured credentials must have at least the following [GCP permissions](https://cloud.google.com/iam/docs/understanding-roles#cloud-storage-roles):
 
 * `storage.buckets.get`
 * `storage.multipartUploads.abort`
@@ -108,9 +131,14 @@ The configured credentials must have at least the following [GCP permissions](ht
 
 The Storage Legacy Bucket Writer role includes all of the above permissions while at the same time restricting access to only the GCR buckets.
 
-The resource name associated with this resource type identifies the GCR container registry associated with the GCP-configured project (the repository name is optional):
+If set, the resource name must identify a GAR or GCR registry using one of the following formats:
 
-* GCR repository URI: `[https://]gcr.io/{project-id}[/{repository-name}]`
+* Google Artifact Registry repository URI: `[https://]<region>-docker.pkg.dev/<project-id>/<registry-id>[/<repository-name>]`
+* Google Artifact Registry name: `projects/<project-id>/locations/<location>/repositories/<repository-id>`
+* (legacy) GCR repository URI: `[https://][us.|eu.|asia.]gcr.io/<project-id>[/<repository-name>]`
+
+The connector can only be used to access GAR and GCR registries in the GCP
+project that it is configured to use.
 
 ## Authentication Methods
 
@@ -167,7 +195,15 @@ Successfully registered service connector `gcp-implicit` with access to the foll
 ┠───────────────────────┼─────────────────────────────────────────────────┨
 ┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
 ┠───────────────────────┼─────────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┃ 🐳 docker-registry    │ gcr.io/zenml-core                               ┃
+┃                       │ us.gcr.io/zenml-core                            ┃
+┃                       │ eu.gcr.io/zenml-core                            ┃
+┃                       │ asia.gcr.io/zenml-core                          ┃
+┃                       │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                       │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                       │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                       │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                       │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
@@ -266,7 +302,15 @@ Successfully registered service connector `gcp-user-account` with access to the 
 ┠───────────────────────┼─────────────────────────────────────────────────┨
 ┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
 ┠───────────────────────┼─────────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┃ 🐳 docker-registry    │ gcr.io/zenml-core                               ┃
+┃                       │ us.gcr.io/zenml-core                            ┃
+┃                       │ eu.gcr.io/zenml-core                            ┃
+┃                       │ asia.gcr.io/zenml-core                          ┃
+┃                       │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                       │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                       │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                       │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                       │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
@@ -464,7 +508,10 @@ Successfully registered service connector `gcp-empty-sa` with access to the foll
 ┃                       │ permission(s) for "projects/20219041791". [request_id: "0x84808facdac08541"                                               ┃
 ┃                       │ ]                                                                                                                         ┃
 ┠───────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ gcr.io/zenml-core                                                                                                         ┃
+┃ 🐳 docker-registry    │ gcr.io/zenml-core                                                                                                         ┃
+┃                       │ us.gcr.io/zenml-core                                                                                                      ┃
+┃                       │ eu.gcr.io/zenml-core                                                                                                      ┃
+┃                       │ asia.gcr.io/zenml-core                                                                                                    ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
@@ -582,7 +629,15 @@ Successfully registered service connector `gcp-workload-identity` with access to
 ┠───────────────────────┼─────────────────────────────────────────────────┨
 ┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
 ┠───────────────────────┼─────────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┃ 🐳 docker-registry    │ gcr.io/zenml-core                               ┃
+┃                       │ us.gcr.io/zenml-core                            ┃
+┃                       │ eu.gcr.io/zenml-core                            ┃
+┃                       │ asia.gcr.io/zenml-core                          ┃
+┃                       │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                       │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                       │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                       │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                       │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
@@ -700,7 +755,15 @@ Successfully registered service connector `gcp-oauth2-token` with access to the 
 ┠───────────────────────┼─────────────────────────────────────────────────┨
 ┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
 ┠───────────────────────┼─────────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┃ 🐳 docker-registry    │ gcr.io/zenml-core                               ┃
+┃                       │ us.gcr.io/zenml-core                            ┃
+┃                       │ eu.gcr.io/zenml-core                            ┃
+┃                       │ asia.gcr.io/zenml-core                          ┃
+┃                       │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                       │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                       │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                       │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                       │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
@@ -808,7 +871,15 @@ Successfully registered service connector `gcp-auto` with access to the followin
 ┠───────────────────────┼─────────────────────────────────────────────────┨
 ┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
 ┠───────────────────────┼─────────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┃ 🐳 docker-registry    │ gcr.io/zenml-core                               ┃
+┃                       │ us.gcr.io/zenml-core                            ┃
+┃                       │ eu.gcr.io/zenml-core                            ┃
+┃                       │ asia.gcr.io/zenml-core                          ┃
+┃                       │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                       │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                       │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                       │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                       │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
@@ -948,22 +1019,22 @@ Metrics-server is running at https://35.185.95.223/api/v1/namespaces/kube-system
 A similar process is possible with GCR container registries:
 
 ```sh
-zenml service-connector verify gcp-user-account --resource-type docker-registry
+zenml service-connector verify gcp-user-account --resource-type docker-registry --resource-id europe-west1-docker.pkg.dev/zenml-core/test
 ```
 
 {% code title="Example Command Output" %}
 ```
 Service connector 'gcp-user-account' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃   RESOURCE TYPE    │ RESOURCE NAMES    ┃
-┠────────────────────┼───────────────────┨
-┃ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   RESOURCE TYPE    │ RESOURCE NAMES                              ┃
+┠────────────────────┼─────────────────────────────────────────────┨
+┃ 🐳 docker-registry │ europe-west1-docker.pkg.dev/zenml-core/test ┃
+┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
 
 ```sh
-zenml service-connector login gcp-user-account --resource-type docker-registry
+zenml service-connector login gcp-user-account --resource-type docker-registry --resource-id europe-west1-docker.pkg.dev/zenml-core/test
 ```
 
 {% code title="Example Command Output" %}
@@ -980,12 +1051,12 @@ The 'gcp-user-account' Docker Service Connector connector was used to successful
 To verify that the local Docker container registry client is correctly configured, the following command can be used:
 
 ```sh
-docker push gcr.io/zenml-core/zenml-server:connectors
+docker push europe-west1-docker.pkg.dev/zenml-core/test/zenml
 ```
 
 {% code title="Example Command Output" %}
 ```
-The push refers to repository [gcr.io/zenml-core/zenml-server]
+The push refers to repository [europe-west1-docker.pkg.dev/zenml-core/test/zenml]
 d4aef4f5ed86: Pushed 
 2d69a4ce1784: Pushed 
 204066eca765: Pushed 
@@ -1027,7 +1098,7 @@ The [Google Cloud Image Builder Stack Component](../../component-guide/image-bui
 
 The GCP Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on Kubernetes clusters to manage workloads. This allows GKE Kubernetes container workloads to be managed without the need to configure and maintain explicit GCP or Kubernetes `kubectl` configuration contexts and credentials in the target environment or in the Stack Component itself.
 
-Similarly, Container Registry Stack Components can be connected to a GCR Container Registry through a GCP Service Connector. This allows container images to be built and published to GCR container registries without the need to configure explicit GCP credentials in the target environment or the Stack Component.
+Similarly, Container Registry Stack Components can be connected to a Google Artifact Registry or GCR Container Registry through a GCP Service Connector. This allows container images to be built and published to GAR or GCR container registries without the need to configure explicit GCP credentials in the target environment or the Stack Component.
 
 ## End-to-end examples
 
@@ -1039,7 +1110,7 @@ This is an example of an end-to-end workflow involving Service Connectors that u
 
 * a [Kubernetes Orchestrator](../../component-guide/orchestrators/kubernetes.md) connected to a GKE Kubernetes cluster
 * a [GCS Artifact Store](../../component-guide/artifact-stores/gcp.md) connected to a GCS bucket
-* a [GCR Container Registry](../../component-guide/container-registries/gcp.md) connected to a GCR container registry
+* a [GCP Container Registry](../../component-guide/container-registries/gcp.md) connected to a Docker Google Artifact Registry
 * a local [Image Builder](../../component-guide/image-builders/local.md)
 
 As a last step, a simple pipeline is run on the resulting Stack.
@@ -1111,7 +1182,15 @@ Successfully registered service connector `gcp-demo-multi` with access to the fo
 ┠───────────────────────┼─────────────────────────────────────────────────┨
 ┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
 ┠───────────────────────┼─────────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┃ 🐳 docker-registry    │ gcr.io/zenml-core                               ┃
+┃                       │ us.gcr.io/zenml-core                            ┃
+┃                       │ eu.gcr.io/zenml-core                            ┃
+┃                       │ asia.gcr.io/zenml-core                          ┃
+┃                       │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                       │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                       │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                       │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                       │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 ````
@@ -1121,7 +1200,7 @@ Successfully registered service connector `gcp-demo-multi` with access to the fo
 **NOTE**: from this point forward, we don't need the local GCP CLI credentials or the local GCP CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the GCP project.
 ```
 
-4\. find out which GCS buckets, GCR registries, and GKE Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal GCP stack: a GCS Artifact Store, a Kubernetes Orchestrator, and a GCP Container Registry.
+4\. find out which GCS buckets, GAR registries, and GKE Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal GCP stack: a GCS Artifact Store, a Kubernetes Orchestrator, and a GCP Container Registry.
 
 ````
 ```sh
@@ -1177,11 +1256,19 @@ zenml service-connector list-resources --resource-type docker-registry
 ````
 ```text
 The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core                               ┃
+┃                                      │                │                │                    │ us.gcr.io/zenml-core                            ┃
+┃                                      │                │                │                    │ eu.gcr.io/zenml-core                            ┃
+┃                                      │                │                │                    │ asia.gcr.io/zenml-core                          ┃
+┃                                      │                │                │                    │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                                      │                │                │                    │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                                      │                │                │                    │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                                      │                │                │                    │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                                      │                │                │                    │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 ````
 {% endcode %}
@@ -1263,10 +1350,10 @@ Successfully connected orchestrator `gke-zenml-test-cluster` to the following re
 ````
 {% endcode %}
 
-7.  Register and connect a GCP Container Registry Stack Component to a GCR container registry:
+7.  Register and connect a GCP Container Registry Stack Component to a GAR registry:
 
     ```sh
-    zenml container-registry register gcr-zenml-core --flavor gcp --uri=gcr.io/zenml-core
+    zenml container-registry register gcr-zenml-core --flavor gcp --uri=europe-west1-docker.pkg.dev/zenml-core/test
     ```
 
 {% code title="Example Command Output" %}
@@ -1292,11 +1379,11 @@ zenml container-registry connect gcr-zenml-core --connector gcp-demo-multi
 Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully connected container registry `gcr-zenml-core` to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                              ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ europe-west1-docker.pkg.dev/zenml-core/test ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 ````
 {% endcode %}
@@ -1371,7 +1458,7 @@ Active global stack set to:'gcp-demo'
 $ python run.py 
 Reusing registered pipeline simple_pipeline (version: 1).
 Building Docker image(s) for pipeline simple_pipeline.
-Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
+Building Docker image europe-west1-docker.pkg.dev/zenml-core/test/zenml:simple_pipeline-orchestrator.
 - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, kubernetes==18.20.0, shapely<2.0
 No .dockerignore found, including all files inside build context.
 Step 1/8 : FROM zenmldocker/zenml:0.39.1-py3.8
@@ -1382,7 +1469,7 @@ Step 5/8 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
 Step 6/8 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
 Step 7/8 : COPY . .
 Step 8/8 : RUN chmod -R a+rw .
-Pushing Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
+Pushing Docker image europe-west1-docker.pkg.dev/zenml-core/test/zenml:simple_pipeline-orchestrator.
 Finished pushing Docker image.
 Finished building Docker image(s).
 Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
@@ -1407,13 +1494,13 @@ Dashboard URL: http://34.148.132.191/workspaces/default/pipelines/cec118d1-d90a-
 
 <details>
 
-<summary>VertexAI Orchestrator, GCS Artifact Store, GCR Container Registry and GCP Image Builder with single-instance GCP Service Connectors</summary>
+<summary>VertexAI Orchestrator, GCS Artifact Store, Google Artifact Registry and GCP Image Builder with single-instance GCP Service Connectors</summary>
 
 This is an example of an end-to-end workflow involving Service Connectors that use multiple single-instance GCP Service Connectors, each giving access to a resource for a Stack Component. A complete ZenML Stack is registered and composed of the following Stack Components, all connected through its individual Service Connector:
 
 * a [VertexAI Orchestrator](../../component-guide/orchestrators/vertex.md) connected to the GCP project
 * a [GCS Artifact Store](../../component-guide/artifact-stores/gcp.md) connected to a GCS bucket
-* a [GCR Container Registry](../../component-guide/container-registries/gcp.md) connected to a GCR container registry
+* a [GCP Container Registry](../../component-guide/container-registries/gcp.md) connected to a GCR container registry
 * a [Google Cloud Image Builder](../../component-guide/image-builders/gcp.md) connected to the GCP project
 
 As a last step, a simple pipeline is run on the resulting Stack.
@@ -1493,11 +1580,19 @@ zenml service-connector register gcr-zenml-core --type gcp --resource-type docke
 ````
 ```text
 Successfully registered service connector `gcr-zenml-core` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃   RESOURCE TYPE    │ RESOURCE NAMES    ┃
-┠────────────────────┼───────────────────┨
-┃ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   RESOURCE TYPE       │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃ 🐳 docker-registry    │ gcr.io/zenml-core                               ┃
+┃                       │ us.gcr.io/zenml-core                            ┃
+┃                       │ eu.gcr.io/zenml-core                            ┃
+┃                       │ asia.gcr.io/zenml-core                          ┃
+┃                       │ asia-docker.pkg.dev/zenml-core/asia.gcr.io      ┃
+┃                       │ europe-docker.pkg.dev/zenml-core/eu.gcr.io      ┃
+┃                       │ europe-west1-docker.pkg.dev/zenml-core/test     ┃
+┃                       │ us-docker.pkg.dev/zenml-core/gcr.io             ┃
+┃                       │ us-docker.pkg.dev/zenml-core/us.gcr.io          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 ````
 {% endcode %}
