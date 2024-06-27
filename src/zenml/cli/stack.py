@@ -247,84 +247,6 @@ def register_stack(
         cloud: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
     """
-    from rich import print
-    from rich.console import Console
-    from rich.prompt import Prompt
-    from rich.table import Table
-
-    def show_status(
-        cloud: str = None,
-        connector: str = None,
-        artifact_store: str = None,
-        orchestrator: str = None,
-        container_registry: str = None,
-    ) -> None:
-        status = []
-        for each in [
-            cloud,
-            connector,
-            artifact_store,
-            orchestrator,
-            container_registry,
-        ]:
-            if not each:
-                each = ":x:"
-            status.append(each)
-
-        status_table = Table(
-            title="New cloud stack registration progress",
-            show_header=True,
-            expand=True,
-        )
-        for c in [
-            "Cloud",
-            "Service Connector",
-            "Artifact Store",
-            "Orchestrator",
-            "Container Registry",
-        ]:
-            status_table.add_column(c, justify="center", width=1)
-
-        status_table.add_row(*status)
-        Console().clear()
-        print(status_table)
-
-    def multi_choice_prompt(
-        object_type: str, choices_nameable: List[Any], prompt_text: str
-    ) -> int:
-        table = Table(
-            title=f"Available {object_type}",
-            show_header=False,
-            border_style=None,
-            expand=True,
-        )
-        table.add_column("", justify="left", width=1)
-        for _ in range(min(len(choices_nameable) // 10, 3)):
-            table.add_column("", justify="left", width=1)
-
-        ins = [f"[bold][0] - Create a new {object_type}[/bold]"]
-        for i, one_choice in enumerate(choices_nameable):
-            if len(ins) == len(table.columns):
-                table.add_row(*ins)
-                ins = []
-            if len(ins) < len(table.columns):
-                ins.append(f"[{i+1}] - {one_choice.name}")
-        if ins:
-            while len(ins) < len(table.columns):
-                ins.append("")
-            table.add_row(*ins)
-
-        print(table)
-
-        return int(
-            Prompt.ask(
-                prompt_text,
-                choices=[str(i) for i in range(0, len(choices_nameable) + 1)],
-                default="0",
-                show_choices=False,
-            )
-        )
-
     if (cloud is None and connector is None) and (
         artifact_store is None or orchestrator is None
     ):
@@ -340,7 +262,7 @@ def register_stack(
     # cloud flow
     service_connector = None
     if cloud is not None and connector is None:
-        show_status(
+        cli_utils.show_status_from_kwargs(
             cloud=cloud,
             connector=connector,
             artifact_store=artifact_store,
@@ -350,22 +272,25 @@ def register_stack(
         existing_connectors = client.list_service_connectors(
             connector_type=cloud, size=100
         )
-        selected_connector = 0
+        connector_selected: Optional[int] = None
         if existing_connectors.total:
-            selected_connector = multi_choice_prompt(
+            connector_selected = cli_utils.multi_choice_prompt(
                 object_type=f"{cloud.upper()} service connectors",
-                choices_nameable=existing_connectors.items,
+                choices=[
+                    [connector.name] for connector in existing_connectors.items
+                ],
+                headers=["Name"],
                 prompt_text=f"We found these {cloud.upper()} service connectors. "
                 "Do you want to create a new one or use one of the existing ones?",
+                default_choice="0",
+                allow_zero_be_a_new_object=True,
             )
-        if selected_connector != 0:
-            service_connector = existing_connectors.items[
-                selected_connector - 1
-            ]
-        else:
+        if connector_selected is None:
             service_connector = _create_service_connector(cloud_provider=cloud)
+        else:
+            service_connector = existing_connectors.items[connector_selected]
     elif connector is not None:
-        show_status(
+        cli_utils.show_status_from_kwargs(
             cloud=cloud,
             connector=connector,
             artifact_store=artifact_store,
@@ -377,7 +302,7 @@ def register_stack(
             cli_utils.warning(
                 f"The service connector `{connector}` is not of type `{cloud}`."
             )
-    show_status(
+    cli_utils.show_status_from_kwargs(
         cloud=cloud,
         connector=service_connector.name,
         artifact_store=artifact_store,
@@ -411,20 +336,22 @@ def register_stack(
                     size=100,
                 )
                 # if some existing components are found - prompt user what to do
-                selected_component = 0
+                component_selected: Optional[int] = None
                 if existing_components.total > 0:
-                    selected_component = multi_choice_prompt(
+                    component_selected = cli_utils.multi_choice_prompt(
                         object_type=component_type.replace("_", " "),
-                        choices_nameable=existing_components.items,
+                        choices=[
+                            [component.name]
+                            for component in existing_components.items
+                        ],
+                        headers=["Name"],
                         prompt_text=f"We found these {component_type.replace('_', ' ')} "
                         "connected using the current service connector. Do you "
                         "want to create a new one or use existing one?",
+                        default_choice="0",
+                        allow_zero_be_a_new_object=True,
                     )
-                if selected_component != 0:
-                    component_response = existing_components.items[
-                        selected_component - 1
-                    ]
-                else:
+                if component_selected is None:
                     if service_connector_resource_model is None:
                         service_connector_resource_model = (
                             client.verify_service_connector(
@@ -436,6 +363,10 @@ def register_stack(
                         service_connector,
                         service_connector_resource_model,
                     )
+                else:
+                    component_response = existing_components.items[
+                        component_selected
+                    ]
 
             if component_type == "orchestrator":
                 orchestrator = component_response.name
@@ -443,7 +374,7 @@ def register_stack(
                 artifact_store = component_response.name
             elif component_type == "container_registry":
                 container_registry = component_response.name
-            show_status(
+            cli_utils.show_status_from_kwargs(
                 cloud=cloud,
                 connector=service_connector.name,
                 artifact_store=artifact_store,
@@ -1967,10 +1898,8 @@ def _create_service_connector(cloud_provider: str) -> ServiceConnectorResponse:
         The model of the created service connector.
     """
     from rich import print
-    from rich.console import Console
     from rich.markdown import Markdown
     from rich.prompt import Confirm, Prompt
-    from rich.table import Table
 
     if cloud_provider not in {"aws", "azure", "gcp"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
@@ -1979,35 +1908,26 @@ def _create_service_connector(cloud_provider: str) -> ServiceConnectorResponse:
     auth_methods = client.get_service_connector_type(
         cloud_provider
     ).auth_method_dict
-    auth_methods_table = Table(
-        title=f"Available authentication methods for {cloud_provider}",
-        expand=True,
-        show_lines=True,
-    )
-    auth_methods_table.add_column("Choice", justify="left", width=1)
-    auth_methods_table.add_column("Name", justify="left", width=10)
-    auth_methods_table.add_column("Required", justify="left", width=10)
-
-    fixed_auth_methods = list(enumerate(auth_methods.items()))
-    for i, (_, value) in fixed_auth_methods:
+    fixed_auth_methods = list(auth_methods.items())
+    choices = []
+    headers = ["Name", "Required"]
+    for _, value in fixed_auth_methods:
         schema = value.config_schema
         required = ""
         for each_req in schema["required"]:
             field = schema["properties"][each_req]
             required += f"[bold]{each_req}[/bold]  [italic]({field.get('title','no description')})[/italic]\n"
-        auth_methods_table.add_row(str(i), value.name, required)
+        choices.append([value.name, required])
+
     auth_selected = False
-    selected_auth_model = None
     while not auth_selected:
-        Console().clear()
-        print(auth_methods_table)
-        selected_auth_idx = int(
-            Prompt.ask(
-                "Please choose one of the authentication option above to see detailed description:",
-                choices=[str(i) for i in range(len(auth_methods))],
-            )
+        selected_auth_idx = cli_utils.multi_choice_prompt(
+            object_type=f"authentication methods for {cloud_provider}",
+            choices=choices,
+            headers=headers,
+            prompt_text="Please choose one of the authentication option above to see detailed description:",
         )
-        selected_auth_model = fixed_auth_methods[selected_auth_idx][1][1]
+        selected_auth_model = fixed_auth_methods[selected_auth_idx][1]
         print(
             Markdown(
                 f"## {selected_auth_model.name}\n"
@@ -2040,7 +1960,7 @@ def _create_service_connector(cloud_provider: str) -> ServiceConnectorResponse:
     return client.create_service_connector(
         name=connector_name,
         connector_type=cloud_provider,
-        auth_method=fixed_auth_methods[selected_auth_idx][1][0],
+        auth_method=fixed_auth_methods[selected_auth_idx][0],
         configuration=answers,
     )[0]
 
@@ -2061,7 +1981,6 @@ def _create_stack_component(
     """
     from rich import print
     from rich.prompt import Confirm, Prompt
-    from rich.table import Table
 
     from zenml.cli.stack_components import (
         connect_stack_component_with_service_connector,
@@ -2085,29 +2004,14 @@ def _create_stack_component(
             elif service_connector.type == "gcp":
                 flavor = "gcs"
 
-            available_storages_table = Table(
-                title=f"Available {service_connector.type.upper()} storages:",
-                expand=True,
+            selected_storage_idx = cli_utils.multi_choice_prompt(
+                object_type=f"{service_connector.type.upper()} storages",
+                choices=[[st] for st in available_storages],
+                headers=["Storage"],
+                prompt_text="Please choose one of the storages for the new artifact store:",
             )
-            available_storages_table.add_column(
-                "Choice", justify="left", width=1
-            )
-            available_storages_table.add_column(
-                "Storage", justify="left", width=10
-            )
-            for i, storage in enumerate(available_storages):
-                available_storages_table.add_row(str(i), storage)
-            print(available_storages_table)
-            selected_storage = available_storages[
-                int(
-                    Prompt.ask(
-                        "Please choose one of the storages for the new artifact store:",
-                        choices=[
-                            str(i) for i in range(len(available_storages))
-                        ],
-                    )
-                )
-            ]
+            selected_storage = available_storages[selected_storage_idx]
+
             extra_path = Prompt.ask(
                 f"Please enter any further path inside the storage, if needed ({selected_storage}/...):",
                 default="",
@@ -2132,72 +2036,48 @@ def _create_stack_component(
         config_confirmed = False
         while not config_confirmed:
             if service_connector.type == "aws":
-                available_orchestrators = {}
+                available_orchestrators = []
                 for each in service_connector_resource_model.resources:
+                    types = []
                     if each.resource_type == "aws-generic":
-                        available_orchestrators["Sagemaker"] = (
-                            each.resource_ids or []
-                        )
-                        available_orchestrators["VM AWS"] = (
-                            each.resource_ids or []
-                        )
-
+                        types = ["Sagemaker", "VM AWS"]
                     if each.resource_type == "kubernetes-cluster":
-                        available_orchestrators["K8S"] = (
-                            each.resource_ids or []
-                        )
+                        types = ["K8S"]
+
+                    for orchestrator in each.resource_ids:
+                        for t in types:
+                            available_orchestrators.append([t, orchestrator])
             elif service_connector.type == "gcp":
                 pass
             elif service_connector.type == "azure":
                 pass
 
-            available_orchestrators_table = Table(
-                title=f"Available orchestrators on {service_connector.type.upper()}:",
-                expand=True,
+            selected_orchestrator_idx = cli_utils.multi_choice_prompt(
+                object_type=f"orchestrators on {service_connector.type.upper()}",
+                choices=available_orchestrators,
+                headers=["Orchestrator Type", "Orchestrator details"],
+                prompt_text="Please choose one of the orchestrators for the new orchestrator:",
             )
-            available_orchestrators_table.add_column(
-                "Choice", justify="left", width=1
-            )
-            available_orchestrators_table.add_column(
-                "Orchestrator details", justify="left", width=10
-            )
-            choice_number = 0
-            choices_mapper = {}
-            for type_ in available_orchestrators:
-                for i, orchestrator in enumerate(
-                    available_orchestrators[type_]
-                ):
-                    available_orchestrators_table.add_row(
-                        str(choice_number), f"{type_} - {orchestrator}"
-                    )
-                    choices_mapper[choice_number] = (type_, i)
-                    choice_number += 1
-            print(available_orchestrators_table)
-            orchestrator_choice = int(
-                Prompt.ask(
-                    "Please choose one of the options for the new orchestrator:",
-                    choices=[str(i) for i in range(choice_number)],
-                )
-            )
-            selected_orchestrator = available_orchestrators[
-                choices_mapper[orchestrator_choice][0]
-            ][choices_mapper[orchestrator_choice][1]]
 
-            if choices_mapper[orchestrator_choice][0] == "Sagemaker":
+            selected_orchestrator = available_orchestrators[
+                selected_orchestrator_idx
+            ]
+
+            if selected_orchestrator[0] == "Sagemaker":
                 flavor = "sagemaker"
                 execution_role = Prompt.ask(
                     "Please enter an execution role ARN:"
                 )
                 config = {"execution_role": execution_role}
-            elif choices_mapper[orchestrator_choice][0] == "VM AWS":
+            elif selected_orchestrator[0] == "VM AWS":
                 flavor = "vm_aws"
                 config = {}
-            elif choices_mapper[orchestrator_choice][0] == "K8S":
+            elif selected_orchestrator[0] == "K8S":
                 flavor = "kubernetes"
                 config = {}
             else:
                 raise ValueError(
-                    f"Unknown orchestrator type {choices_mapper[orchestrator_choice][0]}"
+                    f"Unknown orchestrator type {selected_orchestrator[0]}"
                 )
             orchestrator_name = Prompt.ask(
                 "Please enter a name for the orchestrator:"
@@ -2227,29 +2107,13 @@ def _create_stack_component(
                 flavor = "gcp"
                 available_registries = []
 
-            available_registries_table = Table(
-                title=f"Available {service_connector.type.upper()} registries:",
-                expand=True,
+            selected_registry_idx = cli_utils.multi_choice_prompt(
+                object_type=f"{service_connector.type.upper()} registries",
+                choices=[[st] for st in available_registries],
+                headers=["Container Registry"],
+                prompt_text="Please choose one of the registries for the new container registry:",
             )
-            available_registries_table.add_column(
-                "Choice", justify="left", width=1
-            )
-            available_registries_table.add_column(
-                "Container Registry", justify="left", width=10
-            )
-            for i, registry in enumerate(available_registries):
-                available_registries_table.add_row(str(i), registry)
-            print(available_registries_table)
-            selected_storage = available_registries[
-                int(
-                    Prompt.ask(
-                        "Please choose one of the registries for the new container registry:",
-                        choices=[
-                            str(i) for i in range(len(available_registries))
-                        ],
-                    )
-                )
-            ]
+            selected_storage = available_registries[selected_registry_idx]
             config = {"uri": selected_storage}
 
             cr_name = Prompt.ask(
