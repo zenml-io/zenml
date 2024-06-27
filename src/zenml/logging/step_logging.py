@@ -98,7 +98,7 @@ def prepare_logs_uri(
         artifact_store.makedirs(logs_uri_folder)
         return logs_uri_folder
     else:
-        logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
+        logs_uri = os.path.join(logs_base_uri, f"{log_key}{LOGS_EXTENSION}")
         if artifact_store.exists(logs_uri):
             logger.warning(
                 f"Logs file {logs_uri} already exists! Removing old log file..."
@@ -145,61 +145,64 @@ def fetch_logs(
         )
 
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
-    if not artifact_store.isdir(logs_uri):
-        return _read_file(logs_uri, offset, length)
-    else:
-        files = artifact_store.listdir(logs_uri)
-        if len(files) == 1:
-            return _read_file(
-                os.path.join(logs_uri, str(files[0])), offset, length
-            )
+    try:
+        if not artifact_store.isdir(logs_uri):
+            return _read_file(logs_uri, offset, length)
         else:
-            is_negative_offset = offset < 0
-            files.sort(reverse=is_negative_offset)
+            files = artifact_store.listdir(logs_uri)
+            if len(files) == 1:
+                return _read_file(
+                    os.path.join(logs_uri, str(files[0])), offset, length
+                )
+            else:
+                is_negative_offset = offset < 0
+                files.sort(reverse=is_negative_offset)
 
-            # search for the first file we need to read
-            latest_file_id = 0
-            for i, file in enumerate(files):
-                file_size: int = artifact_store.size(
-                    os.path.join(logs_uri, str(file))
-                )  # type: ignore[assignment]
+                # search for the first file we need to read
+                latest_file_id = 0
+                for i, file in enumerate(files):
+                    file_size: int = artifact_store.size(
+                        os.path.join(logs_uri, str(file))
+                    )  # type: ignore[assignment]
 
-                if is_negative_offset:
-                    if file_size >= -offset:
-                        latest_file_id = -(i + 1)
-                        break
+                    if is_negative_offset:
+                        if file_size >= -offset:
+                            latest_file_id = -(i + 1)
+                            break
+                        else:
+                            offset += file_size
                     else:
-                        offset += file_size
-                else:
-                    if file_size > offset:
-                        latest_file_id = i
-                        break
-                    else:
-                        offset -= file_size
+                        if file_size > offset:
+                            latest_file_id = i
+                            break
+                        else:
+                            offset -= file_size
 
-            # read the files according to pre-filtering
-            files.sort()
-            ret = []
-            for file in files[latest_file_id:]:
-                ret.append(
-                    _read_file(
-                        os.path.join(logs_uri, str(file)),
-                        offset,
-                        length,
+                # read the files according to pre-filtering
+                files.sort()
+                ret = []
+                for file in files[latest_file_id:]:
+                    ret.append(
+                        _read_file(
+                            os.path.join(logs_uri, str(file)),
+                            offset,
+                            length,
+                        )
                     )
-                )
-                offset = 0
-                length -= len(ret[-1])
-                if length <= 0:
-                    # stop further reading, if the whole length is already read
-                    break
+                    offset = 0
+                    length -= len(ret[-1])
+                    if length <= 0:
+                        # stop further reading, if the whole length is already read
+                        break
 
-            if not ret:
-                raise DoesNotExistException(
-                    f"Folder '{logs_uri}' is empty in artifact store "
-                    f"'{artifact_store.name}'."
-                )
-            return "".join(ret)
+                if not ret:
+                    raise DoesNotExistException(
+                        f"Folder '{logs_uri}' is empty in artifact store "
+                        f"'{artifact_store.name}'."
+                    )
+                return "".join(ret)
+    finally:
+        artifact_store.cleanup()
 
 
 class StepLogsStorage:
@@ -238,7 +241,7 @@ class StepLogsStorage:
         # Immutable filesystems state
         self.last_merge_time = time.time()
         self.log_files_not_merged: List[str] = []
-        self.next_merged_file_name: str = f"{time.time()}{LOGS_EXTENSION}"
+        self.next_merged_file_name: str = self._get_timestamped_filename()
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
@@ -276,6 +279,14 @@ class StepLogsStorage:
             or time.time() - self.last_save_time >= self.time_interval
         )
 
+    def _get_timestamped_filename(self) -> str:
+        """Returns a timestamped filename.
+
+        Returns:
+            The timestamped filename.
+        """
+        return f"{time.time()}{LOGS_EXTENSION}"
+
     def save_to_file(self, force: bool = False) -> None:
         """Method to save the buffer to the given URI.
 
@@ -293,14 +304,14 @@ class StepLogsStorage:
                     if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
                         if not self.log_files_not_merged:
                             self.next_merged_file_name = (
-                                f"{time.time()}{LOGS_EXTENSION}"
+                                self._get_timestamped_filename()
                             )
-                        log_file_ = f"{time.time()}{LOGS_EXTENSION}"
-                        self.log_files_not_merged.append(log_file_)
+                        _logs_uri = self._get_timestamped_filename()
+                        self.log_files_not_merged.append(_logs_uri)
                         with self.artifact_store.open(
                             os.path.join(
                                 self.logs_uri,
-                                log_file_,
+                                _logs_uri,
                             ),
                             "w",
                         ) as file:
@@ -360,7 +371,7 @@ class StepLogsStorage:
         """
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
             files_ = files or self.artifact_store.listdir(self.logs_uri)
-            file_name_ = file_name or f"full_log{LOGS_EXTENSION}"
+            file_name_ = file_name or self._get_timestamped_filename()
             if len(files_) > 1:
                 files_.sort()
                 logger.debug("Log files count: %s", len(files_))

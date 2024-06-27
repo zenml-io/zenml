@@ -15,7 +15,7 @@
 
 from typing import Generic, TypeVar
 
-from pydantic import Extra, Field
+from pydantic import ConfigDict, Field
 
 from zenml.enums import PluginSubType, PluginType
 from zenml.models.v2.base.base import (
@@ -56,11 +56,7 @@ class BasePluginFlavorResponse(
     name: str = Field(title="Name of the flavor.")
     type: PluginType = Field(title="Type of the plugin.")
     subtype: PluginSubType = Field(title="Subtype of the plugin.")
-
-    class Config:
-        """Configuration for base plugin flavor response."""
-
-        extra = Extra.ignore
+    model_config = ConfigDict(extra="ignore")
 
     def get_hydrated_version(
         self,

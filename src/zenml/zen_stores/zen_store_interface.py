@@ -17,7 +17,12 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -259,6 +264,87 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The updated server settings.
+        """
+
+    # -------------------- Actions  --------------------
+
+    @abstractmethod
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+
+    @abstractmethod
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+
+        Raises:
+            KeyError: If the action doesn't exist.
+        """
+
+    @abstractmethod
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all actions matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+
+        Raises:
+            KeyError: If the action doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+
+        Raises:
+            KeyError: If the action doesn't exist.
         """
 
     # -------------------- API Keys --------------------
@@ -1171,6 +1257,22 @@ class ZenStoreInterface(ABC):
             KeyError: if the build doesn't exist.
         """
 
+    @abstractmethod
+    def run_build(
+        self,
+        build_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a build.
+
+        Args:
+            build_id: The ID of the build to run.
+            run_configuration: Configuration for the run.
+
+        Returns:
+            Model of the pipeline run.
+        """
+
     # -------------------- Pipeline deployments --------------------
 
     @abstractmethod
@@ -1236,6 +1338,22 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the deployment doesn't exist.
+        """
+
+    @abstractmethod
+    def run_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to run.
+            run_configuration: Configuration for the run.
+
+        Returns:
+            Model of the pipeline run.
         """
 
     # -------------------- Event Sources  --------------------

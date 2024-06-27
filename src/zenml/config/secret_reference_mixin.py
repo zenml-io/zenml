@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from zenml.logger import get_logger
 from zenml.utils import secret_utils
+from zenml.utils.pydantic_utils import has_validators
 
 logger = get_logger(__name__)
 
@@ -45,7 +46,7 @@ class SecretReferenceMixin(BaseModel):
         """
         for key, value in kwargs.items():
             try:
-                field = self.__class__.__fields__[key]
+                field = self.__class__.model_fields[key]
             except KeyError:
                 # Value for a private attribute or non-existing field, this
                 # will fail during the upcoming pydantic validation
@@ -75,7 +76,9 @@ class SecretReferenceMixin(BaseModel):
                     "not allowed."
                 )
 
-            requires_validation = field.pre_validators or field.post_validators
+            requires_validation = has_validators(
+                pydantic_class=self.__class__, field_name=key
+            )
             if requires_validation:
                 raise ValueError(
                     f"Passing the attribute `{key}` as a secret reference is "
@@ -146,6 +149,6 @@ class SecretReferenceMixin(BaseModel):
         """
         return {
             secret_utils.parse_secret_reference(v)
-            for v in self.dict().values()
+            for v in self.model_dump().values()
             if secret_utils.is_secret_reference(v)
         }

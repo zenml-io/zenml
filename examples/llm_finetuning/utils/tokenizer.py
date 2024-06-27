@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-
-import torch
 from transformers import AutoTokenizer
 
 
@@ -135,5 +133,5 @@ def tokenize_for_eval(
         for data_point in data_points["target"]
     ]
     return tokenizer(eval_prompts, padding="longest", return_tensors="pt").to(
-        "cuda" if torch.cuda.is_available() else "cpu"
+        "cuda"
     )

@@ -24,6 +24,7 @@ from zenml.exceptions import (
     DuplicateRunNameError,
     EntityExistsError,
     IllegalOperationError,
+    MethodNotAllowedError,
     SecretExistsError,
     StackComponentExistsError,
     StackExistsError,
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
 class ErrorModel(BaseModel):
     """Base class for error responses."""
 
-    detail: Any
+    detail: Optional[Any] = None
 
 
 error_response = dict(model=ErrorModel)
@@ -93,6 +94,8 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     (RuntimeError, 500),
     # 501 Not Implemented,
     (NotImplementedError, 501),
+    # 405 Method Not Allowed
+    (MethodNotAllowedError, 405),
 ]
 
 

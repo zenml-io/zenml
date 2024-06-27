@@ -436,18 +436,21 @@ def load_artifact_visualization(
     artifact_store = _load_artifact_store(
         artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
     )
-    mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
-    value = _load_file_from_artifact_store(
-        uri=visualization.uri,
-        artifact_store=artifact_store,
-        mode=mode,
-    )
+    try:
+        mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
+        value = _load_file_from_artifact_store(
+            uri=visualization.uri,
+            artifact_store=artifact_store,
+            mode=mode,
+        )
 
-    # Encode image visualizations if requested
-    if visualization.type == VisualizationType.IMAGE and encode_image:
-        value = base64.b64encode(bytes(value))
+        # Encode image visualizations if requested
+        if visualization.type == VisualizationType.IMAGE and encode_image:
+            value = base64.b64encode(bytes(value))
 
-    return LoadedVisualization(type=visualization.type, value=value)
+        return LoadedVisualization(type=visualization.type, value=value)
+    finally:
+        artifact_store.cleanup()
 
 
 def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:

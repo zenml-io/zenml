@@ -33,6 +33,7 @@ creat = "creat"
 ret = "ret"
 daa = "daa"
 arange = "arange"
+cachable = "cachable"
 
 [default]
 locale = "en-us"

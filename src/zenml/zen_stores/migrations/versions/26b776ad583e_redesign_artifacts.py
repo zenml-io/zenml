@@ -6,16 +6,13 @@ Create Date: 2022-11-17 08:00:24.936750
 
 """
 
-from typing import TYPE_CHECKING, Dict
+from typing import Any, Dict
 
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
 from sqlalchemy import select
 from sqlalchemy.sql.expression import false, true
-
-if TYPE_CHECKING:
-    from sqlalchemy.engine.row import Row
 
 # revision identifiers, used by Alembic.
 revision = "26b776ad583e"
@@ -53,13 +50,14 @@ def upgrade() -> None:
     # Migrate data
     # ------------
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
     meta.reflect(
+        bind=op.get_bind(),
         only=(
             "artifacts",
             "step_run_output_artifact",
             "step_run_input_artifact",
-        )
+        ),
     )
     artifacts = sa.Table("artifacts", meta)
     step_run_output_artifact = sa.Table("step_run_output_artifact", meta)
@@ -85,7 +83,7 @@ def upgrade() -> None:
         ).where(artifacts.c.is_cached == true())
     ).fetchall()
 
-    def _find_produced_artifact(cached_artifact: "Row") -> "Row":
+    def _find_produced_artifact(cached_artifact: Any) -> Any:
         """For a given cached artifact, find the original produced artifact.
 
         Args:
@@ -115,9 +113,9 @@ def upgrade() -> None:
         produced_artifact = _find_produced_artifact(cached_artifact)
         cached_to_produced_mapping[cached_artifact.id] = produced_artifact.id
         conn.execute(
-            step_run_input_artifact.update(
-                step_run_input_artifact.c.artifact_id == cached_artifact.id
-            ).values({"artifact_id": produced_artifact.id})
+            step_run_input_artifact.update()
+            .where(step_run_input_artifact.c.artifact_id == cached_artifact.id)
+            .values({"artifact_id": produced_artifact.id})
         )
 
     # Delete all cached artifacts from the artifacts table

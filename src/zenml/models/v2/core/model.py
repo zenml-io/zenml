@@ -117,8 +117,8 @@ class ModelResponseBody(WorkspaceScopedResponseBody):
     tags: List["TagResponse"] = Field(
         title="Tags associated with the model",
     )
-    latest_version_name: Optional[str]
-    latest_version_id: Optional[UUID]
+    latest_version_name: Optional[str] = None
+    latest_version_id: Optional[UUID] = None
 
 
 class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -322,10 +322,14 @@ class ModelFilter(WorkspaceScopedTaggableFilter):
         description="Name of the Model",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Model"
+        default=None,
+        description="Workspace of the Model",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the Model"
+        default=None,
+        description="User of the Model",
+        union_mode="left_to_right",
     )
 
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [

@@ -38,7 +38,7 @@ class AzureMLStepOperatorSettings(BaseSettings):
     environment_name: Optional[str] = None
 
 
-class AzureMLStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class AzureMLStepOperatorConfig(
     BaseStepOperatorConfig, AzureMLStepOperatorSettings
 ):
     """Config for the AzureML step operator.
@@ -64,9 +64,9 @@ class AzureMLStepOperatorConfig(  # type: ignore[misc] # https://github.com/pyda
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = SecretField()
-    service_principal_id: Optional[str] = SecretField()
-    service_principal_password: Optional[str] = SecretField()
+    tenant_id: Optional[str] = SecretField(default=None)
+    service_principal_id: Optional[str] = SecretField(default=None)
+    service_principal_password: Optional[str] = SecretField(default=None)
 
     @property
     def is_remote(self) -> bool:
