@@ -2067,51 +2067,56 @@ def _create_stack_component(
         connect_stack_component_with_service_connector,
     )
 
+    if service_connector.type not in {"aws", "azure", "gcp"}:
+        raise ValueError(f"Unknown cloud provider {service_connector.type}")
+
     client = Client()
 
-    # TODO: here we question user and fill the needed details
-    # - generic question will be the name
     if component_type == "artifact_store":
         config_confirmed = False
         while not config_confirmed:
             if service_connector.type == "aws":
                 for each in service_connector_resource_model.resources:
                     if each.resource_type == "s3-bucket":
-                        available_buckets = each.resource_ids
-                available_buckets_table = Table(
-                    title="Available S3 buckets:", expand=True
-                )
-                available_buckets_table.add_column(
-                    "Choice", justify="left", width=1
-                )
-                available_buckets_table.add_column(
-                    "Bucket", justify="left", width=10
-                )
-                for i, bucket in enumerate(available_buckets):
-                    available_buckets_table.add_row(str(i), bucket)
-                print(available_buckets_table)
-                selected_bucket = available_buckets[
-                    int(
-                        Prompt.ask(
-                            "Please choose one of the buckets for new artifact store:",
-                            choices=[
-                                str(i) for i in range(len(available_buckets))
-                            ],
-                        )
-                    )
-                ]
-                extra_path = Prompt.ask(
-                    f"Please enter any further path inside the bucket, if needed ({selected_bucket}/...):",
-                    default="",
-                )
+                        available_storages = each.resource_ids
                 flavor = "s3"
-                config = {
-                    "path": f"{selected_bucket.strip('/')}/{extra_path.strip('/')}"
-                }
+            elif service_connector.type == "azure":
+                flavor = "azure"
+            elif service_connector.type == "gcp":
+                flavor = "gcs"
 
-                as_name = Prompt.ask(
-                    "Please enter a name for the artifact store:"
+            available_storages_table = Table(
+                title=f"Available {service_connector.type.upper()} storages:",
+                expand=True,
+            )
+            available_storages_table.add_column(
+                "Choice", justify="left", width=1
+            )
+            available_storages_table.add_column(
+                "Storage", justify="left", width=10
+            )
+            for i, storage in enumerate(available_storages):
+                available_storages_table.add_row(str(i), storage)
+            print(available_storages_table)
+            selected_storage = available_storages[
+                int(
+                    Prompt.ask(
+                        "Please choose one of the storages for the new artifact store:",
+                        choices=[
+                            str(i) for i in range(len(available_storages))
+                        ],
+                    )
                 )
+            ]
+            extra_path = Prompt.ask(
+                f"Please enter any further path inside the storage, if needed ({selected_storage}/...):",
+                default="",
+            )
+            config = {
+                "path": f"{selected_storage.strip('/')}/{extra_path.strip('/')}"
+            }
+
+            as_name = Prompt.ask("Please enter a name for the artifact store:")
 
             print({"name": as_name, "config": config})
             config_confirmed = Confirm.ask(
@@ -2123,9 +2128,6 @@ def _create_stack_component(
             component_type=StackComponentType.ARTIFACT_STORE,
             configuration=config,
         )
-    elif component_type == "container_registry":
-        # - here we list available registries and ask to pick one
-        component = ComponentResponse()
     elif component_type == "orchestrator":
         config_confirmed = False
         while not config_confirmed:
@@ -2136,55 +2138,67 @@ def _create_stack_component(
                         available_orchestrators["Sagemaker"] = (
                             each.resource_ids or []
                         )
+                        available_orchestrators["VM AWS"] = (
+                            each.resource_ids or []
+                        )
 
                     if each.resource_type == "kubernetes-cluster":
                         available_orchestrators["K8S"] = (
                             each.resource_ids or []
                         )
-                available_orchestrators_table = Table(
-                    title="Available orchestrators on AWS:", expand=True
-                )
-                available_orchestrators_table.add_column(
-                    "Choice", justify="left", width=1
-                )
-                available_orchestrators_table.add_column(
-                    "Orchestrator details", justify="left", width=10
-                )
-                choice_number = 0
-                choices_mapper = {}
-                for type_ in available_orchestrators:
-                    for i, orchestrator in enumerate(
-                        available_orchestrators[type_]
-                    ):
-                        available_orchestrators_table.add_row(
-                            str(choice_number), f"{type_} - {orchestrator}"
-                        )
-                        choices_mapper[choice_number] = (type_, i)
-                        choice_number += 1
-                print(available_orchestrators_table)
-                orchestrator_choice = int(
-                    Prompt.ask(
-                        "Please choose one of the options for the new orchestrator:",
-                        choices=[str(i) for i in range(choice_number)],
-                    )
-                )
-                selected_orchestrator = available_orchestrators[
-                    choices_mapper[orchestrator_choice][0]
-                ][choices_mapper[orchestrator_choice][1]]
+            elif service_connector.type == "gcp":
+                pass
+            elif service_connector.type == "azure":
+                pass
 
-                if choices_mapper[orchestrator_choice][0] == "Sagemaker":
-                    flavor = "sagemaker"
-                    execution_role = Prompt.ask(
-                        "Please enter an execution role ARN:"
+            available_orchestrators_table = Table(
+                title=f"Available orchestrators on {service_connector.type.upper()}:",
+                expand=True,
+            )
+            available_orchestrators_table.add_column(
+                "Choice", justify="left", width=1
+            )
+            available_orchestrators_table.add_column(
+                "Orchestrator details", justify="left", width=10
+            )
+            choice_number = 0
+            choices_mapper = {}
+            for type_ in available_orchestrators:
+                for i, orchestrator in enumerate(
+                    available_orchestrators[type_]
+                ):
+                    available_orchestrators_table.add_row(
+                        str(choice_number), f"{type_} - {orchestrator}"
                     )
-                    config = {"execution_role": execution_role}
-                elif choices_mapper[orchestrator_choice][0] == "K8S":
-                    flavor = "kubernetes"
-                    config = {}
-                else:
-                    raise ValueError(
-                        f"Unknown orchestrator type {choices_mapper[orchestrator_choice][0]}"
-                    )
+                    choices_mapper[choice_number] = (type_, i)
+                    choice_number += 1
+            print(available_orchestrators_table)
+            orchestrator_choice = int(
+                Prompt.ask(
+                    "Please choose one of the options for the new orchestrator:",
+                    choices=[str(i) for i in range(choice_number)],
+                )
+            )
+            selected_orchestrator = available_orchestrators[
+                choices_mapper[orchestrator_choice][0]
+            ][choices_mapper[orchestrator_choice][1]]
+
+            if choices_mapper[orchestrator_choice][0] == "Sagemaker":
+                flavor = "sagemaker"
+                execution_role = Prompt.ask(
+                    "Please enter an execution role ARN:"
+                )
+                config = {"execution_role": execution_role}
+            elif choices_mapper[orchestrator_choice][0] == "VM AWS":
+                flavor = "vm_aws"
+                config = {}
+            elif choices_mapper[orchestrator_choice][0] == "K8S":
+                flavor = "kubernetes"
+                config = {}
+            else:
+                raise ValueError(
+                    f"Unknown orchestrator type {choices_mapper[orchestrator_choice][0]}"
+                )
             orchestrator_name = Prompt.ask(
                 "Please enter a name for the orchestrator:"
             )
@@ -2192,16 +2206,66 @@ def _create_stack_component(
             config_confirmed = Confirm.ask(
                 "Please confirm the values you entered:", default=True
             )
-            component = client.create_stack_component(
-                name=orchestrator_name,
-                flavor=flavor,
-                component_type=StackComponentType.ORCHESTRATOR,
-                configuration=config,
+        component = client.create_stack_component(
+            name=orchestrator_name,
+            flavor=flavor,
+            component_type=StackComponentType.ORCHESTRATOR,
+            configuration=config,
+        )
+    elif component_type == "container_registry":
+        config_confirmed = False
+        while not config_confirmed:
+            if service_connector.type == "aws":
+                for each in service_connector_resource_model.resources:
+                    if each.resource_type == "docker-registry":
+                        available_registries = each.resource_ids
+                flavor = "aws"
+            elif service_connector.type == "azure":
+                flavor = "azure"
+                available_registries = []
+            elif service_connector.type == "gcp":
+                flavor = "gcp"
+                available_registries = []
+
+            available_registries_table = Table(
+                title=f"Available {service_connector.type.upper()} registries:",
+                expand=True,
             )
-    elif component_type == "image_builder":
-        # - only relevant for GCP and is fully optional
-        # - if on GCP - offer what we found, if none, go for local silently
-        component = ComponentResponse()
+            available_registries_table.add_column(
+                "Choice", justify="left", width=1
+            )
+            available_registries_table.add_column(
+                "Container Registry", justify="left", width=10
+            )
+            for i, registry in enumerate(available_registries):
+                available_registries_table.add_row(str(i), registry)
+            print(available_registries_table)
+            selected_storage = available_registries[
+                int(
+                    Prompt.ask(
+                        "Please choose one of the registries for the new container registry:",
+                        choices=[
+                            str(i) for i in range(len(available_registries))
+                        ],
+                    )
+                )
+            ]
+            config = {"uri": selected_storage}
+
+            cr_name = Prompt.ask(
+                "Please enter a name for the container registry:"
+            )
+
+            print({"name": cr_name, "config": config})
+            config_confirmed = Confirm.ask(
+                "Please confirm the values you entered:", default=True
+            )
+        component = client.create_stack_component(
+            name=cr_name,
+            flavor=flavor,
+            component_type=StackComponentType.CONTAINER_REGISTRY,
+            configuration=config,
+        )
     else:
         raise ValueError(f"Unknown component type {component_type}")
 
