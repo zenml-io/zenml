@@ -24,9 +24,9 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
+    BaseUpdate,
 )
 from zenml.models.v2.base.filter import BaseFilter
-from zenml.models.v2.base.update import update_model
 
 # ------------------ Request Model ------------------
 
@@ -48,9 +48,19 @@ class WorkspaceRequest(BaseRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class WorkspaceUpdate(WorkspaceRequest):
+class WorkspaceUpdate(BaseUpdate):
     """Update model for workspaces."""
+
+    name: Optional[str] = Field(
+        title="The unique name of the workspace.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    description: Optional[str] = Field(
+        title="The description of the workspace.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------

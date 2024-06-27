@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from typing import Dict, Generator, List, Mapping, Sequence, Type
+from typing import Dict, Generator, List, Mapping, Optional, Sequence, Type
 from uuid import uuid4
 
 import pytest
-from pydantic import ValidationError, validator
+from pydantic import BaseModel, ValidationError, field_validator
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -59,14 +59,14 @@ def test_stack_component_dict_only_contains_public_attributes(
     assert stub_component_config._some_private_attribute_name == "Also Aria"
 
     expected_dict_keys = {"some_public_attribute_name"}
-    assert set(stub_component_config.dict().keys()) == expected_dict_keys
+    assert set(stub_component_config.model_dump().keys()) == expected_dict_keys
 
 
 def test_stack_component_public_attributes_are_immutable(
     stub_component_config,
 ):
     """Tests that stack component public attributes are immutable but private attribute can be modified."""
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         stub_component_config.some_public_attribute_name = "Not Aria"
 
     with does_not_raise():
@@ -88,7 +88,8 @@ class StubOrchestratorConfig(BaseOrchestratorConfig):
     attribute_without_validator: str = ""
     attribute_with_validator: str = ""
 
-    @validator("attribute_with_validator")
+    @field_validator("attribute_with_validator")
+    @classmethod
     def _ensure_something(cls, value):
         return value
 
@@ -177,7 +178,7 @@ def test_stack_component_secret_reference_resolving(
     new_artifact_store = (
         client_with_stub_orchestrator_flavor.create_stack_component(
             name="local",
-            configuration=LocalArtifactStoreConfig().dict(),
+            configuration=LocalArtifactStoreConfig().model_dump(),
             flavor="local",
             component_type=StackComponentType.ARTIFACT_STORE,
         )
@@ -188,7 +189,7 @@ def test_stack_component_secret_reference_resolving(
             component_type=StackComponentType.ORCHESTRATOR,
             configuration=StubOrchestratorConfig(
                 attribute_without_validator="{{secret.key}}"
-            ).dict(),
+            ).model_dump(),
             flavor="TEST",
         )
     )
@@ -236,7 +237,7 @@ def test_stack_component_serialization_does_not_resolve_secrets(
             component_type=StackComponentType.ORCHESTRATOR,
             configuration=StubOrchestratorConfig(
                 attribute_without_validator=secret_ref,
-            ).dict(),
+            ).model_dump(),
             flavor="TEST",
         )
     )
@@ -250,30 +251,48 @@ def test_stack_component_config_converts_json_strings():
     """Tests that the stack component config converts json strings if a string
     is passed for certain fields."""
 
+    class PydanticModel(BaseModel):
+        value: int
+
     class ComponentConfig(StackComponentConfig):
         list_: List[str]
+        optional_list: Optional[List[str]] = None
         sequence_: Sequence[str]
         dict_: Dict[str, int]
         mapping_: Mapping[str, int]
+        pydantic_model: PydanticModel
+        optional_model: Optional[PydanticModel] = None
 
     config = ComponentConfig(
         list_=["item"],
+        optional_list=["item"],
         sequence_=["item"],
         dict_={"key": 1},
         mapping_={"key": 1},
+        pydantic_model=PydanticModel(value=1),
+        optional_model=PydanticModel(value=1),
     )
     assert config.list_ == ["item"]
+    assert config.optional_list == ["item"]
     assert config.sequence_ == ["item"]
     assert config.dict_ == {"key": 1}
     assert config.mapping_ == {"key": 1}
+    assert config.pydantic_model == PydanticModel(value=1)
+    assert config.optional_model == PydanticModel(value=1)
 
     config = ComponentConfig(
         list_='["item"]',
+        optional_list='["item"]',
         sequence_='["item"]',
         dict_='{"key": 1}',
         mapping_='{"key": 1}',
+        pydantic_model='{"value": 1}',
+        optional_model='{"value": 1}',
     )
     assert config.list_ == ["item"]
+    assert config.optional_list == ["item"]
     assert config.sequence_ == ["item"]
     assert config.dict_ == {"key": 1}
     assert config.mapping_ == {"key": 1}
+    assert config.pydantic_model == PydanticModel(value=1)
+    assert config.optional_model == PydanticModel(value=1)

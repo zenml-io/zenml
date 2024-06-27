@@ -60,12 +60,12 @@ class SkypilotLambdaOrchestratorSettings(SkypilotBaseOrchestratorSettings):
         super().__setattr__(name, value)
 
 
-class SkypilotLambdaOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SkypilotLambdaOrchestratorConfig(
     SkypilotBaseOrchestratorConfig, SkypilotLambdaOrchestratorSettings
 ):
     """Skypilot orchestrator config."""
 
-    api_key: Optional[str] = SecretField()
+    api_key: Optional[str] = SecretField(default=None)
 
 
 class SkypilotLambdaOrchestratorFlavor(BaseOrchestratorFlavor):

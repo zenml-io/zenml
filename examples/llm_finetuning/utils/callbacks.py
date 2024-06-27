@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 from transformers import (
     TrainerCallback,
@@ -26,9 +26,15 @@ from transformers import (
 
 from zenml import get_step_context
 
+if TYPE_CHECKING:
+    from accelerate import Accelerator
+
 
 class ZenMLCallback(TrainerCallback):
     """Callback that logs metrics to ZenML."""
+
+    def __init__(self, accelerator: "Accelerator"):
+        self.accelerator = accelerator
 
     def on_evaluate(
         self,
@@ -47,12 +53,13 @@ class ZenMLCallback(TrainerCallback):
             metrics: The metrics to log.
         """
         try:
-            context = get_step_context()
-            context.model.log_metadata(
-                {
-                    f"step_{state.global_step}_eval_metrics": metrics,
-                }
-            )
+            if self.accelerator is None or self.accelerator.is_main_process:
+                context = get_step_context()
+                context.model.log_metadata(
+                    {
+                        f"step_{state.global_step}_eval_metrics": metrics,
+                    }
+                )
         except RuntimeError:
             # If we can't get the context, silently pass
             return

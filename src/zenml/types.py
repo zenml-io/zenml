@@ -11,7 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Custom types that are used to indicate how to handle data."""
+"""Custom ZenML types."""
+
+from typing import TYPE_CHECKING, Callable, Union
+
+if TYPE_CHECKING:
+    from types import FunctionType
+
+    from zenml.config.source import Source
+
+    HookSpecification = Union[str, Source, FunctionType, Callable[..., None]]
 
 
 class HTMLString(str):

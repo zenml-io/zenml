@@ -116,7 +116,7 @@ def test_generate_cache_key_considers_artifact_store_path(
 def test_generate_cache_key_considers_step_source(generate_cache_key_kwargs):
     """Check that the cache key changes if the step source changes."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    generate_cache_key_kwargs["step"].spec.__config__.allow_mutation = True
+    generate_cache_key_kwargs["step"].spec.model_config["frozen"] = False
     generate_cache_key_kwargs["step"].spec.source = Source.from_import_path(
         "some.new.source"
     )
@@ -129,7 +129,7 @@ def test_generate_cache_key_considers_step_parameters(
 ):
     """Check that the cache key changes if the step parameters change."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    generate_cache_key_kwargs["step"].config.__config__.allow_mutation = True
+    generate_cache_key_kwargs["step"].config.model_config["frozen"] = False
     generate_cache_key_kwargs["step"].config.parameters = {"new_param": 42}
     key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     assert key_1 != key_2
@@ -150,7 +150,7 @@ def test_generate_cache_key_considers_output_artifacts(
 ):
     """Check that the cache key changes if the output artifacts change."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    generate_cache_key_kwargs["step"].config.__config__.allow_mutation = True
+    generate_cache_key_kwargs["step"].config.model_config["frozen"] = False
     generate_cache_key_kwargs["step"].config.outputs.pop("output_1")
     key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     assert key_1 != key_2
@@ -161,7 +161,7 @@ def test_generate_cache_key_considers_caching_parameters(
 ):
     """Check that the cache key changes if the caching parameters change."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    generate_cache_key_kwargs["step"].config.__config__.allow_mutation = True
+    generate_cache_key_kwargs["step"].config.model_config["frozen"] = False
     generate_cache_key_kwargs["step"].config.caching_parameters = {
         "Aria hates caching": False
     }
@@ -227,7 +227,7 @@ def test_fetching_cached_step_run_uses_latest_candidate(
         clean_client.active_workspace.id
     )
 
-    sample_step = Step.parse_obj(
+    sample_step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",

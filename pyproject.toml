@@ -50,10 +50,12 @@ distro = "^1.6.0"
 docker = "~6.1.0"
 httplib2 = "<0.20,>=0.19.1"
 gitpython = "^3.1.18"
+numpy = "<2.0.0"
 pandas = ">=1.1.5"
 passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
-pydantic = "<1.11, >=1.9.0"
+pydantic = "~2.7"
+pydantic-settings = "~2.2.1"
 pymysql = { version = "~1.1.0,>=1.1.1" }
 pyparsing = ">=2.4.0"
 python = ">=3.8,<3.12"
@@ -62,16 +64,16 @@ pyyaml = ">=6.0.1"
 requests = "<2.32.0" # TODO: remove after https://github.com/docker/docker-py/issues/3256
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
 secure = "~0.3.0"
-sqlalchemy_utils = "0.38.3"
-sqlmodel = "0.0.8"
+sqlalchemy = "^2.0.0"
+sqlalchemy_utils = "*"
+sqlmodel = "0.0.18"
 importlib_metadata = { version = "<=7.0.0", python = "<3.10" }
 
 # Optional dependencies for the ZenServer
-fastapi = { version = ">=0.75,<0.111", optional = true }
+fastapi = { version = ">=0.100, <=0.110", optional = true }
 uvicorn = { extras = ["standard"], version = ">=0.17.5", optional = true }
 python-multipart = { version = "~0.0.9", optional = true }
 pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
-fastapi-utils = { version = "~0.2.1", optional = true }
 orjson = { version = "~3.10.0", optional = true }
 Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
@@ -206,6 +208,7 @@ connectors-azure = [
     "azure-mgmt-containerregistry",
     "azure-mgmt-storage",
     "azure-storage-blob",
+    "azure-mgmt-resource",
     "kubernetes",
 ]
 dev = [
@@ -417,7 +420,6 @@ module = [
     "IPython.core.*",
     "IPython.display.*",
     "plotly.*",
-    "graphviz.*",
     "dash.*",
     "dash_bootstrap_components.*",
     "dash_cytoscape",
@@ -449,7 +451,6 @@ module = [
     "bentoml.*",
     "multipart.*",
     "jose.*",
-    "fastapi_utils.*",
     "sqlalchemy_utils.*",
     "sky.*",
     "copier.*",

@@ -16,10 +16,9 @@
 import copy
 import hashlib
 import inspect
+import os
 from abc import abstractmethod
 from collections import defaultdict
-import os
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -35,7 +34,7 @@ from typing import (
     cast,
 )
 
-from pydantic import BaseModel, Extra, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
@@ -60,6 +59,7 @@ from zenml.utils import (
     settings_utils,
     source_code_utils,
     source_utils,
+    typing_utils,
 )
 
 if TYPE_CHECKING:
@@ -76,10 +76,10 @@ if TYPE_CHECKING:
     )
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.types import HookSpecification
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
-    HookSpecification = Union[str, Source, FunctionType]
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrSource",
         Sequence["MaterializerClassOrSource"],
@@ -526,17 +526,17 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
             elif isinstance(value, LazyArtifactVersionResponse):
                 model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
-                    model=value._lazy_load_model,
-                    artifact_name=value._lazy_load_name,
-                    artifact_version=value._lazy_load_version,
+                    model=value.lazy_load_model,
+                    artifact_name=value.lazy_load_name,
+                    artifact_version=value.lazy_load_version,
                     metadata_name=None,
                 )
             elif isinstance(value, LazyRunMetadataResponse):
                 model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
-                    model=value._lazy_load_model,
-                    artifact_name=value._lazy_load_artifact_name,
-                    artifact_version=value._lazy_load_artifact_version,
-                    metadata_name=value._lazy_load_metadata_name,
+                    model=value.lazy_load_model,
+                    artifact_name=value.lazy_load_artifact_name,
+                    artifact_version=value.lazy_load_artifact_version,
+                    metadata_name=value.lazy_load_metadata_name,
                 )
             elif isinstance(value, ClientLazyLoader):
                 client_lazy_loaders[key] = value
@@ -596,7 +596,7 @@ class BaseStep(metaclass=BaseStepMeta):
         from zenml.new.pipelines.pipeline import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
-            # The step is being called outside of the context of a pipeline,
+            # The step is being called outside the context of a pipeline,
             # we simply call the entrypoint
             return self.call_entrypoint(*args, **kwargs)
 
@@ -658,12 +658,15 @@ class BaseStep(metaclass=BaseStepMeta):
         try:
             validated_args = pydantic_utils.validate_function_args(
                 self.entrypoint,
-                {"arbitrary_types_allowed": True, "smart_union": True},
+                ConfigDict(arbitrary_types_allowed=True),
                 *args,
                 **kwargs,
             )
         except ValidationError as e:
-            raise StepInterfaceError("Invalid entrypoint arguments.") from e
+            raise StepInterfaceError(
+                "Invalid step function entrypoint arguments. Check out the "
+                "pydantic error above for more details."
+            ) from e
 
         return self.entrypoint(**validated_args)
 
@@ -809,7 +812,7 @@ class BaseStep(metaclass=BaseStepMeta):
             success_hook_source = resolve_and_validate_hook(on_success)
 
         if isinstance(parameters, BaseParameters):
-            parameters = parameters.dict()
+            parameters = parameters.model_dump()
 
         values = dict_utils.remove_none_values(
             {
@@ -1124,12 +1127,6 @@ To avoid this consider setting step parameters only in one place (config or code
                 output_name, PartialArtifactConfiguration()
             )
 
-            from pydantic.typing import (
-                get_origin,
-                is_none_type,
-                is_union,
-            )
-
             from zenml.steps.utils import get_args
 
             if not output.materializer_source:
@@ -1142,13 +1139,15 @@ To avoid this consider setting step parameters only in one place (config or code
                     )
                     continue
 
-                if is_union(
-                    get_origin(output_annotation.resolved_annotation)
+                if typing_utils.is_union(
+                    typing_utils.get_origin(
+                        output_annotation.resolved_annotation
+                    )
                     or output_annotation.resolved_annotation
                 ):
                     output_types = tuple(
                         type(None)
-                        if is_none_type(output_type)
+                        if typing_utils.is_none_type(output_type)
                         else output_type
                         for output_type in get_args(
                             output_annotation.resolved_annotation
@@ -1182,7 +1181,7 @@ To avoid this consider setting step parameters only in one place (config or code
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config)
 
-        self._configuration = self._configuration.copy(
+        self._configuration = self._configuration.model_copy(
             update={
                 "caching_parameters": self.caching_parameters,
                 "external_input_artifacts": external_artifacts,
@@ -1191,7 +1190,9 @@ To avoid this consider setting step parameters only in one place (config or code
             }
         )
 
-        return StepConfiguration.parse_obj(self._configuration)
+        return StepConfiguration.model_validate(
+            self._configuration.model_dump()
+        )
 
     def _finalize_parameters(self) -> Dict[str, Any]:
         """Finalizes the config parameters for running this step.
@@ -1212,7 +1213,7 @@ To avoid this consider setting step parameters only in one place (config or code
                 # Make sure we have all necessary values to instantiate the
                 # pydantic model later
                 model = annotation(**value)
-                params[key] = model.dict()
+                params[key] = model.model_dump()
             else:
                 params[key] = value
 
@@ -1267,7 +1268,7 @@ To avoid this consider setting step parameters only in one place (config or code
         for (
             name,
             field,
-        ) in self.entrypoint_definition.legacy_params.annotation.__fields__.items():
+        ) in self.entrypoint_definition.legacy_params.annotation.model_fields.items():
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
                 values[name] = self.configuration.parameters[name]
@@ -1275,7 +1276,7 @@ To avoid this consider setting step parameters only in one place (config or code
                 # a value for this parameter has been set in the "new" way
                 # already
                 values[name] = params_defined_in_new_way[name]
-            elif field.required:
+            elif field.is_required():
                 # this field has no default value set and therefore needs
                 # to be passed via an initialized config object
                 missing_keys.append(name)
@@ -1291,8 +1292,12 @@ To avoid this consider setting step parameters only in one place (config or code
             )
 
         if (
-            self.entrypoint_definition.legacy_params.annotation.__config__.extra
-            == Extra.allow
+            getattr(
+                self.entrypoint_definition.legacy_params.annotation.model_config,
+                "extra",
+                None,
+            )
+            == "allow"
         ):
             # Add all parameters for the config class for backwards
             # compatibility if the config class allows extra attributes

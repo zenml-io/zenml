@@ -56,7 +56,9 @@ class ServerSettingsSchema(SQLModel, table=True):
         Returns:
             The updated `ServerSettingsSchema`.
         """
-        for field, value in settings_update.dict(exclude_unset=True).items():
+        for field, value in settings_update.model_dump(
+            exclude_unset=True
+        ).items():
             if field == "onboarding_state":
                 if value is not None:
                     self.onboarding_state = json.dumps(value)

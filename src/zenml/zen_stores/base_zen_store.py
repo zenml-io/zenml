@@ -18,6 +18,7 @@ from abc import ABC
 from typing import (
     Any,
     ClassVar,
+    Dict,
     Optional,
     Tuple,
     Type,
@@ -26,7 +27,7 @@ from typing import (
 from urllib.parse import urlparse
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, model_validator
 from requests import ConnectionError
 
 import zenml
@@ -54,6 +55,7 @@ from zenml.models import (
     UserResponse,
     WorkspaceResponse,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -77,6 +79,45 @@ class BaseZenStore(
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def convert_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Method to infer the correct type of the config and convert.
+
+        Args:
+            data: The provided configuration object, can potentially be a
+                generic object
+
+        Raises:
+            ValueError: If the provided config object's type does not match
+                any of the current implementations.
+
+        Returns:
+            The converted configuration object.
+        """
+        if data["config"].type == StoreType.SQL:
+            from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+
+            data["config"] = SqlZenStoreConfiguration(
+                **data["config"].model_dump()
+            )
+
+        elif data["config"].type == StoreType.REST:
+            from zenml.zen_stores.rest_zen_store import (
+                RestZenStoreConfiguration,
+            )
+
+            data["config"] = RestZenStoreConfiguration(
+                **data["config"].model_dump()
+            )
+        else:
+            raise ValueError(
+                f"Unknown type '{data['config'].type}' for the configuration."
+            )
+
+        return data
 
     # ---------------------------------
     # Initialization and configuration
@@ -477,14 +518,10 @@ class BaseZenStore(
             raise KeyError(f"User with external ID '{user_id}' not found.")
         return users.items[0]
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        validate_assignment=True,
         # Ignore extra attributes from configs of previous ZenML versions
-        extra = "ignore"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        extra="ignore",
+    )

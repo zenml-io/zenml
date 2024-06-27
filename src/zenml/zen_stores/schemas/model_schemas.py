@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
+from pydantic import ConfigDict
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
@@ -206,7 +207,7 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The updated `ModelSchema`.
         """
-        for field, value in model_update.dict(
+        for field, value in model_update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
             setattr(self, field, value)
@@ -285,6 +286,14 @@ class ModelVersionSchema(NamedSchema, table=True):
             overlaps="run_metadata",
         ),
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(
@@ -498,6 +507,14 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
         sa_column=Column(BOOLEAN, nullable=True)
     )
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
     @classmethod
     def from_request(
         cls,
@@ -613,6 +630,14 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
     pipeline_run: "PipelineRunSchema" = Relationship(
         back_populates="model_versions_pipeline_runs_links"
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(

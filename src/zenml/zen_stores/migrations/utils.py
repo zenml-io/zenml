@@ -28,8 +28,7 @@ from typing import (
 )
 
 import pymysql
-from pydantic import BaseModel
-from pydantic.json import pydantic_encoder
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import MetaData, func, text
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
@@ -42,6 +41,7 @@ from sqlmodel import (
 )
 
 from zenml.logger import get_logger
+from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
 
@@ -300,25 +300,26 @@ class MigrationUtils(BaseModel):
 
                 # Fetch the number of rows in the table
                 row_count = conn.scalar(
-                    select([func.count("*")]).select_from(table)
+                    select(func.count()).select_from(table)
                 )
 
                 # Fetch the data from the table in batches
-                batch_size = 50
-                for i in range(0, row_count, batch_size):
-                    rows = conn.execute(
-                        table.select()
-                        .order_by(*order_by)
-                        .limit(batch_size)
-                        .offset(i)
-                    ).fetchall()
+                if row_count is not None:
+                    batch_size = 50
+                    for i in range(0, row_count, batch_size):
+                        rows = conn.execute(
+                            table.select()
+                            .order_by(*order_by)
+                            .limit(batch_size)
+                            .offset(i)
+                        ).fetchall()
 
-                    store_db_info(
-                        dict(
-                            table=table.name,
-                            data=[row._asdict() for row in rows],
-                        ),
-                    )
+                        store_db_info(
+                            dict(
+                                table=table.name,
+                                data=[row._asdict() for row in rows],
+                            ),
+                        )
 
     def restore_database_from_storage(
         self, load_db_info: Callable[[], Generator[Dict[str, Any], None, None]]
@@ -342,11 +343,9 @@ class MigrationUtils(BaseModel):
                 information.
         """
         # Drop and re-create the primary database
-        self.create_database(
-            drop=True,
-        )
+        self.create_database(drop=True)
 
-        metadata = MetaData(bind=self.engine)
+        metadata = MetaData()
 
         with self.engine.begin() as connection:
             # read the DB information one JSON object at a time
@@ -356,7 +355,7 @@ class MigrationUtils(BaseModel):
                     # execute the table creation statement
                     connection.execute(text(table_dump["create_stmt"]))
                     # Reload the database metadata after creating the table
-                    metadata.reflect()
+                    metadata.reflect(bind=self.engine)
 
                 if "data" in table_dump:
                     # insert the data into the database
@@ -604,11 +603,11 @@ class MigrationUtils(BaseModel):
             src_engine: The source SQLAlchemy engine.
             dst_engine: The destination SQLAlchemy engine.
         """
-        src_metadata = MetaData(bind=src_engine)
-        src_metadata.reflect()
+        src_metadata = MetaData()
+        src_metadata.reflect(bind=src_engine)
 
-        dst_metadata = MetaData(bind=dst_engine)
-        dst_metadata.reflect()
+        dst_metadata = MetaData()
+        dst_metadata.reflect(bind=dst_engine)
 
         # @event.listens_for(src_metadata, "column_reflect")
         # def generalize_datatypes(inspector, tablename, column_dict):
@@ -620,7 +619,7 @@ class MigrationUtils(BaseModel):
 
         # Refresh target metadata after creating the tables
         dst_metadata.clear()
-        dst_metadata.reflect()
+        dst_metadata.reflect(bind=dst_engine)
 
         # Copy all data from the source database to the destination database
         with src_engine.begin() as src_conn:
@@ -648,22 +647,23 @@ class MigrationUtils(BaseModel):
                         order_by.append(src_table.columns["id"])
 
                     row_count = src_conn.scalar(
-                        select([func.count("*")]).select_from(src_table)
+                        select(func.count()).select_from(src_table)
                     )
 
                     # Copy rows in batches
-                    batch_size = 50
-                    for i in range(0, row_count, batch_size):
-                        rows = src_conn.execute(
-                            src_table.select()
-                            .order_by(*order_by)
-                            .limit(batch_size)
-                            .offset(i)
-                        ).fetchall()
+                    if row_count is not None:
+                        batch_size = 50
+                        for i in range(0, row_count, batch_size):
+                            rows = src_conn.execute(
+                                src_table.select()
+                                .order_by(*order_by)
+                                .limit(batch_size)
+                                .offset(i)
+                            ).fetchall()
 
-                        dst_conn.execute(
-                            insert, [row._asdict() for row in rows]
-                        )
+                            dst_conn.execute(
+                                insert, [row._asdict() for row in rows]
+                            )
 
     def backup_database_to_db(self, backup_db_name: str) -> None:
         """Backup the database to a backup database.
@@ -713,8 +713,4 @@ class MigrationUtils(BaseModel):
             "backup database."
         )
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # all attributes with leading underscore are private
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)

@@ -118,7 +118,7 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
     test_pipeline.prepare()
 
     # conflict 5 and 1
-    run_config = PipelineRunConfiguration.parse_obj(
+    run_config = PipelineRunConfiguration.model_validate(
         {"steps": {"step_with_int_input": {"parameters": {"input_": 5}}}}
     )
     with pytest.raises(
@@ -132,7 +132,7 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
         )
 
     # no conflict 1 and 1
-    run_config = PipelineRunConfiguration.parse_obj(
+    run_config = PipelineRunConfiguration.model_validate(
         {"steps": {"step_with_int_input": {"parameters": {"input_": 1}}}}
     )
     deployment, _ = Compiler().compile(

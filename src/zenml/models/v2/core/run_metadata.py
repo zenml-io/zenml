@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+from zenml.model.model import Model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -29,9 +30,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-
-if TYPE_CHECKING:
-    from zenml.model.model import Model
 
 # ------------------ Request Model ------------------
 
@@ -55,11 +53,6 @@ class RunMetadataRequest(WorkspaceScopedRequest):
         title="The types of the metadata to be created.",
     )
 
-    class Config:
-        """Pydantic configuration."""
-
-        smart_union = True
-
 
 # ------------------ Update Model ------------------
 
@@ -71,23 +64,53 @@ class RunMetadataRequest(WorkspaceScopedRequest):
 class RunMetadataResponseBody(WorkspaceScopedResponseBody):
     """Response body for run metadata."""
 
-    key: str = Field(
-        title="The key of the metadata.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+    key: str = Field(title="The key of the metadata.")
     value: MetadataType = Field(
-        title="The value of the metadata.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
+        title="The value of the metadata.", union_mode="smart"
     )
-    type: MetadataTypeEnum = Field(
-        title="The type of the metadata.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+    type: MetadataTypeEnum = Field(title="The type of the metadata.")
 
-    class Config:
-        """Pydantic configuration."""
+    @field_validator("key", "type")
+    @classmethod
+    def str_field_max_length_check(cls, value: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum str length.
 
-        smart_union = True
+        Args:
+            value: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(value)) < STR_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {STR_FIELD_MAX_LENGTH}"
+        )
+        return value
+
+    @field_validator("value")
+    @classmethod
+    def text_field_max_length_check(cls, value: Any) -> Any:
+        """Checks if the length of the value exceeds the maximum text length.
+
+        Args:
+            value: the value set in the field
+
+        Returns:
+            the value itself.
+
+        Raises:
+            AssertionError: if the length of the field is longer than the
+                maximum threshold.
+        """
+        assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
+            "The length of the value for this field can not "
+            f"exceed {TEXT_FIELD_MAX_LENGTH}"
+        )
+        return value
 
 
 class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -189,11 +212,17 @@ class RunMetadataResponse(
 class RunMetadataFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of run metadata."""
 
-    resource_id: Optional[Union[str, UUID]] = None
+    resource_id: Optional[Union[str, UUID]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     resource_type: Optional[MetadataResourceTypes] = None
-    stack_component_id: Optional[Union[str, UUID]] = None
+    stack_component_id: Optional[Union[str, UUID]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     key: Optional[str] = None
-    type: Optional[Union[str, MetadataTypeEnum]] = None
+    type: Optional[Union[str, MetadataTypeEnum]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
 
 # -------------------- Lazy Loader --------------------
@@ -207,10 +236,10 @@ class LazyRunMetadataResponse(RunMetadataResponse):
     """
 
     id: Optional[UUID] = None  # type: ignore[assignment]
-    _lazy_load_artifact_name: Optional[str] = None
-    _lazy_load_artifact_version: Optional[str] = None
-    _lazy_load_metadata_name: Optional[str] = None
-    _lazy_load_model: "Model"
+    lazy_load_artifact_name: Optional[str] = None
+    lazy_load_artifact_version: Optional[str] = None
+    lazy_load_metadata_name: Optional[str] = None
+    lazy_load_model: Model
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
@@ -231,9 +260,3 @@ class LazyRunMetadataResponse(RunMetadataResponse):
         raise RuntimeError(
             "Cannot access run metadata metadata before pipeline runs."
         )
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extras to include the lazy load attributes
-        extra = "allow"
