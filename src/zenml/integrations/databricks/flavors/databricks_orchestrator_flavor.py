@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Databricks orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type, Union
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
@@ -22,7 +22,9 @@ from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
-    from zenml.integrations.databricks.orchestrators import DatabricksOrchestrator
+    from zenml.integrations.databricks.orchestrators import (
+        DatabricksOrchestrator,
+    )
 
 
 logger = get_logger(__name__)

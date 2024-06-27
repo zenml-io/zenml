@@ -27,7 +27,7 @@ class DatabricksIntegration(Integration):
     """Definition of Databricks Integration for ZenML."""
 
     NAME = DATABRICKS
-    REQUIREMENTS = ["workflows_authoring_toolkit"]
+    REQUIREMENTS = ["databricks-sdk"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -43,3 +43,9 @@ class DatabricksIntegration(Integration):
         return [DatabricksOrchestratorFlavor]
 
 DatabricksIntegration.check_installation()
+
+
+from databricks.sdk import WorkspaceClient
+w = WorkspaceClient(, account_id="fbe81b69-874c-4447-a150-c45e7674519c", token='dose8d22a0ab5dfd8b617b0e398b0bc35a49')
+
+from databricks.sdk import WorkspaceClient

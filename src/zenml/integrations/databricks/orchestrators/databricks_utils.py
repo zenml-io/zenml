@@ -1,4 +1,3 @@
-
 #  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,71 +11,49 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, root_validator
+from typing import List, Optional
 
-class PythonWheelTask(BaseModel):
-    entry_point: str
-    package_name: str
-    parameters: List[str] = []
+from databricks.sdk.service.compute import Library, PythonPyPiLibrary
+from databricks.sdk.service.jobs import PythonWheelTask, TaskDependency
+from databricks.sdk.service.jobs import Task as DatabricksTask
 
-class DatabricksTask(BaseModel):
-    task_key: str
-    python_wheel_task: PythonWheelTask
-    libraries: List[Dict] = Field(default_factory=list)
-    depends_on: Optional[List[Dict[str, str]]] = None
 
-def generate_databricks_yaml(pipeline_name, tasks):
-    return {
-        "resources": {
-            "jobs": {
-                pipeline_name: {
-                    "job_clusters": [
-                        {
-                            "job_cluster_key": "Default",
-                            "new_cluster": {
-                                "autoscale": {
-                                    "max_workers": 4,
-                                    "min_workers": 1,
-                                },
-                                "node_type_id": "${var.default_node_type_id}",
-                                "spark_version": "${var.default_spark_version}",
-                            },
-                        }
-                    ],
-                    "name": pipeline_name,
-                    "tasks": [
-                        task.dict(exclude_none=True) for task in tasks
-                    ],  # Convert tasks to dictionaries
-                }
-            }
-        }
-    }
+def convert_step_to_task(
+    task_name: str,
+    command: str,
+    arguments: List[str],
+    libraries: Optional[List[str]] = None,
+    depends_on: Optional[List[str]] = None,
+) -> DatabricksTask:
+    """Convert a ZenML step to a Databricks task.
 
-def convert_step_to_task(task_name: str, command: str, arguments: List[str], libraries: Optional[List[str]] = None, depends_on: Optional[List[str]] = None):
-    dependencies = [
-            {
-                "whl": "../../dist/*.whl",
-            },
-            {
-                "pypi": {
-                    "package": "zenml",
-                }
-            },
+    Args:
+        task_name: Name of the task.
+        command: Command to run.
+        arguments: Arguments to pass to the command.
+        libraries: Libraries to install.
+        depends_on: List of tasks to depend on.
 
-        ]
-    if libraries:
-        dependencies.extend([{"pypi": {"package": lib}} for lib in libraries])
-    return DatabricksTask(
+    Returns:
+        Databricks task.
+    """
+    DatabricksTask(
         task_key=task_name,
         job_cluster_key="Default",
+        libraries=[
+            Library(pypi=PythonPyPiLibrary(library)) for library in libraries
+        ]
+        if libraries
+        else None,
         python_wheel_task=PythonWheelTask(
-            entry_point=command,
             package_name="zenml",
+            entry_point=command,
             parameters=arguments,
         ),
-        libraries=dependencies,
-        depends_on=[
-            {"task_key": task} for task in depends_on
-        ] if depends_on else None,
+        base_parameters={
+            "arguments": arguments,
+        },
+        depends_on=[TaskDependency(task) for task in depends_on]
+        if depends_on
+        else None,
     )

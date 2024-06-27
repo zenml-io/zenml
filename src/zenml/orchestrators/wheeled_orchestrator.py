@@ -13,16 +13,12 @@
 #  permissions and limitations under the License.
 """Wheeled orchestrator class."""
 
-from abc import ABC
 import os
-import tempfile
-from typing import List, Optional
 import subprocess
+import tempfile
+from abc import ABC
 
-from zenml.config.build_configuration import BuildConfiguration
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.io import fileio
-from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse
 from zenml.orchestrators import BaseOrchestrator
 from zenml.utils.io_utils import copy_dir
 from zenml.utils.source_utils import get_source_root
@@ -32,11 +28,9 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
     """Base class for wheeled orchestrators."""
 
     def copy_repository_to_temp_dir_and_add_setup_py(self) -> str:
-        """Copy the repository to a temporary directory and add a setup.py file.
-        """
+        """Copy the repository to a temporary directory and add a setup.py file."""
         repo_path = get_source_root()
 
-        
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
 
@@ -44,7 +38,6 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
         temp_repo_path = os.path.join(temp_dir, "zenmlproject")
 
         fileio.mkdir(temp_repo_path)
-
 
         # Copy the repository to the temporary directory
         copy_dir(repo_path, temp_repo_path)
@@ -69,9 +62,6 @@ setup(
             f.write(setup_py_content)
 
         return temp_dir
-    
-
-
 
     def create_wheel(self, temp_dir: str) -> str:
         """
@@ -109,5 +99,3 @@ setup(
         finally:
             # Change back to the original directory
             os.chdir(original_dir)
-
-
