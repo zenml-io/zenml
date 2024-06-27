@@ -549,7 +549,7 @@ class Compiler:
             step_operator = step.config.step_operator
             if step_operator and step_operator not in available_step_operators:
                 raise StackValidationError(
-                    f"Step '{name}' requires step operator "
+                    f"Step `{name}` requires step operator "
                     f"'{step_operator}' which is not configured in "
                     f"the stack '{stack.name}'. Available step operators: "
                     f"{available_step_operators}."
@@ -561,7 +561,7 @@ class Compiler:
                 and experiment_tracker not in available_experiment_trackers
             ):
                 raise StackValidationError(
-                    f"Step '{name}' requires experiment tracker "
+                    f"Step `{name}` requires experiment tracker "
                     f"'{experiment_tracker}' which is not "
                     f"configured in the stack '{stack.name}'. Available "
                     f"experiment trackers: {available_experiment_trackers}."

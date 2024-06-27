@@ -166,7 +166,7 @@ def mlflow_model_deployer_step(
                 "was negative."
             )
         logger.info(
-            f"Reusing last model server deployed by step '{step_name}' of "
+            f"Reusing last model server deployed by step `{step_name}` of "
             f"pipeline '{pipeline_name}' for model '{model_name}'..."
         )
         service = cast(MLFlowDeploymentService, existing_services[0])

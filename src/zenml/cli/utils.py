@@ -39,6 +39,7 @@ from typing import (
 )
 
 import click
+import pkg_resources
 import yaml
 from pydantic import BaseModel, SecretStr
 from rich import box, table
@@ -353,9 +354,11 @@ def print_pydantic_models(
             marker = "current"
         if active_models is not None and show_active_column:
             return {
-                marker: ":point_right:"
-                if any(model.id == a.id for a in active_models)
-                else "",
+                marker: (
+                    ":point_right:"
+                    if any(model.id == a.id for a in active_models)
+                    else ""
+                ),
                 **items,
             }
 
@@ -1004,12 +1007,19 @@ def prompt_configuration(
 def install_packages(
     packages: List[str],
     upgrade: bool = False,
+    use_uv: bool = False,
 ) -> None:
-    """Installs pypi packages into the current environment with pip.
+    """Installs pypi packages into the current environment with pip or uv.
+
+    When using with `uv`, a virtual environment is required.
 
     Args:
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
+        use_uv: Whether to use uv for package installation.
+
+    Raises:
+        e: If the package installation fails.
     """
     if "neptune" in packages:
         declare(
@@ -1018,24 +1028,55 @@ def install_packages(
         )
         uninstall_package("neptune-client")
 
+    if "prodigy" in packages:
+        packages.remove("prodigy")
+        declare(
+            "The `prodigy` package should be installed manually using your "
+            "license key. Please visit https://prodi.gy/docs/install for more "
+            "information."
+        )
+    if not packages:
+        # if user only tried to install prodigy, we can
+        # just return without doing anything
+        return
+
+    pip_command = ["uv", "pip"] if use_uv else ["pip"]
     if upgrade:
-        command = [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--upgrade",
-        ] + packages
+        command = (
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "install",
+                "--upgrade",
+            ]
+            + packages
+        )
     else:
-        command = [sys.executable, "-m", "pip", "install"] + packages
+        command = [sys.executable, "-m"] + pip_command + ["install"] + packages
 
     if not IS_DEBUG_ENV:
-        command += [
-            "-qqq",
-            "--no-warn-conflicts",
-        ]
+        quiet_flag = "-q" if use_uv else "-qqq"
+        command.append(quiet_flag)
+        if not use_uv:
+            command.append("--no-warn-conflicts")
 
-    subprocess.check_call(command)
+    try:
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError as e:
+        if (
+            use_uv
+            and "Failed to locate a virtualenv or Conda environment" in str(e)
+        ):
+            error(
+                "Failed to locate a virtualenv or Conda environment. "
+                "When using uv, a virtual environment is required. "
+                "Run `uv venv` to create a virtualenv and retry."
+            )
+        else:
+            raise e
 
     if "label-studio" in packages:
         warning(
@@ -1048,23 +1089,56 @@ def install_packages(
         )
 
 
-def uninstall_package(package: str) -> None:
-    """Uninstalls pypi package from the current environment with pip.
+def uninstall_package(package: str, use_uv: bool = False) -> None:
+    """Uninstalls pypi package from the current environment with pip or uv.
 
     Args:
         package: The package to uninstall.
+        use_uv: Whether to use uv for package uninstallation.
     """
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "uninstall",
-            "-qqq",
-            "-y",
-            package,
-        ]
-    )
+    pip_command = ["uv", "pip"] if use_uv else ["pip"]
+    quiet_flag = "-q" if use_uv else "-qqq"
+
+    if use_uv:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "uninstall",
+                quiet_flag,
+                package,
+            ]
+        )
+    else:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "uninstall",
+                quiet_flag,
+                "-y",
+                package,
+            ]
+        )
+
+
+def is_uv_installed() -> bool:
+    """Check if uv is installed in the current environment.
+
+    Returns:
+        True if uv is installed, False otherwise.
+    """
+    try:
+        pkg_resources.get_distribution("uv")
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
 
 
 def pretty_print_secret(
@@ -1238,12 +1312,16 @@ def pretty_print_model_version_details(
         "REGISTERED_MODEL_NAME": model_version.registered_model.name,
         "VERSION": model_version.version,
         "VERSION_DESCRIPTION": model_version.description,
-        "CREATED_AT": str(model_version.created_at)
-        if model_version.created_at
-        else "N/A",
-        "UPDATED_AT": str(model_version.last_updated_at)
-        if model_version.last_updated_at
-        else "N/A",
+        "CREATED_AT": (
+            str(model_version.created_at)
+            if model_version.created_at
+            else "N/A"
+        ),
+        "UPDATED_AT": (
+            str(model_version.last_updated_at)
+            if model_version.last_updated_at
+            else "N/A"
+        ),
         "METADATA": model_version.metadata.dict()
         if model_version.metadata
         else {},
@@ -1606,7 +1684,7 @@ def expires_in(
         expires_at -= datetime.timedelta(seconds=skew_tolerance)
     if expires_at < now:
         return expired_str
-    return seconds_to_human_readable((expires_at - now).seconds)
+    return seconds_to_human_readable(int((expires_at - now).total_seconds()))
 
 
 def print_service_connectors_table(
@@ -1669,13 +1747,15 @@ def print_service_connectors_table(
             "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
             "RESOURCE NAME": resource_name,
             "OWNER": f"{connector.user.name if connector.user else '-'}",
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else ""
+            ),
             "LABELS": "\n".join(labels),
         }
         configurations.append(connector_config)
@@ -1731,15 +1811,17 @@ def print_service_connector_resource_table(
             resource_row = {}
             if not show_resources_only:
                 resource_row = {
-                    "CONNECTOR ID": str(resource_model.id)
-                    if not printed_connector
-                    else "",
-                    "CONNECTOR NAME": resource_model.name
-                    if not printed_connector
-                    else "",
-                    "CONNECTOR TYPE": resource_model.emojified_connector_type
-                    if not printed_connector
-                    else "",
+                    "CONNECTOR ID": (
+                        str(resource_model.id) if not printed_connector else ""
+                    ),
+                    "CONNECTOR NAME": (
+                        resource_model.name if not printed_connector else ""
+                    ),
+                    "CONNECTOR TYPE": (
+                        resource_model.emojified_connector_type
+                        if not printed_connector
+                        else ""
+                    ),
                 }
             resource_row.update(
                 {
@@ -1815,16 +1897,20 @@ def print_service_connector_configuration(
             "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "N/A",
-            "EXPIRES_SKEW_TOLERANCE": connector.expires_skew_tolerance
-            if connector.expires_skew_tolerance
-            else "N/A",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else "N/A"
+            ),
+            "EXPIRES_SKEW_TOLERANCE": (
+                connector.expires_skew_tolerance
+                if connector.expires_skew_tolerance
+                else "N/A"
+            ),
             "OWNER": user_name,
             "WORKSPACE": connector.workspace.name,
             "CREATED_AT": connector.created,
@@ -1838,16 +1924,20 @@ def print_service_connector_configuration(
             "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
             "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SESSION DURATION": expiration,
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "N/A",
-            "EXPIRES_SKEW_TOLERANCE": connector.expires_skew_tolerance
-            if connector.expires_skew_tolerance
-            else "N/A",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else "N/A"
+            ),
+            "EXPIRES_SKEW_TOLERANCE": (
+                connector.expires_skew_tolerance
+                if connector.expires_skew_tolerance
+                else "N/A"
+            ),
         }
 
     for item in properties.items():
@@ -2649,3 +2739,16 @@ def verify_mlstacks_prerequisites_installation() -> None:
         error(NOT_INSTALLED_MESSAGE)
     except subprocess.CalledProcessError:
         error(TERRAFORM_NOT_INSTALLED_MESSAGE)
+
+
+def is_jupyter_installed() -> bool:
+    """Checks if Jupyter notebook is installed.
+
+    Returns:
+        bool: True if Jupyter notebook is installed, False otherwise.
+    """
+    try:
+        pkg_resources.get_distribution("notebook")
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False

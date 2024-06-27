@@ -19,21 +19,30 @@ import sys
 import time
 from contextvars import ContextVar
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Type
-from uuid import uuid4
+from typing import Any, Callable, List, Optional, Type, Union
+from uuid import UUID, uuid4
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifacts.utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.client import Client
+from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     STEP_LOGS_STORAGE_MAX_MESSAGES,
+    STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
 )
+from zenml.zen_stores.base_zen_store import BaseZenStore
 
 # Get the logger
 logger = get_logger(__name__)
 
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
+
+LOGS_EXTENSION = ".log"
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -54,7 +63,7 @@ def prepare_logs_uri(
     step_name: str,
     log_key: Optional[str] = None,
 ) -> str:
-    """Generates and prepares a URI for the log file for a step.
+    """Generates and prepares a URI for the log file or folder for a step.
 
     Args:
         artifact_store: The artifact store on which the artifact will be stored.
@@ -62,9 +71,8 @@ def prepare_logs_uri(
         log_key: The unique identification key of the log file.
 
     Returns:
-        The URI of the logs file.
+        The URI of the log storage (file or folder).
     """
-    artifact_store = Client().active_stack.artifact_store
     if log_key is None:
         log_key = str(uuid4())
 
@@ -79,13 +87,119 @@ def prepare_logs_uri(
         artifact_store.makedirs(logs_base_uri)
 
     # Delete the file if it already exists
-    logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
-    if artifact_store.exists(logs_uri):
-        logger.warning(
-            f"Logs file {logs_uri} already exists! Removing old log file..."
+    if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+        logs_uri_folder = os.path.join(logs_base_uri, log_key)
+        if artifact_store.exists(logs_uri_folder):
+            logger.warning(
+                f"Logs directory {logs_uri_folder} already exists! Removing old log directory..."
+            )
+            artifact_store.rmtree(logs_uri_folder)
+
+        artifact_store.makedirs(logs_uri_folder)
+        return logs_uri_folder
+    else:
+        logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
+        if artifact_store.exists(logs_uri):
+            logger.warning(
+                f"Logs file {logs_uri} already exists! Removing old log file..."
+            )
+            artifact_store.remove(logs_uri)
+        return logs_uri
+
+
+def fetch_logs(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+    offset: int = 0,
+    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
+) -> str:
+    """Fetches the logs from the artifact store.
+
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the artifact.
+        offset: The offset from which to start reading.
+        length: The amount of bytes that should be read.
+
+    Returns:
+        The logs as a string.
+
+    Raises:
+        DoesNotExistException: If the artifact does not exist in the artifact
+            store.
+    """
+
+    def _read_file(
+        uri: str, offset: int = 0, length: Optional[int] = None
+    ) -> str:
+        return str(
+            _load_file_from_artifact_store(
+                uri,
+                artifact_store=artifact_store,
+                mode="rb",
+                offset=offset,
+                length=length,
+            ).decode()
         )
-        artifact_store.remove(logs_uri)
-    return logs_uri
+
+    artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+    if not artifact_store.isdir(logs_uri):
+        return _read_file(logs_uri, offset, length)
+    else:
+        files = artifact_store.listdir(logs_uri)
+        if len(files) == 1:
+            return _read_file(
+                os.path.join(logs_uri, str(files[0])), offset, length
+            )
+        else:
+            is_negative_offset = offset < 0
+            files.sort(reverse=is_negative_offset)
+
+            # search for the first file we need to read
+            latest_file_id = 0
+            for i, file in enumerate(files):
+                file_size: int = artifact_store.size(
+                    os.path.join(logs_uri, str(file))
+                )  # type: ignore[assignment]
+
+                if is_negative_offset:
+                    if file_size >= -offset:
+                        latest_file_id = -(i + 1)
+                        break
+                    else:
+                        offset += file_size
+                else:
+                    if file_size > offset:
+                        latest_file_id = i
+                        break
+                    else:
+                        offset -= file_size
+
+            # read the files according to pre-filtering
+            files.sort()
+            ret = []
+            for file in files[latest_file_id:]:
+                ret.append(
+                    _read_file(
+                        os.path.join(logs_uri, str(file)),
+                        offset,
+                        length,
+                    )
+                )
+                offset = 0
+                length -= len(ret[-1])
+                if length <= 0:
+                    # stop further reading, if the whole length is already read
+                    break
+
+            if not ret:
+                raise DoesNotExistException(
+                    f"Folder '{logs_uri}' is empty in artifact store "
+                    f"'{artifact_store.name}'."
+                )
+            return "".join(ret)
 
 
 class StepLogsStorage:
@@ -96,25 +210,46 @@ class StepLogsStorage:
         logs_uri: str,
         max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
         time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
+        merge_files_interval: int = STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
     ) -> None:
         """Initialization.
 
         Args:
-            logs_uri: the target URI to store the logs.
+            logs_uri: the URI of the log file or folder.
             max_messages: the maximum number of messages to save in the buffer.
             time_interval: the amount of seconds before the buffer gets saved
                 automatically.
+            merge_files_interval: the amount of seconds before the created files
+                get merged into a single file.
         """
         # Parameters
         self.logs_uri = logs_uri
         self.max_messages = max_messages
         self.time_interval = time_interval
+        self.merge_files_interval = merge_files_interval
 
         # State
         self.buffer: List[str] = []
         self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
         self.disabled = False
+        self._artifact_store: Optional["BaseArtifactStore"] = None
+
+        # Immutable filesystems state
+        self.last_merge_time = time.time()
+        self.log_files_not_merged: List[str] = []
+        self.next_merged_file_name: str = f"{time.time()}{LOGS_EXTENSION}"
+
+    @property
+    def artifact_store(self) -> "BaseArtifactStore":
+        """Returns the active artifact store.
+
+        Returns:
+            The active artifact store.
+        """
+        if self._artifact_store is None:
+            self._artifact_store = Client().active_stack.artifact_store
+        return self._artifact_store
 
     def write(self, text: str) -> None:
         """Main write method.
@@ -127,26 +262,60 @@ class StepLogsStorage:
 
         if not self.disabled:
             self.buffer.append(text)
+            self.save_to_file()
 
-            if (
-                len(self.buffer) >= self.max_messages
-                or time.time() - self.last_save_time >= self.time_interval
-            ):
-                self.save_to_file()
+    @property
+    def _is_write_needed(self) -> bool:
+        """Checks whether the buffer needs to be written to disk.
 
-    def save_to_file(self) -> None:
-        """Method to save the buffer to the given URI."""
-        artifact_store = Client().active_stack.artifact_store
-        if not self.disabled:
+        Returns:
+            whether the buffer needs to be written to disk.
+        """
+        return (
+            len(self.buffer) >= self.max_messages
+            or time.time() - self.last_save_time >= self.time_interval
+        )
+
+    def save_to_file(self, force: bool = False) -> None:
+        """Method to save the buffer to the given URI.
+
+        Args:
+            force: whether to force a save even if the write conditions not met.
+        """
+        if not self.disabled and (self._is_write_needed or force):
+            # IMPORTANT: keep this as the first code line in this method! The
+            # code that follows might still emit logging messages, which will
+            # end up triggering this method again, causing an infinite loop.
+            self.disabled = True
+
             try:
-                self.disabled = True
-
                 if self.buffer:
-                    with artifact_store.open(self.logs_uri, "a") as file:
-                        for message in self.buffer:
-                            file.write(
-                                remove_ansi_escape_codes(message) + "\n"
+                    if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+                        if not self.log_files_not_merged:
+                            self.next_merged_file_name = (
+                                f"{time.time()}{LOGS_EXTENSION}"
                             )
+                        log_file_ = f"{time.time()}{LOGS_EXTENSION}"
+                        self.log_files_not_merged.append(log_file_)
+                        with self.artifact_store.open(
+                            os.path.join(
+                                self.logs_uri,
+                                log_file_,
+                            ),
+                            "w",
+                        ) as file:
+                            for message in self.buffer:
+                                file.write(
+                                    remove_ansi_escape_codes(message) + "\n"
+                                )
+                    else:
+                        with self.artifact_store.open(
+                            self.logs_uri, "a"
+                        ) as file:
+                            for message in self.buffer:
+                                file.write(
+                                    remove_ansi_escape_codes(message) + "\n"
+                                )
 
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the
@@ -159,6 +328,66 @@ class StepLogsStorage:
                 self.last_save_time = time.time()
 
                 self.disabled = False
+        # merge created files on a given interval (defaults to 10 minutes)
+        # only runs on Immutable Filesystems
+        if (
+            self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM
+            and time.time() - self.last_merge_time > self.merge_files_interval
+        ):
+            try:
+                self.merge_log_files(
+                    self.next_merged_file_name, self.log_files_not_merged
+                )
+            except (OSError, IOError) as e:
+                logger.error(f"Error while trying to roll up logs: {e}")
+            else:
+                self.log_files_not_merged = []
+            finally:
+                self.last_merge_time = time.time()
+
+    def merge_log_files(
+        self,
+        file_name: Optional[str] = None,
+        files: Optional[List[str]] = None,
+    ) -> None:
+        """Merges all log files into one in the given URI.
+
+        Called on the logging context exit.
+
+        Args:
+            file_name: The name of the merged log file.
+            files: The list of log files to merge.
+        """
+        if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+            files_ = files or self.artifact_store.listdir(self.logs_uri)
+            file_name_ = file_name or f"full_log{LOGS_EXTENSION}"
+            if len(files_) > 1:
+                files_.sort()
+                logger.debug("Log files count: %s", len(files_))
+
+                try:
+                    # dump all logs to a local file first
+                    with self.artifact_store.open(
+                        os.path.join(self.logs_uri, file_name_), "w"
+                    ) as merged_file:
+                        for file in files_:
+                            merged_file.write(
+                                str(
+                                    _load_file_from_artifact_store(
+                                        os.path.join(self.logs_uri, str(file)),
+                                        artifact_store=self.artifact_store,
+                                        mode="r",
+                                    )
+                                )
+                            )
+                except Exception as e:
+                    logger.warning(f"Failed to merge log files. {e}")
+                else:
+                    # clean up left over files
+                    for file in files_:
+                        self.artifact_store.remove(
+                            os.path.join(self.logs_uri, str(file))
+                        )
 
 
 class StepLogsStorageContext:
@@ -211,7 +440,8 @@ class StepLogsStorageContext:
 
         Restores the `write` method of both stderr and stdout.
         """
-        self.storage.save_to_file()
+        self.storage.save_to_file(force=True)
+        self.storage.merge_log_files()
 
         setattr(sys.stdout, "write", self.stdout_write)
         setattr(sys.stdout, "flush", self.stdout_flush)

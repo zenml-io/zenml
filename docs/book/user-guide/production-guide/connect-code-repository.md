@@ -1,9 +1,10 @@
 ---
 description: >-
-  Connect a Git repository to ZenML to track code changes and collaborate on MLOps projects.
+  Connect a Git repository to ZenML to track code changes and collaborate on
+  MLOps projects.
 ---
 
-# Connect your code repository
+# Configure a code repository
 
 Throughout the lifecycle of a MLOps pipeline, it can get quite tiresome to always wait for a Docker build every time after running a pipeline (even if the local Docker cache is used). However, there is a way to just have one pipeline build and keep reusing it until a change to the pipeline environment is made: by connecting a code repository.
 
@@ -24,7 +25,7 @@ By connecting a Git repository, you avoid redundant builds and make your MLOps p
 
 ## Creating a GitHub Repository
 
-While ZenML supports [many different flavors of git repositories](../advanced-guide/configuring-zenml/connect-your-git-repository.md), this guide will focus on [GitHub](https://github.com). To create a repository on GitHub:
+While ZenML supports [many different flavors of git repositories](../../how-to/setting-up-a-project-repository/connect-your-git-repository.md), this guide will focus on [GitHub](https://github.com). To create a repository on GitHub:
 
 1. Sign in to [GitHub](https://github.com/).
 2. Click the "+" icon and select "New repository."
@@ -54,7 +55,7 @@ Replace `YOUR_USERNAME` and `YOUR_REPOSITORY_NAME` with your GitHub information.
 
 ## Linking to ZenML
 
-To connect your GitHub repository to ZenML, you'll need a GitHub Personal Access Token (PAT). 
+To connect your GitHub repository to ZenML, you'll need a GitHub Personal Access Token (PAT).
 
 <details>
 
@@ -93,14 +94,13 @@ Your code is now connected to your ZenML server. ZenML will automatically detect
 You can try this out by running our training pipeline again:
 
 ```python
-# This will build the docker image the first time
+# This will build the Docker image the first time
 python run.py --training-pipeline
 
-# This will skip docker building
+# This will skip Docker building
 python run.py --training-pipeline
 ```
 
-You can read more about [the ZenML Git Integration here](../advanced-guide/configuring-zenml/connect-your-git-repository.md).
+You can read more about [the ZenML Git Integration here](../../how-to/setting-up-a-project-repository/connect-your-git-repository.md).
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

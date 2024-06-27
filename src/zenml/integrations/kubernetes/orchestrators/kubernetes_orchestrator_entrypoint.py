@@ -116,8 +116,10 @@ def main() -> None:
             command=step_command,
             args=step_args,
             env=env,
-            settings=settings,
-            service_account_name=settings.service_account_name,
+            privileged=settings.privileged,
+            pod_settings=settings.pod_settings,
+            service_account_name=settings.step_pod_service_account_name
+            or settings.service_account_name,
             mount_local_stores=mount_local_stores,
         )
 
@@ -130,7 +132,9 @@ def main() -> None:
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to start...")
         kube_utils.wait_pod(
-            core_api=core_api,
+            kube_client_fn=lambda: orchestrator.get_kube_client(
+                incluster=True
+            ),
             pod_name=pod_name,
             namespace=args.kubernetes_namespace,
             exit_condition_lambda=kube_utils.pod_is_done,
@@ -138,7 +142,14 @@ def main() -> None:
         )
         logger.info(f"Pod of step `{step_name}` completed.")
 
-    ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_kubernetes).run()
+    parallel_node_startup_waiting_period = (
+        orchestrator.config.parallel_step_startup_waiting_period or 0.0
+    )
+    ThreadedDagRunner(
+        dag=pipeline_dag,
+        run_fn=run_step_on_kubernetes,
+        parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
+    ).run()
 
     logger.info("Orchestration pod completed.")
 

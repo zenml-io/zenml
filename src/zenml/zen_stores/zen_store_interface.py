@@ -94,6 +94,8 @@ from zenml.models import (
     SecretResponse,
     SecretUpdate,
     ServerModel,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -228,6 +230,35 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The ID of the deployment.
+        """
+
+    # -------------------- Server Settings --------------------
+
+    @abstractmethod
+    def get_server_settings(
+        self, hydrate: bool = True
+    ) -> ServerSettingsResponse:
+        """Get the server settings.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The server settings.
+        """
+
+    @abstractmethod
+    def update_server_settings(
+        self, settings_update: ServerSettingsUpdate
+    ) -> ServerSettingsResponse:
+        """Update the server settings.
+
+        Args:
+            settings_update: The server settings update.
+
+        Returns:
+            The updated server settings.
         """
 
     # -------------------- API Keys --------------------

@@ -17,7 +17,7 @@ from uuid import UUID
 from zenml import constants
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, ModelStages
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineDeploymentBase,
@@ -166,7 +166,13 @@ def _update_new_requesters(
         try:
             model._get_model_version()
             version_existed = key not in new_versions_requested
-        except KeyError:
+        except KeyError as e:
+            if model.version in ModelStages.values():
+                raise KeyError(
+                    f"Unable to get model `{model.name}` using stage "
+                    f"`{model.version}`, please check that the model "
+                    "version in given stage exists before running a pipeline."
+                ) from e
             version_existed = False
     if not version_existed:
         model.was_created_in_this_run = True

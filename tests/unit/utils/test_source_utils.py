@@ -15,6 +15,7 @@
 import pathlib
 import sys
 from contextlib import ExitStack as does_not_raise
+from types import BuiltinFunctionType, FunctionType
 from uuid import uuid4
 
 import pytest
@@ -54,6 +55,22 @@ def test_basic_source_loading():
         module="zenml.client", attribute=None, type=SourceType.INTERNAL
     )
     assert source_utils.load(client_module_source) is client
+
+    function_type_source = Source(
+        module=FunctionType.__module__,
+        attribute=FunctionType.__name__,
+        type=SourceType.BUILTIN,
+    )
+    assert source_utils.load(function_type_source) is FunctionType
+
+    builtin_function_type_source = Source(
+        module=BuiltinFunctionType.__module__,
+        attribute=BuiltinFunctionType.__name__,
+        type=SourceType.BUILTIN,
+    )
+    assert (
+        source_utils.load(builtin_function_type_source) is BuiltinFunctionType
+    )
 
     with pytest.raises(ModuleNotFoundError):
         source_utils.load("zenml.not_a_module.Class")
@@ -122,6 +139,16 @@ def test_basic_source_resolving(mocker):
         package_name="pytest",
         version=pytest.__version__,
         type=SourceType.DISTRIBUTION_PACKAGE,
+    )
+    assert source_utils.resolve(type(empty_function)) == Source(
+        module=FunctionType.__module__,
+        attribute=FunctionType.__name__,
+        type=SourceType.BUILTIN,
+    )
+    assert source_utils.resolve(type(len)) == Source(
+        module=BuiltinFunctionType.__module__,
+        attribute=BuiltinFunctionType.__name__,
+        type=SourceType.BUILTIN,
     )
 
     # User sources

@@ -35,7 +35,7 @@ class MlflowIntegration(Integration):
     # does not pin it. They fixed this in a later version, so we can probably
     # remove this once we update the mlflow version.
     REQUIREMENTS = [
-        "mlflow>=2.1.1,<=2.11.3",
+        "mlflow>=2.1.1,<=2.12.2",
         "mlserver>=1.3.3",
         "mlserver-mlflow>=1.3.3",
         # TODO: remove this requirement once rapidjson is fixed

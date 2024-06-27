@@ -16,6 +16,7 @@
 from secrets import token_hex
 from typing import (
     TYPE_CHECKING,
+    AbstractSet,
     Any,
     ClassVar,
     Dict,
@@ -81,6 +82,10 @@ class UserBase(BaseModel):
     external_user_id: Optional[UUID] = Field(
         default=None,
         title="The external user ID associated with the account.",
+    )
+    user_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The metadata associated with the user.",
     )
 
     @classmethod
@@ -201,6 +206,12 @@ class UserUpdate(UserBase, BaseZenModel):
     active: Optional[bool] = Field(
         default=None, title="Whether the account is active."
     )
+    old_password: Optional[str] = Field(
+        default=None,
+        title="The previous password for the user. Only relevant for user "
+        "accounts. Required when updating the password.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
     @root_validator
     def user_email_updates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -230,6 +241,22 @@ class UserUpdate(UserBase, BaseZenModel):
                     "your email."
                 )
         return values
+
+    def create_copy(self, exclude: AbstractSet[str]) -> "UserUpdate":
+        """Create a copy of the current instance.
+
+        Args:
+            exclude: Fields to exclude from the copy.
+
+        Returns:
+            A copy of the current instance.
+        """
+        return UserUpdate(
+            **self.dict(
+                exclude_unset=True,
+                exclude=exclude,
+            )
+        )
 
 
 # ------------------ Response Model ------------------
@@ -285,6 +312,10 @@ class UserResponseMetadata(BaseResponseMetadata):
         default=None,
         title="The external user ID associated with the account. Only relevant "
         "for user accounts.",
+    )
+    user_metadata: Dict[str, Any] = Field(
+        default={},
+        title="The metadata associated with the user.",
     )
 
 
@@ -408,6 +439,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_metadata().external_user_id
+
+    @property
+    def user_metadata(self) -> Dict[str, Any]:
+        """The `user_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().user_metadata
 
     # Helper methods
     @classmethod

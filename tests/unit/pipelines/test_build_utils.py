@@ -462,6 +462,18 @@ def test_local_repo_verification(
         new_callable=mocker.PropertyMock,
         return_value=True,
     )
+    mocker.patch.object(Stack, "get_docker_builds", return_value=[])
+
+    # Code download not required if no build is necessary
+    assert not build_utils.verify_local_repository_context(
+        deployment=deployment,
+        local_repo_context=None,
+    )
+
+    build_config = BuildConfiguration(key="key", settings=DockerSettings())
+    mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[build_config]
+    )
 
     with pytest.raises(RuntimeError):
         # No local repo

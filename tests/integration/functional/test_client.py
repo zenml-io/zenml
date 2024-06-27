@@ -415,7 +415,9 @@ def test_registering_a_new_stack_component_succeeds(clean_client):
 def test_deregistering_a_stack_component_in_stack_fails(clean_client):
     """Tests that deregistering a stack component works and is persisted."""
     component = _create_local_stack(
-        clean_client, "", orchestrator_name="unregistered_orchestrator"
+        clean_client,
+        "local_stack",
+        orchestrator_name="unregistered_orchestrator",
     ).components[StackComponentType.ORCHESTRATOR][0]
 
     with pytest.raises(IllegalOperationError):

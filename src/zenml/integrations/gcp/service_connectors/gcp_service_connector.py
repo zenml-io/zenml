@@ -79,6 +79,7 @@ logger = get_logger(__name__)
 
 GKE_KUBE_API_TOKEN_EXPIRATION = 60
 DEFAULT_IMPERSONATE_TOKEN_EXPIRATION = 3600  # 1 hour
+GCP_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
 
 
 class GCPUserAccountCredentials(AuthenticationConfig):
@@ -859,7 +860,10 @@ class GCPServiceConnector(ServiceConnector):
             # Refresh expired sessions
             now = datetime.datetime.now(datetime.timezone.utc)
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
-            if expires_at > now:
+            # check if the token expires in the near future
+            if expires_at > now + datetime.timedelta(
+                minutes=GCP_SESSION_EXPIRATION_BUFFER
+            ):
                 return session, expires_at
 
         logger.debug(

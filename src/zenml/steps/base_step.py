@@ -38,6 +38,7 @@ from typing import (
 from pydantic import BaseModel, Extra, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
+from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
@@ -141,6 +142,7 @@ class BaseStep(metaclass=BaseStepMeta):
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        retry: Optional[StepRetryConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a step.
@@ -170,6 +172,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
+            retry: Configuration for retrying the step in case of failure.
             **kwargs: Keyword arguments passed to the step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
@@ -189,36 +192,36 @@ class BaseStep(metaclass=BaseStepMeta):
                 # We therefore disable caching unless it is explicitly enabled
                 enable_cache = False
                 logger.debug(
-                    "Step '%s': Step context required and caching not "
+                    "Step `%s`: Step context required and caching not "
                     "explicitly enabled.",
                     name,
                 )
 
         logger.debug(
-            "Step '%s': Caching %s.",
+            "Step `%s`: Caching %s.",
             name,
             "enabled" if enable_cache is not False else "disabled",
         )
         logger.debug(
-            "Step '%s': Artifact metadata %s.",
+            "Step `%s`: Artifact metadata %s.",
             name,
             "enabled" if enable_artifact_metadata is not False else "disabled",
         )
         logger.debug(
-            "Step '%s': Artifact visualization %s.",
+            "Step `%s`: Artifact visualization %s.",
             name,
             "enabled"
             if enable_artifact_visualization is not False
             else "disabled",
         )
         logger.debug(
-            "Step '%s': logs %s.",
+            "Step `%s`: logs %s.",
             name,
             "enabled" if enable_step_logs is not False else "disabled",
         )
         if model is not None:
             logger.debug(
-                "Step '%s': Is in Model context %s.",
+                "Step `%s`: Is in Model context %s.",
                 name,
                 {
                     "model": model.name,
@@ -243,6 +246,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_failure=on_failure,
             on_success=on_success,
             model=model,
+            retry=retry,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
 
@@ -488,7 +492,7 @@ class BaseStep(metaclass=BaseStepMeta):
             bound_args = signature.bind_partial(*args, **kwargs)
         except TypeError as e:
             raise StepInterfaceError(
-                f"Wrong arguments when calling step '{self.name}': {e}"
+                f"Wrong arguments when calling step `{self.name}`: {e}"
             ) from e
 
         artifacts = {}
@@ -709,6 +713,7 @@ class BaseStep(metaclass=BaseStepMeta):
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         merge: bool = True,
+        retry: Optional[StepRetryConfig] = None,
     ) -> T:
         """Configures the step.
 
@@ -751,6 +756,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            retry: Configuration for retrying the step in case of failure.
 
         Returns:
             The step instance that this method was called on.
@@ -820,6 +826,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
                 "model": model,
+                "retry": retry,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -1026,7 +1033,7 @@ To avoid this consider setting step parameters only in one place (config or code
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
                     f"Got unexpected materializers for non-existent "
-                    f"output '{output_name}' in step '{self.name}'. "
+                    f"output '{output_name}' in step `{self.name}`. "
                     f"Only materializers for the outputs "
                     f"{allowed_output_names} of this step can"
                     f" be registered."
@@ -1039,7 +1046,7 @@ To avoid this consider setting step parameters only in one place (config or code
                     ):
                         raise StepInterfaceError(
                             f"Materializer source `{source}` "
-                            f"for output '{output_name}' of step '{self.name}' "
+                            f"for output '{output_name}' of step `{self.name}` "
                             "does not resolve to a `BaseMaterializer` subclass."
                         )
 
@@ -1239,7 +1246,7 @@ To avoid this consider setting step parameters only in one place (config or code
         logger.warning(
             "The `BaseParameters` class to define step parameters is "
             "deprecated. Check out our docs "
-            "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines "
+            "https://docs.zenml.io/how-to/use-configuration-files/how-to-use-config "
             "for information on how to parameterize your steps. As a quick "
             "fix to get rid of this warning, make sure your parameter class "
             "inherits from `pydantic.BaseModel` instead of the "

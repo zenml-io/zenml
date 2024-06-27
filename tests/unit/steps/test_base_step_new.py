@@ -170,3 +170,20 @@ def test_step_allows_dict_list_annotations():
 
     with does_not_raise():
         test_pipeline()
+
+
+@step
+def step_with_single_output() -> int:
+    return 1
+
+
+def test_unpacking_step_artifact_raises_custom_exception():
+    """Tests that unpacking an artifact returned by a step inside a pipeline
+    raises a custom exception with explanation on how to solve the issue."""
+
+    @pipeline
+    def test_pipeline():
+        a, b = step_with_single_output()
+
+    with pytest.raises(StepInterfaceError):
+        test_pipeline()

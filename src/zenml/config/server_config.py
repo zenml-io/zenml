@@ -16,7 +16,7 @@
 import json
 import os
 from secrets import token_hex
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
@@ -29,7 +29,18 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
+    DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
+    DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
+    DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
+    DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ENV_ZENML_SERVER_PREFIX,
 )
 from zenml.enums import AuthScheme
@@ -55,8 +66,16 @@ class ServerConfiguration(BaseModel):
 
     Attributes:
         deployment_type: The type of ZenML server deployment that is running.
-        base_url: The base URL of the ZenML server.
-        root_url_path: The root URL path of the ZenML server.
+        server_url: The URL where the ZenML server API is reachable. Must be
+            configured for features that involve triggering workloads from the
+            ZenML dashboard (e.g., running pipelines). If not specified, the
+            clients will use the same URL used to connect them to the ZenML
+            server.
+        dashboard_url: The URL where the ZenML dashboard is reachable.
+            If not specified, the `server_url` value is used. This should be
+            configured if the dashboard is served from a different URL than the
+            ZenML server.
+        root_url_path: The root URL path for the ZenML API and dashboard.
         auth_scheme: The authentication scheme used by the ZenML server.
         jwt_token_algorithm: The algorithm used to sign and verify JWT tokens.
         jwt_token_issuer: The issuer of the JWT tokens. If not specified, the
@@ -83,10 +102,6 @@ class ServerConfiguration(BaseModel):
             2.0 device authorization request expires.
         device_auth_polling_interval: The polling interval in seconds used to
             poll the OAuth 2.0 device authorization endpoint.
-        dashboard_url: The URL where the ZenML dashboard is hosted. Used to
-            construct the OAuth 2.0 device authorization endpoint. If not set,
-            a partial URL is returned to the client which is used to construct
-            the full URL based on the server's root URL path.
         device_expiration_minutes: The time in minutes that an OAuth 2.0 device is
             allowed to be used to authenticate with the ZenML server. If not
             set or if `jwt_token_expire_minutes` is not set, the devices are
@@ -128,10 +143,95 @@ class ServerConfiguration(BaseModel):
             server.
         login_rate_limit_minute: The number of login attempts allowed per minute.
         login_rate_limit_day: The number of login attempts allowed per day.
+        secure_headers_server: Custom value to be set in the `Server` HTTP
+            header to identify the server. If not specified, or if set to one of
+            the reserved values `enabled`, `yes`, `true`, `on`, the `Server`
+            header will be set to the default value (ZenML server ID). If set to
+            one of the reserved values `disabled`, `no`, `none`, `false`, `off`
+            or to an empty string, the `Server` header will not be included in
+            responses.
+        secure_headers_hsts: The server header value to be set in the HTTP
+            header `Strict-Transport-Security`. If not specified, or if set to
+            one of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Strict-Transport-Security` header will be set to the default value
+            (`max-age=63072000; includeSubdomains`). If set to one of
+            the reserved values `disabled`, `no`, `none`, `false`, `off` or to
+            an empty string, the `Strict-Transport-Security` header will not be
+            included in responses.
+        secure_headers_xfo: The server header value to be set in the HTTP
+            header `X-Frame-Options`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `X-Frame-Options`
+            header will be set to the default value (`SAMEORIGIN`). If set to
+            one of the reserved values `disabled`, `no`, `none`, `false`, `off`
+            or to an empty string, the `X-Frame-Options` header will not be
+            included in responses.
+        secure_headers_xxp: The server header value to be set in the HTTP
+            header `X-XSS-Protection`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `X-XSS-Protection`
+            header will be set to the default value (`0`). If set to one of the
+            reserved values `disabled`, `no`, `none`, `false`, `off` or
+            to an empty string, the `X-XSS-Protection` header will not be
+            included in responses. NOTE: this header is deprecated and should
+            always be set to `0`. The `Content-Security-Policy` header should be
+            used instead.
+        secure_headers_content: The server header value to be set in the HTTP
+            header `X-Content-Type-Options`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `X-Content-Type-Options` header will be set to the default value
+            (`nosniff`). If set to one of the reserved values `disabled`, `no`,
+            `none`, `false`, `off` or to an empty string, the
+            `X-Content-Type-Options` header will not be included in responses.
+        secure_headers_csp: The server header value to be set in the HTTP
+            header `Content-Security-Policy`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Content-Security-Policy` header will be set to a default value
+            that is compatible with the ZenML dashboard. If set to one of the
+            reserved values `disabled`, `no`, `none`, `false`, `off` or to an
+            empty string, the `Content-Security-Policy` header will not be
+            included in responses.
+        secure_headers_referrer: The server header value to be set in the HTTP
+            header `Referrer-Policy`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `Referrer-Policy`
+            header will be set to the default value
+            (`no-referrer-when-downgrade`). If set to one of the reserved values
+            `disabled`, `no`, `none`, `false`, `off` or to an empty string, the
+            `Referrer-Policy` header will not be included in responses.
+        secure_headers_cache: The server header value to be set in the HTTP
+            header `Cache-Control`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `Cache-Control`
+            header will be set to the default value
+            (`no-store, no-cache, must-revalidate`). If set to one of the
+            reserved values `disabled`, `no`, `none`, `false`, `off` or to an
+            empty string, the `Cache-Control` header will not be included in
+            responses.
+        secure_headers_permissions: The server header value to be set in the
+            HTTP header `Permissions-Policy`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Permissions-Policy` header will be set to the default value
+            (`accelerometer=(), camera=(), geolocation=(), gyroscope=(),
+            magnetometer=(), microphone=(), payment=(), usb=()`). If set to
+            one of the reserved values `disabled`, `no`, `none`, `false`, `off`
+            or to an empty string, the `Permissions-Policy` header will not be
+            included in responses.
+        use_legacy_dashboard: Whether to use the legacy dashboard. If set to
+            `True`, the dashboard will be used with the old UI. If set to
+            `False`, the new dashboard will be used.
+        server_name: The name of the ZenML server. Used only during initial
+            deployment. Can be changed later as a part of the server settings.
+        display_announcements: Whether to display announcements about ZenML in
+            the dashboard. Used only during initial deployment. Can be changed
+            later as a part of the server settings.
+        display_updates: Whether to display notifications about ZenML updates in
+            the dashboard. Used only during initial deployment. Can be changed
+            later as a part of the server settings.
+        auto_activate: Whether to automatically activate the server and create a
+            default admin user account with an empty password during the initial
+            deployment.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
-    base_url: str = ""
+    server_url: Optional[str] = None
+    dashboard_url: Optional[str] = None
     root_url_path: str = ""
     metadata: Dict[str, Any] = {}
     auth_scheme: AuthScheme = AuthScheme.OAUTH2_PASSWORD_BEARER
@@ -151,7 +251,6 @@ class ServerConfiguration(BaseModel):
     device_auth_polling_interval: int = (
         DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
     )
-    dashboard_url: Optional[str] = None
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None
 
@@ -170,6 +269,40 @@ class ServerConfiguration(BaseModel):
     rate_limit_enabled: bool = False
     login_rate_limit_minute: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE
     login_rate_limit_day: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY
+
+    secure_headers_server: Union[bool, str] = True
+    secure_headers_hsts: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS
+    )
+    secure_headers_xfo: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO
+    )
+    secure_headers_xxp: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP
+    )
+    secure_headers_content: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT
+    )
+    secure_headers_csp: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP
+    )
+    secure_headers_referrer: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER
+    )
+    secure_headers_cache: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE
+    )
+    secure_headers_permissions: Union[bool, str] = (
+        DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS
+    )
+    use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
+
+    server_name: str = DEFAULT_ZENML_SERVER_NAME
+    display_announcements: bool = True
+    display_updates: bool = True
+    auto_activate: bool = False
+
+    thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
 
     _deployment_id: Optional[UUID] = None
 
@@ -220,6 +353,16 @@ class ServerConfiguration(BaseModel):
                 raise ValueError(
                     f"The server metadata is not a valid JSON string: {e}"
                 )
+
+        # if one of the secure headers options is set to a boolean value, set
+        # the corresponding value
+        for k, v in values.copy().items():
+            if k.startswith("secure_headers_") and isinstance(v, str):
+                if v.lower() in ["disabled", "no", "none", "false", "off", ""]:
+                    values[k] = False
+                if v.lower() in ["enabled", "yes", "true", "on"]:
+                    # Revert to the default value if the header is enabled
+                    del values[k]
 
         return values
 

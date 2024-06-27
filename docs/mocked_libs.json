@@ -25,6 +25,7 @@
     "botocore.exceptions",
     "botocore.signers",
     "catboost",
+    "comet_ml",
     "datasets",
     "datasets.dataset_dict",
     "deepchecks",
@@ -71,6 +72,7 @@
     "google.api_core",
     "google.api_core.exceptions",
     "google.auth",
+    "google.auth.aws",
     "google.auth._default",
     "google.auth.exceptions",
     "google.auth.transport",
@@ -205,5 +207,16 @@
     "whylogs.api.writer.whylabs",
     "whylogs.core",
     "whylogs.viz",
-    "xgboost"
+    "xgboost",
+    "argilla",
+    "argilla.client",
+    "argilla.client.client",
+    "argilla.client.sdk",
+    "argilla.client.sdk.commons",
+    "argilla.client.sdk.commons.errors",
+    "peewee",
+    "prodigy",
+    "prodigy.components",
+    "prodigy.components.db",
+    "prodigy.errors"
 ]

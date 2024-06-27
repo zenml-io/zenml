@@ -25,7 +25,6 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
-from zenml.analytics import group
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -261,7 +260,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
                     "Read more about this issue and how to solve it here: "
-                    "`https://docs.zenml.io/user-guide/advanced-guide/environment-management/global-settings-of-zenml#version-mismatch-downgrading`",
+                    "`https://docs.zenml.io/reference/global-settings#version-mismatch-downgrading`",
                     config_version,
                     curr_version,
                 )
@@ -683,23 +682,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         config = self._get_store_configuration(baseline=config)
         self._configure_store(config, skip_default_registrations, **kwargs)
         logger.info("Updated the global store configuration.")
-
-        if self.zen_store.type == StoreType.REST:
-            # Every time a client connects to a ZenML server, we want to
-            # group the client ID and the server ID together. This records
-            # only that a particular client has successfully connected to a
-            # particular server at least once, but no information about the
-            # user account is recorded here.
-            server_info = self.zen_store.get_store_info()
-
-            group(
-                group_id=server_info.id,
-                group_metadata={
-                    "version": server_info.version,
-                    "deployment_type": str(server_info.deployment_type),
-                    "database_type": str(server_info.database_type),
-                },
-            )
 
     @property
     def zen_store(self) -> "BaseZenStore":

@@ -20,6 +20,7 @@ from datetime import datetime
 from string import ascii_lowercase
 from threading import Thread
 from typing import Dict, List, Optional, Tuple
+from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
@@ -47,7 +48,6 @@ from tests.unit.pipelines.test_build_utils import (
 )
 from zenml.artifacts.utils import (
     _load_artifact_store,
-    _load_file_from_artifact_store,
 )
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -78,7 +78,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     StackExistsError,
 )
-from zenml.logging.step_logging import prepare_logs_uri
+from zenml.logging.step_logging import fetch_logs, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
@@ -121,7 +121,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
-from zenml.models.v2.core.model import ModelFilter, ModelUpdate
+from zenml.models.v2.core.model import ModelFilter, ModelRequest, ModelUpdate
 from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
@@ -566,13 +566,14 @@ class TestAdminUser:
                 user_name=test_user.name, password=self.default_pwd
             ):
                 new_zen_store: RestZenStore = Client().zen_store
-                new_zen_store.update_user(
-                    test_user.id,
-                    UserUpdate(
-                        name=test_user.name,
-                        is_admin=False,
-                    ),
-                )
+                with pytest.raises(IllegalOperationError):
+                    new_zen_store.update_user(
+                        test_user.id,
+                        UserUpdate(
+                            name=test_user.name,
+                            is_admin=False,
+                        ),
+                    )
 
     def test_update_self_via_current_user_endpoint(self):
         """Tests updating self in admin and non-admin setting."""
@@ -582,13 +583,14 @@ class TestAdminUser:
         zen_store: RestZenStore = Client().zen_store
         default_user = zen_store.get_user(DEFAULT_USERNAME)
         assert default_user.is_admin
-        # self update cannot change admin status
         zen_store.put(
             "/current-user",
-            body=UserUpdate(name=default_user.name, is_admin=False),
+            body=UserUpdate(name=default_user.name, full_name="Axl"),
         )
         default_user = zen_store.get_user(DEFAULT_USERNAME)
-        assert default_user.is_admin
+        assert default_user.full_name == "Axl"
+        assert default_user.is_admin  # admin status is not changed
+
         with UserContext(
             password=self.default_pwd, is_admin=False
         ) as test_user:
@@ -597,7 +599,18 @@ class TestAdminUser:
             ):
                 new_zen_store: RestZenStore = Client().zen_store
                 assert not test_user.is_admin
-                # self update cannot change admin status
+                new_zen_store.put(
+                    "/current-user",
+                    body=UserUpdate(
+                        name=test_user.name,
+                        full_name="Axl",
+                    ),
+                )
+                user = zen_store.get_user(test_user.id)
+                assert not user.is_admin
+                assert user.full_name == "Axl"
+
+                # self update does not change admin status
                 new_zen_store.put(
                     "/current-user",
                     body=UserUpdate(
@@ -936,25 +949,6 @@ def test_updating_user_with_existing_name_fails():
                     user_id=user.id,
                     user_update=UserUpdate(name=existing_service_account.name),
                 )
-
-
-def test_updating_default_user_fails():
-    """Tests that updating the default user is prohibited."""
-    client = Client()
-    default_user = client.zen_store.get_user(DEFAULT_USERNAME)
-    assert default_user
-    user_update = UserUpdate(name="axl")
-    with pytest.raises(IllegalOperationError):
-        client.zen_store.update_user(
-            user_id=default_user.id, user_update=user_update
-        )
-
-
-def test_deleting_default_user_fails():
-    """Tests that deleting the default user is prohibited."""
-    zen_store = Client().zen_store
-    with pytest.raises(IllegalOperationError):
-        zen_store.delete_user("default")
 
 
 def test_create_user_no_password():
@@ -2503,6 +2497,23 @@ def test_count_stack_components():
         assert store.count_stack_components(filter_model) == count_before + 1
 
 
+def test_stack_component_create_fails_with_invalid_name():
+    """Tests that creating a stack component with an invalid name fails."""
+    client = Client()
+    store = client.zen_store
+    with pytest.raises(ValueError):
+        store.create_stack_component(
+            ComponentRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                name="I will fail\n",
+                type=StackComponentType.ORCHESTRATOR,
+                configuration={},
+                flavor="local",
+            )
+        )
+
+
 # .-------------------------.
 # | Stack component flavors |
 # '-------------------------'
@@ -2638,6 +2649,31 @@ def test_register_stack_fails_when_stack_exists():
                     store.create_stack(
                         stack=new_stack,
                     )
+
+
+def test_register_stack_fails_with_invalid_name():
+    """Tests registering stack fails with invalid name."""
+    client = Client()
+    store = client.zen_store
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with pytest.raises(ValueError):
+                store.create_stack(
+                    StackRequest(
+                        name="I will fail\n",
+                        components=components,
+                        workspace=client.active_workspace.id,
+                        user=client.active_user.id,
+                    )
+                )
 
 
 def test_updating_nonexistent_stack_fails():
@@ -2929,6 +2965,40 @@ def test_list_unused_artifacts():
         assert artifact_versions.total == num_unused_artifact_versions_before
 
 
+def test_list_custom_named_artifacts():
+    """Tests listing with `has_custom_name=True` only returns custom named artifacts with proper filtering."""
+    client = Client()
+    store = client.zen_store
+
+    num_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
+    num_matching_named_before = store.list_artifact_versions(
+        ArtifactVersionFilter(
+            has_custom_name=True, name="contains:test_step_output"
+        )
+    ).total
+    num_runs = 1
+
+    with PipelineRunContext(num_runs):
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter()
+        )
+        assert (
+            artifact_versions.total
+            == num_artifact_versions_before + num_runs * 2
+        )
+
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter(
+                has_custom_name=True, name="contains:test_step_output"
+            )
+        )
+        assert (
+            artifact_versions.total - num_matching_named_before == num_runs * 2
+        )
+
+
 def test_artifacts_are_not_deleted_with_run(clean_client: "Client"):
     """Tests listing with `unused=True` only returns unused artifacts."""
     store = clean_client.zen_store
@@ -2950,6 +3020,37 @@ def test_artifacts_are_not_deleted_with_run(clean_client: "Client"):
         assert artifacts.total == num_artifact_versions_before + num_runs * 2
 
 
+def test_artifact_create_fails_with_invalid_name(clean_client: "Client"):
+    """Tests that artifact creation fails with an invalid name."""
+    store = clean_client.zen_store
+    with pytest.raises(Exception):
+        store.create_artifact(ArtifactRequest(name="I will fail\n"))
+
+
+def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
+    """Tests that artifact fetch works even with an invalid name.
+
+    This test is only needed to ensure that legacy entities with illegal names
+    would still work fine.
+    """
+    store = clean_client.zen_store
+    ar = ArtifactRequest(
+        name="I should fail\n But hacky `validate_name` protects me from it"
+    )
+    with patch(
+        "zenml.zen_stores.sql_zen_store.validate_name", return_value=None
+    ):
+        response = store.create_artifact(ar)
+
+    fetched = store.get_artifact(response.id)
+    assert (
+        fetched.name
+        == "I should fail\n But hacky `validate_name` protects me from it"
+    )
+
+    store.delete_artifact(response.id)
+
+
 # .---------.
 # | Logs    |
 # '---------'
@@ -2965,14 +3066,11 @@ def test_logs_are_recorded_properly(clean_client):
         steps = run_context.steps
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
-        artifact_store = _load_artifact_store(
-            step1_logs.artifact_store_id, store
+        step1_logs_content = fetch_logs(
+            store, step1_logs.artifact_store_id, step1_logs.uri
         )
-        step1_logs_content = _load_file_from_artifact_store(
-            step1_logs.uri, artifact_store=artifact_store, mode="r"
-        )
-        step2_logs_content = _load_file_from_artifact_store(
-            step2_logs.uri, artifact_store=artifact_store, mode="r"
+        step2_logs_content = fetch_logs(
+            store, step1_logs.artifact_store_id, step2_logs.uri
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
@@ -3015,14 +3113,10 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
         )
 
         with pytest.raises(DoesNotExistException):
-            _load_file_from_artifact_store(
-                logs_uri_1, artifact_store=artifact_store, mode="r"
-            )
+            fetch_logs(store, artifact_store_id, logs_uri_1)
 
         with pytest.raises(DoesNotExistException):
-            _load_file_from_artifact_store(
-                logs_uri_2, artifact_store=artifact_store, mode="r"
-            )
+            fetch_logs(store, artifact_store_id, logs_uri_2)
 
 
 # .--------------------.
@@ -4057,6 +4151,19 @@ class TestModel:
             )
             assert len(ms) == 0
 
+    def test_create_fails_with_invalid_name(self):
+        """Test that creation fails with invalid name."""
+        c = Client()
+        zs = c.zen_store
+        with pytest.raises(ValueError):
+            zs.create_model(
+                ModelRequest(
+                    user=c.active_user.id,
+                    workspace=c.active_workspace.id,
+                    name="I will fail\n",
+                )
+            )
+
 
 class TestModelVersion:
     def test_create_pass(self):
@@ -4071,6 +4178,20 @@ class TestModelVersion:
                     name="great one",
                 )
             )
+
+    def test_create_fail_with_invalid_name(self):
+        """Test that creation fails with invalid name."""
+        with ModelContext() as model:
+            zs = Client().zen_store
+            with pytest.raises(ValueError):
+                zs.create_model_version(
+                    ModelVersionRequest(
+                        user=model.user.id,
+                        workspace=model.workspace.id,
+                        model=model.id,
+                        name="I will fail\n",
+                    )
+                )
 
     def test_create_duplicated(self):
         """Test that duplicated creation fails."""
@@ -5006,6 +5127,11 @@ class TestTag:
         """Tests that tag creation fails without a name."""
         with pytest.raises(ValueError):
             clean_client.create_tag(TagRequest(color="yellow"))
+
+    def test_create_fails_with_invalid_name(self, clean_client: "Client"):
+        """Tests that tag creation fails with invalid name."""
+        with pytest.raises(ValueError):
+            clean_client.create_tag(TagRequest(name="I will fail\n"))
 
     def test_create_duplicate(self, clean_client: "Client"):
         """Tests that tag creation fails on duplicate."""

@@ -331,7 +331,7 @@ class ModelVersionResponse(
             was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
         )
-        mv._id = self.id
+        mv.model_version_id = self.id
 
         return mv
 

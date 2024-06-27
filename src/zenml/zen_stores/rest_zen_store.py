@@ -50,6 +50,7 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CURRENT_USER,
+    DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -74,6 +75,7 @@ from zenml.constants import (
     SECRETS_BACKUP,
     SECRETS_OPERATIONS,
     SECRETS_RESTORE,
+    SERVER_SETTINGS,
     SERVICE_ACCOUNTS,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_RESOURCES,
@@ -180,6 +182,8 @@ from zenml.models import (
     SecretResponse,
     SecretUpdate,
     ServerModel,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -354,9 +358,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         fileio.makedirs(str(secret_folder))
         file_path = Path(secret_folder, "ca_bundle.pem")
-        with open(file_path, "w") as f:
+        with os.fdopen(
+            os.open(file_path, flags=os.O_RDWR | os.O_CREAT, mode=0o600), "w"
+        ) as f:
             f.write(verify_ssl)
-        file_path.chmod(0o600)
         verify_ssl = str(file_path)
 
         return verify_ssl
@@ -444,6 +449,37 @@ class RestZenStore(BaseZenStore):
             The ID of the deployment.
         """
         return self.get_store_info().id
+
+    # -------------------- Server Settings --------------------
+
+    def get_server_settings(
+        self, hydrate: bool = True
+    ) -> ServerSettingsResponse:
+        """Get the server settings.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The server settings.
+        """
+        response_body = self.get(SERVER_SETTINGS, params={"hydrate": hydrate})
+        return ServerSettingsResponse.parse_obj(response_body)
+
+    def update_server_settings(
+        self, settings_update: ServerSettingsUpdate
+    ) -> ServerSettingsResponse:
+        """Update the server settings.
+
+        Args:
+            settings_update: The server settings update.
+
+        Returns:
+            The updated server settings.
+        """
+        response_body = self.put(SERVER_SETTINGS, body=settings_update)
+        return ServerSettingsResponse.parse_obj(response_body)
 
     # ----------------------------- API Keys -----------------------------
 
@@ -2943,6 +2979,23 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponse,
         )
 
+    def deactivate_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserResponse:
+        """Deactivates a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+
+        Returns:
+            The deactivated user containing the activation token.
+        """
+        response_body = self.put(
+            f"{USERS}/{str(user_name_or_id)}{DEACTIVATE}",
+        )
+
+        return UserResponse.parse_obj(response_body)
+
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
 
@@ -3677,7 +3730,13 @@ class RestZenStore(BaseZenStore):
         return self._session
 
     def clear_session(self) -> None:
-        """Clear the authentication session and any cached API tokens."""
+        """Clear the authentication session and any cached API tokens.
+
+        Raises:
+            AuthorizationException: If the API token can't be reset because
+                the store configuration does not contain username and password
+                or an API key to fetch a new token.
+        """
         self._session = None
         self._api_token = None
         # Clear the configured API token only if it's possible to fetch a new
@@ -3689,6 +3748,16 @@ class RestZenStore(BaseZenStore):
             or self.config.api_key is not None
         ):
             self.config.api_token = None
+        elif self.config.api_token:
+            raise AuthorizationException(
+                "Unable to refresh invalid API token. This is probably "
+                "because you're connected to your ZenML server with device "
+                "authentication. Rerunning `zenml connect --url "
+                f"{self.config.url}` should solve this issue. "
+                "If you're seeing this error from an automated workload, "
+                "you should probably use a service account to start that "
+                "workload to prevent this error."
+            )
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:

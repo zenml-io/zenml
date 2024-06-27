@@ -144,3 +144,29 @@ def test_build_skipping():
         download_files=False,
     )
     assert image_digest
+
+
+def test_python_package_installer_args():
+    """Tests that the python package installer args get passed correctly."""
+    docker_settings = DockerSettings(
+        python_package_installer_args={
+            "default-timeout": 99,
+            "other-arg": "value",
+            "option": None,
+        }
+    )
+
+    requirements_files = [("requirements.txt", "numpy", [])]
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+            download_files=False,
+            requirements_files=requirements_files,
+        )
+    )
+
+    assert (
+        "RUN pip install --no-cache-dir --default-timeout=99 --other-arg=value --option"
+        in generated_dockerfile
+    )

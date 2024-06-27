@@ -1,15 +1,29 @@
 # Changes here will be overwritten by Copier
-_commit: 2024.03.18
+_commit: 2024.06.06
 _src_path: gh:zenml-io/template-llm-finetuning
+bf16: true
 cuda_version: cuda11.8
-email: ''
-from_safetensors: false
+dataset_name: gem/viggo
+email: info@zenml.io
 full_name: ZenML GmbH
-huggingface_adapter_model_repository: ''
-huggingface_merged_model_repository: ''
-model_repository: mistralai/Mistral-7B-Instruct-v0.1
+model_repository: microsoft/phi-2
 open_source_license: apache
-product_name: llm_lora
+product_name: llm-peft
 project_name: ZenML LLM Finetuning project
+step_operator: gcp_a100
+steps_of_finetuning: 300
+system_prompt: 'Given a target sentence construct the underlying meaning representation
+    of the input sentence as a single function with attributes and attribute values.
+
+    This function should describe the target string accurately and the function must
+    be one of the following [''inform'', ''request'', ''give_opinion'', ''confirm'',
+    ''verify_attribute'', ''suggest'', ''request_explanation'', ''recommend'', ''request_attribute''].
+
+    The attributes must be one of the following: [''name'', ''exp_release_date'',
+    ''release_year'', ''developer'', ''esrb'', ''rating'', ''genres'', ''player_perspective'',
+    ''has_multiplayer'', ''platforms'', ''available_on_steam'', ''has_linux_release'',
+    ''has_mac_release'', ''specifier'']
+
+    '
 version: 0.1.0
 zenml_server_url: ''

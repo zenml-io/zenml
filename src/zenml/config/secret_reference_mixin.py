@@ -65,7 +65,7 @@ class SecretReferenceMixin(BaseModel):
                         "but future versions of ZenML will require you to pass "
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure values with secrets "
-                        "here: https://docs.zenml.io/user-guide/advanced-guide/secret-management"
+                        "here: https://docs.zenml.io/getting-started/deploying-zenml/manage-the-deployed-services/secret-management"
                     )
                 continue
 

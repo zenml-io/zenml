@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of user tables."""
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
@@ -79,6 +80,7 @@ class UserSchema(NamedSchema, table=True):
     email_opted_in: Optional[bool] = Field(nullable=True)
     external_user_id: Optional[UUID] = Field(nullable=True)
     is_admin: bool = Field(default=False)
+    user_metadata: Optional[str] = Field(nullable=True)
 
     stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
@@ -171,6 +173,9 @@ class UserSchema(NamedSchema, table=True):
             email=model.email,
             is_service_account=False,
             is_admin=model.is_admin,
+            user_metadata=json.dumps(model.user_metadata)
+            if model.user_metadata
+            else None,
         )
 
     @classmethod
@@ -206,12 +211,18 @@ class UserSchema(NamedSchema, table=True):
             The updated `UserSchema`.
         """
         for field, value in user_update.dict(exclude_unset=True).items():
+            if field == "old_password":
+                continue
+
             if field == "password":
                 setattr(self, field, user_update.create_hashed_password())
             elif field == "activation_token":
                 setattr(
                     self, field, user_update.create_hashed_activation_token()
                 )
+            elif field == "user_metadata":
+                if value is not None:
+                    self.user_metadata = json.dumps(value)
             else:
                 setattr(self, field, value)
 
@@ -264,6 +275,9 @@ class UserSchema(NamedSchema, table=True):
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
+                user_metadata=json.loads(self.user_metadata)
+                if self.user_metadata
+                else {},
             )
 
         return UserResponse(

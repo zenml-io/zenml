@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from typing import Generator, Type
+from typing import Dict, Generator, List, Mapping, Sequence, Type
 from uuid import uuid4
 
 import pytest
@@ -26,6 +26,7 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
+from zenml.stack import StackComponentConfig
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -243,3 +244,36 @@ def test_stack_component_serialization_does_not_resolve_secrets(
         new_orchestrator.configuration["attribute_without_validator"]
         == secret_ref
     )
+
+
+def test_stack_component_config_converts_json_strings():
+    """Tests that the stack component config converts json strings if a string
+    is passed for certain fields."""
+
+    class ComponentConfig(StackComponentConfig):
+        list_: List[str]
+        sequence_: Sequence[str]
+        dict_: Dict[str, int]
+        mapping_: Mapping[str, int]
+
+    config = ComponentConfig(
+        list_=["item"],
+        sequence_=["item"],
+        dict_={"key": 1},
+        mapping_={"key": 1},
+    )
+    assert config.list_ == ["item"]
+    assert config.sequence_ == ["item"]
+    assert config.dict_ == {"key": 1}
+    assert config.mapping_ == {"key": 1}
+
+    config = ComponentConfig(
+        list_='["item"]',
+        sequence_='["item"]',
+        dict_='{"key": 1}',
+        mapping_='{"key": 1}',
+    )
+    assert config.list_ == ["item"]
+    assert config.sequence_ == ["item"]
+    assert config.dict_ == {"key": 1}
+    assert config.mapping_ == {"key": 1}

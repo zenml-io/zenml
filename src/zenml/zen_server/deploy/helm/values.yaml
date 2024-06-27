@@ -10,15 +10,36 @@ zenml:
 
   replicaCount: 1
 
+  # The number of ZenML server worker threads to use. This controls the number
+  # of concurrent requests that each ZenML server pod/replica can handle at a
+  # time. If not specified, the default value is 40.
+  #
+  # NOTE: this value should be coordinated with the `zenml.database.poolSize`
+  # and `zenml.database.maxOverflow` values to ensure that the ZenML server
+  # workers do not block on database connections (i.e. the sum of the pool size
+  # and max overflow should be greater than or equal to the thread pool size).
+  #
+  # threadPoolSize: 40
+
   image:
     repository: zenmldocker/zenml-server
     pullPolicy: Always
     # Overrides the image tag whose default is the chart appVersion.
     tag:
 
-  # The URL of the ZenML server. This is used to direct users to the correct
-  # address in log messages when running a pipeline and for other similar tasks.
-  baseURL:
+  # The URL where the ZenML server API is reachable. If not specified, the
+  # clients will use the same URL used to connect them to the ZenML server.
+  serverURL:
+
+  # The URL where the ZenML dashboard is reachable.
+  # If not specified, the `serverURL` value is used. This should be
+  # configured if the dashboard is served from a different URL than the
+  # ZenML server.
+  #
+  # This is value is used to compute the dashboard URLs during the web login
+  # authentication workflow, to print dashboard URLs in log messages when
+  # running a pipeline and for other similar tasks.
+  dashboardURL:
 
   debug: true
 
@@ -112,12 +133,6 @@ zenml:
     # authorization request.
     deviceAuthPollingInterval: 5
 
-    # The URL where the ZenML dashboard is hosted. Used to construct the OAuth
-    # 2.0 device authorization endpoint. If not set, a partial URL is returned
-    # to the client which is used to construct the full URL based on the
-    # server's root URL path.
-    dashboardURL:
-
     # The time in minutes that an OAuth 2.0 device is allowed to be used to
     # authenticate with the ZenML server. If not set or if
     # `zenml.auth.jwtTokenExpireMinutes` is not set, the devices are allowed to
@@ -175,13 +190,8 @@ zenml:
   # ```
   rootUrlPath:
 
-
-
   defaultProject: default
-  defaultUsername: default
-  # Use your own password here
-  defaultPassword: zenml
-
+  
   # Implicit authentication methods featured by service connectors that support
   # them are disabled by default, for security reasons. This is because they
   # allow users to authenticate to the cloud provider where ZenML is running
@@ -199,10 +209,20 @@ zenml:
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
 
+    # Connection pool settings (only relevant for MySQL databases).
+    #
+    # NOTE: these values should be coordinated with the `zenml.threadPoolSize`
+    # to ensure that the ZenML server workers do not block on database
+    # connections (i.e. the sum of the pool size and max overflow should be
+    # greater than or equal to the thread pool size).
+    #
+    # poolSize: 20
+    # maxOverflow: 20
+
     # ZenML supports backing up the database before DB migrations are performed
     # and restoring it in case of a DB migration failure. For more information,
     # see the following documentation:
-    # https://docs.zenml.io/deploying-zenml/zenml-self-hosted/deploy-with-helm#database-backup-and-recovery
+    # https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm#database-backup-and-recovery
     #
     # Several backup strategies are supported:
     #
@@ -302,7 +322,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/aws-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -375,7 +395,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/gcp-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -447,7 +467,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/azure-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -599,7 +619,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/aws-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -653,7 +673,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/gcp-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -718,7 +738,7 @@ zenml:
     # 
     # For a list of supported authentication methods and their configuration
     # options, see the following documentation:
-    # https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods
+    # https://docs.zenml.io/how-to/auth-management/azure-service-connector#authentication-methods
     # 
     # You can also use the ZenML CLI to get the list of supported authentication
     # methods and their configuration options, e.g.:
@@ -786,6 +806,49 @@ zenml:
       # should set the `ZENML_SECRETS_STORE_AWS_ACCESS_KEY_ID` environment
       # variable in the `zenml.secretEnvironment` variable.
       class_path: my.custom.secrets.store.MyCustomSecretsStore
+
+  # The ZenML server's secure headers configuration. This can be used to
+  # enable, disable or set custom values for security headers in the ZenML
+  # server's HTTP responses. The following values can be set for any of the
+  # supported secure headers configuration options:
+  #
+  # - `enabled`, `on`, `true` or `yes` - enables the secure header with the
+  # default value.
+  # - `disabled`, `off`, `false`, `none` or `no` - disables the secure header
+  # entirely, so that it is not set in the ZenML server's HTTP responses.
+  # - any other value - sets the secure header to the specified value.  
+  secure_headers:
+    # The `Server` HTTP header value used to identify the server. The default
+    # value is the ZenML server ID.
+    server: enabled
+    # The `Strict-Transport-Security` HTTP header value. The default value is
+    # `max-age=63072000; includeSubDomains`.
+    hsts: enabled
+    # The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
+    xfo: enabled
+    # The `X-XSS-Protection` HTTP header value. The default value is `0`.
+    # NOTE: this header is deprecated and should not be customized anymore. The
+    # `Content-Security-Policy` header should be used instead.
+    xxp: enabled
+    # The `X-Content-Type-Options` HTTP header value. The default value is
+    # `nosniff`.
+    content: enabled
+    # The `Content-Security-Policy` HTTP header value. This is by default set
+    # to a strict CSP policy that only allows content from the origins required
+    # by the ZenML dashboard.
+    # NOTE: customizing this header is discouraged, as it may cause the ZenML
+    # dashboard to malfunction.
+    csp: enabled
+    # The `Referrer-Policy` HTTP header value. The default value is
+    # `no-referrer-when-downgrade`.
+    referrer: enabled
+    # The `Cache-Control` HTTP header value. The default value is
+    # `no-store, no-cache, must-revalidate`.
+    cache: enabled
+    # The `Permissions-Policy` HTTP header value. The default value is
+    # `accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()`.
+    permissions: enabled
+
 
   # Extra environment variables to set in the ZenML server container.
   environment: {}

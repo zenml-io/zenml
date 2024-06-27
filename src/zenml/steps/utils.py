@@ -110,7 +110,7 @@ def parse_return_type_annotations(
             "Using the `Output` class to define the outputs of your steps is "
             "deprecated. You should instead use the standard Python way of "
             "type annotating your functions. Check out our documentation "
-            "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines#step-output-names "
+            "https://docs.zenml.io/how-to/build-pipelines/step-output-typing-and-annotation "
             "for more information on how to assign custom names to your step "
             "outputs."
         )

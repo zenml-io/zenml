@@ -51,7 +51,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
                     "The 'custom_docker_base_image_name' field has been "
                     "deprecated. To use a custom base container image with your "
                     "orchestrators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/user-guide/advanced-guide/environment-management/containerize-your-pipeline)."
+                    "pipeline (see https://docs.zenml.io/how-to/customize-docker-builds)."
                 )
 
         return values

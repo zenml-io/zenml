@@ -1,0 +1,21 @@
+---
+name: Jira Sync
+on:
+  issues:
+    types: [opened, labeled, unlabeled]
+  issue_comment:
+    types: [created]
+jobs:
+  sync:
+    name: Sync Items
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync
+        uses: mheap/github-action-issue-to-jira@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          jiraHost: ${{ secrets.JIRA_HOST }}
+          jiraUsername: ${{ secrets.JIRA_USERNAME }}
+          jiraPassword: ${{ secrets.JIRA_PASSWORD }}  # See https://id.atlassian.com/manage/api-tokens
+          project: OSSK

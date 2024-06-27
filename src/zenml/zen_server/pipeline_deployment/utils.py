@@ -58,6 +58,7 @@ def run_pipeline(
     Raises:
         ValueError: If the deployment does not have an associated stack or
             build.
+        RuntimeError: If the server URL is not set in the server configuration.
 
     Returns:
         ID of the new pipeline run.
@@ -87,8 +88,11 @@ def run_pipeline(
         assert auth_context.access_token
         api_token = auth_context.access_token.encode()
 
-    server_url = server_config().dashboard_url
-    assert server_url
+    server_url = server_config().server_url
+    if not server_url:
+        raise RuntimeError(
+            "The server URL is not set in the server configuration"
+        )
     assert build.zenml_version
     zenml_version = build.zenml_version
 

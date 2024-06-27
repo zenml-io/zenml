@@ -30,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.model_version import ModelVersionResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
@@ -218,6 +219,8 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class StepRunResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
+
+    model_version: Optional[ModelVersionResponse]
 
 
 class StepRunResponse(
@@ -434,6 +437,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_metadata().run_metadata
+
+    @property
+    def model_version(self) -> Optional[ModelVersionResponse]:
+        """The `model_version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().model_version
 
 
 # ------------------ Filter Model ------------------

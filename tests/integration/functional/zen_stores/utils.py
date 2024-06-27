@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
 
 from pydantic import BaseModel, Field, SecretStr
+from typing_extensions import Annotated
 
 from tests.integration.functional.utils import sample_name
 from zenml import (
@@ -104,13 +105,15 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @step
-def constant_int_output_test_step() -> int:
+def constant_int_output_test_step() -> Annotated[int, "test_step_output"]:
     logging.info("log")
     return 7
 
 
 @step
-def int_plus_one_test_step(input: int) -> int:
+def int_plus_one_test_step(
+    input: int,
+) -> Annotated[int, "test_step_output_plus_one"]:
     return input + 1
 
 

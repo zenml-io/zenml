@@ -140,6 +140,7 @@ ENV_ZENML_DISABLE_WORKSPACE_WARNINGS = "ZENML_DISABLE_WORKSPACE_WARNINGS"
 ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT = "ZENML_SKIP_IMAGE_BUILDER_DEFAULT"
 ENV_ZENML_REQUIRES_CODE_DOWNLOAD = "ZENML_REQUIRES_CODE_DOWNLOAD"
 ENV_ZENML_SERVER = "ZENML_SERVER"
+ENV_ZENML_LOCAL_SERVER = "ZENML_LOCAL_SERVER"
 ENV_ZENML_HUB_URL = "ZENML_HUB_URL"
 ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
@@ -147,6 +148,7 @@ ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES = (
     "ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES"
 )
+ENV_ZENML_IGNORE_FAILURE_HOOK = "ZENML_IGNORE_FAILURE_HOOK"
 
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
@@ -155,6 +157,10 @@ ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 ENV_ZENML_SERVER_REPORTABLE_RESOURCES = (
     f"{ENV_ZENML_SERVER_PREFIX}REPORTABLE_RESOURCES"
 )
+ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD = (
+    f"{ENV_ZENML_SERVER_PREFIX}USE_LEGACY_DASHBOARD"
+)
+ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -223,6 +229,8 @@ ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
 STEP_SOURCE_PARAMETER_NAME = "step_source"
 
 # Server settings
+DEFAULT_ZENML_SERVER_NAME = "default"
+DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE = 40
 DEFAULT_ZENML_JWT_TOKEN_LEEWAY = 10
 DEFAULT_ZENML_JWT_TOKEN_ALGORITHM = "HS256"
 DEFAULT_ZENML_AUTH_SCHEME = AuthScheme.OAUTH2_PASSWORD_BEARER
@@ -236,15 +244,61 @@ DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE = 5
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY = 1000
 
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
+    "max-age=63072000; includeSubdomains"
+)
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP = "0"
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
+_csp_script_src_urls = ["https://widgets-v3.featureos.app"]
+_csp_connect_src_urls = [
+    "https://sdkdocs.zenml.io",
+    "https://hubapi.zenml.io",
+    "https://analytics.zenml.io",
+]
+_csp_img_src_urls = [
+    "https://public-flavor-logos.s3.eu-central-1.amazonaws.com",
+    "https://avatar.vercel.sh",
+]
+_csp_frame_src_urls = [
+    "https://zenml.hellonext.co",
+    "https://sdkdocs.zenml.io",
+    "https://widgets-v3.hellonext.co",
+    "https://widgets-v3.featureos.app",
+    "https://zenml.portal.trainn.co",
+]
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP = (
+    "default-src 'none'; "
+    f"script-src 'self' 'unsafe-inline' 'unsafe-eval' {' '.join(_csp_script_src_urls)}; "
+    f"connect-src 'self' {' '.join(_csp_connect_src_urls)}; "
+    f"img-src 'self' data: {' '.join(_csp_img_src_urls)}; "
+    "style-src 'self' 'unsafe-inline'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "font-src 'self';"
+    f"frame-src {' '.join(_csp_frame_src_urls)}"
+)
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER = "no-referrer-when-downgrade"
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE = (
+    "no-store, no-cache, must-revalidate"
+)
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
+    "accelerometer=(), autoplay=(), camera=(), encrypted-media=(), "
+    "geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), "
+    "payment=(), sync-xhr=(), usb=()"
+)
+DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
+DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
+
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
 # ENV_ZENML_REPORTABLE_RESOURCES='["Foo", "bar"]'
 REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
     ENV_ZENML_SERVER_REPORTABLE_RESOURCES,
     expected_type=list,
-    default=["pipeline_run", "model"],
+    default=["pipeline", "pipeline_run", "model"],
 )
-REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline"]
+REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline", "pipeline_run"]
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
@@ -288,6 +342,7 @@ SECRETS = "/secrets"
 SECRETS_OPERATIONS = "/secrets_operations"
 SECRETS_BACKUP = "/backup"
 SECRETS_RESTORE = "/restore"
+SERVER_SETTINGS = "/settings"
 SERVICE_ACCOUNTS = "/service_accounts"
 SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
@@ -395,3 +450,9 @@ SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS = 60 * 5  # 5 minutes
 MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION = (
     10  # empirical value to pass heavy parallelized tests
 )
+
+
+FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"
+
+# Name validation
+BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
