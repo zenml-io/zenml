@@ -31,11 +31,11 @@ from zenml.utils.source_utils import get_source_root
 class WheeledOrchestrator(BaseOrchestrator, ABC):
     """Base class for wheeled orchestrators."""
 
-    def copy_repository_to_temp_dir_and_add_setup_py(self) -> str:
+    @staticmethod
+    def copy_repository_to_temp_dir_and_add_setup_py() -> str:
         """Copy the repository to a temporary directory and add a setup.py file.
         """
         repo_path = get_source_root()
-
         
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -44,7 +44,6 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
         temp_repo_path = os.path.join(temp_dir, "zenmlproject")
 
         fileio.mkdir(temp_repo_path)
-
 
         # Copy the repository to the temporary directory
         copy_dir(repo_path, temp_repo_path)
@@ -69,11 +68,9 @@ setup(
             f.write(setup_py_content)
 
         return temp_dir
-    
 
-
-
-    def create_wheel(self, temp_dir: str) -> str:
+    @staticmethod
+    def create_wheel(temp_dir: str) -> str:
         """
         Create a wheel for the package in the given temporary directory.
 

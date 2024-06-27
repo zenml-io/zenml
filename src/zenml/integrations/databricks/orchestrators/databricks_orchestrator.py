@@ -17,28 +17,23 @@ import itertools
 import json
 import os
 import re
-from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import StepEntrypointConfiguration
-from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
     DatabricksOrchestratorConfig,
     DatabricksOrchestratorSettings,
 )
-from zenml.integrations.databricks.orchestrators.databricks_utils import DatabricksTask, convert_step_to_task, generate_databricks_yaml
+from zenml.integrations.databricks.orchestrators.databricks_utils import convert_step_to_task, generate_databricks_yaml
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import (
-    BaseOrchestrator,
-)
+
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, yaml_utils
+from zenml.utils import io_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
@@ -50,6 +45,9 @@ logger = get_logger(__name__)
 
 ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID = "ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID"
 ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
+DATABRICKS_SECRET_SCOPE = "zenml"
+DATABRICKS_SECRET_NAME = "ZENML_API_KEY"
+
 
 class DatabricksOrchestrator(WheeledOrchestrator):
     """Base class for Orchestrator responsible for running pipelines remotely in a VM.
@@ -59,6 +57,10 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
     # The default instance type to use if none is specified in settings
     DEFAULT_INSTANCE_TYPE: Optional[str] = None
+
+    CLIENT_ID: str = os.getenv("DATABRICKS_CLIENT_ID")
+    CLIENT_SECRET: str = os.getenv("DATABRICKS_CLIENT_SECRET")
+    databricks_host: str = os.getenv("DATABRICKS_HOST")
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -145,7 +147,64 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             Path to the pipeline directory.
         """
         return os.path.join(self.root_directory, "pipelines")
-    
+
+    @property
+    def databricks_client(self) -> "WorkspaceClient":
+        """An active databricks client."""
+        from databricks.sdk import WorkspaceClient
+
+        return WorkspaceClient(
+            host=self.databricks_host,
+            client_id=self.CLIENT_ID,
+            client_secret=self.CLIENT_SECRET
+        )
+
+    def zenml_api_key(self):
+        """A ZenML API Key used for authentication with the ZenML Server.
+
+        Returns:
+            The ZenML API Key
+        """
+        try:
+            zenml_api_key = self.databricks_client.secrets.get_secret(
+                scope=DATABRICKS_SECRET_SCOPE,
+                key=DATABRICKS_SECRET_NAME
+            )
+        except Exception as e:
+            raise RuntimeError(e)
+        else:
+            return zenml_api_key
+
+    def prepare_pipeline_deployment(
+        self,
+        deployment: "PipelineDeploymentResponse",
+        stack: "Stack",
+    ) -> None:
+        """Prepares deploying the pipeline.
+
+        This method gets called immediately before a pipeline is deployed.
+        In this particular implementation validates that a ZenML API key is
+        registered as Secret within databricks.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+
+        Raises:
+            RuntimeError: If the databricks workspace does not have a
+                ZenML API Key registered.
+        """
+        try:
+            api_key = self.zenml_api_key
+        except RuntimeError:
+            raise RuntimeError(
+                "No ZenML API key found as secret within the secrets "
+                "of your Databricks workspace. To make this work "
+                "please do the following: \n"
+                "1) Create a service account within zenml and generate an API Key. \n"
+                "2) Store this API Key in your databricks workspace with scope "
+                f"`{DATABRICKS_SECRET_SCOPE}` and name `{DATABRICKS_SECRET_NAME}`.")
+
     def setup_credentials(self) -> None:
         """Set up credentials for the orchestrator."""
         connector = self.get_connector()
@@ -256,7 +315,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                         r[1].split("\n") for r in requirements_files
                     )
                 )
-
 
                 task = convert_step_to_task(f"{deployment.id}_{step_name}", ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND, arguments, requirements, depends_on=upstream_steps)
                 tasks.append(task)

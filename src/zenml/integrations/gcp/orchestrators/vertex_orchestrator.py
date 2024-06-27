@@ -221,7 +221,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
     ) -> None:
-        """Build a Docker image and push it to the container registry.
+        """Prepares deploying the pipeline.
+
+        This method gets called immediately before a pipeline is deployed.
+        In this particular implementation validates a potential schedule.
 
         Args:
             deployment: The pipeline deployment configuration.
