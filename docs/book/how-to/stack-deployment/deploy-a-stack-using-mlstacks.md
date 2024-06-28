@@ -73,98 +73,11 @@ MLStacks also uses Helm to deploy Kubernetes resources. You will need to have He
 
 ## Deploying a stack
 
-A simple stack deployment can be done using the following command:
+Deploying an end-to-end stack through the ZenML CLI is only possible with the [deployment wizard which does not use `mlstacks`](../../how-to/stack-deployment/deploy-a-cloud-stack.md). However, you can use `mlstacks` directly to deploy various types of stacks and [import them into ZenML](https://mlstacks.zenml.io/reference/zenml).
 
-```bash
-zenml stack deploy -p aws -a -n basic -r eu-north-1 -x bucket_name=my_bucket -o sagemaker
+```shell
+zenml stack import -f <path-to-stack-file-generated-by-mlstacks.yaml>
 ```
-
-This command deploys a stack on AWS that uses an S3 bucket as an artifact store
-and Sagemaker as your orchestrator. The stack will be imported into ZenML once
-the deployment is complete and you can start using it right away!
-
-Supported flavors and component types are as follows:
-
-| Component Type | Flavor(s) |
-| -------------- | --------- |
-| Artifact Store | s3, gcp, minio |
-| Container Registry | aws, gcp |
-| Experiment Tracker | mlflow |
-| Orchestrator | kubernetes, kubeflow, tekton, vertex |
-| MLOps Platform | zenml |
-| Model Deployer | seldon |
-| Step Operator | sagemaker, vertex |
-
-MLStacks currently only supports deployments using AWS, GCP, and K3D as providers.
-
-<summary>Want more details on how this works internally?</summary>
-
-The stack recipe CLI interacts with the
-[mlstacks](https://github.com/zenml-io/mlstacks) repository to fetch the recipes
-and stores them locally in the **Global Config** directory. 
-
-This is where you could potentially make any changes you want to the recipe files. You can also use native terraform commands like `terraform apply` to deploy components but this would require you to pass the variables manually using the `-var-file` flag to the terraform CLI.
-
-</details>
-
-### CLI Options for `zenml stack deploy`
-
-Current required options to be passed in to the `zenml stack deploy` subcommand
-are:
-
-- `-p` or `--provider`: The cloud provider to deploy the stack on. Currently
-  supported providers are `aws`, `gcp`, and `k3d`.
-- `-n` or `--name`: The name of the stack to be deployed. This is used to
-  identify the stack in ZenML.
-- `-r` or `--region`: The region to deploy the stack in.
-
-The remaining options relate to which components you want to deploy.
-
-If you want to pass an `mlstacks` stack specification file into the CLI to use
-for deployment, you can do so with the `-f` option. Similarly, if you wish to
-see more of the Terraform logging, prompts and output, you can pass the `-d`
-flag to turn on `debug-mode`.
-
-Any extra configuration for specific components (as noted in the individual
-component deployment documentation) can be passed
-in with the `-x` option. This option can be used multiple times to pass in
-multiple configurations.
-
-### Interactive stack deployment
-
-If you would like to be guided through the deployment process, you can use the
-`zenml stack deploy` command with the `--interactive` flag. You will still need
-to provide the `provider`, `name` and `region` options as described above but
-for the rest, you will get prompts in the CLI as to which components you would
-like to deploy. For example, using GCP as the provider you might type:
-
-```bash
-zenml stack deploy -p gcp -n my_new_stack -r us-east1 --interactive
-```
-
-### Displaying Terraform outputs for stacks deployed with mlstacks
-
-If you want to view any of the Terraform-generated outputs for a stack deployed
-with `mlstacks`, you can do so with the following command:
-
-```bash
-zenml stack describe -o <STACK_NAME>
-```
-
-This will print any available outputs to the console if you have deployed a
-stack with `mlstacks` via ZenML.
-
-### Deleting / destroying resources
-
-🗑️ Once you're done running your pipelines, there's only a single command you need to execute that will take care of cleaning up all the resources that you had created on your cloud.
-
-```
-zenml stack destroy <STACK_NAME>
-```
-
-This will offer you the option to delete the underlying stack specifications and
-state files as well. You can also choose to delete the stack from your ZenML
-server.
 
 ## Deploy a stack component
 
