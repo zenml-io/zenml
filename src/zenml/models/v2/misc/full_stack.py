@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing full stack requests."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -35,7 +35,12 @@ class ComponentInfo(BaseModel):
     """Information about each stack components when creating a full stack."""
 
     flavor: str
-    service_connector: Optional[str] = None
+    service_connector_index: Optional[int] = Field(
+        default=None,
+        title="The id of the service connector from the list `service_connectors`.",
+        description="The id of the service connector from the list "
+        "`service_connectors` from `FullStackRequest`.",
+    )
     configuration: Dict[str, Any] = {}
 
 
@@ -53,12 +58,14 @@ class FullStackRequest(BaseRequest):
         title="The description of the stack",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = Field(
-        default=None,
-        title="The service connector for the full stack registration.",
-        description="The UUID of an already existing service connector or "
-        "request information to create a service connector from "
-        "scratch.",
+    service_connectors: Optional[List[Union[UUID, ServiceConnectorInfo]]] = (
+        Field(
+            default=[],
+            title="The service connectors dictionary for the full stack registration.",
+            description="The UUID of an already existing service connector or "
+            "request information to create a service connector from "
+            "scratch.",
+        )
     )
     components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = Field(
         title="The mapping for the components of the full stack registration.",

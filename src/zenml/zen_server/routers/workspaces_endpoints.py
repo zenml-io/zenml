@@ -377,29 +377,36 @@ def create_full_stack(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    if isinstance(full_stack.service_connector, UUID):
-        service_connector = zen_store().get_service_connector(
-            full_stack.service_connector, hydrate=False
-        )
-        verify_permission_for_model(
-            model=service_connector, action=Action.READ
-        )
-    else:
+    is_connector_create_needed = False
+    for connector_id_or_info in full_stack.service_connectors:
+        if isinstance(connector_id_or_info, UUID):
+            service_connector = zen_store().get_service_connector(
+                connector_id_or_info, hydrate=False
+            )
+            verify_permission_for_model(
+                model=service_connector, action=Action.READ
+            )
+        else:
+            is_connector_create_needed = True
+    if is_connector_create_needed:
         verify_permission(
             resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
         )
 
-    for component_id_or_request in full_stack.components.values():
-        if isinstance(component_id_or_request, UUID):
+    is_component_create_needed = False
+    for component_id_or_info in full_stack.components.values():
+        if isinstance(component_id_or_info, UUID):
             component = zen_store().get_stack_component(
-                component_id_or_request, hydrate=False
+                component_id_or_info, hydrate=False
             )
             verify_permission_for_model(model=component, action=Action.READ)
         else:
-            verify_permission(
-                resource_type=ResourceType.STACK_COMPONENT,
-                action=Action.CREATE,
-            )
+            is_component_create_needed = True
+    if is_component_create_needed:
+        verify_permission(
+            resource_type=ResourceType.STACK_COMPONENT,
+            action=Action.CREATE,
+        )
 
     verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
 

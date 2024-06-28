@@ -6932,22 +6932,26 @@ class SqlZenStore(BaseZenStore):
         """
         validate_name(full_stack)
 
-        if isinstance(full_stack.service_connector, UUID):
-            service_connector = self.get_service_connector(
-                full_stack.service_connector
-            )
-        else:
-            service_connector_request = ServiceConnectorRequest(
-                name=full_stack.name,  # try and fail, then randomize
-                connector_type=full_stack.service_connector.connector_type,
-                auth_type=full_stack.service_connector.auth_type,
-                configuration=full_stack.service_connector.configuration,
-                user=full_stack.user_id,
-                workspace=full_stack.workspace_id,
-            )
-            service_connector = self.create_service_connector(
-                service_connector=service_connector_request
-            )
+        service_connectors: List[ServiceConnectorResponse] = []
+        for connector_id_or_info in full_stack.service_connectors:
+            if isinstance(connector_id_or_info, UUID):
+                service_connectors.append(
+                    self.get_service_connector(connector_id_or_info)
+                )
+            else:
+                service_connector_request = ServiceConnectorRequest(
+                    name=full_stack.name,  # try and fail, then randomize
+                    connector_type=connector_id_or_info.connector_type,
+                    auth_type=connector_id_or_info.auth_type,
+                    configuration=connector_id_or_info.configuration,
+                    user=full_stack.user_id,
+                    workspace=full_stack.workspace_id,
+                )
+                service_connectors.append(
+                    self.create_service_connector(
+                        service_connector=service_connector_request
+                    )
+                )
 
         components_mapping: Dict[StackComponentType, List[UUID]] = {}
         for component_type, component_info in full_stack.components.items():
@@ -6967,7 +6971,10 @@ class SqlZenStore(BaseZenStore):
                 component = self.create_stack_component(
                     component=component_request
                 )
-                if component_info.service_connector is not None:
+                if component_info.service_connector_index is not None:
+                    service_connector = service_connectors[
+                        component_info.service_connector_index
+                    ]
                     flavor_list = self.list_flavors(
                         flavor_filter_model=FlavorFilter(
                             name=component_info.flavor,
