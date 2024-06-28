@@ -107,7 +107,7 @@
   * [Define where an image is built](how-to/customize-docker-builds/define-where-an-image-is-built.md)
 * [⚒️ Deploy and configure stacks](how-to/stack-deployment/README.md)
   * [Deploy a cloud stack](how-to/stack-deployment/deploy-a-cloud-stack.md)
-  * [Register a cloud stack](how-to/stack-deployment/deploy-a-cloud-stack.md)
+  * [Register a cloud stack](how-to/stack-deployment/register-a-cloud-stack.md)
   * [Deploy stack/components using mlstacks](how-to/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Reference secrets in stack configuration](how-to/stack-deployment/reference-secrets-in-stack-configuration.md)
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
