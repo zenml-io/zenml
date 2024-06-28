@@ -15,7 +15,7 @@ These, along with [remote storage](remote-storage.md), complete a basic cloud st
 
 ## Starting with a basic cloud stack
 
-{% hint style="info" %}
+{% hint style="warning" %}
 Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
 and go to the [easy stack registration](easy-stack-registration.md) for an easier way to get to the same
 outcome!

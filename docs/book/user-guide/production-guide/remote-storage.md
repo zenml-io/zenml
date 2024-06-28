@@ -14,7 +14,7 @@ When using a stack with remote storage, nothing changes except the fact that the
 
 ## Provisioning and registering a remote artifact store
 
-{% hint style="info" %}
+{% hint style="warning" %}
 Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
 and go to the [easy stack registration](easy-stack-registration.md) for an easier way to get to the same
 outcome!
