@@ -158,6 +158,8 @@ Already have existing resources? No problem, you can register them easily:
 zenml stack register --provider aws  # can be gcp, azure
 ```
 
+TODO: Might be nice to have a GIF here of zenml stack register.
+
 Read more about [ZenML stacks](https://docs.zenml.io/user-guide/production-guide/understand-stacks).
 
 ### Run workloads easily on your production infrastructure
