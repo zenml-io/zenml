@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     ARTIFACTS,
     CODE_REPOSITORIES,
+    FULL_STACK,
     GET_OR_CREATE,
     MODEL_VERSIONS,
     MODELS,
@@ -51,6 +52,7 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
+    FullStackRequest,
     ModelRequest,
     ModelResponse,
     ModelVersionArtifactRequest,
@@ -347,6 +349,72 @@ def create_stack(
         resource_type=ResourceType.STACK,
         create_method=zen_store().create_stack,
     )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + FULL_STACK,
+    response_model=StackResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_full_stack(
+    workspace_name_or_id: Union[str, UUID],
+    full_stack: FullStackRequest,
+    auth_context: AuthContext = Security(authorize),
+) -> StackResponse:
+    """Creates a stack for a particular workspace.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        full_stack: Stack to register.
+
+    Returns:
+        The created stack.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the stack
+            does not match the current workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if isinstance(full_stack.service_connector, UUID):
+        service_connector = zen_store().get_service_connector(
+            full_stack.service_connector
+        )
+        verify_permission_for_model(
+            model=service_connector, action=Action.READ
+        )
+    else:
+        verify_permission(
+            resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
+        )
+
+    for component_type, component_id_or_request in full_stack.components:
+        if isinstance(component_id_or_request, UUID):
+            component = zen_store().get_stack_component(
+                full_stack.component_id_or_request
+            )
+            verify_permission_for_model(model=component, action=Action.READ)
+        else:
+            verify_permission(
+                resource_type=ResourceType.STACK_COMPONENT,
+                action=Action.CREATE,
+            )
+
+            if "service_connector" in component_id_or_request:
+                verify_permission(
+                    resource_type=ResourceType.STACK_COMPONENT,
+                    action=Action.UPDATE,
+                )
+
+    verify_permission(
+        resource_type=ResourceType.STACK_COMPONENT, action=Action.CREATE
+    )
+
+    full_stack.user_id = auth_context.user.id
+    full_stack.workspace_id = workspace.id
+
+    return zen_store().create_full_stack(full_stack)
 
 
 @router.get(
