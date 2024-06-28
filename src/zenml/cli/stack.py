@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import click
+from rich.console import Console
+from rich.syntax import Syntax
 
 import zenml
 from zenml.analytics.enums import AnalyticsEvent
@@ -199,8 +201,8 @@ def stack() -> None:
     type=click.BOOL,
 )
 @click.option(
-    "-cp",
-    "--cloud",
+    "-p",
+    "--provider",
     help="Name of the cloud provider for this stack.",
     type=click.Choice(["aws", "azure", "gcp"]),
     required=False,
@@ -227,7 +229,7 @@ def register_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     set_stack: bool = False,
-    cloud: Optional[str] = None,
+    provider: Optional[str] = None,
     connector: Optional[str] = None,
 ) -> None:
     """Register a stack.
@@ -247,10 +249,10 @@ def register_stack(
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         set_stack: Immediately set this stack as active.
-        cloud: Name of the cloud provider for this stack.
+        provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
     """
-    if (cloud is None and connector is None) and (
+    if (provider is None and connector is None) and (
         artifact_store is None or orchestrator is None
     ):
         cli_utils.error(
@@ -275,63 +277,58 @@ def register_stack(
 
     components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = {}
     # cloud flow
+    created_objects = set()
     service_connector = None
-    if cloud is not None and connector is None:
-        cli_utils.show_status_from_kwargs(
-            cloud=cloud,
-            connector=connector,
-            artifact_store=artifact_store,
-            orchestrator=orchestrator,
-            container_registry=container_registry,
+    if provider is not None and connector is None:
+        use_implicit = cli_utils.Confirm.ask(
+            f"[bold]{provider.upper()} cloud service connector[/bold] "
+            "can use the Implicit Authentication by accessing connection "
+            "configuration of the environment or use one of "
+            "the authentications methods supported.\n"
+            "The implicit authentication is great to quickstart, but "
+            "actual credentials may vary system to system impacting reproducibility.\n"
+            "Would you like to use the Implicit Authentication method?",
+            default=False,
+            show_choices=True,
+            show_default=True,
         )
-        existing_connectors = client.list_service_connectors(
-            connector_type=cloud, size=100
-        )
-        connector_selected: Optional[int] = None
-        if existing_connectors.total:
-            connector_selected = cli_utils.multi_choice_prompt(
-                object_type=f"{cloud.upper()} service connectors",
-                choices=[
-                    [connector.name] for connector in existing_connectors.items
-                ],
-                headers=["Name"],
-                prompt_text=f"We found these {cloud.upper()} service connectors. "
-                "Do you want to create a new one or use one of the existing ones?",
-                default_choice="0",
-                allow_zero_be_a_new_object=True,
+        if not use_implicit:
+            existing_connectors = client.list_service_connectors(
+                connector_type=provider, size=100
             )
-        if connector_selected is None:
+            connector_selected: Optional[int] = None
+            if existing_connectors.total:
+                connector_selected = cli_utils.multi_choice_prompt(
+                    object_type=f"{provider.upper()} service connectors",
+                    choices=[
+                        [connector.name]
+                        for connector in existing_connectors.items
+                    ],
+                    headers=["Name"],
+                    prompt_text=f"We found these {provider.upper()} service connectors. "
+                    "Do you want to create a new one or use one of the existing ones?",
+                    default_choice="0",
+                    allow_zero_be_a_new_object=True,
+                )
+        if use_implicit or connector_selected is None:
             service_connector = _get_service_connector_info(
-                cloud_provider=cloud
+                cloud_provider=provider, use_implicit=use_implicit
             )
+            created_objects.add("service_connector")
         else:
             selected_connector = existing_connectors.items[connector_selected]
             service_connector = selected_connector.id
             connector = selected_connector.name
             if isinstance(selected_connector.connector_type, str):
-                cloud = selected_connector.connector_type
+                provider = selected_connector.connector_type
             else:
-                cloud = selected_connector.connector_type.connector_type
+                provider = selected_connector.connector_type.connector_type
     elif connector is not None:
-        cli_utils.show_status_from_kwargs(
-            cloud=cloud,
-            connector=connector,
-            artifact_store=artifact_store,
-            orchestrator=orchestrator,
-            container_registry=container_registry,
-        )
         service_connector = client.get_service_connector(connector).id
-        if service_connector.type != cloud:
+        if service_connector.type != provider:
             cli_utils.warning(
-                f"The service connector `{connector}` is not of type `{cloud}`."
+                f"The service connector `{connector}` is not of type `{provider}`."
             )
-    cli_utils.show_status_from_kwargs(
-        cloud=cloud,
-        connector=connector,
-        artifact_store=artifact_store,
-        orchestrator=orchestrator,
-        container_registry=container_registry,
-    )
 
     if service_connector:
         service_connector_resource_model = None
@@ -395,11 +392,12 @@ def register_stack(
 
                     component_info = _get_stack_component_info(
                         component_type=component_type.value,
-                        cloud_provider=cloud,
+                        cloud_provider=provider,
                         service_connector_resource_models=service_connector_resource_model.resources,
                         service_connector_index=0,
                     )
                     component_name = stack_name
+                    created_objects.add(component_type.value)
                 else:
                     selected_component = existing_components.items[
                         component_selected
@@ -414,13 +412,6 @@ def register_stack(
                 orchestrator = component_name
             if component_type == StackComponentType.CONTAINER_REGISTRY:
                 container_registry = component_name
-            cli_utils.show_status_from_kwargs(
-                cloud=cloud,
-                connector=connector,
-                artifact_store=artifact_store,
-                orchestrator=orchestrator,
-                container_registry=container_registry,
-            )
 
     # normal flow once all components are defined
     with console.status(f"Registering stack '{stack_name}'...\n"):
@@ -461,6 +452,10 @@ def register_stack(
         cli_utils.declare(
             f"Stack '{created_stack.name}' successfully registered!"
         )
+        cli_utils.print_stack_configuration(
+            stack=created_stack,
+            active=created_stack.id == client.active_stack_model.id,
+        )
 
     if set_stack:
         client.activate_stack(created_stack.id)
@@ -470,9 +465,28 @@ def register_stack(
             f"Active {scope} stack set to:'{created_stack.name}'"
         )
 
-    print_model_url(get_stack_url(created_stack))
+    delete_commands = []
+    if "service_connector" in created_objects:
+        created_objects.remove("service_connector")
+        connectors = set()
+        for each in created_objects:
+            connectors.add(created_stack.components[each][0].connector.name)
+        for connector in connectors:
+            delete_commands.append(
+                "zenml service-connector delete " + connector
+            )
+    for each in created_objects:
+        delete_commands.append(
+            f"zenml {each.replace('_', '-')} delete {created_stack.components[each][0].name}"
+        )
+    delete_commands.append("zenml stack delete -y " + created_stack.name)
 
-    # TODO: print how to delete stack and how to run a pipeline on it
+    Console().print(
+        "To delete the objects created by this command run, please run in a sequence:\n"
+    )
+    Console().print(Syntax("\n".join(delete_commands[::-1]), "bash"))
+
+    print_model_url(get_stack_url(created_stack))
 
 
 @stack.command(
@@ -1924,18 +1938,19 @@ def connect_stack(
         )
 
 
-def _get_service_connector_info(cloud_provider: str) -> ServiceConnectorInfo:
+def _get_service_connector_info(
+    cloud_provider: str, use_implicit: bool
+) -> ServiceConnectorInfo:
     """Get a service connector info with given cloud provider.
 
     Args:
         cloud_provider: The cloud provider to use.
+        use_implicit: Whether to use implicit credentials.
 
     Returns:
         The info model of the created service connector.
     """
-    from rich import print
-    from rich.markdown import Markdown
-    from rich.prompt import Confirm, Prompt
+    from rich.prompt import Prompt
 
     if cloud_provider not in {"aws", "azure", "gcp"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
@@ -1944,55 +1959,50 @@ def _get_service_connector_info(cloud_provider: str) -> ServiceConnectorInfo:
     auth_methods = client.get_service_connector_type(
         cloud_provider
     ).auth_method_dict
-    fixed_auth_methods = list(auth_methods.items())
-    choices = []
-    headers = ["Name", "Required"]
-    for _, value in fixed_auth_methods:
-        schema = value.config_schema
-        required = ""
-        for each_req in schema["required"]:
-            field = schema["properties"][each_req]
-            required += f"[bold]{each_req}[/bold]  [italic]({field.get('title','no description')})[/italic]\n"
-        choices.append([value.name, required])
+    if not use_implicit:
+        fixed_auth_methods = list(
+            [
+                (key, value)
+                for key, value in auth_methods.items()
+                if key != "implicit"
+            ]
+        )
+        choices = []
+        headers = ["Name", "Required"]
+        for _, value in fixed_auth_methods:
+            schema = value.config_schema
+            required = ""
+            for each_req in schema["required"]:
+                field = schema["properties"][each_req]
+                required += f"[bold]{each_req}[/bold]  [italic]({field.get('title','no description')})[/italic]\n"
+            choices.append([value.name, required])
 
-    auth_selected = False
-    while not auth_selected:
         selected_auth_idx = cli_utils.multi_choice_prompt(
             object_type=f"authentication methods for {cloud_provider}",
             choices=choices,
             headers=headers,
-            prompt_text="Please choose one of the authentication option above to see detailed description:",
+            prompt_text="Please choose one of the authentication option above.",
         )
-        selected_auth_model = fixed_auth_methods[selected_auth_idx][1]
-        print(
-            Markdown(
-                f"## {selected_auth_model.name}\n"
-                + selected_auth_model.description
-            )
-        )
+        auth_type = fixed_auth_methods[selected_auth_idx][0]
+    else:
+        auth_type = "implicit"
 
-        auth_selected = Confirm.ask(
-            "Do you want to continue or go back to authentication methods selection?",
-            default=True,
-        )
-    if not selected_auth_model:
-        raise ValueError("No authentication method selected")
+    selected_auth_model = auth_methods[auth_type]
+
     required_fields = selected_auth_model.config_schema["required"]
-    data_entered = False
-    while not data_entered:
-        answers = {}
-        for req_field in required_fields:
-            answers[req_field] = Prompt.ask(
-                f"Please enter value for `{req_field}`:"
-            )
-        data_entered = Confirm.ask(
-            "Please confirm the values you entered:\n" + str(answers),
-            default=True,
+    properties = selected_auth_model.config_schema["properties"]
+
+    answers = {}
+    for req_field in required_fields:
+        answers[req_field] = Prompt.ask(
+            f"Please enter value for `{req_field}`:",
+            password="format" in properties[req_field]
+            and properties[req_field]["format"] == "password",
         )
 
     return ServiceConnectorInfo(
         connector_type=cloud_provider,
-        auth_type=fixed_auth_methods[selected_auth_idx][0],
+        auth_type=auth_type,
         configuration=answers,
     )
 
@@ -2020,129 +2030,133 @@ def _get_stack_component_info(
         ValueError: If the cloud provider is not supported.
         ValueError: If the component type is not supported.
     """
-    from rich import print
-    from rich.prompt import Confirm, Prompt
+    from rich.prompt import Prompt
 
     if cloud_provider not in {"aws", "azure", "gcp"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
+    AWS_DOCS = (
+        "https://docs.zenml.io/how-to/auth-management/aws-service-connector"
+    )
+
     flavor = "undefined"
     config = {}
     if component_type == "artifact_store":
-        config_confirmed = False
-        while not config_confirmed:
-            if cloud_provider == "aws":
-                for each in service_connector_resource_models:
-                    if each.resource_type == "s3-bucket":
-                        available_storages = each.resource_ids
-                flavor = "s3"
-            elif cloud_provider == "azure":
-                flavor = "azure"
-            elif cloud_provider == "gcp":
-                flavor = "gcs"
+        if cloud_provider == "aws":
+            for each in service_connector_resource_models:
+                if each.resource_type == "s3-bucket":
+                    available_storages = each.resource_ids
+            flavor = "s3"
+            if not available_storages:
+                cli_utils.error(
+                    "We were unable to find any S3 buckets available "
+                    "to configured service connector. Please, verify "
+                    "that needed permission are granted for the "
+                    "service connector.\nDocumentation for the S3 "
+                    "Buckets configuration can be found at "
+                    f"{AWS_DOCS}#s3-bucket"
+                )
+        elif cloud_provider == "azure":
+            flavor = "azure"
+        elif cloud_provider == "gcp":
+            flavor = "gcs"
 
-            selected_storage_idx = cli_utils.multi_choice_prompt(
-                object_type=f"{cloud_provider.upper()} storages",
-                choices=[[st] for st in available_storages],
-                headers=["Storage"],
-                prompt_text="Please choose one of the storages for the new artifact store:",
-            )
-            selected_storage = available_storages[selected_storage_idx]
+        selected_storage_idx = cli_utils.multi_choice_prompt(
+            object_type=f"{cloud_provider.upper()} storages",
+            choices=[[st] for st in available_storages],
+            headers=["Storage"],
+            prompt_text="Please choose one of the storages for the new artifact store:",
+        )
+        selected_storage = available_storages[selected_storage_idx]
 
-            extra_path = Prompt.ask(
-                f"Please enter any further path inside the storage, if needed ({selected_storage}/...):",
-                default="",
-            )
-            config = {
-                "path": f"{selected_storage.strip('/')}/{extra_path.strip('/')}"
-            }
-
-            print(config)
-            config_confirmed = Confirm.ask(
-                "Please confirm the values you entered:", default=True
-            )
+        config = {"path": selected_storage}
     elif component_type == "orchestrator":
-        config_confirmed = False
-        while not config_confirmed:
-            if cloud_provider == "aws":
-                available_orchestrators = []
-                for each in service_connector_resource_models:
-                    types = []
-                    if each.resource_type == "aws-generic":
-                        types = ["Sagemaker", "VM AWS"]
-                    if each.resource_type == "kubernetes-cluster":
-                        types = ["K8S"]
+        if cloud_provider == "aws":
+            available_orchestrators = []
+            for each in service_connector_resource_models:
+                types = []
+                if each.resource_type == "aws-generic":
+                    types = ["Sagemaker", "VM AWS"]
+                if each.resource_type == "kubernetes-cluster":
+                    types = ["K8S"]
 
+                if each.resource_ids:
                     for orchestrator in each.resource_ids:
                         for t in types:
                             available_orchestrators.append([t, orchestrator])
-            elif cloud_provider == "gcp":
-                pass
-            elif cloud_provider == "azure":
-                pass
-
-            selected_orchestrator_idx = cli_utils.multi_choice_prompt(
-                object_type=f"orchestrators on {cloud_provider.upper()}",
-                choices=available_orchestrators,
-                headers=["Orchestrator Type", "Orchestrator details"],
-                prompt_text="Please choose one of the orchestrators for the new orchestrator:",
-            )
-
-            selected_orchestrator = available_orchestrators[
-                selected_orchestrator_idx
-            ]
-
-            if selected_orchestrator[0] == "Sagemaker":
-                flavor = "sagemaker"
-                execution_role = Prompt.ask(
-                    "Please enter an execution role ARN:"
+            if not available_orchestrators:
+                cli_utils.error(
+                    "We were unable to find any orchestrator engines "
+                    "available to the service connector. Please, verify "
+                    "that needed permission are granted for the "
+                    "service connector.\nDocumentation for the Generic "
+                    "AWS resource configuration can be found at "
+                    f"{AWS_DOCS}#generic-aws-resource\n"
+                    "Documentation for the Kubernetes resource "
+                    "configuration can be found at "
+                    f"{AWS_DOCS}#eks-kubernetes-cluster"
                 )
-                config = {"execution_role": execution_role}
-            elif selected_orchestrator[0] == "VM AWS":
-                flavor = "vm_aws"
-                config = {}
-            elif selected_orchestrator[0] == "K8S":
-                flavor = "kubernetes"
-                config = {}
-            else:
-                raise ValueError(
-                    f"Unknown orchestrator type {selected_orchestrator[0]}"
-                )
-            print(config)
-            config_confirmed = Confirm.ask(
-                "Please confirm the values you entered:", default=True
+        elif cloud_provider == "gcp":
+            pass
+        elif cloud_provider == "azure":
+            pass
+
+        selected_orchestrator_idx = cli_utils.multi_choice_prompt(
+            object_type=f"orchestrators on {cloud_provider.upper()}",
+            choices=available_orchestrators,
+            headers=["Orchestrator Type", "Orchestrator details"],
+            prompt_text="Please choose one of the orchestrators for the new orchestrator:",
+        )
+
+        selected_orchestrator = available_orchestrators[
+            selected_orchestrator_idx
+        ]
+
+        if selected_orchestrator[0] == "Sagemaker":
+            flavor = "sagemaker"
+            execution_role = Prompt.ask("Please enter an execution role ARN:")
+            config = {"execution_role": execution_role}
+        elif selected_orchestrator[0] == "VM AWS":
+            flavor = "vm_aws"
+            config = {}
+        elif selected_orchestrator[0] == "K8S":
+            flavor = "kubernetes"
+            config = {}
+        else:
+            raise ValueError(
+                f"Unknown orchestrator type {selected_orchestrator[0]}"
             )
     elif component_type == "container_registry":
-        config_confirmed = False
-        while not config_confirmed:
-            if cloud_provider == "aws":
-                for each in service_connector_resource_models:
-                    if each.resource_type == "docker-registry":
-                        available_registries = each.resource_ids
-                flavor = "aws"
-            elif cloud_provider == "azure":
-                flavor = "azure"
-                available_registries = []
-            elif cloud_provider == "gcp":
-                flavor = "gcp"
-                available_registries = []
+        available_registries = []
+        if cloud_provider == "aws":
+            flavor = "aws"
+            for each in service_connector_resource_models:
+                if each.resource_type == "docker-registry":
+                    available_registries = each.resource_ids
+            if not available_registries:
+                cli_utils.error(
+                    "We were unable to find any container registries "
+                    "available to the service connector. Please, verify "
+                    "that needed permission are granted for the "
+                    "service connector.\nDocumentation for the ECR "
+                    "container registry resource configuration can "
+                    f"be found at {AWS_DOCS}#ecr-container-registry"
+                )
+        elif cloud_provider == "azure":
+            flavor = "azure"
+        elif cloud_provider == "gcp":
+            flavor = "gcp"
 
-            selected_registry_idx = cli_utils.multi_choice_prompt(
-                object_type=f"{cloud_provider.upper()} registries",
-                choices=[[st] for st in available_registries],
-                headers=["Container Registry"],
-                prompt_text="Please choose one of the registries for the new container registry:",
-            )
-            selected_storage = available_registries[selected_registry_idx]
-            config = {"uri": selected_storage}
-
-            print(config)
-            config_confirmed = Confirm.ask(
-                "Please confirm the values you entered:", default=True
-            )
+        selected_registry_idx = cli_utils.multi_choice_prompt(
+            object_type=f"{cloud_provider.upper()} registries",
+            choices=[[st] for st in available_registries],
+            headers=["Container Registry"],
+            prompt_text="Please choose one of the registries for the new container registry:",
+        )
+        selected_storage = available_registries[selected_registry_idx]
+        config = {"uri": selected_storage}
     else:
         raise ValueError(f"Unknown component type {component_type}")
-    service_connector_index
 
     return ComponentInfo(
         flavor=flavor,

@@ -2757,34 +2757,6 @@ def is_jupyter_installed() -> bool:
         return False
 
 
-def show_status_from_kwargs(default_value: str = ":x:", **kwargs: Any) -> None:
-    """Show status from kwargs.
-
-    Args:
-        default_value: The default value to show status from.
-        **kwargs: The kwargs to show status from. If value is passed,
-            but `None` a default value is used.
-    """
-    status = []
-    names = []
-    for name, each in kwargs.items():
-        if not each:
-            each = ":x:"
-        status.append(each)
-        names.append(name.replace("_", " ").capitalize())
-
-    status_table = Table(
-        title="New cloud stack registration progress",
-        show_header=True,
-        expand=True,
-    )
-    for c in names:
-        status_table.add_column(c, justify="center", width=1)
-
-    status_table.add_row(*status)
-    Console().print(status_table)
-
-
 def multi_choice_prompt(
     object_type: str,
     choices: List[List[Any]],
