@@ -59,15 +59,13 @@ class FullStackRequest(BaseRequest):
         title="The description of the stack",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    service_connectors: Optional[List[Union[UUID, ServiceConnectorInfo]]] = (
-        Field(
-            default=[],
-            title="The service connectors dictionary for the full stack "
-            "registration.",
-            description="The UUID of an already existing service connector or "
-            "request information to create a service connector from "
-            "scratch.",
-        )
+    service_connectors: List[Union[UUID, ServiceConnectorInfo]] = Field(
+        default=[],
+        title="The service connectors dictionary for the full stack "
+        "registration.",
+        description="The UUID of an already existing service connector or "
+        "request information to create a service connector from "
+        "scratch.",
     )
     components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = Field(
         title="The mapping for the components of the full stack registration.",

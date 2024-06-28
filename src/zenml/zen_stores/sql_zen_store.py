@@ -7009,7 +7009,7 @@ class SqlZenStore(BaseZenStore):
 
                     if not requirements:
                         raise RuntimeError(
-                            f"The '{component_info.name}' implementation "
+                            f"The '{flavor_model.name}' implementation "
                             "does not support using a service connector to "
                             "connect to resources."
                         )
