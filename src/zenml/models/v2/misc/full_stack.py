@@ -20,7 +20,6 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.scoped import WorkspaceScopedRequest
 
 
 class ServiceConnectorInfo(BaseModel):
@@ -45,6 +44,9 @@ class ComponentInfo(BaseModel):
 class FullStackRequest(BaseModel):
     """Request model for a full-stack."""
 
+    user_id: Optional[UUID] = None
+    workspace_id: Optional[UUID] = None
+
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
@@ -65,7 +67,3 @@ class FullStackRequest(BaseModel):
         "existing components or request information for brand new "
         "components.",
     )
-
-
-class FullStackScopedRequest(FullStackRequest, WorkspaceScopedRequest):
-    """Request model for a full-stack scoped by a user and workspace."""
