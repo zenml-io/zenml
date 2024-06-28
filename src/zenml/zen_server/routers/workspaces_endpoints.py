@@ -379,7 +379,7 @@ def create_full_stack(
 
     if isinstance(full_stack.service_connector, UUID):
         service_connector = zen_store().get_service_connector(
-            full_stack.service_connector
+            full_stack.service_connector, hydrate=False
         )
         verify_permission_for_model(
             model=service_connector, action=Action.READ
@@ -389,10 +389,10 @@ def create_full_stack(
             resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
         )
 
-    for component_type, component_id_or_request in full_stack.components:
+    for component_id_or_request in full_stack.components.values():
         if isinstance(component_id_or_request, UUID):
             component = zen_store().get_stack_component(
-                full_stack.component_id_or_request
+                component_id_or_request, hydrate=False
             )
             verify_permission_for_model(model=component, action=Action.READ)
         else:
@@ -401,15 +401,7 @@ def create_full_stack(
                 action=Action.CREATE,
             )
 
-            if "service_connector" in component_id_or_request:
-                verify_permission(
-                    resource_type=ResourceType.STACK_COMPONENT,
-                    action=Action.UPDATE,
-                )
-
-    verify_permission(
-        resource_type=ResourceType.STACK_COMPONENT, action=Action.CREATE
-    )
+    verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
 
     full_stack.user_id = auth_context.user.id
     full_stack.workspace_id = workspace.id
