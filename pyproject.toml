@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.58.2"
+version = "0.60.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -108,6 +108,7 @@ kubernetes = { version = ">=18.20.0", optional = true }
 # Optional dependencies for the GCP connector
 google-cloud-container = { version = ">=2.21.0", optional = true }
 google-cloud-storage = { version = ">=2.9.0", optional = true }
+google-cloud-artifact-registry = { version = ">=1.11.3", optional = true }
 
 # Optional dependencies for the Azure connector
 azure-mgmt-containerservice = { version = ">=20.0.0", optional = true }
@@ -200,6 +201,7 @@ connectors-aws = ["boto3", "kubernetes", "aws-profile-manager"]
 connectors-gcp = [
     "google-cloud-container",
     "google-cloud-storage",
+    "google-cloud-artifact-registry",
     "kubernetes",
 ]
 connectors-azure = [
