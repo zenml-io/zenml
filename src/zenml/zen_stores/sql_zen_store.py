@@ -172,6 +172,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -6918,6 +6919,145 @@ class SqlZenStore(BaseZenStore):
             session.refresh(new_stack_schema)
 
             return new_stack_schema.to_model(include_metadata=True)
+
+    @track_decorator(AnalyticsEvent.REGISTERED_STACK)
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Register a full stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The registered stack.
+        """
+        validate_name(full_stack)
+
+        if isinstance(full_stack.service_connector, UUID):
+            service_connector = self.get_service_connector(
+                full_stack.service_connector
+            )
+        else:
+            service_connector_request = ServiceConnectorRequest(
+                name=full_stack.service_connector.name,
+                flavor=full_stack.service_connector.flavor,
+                auth_type=full_stack.service_connector.auth_type,
+                configuration=full_stack.service_connector.configuration,
+            )
+            service_connector = self.create_service_connector(
+                service_connector=service_connector_request
+            )
+
+        for component_type, component_info in full_stack.components:
+            if isinstance(component_info, UUID):
+                component = self.get_stack_component(
+                    component_id=component_info
+                )
+            else:
+                component_request = ComponentRequest(
+                    name=component_info.name,
+                    type=component_info.type,
+                    flavor=component_info.flavor,
+                    configuration=component_info.configuration,
+                )
+                component = self.create_stack_component(
+                    component=component_request
+                )
+                if component_info.service_connector is not None:
+                    flavor_list = self.list_flavors(
+                        flavor_filter_model=FlavorFilter(
+                            name=component_info.flavor,
+                            type=component_info.type,
+                        )
+                    )
+                    assert len(flavor_list) == 1
+
+                    flavor_model = flavor_list[0]
+
+                    requirements = flavor_model.connector_requirements
+
+                    if not requirements:
+                        raise RuntimeError(
+                            f"The '{component_info.name}' implementation "
+                            "does not support using a service connector to "
+                            "connect to resources."
+                        )
+
+                    resource_id = None
+                    resource_type = requirements.resource_type
+                    if requirements.resource_id_attr is not None:
+                        resource_id = component_info.configuration.get(
+                            requirements.resource_id_attr
+                        )
+
+                    satisfied, msg = requirements.is_satisfied_by(
+                        connector=service_connector,
+                        component=component,
+                    )
+
+                    if not satisfied:
+                        raise RuntimeError(
+                            "Please pick a connector that is compatible with "
+                            "the component flavor and try again, or use the "
+                            "interactive mode to select a compatible connector."
+                        )
+
+                    if not resource_id:
+                        if service_connector.resource_id:
+                            resource_id = service_connector.resource_id
+                        elif service_connector.supports_instances:
+                            raise RuntimeError(
+                                f"Multiple {resource_type} resources are "
+                                "available for the selected connector. Please "
+                                "use a `resource_id` to configure a "
+                                f"{resource_type} resource."
+                            )
+
+                    try:
+                        connector_resources = self.verify_service_connector(
+                            service_connector_id=service_connector.id,
+                            resource_type=requirements.resource_type,
+                            resource_id=resource_id,
+                        )
+                    except (
+                        KeyError,
+                        ValueError,
+                        IllegalOperationError,
+                        NotImplementedError,
+                        AuthorizationException,
+                    ) as e:
+                        raise RuntimeError(
+                            f"Access to the resource could not be verified: {e}"
+                        )
+
+                    resources = connector_resources.resources[0]
+                    if resources.resource_ids:
+                        if len(resources.resource_ids) > 1:
+                            raise RuntimeError(
+                                f"Multiple {resource_type} resources are "
+                                f"available for the selected connector. Please "
+                                "use the a specific resource-id to configure a "
+                                f"{resource_type} resource."
+                            )
+                        else:
+                            resource_id = resources.resource_ids[0]
+
+                    component_update = ComponentUpdate(
+                        connector=service_connector.id,
+                        connector_resource_id=resource_id,
+                    )
+                    self.update_stack_component(
+                        component_update=component_update
+                    )
+
+            full_stack.components[component_type] = component.id
+
+        stack_request = StackRequest(
+            name=full_stack.name,
+            description=full_stack.description,
+            component=full_stack.components,
+        )
+
+        return self.create_stack(stack_request)
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
