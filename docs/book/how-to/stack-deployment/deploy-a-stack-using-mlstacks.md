@@ -2,16 +2,25 @@
 description: Individually deploying different stack components.
 ---
 
-# Deploy a stack using mlstacks
+# ⚒️ Deploying stacks and components using `mlstacks`
+
+The first step in running your pipelines on remote infrastructure is to deploy all the components that you would need, like an [MLflow tracking server](../../component-guide/experiment-trackers/mlflow.md),
+[Kubeflow orchestrator](../../component-guide/orchestrators/kubeflow.md), and more to your cloud.
+
+This can bring plenty of benefits like scalability, reliability, and collaboration. ZenML eases the path to production by providing a seamless way for all tools to interact with others through the use of abstractions. However, one of the most painful parts of this process, from what we see on our Slack and in general, is the deployment of these stack components.
 
 [`mlstacks`](https://mlstacks.zenml.io/) is a Python package that allows you to quickly spin up MLOps
 infrastructure using Terraform. It is designed to be used with
 [ZenML](https://zenml.io), but can be used with any MLOps tool or platform. You
 can deploy a modular MLOps stack for AWS, GCP or K3D using mlstacks. Each deployment type is designed to offer a great deal of flexibility in configuring the resources while preserving the ease of application through the use of sensible defaults.
 
+To make even this process easier for our users, we have created the `deploy` command in `zenml`, which allows you to quickly get started with a full-fledged MLOps stack using only a few commands. You can choose to deploy individual stack components through the stack-component CLI or deploy a stack with multiple components together (a tad more manual steps).
+
 Check out [the full documentation for the mlstacks package](https://mlstacks.zenml.io/) for more information.
 
-## When should I deploy something using mlstacks?
+## Deploy a stack using mlstacks
+
+### When should I deploy something using mlstacks?
 
 To answer this question, here are some pros and cons in comparison to the stack-component deploy method which can help you choose what works best for you!
 
@@ -31,7 +40,13 @@ To answer this question, here are some pros and cons in comparison to the stack-
 {% endtab %}
 {% endtabs %}
 
-## Installing the mlstacks extra
+The ZenML CLI has special subcommands that allow you to deploy individual stack components as well as whole stacks using MLStacks. These stacks will be useful for you if:
+
+* You are at the start of your MLOps journey, and would like to explore different tools.
+* You are looking for guidelines for production-grade deployments.
+
+
+### Installing the mlstacks extra
 
 To install `mlstacks`, either run `pip install mlstacks` or `pip install
 "zenml[mlstacks]"` to install it along with ZenML.
@@ -46,7 +61,7 @@ Helm installed. Please visit [the Helm
 docs](https://helm.sh/docs/intro/install/#from-script) for installation
 instructions.
 
-## Deploying a stack
+### Deploying a stack
 
 A simple stack deployment can be done using the following command:
 
@@ -82,7 +97,7 @@ This is where you could potentially make any changes you want to the recipe file
 
 </details>
 
-### CLI Options for `zenml stack deploy`
+#### CLI Options for `zenml stack deploy`
 
 Current required options to be passed in to the `zenml stack deploy` subcommand
 are:
@@ -105,7 +120,7 @@ component deployment documentation) can be passed
 in with the `-x` option. This option can be used multiple times to pass in
 multiple configurations.
 
-### Interactive stack deployment
+#### Interactive stack deployment
 
 If you would like to be guided through the deployment process, you can use the
 `zenml stack deploy` command with the `--interactive` flag. You will still need
@@ -117,7 +132,7 @@ like to deploy. For example, using GCP as the provider you might type:
 zenml stack deploy -p gcp -n my_new_stack -r us-east1 --interactive
 ```
 
-## Displaying Terraform outputs for stacks deployed with mlstacks
+### Displaying Terraform outputs for stacks deployed with mlstacks
 
 If you want to view any of the Terraform-generated outputs for a stack deployed
 with `mlstacks`, you can do so with the following command:
@@ -129,7 +144,7 @@ zenml stack describe -o <STACK_NAME>
 This will print any available outputs to the console if you have deployed a
 stack with `mlstacks` via ZenML.
 
-## Deleting / destroying resources
+### Deleting / destroying resources
 
 🗑️ Once you're done running your pipelines, there's only a single command you need to execute that will take care of cleaning up all the resources that you had created on your cloud.
 
@@ -141,11 +156,11 @@ This will offer you the option to delete the underlying stack specifications and
 state files as well. You can also choose to delete the stack from your ZenML
 server.
 
-# Deploy a stack component
+## Deploy a stack component
 
 If you have used ZenML before, you must be familiar with the flow of registering new stack components. It goes something like this:
 
-```
+```shell
 zenml artifact-store register my_store --flavor=s3 --path=s3://my_bucket
 ```
 
@@ -198,7 +213,7 @@ Using the values you pass for the cloud, the CLI picks up the right modular reci
 
 </details>
 
-## Destroying a stack component
+### Destroying a stack component
 
 Destroying a stack component (i.e. deleting and destroying the underlying
 infrastructure) is as easy as deploying one. You can run the following command
@@ -210,7 +225,7 @@ zenml artifact-store destroy -p gcp my_store
 
 This will destroy the deployed infrastructure and prompt you if you also want to remove and deregister the component from your ZenML server.
 
-## 🍨 Available flavors for stack components
+### 🍨 Available flavors for stack components
 
 Here's a table of all the flavors that can be deployed through the CLI for every stack component. This is a list that will keep on growing and you can also contribute any flavor or stack component that you feel is missing. Refer to the [Contribution page](../../../../CONTRIBUTING.md) for steps on how to do that :smile:
 
@@ -238,7 +253,7 @@ This variable is then passed as input to the underlying modular recipe. If you c
 | Model Deployer     | seldon                               |
 | Step Operator      | sagemaker, vertex                    |
 
-### ✨ Customizing your stack components
+#### ✨ Customizing your stack components
 
 With simplicity, we didn't want to compromise on the flexibility that this deployment method allows. As such, we have added the option to pass configuration specific to the stack components as key-value arguments to the deploy CLI. Here is an assortment of all possible configurations that can be set.
 

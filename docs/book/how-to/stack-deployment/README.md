@@ -1,17 +1,10 @@
 ---
-description: Deploying your stack components directly from the ZenML CLI
+description: Stacks are the configuration of your infrastructure.
 ---
 
-# ⚒️ Deploy and configure stacks
+# Managing stacks & components
 
-The first step in running your pipelines on remote infrastructure is to deploy all the components that you would need, like an [MLflow tracking server](../../component-guide/experiment-trackers/mlflow.md),
-[Kubeflow orchestrator](../../component-guide/orchestrators/kubeflow.md), and more to your cloud.
-
-This can bring plenty of benefits like scalability, reliability, and collaboration. ZenML eases the path to production by providing a seamless way for all tools to interact with others through the use of abstractions. However, one of the most painful parts of this process, from what we see on our Slack and in general, is the deployment of these stack components.
-
-## Deploying and managing MLOps tools is tricky 😭😵‍💫
-
-It is not trivial to set up all the different tools that you might need for your pipeline.
+Deploying and managing MLOps tools is tricky 😭😵‍💫. It is not trivial to set up all the different tools that you might need for your pipeline.
 
 * 🌈 Each tool comes with a certain set of requirements. For example, a Kubeflow installation will require you to have a Kubernetes cluster, and so would a Seldon Core deployment.
 * 🤔 Figuring out the defaults for infra parameters is not easy. Even if you have identified the backing infra that you need for a stack component, setting up reasonable defaults for parameters like instance size, CPU, memory, etc., needs a lot of experimentation to figure out.
@@ -21,17 +14,6 @@ It is not trivial to set up all the different tools that you might need for your
 * 🧹 Cleaning up your resources after you're done with your experiments is super important yet very challenging. Many of the components need a range of other resources to work which might slide past your radar if you're not careful. For example, if your Kubernetes cluster has made use of Load Balancers, you might still have one lying around in your account even after deleting the cluster, costing you money and frustration.
 
 All of these points make taking your pipelines to production a more difficult task than it should be. We believe that the expertise in setting up these often-complex stacks shouldn't be a prerequisite to running your ML pipelines.
-
-Thus, to make even this process easier for our users, we have created the `deploy` CLI which allows you to quickly get started with a full-fledged MLOps stack using only a few commands. You can choose to deploy individual stack components through the stack-component CLI or deploy a stack with multiple components together (a tad more manual steps).
-
-## What is `mlstacks`?
-
-[MLStacks](https://mlstacks.zenml.io) is a [Python package](https://pypi.org/project/mlstacks/) that allows you to quickly spin up MLOps infrastructure using Terraform. It is designed to be used with [ZenML](https://zenml.io), but can be used with any MLOps tool or platform.
-
-The ZenML CLI has special subcommands that allow you to deploy individual stack components as well as whole stacks using MLStacks. These stacks will be useful for you if:
-
-* You are at the start of your MLOps journey, and would like to explore different tools.
-* You are looking for guidelines for production-grade deployments.
 
 ## Installing the mlstacks extra
 

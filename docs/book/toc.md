@@ -105,7 +105,7 @@
   * [Use code repositories to automate Docker build reuse](how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md)
   * [Build the pipeline without running](how-to/customize-docker-builds/build-the-pipeline-without-running.md)
   * [Define where an image is built](how-to/customize-docker-builds/define-where-an-image-is-built.md)
-* [⚒️ Deploy and configure stacks](how-to/stack-deployment/README.md)
+* [⚒️ Manage stacks & components](how-to/stack-deployment/README.md)
   * [Deploy a cloud stack](how-to/stack-deployment/deploy-a-cloud-stack.md)
   * [Register a cloud stack](how-to/stack-deployment/register-a-cloud-stack.md)
   * [Deploy stack/components using mlstacks](how-to/stack-deployment/deploy-a-stack-using-mlstacks.md)
