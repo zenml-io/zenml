@@ -44,6 +44,7 @@ import pkg_resources
 import yaml
 from pydantic import BaseModel, SecretStr
 from rich import box, table
+from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
 from rich.markup import escape
@@ -2764,8 +2765,6 @@ def show_status_from_kwargs(default_value: str = ":x:", **kwargs: Any) -> None:
         **kwargs: The kwargs to show status from. If value is passed,
             but `None` a default value is used.
     """
-    from rich import print
-
     status = []
     names = []
     for name, each in kwargs.items():
@@ -2783,7 +2782,7 @@ def show_status_from_kwargs(default_value: str = ":x:", **kwargs: Any) -> None:
         status_table.add_column(c, justify="center", width=1)
 
     status_table.add_row(*status)
-    print(status_table)
+    Console().print(status_table)
 
 
 def multi_choice_prompt(
@@ -2807,7 +2806,6 @@ def multi_choice_prompt(
     Returns:
         The selected choice index or None for new object
     """
-    from rich import print
 
     table = Table(
         title=f"Available {object_type}",
@@ -2831,7 +2829,7 @@ def multi_choice_prompt(
         )
     for i, one_choice in enumerate(choices):
         table.add_row(f"[{i+i_shift}]", *[str(x) for x in one_choice])
-    print(table)
+    Console().print(table)
 
     selected = Prompt.ask(
         prompt_text,

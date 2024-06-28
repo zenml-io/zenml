@@ -6939,15 +6939,18 @@ class SqlZenStore(BaseZenStore):
         else:
             service_connector_request = ServiceConnectorRequest(
                 name=full_stack.service_connector.name,
-                flavor=full_stack.service_connector.flavor,
+                connector_type=full_stack.service_connector.connector_type,
                 auth_type=full_stack.service_connector.auth_type,
                 configuration=full_stack.service_connector.configuration,
+                user=full_stack.user_id,
+                workspace=full_stack.workspace_id,
             )
             service_connector = self.create_service_connector(
                 service_connector=service_connector_request
             )
 
-        for component_type, component_info in full_stack.components:
+        components_mapping: Dict[StackComponentType, List[UUID]] = {}
+        for component_type, component_info in full_stack.components.items():
             if isinstance(component_info, UUID):
                 component = self.get_stack_component(
                     component_id=component_info
@@ -6955,9 +6958,11 @@ class SqlZenStore(BaseZenStore):
             else:
                 component_request = ComponentRequest(
                     name=component_info.name,
-                    type=component_info.type,
+                    type=component_type,
                     flavor=component_info.flavor,
                     configuration=component_info.configuration,
+                    user=full_stack.user_id,
+                    workspace=full_stack.workspace_id,
                 )
                 component = self.create_stack_component(
                     component=component_request
@@ -6966,7 +6971,7 @@ class SqlZenStore(BaseZenStore):
                     flavor_list = self.list_flavors(
                         flavor_filter_model=FlavorFilter(
                             name=component_info.flavor,
-                            type=component_info.type,
+                            type=component_type,
                         )
                     )
                     assert len(flavor_list) == 1
@@ -7049,12 +7054,16 @@ class SqlZenStore(BaseZenStore):
                         component_update=component_update
                     )
 
-            full_stack.components[component_type] = component.id
+            components_mapping[component_type] = [
+                component.id,
+            ]
 
         stack_request = StackRequest(
+            user=full_stack.user_id,
+            workspace=full_stack.workspace_id,
             name=full_stack.name,
             description=full_stack.description,
-            component=full_stack.components,
+            components=components_mapping,
         )
 
         return self.create_stack(stack_request)

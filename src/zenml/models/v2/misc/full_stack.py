@@ -27,7 +27,7 @@ class ServiceConnectorInfo(BaseModel):
     """Information about the service connector when creating a full stack."""
 
     name: str
-    type: str
+    connector_type: str
     auth_type: str
     configuration: Dict[str, Any] = {}
 
@@ -36,7 +36,6 @@ class ComponentInfo(BaseModel):
     """Information about each stack components when creating a full stack."""
 
     name: str
-    type: StackComponentType
     flavor: str
     service_connector: Optional[str] = None
     configuration: Dict[str, Any] = {}
@@ -51,12 +50,13 @@ class FullStackRequest(BaseRequest):
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
-    description: str = Field(
+    description: Optional[str] = Field(
         default="",
         title="The description of the stack",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    service_connector: Union[UUID, ServiceConnectorInfo] = Field(
+    service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = Field(
+        default=None,
         title="The service connector for the full stack registration.",
         description="The UUID of an already existing service connector or "
         "request information to create a service connector from "
