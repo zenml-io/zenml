@@ -1416,7 +1416,7 @@ use the following command:
 
 ```bash
 zenml stack register STACK_NAME \
-       -cp CLOUD_PROVIDER
+       -p CLOUD_PROVIDER
 ```
 
 To create a new stack using the existing service connector with a set of minimal components, 
