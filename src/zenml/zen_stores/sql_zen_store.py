@@ -6920,7 +6920,6 @@ class SqlZenStore(BaseZenStore):
 
             return new_stack_schema.to_model(include_metadata=True)
 
-    @track_decorator(AnalyticsEvent.REGISTERED_STACK)
     def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
         """Register a full stack.
 
@@ -6930,171 +6929,220 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
-        validate_name(full_stack)
+        # We can not use the decorator here, as we need custom metadata
+        with track_handler(
+            event=AnalyticsEvent.REGISTERED_STACK,
+            metadata={"generated_by_wizard": True},
+        ) as handler:
+            # For clean-up purposes, each created entity is tracked here
+            try:
+                # Validate the name of the new stack
+                validate_name(full_stack)
 
-        service_connectors: List[ServiceConnectorResponse] = []
-        for connector_id_or_info in full_stack.service_connectors:
-            if isinstance(connector_id_or_info, UUID):
-                service_connectors.append(
-                    self.get_service_connector(connector_id_or_info)
-                )
-            else:
-                connector_name = full_stack.name
-                while True:
-                    try:
-                        service_connector_request = ServiceConnectorRequest(
-                            name=connector_name,
-                            connector_type=connector_id_or_info.connector_type,
-                            auth_method=connector_id_or_info.auth_type,
-                            configuration=connector_id_or_info.configuration,
-                            user=full_stack.user_id,
-                            workspace=full_stack.workspace_id,
-                        )
+                # Service Connectors
+                service_connectors: List[ServiceConnectorResponse] = []
+                service_connectors_created_ids: List[UUID] = []
+
+                for connector_id_or_info in full_stack.service_connectors:
+                    # Fetch an existing service connector
+                    if isinstance(connector_id_or_info, UUID):
                         service_connectors.append(
-                            self.create_service_connector(
-                                service_connector=service_connector_request
+                            self.get_service_connector(connector_id_or_info)
+                        )
+                    # Create a new service connector
+                    else:
+                        connector_name = full_stack.name
+                        while True:
+                            try:
+                                service_connector_request = ServiceConnectorRequest(
+                                    name=connector_name,
+                                    connector_type=connector_id_or_info.connector_type,
+                                    auth_method=connector_id_or_info.auth_type,
+                                    configuration=connector_id_or_info.configuration,
+                                    user=full_stack.user_id,
+                                    workspace=full_stack.workspace_id,
+                                )
+                                service_connector_response = self.create_service_connector(
+                                    service_connector=service_connector_request
+                                )
+                                service_connectors.append(
+                                    service_connector_response
+                                )
+                                service_connectors_created_ids.append(
+                                    service_connector_response.id
+                                )
+                                break
+                            except EntityExistsError:
+                                connector_name = f"{full_stack.name}-{random_str(4)}".lower()
+                                continue
+
+                # Stack Components
+                components_mapping: Dict[StackComponentType, List[UUID]] = {}
+                components_created_ids: List[UUID] = []
+
+                for (
+                    component_type,
+                    component_info,
+                ) in full_stack.components.items():
+                    # Fetch an existing component
+                    if isinstance(component_info, UUID):
+                        component = self.get_stack_component(
+                            component_id=component_info
+                        )
+                    # Create a new component
+                    else:
+                        component_name = full_stack.name
+                        while True:
+                            try:
+                                component_request = ComponentRequest(
+                                    name=component_name,
+                                    type=component_type,
+                                    flavor=component_info.flavor,
+                                    configuration=component_info.configuration,
+                                    user=full_stack.user_id,
+                                    workspace=full_stack.workspace_id,
+                                )
+                                component = self.create_stack_component(
+                                    component=component_request
+                                )
+                                components_created_ids.append(component.id)
+                                break
+                            except EntityExistsError:
+                                component_name = f"{full_stack.name}-{random_str(4)}".lower()
+                                continue
+
+                        if component_info.service_connector_index is not None:
+                            service_connector = service_connectors[
+                                component_info.service_connector_index
+                            ]
+                            flavor_list = self.list_flavors(
+                                flavor_filter_model=FlavorFilter(
+                                    name=component_info.flavor,
+                                    type=component_type,
+                                )
                             )
-                        )
-                        break
-                    except EntityExistsError:
-                        connector_name = (
-                            f"{full_stack.name}-{random_str(4)}".lower()
-                        )
+                            assert len(flavor_list) == 1
 
-                        continue
+                            flavor_model = flavor_list[0]
 
-        components_mapping: Dict[StackComponentType, List[UUID]] = {}
-        for component_type, component_info in full_stack.components.items():
-            if isinstance(component_info, UUID):
-                component = self.get_stack_component(
-                    component_id=component_info
-                )
-            else:
-                component_name = full_stack.name
+                            requirements = flavor_model.connector_requirements
+
+                            if not requirements:
+                                raise RuntimeError(
+                                    f"The '{flavor_model.name}' implementation "
+                                    "does not support using a service connector to "
+                                    "connect to resources."
+                                )
+
+                            resource_id = None
+                            resource_type = requirements.resource_type
+                            if requirements.resource_id_attr is not None:
+                                resource_id = component_info.configuration.get(
+                                    requirements.resource_id_attr
+                                )
+
+                            satisfied, msg = requirements.is_satisfied_by(
+                                connector=service_connector,
+                                component=component,
+                            )
+
+                            if not satisfied:
+                                raise RuntimeError(
+                                    "Please pick a connector that is "
+                                    "compatible with the component flavor and "
+                                    "try again.."
+                                )
+
+                            if not resource_id:
+                                if service_connector.resource_id:
+                                    resource_id = service_connector.resource_id
+                                elif service_connector.supports_instances:
+                                    raise RuntimeError(
+                                        f"Multiple {resource_type} resources "
+                                        "are available for the selected "
+                                        "connector. Please use a `resource_id` "
+                                        "to configure a "
+                                        f"{resource_type} resource."
+                                    )
+
+                            try:
+                                connector_resources = self.verify_service_connector(
+                                    service_connector_id=service_connector.id,
+                                    resource_type=requirements.resource_type,
+                                    resource_id=resource_id,
+                                )
+                            except (
+                                KeyError,
+                                ValueError,
+                                IllegalOperationError,
+                                NotImplementedError,
+                                AuthorizationException,
+                            ) as e:
+                                raise RuntimeError(
+                                    f"Access to the resource could not be "
+                                    f"verified: {e}"
+                                )
+
+                            resources = connector_resources.resources[0]
+                            if resources.resource_ids:
+                                if len(resources.resource_ids) > 1:
+                                    raise RuntimeError(
+                                        f"Multiple {resource_type} resources are "
+                                        "available for the selected connector. "
+                                        "Please use the a specific resource-id to "
+                                        f"configure a {resource_type} resource."
+                                    )
+                                else:
+                                    resource_id = resources.resource_ids[0]
+
+                            component_update = ComponentUpdate(
+                                connector=service_connector.id,
+                                connector_resource_id=resource_id,
+                            )
+                            self.update_stack_component(
+                                component_id=component.id,
+                                component_update=component_update,
+                            )
+
+                    components_mapping[component_type] = [
+                        component.id,
+                    ]
+
+                # Stck
+                stack_name = full_stack.name
                 while True:
                     try:
-                        component_request = ComponentRequest(
-                            name=component_name,
-                            type=component_type,
-                            flavor=component_info.flavor,
-                            configuration=component_info.configuration,
+                        stack_request = StackRequest(
                             user=full_stack.user_id,
                             workspace=full_stack.workspace_id,
+                            name=stack_name,
+                            description=full_stack.description,
+                            components=components_mapping,
                         )
-                        component = self.create_stack_component(
-                            component=component_request
-                        )
+                        stack_response = self.create_stack(stack_request)
                         break
                     except EntityExistsError:
-                        component_name = (
+                        stack_name = (
                             f"{full_stack.name}-{random_str(4)}".lower()
                         )
                         continue
 
-                if component_info.service_connector_index is not None:
-                    service_connector = service_connectors[
-                        component_info.service_connector_index
-                    ]
-                    flavor_list = self.list_flavors(
-                        flavor_filter_model=FlavorFilter(
-                            name=component_info.flavor,
-                            type=component_type,
-                        )
+                handler.metadata.update(
+                    stack_response.get_analytics_metadata()
+                )
+            except Exception as e:
+                for service_connector_id in service_connectors_created_ids:
+                    self.delete_service_connector(
+                        service_connector_id=service_connector_id
                     )
-                    assert len(flavor_list) == 1
+                for component_id in components_created_ids:
+                    self.delete_stack_component(component_id=component_id)
 
-                    flavor_model = flavor_list[0]
-
-                    requirements = flavor_model.connector_requirements
-
-                    if not requirements:
-                        raise RuntimeError(
-                            f"The '{flavor_model.name}' implementation "
-                            "does not support using a service connector to "
-                            "connect to resources."
-                        )
-
-                    resource_id = None
-                    resource_type = requirements.resource_type
-                    if requirements.resource_id_attr is not None:
-                        resource_id = component_info.configuration.get(
-                            requirements.resource_id_attr
-                        )
-
-                    satisfied, msg = requirements.is_satisfied_by(
-                        connector=service_connector,
-                        component=component,
-                    )
-
-                    if not satisfied:
-                        raise RuntimeError(
-                            "Please pick a connector that is compatible with "
-                            "the component flavor and try again, or use the "
-                            "interactive mode to select a compatible connector."
-                        )
-
-                    if not resource_id:
-                        if service_connector.resource_id:
-                            resource_id = service_connector.resource_id
-                        elif service_connector.supports_instances:
-                            raise RuntimeError(
-                                f"Multiple {resource_type} resources are "
-                                "available for the selected connector. Please "
-                                "use a `resource_id` to configure a "
-                                f"{resource_type} resource."
-                            )
-
-                    try:
-                        connector_resources = self.verify_service_connector(
-                            service_connector_id=service_connector.id,
-                            resource_type=requirements.resource_type,
-                            resource_id=resource_id,
-                        )
-                    except (
-                        KeyError,
-                        ValueError,
-                        IllegalOperationError,
-                        NotImplementedError,
-                        AuthorizationException,
-                    ) as e:
-                        raise RuntimeError(
-                            f"Access to the resource could not be verified: {e}"
-                        )
-
-                    resources = connector_resources.resources[0]
-                    if resources.resource_ids:
-                        if len(resources.resource_ids) > 1:
-                            raise RuntimeError(
-                                f"Multiple {resource_type} resources are "
-                                f"available for the selected connector. Please "
-                                "use the a specific resource-id to configure a "
-                                f"{resource_type} resource."
-                            )
-                        else:
-                            resource_id = resources.resource_ids[0]
-
-                    component_update = ComponentUpdate(
-                        connector=service_connector.id,
-                        connector_resource_id=resource_id,
-                    )
-                    self.update_stack_component(
-                        component_id=component.id,
-                        component_update=component_update,
-                    )
-
-            components_mapping[component_type] = [
-                component.id,
-            ]
-
-        stack_request = StackRequest(
-            user=full_stack.user_id,
-            workspace=full_stack.workspace_id,
-            name=full_stack.name,
-            description=full_stack.description,
-            components=components_mapping,
-        )
-
-        return self.create_stack(stack_request)
+                raise RuntimeError(
+                    f"Full Stack creation has failed {e}. Cleaning up the "
+                    f"created entities."
+                )
+            return stack_response
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
