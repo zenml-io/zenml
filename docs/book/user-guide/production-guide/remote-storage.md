@@ -14,10 +14,10 @@ When using a stack with remote storage, nothing changes except the fact that the
 
 ## Provisioning and registering a remote artifact store
 
-{% hint style="warning" %}
-Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
+{% hint style="info" %}
+**Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
 and read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-if you have existing infrastructure, or read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).
+if you have existing infrastructure, or read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
 {% endhint %}
 
 Out of the box, ZenML ships with [many different supported artifact store flavors](../../component-guide/artifact-stores/artifact-stores.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
