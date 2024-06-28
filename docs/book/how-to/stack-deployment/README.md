@@ -30,8 +30,13 @@ This docs section consists of information that makes it easier to provision, con
   <tbody>
     <tr>
       <td><mark style="color:purple;"><strong>Deploy a cloud stack</strong></mark></td>
-      <td>Individually deploying different stack components.</td>
+      <td>Description of deploying a cloud stack.</td>
       <td><a href="how-to/stack-deployment/deploy-a-cloud-stack.md">how-to/stack-deployment/deploy-a-cloud-stack.md</a></td>
+    </tr>
+    <tr>
+      <td><mark style="color:purple;"><strong>Register a cloud stack</strong></mark></td>
+      <td>Description of registering a cloud stack.</td>
+      <td><a href="how-to/stack-deployment/register-a-cloud-stack.md">how-to/stack-deployment/register-a-cloud-stack.md</a></td>
     </tr>
     <tr>
       <td><mark style="color:purple;"><strong>Deploy stack/components using mlstacks</strong></mark></td>
@@ -39,9 +44,19 @@ This docs section consists of information that makes it easier to provision, con
       <td><a href="how-to/stack-deployment/deploy-a-stack-using-mlstacks.md">how-to/stack-deployment/deploy-a-stack-using-mlstacks.md</a></td>
     </tr>
     <tr>
-      <td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td>
+      <td><mark style="color:purple;"><strong>Reference secrets in stack configuration</strong></mark></td>
+      <td>Description of referencing secrets in stack configuration.</td>
+      <td><a href="how-to/stack-deployment/reference-secrets-in-stack-configuration.md">how-to/stack-deployment/reference-secrets-in-stack-configuration.md</a></td>
+    </tr>
+    <tr>
+      <td><mark style="color:purple;"><strong>Implement a custom stack component</strong></mark></td>
       <td>Creating your custom stack component solutions.</td>
       <td><a href="how-to/stack-deployment/implement-a-custom-stack-component.md">how-to/stack-deployment/implement-a-custom-stack-component.md</a></td>
+    </tr>
+    <tr>
+      <td><mark style="color:purple;"><strong>Implement a custom integration</strong></mark></td>
+      <td>Description of implementing a custom integration.</td>
+      <td><a href="how-to/stack-deployment/implement-a-custom-integration.md">how-to/stack-deployment/implement-a-custom-integration.md</a></td>
     </tr>
   </tbody>
 </table>
