@@ -320,7 +320,7 @@ def register_stack(
             orchestrator=orchestrator,
             container_registry=container_registry,
         )
-        service_connector = client.get_service_connector(connector)
+        service_connector = client.get_service_connector(connector).id
         if service_connector.type != cloud:
             cli_utils.warning(
                 f"The service connector `{connector}` is not of type `{cloud}`."
@@ -383,12 +383,14 @@ def register_stack(
                                 )
                             )
                         else:
-                            service_connector_resource_model = client.create_service_connector(
-                                name=service_connector.name,
-                                type=service_connector.connector_type,
-                                auth_method=service_connector.auth_method,
-                                configuration=service_connector.configuration,
-                                register=False,
+                            _, service_connector_resource_model = (
+                                client.create_service_connector(
+                                    name=stack_name,
+                                    connector_type=service_connector.connector_type,
+                                    auth_method=service_connector.auth_type,
+                                    configuration=service_connector.configuration,
+                                    register=False,
+                                )
                             )
 
                     component_info = _get_stack_component_info(
@@ -1990,7 +1992,7 @@ def _get_service_connector_info(cloud_provider: str) -> ServiceConnectorInfo:
 
     return ServiceConnectorInfo(
         connector_type=cloud_provider,
-        auth_method=fixed_auth_methods[selected_auth_idx][0],
+        auth_type=fixed_auth_methods[selected_auth_idx][0],
         configuration=answers,
     )
 

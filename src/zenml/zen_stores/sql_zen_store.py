@@ -6942,7 +6942,7 @@ class SqlZenStore(BaseZenStore):
                 service_connector_request = ServiceConnectorRequest(
                     name=full_stack.name,  # try and fail, then randomize
                     connector_type=connector_id_or_info.connector_type,
-                    auth_type=connector_id_or_info.auth_type,
+                    auth_method=connector_id_or_info.auth_type,
                     configuration=connector_id_or_info.configuration,
                     user=full_stack.user_id,
                     workspace=full_stack.workspace_id,
