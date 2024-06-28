@@ -6938,7 +6938,7 @@ class SqlZenStore(BaseZenStore):
             )
         else:
             service_connector_request = ServiceConnectorRequest(
-                name=full_stack.service_connector.name,
+                name=full_stack.name,  # try and fail, then randomize
                 connector_type=full_stack.service_connector.connector_type,
                 auth_type=full_stack.service_connector.auth_type,
                 configuration=full_stack.service_connector.configuration,
@@ -6957,7 +6957,7 @@ class SqlZenStore(BaseZenStore):
                 )
             else:
                 component_request = ComponentRequest(
-                    name=component_info.name,
+                    name=full_stack.name,  # try and fail, then randomize
                     type=component_type,
                     flavor=component_info.flavor,
                     configuration=component_info.configuration,
