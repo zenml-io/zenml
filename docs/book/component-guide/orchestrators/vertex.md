@@ -30,10 +30,6 @@ In order to quickly enable APIs, and create other resources necessary for using 
 
 ## How to use it
 
-{% hint style="warning" %}
-The Vertex Orchestrator (and GCP integration in general) currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
-{% endhint %}
-
 To use the Vertex orchestrator, we need:
 
 *   The ZenML `gcp` integration installed. If you haven't done so, run
