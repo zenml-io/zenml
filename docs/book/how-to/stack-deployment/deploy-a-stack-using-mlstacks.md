@@ -18,9 +18,7 @@ To make even this process easier for our users, we have created the `deploy` com
 
 Check out [the full documentation for the mlstacks package](https://mlstacks.zenml.io/) for more information.
 
-## Deploy a stack using mlstacks
-
-### When should I deploy something using mlstacks?
+## When should I deploy something using mlstacks?
 
 To answer this question, here are some pros and cons in comparison to the stack-component deploy method which can help you choose what works best for you!
 
@@ -45,7 +43,15 @@ The ZenML CLI has special subcommands that allow you to deploy individual stack 
 * You are at the start of your MLOps journey, and would like to explore different tools.
 * You are looking for guidelines for production-grade deployments.
 
-### Installing the mlstacks extra
+## How does `mlstacks` work?
+
+MLStacks is built around the concept of a stack specification. A stack specification is a YAML file that describes the stack and includes references to component specification files. A component specification is a YAML file that describes a component. (Currently all deployments of components (in various combinations) must be defined within the context of a stack.)
+
+ZenML handles the creation of stack specifications for you when you run one of the `deploy` subcommands using the CLI. A valid specification is generated and used by `mlstacks` to deploy your stack using Terraform. The Terraform definitions and state are stored in your global configuration directory along with any state files generated while deploying your stack.
+
+Your configuration directory could be in a number of different places depending on your operating system, but read more about it in the [Click docs](https://click.palletsprojects.com/en/8.1.x/api/#click.get\_app\_dir) to see which location applies to your situation.
+
+## Installing the mlstacks extra
 
 To install `mlstacks`, either run `pip install mlstacks` or `pip install "zenml[mlstacks]"` to install it along with ZenML.
 

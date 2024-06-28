@@ -15,14 +15,6 @@ Deploying and managing MLOps tools is tricky 😭😵‍💫. It is not trivial 
 
 All of these points make taking your pipelines to production a more difficult task than it should be. We believe that the expertise in setting up these often-complex stacks shouldn't be a prerequisite to running your ML pipelines.
 
-## Installing the mlstacks extra
-
-To install `mlstacks`, either run `pip install mlstacks` or `pip install "zenml[mlstacks]"` to install it along with ZenML.
-
-MLStacks uses Terraform on the backend to manage infrastructure. You will need to have Terraform installed. Please visit [the Terraform docs](https://learn.hashicorp.com/tutorials/terraform/install-cli#install-terraform) for installation instructions.
-
-MLStacks also uses Helm to deploy Kubernetes resources. You will need to have Helm installed. Please visit [the Helm docs](https://helm.sh/docs/intro/install/#from-script) for installation instructions.
-
 ## Deploying a stack component
 
 The ZenML CLI allows you to deploy individual stack components using the `deploy` subcommand which is implemented for all supported stack components. You can find the list of supported stack components [here](../stack-deployment/README.md).
@@ -31,13 +23,7 @@ The ZenML CLI allows you to deploy individual stack components using the `deploy
 
 For deploying a full stack, use the `zenml stack deploy` command. See the [stack deployment](deploy-a-stack-using-mlstacks.md) page for more details of which cloud providers and stack components are supported.
 
-## How does `mlstacks` work?
 
-MLStacks is built around the concept of a stack specification. A stack specification is a YAML file that describes the stack and includes references to component specification files. A component specification is a YAML file that describes a component. (Currently all deployments of components (in various combinations) must be defined within the context of a stack.)
-
-ZenML handles the creation of stack specifications for you when you run one of the `deploy` subcommands using the CLI. A valid specification is generated and used by `mlstacks` to deploy your stack using Terraform. The Terraform definitions and state are stored in your global configuration directory along with any state files generated while deploying your stack.
-
-Your configuration directory could be in a number of different places depending on your operating system, but read more about it in the [Click docs](https://click.palletsprojects.com/en/8.1.x/api/#click.get\_app\_dir) to see which location applies to your situation.
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy a cloud stack easily</strong></mark></td><td>Individually deploying different stack components.</td><td><a href="deploy-a-stack-component.md">deploy-a-stack-component.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy a stack with multiple components using mlstacks</strong></mark></td><td>Deploying an entire stack with ZenML's `mlstacks` package.</td><td><a href="../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md">../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td><td>Creating your custom stack component solutions.</td><td><a href="../../../../CONTRIBUTING.md">CONTRIBUTING.md</a></td></tr></tbody></table>
 
