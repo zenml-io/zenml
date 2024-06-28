@@ -7108,7 +7108,7 @@ class SqlZenStore(BaseZenStore):
                         component.id,
                     ]
 
-                # Stck
+                # Stack
                 stack_name = full_stack.name
                 while True:
                     try:
