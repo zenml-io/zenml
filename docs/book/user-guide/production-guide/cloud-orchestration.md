@@ -15,11 +15,12 @@ These, along with [remote storage](remote-storage.md), complete a basic cloud st
 
 ## Starting with a basic cloud stack
 
-{% hint style="warning" %}
-Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
-and go to the [easy stack registration](easy-stack-registration.md) for an easier way to get to the same
-outcome!
+{% hint style="info" %}
+**Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
+and read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
+if you have existing infrastructure, or read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
 {% endhint %}
+
 
 The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The advantage of Skypilot is that it simply provisions a VM to execute the pipeline on your cloud provider.
 
