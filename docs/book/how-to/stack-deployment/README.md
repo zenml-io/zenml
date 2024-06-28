@@ -4,7 +4,9 @@ description: Stacks are the configuration of your infrastructure.
 
 # Managing stacks & components
 
-Deploying and managing MLOps tools is tricky 😭😵‍💫. It is not trivial to set up all the different tools that you might need for your pipeline.
+The concept of a [stack](../../user-guide/production-guide/understand-stacks.md) is a fundamental component of the ZenML framework. Put simply, a stack is the configuration of the infrastructure and tooling that defines where and how a pipeline executes. Let’s take a simple example. Here is a simple pipeline in ZenML:
+
+However, deploying and managing a MLOps stack is tricky 😭😵‍💫. It is not trivial to set up all the different tools that you might need for your pipeline.
 
 * 🌈 Each tool comes with a certain set of requirements. For example, a Kubeflow installation will require you to have a Kubernetes cluster, and so would a Seldon Core deployment.
 * 🤔 Figuring out the defaults for infra parameters is not easy. Even if you have identified the backing infra that you need for a stack component, setting up reasonable defaults for parameters like instance size, CPU, memory, etc., needs a lot of experimentation to figure out.
@@ -15,16 +17,33 @@ Deploying and managing MLOps tools is tricky 😭😵‍💫. It is not trivial 
 
 All of these points make taking your pipelines to production a more difficult task than it should be. We believe that the expertise in setting up these often-complex stacks shouldn't be a prerequisite to running your ML pipelines.
 
-## Deploying a stack component
+This docs section consists of information that makes it easier to provision, configure, and extend stacks and components in ZenML.
 
-The ZenML CLI allows you to deploy individual stack components using the `deploy` subcommand which is implemented for all supported stack components. You can find the list of supported stack components [here](../stack-deployment/README.md).
-
-## Deploying a stack
-
-For deploying a full stack, use the `zenml stack deploy` command. See the [stack deployment](deploy-a-stack-using-mlstacks.md) page for more details of which cloud providers and stack components are supported.
-
-
-
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy a cloud stack easily</strong></mark></td><td>Individually deploying different stack components.</td><td><a href="deploy-a-stack-component.md">deploy-a-stack-component.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy a stack with multiple components using mlstacks</strong></mark></td><td>Deploying an entire stack with ZenML's `mlstacks` package.</td><td><a href="../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md">../../how-to/stack-deployment/deploy-a-stack-using-mlstacks.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td><td>Creating your custom stack component solutions.</td><td><a href="../../../../CONTRIBUTING.md">CONTRIBUTING.md</a></td></tr></tbody></table>
+<table data-view="cards">
+  <thead>
+    <tr>
+      <th></th>
+      <th></th>
+      <th data-hidden data-card-target data-type="content-ref"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><mark style="color:purple;"><strong>Deploy a cloud stack</strong></mark></td>
+      <td>Individually deploying different stack components.</td>
+      <td><a href="how-to/stack-deployment/deploy-a-cloud-stack.md">how-to/stack-deployment/deploy-a-cloud-stack.md</a></td>
+    </tr>
+    <tr>
+      <td><mark style="color:purple;"><strong>Deploy stack/components using mlstacks</strong></mark></td>
+      <td>Deploying an entire stack with ZenML's `mlstacks` package.</td>
+      <td><a href="how-to/stack-deployment/deploy-a-stack-using-mlstacks.md">how-to/stack-deployment/deploy-a-stack-using-mlstacks.md</a></td>
+    </tr>
+    <tr>
+      <td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td>
+      <td>Creating your custom stack component solutions.</td>
+      <td><a href="how-to/stack-deployment/implement-a-custom-stack-component.md">how-to/stack-deployment/implement-a-custom-stack-component.md</a></td>
+    </tr>
+  </tbody>
+</table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
