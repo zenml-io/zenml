@@ -59,7 +59,7 @@ MLStacks uses Terraform on the backend to manage infrastructure. You will need t
 
 MLStacks also uses Helm to deploy Kubernetes resources. You will need to have Helm installed. Please visit [the Helm docs](https://helm.sh/docs/intro/install/#from-script) for installation instructions.
 
-### Deploying a stack
+## Deploying a stack
 
 A simple stack deployment can be done using the following command:
 
@@ -95,7 +95,7 @@ This is where you could potentially make any changes you want to the recipe file
 
 </details>
 
-#### CLI Options for `zenml stack deploy`
+### CLI Options for `zenml stack deploy`
 
 Current required options to be passed in to the `zenml stack deploy` subcommand
 are:
@@ -118,7 +118,7 @@ component deployment documentation) can be passed
 in with the `-x` option. This option can be used multiple times to pass in
 multiple configurations.
 
-#### Interactive stack deployment
+### Interactive stack deployment
 
 If you would like to be guided through the deployment process, you can use the
 `zenml stack deploy` command with the `--interactive` flag. You will still need
