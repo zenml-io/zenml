@@ -15,6 +15,12 @@ These, along with [remote storage](remote-storage.md), complete a basic cloud st
 
 ## Starting with a basic cloud stack
 
+{% hint style="info" %}
+Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
+and go to the [easy stack registration](easy-stack-registration.md) for an easier way to get to the same
+outcome!
+{% endhint %}
+
 The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The advantage of Skypilot is that it simply provisions a VM to execute the pipeline on your cloud provider.
 
 Coupled with Skypilot, we need a mechanism to package your code and ship it to the cloud for Skypilot to do its thing. ZenML uses [Docker](https://www.docker.com/) to achieve this. Every time you run a pipeline with a remote orchestrator, [ZenML builds an image](../../how-to/setting-up-a-project-repository/connect-your-git-repository.md) for the entire pipeline (and optionally each step of a pipeline depending on your [configuration](../../how-to/customize-docker-builds/README.md)). This image contains the code, requirements, and everything else needed to run the steps of the pipeline in any environment. ZenML then pushes this image to the container registry configured in your stack, and the orchestrator pulls the image when it's ready to execute a step.

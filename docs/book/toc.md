@@ -35,6 +35,7 @@
   * [Understanding stacks](user-guide/production-guide/understand-stacks.md)
   * [Connecting remote storage](user-guide/production-guide/remote-storage.md)
   * [Orchestrate on the cloud](user-guide/production-guide/cloud-orchestration.md)
+  * [Easy stack registration](user-guide/production-guide/easy-stack-registration.md)
   * [Configure your pipeline to add compute](user-guide/production-guide/configure-pipeline.md)
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
   * [Set up CI/CD](user-guide/production-guide/ci-cd.md)
