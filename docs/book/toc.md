@@ -84,7 +84,7 @@
   * [Access secrets in a step](how-to/build-pipelines/access-secrets-in-a-step.md)
   * [Fetching pipelines](how-to/build-pipelines/fetching-pipelines.md)
   * [Get past pipeline/step runs](how-to/build-pipelines/get-past-pipeline-step-runs.md)
-* [🚨 Build a pipeline](how-to/trigger-pipelines/README.md)
+* [🚨 Trigger a pipeline](how-to/trigger-pipelines/README.md)
   * [Trigger a pipeline from Python Client](how-to/trigger-pipelines/trigger-a-pipeline-from-client.md)
   * [Trigger a pipeline from another](how-to/trigger-pipelines/trigger-a-pipeline-from-another.md)
   * [Trigger a pipeline from REST API](how-to/trigger-pipelines/trigger-a-pipeline-from-rest-api.md)
@@ -108,7 +108,6 @@
 * [⚒️ Deploy and configure stacks](how-to/stack-deployment/README.md)
   * [Deploy a cloud stack](how-to/stack-deployment/deploy-a-cloud-stack.md)
   * [Register a cloud stack](how-to/stack-deployment/deploy-a-cloud-stack.md)
-  <!-- * [Deploy a stack component](how-to/stack-deployment/deploy-a-stack-component.md) -->
   * [Deploy stack/components using mlstacks](how-to/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Reference secrets in stack configuration](how-to/stack-deployment/reference-secrets-in-stack-configuration.md)
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
