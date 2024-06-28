@@ -53,10 +53,13 @@ from zenml.exceptions import (
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import StackFilter
-from zenml.models.v2.core.component import ComponentResponse
-from zenml.models.v2.core.service_connector import ServiceConnectorResponse
+from zenml.models.v2.misc.full_stack import (
+    ComponentInfo,
+    FullStackRequest,
+    ServiceConnectorInfo,
+)
 from zenml.models.v2.misc.service_connector_type import (
-    ServiceConnectorResourcesModel,
+    ServiceConnectorTypedResourcesModel,
 )
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
@@ -259,6 +262,18 @@ def register_stack(
 
     client = Client()
 
+    try:
+        client.get_stack(name_id_or_prefix=stack_name)
+        cli_utils.error(
+            f"A stack with name `{stack_name}` already exists, "
+            "please use a different name."
+        )
+    except KeyError:
+        pass
+    except Exception as e:
+        raise e
+
+    components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = {}
     # cloud flow
     service_connector = None
     if cloud is not None and connector is None:
@@ -286,9 +301,17 @@ def register_stack(
                 allow_zero_be_a_new_object=True,
             )
         if connector_selected is None:
-            service_connector = _create_service_connector(cloud_provider=cloud)
+            service_connector = _get_service_connector_info(
+                cloud_provider=cloud
+            )
         else:
-            service_connector = existing_connectors.items[connector_selected]
+            selected_connector = existing_connectors.items[connector_selected]
+            service_connector = selected_connector.id
+            connector = selected_connector.name
+            if isinstance(selected_connector.connector_type, str):
+                cloud = selected_connector.connector_type
+            else:
+                cloud = selected_connector.connector_type.connector_type
     elif connector is not None:
         cli_utils.show_status_from_kwargs(
             cloud=cloud,
@@ -304,7 +327,7 @@ def register_stack(
             )
     cli_utils.show_status_from_kwargs(
         cloud=cloud,
-        connector=service_connector.name,
+        connector=connector,
         artifact_store=artifact_store,
         orchestrator=orchestrator,
         container_registry=container_registry,
@@ -314,69 +337,84 @@ def register_stack(
         service_connector_resource_model = None
         # create components
         needed_components = (
-            ("artifact_store", artifact_store),
-            ("orchestrator", orchestrator),  # for azure only k8s orchestrator
-            ("container_registry", container_registry),
+            (StackComponentType.ARTIFACT_STORE, artifact_store),
+            (StackComponentType.ORCHESTRATOR, orchestrator),
+            (StackComponentType.CONTAINER_REGISTRY, container_registry),
         )
         for component_type, preset_name in needed_components:
             if preset_name is not None:
-                component_response = client.get_stack_component(
+                component_info = client.get_stack_component(
                     component_type, preset_name
                 )
-                if component_response.connector.id != service_connector.id:
-                    cli_utils.error(
-                        f"The {component_type.replace('_', ' ')} and service connector "
-                        "do not match. Please check your inputs and try again."
-                    )
+                component_info = component_info.id
             else:
-                # find existing components under same connector
-                existing_components = client.list_stack_components(
-                    type=component_type,
-                    connector_id=service_connector.id,
-                    size=100,
-                )
-                # if some existing components are found - prompt user what to do
-                component_selected: Optional[int] = None
-                if existing_components.total > 0:
-                    component_selected = cli_utils.multi_choice_prompt(
-                        object_type=component_type.replace("_", " "),
-                        choices=[
-                            [component.name]
-                            for component in existing_components.items
-                        ],
-                        headers=["Name"],
-                        prompt_text=f"We found these {component_type.replace('_', ' ')} "
-                        "connected using the current service connector. Do you "
-                        "want to create a new one or use existing one?",
-                        default_choice="0",
-                        allow_zero_be_a_new_object=True,
+                if isinstance(service_connector, UUID):
+                    # find existing components under same connector
+                    existing_components = client.list_stack_components(
+                        type=component_type.value,
+                        connector_id=service_connector,
+                        size=100,
                     )
+                    # if some existing components are found - prompt user what to do
+                    component_selected: Optional[int] = None
+                    if existing_components.total > 0:
+                        component_selected = cli_utils.multi_choice_prompt(
+                            object_type=component_type.value.replace("_", " "),
+                            choices=[
+                                [component.name]
+                                for component in existing_components.items
+                            ],
+                            headers=["Name"],
+                            prompt_text=f"We found these {component_type.value.replace('_', ' ')} "
+                            "connected using the current service connector. Do you "
+                            "want to create a new one or use existing one?",
+                            default_choice="0",
+                            allow_zero_be_a_new_object=True,
+                        )
+                else:
+                    component_selected = None
+
                 if component_selected is None:
                     if service_connector_resource_model is None:
-                        service_connector_resource_model = (
-                            client.verify_service_connector(
-                                service_connector.id
+                        if isinstance(service_connector, UUID):
+                            service_connector_resource_model = (
+                                client.verify_service_connector(
+                                    service_connector
+                                )
                             )
-                        )
-                    component_response = _create_stack_component(
-                        component_type,
-                        service_connector,
-                        service_connector_resource_model,
+                        else:
+                            service_connector_resource_model = client.create_service_connector(
+                                name=service_connector.name,
+                                type=service_connector.connector_type,
+                                auth_method=service_connector.auth_method,
+                                configuration=service_connector.configuration,
+                                register=False,
+                            )
+
+                    component_info = _get_stack_component_info(
+                        component_type=component_type.value,
+                        cloud_provider=cloud,
+                        service_connector_resource_models=service_connector_resource_model.resources,
+                        service_connector_index=0,
                     )
+                    component_name = stack_name
                 else:
-                    component_response = existing_components.items[
+                    selected_component = existing_components.items[
                         component_selected
                     ]
+                    component_info = selected_component.id
+                    component_name = selected_component.name
 
-            if component_type == "orchestrator":
-                orchestrator = component_response.name
-            elif component_type == "artifact_store":
-                artifact_store = component_response.name
-            elif component_type == "container_registry":
-                container_registry = component_response.name
+            components[component_type] = component_info
+            if component_type == StackComponentType.ARTIFACT_STORE:
+                artifact_store = component_name
+            if component_type == StackComponentType.ORCHESTRATOR:
+                orchestrator = component_name
+            if component_type == StackComponentType.CONTAINER_REGISTRY:
+                container_registry = component_name
             cli_utils.show_status_from_kwargs(
                 cloud=cloud,
-                connector=service_connector.name,
+                connector=connector,
                 artifact_store=artifact_store,
                 orchestrator=orchestrator,
                 container_registry=container_registry,
@@ -384,40 +422,36 @@ def register_stack(
 
     # normal flow once all components are defined
     with console.status(f"Registering stack '{stack_name}'...\n"):
-        components: Dict[StackComponentType, Union[str, UUID]] = dict()
-
-        components[StackComponentType.ARTIFACT_STORE] = artifact_store
-        components[StackComponentType.ORCHESTRATOR] = orchestrator
-
-        if alerter:
-            components[StackComponentType.ALERTER] = alerter
-        if annotator:
-            components[StackComponentType.ANNOTATOR] = annotator
-        if data_validator:
-            components[StackComponentType.DATA_VALIDATOR] = data_validator
-        if feature_store:
-            components[StackComponentType.FEATURE_STORE] = feature_store
-        if image_builder:
-            components[StackComponentType.IMAGE_BUILDER] = image_builder
-        if model_deployer:
-            components[StackComponentType.MODEL_DEPLOYER] = model_deployer
-        if model_registry:
-            components[StackComponentType.MODEL_REGISTRY] = model_registry
-        if step_operator:
-            components[StackComponentType.STEP_OPERATOR] = step_operator
-        if experiment_tracker:
-            components[StackComponentType.EXPERIMENT_TRACKER] = (
-                experiment_tracker
-            )
-        if container_registry:
-            components[StackComponentType.CONTAINER_REGISTRY] = (
-                container_registry
-            )
+        for component_type, component_name in [
+            (StackComponentType.ARTIFACT_STORE, artifact_store),
+            (StackComponentType.ORCHESTRATOR, orchestrator),
+            (StackComponentType.ALERTER, alerter),
+            (StackComponentType.ANNOTATOR, annotator),
+            (StackComponentType.DATA_VALIDATOR, data_validator),
+            (StackComponentType.FEATURE_STORE, feature_store),
+            (StackComponentType.IMAGE_BUILDER, image_builder),
+            (StackComponentType.MODEL_DEPLOYER, model_deployer),
+            (StackComponentType.MODEL_REGISTRY, model_registry),
+            (StackComponentType.STEP_OPERATOR, step_operator),
+            (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
+            (StackComponentType.CONTAINER_REGISTRY, container_registry),
+        ]:
+            if component_name and component_type not in components:
+                components[component_type] = client.get_stack_component(
+                    component_type, component_name
+                ).id
 
         try:
-            created_stack = client.create_stack(
-                name=stack_name,
-                components=components,
+            created_stack = client.zen_store.create_full_stack(
+                full_stack=FullStackRequest(
+                    user_id=client.active_user.id,
+                    workspace_id=client.active_workspace.id,
+                    name=stack_name,
+                    components=components,
+                    service_connectors=[
+                        service_connector,
+                    ],
+                )
             )
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
@@ -1888,14 +1922,14 @@ def connect_stack(
         )
 
 
-def _create_service_connector(cloud_provider: str) -> ServiceConnectorResponse:
-    """Create a service connector with given cloud provider.
+def _get_service_connector_info(cloud_provider: str) -> ServiceConnectorInfo:
+    """Get a service connector info with given cloud provider.
 
     Args:
         cloud_provider: The cloud provider to use.
 
     Returns:
-        The model of the created service connector.
+        The info model of the created service connector.
     """
     from rich import print
     from rich.markdown import Markdown
@@ -1954,58 +1988,59 @@ def _create_service_connector(cloud_provider: str) -> ServiceConnectorResponse:
             default=True,
         )
 
-    connector_name = Prompt.ask(
-        "Please enter a name for the service connector:"
-    )
-    return client.create_service_connector(
-        name=connector_name,
+    return ServiceConnectorInfo(
         connector_type=cloud_provider,
         auth_method=fixed_auth_methods[selected_auth_idx][0],
         configuration=answers,
-    )[0]
+    )
 
 
-def _create_stack_component(
+def _get_stack_component_info(
     component_type: str,
-    service_connector: ServiceConnectorResponse,
-    service_connector_resource_model: ServiceConnectorResourcesModel,
-) -> ComponentResponse:
-    """Create a stack component with given type and service connector.
+    cloud_provider: str,
+    service_connector_resource_models: List[
+        ServiceConnectorTypedResourcesModel
+    ],
+    service_connector_index: Optional[int] = None,
+) -> ComponentInfo:
+    """Get a stack component info with given type and service connector.
 
     Args:
         component_type: The type of component to create.
-        service_connector: The service connector to use.
+        cloud_provider: The cloud provider to use.
+        service_connector_resource_models: The list of the available service connector resource models.
+        service_connector_index: The index of the service connector to use.
 
     Returns:
-        The model of the created component.
+        The info model of the stack component.
+
+    Raises:
+        ValueError: If the cloud provider is not supported.
+        ValueError: If the component type is not supported.
     """
     from rich import print
     from rich.prompt import Confirm, Prompt
 
-    from zenml.cli.stack_components import (
-        connect_stack_component_with_service_connector,
-    )
+    if cloud_provider not in {"aws", "azure", "gcp"}:
+        raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
-    if service_connector.type not in {"aws", "azure", "gcp"}:
-        raise ValueError(f"Unknown cloud provider {service_connector.type}")
-
-    client = Client()
-
+    flavor = "undefined"
+    config = {}
     if component_type == "artifact_store":
         config_confirmed = False
         while not config_confirmed:
-            if service_connector.type == "aws":
-                for each in service_connector_resource_model.resources:
+            if cloud_provider == "aws":
+                for each in service_connector_resource_models:
                     if each.resource_type == "s3-bucket":
                         available_storages = each.resource_ids
                 flavor = "s3"
-            elif service_connector.type == "azure":
+            elif cloud_provider == "azure":
                 flavor = "azure"
-            elif service_connector.type == "gcp":
+            elif cloud_provider == "gcp":
                 flavor = "gcs"
 
             selected_storage_idx = cli_utils.multi_choice_prompt(
-                object_type=f"{service_connector.type.upper()} storages",
+                object_type=f"{cloud_provider.upper()} storages",
                 choices=[[st] for st in available_storages],
                 headers=["Storage"],
                 prompt_text="Please choose one of the storages for the new artifact store:",
@@ -2020,24 +2055,16 @@ def _create_stack_component(
                 "path": f"{selected_storage.strip('/')}/{extra_path.strip('/')}"
             }
 
-            as_name = Prompt.ask("Please enter a name for the artifact store:")
-
-            print({"name": as_name, "config": config})
+            print(config)
             config_confirmed = Confirm.ask(
                 "Please confirm the values you entered:", default=True
             )
-        component = client.create_stack_component(
-            name=as_name,
-            flavor=flavor,
-            component_type=StackComponentType.ARTIFACT_STORE,
-            configuration=config,
-        )
     elif component_type == "orchestrator":
         config_confirmed = False
         while not config_confirmed:
-            if service_connector.type == "aws":
+            if cloud_provider == "aws":
                 available_orchestrators = []
-                for each in service_connector_resource_model.resources:
+                for each in service_connector_resource_models:
                     types = []
                     if each.resource_type == "aws-generic":
                         types = ["Sagemaker", "VM AWS"]
@@ -2047,13 +2074,13 @@ def _create_stack_component(
                     for orchestrator in each.resource_ids:
                         for t in types:
                             available_orchestrators.append([t, orchestrator])
-            elif service_connector.type == "gcp":
+            elif cloud_provider == "gcp":
                 pass
-            elif service_connector.type == "azure":
+            elif cloud_provider == "azure":
                 pass
 
             selected_orchestrator_idx = cli_utils.multi_choice_prompt(
-                object_type=f"orchestrators on {service_connector.type.upper()}",
+                object_type=f"orchestrators on {cloud_provider.upper()}",
                 choices=available_orchestrators,
                 headers=["Orchestrator Type", "Orchestrator details"],
                 prompt_text="Please choose one of the orchestrators for the new orchestrator:",
@@ -2079,36 +2106,27 @@ def _create_stack_component(
                 raise ValueError(
                     f"Unknown orchestrator type {selected_orchestrator[0]}"
                 )
-            orchestrator_name = Prompt.ask(
-                "Please enter a name for the orchestrator:"
-            )
-            print({"name": orchestrator_name, "config": config})
+            print(config)
             config_confirmed = Confirm.ask(
                 "Please confirm the values you entered:", default=True
             )
-        component = client.create_stack_component(
-            name=orchestrator_name,
-            flavor=flavor,
-            component_type=StackComponentType.ORCHESTRATOR,
-            configuration=config,
-        )
     elif component_type == "container_registry":
         config_confirmed = False
         while not config_confirmed:
-            if service_connector.type == "aws":
-                for each in service_connector_resource_model.resources:
+            if cloud_provider == "aws":
+                for each in service_connector_resource_models:
                     if each.resource_type == "docker-registry":
                         available_registries = each.resource_ids
                 flavor = "aws"
-            elif service_connector.type == "azure":
+            elif cloud_provider == "azure":
                 flavor = "azure"
                 available_registries = []
-            elif service_connector.type == "gcp":
+            elif cloud_provider == "gcp":
                 flavor = "gcp"
                 available_registries = []
 
             selected_registry_idx = cli_utils.multi_choice_prompt(
-                object_type=f"{service_connector.type.upper()} registries",
+                object_type=f"{cloud_provider.upper()} registries",
                 choices=[[st] for st in available_registries],
                 headers=["Container Registry"],
                 prompt_text="Please choose one of the registries for the new container registry:",
@@ -2116,29 +2134,16 @@ def _create_stack_component(
             selected_storage = available_registries[selected_registry_idx]
             config = {"uri": selected_storage}
 
-            cr_name = Prompt.ask(
-                "Please enter a name for the container registry:"
-            )
-
-            print({"name": cr_name, "config": config})
+            print(config)
             config_confirmed = Confirm.ask(
                 "Please confirm the values you entered:", default=True
             )
-        component = client.create_stack_component(
-            name=cr_name,
-            flavor=flavor,
-            component_type=StackComponentType.CONTAINER_REGISTRY,
-            configuration=config,
-        )
     else:
         raise ValueError(f"Unknown component type {component_type}")
+    service_connector_index
 
-    connect_stack_component_with_service_connector(
-        component_type=component.type,
-        name_id_or_prefix=component.id,
-        connector=service_connector.id,
-        interactive=False,
-        no_verify=False,
+    return ComponentInfo(
+        flavor=flavor,
+        configuration=config,
+        service_connector_index=service_connector_index,
     )
-
-    return component
