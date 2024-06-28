@@ -79,7 +79,7 @@ Deploying an end-to-end stack through the ZenML CLI is only possible with the [d
 zenml stack import -f <path-to-stack-file-generated-by-mlstacks.yaml>
 ```
 
-## Deploy a stack component
+## Deploying a stack component
 
 If you have used ZenML before, you must be familiar with the flow of registering new stack components. It goes something like this:
 
