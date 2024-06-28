@@ -367,6 +367,7 @@ def create_full_stack(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         full_stack: Stack to register.
+        auth_context: Authentication context.
 
     Returns:
         The created stack.

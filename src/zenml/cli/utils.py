@@ -2799,14 +2799,13 @@ def multi_choice_prompt(
         object_type: The type of the object
         choices: The list of choices
         prompt_text: The prompt text
-        selector_from_choices: The list of selectors to use
+        headers: The list of headers.
         allow_zero_be_a_new_object: Whether to allow zero as a new object
         default_choice: The default choice
 
     Returns:
         The selected choice index or None for new object
     """
-
     table = Table(
         title=f"Available {object_type}",
         show_header=True,

@@ -6939,19 +6939,29 @@ class SqlZenStore(BaseZenStore):
                     self.get_service_connector(connector_id_or_info)
                 )
             else:
-                service_connector_request = ServiceConnectorRequest(
-                    name=full_stack.name,  # try and fail, then randomize
-                    connector_type=connector_id_or_info.connector_type,
-                    auth_method=connector_id_or_info.auth_type,
-                    configuration=connector_id_or_info.configuration,
-                    user=full_stack.user_id,
-                    workspace=full_stack.workspace_id,
-                )
-                service_connectors.append(
-                    self.create_service_connector(
-                        service_connector=service_connector_request
-                    )
-                )
+                connector_name = full_stack.name
+                while True:
+                    try:
+                        service_connector_request = ServiceConnectorRequest(
+                            name=connector_name,
+                            connector_type=connector_id_or_info.connector_type,
+                            auth_method=connector_id_or_info.auth_type,
+                            configuration=connector_id_or_info.configuration,
+                            user=full_stack.user_id,
+                            workspace=full_stack.workspace_id,
+                        )
+                        service_connectors.append(
+                            self.create_service_connector(
+                                service_connector=service_connector_request
+                            )
+                        )
+                        break
+                    except EntityExistsError:
+                        connector_name = (
+                            f"{full_stack.name}-{random_str(4)}".lower()
+                        )
+
+                        continue
 
         components_mapping: Dict[StackComponentType, List[UUID]] = {}
         for component_type, component_info in full_stack.components.items():
@@ -6960,17 +6970,27 @@ class SqlZenStore(BaseZenStore):
                     component_id=component_info
                 )
             else:
-                component_request = ComponentRequest(
-                    name=full_stack.name,  # try and fail, then randomize
-                    type=component_type,
-                    flavor=component_info.flavor,
-                    configuration=component_info.configuration,
-                    user=full_stack.user_id,
-                    workspace=full_stack.workspace_id,
-                )
-                component = self.create_stack_component(
-                    component=component_request
-                )
+                component_name = full_stack.name
+                while True:
+                    try:
+                        component_request = ComponentRequest(
+                            name=component_name,
+                            type=component_type,
+                            flavor=component_info.flavor,
+                            configuration=component_info.configuration,
+                            user=full_stack.user_id,
+                            workspace=full_stack.workspace_id,
+                        )
+                        component = self.create_stack_component(
+                            component=component_request
+                        )
+                        break
+                    except EntityExistsError:
+                        component_name = (
+                            f"{full_stack.name}-{random_str(4)}".lower()
+                        )
+                        continue
+
                 if component_info.service_connector_index is not None:
                     service_connector = service_connectors[
                         component_info.service_connector_index
@@ -7058,7 +7078,8 @@ class SqlZenStore(BaseZenStore):
                         connector_resource_id=resource_id,
                     )
                     self.update_stack_component(
-                        component_update=component_update
+                        component_id=component.id,
+                        component_update=component_update,
                     )
 
             components_mapping[component_type] = [

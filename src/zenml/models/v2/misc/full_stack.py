@@ -37,7 +37,8 @@ class ComponentInfo(BaseModel):
     flavor: str
     service_connector_index: Optional[int] = Field(
         default=None,
-        title="The id of the service connector from the list `service_connectors`.",
+        title="The id of the service connector from the list "
+        "`service_connectors`.",
         description="The id of the service connector from the list "
         "`service_connectors` from `FullStackRequest`.",
     )
@@ -61,7 +62,8 @@ class FullStackRequest(BaseRequest):
     service_connectors: Optional[List[Union[UUID, ServiceConnectorInfo]]] = (
         Field(
             default=[],
-            title="The service connectors dictionary for the full stack registration.",
+            title="The service connectors dictionary for the full stack "
+            "registration.",
             description="The UUID of an already existing service connector or "
             "request information to create a service connector from "
             "scratch.",
