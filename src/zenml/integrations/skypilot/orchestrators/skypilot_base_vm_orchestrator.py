@@ -303,7 +303,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     accelerators=settings.accelerators,
                     accelerator_args=settings.accelerator_args,
                     use_spot=settings.use_spot,
-                    spot_recovery=settings.spot_recovery,
+                    job_recovery=settings.job_recovery,
                     region=settings.region,
                     zone=settings.zone,
                     image_id=settings.image_id,
