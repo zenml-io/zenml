@@ -144,7 +144,7 @@ There are public templates to easily provision a simple MLOps stack that can be 
 
 [![Create a GCP MLOps Stack](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_working_dir=infra&cloudshell_open_in_editor=gcp-gar-gcs-vertex.yaml,gcp-gar-gcs-vertex-config.yaml&cloudshell_print=gcp-gar-gcs-vertex.txt&cloudshell_git_branch=feature/prd-482-one-click-stacks)
 
-[![Create an Azure MLOps Stack](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_working_dir=infra&cloudshell_open_in_editor=gcp-gar-gcs-vertex.yaml,gcp-gar-gcs-vertex-config.yaml&cloudshell_print=gcp-gar-gcs-vertex.txt&cloudshell_git_branch=feature/prd-482-one-click-stacks)
+[![Create an Azure MLOps Stack](https://encore.dev/assets/resources/arm_cover.png)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_working_dir=infra&cloudshell_open_in_editor=gcp-gar-gcs-vertex.yaml,gcp-gar-gcs-vertex-config.yaml&cloudshell_print=gcp-gar-gcs-vertex.txt&cloudshell_git_branch=feature/prd-482-one-click-stacks)
 
 Or, use a simple CLI command:
 
