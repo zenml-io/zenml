@@ -11,7 +11,7 @@ This is a hint for reference.
 {% tabs %}
 
 {% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/Create_Stack.png" alt=""><figcaption><p>This should be the right image.</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/Create_Stack.png" alt=""><figcaption><p>This should be the right image.</p></figcaption></figure>
 {% endtab %}
 
 {% tab title="CLI" %}
