@@ -18,7 +18,7 @@ These, along with [remote storage](remote-storage.md), complete a basic cloud st
 {% hint style="info" %}
 **Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
 and read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-if you have existing infrastructure, or read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
+if you have existing infrastructure, or read [how to provision a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
 {% endhint %}
 
 
