@@ -23,6 +23,13 @@ Check out [the full documentation for the mlstacks package](https://mlstacks.zen
 {% hint style="info" %}
 **MLStacks deploys resources using a Kubernetes cluster, which may be expensive and not for ever y user. In order to use stacks which are more basic and cheaper on the cloud, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
 if you have existing infrastructure, or read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
+
+Or simply try running one of:
+
+```shell
+zenml stack register --provider aws
+zenml stack deploy --provider aws
+```
 {% endhint %}
 
 To answer this question, here are some pros and cons in comparison to the stack-component deploy method which can help you choose what works best for you!

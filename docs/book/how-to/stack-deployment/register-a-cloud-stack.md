@@ -4,6 +4,16 @@ description: Register a cloud stack easily
 
 # Register a cloud stack with an easy wizard
 
+
+```shell
+zenml stack register -p aws
+ 
+role_arn?
+
+Fallbacks 
+```
+
+
 {% hint style="info" %}
 This is a hint for reference.
 {% endhint %}
