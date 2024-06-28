@@ -86,7 +86,7 @@
   * [Get past pipeline/step runs](how-to/build-pipelines/get-past-pipeline-step-runs.md)
 * [🚨 Trigger a pipeline](how-to/trigger-pipelines/README.md)
   * [Trigger a pipeline from Python Client](how-to/trigger-pipelines/trigger-a-pipeline-from-client.md)
-  * [Trigger a pipeline from another](how-to/trigger-pipelines/trigger-a-pipeline-from-another.md)
+  * [Trigger a pipeline from another pipeline](how-to/trigger-pipelines/trigger-a-pipeline-from-another.md)
   * [Trigger a pipeline from REST API](how-to/trigger-pipelines/trigger-a-pipeline-from-rest-api.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
   * [How to configure a pipeline with a YAML](how-to/use-configuration-files/how-to-use-config.md)
