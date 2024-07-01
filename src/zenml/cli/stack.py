@@ -16,11 +16,12 @@
 import getpass
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 from uuid import UUID
 
 import click
 from rich.console import Console
+from rich.prompt import Confirm
 from rich.syntax import Syntax
 
 import zenml
@@ -252,6 +253,7 @@ def register_stack(
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
     """
+
     if (provider is None and connector is None) and (
         artifact_store is None or orchestrator is None
     ):
@@ -275,10 +277,10 @@ def register_stack(
 
     components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = {}
     # cloud flow
-    created_objects = set()
-    service_connector = None
+    created_objects: Set[str] = set()
+    service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = None
     if provider is not None and connector is None:
-        use_implicit = cli_utils.Confirm.ask(
+        use_implicit = Confirm.ask(
             f"[bold]{provider.upper()} cloud service connector[/bold] "
             "can use the Implicit Authentication by accessing connection "
             "configuration of the environment or use one of "
@@ -322,11 +324,15 @@ def register_stack(
             else:
                 provider = selected_connector.connector_type.connector_type
     elif connector is not None:
-        service_connector = client.get_service_connector(connector).id
-        if service_connector.type != provider:
-            cli_utils.warning(
-                f"The service connector `{connector}` is not of type `{provider}`."
-            )
+        service_connector_response = client.get_service_connector(connector)
+        service_connector = service_connector_response.id
+        if provider:
+            if service_connector_response.type != provider:
+                cli_utils.warning(
+                    f"The service connector `{connector}` is not of type `{provider}`."
+                )
+        else:
+            provider = service_connector_response.type
 
     if service_connector:
         service_connector_resource_model = None
@@ -337,11 +343,12 @@ def register_stack(
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
         )
         for component_type, preset_name in needed_components:
+            component_info: Optional[Union[UUID, ComponentInfo]] = None
             if preset_name is not None:
-                component_info = client.get_stack_component(
+                component_response = client.get_stack_component(
                     component_type, preset_name
                 )
-                component_info = component_info.id
+                component_info = component_response.id
             else:
                 if isinstance(service_connector, UUID):
                     # find existing components under same connector
@@ -387,6 +394,20 @@ def register_stack(
                                     register=False,
                                 )
                             )
+                            if service_connector_resource_model is None:
+                                cli_utils.error(
+                                    f"Failed to validate service connector {service_connector}..."
+                                )
+                    if provider is None:
+                        if isinstance(
+                            service_connector_resource_model.connector_type,
+                            str,
+                        ):
+                            provider = (
+                                service_connector_resource_model.connector_type
+                            )
+                        else:
+                            provider = service_connector_resource_model.connector_type.connector_type
 
                     component_info = _get_stack_component_info(
                         component_type=component_type.value,
@@ -413,7 +434,7 @@ def register_stack(
 
     # normal flow once all components are defined
     with console.status(f"Registering stack '{stack_name}'...\n"):
-        for component_type, component_name in [
+        for component_type_, component_name_ in [
             (StackComponentType.ARTIFACT_STORE, artifact_store),
             (StackComponentType.ORCHESTRATOR, orchestrator),
             (StackComponentType.ALERTER, alerter),
@@ -427,9 +448,9 @@ def register_stack(
             (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
         ]:
-            if component_name and component_type not in components:
-                components[component_type] = client.get_stack_component(
-                    component_type, component_name
+            if component_name_ and component_type_ not in components:
+                components[component_type_] = client.get_stack_component(
+                    component_type_, component_name_
                 ).id
 
         try:
@@ -468,15 +489,18 @@ def register_stack(
         created_objects.remove("service_connector")
         connectors = set()
         for each in created_objects:
-            connectors.add(created_stack.components[each][0].connector.name)
+            if comps_ := created_stack.components[StackComponentType(each)]:
+                if conn_ := comps_[0].connector:
+                    connectors.add(conn_.name)
         for connector in connectors:
             delete_commands.append(
                 "zenml service-connector delete " + connector
             )
     for each in created_objects:
-        delete_commands.append(
-            f"zenml {each.replace('_', '-')} delete {created_stack.components[each][0].name}"
-        )
+        if comps_ := created_stack.components[StackComponentType(each)]:
+            delete_commands.append(
+                f"zenml {each.replace('_', '-')} delete {comps_[0].name}"
+            )
     delete_commands.append("zenml stack delete -y " + created_stack.name)
 
     Console().print(
@@ -1984,6 +2008,8 @@ def _get_service_connector_info(
             headers=headers,
             prompt_text="Please choose one of the authentication option above.",
         )
+        if selected_auth_idx is None:
+            cli_utils.error("No authentication method selected.")
         auth_type = fixed_auth_methods[selected_auth_idx][0]
     else:
         auth_type = "implicit"
@@ -2043,10 +2069,11 @@ def _get_stack_component_info(
     flavor = "undefined"
     config = {}
     if component_type == "artifact_store":
+        available_storages: List[str] = []
         if cloud_provider == "aws":
             for each in service_connector_resource_models:
                 if each.resource_type == "s3-bucket":
-                    available_storages = each.resource_ids
+                    available_storages = each.resource_ids or []
             flavor = "s3"
             if not available_storages:
                 cli_utils.error(
@@ -2068,6 +2095,9 @@ def _get_stack_component_info(
             headers=["Storage"],
             prompt_text="Please choose one of the storages for the new artifact store:",
         )
+        if selected_storage_idx is None:
+            cli_utils.error("No storage selected.")
+
         selected_storage = available_storages[selected_storage_idx]
 
         config = {"path": selected_storage}
@@ -2108,6 +2138,8 @@ def _get_stack_component_info(
             headers=["Orchestrator Type", "Orchestrator details"],
             prompt_text="Please choose one of the orchestrators for the new orchestrator:",
         )
+        if selected_orchestrator_idx is None:
+            cli_utils.error("No orchestrator selected.")
 
         selected_orchestrator = available_orchestrators[
             selected_orchestrator_idx
@@ -2128,12 +2160,12 @@ def _get_stack_component_info(
                 f"Unknown orchestrator type {selected_orchestrator[0]}"
             )
     elif component_type == "container_registry":
-        available_registries = []
+        available_registries: List[str] = []
         if cloud_provider == "aws":
             flavor = "aws"
             for each in service_connector_resource_models:
                 if each.resource_type == "docker-registry":
-                    available_registries = each.resource_ids
+                    available_registries = each.resource_ids or []
             if not available_registries:
                 cli_utils.error(
                     "We were unable to find any container registries "
@@ -2154,6 +2186,8 @@ def _get_stack_component_info(
             headers=["Container Registry"],
             prompt_text="Please choose one of the registries for the new container registry:",
         )
+        if selected_registry_idx is None:
+            cli_utils.error("No container registry selected.")
         selected_storage = available_registries[selected_registry_idx]
         config = {"uri": selected_storage}
     else:
