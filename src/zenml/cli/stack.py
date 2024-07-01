@@ -253,7 +253,6 @@ def register_stack(
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
     """
-
     if (provider is None and connector is None) and (
         artifact_store is None or orchestrator is None
     ):
