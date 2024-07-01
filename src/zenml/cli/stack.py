@@ -266,7 +266,10 @@ def register_stack(
     client = Client()
 
     try:
-        client.get_stack(name_id_or_prefix=stack_name)
+        client.get_stack(
+            name_id_or_prefix=stack_name,
+            allow_name_prefix_match=False,
+        )
         cli_utils.error(
             f"A stack with name `{stack_name}` already exists, "
             "please use a different name."
