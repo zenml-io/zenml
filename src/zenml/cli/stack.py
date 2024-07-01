@@ -383,8 +383,8 @@ def register_stack(
                             _, service_connector_resource_model = (
                                 client.create_service_connector(
                                     name=stack_name,
-                                    connector_type=service_connector.connector_type,
-                                    auth_method=service_connector.auth_type,
+                                    connector_type=service_connector.type,
+                                    auth_method=service_connector.auth_method,
                                     configuration=service_connector.configuration,
                                     register=False,
                                 )
@@ -2001,8 +2001,8 @@ def _get_service_connector_info(
         )
 
     return ServiceConnectorInfo(
-        connector_type=cloud_provider,
-        auth_type=auth_type,
+        type=cloud_provider,
+        auth_method=auth_type,
         configuration=answers,
     )
 

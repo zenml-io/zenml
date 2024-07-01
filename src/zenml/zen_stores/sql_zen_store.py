@@ -6928,6 +6928,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The registered stack.
+
+        Raises:
+            RuntimeError: If the full stack creation fails
         """
         # We can not use the decorator here, as we need custom metadata
         with track_handler(
@@ -6956,8 +6959,8 @@ class SqlZenStore(BaseZenStore):
                             try:
                                 service_connector_request = ServiceConnectorRequest(
                                     name=connector_name,
-                                    connector_type=connector_id_or_info.connector_type,
-                                    auth_method=connector_id_or_info.auth_type,
+                                    connector_type=connector_id_or_info.type,
+                                    auth_method=connector_id_or_info.auth_method,
                                     configuration=connector_id_or_info.configuration,
                                     user=full_stack.user_id,
                                     workspace=full_stack.workspace_id,

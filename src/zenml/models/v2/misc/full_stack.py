@@ -26,8 +26,8 @@ from zenml.models.v2.base.base import BaseRequest
 class ServiceConnectorInfo(BaseModel):
     """Information about the service connector when creating a full stack."""
 
-    connector_type: str
-    auth_type: str
+    type: str
+    auth_method: str
     configuration: Dict[str, Any] = {}
 
 
