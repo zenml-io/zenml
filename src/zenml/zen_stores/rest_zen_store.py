@@ -2677,9 +2677,9 @@ class RestZenStore(BaseZenStore):
         }
 
         for connector in local_connector_types:
-            if connector.type in connector_types_map:
+            if connector.connector_type in connector_types_map:
                 connector.remote = True
-            connector_types_map[connector.type] = connector
+            connector_types_map[connector.connector_type] = connector
 
         return list(connector_types_map.values())
 

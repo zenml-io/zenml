@@ -2777,6 +2777,9 @@ def multi_choice_prompt(
 
     Returns:
         The selected choice index or None for new object
+
+    Raises:
+        RuntimeError: If no choice is made.
     """
     table = Table(
         title=f"Available {object_type}",
@@ -2808,6 +2811,8 @@ def multi_choice_prompt(
         default=default_choice,
         show_choices=False,
     )
+    if selected is None:
+        raise RuntimeError(f"No {object_type} was selected")
 
     if selected == "0" and allow_zero_be_a_new_object:
         return None
