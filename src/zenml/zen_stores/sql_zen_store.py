@@ -6930,7 +6930,7 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
 
         Raises:
-            RuntimeError: If the full stack creation fails
+            RuntimeError: If the full stack creation fails.
         """
         # We can not use the decorator here, as we need custom metadata
         with track_handler(
@@ -6938,13 +6938,15 @@ class SqlZenStore(BaseZenStore):
             metadata={"generated_by_wizard": True},
         ) as handler:
             # For clean-up purposes, each created entity is tracked here
+            service_connectors_created_ids: List[UUID] = []
+            components_created_ids: List[UUID] = []
+
             try:
                 # Validate the name of the new stack
                 validate_name(full_stack)
 
                 # Service Connectors
                 service_connectors: List[ServiceConnectorResponse] = []
-                service_connectors_created_ids: List[UUID] = []
 
                 for connector_id_or_info in full_stack.service_connectors:
                     # Fetch an existing service connector
@@ -6981,7 +6983,6 @@ class SqlZenStore(BaseZenStore):
 
                 # Stack Components
                 components_mapping: Dict[StackComponentType, List[UUID]] = {}
-                components_created_ids: List[UUID] = []
 
                 for (
                     component_type,
@@ -7144,7 +7145,7 @@ class SqlZenStore(BaseZenStore):
                 raise RuntimeError(
                     f"Full Stack creation has failed {e}. Cleaning up the "
                     f"created entities."
-                )
+                ) from e
             return stack_response
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
