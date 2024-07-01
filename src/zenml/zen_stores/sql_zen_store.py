@@ -7135,13 +7135,12 @@ class SqlZenStore(BaseZenStore):
                     stack_response.get_analytics_metadata()
                 )
             except Exception as e:
+                for component_id in components_created_ids:
+                    self.delete_stack_component(component_id=component_id)
                 for service_connector_id in service_connectors_created_ids:
                     self.delete_service_connector(
                         service_connector_id=service_connector_id
                     )
-                for component_id in components_created_ids:
-                    self.delete_stack_component(component_id=component_id)
-
                 raise RuntimeError(
                     f"Full Stack creation has failed {e}. Cleaning up the "
                     f"created entities."
