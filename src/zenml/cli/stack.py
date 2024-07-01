@@ -272,8 +272,6 @@ def register_stack(
         )
     except KeyError:
         pass
-    except Exception as e:
-        raise e
 
     components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = {}
     # cloud flow
@@ -1949,6 +1947,9 @@ def _get_service_connector_info(
 
     Returns:
         The info model of the created service connector.
+
+    Raises:
+        ValueError: If the cloud provider is not supported.
     """
     from rich.prompt import Prompt
 

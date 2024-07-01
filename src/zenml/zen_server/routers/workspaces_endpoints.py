@@ -371,10 +371,6 @@ def create_full_stack(
 
     Returns:
         The created stack.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
