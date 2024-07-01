@@ -7069,36 +7069,6 @@ class SqlZenStore(BaseZenStore):
                                         f"{resource_type} resource."
                                     )
 
-                            try:
-                                connector_resources = self.verify_service_connector(
-                                    service_connector_id=service_connector.id,
-                                    resource_type=requirements.resource_type,
-                                    resource_id=resource_id,
-                                )
-                            except (
-                                KeyError,
-                                ValueError,
-                                IllegalOperationError,
-                                NotImplementedError,
-                                AuthorizationException,
-                            ) as e:
-                                raise RuntimeError(
-                                    f"Access to the resource could not be "
-                                    f"verified: {e}"
-                                )
-
-                            resources = connector_resources.resources[0]
-                            if resources.resource_ids:
-                                if len(resources.resource_ids) > 1:
-                                    raise RuntimeError(
-                                        f"Multiple {resource_type} resources are "
-                                        "available for the selected connector. "
-                                        "Please use the a specific resource-id to "
-                                        f"configure a {resource_type} resource."
-                                    )
-                                else:
-                                    resource_id = resources.resource_ids[0]
-
                             component_update = ComponentUpdate(
                                 connector=service_connector.id,
                                 connector_resource_id=resource_id,
