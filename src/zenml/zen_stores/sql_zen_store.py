@@ -6964,8 +6964,8 @@ class SqlZenStore(BaseZenStore):
                                     connector_type=connector_id_or_info.type,
                                     auth_method=connector_id_or_info.auth_method,
                                     configuration=connector_id_or_info.configuration,
-                                    user=full_stack.user_id,
-                                    workspace=full_stack.workspace_id,
+                                    user=full_stack.user,
+                                    workspace=full_stack.workspace,
                                 )
                                 service_connector_response = self.create_service_connector(
                                     service_connector=service_connector_request
@@ -7003,8 +7003,8 @@ class SqlZenStore(BaseZenStore):
                                     type=component_type,
                                     flavor=component_info.flavor,
                                     configuration=component_info.configuration,
-                                    user=full_stack.user_id,
-                                    workspace=full_stack.workspace_id,
+                                    user=full_stack.user,
+                                    workspace=full_stack.workspace,
                                 )
                                 component = self.create_stack_component(
                                     component=component_request
@@ -7087,8 +7087,8 @@ class SqlZenStore(BaseZenStore):
                 while True:
                     try:
                         stack_request = StackRequest(
-                            user=full_stack.user_id,
-                            workspace=full_stack.workspace_id,
+                            user=full_stack.user,
+                            workspace=full_stack.workspace,
                             name=stack_name,
                             description=full_stack.description,
                             components=components_mapping,

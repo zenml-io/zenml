@@ -407,8 +407,8 @@ def create_full_stack(
 
     verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
 
-    full_stack.user_id = auth_context.user.id
-    full_stack.workspace_id = workspace.id
+    full_stack.user = auth_context.user.id
+    full_stack.workspace = workspace.id
 
     return zen_store().create_full_stack(full_stack)
 

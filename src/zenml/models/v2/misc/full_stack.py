@@ -48,8 +48,8 @@ class ComponentInfo(BaseModel):
 class FullStackRequest(BaseRequest):
     """Request model for a full-stack."""
 
-    user_id: Optional[UUID] = None
-    workspace_id: Optional[UUID] = None
+    user: Optional[UUID] = None
+    workspace: Optional[UUID] = None
 
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH

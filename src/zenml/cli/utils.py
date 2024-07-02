@@ -2830,6 +2830,8 @@ def requires_mac_env_var_warning() -> bool:
     Returns:
         bool: True if a warning needs to be shown, False otherwise.
     """
+    breakpoint()
+
     if mac_version := platform.mac_ver()[0]:
         try:
             major, minor, _ = mac_version.split(".")
@@ -2840,7 +2842,6 @@ def requires_mac_env_var_warning() -> bool:
             return True
     else:
         mac_version_tuple = (0, 0)
-
     return (
         not os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY")
         and sys.platform == "darwin"

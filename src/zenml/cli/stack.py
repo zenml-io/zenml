@@ -458,8 +458,8 @@ def register_stack(
         try:
             created_stack = client.zen_store.create_full_stack(
                 full_stack=FullStackRequest(
-                    user_id=client.active_user.id,
-                    workspace_id=client.active_workspace.id,
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
                     name=stack_name,
                     components=components,
                     service_connectors=[

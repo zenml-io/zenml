@@ -2755,7 +2755,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
-        return self._create_resource(
+        return self._create_workspace_scoped_resource(
             resource=full_stack,
             route=FULL_STACK,
             response_model=StackResponse,
