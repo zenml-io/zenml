@@ -462,9 +462,9 @@ def register_stack(
                     workspace=client.active_workspace.id,
                     name=stack_name,
                     components=components,
-                    service_connectors=[
-                        service_connector,
-                    ],
+                    service_connectors=[service_connector]
+                    if service_connector
+                    else [],
                 )
             )
         except (KeyError, IllegalOperationError) as err:
