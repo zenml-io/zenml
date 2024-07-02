@@ -164,4 +164,4 @@ def test_requires_mac_env_var_warning(mac_version, env_var, expected_result):
 
 def test_requires_mac_env_var_warning_non_mac():
     with patch("sys.platform", "linux"):
-        assert requires_mac_env_var_warning() == False
+        assert not requires_mac_env_var_warning()
