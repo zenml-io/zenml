@@ -364,7 +364,7 @@ class MigrationUtils(BaseModel):
                         # Convert column values to the correct type
                         for column in table.columns:
                             # Blob columns are stored as binary strings
-                            if column.type.python_type == bytes and isinstance(
+                            if column.type.python_type is bytes and isinstance(
                                 row[column.name], str
                             ):
                                 # Convert the string to bytes
