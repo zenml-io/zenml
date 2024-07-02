@@ -2751,21 +2751,38 @@ def is_jupyter_installed() -> bool:
         return False
 
 
+def get_macos_version() -> Tuple[Optional[int], Optional[int]]:
+    """
+    Get the macOS version as a tuple of (major, minor) version numbers.
+
+    Returns:
+        A tuple of (major, minor) version numbers if running on macOS, or (None, None) otherwise.
+    """
+    if sys.platform == "darwin":
+        mac_version = platform.mac_ver()[0]
+        if mac_version:
+            try:
+                major, minor, _ = mac_version
+                return int(major), int(minor)
+            except (ValueError, TypeError):
+                pass
+    return None, None
+
+
 def requires_mac_env_var_warning() -> bool:
-    """Checks if a warning needs to be shown for a local Mac server.
+    """
+    Check if a warning needs to be shown for a local Mac server.
 
     This is for the case where a user is on a macOS system, trying to run a
     local server but is missing the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY`
     environment variable.
 
     Returns:
-        bool: True if a warning needs to be shown, False otherwise.
+        True if a warning needs to be shown, False otherwise.
     """
-    if sys.platform == "darwin":
-        mac_version = platform.mac_ver()[0]
-        if mac_version:
-            major, minor = map(int, mac_version.split(".")[:2])
-            return not os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") and (
-                major > 10 or (major == 10 and minor >= 13)
-            )
+    major, minor = get_macos_version()
+    if major is not None and minor is not None:
+        return not os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") and (
+            major > 10 or (major == 10 and minor >= 13)
+        )
     return False
