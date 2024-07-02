@@ -2762,10 +2762,10 @@ def requires_mac_env_var_warning() -> bool:
         bool: True if a warning needs to be shown, False otherwise.
     """
     if sys.platform == "darwin":
-        if mac_version := platform.mac_ver()[0]:
+        mac_version = platform.mac_ver()[0]
+        if mac_version:
             major, minor = map(int, mac_version.split(".")[:2])
             return not os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") and (
-                major,
-                minor,
-            ) >= (10, 13)
+                major > 10 or (major == 10 and minor >= 13)
+            )
     return False
