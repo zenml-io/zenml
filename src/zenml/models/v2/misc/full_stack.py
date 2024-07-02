@@ -42,6 +42,7 @@ class ComponentInfo(BaseModel):
         description="The id of the service connector from the list "
         "`service_connectors` from `FullStackRequest`.",
     )
+    service_connector_resource_id: Optional[str] = None
     configuration: Dict[str, Any] = {}
 
 

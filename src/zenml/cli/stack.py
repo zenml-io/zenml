@@ -2069,6 +2069,7 @@ def _get_stack_component_info(
     )
 
     flavor = "undefined"
+    service_connector_resource_id = None
     config = {}
     if component_type == "artifact_store":
         available_storages: List[str] = []
@@ -2103,6 +2104,7 @@ def _get_stack_component_info(
         selected_storage = available_storages[selected_storage_idx]
 
         config = {"path": selected_storage}
+        service_connector_resource_id = selected_storage
     elif component_type == "orchestrator":
         if cloud_provider == "aws":
             available_orchestrators = []
@@ -2153,7 +2155,7 @@ def _get_stack_component_info(
             config = {"execution_role": execution_role}
         elif selected_orchestrator[0] == "VM AWS":
             flavor = "vm_aws"
-            config = {}
+            config = {"region": selected_orchestrator[1]}
         elif selected_orchestrator[0] == "K8S":
             flavor = "kubernetes"
             config = {}
@@ -2161,6 +2163,7 @@ def _get_stack_component_info(
             raise ValueError(
                 f"Unknown orchestrator type {selected_orchestrator[0]}"
             )
+        service_connector_resource_id = selected_orchestrator[1]
     elif component_type == "container_registry":
         available_registries: List[str] = []
         if cloud_provider == "aws":
@@ -2190,8 +2193,9 @@ def _get_stack_component_info(
         )
         if selected_registry_idx is None:
             cli_utils.error("No container registry selected.")
-        selected_storage = available_registries[selected_registry_idx]
-        config = {"uri": selected_storage}
+        selected_registry = available_registries[selected_registry_idx]
+        config = {"uri": selected_registry}
+        service_connector_resource_id = selected_registry
     else:
         raise ValueError(f"Unknown component type {component_type}")
 
@@ -2199,4 +2203,5 @@ def _get_stack_component_info(
         flavor=flavor,
         configuration=config,
         service_connector_index=service_connector_index,
+        service_connector_resource_id=service_connector_resource_id,
     )
