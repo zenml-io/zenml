@@ -2752,8 +2752,7 @@ def is_jupyter_installed() -> bool:
 
 
 def get_macos_version() -> Tuple[Optional[int], Optional[int]]:
-    """
-    Get the macOS version as a tuple of (major, minor) version numbers.
+    """Get the macOS version as a tuple of (major, minor) version numbers.
 
     Returns:
         A tuple of (major, minor) version numbers if running on macOS, or (None, None) otherwise.
@@ -2770,8 +2769,7 @@ def get_macos_version() -> Tuple[Optional[int], Optional[int]]:
 
 
 def requires_mac_env_var_warning() -> bool:
-    """
-    Check if a warning needs to be shown for a local Mac server.
+    """Check if a warning needs to be shown for a local Mac server.
 
     This is for the case where a user is on a macOS system, trying to run a
     local server but is missing the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY`

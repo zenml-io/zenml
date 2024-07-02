@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from unittest.mock import patch
 from typing import Tuple
+from unittest.mock import patch
 
 import pytest
 from click import ClickException
@@ -138,8 +138,7 @@ def test_validate_keys():
 def test_requires_mac_env_var_warning(
     mac_version: Tuple[str, ...], env_var: str, expected_result: bool
 ) -> None:
-    """
-    Test the requires_mac_env_var_warning function.
+    """Test the requires_mac_env_var_warning function.
 
     Args:
         mac_version: A tuple representing the mocked macOS version.
@@ -166,8 +165,6 @@ def test_requires_mac_env_var_warning(
 
 
 def test_requires_mac_env_var_warning_non_mac() -> None:
-    """
-    Test the requires_mac_env_var_warning function on a non-macOS platform.
-    """
+    """Test the requires_mac_env_var_warning function on a non-macOS platform."""
     with patch("sys.platform", "linux"):
         assert not requires_mac_env_var_warning()
