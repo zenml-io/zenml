@@ -2111,9 +2111,9 @@ def _get_stack_component_info(
             for each in service_connector_resource_models:
                 types = []
                 if each.resource_type == "aws-generic":
-                    types = ["Sagemaker", "VM AWS"]
+                    types = ["Sagemaker", "Skypilot (EC2)"]
                 if each.resource_type == "kubernetes-cluster":
-                    types = ["K8S"]
+                    types = ["Kubernetes"]
 
                 if each.resource_ids:
                     for orchestrator in each.resource_ids:
@@ -2153,10 +2153,10 @@ def _get_stack_component_info(
             flavor = "sagemaker"
             execution_role = Prompt.ask("Please enter an execution role ARN:")
             config = {"execution_role": execution_role}
-        elif selected_orchestrator[0] == "VM AWS":
+        elif selected_orchestrator[0] == "Skypilot (EC2)":
             flavor = "vm_aws"
             config = {"region": selected_orchestrator[1]}
-        elif selected_orchestrator[0] == "K8S":
+        elif selected_orchestrator[0] == "Kubernetes":
             flavor = "kubernetes"
             config = {}
         else:
