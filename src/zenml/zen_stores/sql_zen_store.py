@@ -7038,12 +7038,17 @@ class SqlZenStore(BaseZenStore):
                                     "connect to resources."
                                 )
 
-                            resource_id = None
-                            resource_type = requirements.resource_type
-                            if requirements.resource_id_attr is not None:
-                                resource_id = component_info.configuration.get(
-                                    requirements.resource_id_attr
-                                )
+                            if component_info.service_connector_resource_id:
+                                resource_id = component_info.service_connector_resource_id
+                            else:
+                                resource_id = None
+                                resource_type = requirements.resource_type
+                                if requirements.resource_id_attr is not None:
+                                    resource_id = (
+                                        component_info.configuration.get(
+                                            requirements.resource_id_attr
+                                        )
+                                    )
 
                             satisfied, msg = requirements.is_satisfied_by(
                                 connector=service_connector,
