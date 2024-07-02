@@ -143,18 +143,25 @@ def test_validate_keys():
     ],
 )
 def test_requires_mac_env_var_warning(mac_version, env_var, expected_result):
-    """Test that the requires_mac_env_var_warning function works."""
+    original_env_var = os.environ.get("OBJC_DISABLE_INITIALIZE_FORK_SAFETY")
+
     with patch(
         "platform.mac_ver", return_value=(mac_version, ("", "", ""), "x86_64")
-    ), patch.dict(
-        os.environ,
-        {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": env_var} if env_var else {},
-        clear=True,
     ):
+        if "OBJC_DISABLE_INITIALIZE_FORK_SAFETY" in os.environ:
+            del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
+
+        if env_var:
+            os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = env_var
+
         assert requires_mac_env_var_warning() == expected_result
+
+    if original_env_var is not None:
+        os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = original_env_var
+    elif "OBJC_DISABLE_INITIALIZE_FORK_SAFETY" in os.environ:
+        del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
 
 
 def test_requires_mac_env_var_warning_non_mac():
-    """Test that the requires_mac_env_var_warning function works."""
     with patch("sys.platform", "linux"):
-        assert not requires_mac_env_var_warning()
+        assert requires_mac_env_var_warning() == False
