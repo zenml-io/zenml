@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
-import functools
 from typing import TYPE_CHECKING, Dict, List, Tuple
 from uuid import UUID
 
@@ -48,13 +47,11 @@ def resolve_step_inputs(
     """
     from zenml.models import ArtifactVersionResponse, RunMetadataResponse
 
-    list_run_steps = functools.partial(
-        Client().list_run_steps, pipeline_run_id=run_id
-    )
-
     current_run_steps = {
         run_step.name: run_step
-        for run_step in pagination_utils.depaginate(list_run_steps)
+        for run_step in pagination_utils.depaginate(
+            Client().list_run_steps, pipeline_run_id=run_id
+        )
     }
 
     input_artifacts: Dict[str, "ArtifactVersionResponse"] = {}
