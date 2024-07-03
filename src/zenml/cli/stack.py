@@ -404,6 +404,7 @@ def register_stack(
                                 )
                             )
                         else:
+                            breakpoint()
                             _, service_connector_resource_model = (
                                 client.create_service_connector(
                                     name=stack_name,
@@ -1999,7 +2000,7 @@ def _get_service_connector_info(
     """
     from rich.prompt import Prompt
 
-    if cloud_provider not in {"aws", "azure", "gcp"}:
+    if cloud_provider not in {"aws"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
     client = Client()
@@ -2058,6 +2059,7 @@ def _get_service_connector_info(
                 password="format" in properties[req_field]
                 and properties[req_field]["format"] == "password",
             )
+    Console().print("All mandatory configuration parameters received!")
 
     return ServiceConnectorInfo(
         type=cloud_provider,

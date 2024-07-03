@@ -2842,8 +2842,6 @@ def requires_mac_env_var_warning() -> bool:
     Returns:
         bool: True if a warning needs to be shown, False otherwise.
     """
-    breakpoint()
-
     if mac_version := platform.mac_ver()[0]:
         try:
             major, minor, _ = mac_version.split(".")
