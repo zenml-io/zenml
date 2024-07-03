@@ -72,6 +72,7 @@ from zenml.models import (
     BoolFilter,
     NumericFilter,
     Page,
+    ServiceConnectorRequirements,
     StrFilter,
     UUIDFilter,
 )
@@ -616,13 +617,18 @@ def print_flavor_list(flavors: Page["FlavorResponse"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "ComponentResponse", active_status: bool
+    component: "ComponentResponse",
+    active_status: bool,
+    connector_requirements: Optional[ServiceConnectorRequirements] = None,
 ) -> None:
     """Prints the configuration options of a stack component.
 
     Args:
         component: The stack component to print.
         active_status: Whether the stack component is active.
+        connector_requirements: Connector requirements for the component, taken
+            from the component flavor. Only needed if the component has a
+            connector.
     """
     if component.user:
         user_name = component.user.name
@@ -693,11 +699,17 @@ def print_stack_component_configuration(
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
 
+        resource_type = (
+            connector_requirements.resource_type
+            if connector_requirements
+            else component.connector.resource_types[0]
+        )
+
         connector_dict = {
             "ID": str(component.connector.id),
             "NAME": component.connector.name,
             "TYPE": component.connector.type,
-            "RESOURCE TYPE": component.connector.resource_types[0],
+            "RESOURCE TYPE": resource_type,
             "RESOURCE NAME": component.connector_resource_id
             or component.connector.resource_id
             or "N/A",
