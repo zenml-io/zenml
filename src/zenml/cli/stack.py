@@ -311,6 +311,7 @@ def register_stack(
 
         connector_selected: Optional[int] = None
         if not use_auto_configure:
+            service_connector_response = None
             existing_connectors = client.list_service_connectors(
                 connector_type=provider, size=100
             )
