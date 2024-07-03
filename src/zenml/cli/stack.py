@@ -56,6 +56,10 @@ from zenml.exceptions import (
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import StackFilter
+from zenml.models.v2.core.service_connector import (
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+)
 from zenml.models.v2.misc.full_stack import (
     ComponentInfo,
     FullStackRequest,
@@ -282,23 +286,34 @@ def register_stack(
     created_objects: Set[str] = set()
     service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = None
     if provider is not None and connector is None:
-        use_implicit = Confirm.ask(
-            f"[bold]{provider.upper()} cloud service connector[/bold] "
-            "can use the Implicit Authentication by accessing connection "
-            "configuration of the environment or use one of "
-            "the authentications methods supported.\n"
-            "The implicit authentication is great to quickstart, but "
-            "actual credentials may vary system to system impacting reproducibility.\n"
-            "Would you like to use the Implicit Authentication method?",
-            default=False,
-            show_choices=True,
-            show_default=True,
-        )
-        if not use_implicit:
+        service_connector_response = None
+        use_auto_configure = False
+        try:
+            service_connector_response, _ = client.create_service_connector(
+                name=stack_name,
+                connector_type=provider,
+                register=False,
+                auto_configure=True,
+                verify=False,
+            )
+        except Exception:
+            pass
+        if service_connector_response:
+            use_auto_configure = Confirm.ask(
+                f"[bold]{provider.upper()} cloud service connector[/bold] "
+                "has detected connection credentials in your environment.\n"
+                "Would you like to use these credentials or create a new "
+                "configuration by providing connection details?",
+                default=True,
+                show_choices=True,
+                show_default=True,
+            )
+
+        connector_selected: Optional[int] = None
+        if not use_auto_configure:
             existing_connectors = client.list_service_connectors(
                 connector_type=provider, size=100
             )
-            connector_selected: Optional[int] = None
             if existing_connectors.total:
                 connector_selected = cli_utils.multi_choice_prompt(
                     object_type=f"{provider.upper()} service connectors",
@@ -312,9 +327,10 @@ def register_stack(
                     default_choice="0",
                     allow_zero_be_a_new_object=True,
                 )
-        if use_implicit or connector_selected is None:
+        if use_auto_configure or connector_selected is None:
             service_connector = _get_service_connector_info(
-                cloud_provider=provider, use_implicit=use_implicit
+                cloud_provider=provider,
+                connector_details=service_connector_response,
             )
             created_objects.add("service_connector")
         else:
@@ -1963,13 +1979,16 @@ def connect_stack(
 
 
 def _get_service_connector_info(
-    cloud_provider: str, use_implicit: bool
+    cloud_provider: str,
+    connector_details: Optional[
+        Union[ServiceConnectorResponse, ServiceConnectorRequest]
+    ],
 ) -> ServiceConnectorInfo:
     """Get a service connector info with given cloud provider.
 
     Args:
         cloud_provider: The cloud provider to use.
-        use_implicit: Whether to use implicit credentials.
+        connector_details: Whether to use implicit credentials.
 
     Returns:
         The info model of the created service connector.
@@ -1986,7 +2005,7 @@ def _get_service_connector_info(
     auth_methods = client.get_service_connector_type(
         cloud_provider
     ).auth_method_dict
-    if not use_implicit:
+    if not connector_details:
         fixed_auth_methods = list(
             [
                 (key, value)
@@ -2014,7 +2033,7 @@ def _get_service_connector_info(
             cli_utils.error("No authentication method selected.")
         auth_type = fixed_auth_methods[selected_auth_idx][0]
     else:
-        auth_type = "implicit"
+        auth_type = connector_details.auth_method
 
     selected_auth_model = auth_methods[auth_type]
 
@@ -2023,11 +2042,21 @@ def _get_service_connector_info(
 
     answers = {}
     for req_field in required_fields:
-        answers[req_field] = Prompt.ask(
-            f"Please enter value for `{req_field}`:",
-            password="format" in properties[req_field]
-            and properties[req_field]["format"] == "password",
-        )
+        if connector_details:
+            if conf_value := connector_details.configuration.get(
+                req_field, None
+            ):
+                answers[req_field] = conf_value
+            elif secret_value := connector_details.secrets.get(
+                req_field, None
+            ):
+                answers[req_field] = secret_value.get_secret_value()
+        if req_field not in answers:
+            answers[req_field] = Prompt.ask(
+                f"Please enter value for `{req_field}`:",
+                password="format" in properties[req_field]
+                and properties[req_field]["format"] == "password",
+            )
 
     return ServiceConnectorInfo(
         type=cloud_provider,
