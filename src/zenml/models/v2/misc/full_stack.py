@@ -16,7 +16,7 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
@@ -74,3 +74,20 @@ class FullStackRequest(BaseRequest):
         "existing components or request information for brand new "
         "components.",
     )
+
+    @model_validator(mode="after")
+    def _validate_indexes_in_components(self) -> "FullStackRequest":
+        for component in self.components.values():
+            if isinstance(component, ComponentInfo):
+                if component.service_connector_index is not None:
+                    if (
+                        component.service_connector_index < 0
+                        or component.service_connector_index
+                        >= len(self.service_connectors)
+                    ):
+                        raise ValueError(
+                            f"Service connector index {component.service_connector_index} "
+                            "is out of range. Please provide a valid index referring to "
+                            "the position in the list of service connectors."
+                        )
+        return self
