@@ -27,7 +27,7 @@ class DatabricksIntegration(Integration):
     """Definition of Databricks Integration for ZenML."""
 
     NAME = DATABRICKS
-    REQUIREMENTS = ["databricks-sdk"]
+    REQUIREMENTS = ["databricks-sdk==0.28.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

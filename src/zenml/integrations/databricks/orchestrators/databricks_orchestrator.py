@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of the Databricks orchestrator."""
 
-import io
 import itertools
 import os
 import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
+from databricks.sdk.service.compute import AutoScale
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml.client import Client
@@ -229,7 +229,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             )
 
         # Create a callable for future compilation into a dsl.Pipeline.
-        def _construct_databricks_pipeline() -> List[DatabricksTask]:
+        def _construct_databricks_pipeline(
+            zenml_project_wheel: str, cluster_id: str
+        ) -> List[DatabricksTask]:
             """Create a databrcks task for each step.
 
             This should contain the name of the step or task and configures the
@@ -238,7 +240,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             Additionally, this gives each task information about its
             direct downstream steps.
             """
-            tasks: DatabricksTask = []
+            tasks = []
             for step_name, step in deployment.step_configurations.items():
                 # image = self.get_image(
                 #    deployment=deployment, step_name=step_name
@@ -273,6 +275,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
                 docker_settings = step.config.docker_settings
                 docker_image_builder = PipelineDockerImageBuilder()
+                # Gather the requirements files
                 requirements_files = (
                     docker_image_builder.gather_requirements_files(
                         docker_settings=docker_settings,
@@ -280,11 +283,16 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                         log=False,
                     )
                 )
+
+                # Extract and clean the requirements
                 requirements = list(
                     itertools.chain.from_iterable(
-                        r[1].split("\n") for r in requirements_files
+                        r[1].strip().split("\n") for r in requirements_files
                     )
                 )
+
+                # Remove empty items and duplicates
+                requirements = sorted(set(filter(None, requirements)))
 
                 task = convert_step_to_task(
                     f"{deployment.id}_{step_name}",
@@ -292,8 +300,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     arguments,
                     requirements,
                     depends_on=upstream_steps,
+                    zenml_project_wheel=zenml_project_wheel,
+                    cluster_id=cluster_id,
                 )
-                breakpoint()
                 tasks.append(task)
                 # Create a container_op - the kubeflow equivalent of a step. It
                 # contains the name of the step, the name of the docker image,
@@ -325,40 +334,40 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         # Create a wheel for the package in the temporary directory
         wheel_path = self.create_wheel(temp_dir=repository_temp_dir)
 
-        breakpoint()
-
-        pipeline_wheel_path = os.path.join(
-            self.pipeline_directory, wheel_path.rsplit("/", 1)[-1]
-        )
-
-        fileio.copy(wheel_path, pipeline_wheel_path, overwrite=True)
-
-        fileio.rmtree(repository_temp_dir)
-
         databricks_client = self._get_databricks_client(
-            cast(DatabricksOrchestratorSettings, self.get_settings())
+            cast(DatabricksOrchestratorSettings, self.get_settings(deployment))
         )
 
-        breakpoint()
         # Create an empty folder in a volume.
-        databricks_directory = (
-            f"/zenml/{deployment.pipeline.name}/{orchestrator_run_name}"
-        )
+        databricks_directory = f"dbfs:/Workspace/Users/7c2a45bf-fd61-46b7-a0a3-6ff6d7b81a7a/zenml/{deployment.pipeline.name}/{orchestrator_run_name}"
         databricks_wheel_path = (
             f"{databricks_directory}/{wheel_path.rsplit('/', 1)[-1]}"
         )
-        databricks_client.files.create_directory(databricks_directory)
 
-        breakpoint()
-        # Upload a file to a volume.
-        with fileio.open(wheel_path, "rb") as file:
-            file_bytes = file.read()
-            binary_data = io.BytesIO(file_bytes)
-            databricks_client.files.upload(
-                databricks_wheel_path, binary_data, overwrite=True
-            )
+        databricks_client.dbutils.fs.mkdirs(databricks_directory)
+        databricks_client.dbutils.fs.cp(
+            f"file:/{wheel_path}", databricks_wheel_path
+        )
 
-        breakpoint()
+        cluster = databricks_client.clusters.create_and_wait(
+            spark_version="15.3.x-gpu-ml-scala2.12",  # 14.3.x-gpu-ml-scala2.12  14.3.x-scala2.12
+            num_workers=0,
+            node_type_id="Standard_NC24ads_A100_v4",
+            cluster_name="zenml-test-cluster",
+            policy_id="0016745CDB60B745",
+            autotermination_minutes=20,
+            autoscale=AutoScale(min_workers=1, max_workers=1),
+            single_user_name="7c2a45bf-fd61-46b7-a0a3-6ff6d7b81a7a",
+            spark_env_vars={
+                "DISABLE_MLFLOW_INTEGRATION": "true",
+                "TORCH_DISTRIBUTED_DEBUG": "DETAIL",
+            },
+            spark_conf={
+                "spark.databricks.driver.dbfsLibraryInstallationAllowed": "true",
+            },
+        )
+
+        fileio.rmtree(repository_temp_dir)
 
         logger.info(
             "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
@@ -366,13 +375,21 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         # using the databricks client uploads the pipeline to kubeflow pipelines and
         # runs it there
-        breakpoint()
         self._upload_and_run_pipeline(
-            pipeline_name=orchestrator_run_name,
-            tasks=_construct_databricks_pipeline(),
+            pipeline_name=deployment.pipeline.name,
+            tasks=_construct_databricks_pipeline(
+                databricks_wheel_path, cluster.cluster_id
+            ),
             run_name=orchestrator_run_name,
-            settings=cast(DatabricksOrchestratorSettings, self.get_settings()),
+            settings=cast(
+                DatabricksOrchestratorSettings, self.get_settings(deployment)
+            ),
         )
+
+        # databricks_client.clusters.delete_and_wait(
+        #    cluster_id=cluster.cluster_id
+        # )
+        # databricks_client.cluster_policies.delete(policy_id=policy.policy_id)
 
     def _upload_and_run_pipeline(
         self,
@@ -392,10 +409,12 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             schedule: The schedule the pipeline will run on.
         """
         databricks_client = self._get_databricks_client(settings)
-        databricks_client.jobs.create(
+
+        job = databricks_client.jobs.create(
             name=pipeline_name,
             tasks=tasks,
         )
+        databricks_client.jobs.run_now(job_id=job.job_id)
 
     def sanitize_cluster_name(self, name: str) -> str:
         """Sanitize the value to be used in a cluster name.
