@@ -6930,7 +6930,8 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
 
         Raises:
-            RuntimeError: If the full stack creation fails.
+            ValueError: If the full stack creation fails, due to the corrupted input.
+            RuntimeError: If the full stack creation fails, due to unforeseen errors.
         """
         # We can not use the decorator here, as we need custom metadata
         with track_handler(
@@ -7032,7 +7033,7 @@ class SqlZenStore(BaseZenStore):
                             requirements = flavor_model.connector_requirements
 
                             if not requirements:
-                                raise RuntimeError(
+                                raise ValueError(
                                     f"The '{flavor_model.name}' implementation "
                                     "does not support using a service connector to "
                                     "connect to resources."
@@ -7056,7 +7057,7 @@ class SqlZenStore(BaseZenStore):
                             )
 
                             if not satisfied:
-                                raise RuntimeError(
+                                raise ValueError(
                                     "Please pick a connector that is "
                                     "compatible with the component flavor and "
                                     "try again.."
@@ -7066,7 +7067,7 @@ class SqlZenStore(BaseZenStore):
                                 if service_connector.resource_id:
                                     resource_id = service_connector.resource_id
                                 elif service_connector.supports_instances:
-                                    raise RuntimeError(
+                                    raise ValueError(
                                         f"Multiple {resource_type} resources "
                                         "are available for the selected "
                                         "connector. Please use a `resource_id` "
