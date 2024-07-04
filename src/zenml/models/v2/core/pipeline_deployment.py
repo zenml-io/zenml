@@ -20,6 +20,7 @@ from pydantic import Field
 
 from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.page import Page
@@ -70,6 +71,14 @@ class PipelineDeploymentBase(BaseZenModel):
     server_version: Optional[str] = Field(
         default=None,
         title="The version of the ZenML installation on the server side.",
+    )
+    pipeline_version_hash: Optional[str] = Field(
+        default=None,
+        title="The pipeline version hash of the deployment.",
+    )
+    pipeline_spec: Optional[PipelineSpec] = Field(
+        default=None,
+        title="The pipeline spec of the deployment.",
     )
 
     @property
@@ -150,6 +159,13 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     server_version: Optional[str] = Field(
         title="The version of the ZenML installation on the server side."
     )
+    pipeline_version_hash: Optional[str] = Field(
+        default=None, title="The pipeline version hash of the deployment."
+    )
+    pipeline_spec: Optional[PipelineSpec] = Field(
+        default=None, title="The pipeline spec of the deployment."
+    )
+
     pipeline: Optional[PipelineResponse] = Field(
         default=None, title="The pipeline associated with the deployment."
     )
@@ -250,6 +266,24 @@ class PipelineDeploymentResponse(
             the value of the property.
         """
         return self.get_metadata().server_version
+
+    @property
+    def pipeline_version_hash(self) -> Optional[str]:
+        """The `pipeline_version_hash` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().pipeline_version_hash
+
+    @property
+    def pipeline_spec(self) -> Optional[PipelineSpec]:
+        """The `server_version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().pipeline_spec
 
     @property
     def pipeline(self) -> Optional[PipelineResponse]:

@@ -413,7 +413,6 @@ def log_step_metadata(
     metadata: Dict[str, "MetadataType"],
     step_name: Optional[str] = None,
     pipeline_name_id_or_prefix: Optional[Union[str, UUID]] = None,
-    pipeline_version: Optional[str] = None,
     run_id: Optional[str] = None,
 ) -> None:
     """Logs step metadata.
@@ -424,8 +423,6 @@ def log_step_metadata(
             when being called inside a step.
         pipeline_name_id_or_prefix: The name of the pipeline to log metadata
             for. Can be omitted when being called inside a step.
-        pipeline_version: The version of the pipeline to log metadata for.
-            Can be omitted when being called inside a step.
         run_id: The ID of the run to log metadata for. Can be omitted when
             being called inside a step.
 
@@ -460,7 +457,6 @@ def log_step_metadata(
             )
         pipeline_run = client.get_pipeline(
             name_id_or_prefix=pipeline_name_id_or_prefix,
-            version=pipeline_version,
         ).last_run
         step_run_id = pipeline_run.steps[step_name].id
     client.create_run_metadata(

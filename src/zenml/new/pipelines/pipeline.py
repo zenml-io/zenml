@@ -241,20 +241,6 @@ class Pipeline:
         """
         return inspect.getsource(self.source_object)
 
-    @classmethod
-    def from_model(cls, model: "PipelineResponse") -> "Pipeline":
-        """Creates a pipeline instance from a model.
-
-        Args:
-            model: The model to load the pipeline instance from.
-
-        Returns:
-            The pipeline instance.
-        """
-        from zenml.new.pipelines.deserialization_utils import load_pipeline
-
-        return load_pipeline(model=model)
-
     @property
     def model(self) -> "PipelineResponse":
         """Gets the registered pipeline model for this instance.
@@ -267,14 +253,7 @@ class Pipeline:
         """
         self._prepare_if_possible()
 
-        pipeline_spec = Compiler().compile_spec(self)
-        version_hash = self._compute_unique_identifier(
-            pipeline_spec=pipeline_spec
-        )
-
-        pipelines = Client().list_pipelines(
-            name=self.name, version_hash=version_hash
-        )
+        pipelines = Client().list_pipelines(name=self.name)
         if len(pipelines) == 1:
             return pipelines.items[0]
 
@@ -513,8 +492,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "pipeline build/run` commands."
             )
 
-        pipeline_spec = Compiler().compile_spec(self)
-        return self._register(pipeline_spec=pipeline_spec)
+        return self._register()
 
     def build(
         self,
@@ -546,7 +524,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 steps=step_configurations,
                 settings=settings,
             )
-            pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+            pipeline_id = self._register().id
 
             local_repo = code_repository_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository_context(
@@ -646,7 +624,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             pipeline_id = None
             if register_pipeline:
-                pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+                pipeline_id = self._register().id
 
             else:
                 logger.debug(f"Pipeline {self.name} is unlisted.")
@@ -1027,7 +1005,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         return deployment, pipeline_spec, run_config.schedule, run_config.build
 
-    def _register(self, pipeline_spec: "PipelineSpec") -> "PipelineResponse":
+    def _register(self) -> "PipelineResponse":
         """Register the pipeline in the server.
 
         Args:
@@ -1036,44 +1014,27 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The registered pipeline model.
         """
+        client = Client()
 
-        def _get(version_hash: str) -> PipelineResponse:
-            client = Client()
-
+        def _get() -> PipelineResponse:
             matching_pipelines = client.list_pipelines(
                 name=self.name,
-                version_hash=version_hash,
                 size=1,
                 sort_by="desc:created",
             )
+
             if matching_pipelines.total:
                 registered_pipeline = matching_pipelines.items[0]
-                logger.info(
-                    "Reusing registered pipeline version: `(version: %s)`.",
-                    registered_pipeline.version,
-                )
                 return registered_pipeline
             raise RuntimeError("No matching pipelines found.")
 
-        version_hash = self._compute_unique_identifier(
-            pipeline_spec=pipeline_spec
-        )
-
-        client = Client()
         try:
-            return _get(version_hash)
+            return _get()
         except RuntimeError:
-            latest_version = self._get_latest_version() or 0
-            version = str(latest_version + 1)
-
             request = PipelineRequest(
                 workspace=client.active_workspace.id,
                 user=client.active_user.id,
                 name=self.name,
-                version=version,
-                version_hash=version_hash,
-                spec=pipeline_spec,
-                docstring=self.__doc__,
             )
 
             try:
@@ -1081,12 +1042,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     pipeline=request
                 )
                 logger.info(
-                    "Registered new version: `(version %s)`.",
-                    registered_pipeline.version,
+                    "Registered new pipeline: `%s`.",
+                    registered_pipeline.name,
                 )
                 return registered_pipeline
             except EntityExistsError:
-                return _get(version_hash)
+                return _get()
 
     def _compute_unique_identifier(self, pipeline_spec: PipelineSpec) -> str:
         """Computes a unique identifier from the pipeline spec and steps.
@@ -1112,22 +1073,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             hash_.update(step_source.encode())
 
         return hash_.hexdigest()
-
-    def _get_latest_version(self) -> Optional[int]:
-        """Gets the latest version of this pipeline.
-
-        Returns:
-            The latest version or `None` if no version exists.
-        """
-        all_pipelines = Client().list_pipelines(
-            name=self.name, sort_by="desc:created", size=1
-        )
-        if not all_pipelines.total:
-            return None
-        pipeline = all_pipelines.items[0]
-        if pipeline.version == "UNVERSIONED":
-            return None
-        return int(all_pipelines.items[0].version)
 
     def add_step_invocation(
         self,

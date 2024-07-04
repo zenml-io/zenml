@@ -2337,9 +2337,6 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        version: Optional[str] = None,
-        version_hash: Optional[str] = None,
-        docstring: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -2355,9 +2352,6 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the pipeline to filter by.
-            version: The version of the pipeline to filter by.
-            version_hash: The version hash of the pipeline to filter by.
-            docstring: The docstring of the pipeline to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -2375,9 +2369,6 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            version=version,
-            version_hash=version_hash,
-            docstring=docstring,
             workspace_id=workspace_id,
             user_id=user_id,
         )
@@ -2390,71 +2381,41 @@ class Client(metaclass=ClientMetaClass):
     def get_pipeline(
         self,
         name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
         hydrate: bool = True,
     ) -> PipelineResponse:
         """Get a pipeline by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
-            version: The pipeline version. If not specified, the latest
-                version is returned.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The pipeline.
         """
-        return self._get_entity_version_by_id_or_name_or_prefix(
+        return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_pipeline,
             list_method=self.list_pipelines,
             name_id_or_prefix=name_id_or_prefix,
-            version=version,
             hydrate=hydrate,
         )
 
     def delete_pipeline(
         self,
         name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
-        all_versions: bool = False,
     ) -> None:
         """Delete a pipeline.
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
-            version: The pipeline version. If left empty, will delete
-                the latest version.
-            all_versions: If `True`, delete all versions of the pipeline.
-
-        Raises:
-            ValueError: If an ID is supplied when trying to delete all versions
-                of a pipeline.
         """
-        if all_versions:
-            if is_valid_uuid(name_id_or_prefix):
-                raise ValueError(
-                    "You need to supply a name (not an ID) when trying to "
-                    "delete all versions of a pipeline."
-                )
-
-            for pipeline in depaginate(
-                functools.partial(
-                    Client().list_pipelines, name=name_id_or_prefix
-                )
-            ):
-                Client().delete_pipeline(pipeline.id)
-        else:
-            pipeline = self.get_pipeline(
-                name_id_or_prefix=name_id_or_prefix, version=version
-            )
-            self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
+        pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
     @_fail_for_sql_zen_store
     def trigger_pipeline(
         self,
         pipeline_name_or_id: Union[str, UUID, None] = None,
-        pipeline_version: Optional[str] = None,
         run_configuration: Optional[PipelineRunConfiguration] = None,
         config_path: Optional[str] = None,
         deployment_id: Optional[UUID] = None,
@@ -2565,9 +2526,7 @@ class Client(metaclass=ClientMetaClass):
             )
         else:
             assert pipeline_name_or_id
-            pipeline = self.get_pipeline(
-                name_id_or_prefix=pipeline_name_or_id, version=pipeline_version
-            )
+            pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
 
             stack = None
             if stack_name_or_id:

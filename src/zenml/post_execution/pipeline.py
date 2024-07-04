@@ -38,14 +38,11 @@ def get_pipelines() -> List["PipelineResponse"]:
 
 def get_pipeline(
     pipeline: str,
-    version: Optional[str] = None,
 ) -> Optional["PipelineResponse"]:
     """(Deprecated) Fetches a pipeline model.
 
     Args:
         pipeline: The name of the pipeline.
-        version: Optional pipeline version. Specifies the version of the
-            pipeline to return. If not given, returns the latest version.
 
     Returns:
         The pipeline model.
@@ -55,4 +52,4 @@ def get_pipeline(
         "removed in a future release. Please use "
         "`zenml.client.Client().get_pipeline()` instead."
     )
-    return Client().get_pipeline(name_id_or_prefix=pipeline, version=version)
+    return Client().get_pipeline(name_id_or_prefix=pipeline)

@@ -200,12 +200,6 @@ from zenml.models.v2.core.pipeline import (
     PipelineResponseBody,
     PipelineResponseMetadata,
 )
-from zenml.models.v2.core.pipeline_namespace import (
-    PipelineNamespaceResponseBody,
-    PipelineNamespaceResponseMetadata,
-    PipelineNamespaceResponse,
-    PipelineNamespaceFilter,
-)
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
     PipelineBuildRequest,
@@ -583,10 +577,6 @@ __all__ = [
     "PipelineResponse",
     "PipelineResponseBody",
     "PipelineResponseMetadata",
-    "PipelineNamespaceFilter",
-    "PipelineNamespaceResponse",
-    "PipelineNamespaceResponseBody",
-    "PipelineNamespaceResponseMetadata",
     "PipelineBuildBase",
     "PipelineBuildRequest",
     "PipelineBuildFilter",

@@ -387,6 +387,8 @@ def apply_run_config(
         build=deployment.build.id,
         schedule=None,
         code_reference=code_reference_request,
+        pipeline_version_hash=deployment.pipeline_version_hash,
+        pipeline_spec=deployment.pipeline_spec,
     )
 
     return deployment_request

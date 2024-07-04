@@ -13,17 +13,13 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String
-from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.config.pipeline_spec import PipelineSpec
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
     PipelineRequest,
     PipelineResponse,
@@ -53,17 +49,7 @@ class PipelineSchema(NamedSchema, table=True):
     __tablename__ = "pipeline"
 
     # Fields
-    version: str
-    version_hash: str
-    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    spec: str = Field(
-        sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
-            nullable=False,
-        )
-    )
+    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     # Foreign keys
     workspace_id: UUID = build_foreign_key_field(
@@ -113,14 +99,9 @@ class PipelineSchema(NamedSchema, table=True):
         """
         return cls(
             name=pipeline_request.name,
-            version=pipeline_request.version,
-            version_hash=pipeline_request.version_hash,
+            description=pipeline_request.description,
             workspace_id=pipeline_request.workspace,
             user_id=pipeline_request.user,
-            docstring=pipeline_request.docstring,
-            spec=json.dumps(
-                pipeline_request.spec.model_dump(mode="json"), sort_keys=True
-            ),
         )
 
     def to_model(
@@ -144,17 +125,15 @@ class PipelineSchema(NamedSchema, table=True):
         body = PipelineResponseBody(
             user=self.user.to_model() if self.user else None,
             status=[run.status for run in self.runs[:last_x_runs]],
+            latest_run_id=self.runs[-1].id if self.runs else None,
+            latest_run_status=self.runs[-1].id if self.runs else None,
             created=self.created,
             updated=self.updated,
-            version=self.version,
         )
         metadata = None
         if include_metadata:
             metadata = PipelineResponseMetadata(
                 workspace=self.workspace.to_model(),
-                version_hash=self.version_hash,
-                spec=PipelineSpec.model_validate_json(self.spec),
-                docstring=self.docstring,
             )
 
         return PipelineResponse(
@@ -173,5 +152,6 @@ class PipelineSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineSchema`.
         """
+        self.description = pipeline_update.description
         self.updated = datetime.utcnow()
         return self

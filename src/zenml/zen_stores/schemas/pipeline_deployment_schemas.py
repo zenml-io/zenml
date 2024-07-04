@@ -22,6 +22,7 @@ from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
@@ -74,6 +75,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=True)
     server_version: str = Field(nullable=True)
+    pipeline_version_hash: Optional[str] = Field(nullable=True, default=None)
+    pipeline_spec: Optional[str] = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -187,6 +197,12 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             client_environment=json.dumps(request.client_environment),
             client_version=request.client_version,
             server_version=request.server_version,
+            pipeline_version_hash=request.pipeline_version_hash,
+            pipeline_spec=json.dumps(
+                request.pipeline_spec.model_dump(mode="json"), sort_keys=True
+            )
+            if request.pipeline_spec
+            else None,
         )
 
     def to_model(
@@ -234,6 +250,12 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 schedule=self.schedule.to_model() if self.schedule else None,
                 code_reference=self.code_reference.to_model()
                 if self.code_reference
+                else None,
+                pipeline_version_hash=self.pipeline_version_hash,
+                pipeline_spec=PipelineSpec.model_validate_json(
+                    self.pipeline_spec
+                )
+                if self.pipeline_spec
                 else None,
             )
         return PipelineDeploymentResponse(

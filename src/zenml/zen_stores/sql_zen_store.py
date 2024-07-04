@@ -201,9 +201,6 @@ from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
     PipelineFilter,
-    PipelineNamespaceFilter,
-    PipelineNamespaceResponse,
-    PipelineNamespaceResponseBody,
     PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
@@ -3892,14 +3889,13 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.version_hash == pipeline.version_hash)
                 .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
                     f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name and "
-                    f"version already exists."
+                    f"'{pipeline.workspace}': A pipeline with this name "
+                    "already exists."
                 )
 
             # Create the pipeline
@@ -3938,80 +3934,6 @@ class SqlZenStore(BaseZenStore):
                 )
 
             return pipeline.to_model(include_metadata=hydrate)
-
-    def list_pipeline_namespaces(
-        self,
-        filter_model: PipelineNamespaceFilter,
-        hydrate: bool = False,
-    ) -> Page[PipelineNamespaceResponse]:
-        """List all pipeline namespaces matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all pipeline namespaces matching the filter criteria.
-        """
-
-        def _custom_conversion(
-            row: Tuple[str, UUID, str],
-        ) -> PipelineNamespaceResponse:
-            name, latest_run_id, latest_run_status = row
-
-            body = PipelineNamespaceResponseBody(
-                latest_run_id=latest_run_id,
-                latest_run_status=latest_run_status,
-            )
-
-            return PipelineNamespaceResponse(name=name, body=body)
-
-        def _custom_fetch(
-            session: Session,
-            query: Union[Select[Any], SelectOfScalar[Any]],
-            filter: BaseFilter,
-        ) -> Sequence[Any]:
-            return session.exec(query).all()
-
-        with Session(self.engine) as session:
-            max_date_subquery = (
-                select(
-                    PipelineSchema.name,
-                    func.max(PipelineRunSchema.created).label("max_created"),
-                )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
-                )
-                .group_by(PipelineSchema.name)
-                .subquery()
-            )
-
-            query = (
-                select(
-                    max_date_subquery.c.name,
-                    PipelineRunSchema.id,
-                    PipelineRunSchema.status,
-                )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineRunSchema.created  # type: ignore[arg-type]
-                    == max_date_subquery.c.max_created,
-                )
-                .order_by(desc(PipelineRunSchema.updated))  # type: ignore[arg-type]
-            )
-
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineSchema,
-                filter_model=filter_model,
-                hydrate=hydrate,
-                custom_fetch=_custom_fetch,
-                custom_schema_to_model_conversion=_custom_conversion,
-            )
 
     def list_pipelines(
         self,

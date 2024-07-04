@@ -133,6 +133,11 @@ class Compiler:
 
         client_version, server_version = get_zenml_versions()
 
+        step_specs = [step.spec for step in steps.values()]
+        pipeline_spec = self._compute_pipeline_spec(
+            pipeline=pipeline, step_specs=step_specs
+        )
+
         deployment = PipelineDeploymentBase(
             run_name_template=run_name,
             pipeline_configuration=pipeline.configuration,
@@ -140,11 +145,10 @@ class Compiler:
             client_environment=get_run_environment_dict(),
             client_version=client_version,
             server_version=server_version,
-        )
-
-        step_specs = [step.spec for step in steps.values()]
-        pipeline_spec = self._compute_pipeline_spec(
-            pipeline=pipeline, step_specs=step_specs
+            pipeline_version_hash=pipeline._compute_unique_identifier(
+                pipeline_spec=pipeline_spec
+            ),
+            pipeline_spec=pipeline_spec,
         )
 
         logger.debug("Compiled pipeline deployment: %s", deployment)
