@@ -67,6 +67,10 @@ curl -X 'POST' \
 }'
 ```
 
+{% hint style="info" %}
+The pipeline that you're triggering has to have been run previously on a remote stack. In other words, the functionality to trigger a pipeline from another only works when a Docker image has previously been built for that pipeline. In most cases this will be because you ran the pipeline already, but in some cases you might have built the image separately.
+{% endhint %}
+
 A positive response means your pipeline has been re-triggered with a different config!
 
 

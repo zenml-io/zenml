@@ -102,8 +102,12 @@ def finetune(
     if should_print:
         logger.info("Loading datasets...")
     tokenizer = load_tokenizer(base_model_id, use_fast=use_fast)
-    tokenized_train_dataset = load_from_disk(dataset_dir / "train")
-    tokenized_val_dataset = load_from_disk(dataset_dir / "val")
+    tokenized_train_dataset = load_from_disk(
+        str((dataset_dir / "train").absolute())
+    )
+    tokenized_val_dataset = load_from_disk(
+        str((dataset_dir / "val").absolute())
+    )
 
     if should_print:
         logger.info("Loading base model...")
@@ -162,7 +166,6 @@ def finetune(
     if should_print:
         logger.info("Saving model...")
 
-    ft_model_dir = Path(ft_model_dir)
     if not use_accelerate or accelerator.is_main_process:
         ft_model_dir.mkdir(parents=True, exist_ok=True)
     if not use_accelerate:
