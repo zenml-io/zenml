@@ -2755,10 +2755,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
-        return self._create_workspace_scoped_resource(
+        assert full_stack.workspace is not None
+
+        return self._create_resource(
             resource=full_stack,
-            route=FULL_STACK,
             response_model=StackResponse,
+            route=f"{WORKSPACES}/{str(full_stack.workspace)}{FULL_STACK}",
         )
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
