@@ -22,7 +22,7 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
     zenml deploy --provider aws
 
     # Connect cloud resources with a simple wizard
-    zenml stack register --provider aws
+    zenml stack register <STACK_NAME> --provider aws
 
     # Deploy entire MLOps stacks at once
     zenml stack deploy  --provider gcp

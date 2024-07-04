@@ -14,7 +14,6 @@ This guide will focus on shifting gears from running pipelines _locally_ on your
 * [Understanding stacks](understand-stacks.md)
 * [Connecting remote storage](remote-storage.md)
 * [Orchestrating on the cloud](cloud-orchestration.md)
-* [Easy stack registration](easy-stack-registration.md)
 * [Configuring the pipeline to scale compute](configure-pipeline.md)
 * [Configure a code repository](connect-code-repository.md)
 

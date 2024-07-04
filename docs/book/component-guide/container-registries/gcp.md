@@ -19,6 +19,13 @@ You should use the GCP container registry if:
 
 ### How to deploy it
 
+{% hint style="info" %}
+Don't want to deploy the container registry manually? Check out the
+[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 When using the Google Artifact Registry, you need to:
 
 * enable it [here](https://console.cloud.google.com/marketplace/product/google/artifactregistry.googleapis.com)

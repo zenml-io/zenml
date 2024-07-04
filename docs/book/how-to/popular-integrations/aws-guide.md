@@ -7,15 +7,19 @@ description: A simple guide to create an AWS stack to run your ZenML pipelines
 This page aims to quickly set up a minimal production stack on AWS. With just a few simple steps, you will set up an IAM role with specifically-scoped permissions that ZenML can use to authenticate with the relevant AWS resources.
 
 {% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
-and read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-if you have existing infrastructure, or read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
-
-Or simply try running one of:
+**Don't want to learn how to deploy and register stack components manually? 
+Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+and learn how to use:**
 
 ```shell
-zenml stack register --provider aws
 zenml stack deploy --provider aws
+```
+
+**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
+and learn how to use:**
+
+```shell
+zenml stack register <STACK_NAME> --provider aws
 ```
 {% endhint %}
 

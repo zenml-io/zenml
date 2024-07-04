@@ -13,21 +13,24 @@ In order to do this, we need to get familiar with two more stack components:
 
 These, along with [remote storage](remote-storage.md), complete a basic cloud stack where our pipeline is entirely running on the cloud.
 
-## Starting with a basic cloud stack
-
 {% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
-and read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-if you have existing infrastructure, or read [how to provision a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
-
-Or simply try running one of:
+**Don't want to learn how to deploy and register stack components manually? 
+Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+and learn how to use:**
 
 ```shell
-zenml stack register --provider aws
 zenml stack deploy --provider aws
+```
+
+**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
+and learn how to use:**
+
+```shell
+zenml stack register <STACK_NAME> --provider aws
 ```
 {% endhint %}
 
+## Starting with a basic cloud stack
 
 The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The advantage of Skypilot is that it simply provisions a VM to execute the pipeline on your cloud provider.
 
@@ -45,7 +48,7 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 6. As each pipeline runs, it stores artifacts physically in the `artifact store`. Of course, this artifact store needs to be some form of cloud storage.
 7. As each pipeline runs, it reports status back to the ZenML server and optionally queries the server for metadata.
 
-## Provisioning and registering a Skypilot orchestrator alongside a container registry
+## Provisioning and registering an orchestrator alongside a container registry
 
 While there are detailed docs on [how to set up a Skypilot orchestrator](../../component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../component-guide/container-registries/container-registries.md) on each public cloud, we have put the most relevant details here for convenience:
 
@@ -136,8 +139,8 @@ Once the service connector is set up, we can register [a Kubernetes orchestrator
 ```shell
 # Ensure your service connector has access to the AKS cluster:
 zenml service-connector list-resources --resource-type kubernetes-cluster -e
-zenml orchestrator register azure_kubernetes_orchestrator --flavor kubernetes
-zenml orchestrator connect azure_kubernetes_orchestrator --connect cloud_connector
+zenml orchestrator register cloud_orchestrator --flavor kubernetes
+zenml orchestrator connect cloud_orchestrator --connect cloud_connector
 ```
 
 The next step is to register [an Azure container registry](../../component-guide/container-registries/azure.md). Similar to the orchestrator, we will use our connector as we are setting up the container registry.

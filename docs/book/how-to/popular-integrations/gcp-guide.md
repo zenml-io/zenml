@@ -4,20 +4,24 @@ description: A simple guide to quickly set up a minimal stack on GCP.
 
 # Set up a minimal GCP stack
 
-{% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? Feel free to skip this chapter
-and read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-if you have existing infrastructure, or read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
+This page aims to quickly set up a minimal production stack on GCP. With just a few simple steps you will set up a service account with specifically-scoped permissions that ZenML can use to authenticate with the relevant GCP resources.
 
-Or simply try running one of:
+{% hint style="info" %}
+**Don't want to learn how to deploy and register stack components manually? 
+Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+and learn how to use:**
 
 ```shell
-zenml stack register --provider gcp
 zenml stack deploy --provider gcp
 ```
-{% endhint %}
 
-This page aims to quickly set up a minimal production stack on GCP. With just a few simple steps you will set up a service account with specifically-scoped permissions that ZenML can use to authenticate with the relevant GCP resources.
+**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
+and learn how to use:**
+
+```shell
+zenml stack register <STACK_NAME> --provider gcp
+```
+{% endhint %}
 
 {% hint style="warning" %}
 While this guide focuses on Google Cloud, we are seeking contributors to create a similar guide for other cloud providers. If you are interested, please create a [pull request over on GitHub](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md).

@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
 ![Running a ZenML pipeline](/docs/book/.gitbook/assets/readme_basic_pipeline.gif)
 
-### Provision a MLOps stack or reuse existing infrastructure easily
+### Easily provision an MLOps stack or reuse your existing infrastructure
 
 The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals. 
 
@@ -141,7 +141,7 @@ There are public templates to easily provision a simple MLOps stack that can be 
 
 <div align="center">
 
-[![Create a AWS MLOps Stack](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/create/review?stackName=zenml-stack&templateURL=https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml)
+[![Create an AWS MLOps Stack](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/create/review?stackName=zenml-stack&templateURL=https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml)
 
 [![Create a GCP MLOps Stack](https://img.shields.io/badge/GoogleCloud-%234285F4.svg?style=for-the-badge&logo=google-cloud&logoColor=white)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_working_dir=infra&cloudshell_open_in_editor=gcp-gar-gcs-vertex.yaml,gcp-gar-gcs-vertex-config.yaml&cloudshell_print=gcp-gar-gcs-vertex.txt&cloudshell_git_branch=feature/prd-482-one-click-stacks)
 
@@ -158,7 +158,7 @@ zenml stack deploy --provider aws  # can be gcp, azure
 Already have existing resources? No problem, you can register them easily:
 
 ```bash
-zenml stack register --provider aws  # can be gcp, azure
+zenml stack register <STACK_NAME> --provider aws  # can be gcp, azure
 ```
 
 TODO: Might be nice to have a GIF here of zenml stack register.
@@ -170,7 +170,7 @@ Read more about [ZenML stacks](https://docs.zenml.io/user-guide/production-guide
 Once you have your MLOps stack configured, you can easily run workloads on it:
 
 ```bash
-zenml stack set k8s  # Set a stack with kubernetes orchestrator
+zenml stack set <STACK_NAME>
 python run.py
 ```
 

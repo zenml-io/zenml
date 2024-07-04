@@ -4,7 +4,7 @@ description: Stacks are the configuration of your infrastructure.
 
 # Managing stacks & components
 
-The concept of a [stack](../../user-guide/production-guide/understand-stacks.md) is a fundamental component of the ZenML framework. Put simply, a stack is the configuration of the infrastructure and tooling that defines where and how a pipeline executes. Let’s take a simple example. Here is a simple pipeline in ZenML:
+The [stack](../../user-guide/production-guide/understand-stacks.md) is a fundamental component of the ZenML framework. Put simply, a stack represents the configuration of the infrastructure and tooling that defines where and how a pipeline executes.
 
 However, deploying and managing a MLOps stack is tricky 😭😵‍💫. It is not trivial to set up all the different tools that you might need for your pipeline.
 
