@@ -431,6 +431,7 @@ def register_stack(
                             cli_utils.error(
                                 f"Failed to validate service connector {service_connector}..."
                             )
+
                     if provider is None:
                         if isinstance(
                             service_connector_resource_model.connector_type,
