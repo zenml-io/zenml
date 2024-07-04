@@ -60,6 +60,10 @@ class FullStackRequest(BaseRequest):
         title="The description of the stack",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    labels: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The stack labels.",
+    )
     service_connectors: List[Union[UUID, ServiceConnectorInfo]] = Field(
         default=[],
         title="The service connectors dictionary for the full stack "
