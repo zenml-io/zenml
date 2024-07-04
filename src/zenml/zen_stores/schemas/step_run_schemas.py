@@ -22,7 +22,7 @@ from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import Step, StepSpec
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
@@ -212,11 +212,23 @@ class StepRunSchema(NamedSchema, table=True):
             for artifact in self.output_artifacts
         }
 
+        # the step configuration moved into the deployment - the else case is to
+        # guarantee backwards compatibility
         if self.deployment is not None:
-            full_step_config = Step.model_validate(
-                json.loads(self.deployment.step_configurations)[self.name]
-            )
-        elif self.step_configuration is not None:
+            step_configuration = json.loads(self.deployment.step_configurations)
+            if self.name in step_configuration:
+                full_step_config = Step.model_validate(
+                    step_configuration[self.name]
+                )
+            elif self.step_configuration:
+                full_step_config = Step.model_validate_json(
+                    self.step_configuration
+                )
+            else:
+                raise ValueError(f"Unable to load the configuration for step `{self.name}` from the"
+                                 f"database. To solve this please delete the pipeline run that this"
+                                 f"step run belongs to. Pipeline Run ID: `{self.pipeline_run_id}`.")
+        elif self.step_configuration:
             full_step_config = Step.model_validate_json(
                 self.step_configuration
             )
