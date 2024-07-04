@@ -114,9 +114,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             The Databricks client.
         """
         return DatabricksClient(
-            host="https://adb-3518312650259607.7.azuredatabricks.net",
-            client_id="7c2a45bf-fd61-46b7-a0a3-6ff6d7b81a7a",
-            client_secret="dose6c0332e765954e8483c60503b2e0a02c",
+            host="",
+            client_id="",
+            client_secret="",
         )
 
     @property

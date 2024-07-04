@@ -1,18 +1,44 @@
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Wheeled orchestrator class."""
+
 import os
 import subprocess
 import tempfile
 from abc import ABC
 
+from zenml import __version__
 from zenml.io import fileio
 from zenml.orchestrators import BaseOrchestrator
 from zenml.utils.io_utils import copy_dir
 from zenml.utils.source_utils import get_source_root
 
+DEFAULT_PACKAGE_NAME = "zenmlproject"
+
 
 class WheeledOrchestrator(BaseOrchestrator, ABC):
     """Base class for wheeled orchestrators."""
 
-    PACKAGE_NAME = "zenmlproject"
+    package_name = DEFAULT_PACKAGE_NAME
+
+    def set_package_name(self, package_name: str) -> None:
+        """Set the package name.
+
+        Args:
+            package_name (str): Name of the package.
+        """
+        self.package_name = package_name
 
     def copy_repository_to_temp_dir_and_add_setup_py(self) -> str:
         """Copy the repository to a temporary directory and add a setup.py file."""
@@ -22,7 +48,7 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
 
         # Create a folder within the temporary directory
-        temp_repo_path = os.path.join(temp_dir, self.PACKAGE_NAME)
+        temp_repo_path = os.path.join(temp_dir, self.package_name)
         fileio.mkdir(temp_repo_path)
 
         # Copy the repository to the temporary directory
@@ -38,8 +64,8 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
 from setuptools import setup, find_packages
 
 setup(
-    name="{self.PACKAGE_NAME}",
-    version="0.1",
+    name="{self.package_name}",
+    version="{__version__}",
     packages=find_packages(),
 )
 """
