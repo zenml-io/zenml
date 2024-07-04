@@ -192,6 +192,7 @@ class StepRunSchema(NamedSchema, table=True):
             The created StepRunResponse.
 
         Raises:
+            ValueError: In case the step run configuration can not be loaded.
             RuntimeError: If the step run schema does not have a deployment_id
                 or a step_configuration.
         """
