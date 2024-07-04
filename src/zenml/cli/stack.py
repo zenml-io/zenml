@@ -80,6 +80,7 @@ from zenml.utils.mlstacks_utils import (
     verify_spec_and_tf_files_exist,
 )
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
     from zenml.models import StackResponse
@@ -397,26 +398,39 @@ def register_stack(
 
                 if component_selected is None:
                     if service_connector_resource_model is None:
-                        if isinstance(service_connector, UUID):
-                            service_connector_resource_model = (
-                                client.verify_service_connector(
-                                    service_connector
+                        with console.status(
+                            "Exploring resources available to the service connector...\n"
+                        ):
+                            if isinstance(service_connector, UUID):
+                                service_connector_resource_model = (
+                                    client.verify_service_connector(
+                                        service_connector
+                                    )
                                 )
+                            else:
+                                default_http_timeout = 30
+                                if isinstance(client.zen_store, RestZenStore):
+                                    default_http_timeout = (
+                                        client.zen_store.config.http_timeout
+                                    )
+                                    client.zen_store.config.http_timeout = 120
+                                _, service_connector_resource_model = (
+                                    client.create_service_connector(
+                                        name=stack_name,
+                                        connector_type=service_connector.type,
+                                        auth_method=service_connector.auth_method,
+                                        configuration=service_connector.configuration,
+                                        register=False,
+                                    )
+                                )
+                                if isinstance(client.zen_store, RestZenStore):
+                                    client.zen_store.config.http_timeout = (
+                                        default_http_timeout
+                                    )
+                        if service_connector_resource_model is None:
+                            cli_utils.error(
+                                f"Failed to validate service connector {service_connector}..."
                             )
-                        else:
-                            _, service_connector_resource_model = (
-                                client.create_service_connector(
-                                    name=stack_name,
-                                    connector_type=service_connector.type,
-                                    auth_method=service_connector.auth_method,
-                                    configuration=service_connector.configuration,
-                                    register=False,
-                                )
-                            )
-                            if service_connector_resource_model is None:
-                                cli_utils.error(
-                                    f"Failed to validate service connector {service_connector}..."
-                                )
                     if provider is None:
                         if isinstance(
                             service_connector_resource_model.connector_type,
@@ -1999,7 +2013,7 @@ def _get_service_connector_info(
     """
     from rich.prompt import Prompt
 
-    if cloud_provider not in {"aws", "azure", "gcp"}:
+    if cloud_provider not in {"aws", "gcp"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
     client = Client()
@@ -2028,7 +2042,7 @@ def _get_service_connector_info(
             object_type=f"authentication methods for {cloud_provider}",
             choices=choices,
             headers=headers,
-            prompt_text="Please choose one of the authentication option above.",
+            prompt_text="Please choose one of the authentication option above",
         )
         if selected_auth_idx is None:
             cli_utils.error("No authentication method selected.")
@@ -2058,6 +2072,11 @@ def _get_service_connector_info(
                 password="format" in properties[req_field]
                 and properties[req_field]["format"] == "password",
             )
+    if cloud_provider == "gcp" and auth_type in {
+        "service-account",
+        "external-account",
+    }:
+        answers["generate_temporary_tokens"] = False
 
     return ServiceConnectorInfo(
         type=cloud_provider,
@@ -2097,6 +2116,9 @@ def _get_stack_component_info(
     AWS_DOCS = (
         "https://docs.zenml.io/how-to/auth-management/aws-service-connector"
     )
+    GCP_DOCS = (
+        "https://docs.zenml.io/how-to/auth-management/gcp-service-connector"
+    )
 
     flavor = "undefined"
     service_connector_resource_id = None
@@ -2120,7 +2142,19 @@ def _get_stack_component_info(
         elif cloud_provider == "azure":
             flavor = "azure"
         elif cloud_provider == "gcp":
-            flavor = "gcs"
+            flavor = "gcp"
+            for each in service_connector_resource_models:
+                if each.resource_type == "gcs-bucket":
+                    available_storages = each.resource_ids or []
+            if not available_storages:
+                cli_utils.error(
+                    "We were unable to find any GCS buckets available "
+                    "to configured service connector. Please, verify "
+                    "that needed permission are granted for the "
+                    "service connector.\nDocumentation for the GCS "
+                    "Buckets configuration can be found at "
+                    f"{GCP_DOCS}#gcs-bucket"
+                )
 
         selected_storage_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} storages",
@@ -2136,6 +2170,17 @@ def _get_stack_component_info(
         config = {"path": selected_storage}
         service_connector_resource_id = selected_storage
     elif component_type == "orchestrator":
+
+        def query_gcp_region() -> str:
+            from google.cloud.aiplatform.constants import base as constants
+
+            region = Prompt.ask(
+                "Select a location for your Vertex AI jobs:",
+                choices=sorted(list(constants.SUPPORTED_REGIONS)),
+                show_choices=True,
+            )
+            return region
+
         if cloud_provider == "aws":
             available_orchestrators = []
             for each in service_connector_resource_models:
@@ -2162,7 +2207,30 @@ def _get_stack_component_info(
                     f"{AWS_DOCS}#eks-kubernetes-cluster"
                 )
         elif cloud_provider == "gcp":
-            pass
+            available_orchestrators = []
+            for each in service_connector_resource_models:
+                types = []
+                if each.resource_type == "gcp-generic":
+                    types = ["Vertex AI", "Skypilot (Compute)"]
+                if each.resource_type == "kubernetes-cluster":
+                    types = ["Kubernetes"]
+
+                if each.resource_ids:
+                    for orchestrator in each.resource_ids:
+                        for t in types:
+                            available_orchestrators.append([t, orchestrator])
+            if not available_orchestrators:
+                cli_utils.error(
+                    "We were unable to find any orchestrator engines "
+                    "available to the service connector. Please, verify "
+                    "that needed permission are granted for the "
+                    "service connector.\nDocumentation for the Generic "
+                    "GCP resource configuration can be found at "
+                    f"{GCP_DOCS}#generic-gcp-resource\n"
+                    "Documentation for the GKE Kubernetes resource "
+                    "configuration can be found at "
+                    f"{GCP_DOCS}#gke-kubernetes-cluster"
+                )
         elif cloud_provider == "azure":
             pass
 
@@ -2179,25 +2247,31 @@ def _get_stack_component_info(
             selected_orchestrator_idx
         ]
 
+        config = {}
         if selected_orchestrator[0] == "Sagemaker":
             flavor = "sagemaker"
-            execution_role = Prompt.ask("Please enter an execution role ARN:")
-            config = {"execution_role": execution_role}
+            execution_role = Prompt.ask("Enter an execution role ARN:")
+            config["execution_role"] = execution_role
         elif selected_orchestrator[0] == "Skypilot (EC2)":
             flavor = "vm_aws"
-            config = {"region": selected_orchestrator[1]}
+            config["region"] = selected_orchestrator[1]
+        elif selected_orchestrator[0] == "Skypilot (Compute)":
+            flavor = "vm_gcp"
+            config["region"] = query_gcp_region()
+        elif selected_orchestrator[0] == "Vertex AI":
+            flavor = "vertex"
+            config["location"] = query_gcp_region()
         elif selected_orchestrator[0] == "Kubernetes":
             flavor = "kubernetes"
-            config = {}
         else:
             raise ValueError(
                 f"Unknown orchestrator type {selected_orchestrator[0]}"
             )
         service_connector_resource_id = selected_orchestrator[1]
     elif component_type == "container_registry":
-        available_registries: List[str] = []
-        if cloud_provider == "aws":
-            flavor = "aws"
+
+        def _get_registries(registry_name: str, docs_link: str) -> List[str]:
+            available_registries: List[str] = []
             for each in service_connector_resource_models:
                 if each.resource_type == "docker-registry":
                     available_registries = each.resource_ids or []
@@ -2206,14 +2280,24 @@ def _get_stack_component_info(
                     "We were unable to find any container registries "
                     "available to the service connector. Please, verify "
                     "that needed permission are granted for the "
-                    "service connector.\nDocumentation for the ECR "
+                    f"service connector.\nDocumentation for the {registry_name} "
                     "container registry resource configuration can "
-                    f"be found at {AWS_DOCS}#ecr-container-registry"
+                    f"be found at {docs_link}"
                 )
+            return available_registries
+
+        if cloud_provider == "aws":
+            flavor = "aws"
+            available_registries = _get_registries(
+                "ECR", f"{AWS_DOCS}#ecr-container-registry"
+            )
         elif cloud_provider == "azure":
             flavor = "azure"
         elif cloud_provider == "gcp":
             flavor = "gcp"
+            available_registries = _get_registries(
+                "GCR", f"{GCP_DOCS}#gcr-container-registry"
+            )
 
         selected_registry_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} registries",

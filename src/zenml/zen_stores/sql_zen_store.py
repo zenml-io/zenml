@@ -7026,7 +7026,10 @@ class SqlZenStore(BaseZenStore):
                                     type=component_type,
                                 )
                             )
-                            assert len(flavor_list) == 1
+                            assert len(flavor_list) == 1, (
+                                f"{len(flavor_list)} flavors found for "
+                                f"{component_info.flavor}/{component_type}"
+                            )
 
                             flavor_model = flavor_list[0]
 
@@ -7111,6 +7114,7 @@ class SqlZenStore(BaseZenStore):
                     stack_response.get_analytics_metadata()
                 )
             except Exception as e:
+                breakpoint()
                 for component_id in components_created_ids:
                     self.delete_stack_component(component_id=component_id)
                 for service_connector_id in service_connectors_created_ids:
@@ -7118,7 +7122,7 @@ class SqlZenStore(BaseZenStore):
                         service_connector_id=service_connector_id
                     )
                 raise RuntimeError(
-                    f"Full Stack creation has failed {e}. Cleaning up the "
+                    f"Full Stack creation has failed:\n{e}\n Cleaning up the "
                     f"created entities."
                 ) from e
             return stack_response
