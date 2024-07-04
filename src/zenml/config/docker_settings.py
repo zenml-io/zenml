@@ -102,10 +102,11 @@ class DockerSettings(BaseSettings):
     Depending on the configuration of this object, requirements will be
     installed in the following order (each step optional):
     - The packages installed in your local python environment
-    - The packages specified via the `requirements` attribute
-    - The packages specified via the `required_integrations` and potentially
-      stack requirements
     - The packages specified via the `required_hub_plugins` attribute
+    - The packages required by the stack unless this is disabled by setting
+      `install_stack_requirements=False`.
+    - The packages specified via the `required_integrations`
+    - The packages specified via the `requirements` attribute
 
     Attributes:
         parent_image: Full name of the Docker image that should be

@@ -25,8 +25,8 @@ The Docker Service Connector only supports authenticating to and granting access
 
 The resource name identifies a Docker/OCI registry using one of the following formats (the repository name is optional and ignored).
 
-* DockerHub: docker.io or \[https://]index.docker.io/v1/\[/\<repository-name>]
-* generic OCI registry URI: http\[s]://host\[:port]\[/\<repository-name>]
+* DockerHub: docker.io or `https://index.docker.io/v1/<repository-name>`
+* generic OCI registry URI: `https://host:port/<repository-name>`
 
 ## Authentication Methods
 
