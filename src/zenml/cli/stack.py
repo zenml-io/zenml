@@ -431,7 +431,6 @@ def register_stack(
                             cli_utils.error(
                                 f"Failed to validate service connector {service_connector}..."
                             )
-
                     if provider is None:
                         if isinstance(
                             service_connector_resource_model.connector_type,
@@ -2292,10 +2291,10 @@ def _get_stack_component_info(
             available_registries = _get_registries(
                 "ECR", f"{AWS_DOCS}#ecr-container-registry"
             )
-        elif cloud_provider == "azure":
-            flavor = "azure"
-        elif cloud_provider == "gcp":
-            flavor = "gcp"
+                    "service connector.\nDocumentation for the ECR "
+                    "container registry resource configuration can "
+                    f"be found at {AWS_DOCS}#ecr-container-registry"
+                )
             available_registries = _get_registries(
                 "GCR", f"{GCP_DOCS}#gcr-container-registry"
             )
