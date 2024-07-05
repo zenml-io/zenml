@@ -43,6 +43,7 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
     def copy_repository_to_temp_dir_and_add_setup_py(self) -> str:
         """Copy the repository to a temporary directory and add a setup.py file."""
         repo_path = get_source_root()
+        
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
