@@ -13,14 +13,9 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to AWS."""
 
-import datetime
-from typing import ClassVar, Dict, List, Optional, Tuple
+from typing import ClassVar, Dict, List, Tuple
 
-from zenml.client import Client
-from zenml.enums import StackComponentType, StackDeploymentProvider
-from zenml.models import (
-    DeployedStack,
-)
+from zenml.enums import StackDeploymentProvider
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 from zenml.utils.string_utils import random_str
 

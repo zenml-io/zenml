@@ -13,16 +13,10 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to GCP."""
 
-import datetime
-from typing import ClassVar, Dict, List, Optional, Tuple
+from typing import ClassVar, Dict, List, Tuple
 
-from zenml.client import Client
-from zenml.enums import StackComponentType, StackDeploymentProvider
-from zenml.models import (
-    DeployedStack,
-)
+from zenml.enums import StackDeploymentProvider
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
-from zenml.utils.string_utils import random_str
 
 GCP_DEPLOYMENT_TYPE = "deployment-manager"
 
@@ -207,21 +201,26 @@ GCP project and to clean up the resources created by the stack by using
             and a text description of the URL.
         """
         params = dict(
-            stackName=self.stack_name,
-            templateURL="https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml",
-            param_ResourceName=f"zenml-{random_str(6).lower()}",
-            param_ZenMLServerURL=zenml_server_url,
-            param_ZenMLServerAPIToken=zenml_server_api_token,
+            cloudshell_git_repo="https://github.com/zenml-io/zenml",
+            cloudshell_workspace="infra/gcp",
+            cloudshell_open_in_editor="gcp-gar-gcs-vertex.jinja,gcp-gar-gcs-vertex-config.yaml",
+            cloudshell_tutorial="gcp-gar-gcs-vertex.md",
+            ephemeral="true",
+            # TODO: remove this before the branch is merged
+            cloudshell_git_branch="feature/prd-482-gcp-stack-deployment",
+            # stackName=self.stack_name,
+            # param_ResourceName=f"zenml-{random_str(6).lower()}",
+            # param_ZenMLServerURL=zenml_server_url,
+            # param_ZenMLServerAPIToken=zenml_server_api_token,
         )
         # Encode the parameters as URL query parameters
         query_params = "&".join([f"{k}={v}" for k, v in params.items()])
 
-        region = ""
-        if self.location:
-            region = f"region={self.location}"
+        # region = ""
+        # if self.location:
+        #     region = f"region={self.location}"
 
         return (
-            f"https://console.aws.amazon.com/cloudformation/home?"
-            f"{region}#/stacks/create/review?{query_params}",
-            "GCP CloudFormation Console",
+            f"https://ssh.cloud.google.com/cloudshell/editor?{query_params}",
+            "GCP Cloud Shell Console",
         )
