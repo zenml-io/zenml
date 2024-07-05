@@ -327,6 +327,7 @@ from zenml.models.v2.misc.service_connector_type import (
     ResourceTypeModel,
 )
 from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
+from zenml.models.v2.misc.full_stack import FullStackRequest
 from zenml.models.v2.core.trigger import (
     TriggerRequest,
     TriggerFilter,
@@ -405,6 +406,7 @@ EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
+FullStackRequest.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
 LazyRunMetadataResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
@@ -706,6 +708,7 @@ __all__ = [
     "ServiceConnectorTypedResourcesModel",
     "ServiceConnectorRequirements",
     "ResourceTypeModel",
+    "FullStackRequest",
     "UserAuthModel",
     "ExternalUserModel",
     "BuildItem",

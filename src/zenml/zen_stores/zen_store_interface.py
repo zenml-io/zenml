@@ -54,6 +54,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -2164,6 +2165,24 @@ class ZenStoreInterface(ABC):
         Raises:
             StackExistsError: If a stack with the same name is already owned
                 by this user in this workspace.
+        """
+
+    @abstractmethod
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Create a full stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The created stack.
+
+        Raises:
+            EntityExistsError: If a service connector with the same name
+                already exists.
+            StackComponentExistsError: If a stack component with the same name
+                already exists.
+            StackExistsError: If a stack with the same name already exists.
         """
 
     @abstractmethod
