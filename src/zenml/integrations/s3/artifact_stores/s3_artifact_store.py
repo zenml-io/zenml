@@ -122,7 +122,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
     def get_credentials(
         self,
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
         """Gets authentication credentials.
 
         If an authentication secret is configured, the secret values are
@@ -130,8 +130,8 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         attributes.
 
         Returns:
-            Tuple (key, secret, token) of credentials used to authenticate with
-            the S3 filesystem.
+            Tuple (key, secret, token, region) of credentials used to
+            authenticate with the S3 filesystem.
 
         Raises:
             RuntimeError: If the AWS connector behaves unexpectedly.
@@ -151,6 +151,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 credentials.access_key,
                 credentials.secret_key,
                 credentials.token,
+                client.meta.region_name,
             )
 
         secret = self.get_typed_authentication_secret(
@@ -161,9 +162,10 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 secret.aws_access_key_id,
                 secret.aws_secret_access_key,
                 secret.aws_session_token,
+                None,
             )
         else:
-            return self.config.key, self.config.secret, self.config.token
+            return self.config.key, self.config.secret, self.config.token, None
 
     @property
     def filesystem(self) -> ZenMLS3Filesystem:
@@ -176,13 +178,22 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if self._filesystem and not self.connector_has_expired():
             return self._filesystem
 
-        key, secret, token = self.get_credentials()
+        key, secret, token, region = self.get_credentials()
+
+        # Use the region from the connector if available, otherwise some
+        # remote workloads (e.g. Sagemaker) might not work correctly because
+        # they look for the bucket in the wrong region
+        client_kwargs = {}
+        if region:
+            client_kwargs["region_name"] = region
+        if self.config.client_kwargs:
+            client_kwargs.update(self.config.client_kwargs)
 
         self._filesystem = ZenMLS3Filesystem(
             key=key,
             secret=secret,
             token=token,
-            client_kwargs=self.config.client_kwargs,
+            client_kwargs=client_kwargs,
             config_kwargs=self.config.config_kwargs,
             s3_additional_kwargs=self.config.s3_additional_kwargs,
         )

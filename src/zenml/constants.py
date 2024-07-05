@@ -379,6 +379,8 @@ MODEL_VERSION_ARTIFACTS = "/model_version_artifacts"
 MODEL_VERSION_PIPELINE_RUNS = "/model_version_pipeline_runs"
 SERVICES = "/services"
 SERVICE_CONNECTORS = "/service_connectors"
+STACK = "/stack"
+STACK_DEPLOYMENT = "/stack-deployment"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STATISTICS = "/statistics"
@@ -389,6 +391,7 @@ TAGS = "/tags"
 TRIGGERS = "/triggers"
 TRIGGER_EXECUTIONS = "/trigger_executions"
 USERS = "/users"
+URL = "/url"
 VERSION_1 = "/v1"
 VISUALIZE = "/visualize"
 WEBHOOKS = "/webhooks"
@@ -457,6 +460,7 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "mlops_platform",
     "step_operator",
 ]
+
 
 # Parameters for internal ZenML Models
 TEXT_FIELD_MAX_LENGTH = 65535

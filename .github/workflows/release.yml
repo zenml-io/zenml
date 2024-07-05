@@ -121,6 +121,11 @@ jobs:
       - name: Sleep for 4 minutes
         run: sleep 240
         shell: bash
+  publish-stack-templates:
+    if: github.repository == 'zenml-io/zenml'
+    needs: publish-python-package
+    uses: ./.github/workflows/publish_stack_templates.yml
+    secrets: inherit
   # create a tag on the ZenML cloud plugins repo
   create_tag_on_cloud_plugins_repo:
     runs-on: ubuntu-latest
