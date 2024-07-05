@@ -140,9 +140,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes')
+        if: contains(inputs.test_environment, 'docker') || contains(inputs.test_environment,
+          'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment,
+          'kubernetes')
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
