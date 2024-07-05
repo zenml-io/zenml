@@ -3900,6 +3900,14 @@ class SqlZenStore(BaseZenStore):
 
             # Create the pipeline
             new_pipeline = PipelineSchema.from_request(pipeline)
+
+            if pipeline.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline.tags,
+                    resource_id=new_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+
             session.add(new_pipeline)
             session.commit()
             session.refresh(new_pipeline)
@@ -4004,6 +4012,21 @@ class SqlZenStore(BaseZenStore):
 
             # Update the pipeline
             existing_pipeline.update(pipeline_update)
+
+            if pipeline_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_update.add_tags,
+                    resource_id=existing_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+            pipeline_update.add_tags = None
+            if pipeline_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=pipeline_update.remove_tags,
+                    resource_id=existing_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+            pipeline_update.remove_tags = None
 
             session.add(existing_pipeline)
             session.commit()
@@ -4511,6 +4534,14 @@ class SqlZenStore(BaseZenStore):
 
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
+
+            if pipeline_run.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_run.tags,
+                    resource_id=new_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+
             session.add(new_run)
             session.commit()
 
@@ -4581,6 +4612,14 @@ class SqlZenStore(BaseZenStore):
             if pre_replacement_hook:
                 pre_replacement_hook()
             run_schema.update_placeholder(pipeline_run)
+
+            if pipeline_run.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_run.tags,
+                    resource_id=run_schema.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+
             session.add(run_schema)
             session.commit()
 
@@ -4781,6 +4820,22 @@ class SqlZenStore(BaseZenStore):
 
             # Update the pipeline run
             existing_run.update(run_update=run_update)
+
+            if run_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=run_update.add_tags,
+                    resource_id=existing_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+            run_update.add_tags = None
+            if run_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=run_update.remove_tags,
+                    resource_id=existing_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+            run_update.remove_tags = None
+
             session.add(existing_run)
             session.commit()
 

@@ -22,7 +22,11 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    TaggableResourceTypes,
+)
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -52,6 +56,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
 class PipelineRunSchema(NamedSchema, table=True):
@@ -187,6 +192,13 @@ class PipelineRunSchema(NamedSchema, table=True):
     services: List["ServiceSchema"] = Relationship(
         back_populates="pipeline_run",
     )
+    tags: List["TagResourceSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.PIPELINE_RUN.value}', foreign(TagResourceSchema.resource_id)==PipelineRunSchema.id)",
+            cascade="delete",
+            overlaps="tags",
+        ),
+    )
 
     @classmethod
     def from_request(
@@ -292,6 +304,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             trigger_execution=self.trigger_execution.to_model()
             if self.trigger_execution
             else None,
+            tags=[t.tag.to_model() for t in self.tags],
             created=self.created,
             updated=self.updated,
             deployment_id=self.deployment_id,

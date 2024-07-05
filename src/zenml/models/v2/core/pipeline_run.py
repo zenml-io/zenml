@@ -39,6 +39,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.model_version import ModelVersionResponse
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -109,6 +110,10 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         default=None,
         title="ID of the trigger execution that triggered this run.",
     )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags of the pipeline run.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -119,6 +124,13 @@ class PipelineRunUpdate(BaseModel):
 
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
+    # TODO: we should maybe have a different update model here, the upper two attributes should only be for internal use
+    add_tags: Optional[List[str]] = Field(
+        default=None, title="New tags to add to the pipeline run."
+    )
+    remove_tags: Optional[List[str]] = Field(
+        default=None, title="Tags to remove from the pipeline run."
+    )
 
 
 # ------------------ Response Model ------------------
@@ -150,6 +162,9 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     )
     trigger_execution: Optional["TriggerExecutionResponse"] = Field(
         default=None, title="The trigger execution that triggered this run."
+    )
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the pipeline run.",
     )
 
 

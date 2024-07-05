@@ -20,6 +20,7 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.enums import TaggableResourceTypes
 from zenml.models import (
     PipelineRequest,
     PipelineResponse,
@@ -41,6 +42,7 @@ if TYPE_CHECKING:
     )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
 class PipelineSchema(NamedSchema, table=True):
@@ -82,6 +84,13 @@ class PipelineSchema(NamedSchema, table=True):
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline",
+    )
+    tags: List["TagResourceSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.PIPELINE.value}', foreign(TagResourceSchema.resource_id)==PipelineSchema.id)",
+            cascade="delete",
+            overlaps="tags",
+        ),
     )
 
     @classmethod
@@ -127,6 +136,7 @@ class PipelineSchema(NamedSchema, table=True):
             status=[run.status for run in self.runs[:last_x_runs]],
             latest_run_id=self.runs[-1].id if self.runs else None,
             latest_run_status=self.runs[-1].status if self.runs else None,
+            tags=[t.tag.to_model() for t in self.tags],
             created=self.created,
             updated=self.updated,
         )

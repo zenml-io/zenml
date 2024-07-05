@@ -29,6 +29,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
@@ -49,6 +50,10 @@ class PipelineRequest(WorkspaceScopedRequest):
         title="The description of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags of the pipeline.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -61,6 +66,12 @@ class PipelineUpdate(BaseUpdate):
         default=None,
         title="The description of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    add_tags: Optional[List[str]] = Field(
+        default=None, title="New tags to add to the pipeline."
+    )
+    remove_tags: Optional[List[str]] = Field(
+        default=None, title="Tags to remove from the pipeline."
     )
 
 
@@ -80,6 +91,9 @@ class PipelineResponseBody(WorkspaceScopedResponseBody):
     latest_run_status: Optional[ExecutionStatus] = Field(
         default=None,
         title="The status of the latest run of the pipeline namespace.",
+    )
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the pipeline.",
     )
 
 
