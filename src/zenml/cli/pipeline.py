@@ -340,18 +340,6 @@ def list_pipelines(**kwargs: Any) -> None:
 @pipeline.command("delete")
 @click.argument("pipeline_name_or_id", type=str, required=True)
 @click.option(
-    "--version",
-    "-v",
-    help="Optional pipeline version.",
-    type=str,
-    required=False,
-)
-@click.option(
-    "--all-versions",
-    help="Delete all versions of the pipeline..",
-    is_flag=True,
-)
-@click.option(
     "--yes",
     "-y",
     is_flag=True,

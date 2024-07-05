@@ -71,6 +71,7 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunRequest,
+    PipelineUpdate,
     ResourceTypeModel,
     SecretFilter,
     SecretRequest,
@@ -1055,14 +1056,11 @@ component_crud_test_config = CrudTestConfig(
 pipeline_crud_test_config = CrudTestConfig(
     create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
-        spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
-        version="1",
-        version_hash="abc123",
+        description="Pipeline description",
     ),
-    # Updating pipelines is not doing anything at the moment
-    # update_model=PipelineUpdate(name=sample_name("updated_sample_pipeline")),
+    update_model=PipelineUpdate(description="Updated pipeline description"),
     filter_model=PipelineFilter,
     entity_name="pipeline",
 )
@@ -1139,6 +1137,8 @@ deployment_crud_test_config = CrudTestConfig(
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline_version_hash="random_hash",
+        pipeline_spec=PipelineSpec(steps=[]),
     ),
     filter_model=PipelineDeploymentFilter,
     entity_name="deployment",
