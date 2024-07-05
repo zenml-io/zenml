@@ -122,9 +122,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+          'airflow') || contains(inputs.test_environment, 'kubernetes')
       - uses: actions/checkout@v4.1.1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
