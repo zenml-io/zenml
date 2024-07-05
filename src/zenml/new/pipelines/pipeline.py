@@ -519,7 +519,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
             self._prepare_if_possible()
-            deployment, pipeline_spec, _, _ = self._compile(
+            deployment, _, _ = self._compile(
                 config_path=config_path,
                 steps=step_configurations,
                 settings=settings,
@@ -601,7 +601,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            deployment, pipeline_spec, schedule, build = self._compile(
+            deployment, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
                 enable_cache=enable_cache,
@@ -965,7 +965,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self, config_path: Optional[str] = None, **run_configuration_args: Any
     ) -> Tuple[
         "PipelineDeploymentBase",
-        "PipelineSpec",
         Optional["Schedule"],
         Union["PipelineBuildBase", UUID, None],
     ]:
@@ -976,7 +975,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             **run_configuration_args: Configurations for the pipeline run.
 
         Returns:
-            A tuple containing the deployment, spec, schedule and build of
+            A tuple containing the deployment, schedule and build of
             the compiled pipeline.
         """
         # Activating the built-in integrations to load all materializers
@@ -997,19 +996,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         # Update with the values in code so they take precedence
         run_config = pydantic_utils.update_model(run_config, update=update)
 
-        deployment, pipeline_spec = Compiler().compile(
+        deployment = Compiler().compile(
             pipeline=self,
             stack=Client().active_stack,
             run_configuration=run_config,
         )
 
-        return deployment, pipeline_spec, run_config.schedule, run_config.build
+        return deployment, run_config.schedule, run_config.build
 
     def _register(self) -> "PipelineResponse":
         """Register the pipeline in the server.
-
-        Args:
-            pipeline_spec: The pipeline spec to register.
 
         Returns:
             The registered pipeline model.

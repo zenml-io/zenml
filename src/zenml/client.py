@@ -2454,11 +2454,12 @@ class Client(metaclass=ClientMetaClass):
         ```
 
         Args:
-            pipeline_name_or_id: Name or ID of the pipeline. If not given,
-                either the build or deployment that should be run needs to be
-                specified.
-            pipeline_version: Version of the pipeline. This is only used if a
-                pipeline name is given.
+            pipeline_name_or_id: Name or ID of the pipeline. If this is
+                specified, the latest runnable build for this pipeline will be
+                used for the run (Runnable here means that the build is for
+                a remote stack without any custom flavor stack components). If
+                not given, either the build or deployment that should be run
+                needs to be specified.
             run_configuration: Configuration for the run. Either this or a
                 path to a config file can be specified.
             config_path: Path to a YAML configuration file. This file will be
