@@ -215,6 +215,7 @@ class StepRunSchema(NamedSchema, table=True):
 
         # the step configuration moved into the deployment - the else case is to
         # guarantee backwards compatibility
+        full_step_config = None
         if self.deployment is not None:
             step_configuration = json.loads(
                 self.deployment.step_configurations
@@ -223,17 +224,13 @@ class StepRunSchema(NamedSchema, table=True):
                 full_step_config = Step.model_validate(
                     step_configuration[self.name]
                 )
-            elif self.step_configuration:
-                full_step_config = Step.model_validate_json(
-                    self.step_configuration
-                )
-            else:
+            elif not self.step_configuration:
                 raise ValueError(
                     f"Unable to load the configuration for step `{self.name}` from the"
                     f"database. To solve this please delete the pipeline run that this"
                     f"step run belongs to. Pipeline Run ID: `{self.pipeline_run_id}`."
                 )
-        elif self.step_configuration:
+        if full_step_config is None and self.step_configuration:
             full_step_config = Step.model_validate_json(
                 self.step_configuration
             )
