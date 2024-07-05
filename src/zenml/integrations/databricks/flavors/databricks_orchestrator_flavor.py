@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Databricks orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.databricks.orchestrators import (
@@ -35,10 +36,28 @@ class DatabricksOrchestratorSettings(BaseSettings):
 
     Attributes:
         cluster_name: Databricks cluster name.
+        spark_version: Spark version.
+        num_workers: Number of workers.
+        node_type_id: Node type id.
+        policy_id: Policy id.
+        autotermination_minutes: Autotermination minutes.
+        autoscale: Autoscale.
+        single_user_name: Single user name.
+        spark_conf: Spark configuration.
+        spark_env_vars: Spark environment variables.
     """
 
     # Resources
     cluster_name: Optional[str] = None
+    spark_version: Optional[str] = None
+    num_workers: Optional[int] = None
+    node_type_id: Optional[str] = None
+    policy_id: Optional[str] = None
+    autotermination_minutes: Optional[int] = None
+    autoscale: Optional[Tuple[int, int]] = None
+    single_user_name: Optional[str] = None
+    spark_conf: Optional[Dict[str, str]] = None
+    spark_env_vars: Optional[Dict[str, str]] = None
 
 
 class DatabricksOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
@@ -47,13 +66,14 @@ class DatabricksOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     """Databricks orchestrator base config.
 
     Attributes:
-        disable_step_based_settings: whether to disable step-based settings.
-            If True, the orchestrator will run all steps with the pipeline
-            settings in one single VM. If False, the orchestrator will run
-            each step with its own settings in separate VMs if provided.
+        host: Databricks host.
+        client_id: Databricks client id.
+        client_secret: Databricks client secret.
     """
 
-    disable_step_based_settings: bool = False
+    host: str
+    client_id: Optional[str] = SecretField(default=None)
+    client_secret: Optional[str] = SecretField(default=None)
 
     @property
     def is_local(self) -> bool:

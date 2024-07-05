@@ -285,11 +285,7 @@ class BaseStep(metaclass=BaseStepMeta):
             if project_root not in sys.path:
                 sys.path.insert(0, project_root)
                 sys.path.insert(-1, project_root)
-            step_source = Source(
-                module=f"{prefix}.{source.module}",
-                attribute=source.attribute,
-                type=source.type,
-            )
+            step_source = source
         else:
             step_source = source
 

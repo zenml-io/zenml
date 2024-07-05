@@ -56,6 +56,10 @@ ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID = (
     "ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID"
 )
 ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
+DATABRICKS_WHEELS_DIRECTORY_PREFIX = "dbfs:/FileStore/zenml"
+DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
+DATABRICKS_CLUSTER_DEFAULT_NAME = "zenml-databricks-cluster"
+DATABRICKS_SPARK_DEFAULT_VERSION = "15.3.x-scala2.12"
 
 
 class DatabricksOrchestrator(WheeledOrchestrator):
@@ -114,9 +118,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             The Databricks client.
         """
         return DatabricksClient(
-            host="",
-            client_id="",
-            client_secret="",
+            host=self.config.host,
+            client_id=self.config.client_id,
+            client_secret=self.config.client_secret,
         )
 
     @property
@@ -137,7 +141,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         """
         return DatabricksOrchestratorSettings
 
-    def get_orchestrator_run_id(self) -> str:
+    def get_orchestrator_run_id(self) -> Optional[str]:
         """Returns the active orchestrator run id.
 
         Raises:
@@ -339,32 +343,42 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         )
 
         # Create an empty folder in a volume.
-        databricks_directory = f"dbfs:/Workspace/Users/7c2a45bf-fd61-46b7-a0a3-6ff6d7b81a7a/zenml/{deployment.pipeline.name}/{orchestrator_run_name}"
+        databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{deployment.pipeline.name}/{orchestrator_run_name}"
         databricks_wheel_path = (
             f"{databricks_directory}/{wheel_path.rsplit('/', 1)[-1]}"
         )
 
         databricks_client.dbutils.fs.mkdirs(databricks_directory)
         databricks_client.dbutils.fs.cp(
-            f"file:/{wheel_path}", databricks_wheel_path
+            f"{DATABRICKS_LOCAL_FILESYSTEM_PREFIX}/{wheel_path}",
+            databricks_wheel_path,
         )
 
+        autoscale = None
+        if self.settings_class().autoscale:
+            autoscale = AutoScale(
+                min_workers=self.settings_class().autoscale[0] or 0,
+                max_workers=self.settings_class().autoscale[1] or 0,
+            )
+
         cluster = databricks_client.clusters.create_and_wait(
-            spark_version="15.3.x-gpu-ml-scala2.12",  # 14.3.x-gpu-ml-scala2.12  14.3.x-scala2.12
-            num_workers=0,
-            node_type_id="Standard_NC24ads_A100_v4",
-            cluster_name="zenml-test-cluster",
-            policy_id="0016745CDB60B745",
-            autotermination_minutes=20,
-            autoscale=AutoScale(min_workers=1, max_workers=1),
-            single_user_name="7c2a45bf-fd61-46b7-a0a3-6ff6d7b81a7a",
-            spark_env_vars={
-                "DISABLE_MLFLOW_INTEGRATION": "true",
-                "TORCH_DISTRIBUTED_DEBUG": "DETAIL",
-            },
-            spark_conf={
-                "spark.databricks.driver.dbfsLibraryInstallationAllowed": "true",
-            },
+            spark_version=self.settings_class().spark_version
+            or DATABRICKS_SPARK_DEFAULT_VERSION,  # "15.3.x-gpu-ml-scala2.12",  # 14.3.x-gpu-ml-scala2.12  14.3.x-scala2.12
+            num_workers=self.settings_class().num_workers,  # 0
+            node_type_id=self.settings_class().node_type_id,  # "Standard_NC24ads_A100_v4",
+            cluster_name=self.settings_class().cluster_name
+            or DATABRICKS_CLUSTER_DEFAULT_NAME,
+            policy_id=self.settings_class().policy_id,  # "0016745CDB60B745",
+            autotermination_minutes=self.settings_class().autotermination_minutes,  # 20,
+            autoscale=autoscale,
+            single_user_name=self.settings_class().single_user_name,  # "7c2a45bf-fd61-46b7-a0a3-6ff6d7b81a7a",
+            spark_env_vars=self.settings_class().spark_env_vars,  # {
+            # "DISABLE_MLFLOW_INTEGRATION": "true",
+            # "TORCH_DISTRIBUTED_DEBUG": "DETAIL",
+            # },
+            spark_conf=self.settings_class().spark_conf,  # {
+            # "spark.databricks.driver.dbfsLibraryInstallationAllowed": "true",
+            # },
         )
 
         fileio.rmtree(repository_temp_dir)
@@ -375,6 +389,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         # using the databricks client uploads the pipeline to kubeflow pipelines and
         # runs it there
+        assert cluster.cluster_id is not None
         self._upload_and_run_pipeline(
             pipeline_name=deployment.pipeline.name,
             tasks=_construct_databricks_pipeline(
@@ -414,6 +429,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             name=pipeline_name,
             tasks=tasks,
         )
+        assert job.job_id is not None
         databricks_client.jobs.run_now(job_id=job.job_id)
 
     def sanitize_cluster_name(self, name: str) -> str:
