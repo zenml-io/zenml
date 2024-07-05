@@ -6,6 +6,6 @@ resources:
   type: gcp-gar-gcs-vertex.jinja
   properties:
     resourceNameSuffix: test001
+    region: europe-west3
     zenmlServerURL: https://example.com
     zenmlServerAPIToken: my-zenml-server-api-token
-    region: europe-west3

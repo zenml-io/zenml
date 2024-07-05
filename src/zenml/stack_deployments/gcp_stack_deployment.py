@@ -17,6 +17,7 @@ from typing import ClassVar, Dict, List, Tuple
 
 from zenml.enums import StackDeploymentProvider
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
+from zenml.utils.string_utils import random_str
 
 GCP_DEPLOYMENT_TYPE = "deployment-manager"
 
@@ -208,17 +209,9 @@ GCP project and to clean up the resources created by the stack by using
             ephemeral="true",
             # TODO: remove this before the branch is merged
             cloudshell_git_branch="feature/prd-482-gcp-stack-deployment",
-            # stackName=self.stack_name,
-            # param_ResourceName=f"zenml-{random_str(6).lower()}",
-            # param_ZenMLServerURL=zenml_server_url,
-            # param_ZenMLServerAPIToken=zenml_server_api_token,
         )
         # Encode the parameters as URL query parameters
         query_params = "&".join([f"{k}={v}" for k, v in params.items()])
-
-        # region = ""
-        # if self.location:
-        #     region = f"region={self.location}"
 
         return (
             f"https://ssh.cloud.google.com/cloudshell/editor?{query_params}",
