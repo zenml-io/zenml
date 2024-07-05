@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 from zenml.config.server_config import ServerConfiguration
 from zenml.exceptions import SubscriptionUpgradeRequiredError
 from zenml.logger import get_logger
-from zenml.zen_server.cloud_utils import ZenMLCloudSession
+from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
@@ -59,8 +59,12 @@ class RawUsageEvent(BaseModel):
     )
 
 
-class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
-    """Feature Gate interface definition."""
+class ZenMLCloudFeatureGateInterface(FeatureGateInterface):
+    """ZenML Cloud Feature Gate implementation."""
+
+    def __init__(self) -> None:
+        """Initialize the object."""
+        self._connection = cloud_connection()
 
     def check_entitlement(self, resource: ResourceType) -> None:
         """Checks if a user is entitled to create a resource.
@@ -72,7 +76,7 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
             SubscriptionUpgradeRequiredError: in case a subscription limit is reached
         """
         try:
-            response = self._get(
+            response = self._connection.get(
                 endpoint=ENTITLEMENT_ENDPOINT + "/" + resource, params=None
             )
         except SubscriptionUpgradeRequiredError:
@@ -110,7 +114,9 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
                 "resource_id": str(resource_id),
             },
         ).model_dump()
-        response = self._post(endpoint=USAGE_EVENT_ENDPOINT, data=data)
+        response = self._connection.post(
+            endpoint=USAGE_EVENT_ENDPOINT, data=data
+        )
         if response.status_code != 200:
             logger.error(
                 "Usage report not accepted by upstream backend. "
