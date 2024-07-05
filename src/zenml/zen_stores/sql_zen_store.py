@@ -7012,6 +7012,20 @@ class SqlZenStore(BaseZenStore):
                     )
                 # Create a new component
                 else:
+                    flavor_list = self.list_flavors(
+                        flavor_filter_model=FlavorFilter(
+                            name=component_info.flavor,
+                            type=component_type,
+                        )
+                    )
+                    if not len(flavor_list):
+                        raise ValueError(
+                            f"Flavor '{component_info.flavor}' not found "
+                            f"for component type '{component_type}'."
+                        )
+
+                    flavor_model = flavor_list[0]
+
                     component_name = full_stack.name
                     while True:
                         try:
@@ -7039,15 +7053,6 @@ class SqlZenStore(BaseZenStore):
                         service_connector = service_connectors[
                             component_info.service_connector_index
                         ]
-                        flavor_list = self.list_flavors(
-                            flavor_filter_model=FlavorFilter(
-                                name=component_info.flavor,
-                                type=component_type,
-                            )
-                        )
-                        assert len(flavor_list) == 1
-
-                        flavor_model = flavor_list[0]
 
                         requirements = flavor_model.connector_requirements
 

@@ -17,7 +17,6 @@ from typing import ClassVar, Dict, List, Tuple
 
 from zenml.enums import StackDeploymentProvider
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
-from zenml.utils.string_utils import random_str
 
 GCP_DEPLOYMENT_TYPE = "deployment-manager"
 

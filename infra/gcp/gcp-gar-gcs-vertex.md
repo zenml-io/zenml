@@ -85,11 +85,11 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 Now, let's configure the ZenML stack deployment. You'll need to provide the
 following information:
 
-* a unique name for the ZenML stack and deployment: <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="name: .*"><walkthrough-editor-select-regex>
-* a unique string value to use to name all created GCP resources. Can include lowercase alphanumeric characters and hyphens and must be between 6-32 characters in length: <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="resourceNameSuffix: .*"><walkthrough-editor-select-regex>
-* the GCP region to deploy the resources to: <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="region: .*"><walkthrough-editor-select-regex>
-* the URL where your ZenML server is running: <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="zenmlServerUrl: .*"><walkthrough-editor-select-regex>
-* an API token to authenticate with your ZenML server: <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="zenmlServerAPIToken: .*"><walkthrough-editor-select-regex> 
+* <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="name: .*">a unique name for the ZenML stack and deployment<walkthrough-editor-select-regex>
+* <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="resourceNameSuffix: .*">a unique string value to use to name all created GCP resources<walkthrough-editor-select-regex>.  Can include lowercase alphanumeric characters and hyphens and must be between 6-32 characters in length
+* <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="region: .*">the GCP region to deploy the resources to<walkthrough-editor-select-regex>
+* <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="zenmlServerURL: .*">the URL where your ZenML server is running<walkthrough-editor-select-regex>
+* <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.yaml" regex="zenmlServerAPIToken: .*">the API token to authenticate with your ZenML server<walkthrough-editor-select-regex>
 
 ## 5. Run the following command to deploy the stack with Deployment Manager
 

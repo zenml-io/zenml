@@ -16,6 +16,7 @@ import urllib.request
 from typing import Any, Tuple
 
 from flask import Request
+from sympy import sec
 
 
 def run_script(request: Request) -> Tuple[Any, int]:
@@ -30,10 +31,16 @@ def run_script(request: Request) -> Tuple[Any, int]:
             message.
     """
     payload = request.get_data(as_text=True)
-    if payload:
-        print(f"Received payload: {payload}")
-    else:
+    if not payload:
         return {"status": "error", "message": "No payload received"}, 400
+
+    # Expand secret values in the payload
+    for secret_key, secret_value in os.environ.items():
+        if secret_key.startswith("ZENML_STACK_SECRET_"):
+            secret_key = secret_key.replace("ZENML_STACK_SECRET_", "")
+            payload.replace(f"${secret_key}", secret_value)
+
+    print(f"Received payload: {payload}")
 
     try:
         url = (
