@@ -10,16 +10,15 @@ be set:
     Server.
 """
 
-import json
 import os
 import urllib.error
 import urllib.request
-from typing import Dict
+from typing import Any, Tuple
 
 from flask import Request
 
 
-def run_script(request: Request) -> Dict[str, str]:
+def run_script(request: Request) -> Tuple[Any, int]:
     """Main function to run the script.
 
     Args:
@@ -34,7 +33,7 @@ def run_script(request: Request) -> Dict[str, str]:
     if payload:
         print(f"Received payload: {payload}")
     else:
-        return {"status": "error", "message": "No payload received"}
+        return {"status": "error", "message": "No payload received"}, 400
 
     try:
         url = (
@@ -64,24 +63,26 @@ def run_script(request: Request) -> Dict[str, str]:
         print(response_body)
 
         if status_code == 200:
-            result = {
-                "status": "success",
-                "message": "Stack successfully registered with ZenML",
-            }
+            return (
+                {
+                    "status": "success",
+                    "message": "Stack successfully registered with ZenML",
+                },
+                200,
+            )
         else:
-            result = {
+            return {
                 "status": "failed",
                 "message": (
                     f"Failed to register the ZenML stack. The ZenML Server "
                     f"replied with HTTP status code {status_code}: "
                     f"{response_body}"
                 ),
-            }
+            }, 400
 
     except Exception as e:
         print(f"Error: {str(e)}")
-        result = {
+        return {
             "status": "failed",
             "message": f"Failed to register the ZenML stack: {str(e)}",
-        }
-    return result
+        }, 500

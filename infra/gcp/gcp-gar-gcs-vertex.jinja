@@ -41,7 +41,7 @@ resources:
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
     properties:
       resource: {{ project }}
-      role: roles/artifactregistry.writer
+      role: roles/artifactregistry.createOnPushWriter
       member: serviceAccount:$(ref.zenml-service-account.email)
       #condition:
       #  title: TimeBoundAccess
@@ -107,14 +107,14 @@ resources:
           "description": "Deployed by GCP Deployment Manager deployment {{ deployment }} in the {{ project }} and {{ region }} region.",
           "labels": {
             "zenml:provider": "gcp",
-            "zenml:deployment": "deployment-manager",
+            "zenml:deployment": "deployment-manager"
           },
           "service_connectors": [
             {
               "type": "gcp",
               "auth_method": "service-account",
               "configuration": {
-                "service_account_json": {{ ref.zenml-service-account-key.privateKeyData }}
+                "service_account_json": ${ref.zenml-service-account-key.privateKeyData}
               }
             }
           ],
@@ -146,14 +146,14 @@ resources:
 
 
 outputs:
-#- name: GCSBucket
-#  value: $(ref.zenml-{{ resourceNameSuffix }}.name)
-#
-#- name: ServiceAccountEmail
-#  value: $(ref.service-account.email)
-#
-#- name: ServiceAccountKey
-#  value: $(ref.service-account-key.privateKeyData)
+- name: GCSBucket
+  value: zenml-{{ resourceNameSuffix }}
 
-#- name: ArtifactRegistry
-#  value: $(ref.zenml-artifact-registry.name)
+- name: ServiceAccountEmail
+  value: $(ref.zenml-service-account.email)
+
+- name: ServiceAccountKey
+  value: $(ref.zenml-service-account-key.privateKeyData)
+
+- name: ArtifactRegistry
+  value: $(ref.zenml-artifact-registry.name)

@@ -19,7 +19,8 @@ from typing import ClassVar, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
-from zenml.enums import StackDeploymentProvider
+from zenml.client import Client
+from zenml.enums import StackComponentType, StackDeploymentProvider
 from zenml.models import (
     DeployedStack,
 )
@@ -29,6 +30,7 @@ class ZenMLCloudStackDeployment(BaseModel):
     """ZenML Cloud Stack CLI Deployment base class."""
 
     provider: ClassVar[StackDeploymentProvider]
+    deployment: ClassVar[str]
     stack_name: str
     location: Optional[str] = None
 
@@ -111,20 +113,63 @@ class ZenMLCloudStackDeployment(BaseModel):
             and a text description of the URL.
         """
 
-    @abstractmethod
     def get_stack(
-        self,
-        date_start: Optional[datetime.datetime] = None,
+        self, date_start: Optional[datetime.datetime] = None
     ) -> Optional[DeployedStack]:
         """Return the ZenML stack that was deployed and registered.
 
         This method is called to retrieve a ZenML stack matching the deployment
-        provider and stack name.
+        provider.
 
         Args:
-            date_start: The start date of the deployment.
+            date_start: The date when the deployment started.
 
         Returns:
-            The ZenML stack that was deployed and registered or None if the
-            stack was not found.
+            The ZenML stack that was deployed and registered or None if a
+            matching stack was not found.
         """
+        client = Client()
+
+        # It's difficult to find a stack that matches the CloudFormation
+        # deployment 100% because the user can change the stack name before they
+        # deploy the stack in GCP.
+        #
+        # We try to find a full GCP stack that matches the deployment provider
+        # that was registered after this deployment was created.
+
+        # Get all stacks created after the start date
+        stacks = client.list_stacks(
+            created=f"gt:{str(date_start.replace(microsecond=0))}"
+            if date_start
+            else None,
+            sort_by="desc:created",
+            size=50,
+        )
+
+        if not stacks.items:
+            return None
+
+        # Find a stack that best matches the deployment provider
+        for stack in stacks.items:
+            if not stack.labels:
+                continue
+
+            if stack.labels.get("zenml:provider") != self.provider.value:
+                continue
+
+            if stack.labels.get("zenml:deployment") != self.deployment:
+                continue
+
+            artifact_store = stack.components[
+                StackComponentType.ARTIFACT_STORE
+            ][0]
+
+            if not artifact_store.connector:
+                continue
+
+            return DeployedStack(
+                stack=stack,
+                service_connector=artifact_store.connector,
+            )
+
+        return None

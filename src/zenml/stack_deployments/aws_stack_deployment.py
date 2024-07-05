@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Functionality to deploy a ZenML stack to a cloud provider."""
+"""Functionality to deploy a ZenML stack to AWS."""
 
 import datetime
 from typing import ClassVar, Dict, List, Optional, Tuple
@@ -31,6 +31,7 @@ class AWSZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
     """AWS ZenML Cloud Stack Deployment."""
 
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.AWS
+    deployment: ClassVar[str] = AWS_DEPLOYMENT_TYPE
 
     @classmethod
     def description(cls) -> str:
@@ -226,64 +227,3 @@ console.
             f"{region}#/stacks/create/review?{query_params}",
             "AWS CloudFormation Console",
         )
-
-    def get_stack(
-        self, date_start: Optional[datetime.datetime] = None
-    ) -> Optional[DeployedStack]:
-        """Return the ZenML stack that was deployed and registered.
-
-        This method is called to retrieve a ZenML stack matching the deployment
-        provider.
-
-        Args:
-            date_start: The date when the deployment started.
-
-        Returns:
-            The ZenML stack that was deployed and registered or None if a
-            matching stack was not found.
-        """
-        client = Client()
-
-        # It's difficult to find a stack that matches the CloudFormation
-        # deployment 100% because the user can change the stack name before they
-        # deploy the stack in AWS.
-        #
-        # We try to find a full AWS stack that matches the deployment provider
-        # that was registered after this deployment was created.
-
-        # Get all stacks created after the start date
-        stacks = client.list_stacks(
-            created=f"gt:{str(date_start.replace(microsecond=0))}"
-            if date_start
-            else None,
-            sort_by="desc:created",
-            size=50,
-        )
-
-        if not stacks.items:
-            return None
-
-        # Find a stack that best matches the deployment provider
-        for stack in stacks.items:
-            if not stack.labels:
-                continue
-
-            if stack.labels.get("zenml:provider") != self.provider.value:
-                continue
-
-            if stack.labels.get("zenml:deployment") != AWS_DEPLOYMENT_TYPE:
-                continue
-
-            artifact_store = stack.components[
-                StackComponentType.ARTIFACT_STORE
-            ][0]
-
-            if not artifact_store.connector:
-                continue
-
-            return DeployedStack(
-                stack=stack,
-                service_connector=artifact_store.connector,
-            )
-
-        return None
