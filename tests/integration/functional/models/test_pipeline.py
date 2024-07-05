@@ -42,18 +42,19 @@ def test_pipeline_run_linkage(
         assert runs == model.runs
         assert runs[0] == model.last_run == model.last_successful_run
 
-    # Check different versions of the pipeline do not interfere with each other
     assert pipeline_instance.model.num_runs == 3
+
+    # Check different versions of the pipeline are using the same model
     pipeline_instance_2: BasePipeline = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_two_test_step(),
     )
     pipeline_instance_2.run()
-    assert pipeline_instance.model.num_runs == 3
-    assert pipeline_instance_2.model.num_runs == 1
+    assert pipeline_instance.model.num_runs == 4
+    assert pipeline_instance_2.model.num_runs == 4
     pipeline_instance.run()
-    assert pipeline_instance.model.num_runs == 4
-    assert pipeline_instance_2.model.num_runs == 1
+    assert pipeline_instance.model.num_runs == 5
+    assert pipeline_instance_2.model.num_runs == 5
     pipeline_instance_2.run()
-    assert pipeline_instance.model.num_runs == 4
-    assert pipeline_instance_2.model.num_runs == 2
+    assert pipeline_instance.model.num_runs == 6
+    assert pipeline_instance_2.model.num_runs == 6
