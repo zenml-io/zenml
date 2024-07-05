@@ -13,5 +13,5 @@ Click the button below to deploy a ZenML stack in your AWS account using AWS Clo
 
 Click the button below to deploy a ZenML stack on your GCP project using Google Cloud Shell. Google Cloud Shell will open and clone this repository. Follow the instructions in the Cloud Shell terminal to deploy the stack.
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_workspace=infra/gcp&cloudshell_open_in_editor=gcp-gar-gcs-vertex.jinja,gcp-gar-gcs-vertex-config.yaml&cloudshell_tutorial=gcp-gar-gcs-vertex.md&cloudshell_git_branch=feature/prd-482-gcp-stack-deployment&ephemeral=true&cloudshell_env=BLABLA=blabla,BLILILI=bilili)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?ephemeral=true&cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_workspace=infra/gcp&cloudshell_open_in_editor=gcp-gar-gcs-vertex.jinja,gcp-gar-gcs-vertex-deploy.sh&cloudshell_tutorial=gcp-gar-gcs-vertex.md&cloudshell_git_branch=feature/prd-482-gcp-stack-deployment)
 

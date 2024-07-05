@@ -15,9 +15,9 @@ Parameters:
   ResourceName:
     Type: String
     Description: |
-      Unique string value to use to name all resources. Can include
-      lowercase alphanumeric characters and hyphens and must be between 6-32
-      characters in length.
+      Unique string value to use to name all resources (e.g. zenml-stack-01).
+      Can include lowercase alphanumeric characters and hyphens and must be
+      between 6-32 characters in length.
     MinLength: 8
     MaxLength: 32
     AllowedPattern: "[a-z0-9-]+"
@@ -60,7 +60,7 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${ResourceName}'
+      BucketName: !Sub '${ResourceName}-${AWS::AccountId}'
       AccessControl: Private
       Tags:
         - Key: !Ref TagName

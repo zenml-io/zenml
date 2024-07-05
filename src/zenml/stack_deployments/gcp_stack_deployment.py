@@ -203,7 +203,7 @@ GCP project and to clean up the resources created by the stack by using
         params = dict(
             cloudshell_git_repo="https://github.com/zenml-io/zenml",
             cloudshell_workspace="infra/gcp",
-            cloudshell_open_in_editor="gcp-gar-gcs-vertex.jinja,gcp-gar-gcs-vertex-config.yaml",
+            cloudshell_open_in_editor="gcp-gar-gcs-vertex.jinja,gcp-gar-gcs-vertex-deploy.sh",
             cloudshell_tutorial="gcp-gar-gcs-vertex.md",
             ephemeral="true",
             # TODO: remove this before the branch is merged
