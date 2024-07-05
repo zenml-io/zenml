@@ -49,7 +49,13 @@ def convert_step_to_task(
             db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
     db_libraries.append(Library(whl=zenml_project_wheel))
     # TODO: Remove this hardcoding
-    db_libraries.append(Library(pypi=PythonPyPiLibrary("git+https://github.com/zenml-io/zenml.git@feature/databricks-integrations")))
+    db_libraries.append(
+        Library(
+            pypi=PythonPyPiLibrary(
+                "git+https://github.com/zenml-io/zenml.git@feature/databricks-integrations"
+            )
+        )
+    )
     return DatabricksTask(
         task_key=task_name,
         existing_cluster_id=cluster_id,
