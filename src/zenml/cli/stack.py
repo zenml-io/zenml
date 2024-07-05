@@ -2291,13 +2291,13 @@ def _get_stack_component_info(
             available_registries = _get_registries(
                 "ECR", f"{AWS_DOCS}#ecr-container-registry"
             )
-                    "service connector.\nDocumentation for the ECR "
-                    "container registry resource configuration can "
-                    f"be found at {AWS_DOCS}#ecr-container-registry"
-                )
+        if cloud_provider == "gcp":
+            flavor = "gcp"
             available_registries = _get_registries(
                 "GCR", f"{GCP_DOCS}#gcr-container-registry"
             )
+        if cloud_provider == "azure":
+            flavor = "azure"
 
         selected_registry_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} registries",
