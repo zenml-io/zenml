@@ -208,6 +208,9 @@ function test_upgrade_to_version() {
 
     if [ "$VERSION" == "current" ]; then
         uv pip install -e ".[templates,server]"
+    elif [ "$(version_compare "$VERSION" "0.58.2")" == ">" ]; then
+        # For releases  >= 0.60.0 we don't want to have those old requirements pinned
+        uv pip install -e ".[templates,server]"
     else
         uv pip install "zenml[templates,server]==$VERSION"
         # handles unpinned sqlmodel dependency in older versions
