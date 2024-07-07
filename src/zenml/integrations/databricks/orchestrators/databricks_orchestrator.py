@@ -31,7 +31,7 @@ from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import
     DatabricksOrchestratorConfig,
     DatabricksOrchestratorSettings,
 )
-from zenml.integrations.databricks.orchestrators.databricks_utils import (
+from zenml.integrations.databricks.utils.databricks_utils import (
     convert_step_to_task,
 )
 from zenml.io import fileio
