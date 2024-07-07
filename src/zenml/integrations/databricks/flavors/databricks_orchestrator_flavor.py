@@ -122,7 +122,7 @@ class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubeflow.png"
+        return "https://upload.wikimedia.org/wikipedia/commons/6/63/Databricks_Logo.png"
 
     @property
     def config_class(self) -> Type[DatabricksOrchestratorConfig]:

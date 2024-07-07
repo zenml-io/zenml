@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Databricks utilities."""
 
-from typing import List, Optional
+import re
+from typing import Dict, List, Optional
 
 from databricks.sdk.service.compute import Library, PythonPyPiLibrary
 from databricks.sdk.service.jobs import PythonWheelTask, TaskDependency
@@ -69,3 +70,21 @@ def convert_step_to_task(
         if depends_on
         else None,
     )
+
+
+def sanitize_labels(labels: Dict[str, str]) -> None:
+    """Update the label values to be valid Kubernetes labels.
+
+    See:
+    https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+
+    Args:
+        labels: the labels to sanitize.
+    """
+    for key, value in labels.items():
+        # Kubernetes labels must be alphanumeric, no longer than
+        # 63 characters, and must begin and end with an alphanumeric
+        # character ([a-z0-9A-Z])
+        labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)[:63].strip(
+            "-_."
+        )

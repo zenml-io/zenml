@@ -31,19 +31,19 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
     """Base class for wheeled orchestrators."""
 
     package_name = DEFAULT_PACKAGE_NAME
-
-    def set_package_name(self, package_name: str) -> None:
-        """Set the package name.
-
-        Args:
-            package_name (str): Name of the package.
-        """
-        self.package_name = package_name
+    package_version = __version__
 
     def copy_repository_to_temp_dir_and_add_setup_py(self) -> str:
-        """Copy the repository to a temporary directory and add a setup.py file."""
+        """Copy the repository to a temporary directory and add a setup.py file.
+
+        Returns:
+            Path to the temporary directory containing the copied repository.
+        """
         repo_path = get_source_root()
-        
+
+        self.package_name = (
+            f"{DEFAULT_PACKAGE_NAME}_{os.path.basename(repo_path)}"
+        )
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -66,7 +66,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="{self.package_name}",
-    version="{__version__}",
+    version="{self.package_version}",
     packages=find_packages(),
 )
 """

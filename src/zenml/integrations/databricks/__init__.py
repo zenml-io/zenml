@@ -22,6 +22,9 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 DATABRICKS_ORCHESTRATOR_FLAVOR = "databricks"
+DATABRICKS_MODEL_DEPLOYER_FLAVOR = "databricks"
+DATABRICKS_SERVICE_ARTIFACT = "databricks_deployment_service"
+
 
 class DatabricksIntegration(Integration):
     """Definition of Databricks Integration for ZenML."""
@@ -38,8 +41,12 @@ class DatabricksIntegration(Integration):
         """
         from zenml.integrations.databricks.flavors import (
             DatabricksOrchestratorFlavor,
+            DatabricksModelDeployerFlavor,
         )
 
-        return [DatabricksOrchestratorFlavor]
+        return [
+            DatabricksOrchestratorFlavor,
+            DatabricksModelDeployerFlavor,
+        ]
 
 DatabricksIntegration.check_installation()
