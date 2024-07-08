@@ -15,7 +15,9 @@
 
 from typing import List
 
-from rich.markdown import Markdown
+from rich.console import Console, ConsoleOptions, RenderResult
+from rich.markdown import Heading, Markdown
+from rich.text import Text
 
 zenml_cli_welcome_message = Markdown(
     """
@@ -82,3 +84,35 @@ links below.\n
 
 """
     )
+
+
+class OldSchoolMarkdownHeading(Heading):
+    """A traditional markdown heading."""
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        """Render the heading.
+
+        Args:
+            console: The console rendering the content.
+            options: The console options.
+
+        Yields:
+            RenderResult: The rendered content.
+        """
+        text = self.text
+        text.justify = "left"
+        if self.tag == "h1":
+            # Underline and bold h1s
+            yield Text("", style="bold")
+            yield text
+            yield "=" * len(text)
+        else:
+            if self.tag == "h2":
+                # Just underline h2s
+                yield Text("", style="underline")
+            else:
+                # Just bold everything else
+                yield Text("", style="bold")
+            yield text

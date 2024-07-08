@@ -66,6 +66,7 @@ DEFAULT_DOCKER_PARENT_IMAGE = (
     f"zenmldocker/zenml:{zenml.__version__}-"
     f"py{sys.version_info.major}.{sys.version_info.minor}"
 )
+DEFAULT_ZENML_DOCKER_REPOSITORY = "zenml"
 
 PIP_DEFAULT_ARGS = {
     "no-cache-dir": None,
@@ -198,10 +199,15 @@ class PipelineDockerImageBuilder:
                 # We will build an additional image on top of this one later
                 # to include user files and/or install requirements. The image
                 # we build now will be used as the parent for the next build.
-                user_image_name = (
-                    f"{docker_settings.target_repository}:"
-                    f"{tag}-intermediate-build"
-                )
+                repository = docker_settings.target_repository
+                if not repository:
+                    if container_registry:
+                        repository = (
+                            container_registry.config.default_repository
+                        )
+
+                repository = repository or DEFAULT_ZENML_DOCKER_REPOSITORY
+                user_image_name = f"{repository}:" f"{tag}-intermediate-build"
                 if push and container_registry:
                     user_image_name = (
                         f"{container_registry.config.uri}/{user_image_name}"
@@ -372,7 +378,14 @@ class PipelineDockerImageBuilder:
         Returns:
             The docker image name.
         """
-        target_image_name = f"{docker_settings.target_repository}:{tag}"
+        repository = docker_settings.target_repository
+        if not repository:
+            if container_registry:
+                repository = container_registry.config.default_repository
+
+        repository = repository or DEFAULT_ZENML_DOCKER_REPOSITORY
+
+        target_image_name = f"{repository}:{tag}"
         if container_registry:
             target_image_name = (
                 f"{container_registry.config.uri}/{target_image_name}"

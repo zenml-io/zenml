@@ -146,7 +146,7 @@ def _cli_wrapped_function(func: F) -> F:
         if _is_valid_optional_arg(arg_type):
             arg_type = arg_type.__args__[0]
         arg_name = _cli_arg_name(arg_name)
-        if arg_type == bool:
+        if arg_type is bool:
             options.append(
                 click.option(
                     f"--{arg_name}",

@@ -41,6 +41,7 @@ class BaseContainerRegistryConfig(AuthenticationConfigMixin):
     """
 
     uri: str
+    default_repository: Optional[str] = None
 
     @field_validator("uri")
     @classmethod
