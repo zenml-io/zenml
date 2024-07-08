@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
-from typing import Tuple
 from unittest.mock import patch
 
 import pytest
@@ -123,48 +121,34 @@ def test_validate_keys():
 
 
 @pytest.mark.parametrize(
-    "mac_version, env_var, expected_result",
+    "mac_version, env_var, expected_output",
     [
-        (("10", "15", ""), "", True),
-        (("10", "15", ""), "1", False),
-        (("10", "13", ""), "", True),
-        (("10", "13", ""), "1", False),
-        (("10", "12", ""), "", False),
-        (("10", "12", ""), "1", False),
-        ((), "", False),
-        ((), "1", False),
+        ("10.12", "", False),
+        ("10.13", "", True),
+        ("10.14", "", True),
+        ("10.15", "", True),
+        ("11.0", "", True),
+        ("12.3", "", True),
+        ("13.3.5", "", True),
+        ("14.5", "", True),
+        ("10.12", "1", False),
+        ("10.13", "1", False),
+        ("10.14", "1", False),
+        ("10.15", "1", False),
     ],
 )
-def test_requires_mac_env_var_warning(
-    mac_version: Tuple[str, ...], env_var: str, expected_result: bool
-) -> None:
-    """Test the requires_mac_env_var_warning function.
-
-    Args:
-        mac_version: A tuple representing the mocked macOS version.
-        env_var: The value of the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY` environment variable.
-        expected_result: The expected result of the requires_mac_env_var_warning function.
-    """
-    original_env_var = os.environ.get("OBJC_DISABLE_INITIALIZE_FORK_SAFETY")
-
-    with patch(
-        "platform.mac_ver", return_value=(mac_version, ("", "", ""), "")
-    ):
-        if "OBJC_DISABLE_INITIALIZE_FORK_SAFETY" in os.environ:
-            del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
-
-        if env_var:
-            os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = env_var
-
-        assert requires_mac_env_var_warning() == expected_result
-
-    if original_env_var is not None:
-        os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = original_env_var
-    elif "OBJC_DISABLE_INITIALIZE_FORK_SAFETY" in os.environ:
-        del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
+def test_requires_mac_env_var_warning(mac_version, env_var, expected_output):
+    with patch("sys.platform", "darwin"):
+        with patch("platform.release", return_value=mac_version):
+            with patch.dict(
+                "os.environ",
+                {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": env_var},
+                clear=True,
+            ):
+                assert requires_mac_env_var_warning() == expected_output
 
 
-def test_requires_mac_env_var_warning_non_mac() -> None:
-    """Test the requires_mac_env_var_warning function on a non-macOS platform."""
-    with patch("sys.platform", "linux"):
+@pytest.mark.parametrize("platform", ["win32", "linux"])
+def test_requires_mac_env_var_warning_non_mac(platform):
+    with patch("sys.platform", platform):
         assert not requires_mac_env_var_warning()

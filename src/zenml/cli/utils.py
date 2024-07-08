@@ -2852,23 +2852,6 @@ def multi_choice_prompt(
 def requires_mac_env_var_warning() -> bool:
     """Checks if a warning needs to be shown for a local Mac server.
 
-    Returns:
-        A tuple of (major, minor) version numbers if running on macOS, or (None, None) otherwise.
-    """
-    if sys.platform == "darwin":
-        mac_version = platform.mac_ver()[0]
-        if mac_version:
-            try:
-                major, minor, _ = mac_version
-                return int(major), int(minor)
-            except (ValueError, TypeError):
-                pass
-    return None, None
-
-
-def requires_mac_env_var_warning() -> bool:
-    """Checks if a warning needs to be shown for a local Mac server.
-
     This is for the case where a user is on a macOS system, trying to run a
     local server but is missing the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY`
     environment variable.
