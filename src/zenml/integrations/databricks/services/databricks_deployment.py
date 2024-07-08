@@ -28,7 +28,7 @@ from pydantic import Field
 
 from zenml.client import Client
 from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor import (
-    DatabricksModelDeployerConfig,
+    DatabricksBaseConfig,
 )
 from zenml.integrations.databricks.utils.databricks_utils import (
     sanitize_labels,
@@ -43,7 +43,7 @@ POLLING_TIMEOUT = 1200
 UUID_SLICE_LENGTH: int = 8
 
 
-class DatabricksDeploymentConfig(DatabricksModelDeployerConfig, ServiceConfig):
+class DatabricksDeploymentConfig(DatabricksBaseConfig, ServiceConfig):
     """Databricks service configurations."""
 
     model_uri: str
