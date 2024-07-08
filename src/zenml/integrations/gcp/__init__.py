@@ -53,6 +53,7 @@ class GcpIntegration(Integration):
         "google-cloud-build>=3.11.0",
         "kubernetes",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes","kfp"]
 
     @staticmethod
     def activate() -> None:

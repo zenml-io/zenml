@@ -31,6 +31,9 @@ class KubeflowIntegration(Integration):
 
     NAME = KUBEFLOW
     REQUIREMENTS = ["kfp>=2.6.0", "kfp-kubernetes>=1.1.0"]  # Only 1.x version that supports pyyaml 6
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = [
+        "kfp", # it is used by GCP as well
+    ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

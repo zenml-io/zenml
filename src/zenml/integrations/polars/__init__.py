@@ -25,6 +25,7 @@ class PolarsIntegration(Integration):
         "polars>=0.19.5",
         "pyarrow>=12.0.0"
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pyarrow"]
 
     @classmethod
     def activate(cls) -> None:
