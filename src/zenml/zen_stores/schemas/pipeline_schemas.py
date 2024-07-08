@@ -133,7 +133,6 @@ class PipelineSchema(NamedSchema, table=True):
         """
         body = PipelineResponseBody(
             user=self.user.to_model() if self.user else None,
-            status=[run.status for run in self.runs[:last_x_runs]],
             latest_run_id=self.runs[-1].id if self.runs else None,
             latest_run_status=self.runs[-1].status if self.runs else None,
             tags=[t.tag.to_model() for t in self.tags],

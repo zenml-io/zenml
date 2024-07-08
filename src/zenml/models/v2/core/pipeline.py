@@ -89,9 +89,6 @@ class PipelineUpdate(BaseUpdate):
 class PipelineResponseBody(WorkspaceScopedResponseBody):
     """Response body for pipelines."""
 
-    status: Optional[List[ExecutionStatus]] = Field(
-        default=None, title="The status of the last 3 Pipeline Runs."
-    )
     latest_run_id: Optional[UUID] = Field(
         default=None,
         title="The ID of the latest run of the pipeline namespace.",
@@ -209,16 +206,6 @@ class PipelineResponse(
                 f"{self.id}."
             )
         return runs[0]
-
-    # Body and metadata properties
-    @property
-    def status(self) -> Optional[List[ExecutionStatus]]:
-        """The `status` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().status
 
     @property
     def latest_run_id(self) -> Optional[UUID]:
