@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the MLflow Service."""
+"""Initialization of the Databricks Service."""
 
-from zenml.integrations.mlflow.services.mlflow_deployment import (  # noqa
-    MLFlowDeploymentConfig,
-    MLFlowDeploymentService,
+from zenml.integrations.databricks.services.databricks_deployment import (  # noqa
+    DatabricksServiceConfig,
+    DatabricksDeploymentService,
 )

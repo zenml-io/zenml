@@ -25,4 +25,6 @@ from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor impo
 __all__ = [
     "DatabricksOrchestratorFlavor",
     "DatabricksOrchestratorConfig",
+    "DatabricksModelDeployerFlavor",
+    "DatabricksModelDeployerConfig",
 ]

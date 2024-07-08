@@ -26,7 +26,7 @@ from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor impo
 )
 from zenml.integrations.databricks.services.databricks_deployment import (
     DatabricksDeploymentService,
-    DatabricksServiceConfig,
+    DatabricksDeploymentConfig,
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer
@@ -92,7 +92,7 @@ class DatabricksModelDeployer(BaseModelDeployer):
         )
 
     def _create_new_service(
-        self, id: UUID, timeout: int, config: DatabricksServiceConfig
+        self, id: UUID, timeout: int, config: DatabricksDeploymentConfig
     ) -> DatabricksDeploymentService:
         """Creates a new DatabricksDeploymentService.
 
@@ -103,7 +103,7 @@ class DatabricksModelDeployer(BaseModelDeployer):
             config: the configuration of the model to be deployed with Databricks model deployer.
 
         Returns:
-            The DatabricksServiceConfig object that can be used to interact
+            The DatabricksDeploymentConfig object that can be used to interact
             with the Databricks inference endpoint.
         """
         # create a new service for the new model
@@ -156,7 +156,7 @@ class DatabricksModelDeployer(BaseModelDeployer):
             interact with the remote Databricks inference endpoint server.
         """
         with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
-            config = cast(DatabricksServiceConfig, config)
+            config = cast(DatabricksDeploymentConfig, config)
             # create a new DatabricksDeploymentService instance
             service = self._create_new_service(
                 id=id, timeout=timeout, config=config

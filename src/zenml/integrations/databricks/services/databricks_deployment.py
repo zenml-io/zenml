@@ -43,7 +43,7 @@ POLLING_TIMEOUT = 1200
 UUID_SLICE_LENGTH: int = 8
 
 
-class DatabricksServiceConfig(DatabricksModelDeployerConfig, ServiceConfig):
+class DatabricksDeploymentConfig(DatabricksModelDeployerConfig, ServiceConfig):
     """Databricks service configurations."""
 
     model_uri: str
@@ -66,9 +66,6 @@ class DatabricksServiceConfig(DatabricksModelDeployerConfig, ServiceConfig):
             labels["zenml.model_name"] = self.model_name
         if self.model_uri:
             labels["zenml.model_uri"] = self.model_uri
-        if self.extra_args:
-            for key, value in self.extra_args.items():
-                labels[f"zenml.{key}"] = value
         sanitize_labels(labels)
         return labels
 
@@ -92,12 +89,12 @@ class DatabricksDeploymentService(BaseDeploymentService):
         flavor="databricks",
         description="Databricks inference endpoint prediction service",
     )
-    config: DatabricksServiceConfig
+    config: DatabricksDeploymentConfig
     status: DatabricksServiceStatus = Field(
         default_factory=lambda: DatabricksServiceStatus()
     )
 
-    def __init__(self, config: DatabricksServiceConfig, **attrs: Any):
+    def __init__(self, config: DatabricksDeploymentConfig, **attrs: Any):
         """Initialize the Databricks deployment service.
 
         Args:
@@ -148,7 +145,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         Returns:
             The labels for the Databricks deployment.
         """
-        labels = self.config.get_seldon_deployment_labels()
+        labels = self.config.get_databricks_deployment_labels()
         labels["zenml.service_uuid"] = str(self.uuid)
         sanitize_labels(labels)
         return labels
@@ -185,7 +182,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
             The prediction URI exposed by the prediction service, or None if
             the service is not yet ready.
         """
-        return self.hf_endpoint.url if self.is_running else None
+        return self.databricks_endpoint.endpoint_url if self.is_running else None
 
     def provision(self) -> None:
         """Provision or update remote Databricks deployment instance.
@@ -295,16 +292,13 @@ class DatabricksDeploymentService(BaseDeploymentService):
                 "Please start the service before making predictions."
             )
         if self.prediction_url is not None:
-            if self.hf_endpoint.task == "text-generation":
-                result = self.inference_client.task_generation(
-                    data, max_new_tokens=max_new_tokens
-                )
+            pass
         else:
             # TODO: Add support for all different supported tasks
             raise NotImplementedError(
                 "Tasks other than text-generation is not implemented."
             )
-        return result
+        return ""
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None
