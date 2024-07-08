@@ -30,6 +30,7 @@ class LangchainIntegration(Integration):
         "pyyaml>=6.0.1",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pyyaml","tenacity"]
 
     @classmethod
     def activate(cls) -> None:

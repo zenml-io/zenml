@@ -44,6 +44,7 @@ class DeepchecksIntegration(Integration):
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
     APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas","torchvision","tenacity"]
 
     @staticmethod
     def activate() -> None:

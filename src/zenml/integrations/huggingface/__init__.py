@@ -39,6 +39,7 @@ class HuggingfaceIntegration(Integration):
         # TODO try relaxing it back going forward
         "fsspec<=2023.12.0",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["fsspec"]
 
     @classmethod
     def activate(cls) -> None:
