@@ -24,7 +24,7 @@ cloud stack](deploy-a-cloud-stack.md).
 
 # How to use the Stack Wizard?
 
-At the moment, the stack wizard can only be accessed through our CLI:
+At the moment, the stack wizard can only be accessed through our CLI.
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -36,13 +36,14 @@ you can use the following command:
 zenml stack register <STACK_NAME> -p aws
 ```
 
-To register the cloud stack, the wizard also makes use of a service connector. 
-Either it gets created during this process or you can use an existing connector
-by providing `-c <CONNECTOR_ID>`.
+To register the cloud stack, the first thing that the wizard needs is a service 
+connector. You can either use an existing connector by providing its ID 
+`-c <CONNECTOR_ID>` or the wizard will create one for you.
 
-Similar to the service connector, you can also use an existing stack component.
-However, this is only possible if they are configured with the same service 
-connector defined through the parameter described above.
+Similar to the service connector, you can also use existing stack components.
+However, this is only possible if these component are already configured with 
+the same service connector that you provided through the parameter 
+described above.
 
 {% hint style="warning" %}
 Currently, the stack wizard only works on AWS. We are working on bringing 
@@ -94,8 +95,8 @@ Based on your selection, you will have to provide the required parameters listed
 above. This will allow ZenML to create a Service Connector and 
 authenticate you to use your cloud resources.
 
-For each missing component, the available resources will be listed to you as 
-follows:
+Next, for each missing component, the available resources will be listed to 
+you as follows:
 
 {% code title="Example Command Output for Artifact Stores" %}
 ```
