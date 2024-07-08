@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to AWS."""
 
-from typing import ClassVar, Dict, List, Tuple
+from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
+from zenml.models import StackDeploymentConfig
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 from zenml.utils.string_utils import random_str
 
@@ -183,32 +184,34 @@ console.
             "South America (São Paulo)": "sa-east-1",
         }
 
-    def deploy_url(
+    def get_deployment_config(
         self,
-        zenml_server_url: str,
-        zenml_server_api_token: str,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+    ) -> StackDeploymentConfig:
+        """Return the configuration to deploy the ZenML stack to the specified cloud provider.
 
-        The URL should point to a cloud provider console where the user can
-        deploy the ZenML stack and should include as many pre-filled parameters
-        as possible.
+        The configuration should include:
 
-        Args:
-            zenml_server_url: The URL of the ZenML server.
-            zenml_server_api_token: The API token to authenticate with the ZenML
-                server.
+        * a cloud provider console URL where the user will be redirected to
+        deploy the ZenML stack. The URL should include as many pre-filled
+        URL query parameters as possible.
+        * a textual description of the URL
+        * some deployment providers may require additional configuration
+        parameters to be passed to the cloud provider in addition to the
+        deployment URL query parameters. Where that is the case, this method
+        should also return a string that the user can copy and paste into the
+        cloud provider console to deploy the ZenML stack (e.g. a set of
+        environment variables, or YAML configuration snippet etc.).
 
         Returns:
-            The URL to deploy the ZenML stack to the specified cloud provider
-            and a text description of the URL.
+            The configuration to deploy the ZenML stack to the specified cloud
+            provider.
         """
         params = dict(
             stackName=self.stack_name,
             templateURL="https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml",
             param_ResourceName=f"zenml-{random_str(6).lower()}",
-            param_ZenMLServerURL=zenml_server_url,
-            param_ZenMLServerAPIToken=zenml_server_api_token,
+            param_ZenMLServerURL=self.zenml_server_url,
+            param_ZenMLServerAPIToken=self.zenml_server_api_token,
         )
         # Encode the parameters as URL query parameters
         query_params = "&".join([f"{k}={v}" for k, v in params.items()])
@@ -217,8 +220,13 @@ console.
         if self.location:
             region = f"region={self.location}"
 
-        return (
+        url = (
             f"https://console.aws.amazon.com/cloudformation/home?"
-            f"{region}#/stacks/create/review?{query_params}",
-            "AWS CloudFormation Console",
+            f"{region}#/stacks/create/review?{query_params}"
+        )
+
+        return StackDeploymentConfig(
+            deployment_url=url,
+            deployment_url_text="AWS CloudFormation Console",
+            configuration=None,
         )

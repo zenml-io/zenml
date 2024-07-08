@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to GCP."""
 
-from typing import ClassVar, Dict, List, Tuple
+from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
+from zenml.models import StackDeploymentConfig
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 
 GCP_DEPLOYMENT_TYPE = "deployment-manager"
@@ -58,10 +59,6 @@ GCP.
 You will be redirected to a GCP Cloud Shell console in your browser where you'll
 be asked to log into your GCP project and then create a Deployment Manager
 deployment to provision the necessary cloud resources for ZenML.
-
-The deployment parameters will be pre-filled with the necessary information to
-connect ZenML to your GCP project, so you should only need to review and confirm
-the stack.
 
 After the Deployment Manager deployment is complete, you can return to the CLI
 to view details about the associated ZenML stack automatically registered with
@@ -180,25 +177,27 @@ GCP project and to clean up the resources created by the stack by using
             "US West (Las Vegas)": "us-west4",
         }
 
-    def deploy_url(
+    def get_deployment_config(
         self,
-        zenml_server_url: str,
-        zenml_server_api_token: str,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+    ) -> StackDeploymentConfig:
+        """Return the configuration to deploy the ZenML stack to the specified cloud provider.
 
-        The URL should point to a cloud provider console where the user can
-        deploy the ZenML stack and should include as many pre-filled parameters
-        as possible.
+        The configuration should include:
 
-        Args:
-            zenml_server_url: The URL of the ZenML server.
-            zenml_server_api_token: The API token to authenticate with the ZenML
-                server.
+        * a cloud provider console URL where the user will be redirected to
+        deploy the ZenML stack. The URL should include as many pre-filled
+        URL query parameters as possible.
+        * a textual description of the URL
+        * some deployment providers may require additional configuration
+        parameters to be passed to the cloud provider in addition to the
+        deployment URL query parameters. Where that is the case, this method
+        should also return a string that the user can copy and paste into the
+        cloud provider console to deploy the ZenML stack (e.g. a set of
+        environment variables, or YAML configuration snippet etc.).
 
         Returns:
-            The URL to deploy the ZenML stack to the specified cloud provider
-            and a text description of the URL.
+            The configuration to deploy the ZenML stack to the specified cloud
+            provider.
         """
         params = dict(
             cloudshell_git_repo="https://github.com/zenml-io/zenml",
@@ -211,8 +210,18 @@ GCP project and to clean up the resources created by the stack by using
         )
         # Encode the parameters as URL query parameters
         query_params = "&".join([f"{k}={v}" for k, v in params.items()])
+        url = f"https://shell.cloud.google.com/cloudshell/editor?{query_params}"
 
-        return (
-            f"https://ssh.cloud.google.com/cloudshell/editor?{query_params}",
-            "GCP Cloud Shell Console",
+        config = f"""
+### BEGIN CONFIGURATION ###
+ZENML_STACK_NAME={self.stack_name}
+ZENML_STACK_REGION={self.location or "europe-west3"}
+ZENML_SERVER_URL={self.zenml_server_url}
+ZENML_SERVER_API_TOKEN={self.zenml_server_api_token}
+### END CONFIGURATION ###
+"""
+        return StackDeploymentConfig(
+            deployment_url=url,
+            deployment_url_text="GCP Cloud Shell Console",
+            configuration=config,
         )

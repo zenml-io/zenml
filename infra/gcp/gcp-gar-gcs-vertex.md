@@ -7,18 +7,36 @@ associated ZenML stack that is automatically registered with ZenML.
 
 ## Let's get started!
 
-**Duration**: <walkthrough-tutorial-duration duration=5></walkthrough-tutorial-duration>
+**Estimated time to complete**: <walkthrough-tutorial-duration duration=5></walkthrough-tutorial-duration>
 
 **Prerequisites**:
 
 * A GCP Cloud Billing account
 * ZenML Server URL and API token
 
-Click on 'Start' to begin.
+Click **Start** to begin.
 
 ## Make sure you are authenticated with GCP
 
-<walkthrough-project-setup>Select the GCP Project in which to deploy the stack.</walkthrough-project-setup>
+<walkthrough-project-setup billing=true>Select the GCP Project in which to deploy the stack.</walkthrough-project-setup>
+
+`Note:` In order to be able to install the ZenML stack successfully, you need to have billing enabled for your project.
+
+Then run the following command to configure the selected project in your Cloud Shell terminal:
+
+```sh
+gcloud config set project <walkthrough-project-name/>
+```
+
+💡 Click the 'Copy to Cloud Shell' button to copy and run the command to your
+terminal
+
+If your Cloud Shell is running in untrusted mode, you may also need to run the
+following command to authenticate with GCP:
+
+```sh
+gcloud auth login
+```
 
 ## Configure your deployment
 
@@ -37,7 +55,7 @@ ZENML_SERVER_API_TOKEN=
 ```
 
 To configure your deployment, you need to simply copy these values and paste
-them <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-deploy.sh" regex="### BEGIN CONFIGURATION.*">into the stack deployment script</walkthrough-editor-select-regex>.
+them <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-deploy.sh" regex="### BEGIN CONFIGURATION(\n|.)*?END CONFIGURATION ###">into the stack deployment script</walkthrough-editor-select-regex>.
 
 ## Deploy the ZenML stack
 

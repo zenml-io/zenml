@@ -245,6 +245,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
     StackDeploymentInfo,
     StackFilter,
     StackRequest,
@@ -7439,18 +7440,22 @@ class SqlZenStore(BaseZenStore):
             "Stack deployments are not supported by local ZenML deployments."
         )
 
-    def get_stack_deployment_url(
+    def get_stack_deployment_config(
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
         location: Optional[str] = None,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
 
         Args:
             provider: The stack deployment provider.
             stack_name: The name of the stack.
             location: The location where the stack should be deployed.
+
+        Returns:
+            The cloud provider console URL and configuration needed to deploy
+            the ZenML stack to the specified cloud provider.
 
         Raises:
             NotImplementedError: Stack deployments are not supported by the

@@ -1695,55 +1695,71 @@ def deploy(
         )
         console.print(Markdown("## Instructions\n" + deployment.instructions))
 
+        deployment_config = client.zen_store.get_stack_deployment_config(
+            provider=StackDeploymentProvider(provider),
+            stack_name=stack_name,
+            location=location,
+        )
+
+        if deployment_config.configuration:
+            console.print(
+                Markdown(
+                    "## Configuration\n"
+                    "You will be asked to provide the following configuration "
+                    "values during the deployment process:\n"
+                )
+            )
+
+            console.print(
+                "\n",
+                Syntax(
+                    deployment_config.configuration,
+                    "bash",
+                    theme="monokai",
+                ),
+            )
+
         if not cli_utils.confirmation(
             "\n\nProceed to continue with the deployment. You will be "
             f"automatically redirected to {provider.upper()} in your browser.",
         ):
             raise click.Abort()
 
-        deployment_url, deployment_url_title = (
-            client.zen_store.get_stack_deployment_url(
-                provider=StackDeploymentProvider(provider),
-                stack_name=stack_name,
-                location=location,
-            )
-        )
-
         date_start = datetime.utcnow()
 
-        webbrowser.open(deployment_url)
+        webbrowser.open(deployment_config.deployment_url)
         console.print(
             Markdown(
                 f"If your browser did not open automatically, please open "
                 f"the following URL into your browser to deploy the stack to "
                 f"{provider.upper()}: "
-                f"[{deployment_url_title}]({deployment_url}).\n\n"
+                f"[{deployment_config.deployment_url_text}]"
+                f"({deployment_config.deployment_url}).\n\n"
             )
         )
 
         try:
-            with console.status(
-                "Waiting for the deployment to complete and the stack to be "
+            cli_utils.declare(
+                "\n\nWaiting for the deployment to complete and the stack to be "
                 "registered. Press CTRL+C to abort...\n"
-            ):
-                while True:
-                    deployed_stack = (
-                        client.zen_store.get_stack_deployment_stack(
-                            provider=StackDeploymentProvider(provider),
-                            stack_name=stack_name,
-                            location=location,
-                            date_start=date_start,
-                        )
-                    )
-                    if deployed_stack:
-                        break
-                    time.sleep(10)
+            )
 
-                analytics_handler.metadata.update(
-                    {
-                        "stack_id": deployed_stack.stack.id,
-                    }
+            while True:
+                deployed_stack = client.zen_store.get_stack_deployment_stack(
+                    provider=StackDeploymentProvider(provider),
+                    stack_name=stack_name,
+                    location=location,
+                    date_start=date_start,
                 )
+                if deployed_stack:
+                    break
+                time.sleep(10)
+
+            analytics_handler.metadata.update(
+                {
+                    "stack_id": deployed_stack.stack.id,
+                }
+            )
 
         except KeyboardInterrupt:
             cli_utils.declare("Stack deployment aborted.")

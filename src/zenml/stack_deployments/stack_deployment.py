@@ -15,7 +15,7 @@
 
 import datetime
 from abc import abstractmethod
-from typing import ClassVar, Dict, List, Optional, Tuple
+from typing import ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -23,6 +23,8 @@ from zenml.client import Client
 from zenml.enums import StackComponentType, StackDeploymentProvider
 from zenml.models import (
     DeployedStack,
+    StackDeploymentConfig,
+    StackDeploymentInfo,
 )
 
 
@@ -32,6 +34,8 @@ class ZenMLCloudStackDeployment(BaseModel):
     provider: ClassVar[StackDeploymentProvider]
     deployment: ClassVar[str]
     stack_name: str
+    zenml_server_url: str
+    zenml_server_api_token: str
     location: Optional[str] = None
 
     @classmethod
@@ -91,26 +95,44 @@ class ZenMLCloudStackDeployment(BaseModel):
             names to region descriptions.
         """
 
-    @abstractmethod
-    def deploy_url(
-        self,
-        zenml_server_url: str,
-        zenml_server_api_token: str,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
-
-        The URL should point to a cloud provider console where the user can
-        deploy the ZenML stack and should include as many pre-filled parameters
-        as possible.
-
-        Args:
-            zenml_server_url: The URL of the ZenML server.
-            zenml_server_api_token: The API token to authenticate with the ZenML
-                server.
+    @classmethod
+    def get_deployment_info(cls) -> StackDeploymentInfo:
+        """Return information about the ZenML Cloud Stack Deployment.
 
         Returns:
-            The URL to deploy the ZenML stack to the specified cloud provider
-            and a text description of the URL.
+            Information about the ZenML Cloud Stack Deployment.
+        """
+        return StackDeploymentInfo(
+            provider=cls.provider,
+            description=cls.description(),
+            instructions=cls.instructions(),
+            post_deploy_instructions=cls.post_deploy_instructions(),
+            permissions=cls.permissions(),
+            locations=cls.locations(),
+        )
+
+    @abstractmethod
+    def get_deployment_config(
+        self,
+    ) -> StackDeploymentConfig:
+        """Return the configuration to deploy the ZenML stack to the specified cloud provider.
+
+        The configuration should include:
+
+        * a cloud provider console URL where the user will be redirected to
+        deploy the ZenML stack. The URL should include as many pre-filled
+        URL query parameters as possible.
+        * a textual description of the URL
+        * some deployment providers may require additional configuration
+        parameters to be passed to the cloud provider in addition to the
+        deployment URL query parameters. Where that is the case, this method
+        should also return a string that the user can copy and paste into the
+        cloud provider console to deploy the ZenML stack (e.g. a set of
+        environment variables, or YAML configuration snippet etc.).
+
+        Returns:
+            The configuration to deploy the ZenML stack to the specified cloud
+            provider.
         """
 
     def get_stack(

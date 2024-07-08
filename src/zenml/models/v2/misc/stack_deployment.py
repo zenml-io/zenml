@@ -52,6 +52,21 @@ class StackDeploymentInfo(BaseModel):
     )
 
 
+class StackDeploymentConfig(BaseModel):
+    """Configuration about a stack deployment."""
+
+    deployment_url: str = Field(
+        title="The cloud provider console URL where the stack will be deployed.",
+    )
+    deployment_url_text: str = Field(
+        title="A textual description for the cloud provider console URL.",
+    )
+    configuration: Optional[str] = Field(
+        title="Configuration for the stack deployment that the user must "
+        "manually configure into the cloud provider console.",
+    )
+
+
 class DeployedStack(BaseModel):
     """Information about a deployed stack."""
 

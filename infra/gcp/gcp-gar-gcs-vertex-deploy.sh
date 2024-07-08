@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Configure your deployment
 #
 # The following variables must be configured before running the deployment
@@ -23,6 +25,13 @@ ZENML_SERVER_API_TOKEN=
 
 # Extract the project ID and project number from the gcloud configuration
 PROJECT_ID=$(gcloud config get-value project)
+
+if [ -z "$PROJECT_ID" ]; then
+    echo "ERROR: No project is set in the gcloud configuration. Please set a "
+    echo "project using 'gcloud config set project PROJECT_ID' before running this script."
+    exit 1
+fi
+
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 
 # Enable the necessary services
