@@ -1,0 +1,398 @@
+# Access at: https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/create/review?stackName=zenml-stack&templateURL=https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  This CloudFormation template creates all the resources necessary for a basic
+  AWS ZenML Stack: a private S3 bucket, a private ECR registry, an IAM role with
+  all the necessary permissions to access these resources from ZenML and a
+  IAM user with an access key.
+  
+  The template registers a full ZenML stack linked to the provisioned resources
+  in the ZenML Server.
+
+Parameters:
+  ResourceName:
+    Type: String
+    Description: |
+      Unique string value to use to name all resources. Can include
+      lowercase alphanumeric characters and hyphens and must be between 6-32
+      characters in length.
+    MinLength: 8
+    MaxLength: 32
+    AllowedPattern: "[a-z0-9-]+"
+    ConstraintDescription: |
+      Must be 8-32 characters in length containing only lowercase alphanumeric
+      characters and hyphens.
+
+  ZenMLServerURL:
+    Type: String
+    Description: |
+      URL to the ZenML Server where the stack will be registered. If not
+      provided, the stack will not be registered.
+    AllowedPattern: "^(https?://.*)?$"
+    ConstraintDescription: Must be a valid URL starting with http:// or https://
+    Default: ""
+
+  ZenMLServerAPIToken:
+    Type: String
+    Description: |
+      API token to use to authenticate with the ZenML Server. If not provided,
+      the stack will not be registered.
+    Default: ""
+
+  TagName:
+    Type: String
+    Description: "The name of a tag to apply to all resources"
+    Default: "project"
+
+  TagValue:
+    Type: String
+    Description: "The value of the tag to apply to all resources"
+    Default: "zenml"
+
+Conditions:
+  RegisterZenMLStack: !And
+    - !Not [ !Equals [ !Ref ZenMLServerURL, "" ] ]
+    - !Not [ !Equals [ !Ref ZenMLServerAPIToken, "" ] ]
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ResourceName}'
+      AccessControl: Private
+      Tags:
+        - Key: !Ref TagName
+          Value: !Ref TagValue
+
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub '${ResourceName}'
+      Tags:
+        - Key: !Ref TagName
+          Value: !Sub TagValue
+          
+  IAMUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${ResourceName}'
+      Policies:
+        - PolicyName: AssumeRole
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: "*"
+      Tags:
+        - Key: !Ref TagName
+          Value: !Ref TagValue
+          
+
+  IAMUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref IAMUser
+
+  StackAccessRole:
+    Type: AWS::IAM::Role
+    DependsOn: IAMUser
+    Properties:
+      RoleName: !Sub '${ResourceName}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub '${IAMUser.Arn}'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: S3Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:ListBucket'
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                Resource:
+                  - !Sub '${S3Bucket.Arn}'
+                  - !Sub '${S3Bucket.Arn}/*'
+        - PolicyName: ECRPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ecr:DescribeRegistry'
+                  - 'ecr:BatchGetImage'
+                  - 'ecr:DescribeImages'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:InitiateLayerUpload'
+                  - 'ecr:UploadLayerPart'
+                  - 'ecr:CompleteLayerUpload'
+                  - 'ecr:PutImage'
+                Resource: !Sub '${ECRRepository.Arn}'
+              - Effect: Allow
+                Action:
+                  - 'ecr:GetAuthorizationToken'
+                Resource: '*'
+              # NOTE: this is still required for ZenML to work with ECR
+              - Effect: Allow
+                Action:
+                  - 'ecr:DescribeRepositories'
+                  - 'ecr:ListRepositories'
+                Resource: !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*'
+        - PolicyName: SageMakerPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Allow this role to create, start and monitor SageMaker pipelines
+              - Effect: Allow
+                Action:
+                  - 'sagemaker:CreatePipeline'
+                  - 'sagemaker:StartPipelineExecution'
+                  - 'sagemaker:DescribePipeline'
+                  - 'sagemaker:DescribePipelineExecution'
+                Resource: '*'
+              # Allow this role to pass the SageMaker execution role to the pipeline
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${ResourceName}-sagemaker'
+
+  SageMakerRuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ResourceName}-sagemaker'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns: 
+        - 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'
+
+  InvokeZenMLAPIFunction:
+    Type: AWS::Serverless::Function
+    Condition: RegisterZenMLStack
+    Properties:
+      FunctionName: !Sub '${ResourceName}'
+      Handler: index.handler
+      Runtime: python3.8
+      MemorySize: 512
+      Timeout: 60
+      Environment:
+        Variables:
+          ZENML_SERVER_URL: !Ref ZenMLServerURL
+          ZENML_SERVER_API_TOKEN: !Ref ZenMLServerAPIToken
+      
+      InlineCode: |
+        import os
+        import json
+        import urllib.request
+        import urllib.error
+
+        def send_response(event, context, response_status, response_data, physical_resource_id=None):
+            response_url = event['ResponseURL']
+            
+            response_body = {
+                'Status': response_status,
+                'Reason': f'{response_data}\nSee the details in CloudWatch Log Stream: ' + context.log_stream_name,
+                'PhysicalResourceId': physical_resource_id or context.log_stream_name,
+                'StackId': event['StackId'],
+                'RequestId': event['RequestId'],
+                'LogicalResourceId': event['LogicalResourceId'],
+                'Data': response_data
+            }
+
+            json_response_body = json.dumps(response_body)
+
+            headers = {
+                'content-type': '',
+                'content-length': str(len(json_response_body))
+            }
+
+            req = urllib.request.Request(response_url, data=json_response_body.encode(), headers=headers, method='PUT')
+            with urllib.request.urlopen(req) as response:
+                print(f"Status code: {response.getcode()}")
+                print(f"Response: {response.read().decode('utf-8')}")
+
+        def handler(event, context):
+
+            try:
+                if event['RequestType'] == 'Delete':
+                    send_response(event, context, 'SUCCESS', {'Message': 'Resource deletion successful'})
+                    return
+
+                if event['RequestType'] == 'Update':
+                    send_response(event, context, 'SUCCESS', {'Message': 'Resource updated successfully'})
+                    return
+
+                url = os.environ['ZENML_SERVER_URL'].lstrip('/')+'/api/v1/workspaces/default/full-stack'
+                api_token = os.environ['ZENML_SERVER_API_TOKEN']
+                payload = event['ResourceProperties']['Payload']
+
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+
+                data = payload.encode('utf-8')
+                req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+                try:
+                  with urllib.request.urlopen(req) as response:
+                      status_code = response.getcode()
+                      response_body = response.read().decode('utf-8')
+                except urllib.error.HTTPError as e:
+                    status_code = e.code
+                    response_body = e.read().decode('utf-8')
+
+                print(status_code)
+                print(response_body)
+
+                if status_code == 200:
+                    send_response(
+                      event,
+                      context,
+                      'SUCCESS',
+                      {'Message': 'Stack successfully registered with ZenML'}
+                    )
+                else:
+                    send_response(
+                      event,
+                      context,
+                      'FAILED',
+                      {'Message': f'Failed to register the ZenML stack. The ZenML Server replied with HTTP status code {status_code}: {response_body}'}
+                    )
+
+            except Exception as e:
+                print(f"Error: {str(e)}")
+                send_response(event, context, 'FAILED', {'Message': str(e)})
+
+  InvokeZenMLAPICustomResource:
+    Type: Custom::Resource
+    Condition: RegisterZenMLStack
+    Properties:
+      ServiceToken: !GetAtt InvokeZenMLAPIFunction.Arn
+      ServiceTimeout: 300
+      Payload: !Sub |
+        {
+          "name": "${AWS::StackName}",
+          "description": "Deployed by AWS CloudFormation stack ${AWS::StackName} in the ${AWS::AccountId} account and ${AWS::Region} region.",
+          "labels": {
+            "zenml:provider": "aws",
+            "zenml:deployment": "cloud-formation"
+          },
+          "service_connectors": [
+            {
+              "type": "aws",
+              "auth_method": "iam-role",
+              "configuration": {
+                "aws_access_key_id": "${IAMUserAccessKey}",
+                "aws_secret_access_key": "${IAMUserAccessKey.SecretAccessKey}",
+                "role_arn": "${StackAccessRole.Arn}",
+                "region": "${AWS::Region}"
+              }
+            }
+          ],
+          "components": {
+            "artifact_store": {
+              "flavor": "s3",
+              "service_connector_index": 0,
+              "configuration": {
+                "path": "s3://${S3Bucket}"
+              }
+            },
+            "container_registry":{
+              "flavor": "aws",
+              "service_connector_index": 0,
+              "configuration": {
+                "uri": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com",
+                "default_repository": "${ECRRepository}"
+              }
+            },
+            "orchestrator": {
+              "flavor": "sagemaker",
+              "service_connector_index": 0,
+              "configuration": {
+                "execution_role": "${SageMakerRuntimeRole.Arn}"
+              }
+            }
+          }
+        }
+
+Outputs:
+  AWSRegion:
+    Description: "AWS Region"
+    Value: !Ref AWS::Region
+
+  AWSAccessKeyID:
+    Description: "AWS Access Key ID"
+    Value: !Ref IAMUserAccessKey
+
+  AWSSecretAccessKey:
+    Description: "AWS Secret Access Key"
+    Value: !GetAtt IAMUserAccessKey.SecretAccessKey
+
+  IAMRoleARN:
+    Description: "IAM Role ARN"
+    Value: !GetAtt StackAccessRole.Arn
+
+  SageMakerIAMRoleARN:
+    Description: "SageMaker execution IAM Role ARN"
+    Value: !GetAtt SageMakerRuntimeRole.Arn
+
+  ZenMLStack:
+    Description: "ZenML Stack JSON (can be imported with `zenml stack import`)"
+    Value: !Sub |
+      {
+        "name": "${AWS::StackName}",
+        "description": "Deployed by AWS CloudFormation stack ${AWS::StackName} in the ${AWS::AccountId} account and ${AWS::Region} region.",
+        "labels": {
+          "zenml:provider": "aws",
+          "zenml:deployment": "aws-cloud-formation"
+        },
+        "service_connectors": [
+          {
+            "type": "aws",
+            "auth_method": "iam-role",
+            "configuration": {
+              "aws_access_key_id": "${IAMUserAccessKey}",
+              "aws_secret_access_key": "${IAMUserAccessKey.SecretAccessKey}",
+              "role_arn": "${StackAccessRole.Arn}",
+              "region": "${AWS::Region}"
+            }
+          }
+        ],
+        "components": {
+          "artifact_store": {
+            "flavor": "s3",
+            "service_connector_index": 0,
+            "configuration": {
+              "path": "s3://${S3Bucket}"
+            }
+          },
+          "container_registry":{
+            "flavor": "aws",
+            "service_connector_index": 0,
+            "configuration": {
+              "uri": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com",
+              "default_repository": "${ECRRepository}"
+            }
+          },
+          "orchestrator": {
+            "flavor": "sagemaker",
+            "service_connector_index": 0,
+            "configuration": {
+              "execution_role": "${SageMakerRuntimeRole.Arn}"
+            }
+          }
+        }
+      }
