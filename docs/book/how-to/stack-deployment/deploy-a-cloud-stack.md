@@ -4,8 +4,9 @@ description: Deploy a cloud stack easily
 
 # Deploy a cloud stack with a single click
 
-In ZenML, the [stack]() is a fundamental concept that represents the 
-configuration of your infrastructure. In a normal workflow, creating a stack
+In ZenML, the [stack](../../user-guide/production-guide/understand-stacks.md) 
+is a fundamental concept that represents the configuration of your 
+infrastructure. In a normal workflow, creating a stack
 requires you to first deploy the necessary pieces of infrastructure and then 
 define them as stack components in ZenML with proper authentication.
 
@@ -17,12 +18,12 @@ stack with a single click**.
 
 {% hint style="info" %}
 If you have the required infrastructure pieces already deployed on your cloud, 
-you can also use the stack wizard to seamlessly register your stack.
+you can also use [the stack wizard to seamlessly register your stack](register-a-cloud-stack.md).
 {% endhint %}
 
 ## How to use 1-click deployment tool?
 
-To use the 1-click deployment tool, you can either use the dashboard or 
+To access the 1-click deployment tool, you can either use the dashboard or 
 the CLI:
 
 {% tabs %}
