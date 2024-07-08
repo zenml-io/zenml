@@ -106,7 +106,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         """
         super().__init__(config=config, **attrs)
 
-    def get_client_id_and_secret(self) -> Tuple[str, str]:
+    def get_client_id_and_secret(self) -> Tuple[str, str, str]:
         """Get the Databricks client id and secret.
 
         Raises:
@@ -118,29 +118,31 @@ class DatabricksDeploymentService(BaseDeploymentService):
         client = Client()
         client_id = None
         client_secret = None
+
+        from zenml.integrations.databricks.model_deployers.databricks_model_deployer import (
+            DatabricksModelDeployer,
+        )
+
+        model_deployer = client.active_stack.model_deployer
+        if not isinstance(model_deployer, DatabricksModelDeployer):
+            raise ValueError(
+                "DatabricksModelDeployer is not active in the stack."
+            )
+        host = model_deployer.config.host or None
         if self.config.secret_name:
             secret = client.get_secret(self.config.secret_name)
             client_id = secret.secret_values["client_id"]
             client_secret = secret.secret_values["client_secret"]
         else:
-            from zenml.integrations.databricks.model_deployers.databricks_model_deployer import (
-                DatabricksModelDeployer,
-            )
-
-            model_deployer = client.active_stack.model_deployer
-            if not isinstance(model_deployer, DatabricksModelDeployer):
-                raise ValueError(
-                    "DatabricksModelDeployer is not active in the stack."
-                )
-            client_id = model_deployer.config.client_id or None
-            client_secret = model_deployer.config.client_secret or None
+            client_id = model_deployer.config.client_id
+            client_secret = model_deployer.config.client_secret
         if not client_id:
             raise ValueError("Client id not found.")
         if not client_secret:
             raise ValueError("Client secret not found.")
-        if not self.config.host:
+        if not host:
             raise ValueError("Host not found.")
-        return client_id, client_secret
+        return host, client_id, client_secret
 
     def _get_databricks_deployment_labels(self) -> Dict[str, str]:
         """Generate the labels for the Databricks deployment from the service configuration.
@@ -161,9 +163,9 @@ class DatabricksDeploymentService(BaseDeploymentService):
             databricks inference endpoint.
         """
         return DatabricksClient(
-            host=self.config.host,
-            client_id=self.get_client_id_and_secret()[0],
-            client_secret=self.get_client_id_and_secret()[1],
+            host=self.get_client_id_and_secret()[0],
+            client_id=self.get_client_id_and_secret()[1],
+            client_secret=self.get_client_id_and_secret()[2],
         )
 
     @property
@@ -200,16 +202,18 @@ class DatabricksDeploymentService(BaseDeploymentService):
             for key, value in self._get_databricks_deployment_labels().items():
                 tags.append(EndpointTag(key=key, value=value))
             # Attempt to create and wait for the inference endpoint
+            served_model = ServedModelInput(
+                model_name=self.config.model_name,
+                model_version=self.config.model_version,
+                scale_to_zero_enabled=self.config.scale_to_zero_enabled,
+                workload_type=self.config.workload_type,
+                workload_size=self.config.workload_size,
+            )
+            
             databricks_endpoint = self.databricks_client.serving_endpoints.create_and_wait(
                 name=self._generate_an_endpoint_name(),
                 config=EndpointCoreConfigInput(
-                    served_models=ServedModelInput(
-                        model_name=self.config.model_name,
-                        model_version=self.config.model_version,
-                        scale_to_zero_enabled=self.config.scale_to_zero_enabled,
-                        workload_type=self.config.workload_type,
-                        workload_size=self.config.workload_size,
-                    ),
+                    served_models=[served_model],
                 ),
                 tags=tags,
             )
