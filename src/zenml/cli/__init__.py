@@ -1411,6 +1411,34 @@ zenml stack register STACK_NAME \
 Each corresponding argument should be the name, id or even the first few letters
  of the id that uniquely identify the artifact store or orchestrator.
 
+To create a new stack using the new service connector with a set of minimal components, 
+use the following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -p CLOUD_PROVIDER
+```
+
+To create a new stack using the existing service connector with a set of minimal components, 
+use the following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -sc SERVICE_CONNECTOR_NAME
+```
+
+To create a new stack using the existing service connector with existing components (
+important, that the components are already registered in the service connector), use the 
+following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -sc SERVICE_CONNECTOR_NAME \
+       -a ARTIFACT_STORE_NAME \
+       -o ORCHESTRATOR_NAME \
+       ...
+```
+
 If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
 

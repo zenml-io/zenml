@@ -1152,6 +1152,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         components: Mapping[StackComponentType, Union[str, UUID]],
         stack_spec_file: Optional[str] = None,
+        labels: Optional[Dict[str, Any]] = None,
     ) -> StackResponse:
         """Registers a stack and its components.
 
@@ -1159,6 +1160,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the stack to register.
             components: dictionary which maps component types to component names
             stack_spec_file: path to the stack spec file
+            labels: The labels of the stack.
 
         Returns:
             The model of the registered stack.
@@ -1183,6 +1185,7 @@ class Client(metaclass=ClientMetaClass):
             stack_spec_path=stack_spec_file,
             workspace=self.active_workspace.id,
             user=self.active_user.id,
+            labels=labels,
         )
 
         self._validate_stack_configuration(stack=stack)
@@ -1226,8 +1229,8 @@ class Client(metaclass=ClientMetaClass):
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
         id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
@@ -1278,6 +1281,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         stack_spec_file: Optional[str] = None,
+        labels: Optional[Dict[str, Any]] = None,
         description: Optional[str] = None,
         component_updates: Optional[
             Dict[StackComponentType, List[Union[UUID, str]]]
@@ -1288,7 +1292,8 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix of the stack to update.
             name: the new name of the stack.
-            stack_spec_file: path to the stack spec file
+            stack_spec_file: path to the stack spec file.
+            labels: The new labels of the stack component.
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
                 lists of new stack component names or ids.
@@ -1341,6 +1346,15 @@ class Client(metaclass=ClientMetaClass):
                 c_type: [c.id for c in c_list]
                 for c_type, c_list in components_dict.items()
             }
+
+        if labels is not None:
+            existing_labels = stack.labels or {}
+            existing_labels.update(labels)
+
+            existing_labels = {
+                k: v for k, v in existing_labels.items() if v is not None
+            }
+            update_model.labels = existing_labels
 
         updated_stack = self.zen_store.update_stack(
             stack_id=stack.id,
