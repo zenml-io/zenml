@@ -29,7 +29,7 @@ the CLI:
 {% tab title="Dashboard" %}
 
 In order to create a remote stack over the dashboard go to the stacks page 
-on the dashboard and click "Create New Stack".
+on the dashboard and click "+ New Stack".
 
 ![The new stacks page](../../.gitbook/assets/register_stack_button.png)
 
@@ -48,7 +48,7 @@ bringing support to GCP and Azure as well. Stay in touch for further updates.
 ### AWS
 
 If you choose `aws` as your provider, you will see a page where you will have 
-the select an authentication method and a name for your new stack:
+to select a region and a name for your new stack:
 
 ![Configuring the new stack](../../.gitbook/assets/deploy_stack_aws.png)
 
@@ -100,16 +100,16 @@ prepare for you:
 - An ECR container registry that will be used as a ZenML Container Registry.
 {% endtab %}
 {% tab title="GCP" %}
-We are working on bringing the 1-click deployment to GCP! Stay in
-touch for further updates.
+We are working on bringing the support for the 1-click deployment feature 
+to GCP! Stay in touch for further updates.
 {% endtab %}
 {% tab title="Azure" %}
-We are working on bringing the 1-click deployment to Azure! Stay in
-touch for further updates.
+We are working on bringing the support for the 1-click deployment feature 
+to Azure! Stay in touch for further updates.
 {% endtab %}
 {% endtabs %}
 
-And, there you have it! With a single click, you just deployed a cloud stack 
+There you have it! With a single click, you just deployed a cloud stack 
 and, you can start running your pipelines on a remote setting.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
