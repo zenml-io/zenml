@@ -14,6 +14,6 @@
 """Initialization of the Databricks Service."""
 
 from zenml.integrations.databricks.services.databricks_deployment import (  # noqa
-    DatabricksServiceConfig,
+    DatabricksDeploymentConfig,
     DatabricksDeploymentService,
 )
