@@ -586,6 +586,23 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
+
+    if not stack.labels:
+        declare("No labels are set for this stack.")
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Labels",
+            show_lines=True,
+        )
+        rich_table.add_column("LABEL")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        for label, value in stack.labels.items():
+            rich_table.add_row(label, str(value))
+
+        console.print(rich_table)
+
     declare(
         f"Stack '{stack.name}' with id '{stack.id}' is "
         f"{f'owned by user {stack.user.name}.' if stack.user else 'unowned.'}"
@@ -684,7 +701,7 @@ def print_stack_component_configuration(
         rich_table.add_column("VALUE", overflow="fold")
 
         for label, value in component.labels.items():
-            rich_table.add_row(label, value)
+            rich_table.add_row(label, str(value))
 
         console.print(rich_table)
 

@@ -45,7 +45,7 @@ def update_model(
     original: M,
     update: Union["BaseModel", Dict[str, Any]],
     recursive: bool = True,
-    exclude_none: bool = True,
+    exclude_none: bool = False,
 ) -> M:
     """Updates a pydantic model.
 
@@ -53,8 +53,7 @@ def update_model(
         original: The model to update.
         update: The update values.
         recursive: If `True`, dictionary values will be updated recursively.
-        exclude_none: If `True`, `None` values in the update dictionary
-            will be removed.
+        exclude_none: If `True`, `None` values in the update will be removed.
 
     Returns:
         The updated model.
@@ -67,7 +66,9 @@ def update_model(
         else:
             update_dict = update
     else:
-        update_dict = update.model_dump(exclude_unset=True)
+        update_dict = update.model_dump(
+            exclude_unset=True, exclude_none=exclude_none
+        )
 
     original_dict = original.model_dump(exclude_unset=True)
     if recursive:
@@ -75,7 +76,7 @@ def update_model(
     else:
         values = {**original_dict, **update_dict}
 
-    return original.__class__(**values)
+    return original.__class__.model_validate(values)
 
 
 class TemplateGenerator:

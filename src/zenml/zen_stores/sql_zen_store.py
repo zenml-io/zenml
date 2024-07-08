@@ -111,6 +111,7 @@ from zenml.enums import (
     SecretsStoreType,
     SorterOps,
     StackComponentType,
+    StackDeploymentProvider,
     StepRunInputArtifactType,
     StepRunOutputArtifactType,
     StoreType,
@@ -164,6 +165,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -243,6 +245,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -6972,6 +6975,10 @@ class SqlZenStore(BaseZenStore):
                                 configuration=connector_id_or_info.configuration,
                                 user=full_stack.user,
                                 workspace=full_stack.workspace,
+                                labels={
+                                    k: str(v)
+                                    for k, v in full_stack.labels.items()
+                                },
                             )
                             service_connector_response = (
                                 self.create_service_connector(
@@ -7014,6 +7021,7 @@ class SqlZenStore(BaseZenStore):
                                 configuration=component_info.configuration,
                                 user=full_stack.user,
                                 workspace=full_stack.workspace,
+                                labels=full_stack.labels,
                             )
                             component = self.create_stack_component(
                                 component=component_request
@@ -7405,6 +7413,69 @@ class SqlZenStore(BaseZenStore):
             return self._create_default_stack(
                 workspace_id=workspace.id,
             )
+
+    # ---------------- Stack deployments-----------------
+
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
+    def get_stack_deployment_url(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> Tuple[str, str]:
+        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
 
     # ----------------------------- Step runs -----------------------------
 

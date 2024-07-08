@@ -433,7 +433,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             The dynamic container component.
         """
 
-        @dsl.container_component  # type: ignore[misc]
         def dynamic_container_component() -> dsl.ContainerSpec:
             """Dynamic container component.
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing models."""
 
-from functools import partial
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
 from uuid import UUID
 
@@ -303,7 +302,7 @@ class ModelResponse(
 
         client = Client()
         model_versions = depaginate(
-            partial(client.list_model_versions, model_name_or_id=self.id)
+            client.list_model_versions, model_name_or_id=self.id
         )
         return [
             mv.to_model_class(suppress_class_validation_warnings=True)
