@@ -10,8 +10,8 @@ infrastructure. In a normal workflow, creating a stack
 requires you to first deploy the necessary pieces of infrastructure and then 
 define them as stack components in ZenML with proper authentication.
 
-Especially in a remote setting, this process can sometimes be challenging and 
-time-consuming, and it may create a multi-faceted problem. This is why we 
+Especially in a remote setting, this process can be challenging and 
+time-consuming, and it may create multi-faceted problems. This is why we 
 implemented a feature, that allows you to **deploy the necessary pieces of 
 infrastructure on your selected cloud provider and get you started on remote 
 stack with a single click**.
@@ -21,7 +21,7 @@ If you have the required infrastructure pieces already deployed on your cloud,
 you can also use [the stack wizard to seamlessly register your stack](register-a-cloud-stack.md).
 {% endhint %}
 
-## How to use 1-click deployment tool?
+## How to use the 1-click deployment tool?
 
 To access the 1-click deployment tool, you can either use the dashboard or 
 the CLI:
