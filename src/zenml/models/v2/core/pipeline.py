@@ -22,12 +22,12 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -234,7 +234,7 @@ class PipelineResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineFilter(WorkspaceScopedFilter):
+class PipelineFilter(WorkspaceScopedTaggableFilter):
     """Pipeline filter model."""
 
     name: Optional[str] = Field(

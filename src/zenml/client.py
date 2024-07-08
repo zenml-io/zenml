@@ -2353,6 +2353,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[PipelineResponse]:
         """List all pipelines.
@@ -2368,6 +2369,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the pipeline to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            tag: Tag to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2385,6 +2387,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             user_id=user_id,
+            tag=tag,
         )
         pipeline_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_pipelines(
@@ -3591,6 +3594,7 @@ class Client(metaclass=ClientMetaClass):
         end_time: Optional[Union[datetime, str]] = None,
         num_steps: Optional[Union[int, str]] = None,
         unlisted: Optional[bool] = None,
+        tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
@@ -3619,6 +3623,7 @@ class Client(metaclass=ClientMetaClass):
             end_time: The end_time for the pipeline run
             num_steps: The number of steps for the pipeline run
             unlisted: If the runs should be unlisted or not.
+            tag: Tag to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3648,6 +3653,7 @@ class Client(metaclass=ClientMetaClass):
             start_time=start_time,
             end_time=end_time,
             num_steps=num_steps,
+            tag=tag,
             unlisted=unlisted,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
