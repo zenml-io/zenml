@@ -368,7 +368,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         # runs it there
         assert cluster.cluster_id is not None
         self._upload_and_run_pipeline(
-            pipeline_name=f"{deployment.pipeline.name}_{orchestrator_run_name}",
+            pipeline_name=orchestrator_run_name,
             tasks=_construct_databricks_pipeline(
                 databricks_wheel_path, cluster.cluster_id
             ),
@@ -439,7 +439,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             or DATABRICKS_SPARK_DEFAULT_VERSION,
             "num_workers": self.settings_class().num_workers,
             "node_type_id": self.settings_class().node_type_id
-            or "Standard_DS3_v2",
+            or "Standard_DS5_v2",
             "cluster_name": self.settings_class().cluster_name
             or DATABRICKS_CLUSTER_DEFAULT_NAME,
             "policy_id": self.settings_class().policy_id or "00166D9BEB5150FA",

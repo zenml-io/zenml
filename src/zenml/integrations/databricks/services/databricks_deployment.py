@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation of the Databricks Deployment service."""
 
-from typing import Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
 
+import numpy as np
+import pandas as pd
+import requests
 from databricks.sdk import WorkspaceClient as DatabricksClient
 from databricks.sdk.service.serving import (
     EndpointCoreConfigInput,
@@ -39,6 +42,10 @@ from zenml.services.service import BaseDeploymentService, ServiceConfig
 
 logger = get_logger(__name__)
 
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
 POLLING_TIMEOUT = 1200
 UUID_SLICE_LENGTH: int = 8
 
@@ -49,6 +56,9 @@ class DatabricksDeploymentConfig(DatabricksBaseConfig, ServiceConfig):
     model_uri: Optional[str] = Field(
         None,
         description="URI of the model to deploy. This can be a local path or a cloud storage path.",
+    )
+    host: Optional[str] = Field(
+        None, description="Databricks host URL for the deployment."
     )
 
     def get_databricks_deployment_labels(self) -> Dict[str, str]:
@@ -62,13 +72,13 @@ class DatabricksDeploymentConfig(DatabricksBaseConfig, ServiceConfig):
         """
         labels = {}
         if self.pipeline_name:
-            labels["zenml.pipeline_name"] = self.pipeline_name
+            labels["zenml_pipeline_name"] = self.pipeline_name
         if self.pipeline_step_name:
-            labels["zenml.pipeline_step_name"] = self.pipeline_step_name
+            labels["zenml_pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
-            labels["zenml.model_name"] = self.model_name
+            labels["zenml_model_name"] = self.model_name
         if self.model_uri:
-            labels["zenml.model_uri"] = self.model_uri
+            labels["zenml_model_uri"] = self.model_uri
         sanitize_labels(labels)
         return labels
 
@@ -118,7 +128,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         client = Client()
         client_id = None
         client_secret = None
-
+        host = None
         from zenml.integrations.databricks.model_deployers.databricks_model_deployer import (
             DatabricksModelDeployer,
         )
@@ -128,11 +138,13 @@ class DatabricksDeploymentService(BaseDeploymentService):
             raise ValueError(
                 "DatabricksModelDeployer is not active in the stack."
             )
-        host = model_deployer.config.host or None
+        host = model_deployer.config.host
+        self.config.host = host
         if self.config.secret_name:
             secret = client.get_secret(self.config.secret_name)
             client_id = secret.secret_values["client_id"]
             client_secret = secret.secret_values["client_secret"]
+
         else:
             client_id = model_deployer.config.client_id
             client_secret = model_deployer.config.client_secret
@@ -151,7 +163,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
             The labels for the Databricks deployment.
         """
         labels = self.config.get_databricks_deployment_labels()
-        labels["zenml.service_uuid"] = str(self.uuid)
+        labels["zenml_service_uuid"] = str(self.uuid)
         sanitize_labels(labels)
         return labels
 
@@ -173,7 +185,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         """Get the deployed Hugging Face inference endpoint.
 
         Returns:
-            Huggingface inference endpoint.
+            Databricks inference endpoint.
         """
         return self.databricks_client.serving_endpoints.get(
             name=self._generate_an_endpoint_name(),
@@ -187,9 +199,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
             The prediction URI exposed by the prediction service, or None if
             the service is not yet ready.
         """
-        return (
-            self.databricks_endpoint.endpoint_url if self.is_running else None
-        )
+        return f"{self.config.host}/serving-endpoints/{self._generate_an_endpoint_name()}/invocations"
 
     def provision(self) -> None:
         """Provision or update remote Databricks deployment instance.
@@ -197,36 +207,27 @@ class DatabricksDeploymentService(BaseDeploymentService):
         Raises:
             Exception: If any unexpected error while creating inference endpoint.
         """
-        try:
-            tags = []
-            for key, value in self._get_databricks_deployment_labels().items():
-                tags.append(EndpointTag(key=key, value=value))
-            # Attempt to create and wait for the inference endpoint
-            served_model = ServedModelInput(
-                model_name=self.config.model_name,
-                model_version=self.config.model_version,
-                scale_to_zero_enabled=self.config.scale_to_zero_enabled,
-                workload_type=self.config.workload_type,
-                workload_size=self.config.workload_size,
-            )
-            
-            databricks_endpoint = self.databricks_client.serving_endpoints.create_and_wait(
+        tags = []
+        for key, value in self._get_databricks_deployment_labels().items():
+            tags.append(EndpointTag(key=key, value=value))
+        # Attempt to create and wait for the inference endpoint
+        served_model = ServedModelInput(
+            model_name=self.config.model_name,
+            model_version=self.config.model_version,
+            scale_to_zero_enabled=self.config.scale_to_zero_enabled,
+            workload_type=self.config.workload_type,
+            workload_size=self.config.workload_size,
+        )
+
+        databricks_endpoint = (
+            self.databricks_client.serving_endpoints.create_and_wait(
                 name=self._generate_an_endpoint_name(),
                 config=EndpointCoreConfigInput(
                     served_models=[served_model],
                 ),
                 tags=tags,
             )
-
-        except Exception as e:
-            self.status.update_state(
-                new_state=ServiceState.ERROR, error=str(e)
-            )
-            # Catch-all for any other unexpected errors
-            raise Exception(
-                f"An unexpected error occurred while provisioning the Databricks inference endpoint: {e}"
-            )
-
+        )
         # Check if the endpoint URL is available after provisioning
         if databricks_endpoint.endpoint_url:
             logger.info(
@@ -281,7 +282,9 @@ class DatabricksDeploymentService(BaseDeploymentService):
                 "Databricks Inference Endpoint is deleted or cannot be found."
             )
 
-    def predict(self, data: "Any", max_new_tokens: int) -> "Any":
+    def predict(
+        self, request: Union["NDArray[Any]", pd.DataFrame]
+    ) -> "NDArray[Any]":
         """Make a prediction using the service.
 
         Args:
@@ -301,13 +304,28 @@ class DatabricksDeploymentService(BaseDeploymentService):
                 "Please start the service before making predictions."
             )
         if self.prediction_url is not None:
-            pass
+            databricks_token = Client().get_secret("databricks_token")
+            headers = {
+                "Authorization": f"Bearer {databricks_token.secret_values['token']}",
+                "Content-Type": "application/json",
+            }
+            if type(request) == pd.DataFrame:
+                response = requests.post(  # nosec
+                    self.prediction_url,
+                    json={"instances": request.to_dict("records")},
+                    headers=headers,
+                )
+            else:
+                response = requests.post(  # nosec
+                    self.prediction_url,
+                    json={"instances": request.tolist()},
+                    headers=headers,
+                )
         else:
-            # TODO: Add support for all different supported tasks
-            raise NotImplementedError(
-                "Tasks other than text-generation is not implemented."
-            )
-        return ""
+            raise ValueError("No endpoint known for prediction.")
+        response.raise_for_status()
+
+        return np.array(response.json()["predictions"])
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None

@@ -37,16 +37,14 @@ if TYPE_CHECKING:
 class DatabricksBaseConfig(BaseModel):
     """Databricks Inference Endpoint configuration."""
 
+    workload_size: ServedModelInputWorkloadSize
     secret_name: Optional[str] = None
     scale_to_zero_enabled: bool = False
     env_vars: Optional[Dict[str, str]] = None
     workload_type: Optional[ServedModelInputWorkloadType] = None
-    workload_size: Optional[ServedModelInputWorkloadSize] = None
 
 
-class DatabricksModelDeployerConfig(
-    BaseModelDeployerConfig, DatabricksBaseConfig
-):
+class DatabricksModelDeployerConfig(BaseModelDeployerConfig):
     """Configuration for the Databricks model deployer.
 
     Attributes:
@@ -58,6 +56,7 @@ class DatabricksModelDeployerConfig(
     host: str
     client_id: Optional[str] = SecretField(default=None)
     client_secret: Optional[str] = SecretField(default=None)
+    scale_to_zero_enabled: bool = False
 
 
 class DatabricksModelDeployerFlavor(BaseModelDeployerFlavor):
