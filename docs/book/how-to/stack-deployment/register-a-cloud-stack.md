@@ -11,8 +11,9 @@ define them as stack components in ZenML with proper authentication.
 
 Especially in a remote setting, this process can sometimes be challenging and 
 time-consuming, and it may create a multi-faceted problem. This is why we 
-implemented a feature called the stack wizard, that allows you to browse 
-through your existing infrastructure and use it to register a ZenML cloud stack.
+implemented a feature called the stack wizard, that allows you to **browse 
+through your existing infrastructure and use it to register a ZenML cloud 
+stack**.
 
 {% hint style="info" %}
 If you do not have the required infrastructure pieces already deployed

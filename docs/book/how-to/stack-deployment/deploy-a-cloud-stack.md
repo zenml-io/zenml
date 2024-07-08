@@ -11,9 +11,9 @@ define them as stack components in ZenML with proper authentication.
 
 Especially in a remote setting, this process can sometimes be challenging and 
 time-consuming, and it may create a multi-faceted problem. This is why we 
-implemented a feature, that allows you to deploy the necessary infrastructure
-pieces on your favorite cloud provider and get you started on remote stack
-with a single click.
+implemented a feature, that allows you to **deploy the necessary pieces of 
+infrastructure on your selected cloud provider and get you started on remote 
+stack with a single click**.
 
 {% hint style="info" %}
 If you have the required infrastructure pieces already deployed on your cloud, 
@@ -31,14 +31,18 @@ the CLI:
 In order to create a remote stack over the dashboard go to the stacks page 
 on the dashboard and click "Create New Stack".
 
-### AWS
-
-Screenshot of CloudFormation 
-
 {% hint style="warning" %}
 Currently, the 1-click deployment only works on AWS. We are working on 
 supporting GCP and Azure as well. Stay in touch for further updates.
 {% endhint %}
+
+### AWS
+
+If you choose `aws` as your provider, this command will redirect you to 
+a Cloud Formation page on AWS. You will have to log in to your AWS 
+account, review and confirm the pre-filled configuration and create the stack.
+
+Screenshot of CloudFormation 
 
 {% endtab %}
 {% tab title="CLI" %}
@@ -50,18 +54,18 @@ command:
 zenml stack deploy -p aws
 ```
 
-### AWS 
-
-If you select `aws` as your provider, this command will redirect you to 
-a Cloud Formation page on AWS. You will have to log in to your AWS 
-account, review and confirm the pre-filled configuration and create the stack.
-
-Screenshot of Cloud Formation
-
 {% hint style="warning" %}
 Currently, the 1-click deployment only works on AWS. We are working on 
 supporting GCP and Azure as well. Stay in touch for further updates.
 {% endhint %}
+
+### AWS 
+
+If you choose `aws` as your provider, this command will redirect you to 
+a Cloud Formation page on AWS. You will have to log in to your AWS 
+account, review and confirm the pre-filled configuration and create the stack.
+
+Screenshot of Cloud Formation
 
 {% endtab %}
 {% endtabs %}
