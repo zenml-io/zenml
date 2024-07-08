@@ -1,5 +1,5 @@
 ---
-description: Register a cloud stack easily
+description: Seamlessly register a cloud stack using existing infrastructure
 ---
 
 # Register a cloud stack with existing infrastructure
