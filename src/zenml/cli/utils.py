@@ -2867,27 +2867,18 @@ def requires_mac_env_var_warning() -> bool:
 
 
 def requires_mac_env_var_warning() -> bool:
-    """Check if a warning needs to be shown for a local Mac server.
+    """Checks if a warning needs to be shown for a local Mac server.
 
     This is for the case where a user is on a macOS system, trying to run a
     local server but is missing the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY`
     environment variable.
 
     Returns:
-        True if a warning needs to be shown, False otherwise.
+        bool: True if a warning needs to be shown, False otherwise.
     """
-    if mac_version := platform.mac_ver()[0]:
-        try:
-            major, minor, _ = mac_version.split(".")
-            mac_version_tuple = (int(major), int(minor))
-        except (ValueError, IndexError):
-            # If the version string is not in the expected format,
-            # assume the warning should be shown
-            return True
-    else:
-        mac_version_tuple = (0, 0)
-    return (
-        not os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY")
-        and sys.platform == "darwin"
-        and mac_version_tuple >= (10, 13)
-    )
+    if sys.platform == "darwin":
+        mac_version_tuple = tuple(map(int, platform.release().split(".")[:2]))
+        return not os.getenv(
+            "OBJC_DISABLE_INITIALIZE_FORK_SAFETY"
+        ) and mac_version_tuple >= (10, 13)
+    return False
