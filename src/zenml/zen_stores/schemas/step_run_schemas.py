@@ -213,8 +213,6 @@ class StepRunSchema(NamedSchema, table=True):
             for artifact in self.output_artifacts
         }
 
-        # the step configuration moved into the deployment - the else case is to
-        # guarantee backwards compatibility
         full_step_config = None
         if self.deployment is not None:
             step_configuration = json.loads(
@@ -230,15 +228,19 @@ class StepRunSchema(NamedSchema, table=True):
                     f"database. To solve this please delete the pipeline run that this"
                     f"step run belongs to. Pipeline Run ID: `{self.pipeline_run_id}`."
                 )
-        if full_step_config is None and self.step_configuration:
-            full_step_config = Step.model_validate_json(
-                self.step_configuration
-            )
-        else:
-            raise RuntimeError(
-                "Step run model creation has failed. Each step run entry "
-                "should either have a deployment_id or step_configuration."
-            )
+
+        # the step configuration moved into the deployment - the following case is to ensure
+        # backwards compatibility
+        if full_step_config is None:
+            if self.step_configuration:
+                full_step_config = Step.model_validate_json(
+                    self.step_configuration
+                )
+            else:
+                raise RuntimeError(
+                    "Step run model creation has failed. Each step run entry "
+                    "should either have a deployment_id or step_configuration."
+                )
 
         body = StepRunResponseBody(
             user=self.user.to_model() if self.user else None,
