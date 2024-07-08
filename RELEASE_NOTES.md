@@ -1,4 +1,34 @@
 <!-- markdown-link-check-disable -->
+# 0.61.0
+
+This release comes with a new and easy way to deploy an AWS ZenML stack from the dashboard and the CLI. Give it a try by going to the `Stacks` section in the dashboard or running the `zenml stack deploy` command!
+
+Additionally, this release includes improvements to our documentation and bugfixes for some integrations.
+
+## What's Changed
+
+* Add latest zenml version to migration testing scripts by @htahir1 in https://github.com/zenml-io/zenml/pull/2811
+* Add service connector support for Google Artifact Registry by @stefannica in https://github.com/zenml-io/zenml/pull/2771
+* Update order in which requirements are installed by @schustmi in https://github.com/zenml-io/zenml/pull/2341
+* Add installation instructions for Macs running on Apple Silicon by @strickvl in https://github.com/zenml-io/zenml/pull/2774
+* Added docs for trigger interface by @htahir1 in https://github.com/zenml-io/zenml/pull/2806
+* Update triggers docs with information on previously-run pipelines by @strickvl in https://github.com/zenml-io/zenml/pull/2820
+* Bump kfp version in GCP integration for pydantic2.0 by @wjayesh in https://github.com/zenml-io/zenml/pull/2824
+* Use shared cloud connection to reduce M2M token usage by @schustmi in https://github.com/zenml-io/zenml/pull/2817
+* Fail pipeline run if error happens during deployment by @schustmi in https://github.com/zenml-io/zenml/pull/2818
+* Login to dockerhub to solve rate limiting by @schustmi in https://github.com/zenml-io/zenml/pull/2828
+* Stack wizard CLI + Endpoints by @avishniakov in https://github.com/zenml-io/zenml/pull/2808
+* In-browser assisted full cloud stack deployments by @stefannica in https://github.com/zenml-io/zenml/pull/2816
+* Fix Kubeflow v2 integration  by @wjayesh in https://github.com/zenml-io/zenml/pull/2829
+* fix skypilot jobs failing on VMs (sky bumped to 0.6.0) by @wjayesh in https://github.com/zenml-io/zenml/pull/2815
+* Fix unicode decode errors in k8s pod logs read operation by @wjayesh in https://github.com/zenml-io/zenml/pull/2807
+* Small improvements and bug fixes by @schustmi in https://github.com/zenml-io/zenml/pull/2821
+* TF tests + various integration (un)install improvements by @avishniakov in https://github.com/zenml-io/zenml/pull/2791
+* Fixed bug in the MacOS version check by @strickvl in https://github.com/zenml-io/zenml/pull/2819
+* Remove prefix for analytics labels by @schustmi in https://github.com/zenml-io/zenml/pull/2831
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.60.0...test
 
 # 0.60.0
 
