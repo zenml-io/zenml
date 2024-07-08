@@ -42,9 +42,9 @@ next page:
 Currently, the 1-click deployment only works on AWS. We are working on 
 supporting GCP and Azure as well. Stay in touch for further updates.
 
-![Choosing a cloud provider](../../.gitbook/assets/deploy_stack_selection.png)
-
 {% endhint %}
+
+![Choosing a cloud provider](../../.gitbook/assets/deploy_stack_selection.png)
 
 ### AWS
 
@@ -84,7 +84,6 @@ If you choose `aws` as your provider, this command will redirect you to
 a Cloud Formation page on AWS. You will have to log in to your AWS 
 account, review and confirm the pre-filled configuration and create the stack.
 
-Screenshot of Cloud Formation
 
 {% endtab %}
 {% endtabs %}
