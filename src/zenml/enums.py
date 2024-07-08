@@ -386,3 +386,9 @@ class PluginSubType(StrEnum):
     WEBHOOK = "webhook"
     # Action Subtypes
     PIPELINE_RUN = "pipeline_run"
+
+
+class StackDeploymentProvider(StrEnum):
+    """All possible stack deployment providers."""
+
+    AWS = "aws"
