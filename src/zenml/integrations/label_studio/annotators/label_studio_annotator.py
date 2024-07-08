@@ -527,6 +527,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 aws_access_key_id,
                 aws_secret_access_key,
                 aws_session_token,
+                _,
             ) = artifact_store.get_credentials()
 
             if aws_access_key_id and aws_secret_access_key:
