@@ -1,0 +1,11 @@
+imports:
+- path: gcp-gar-gcs-vertex.jinja
+
+resources:
+- name: zenml-gcp-stack
+  type: gcp-gar-gcs-vertex.jinja
+  properties:
+    resourceNameSuffix: test001
+    zenmlServerURL: https://example.com
+    zenmlServerAPIToken: my-zenml-server-api-token
+    region: europe-west3

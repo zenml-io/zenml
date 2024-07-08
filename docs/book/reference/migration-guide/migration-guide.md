@@ -19,6 +19,7 @@ The following guides contain detailed instructions on how to migrate between Zen
 * [Migration guide 0.13.2 → 0.20.0](migration-zero-twenty.md)
 * [Migration guide 0.23.0 → 0.30.0](migration-zero-thirty.md)
 * [Migration guide 0.39.1 → 0.41.0](migration-zero-forty.md)
+* [Migration guide 0.58.2 → 0.60.0](migration-zero-sixty.md)
 
 ## Release Notes
 

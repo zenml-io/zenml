@@ -17,6 +17,7 @@ import contextlib
 import datetime
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -43,11 +44,13 @@ import pkg_resources
 import yaml
 from pydantic import BaseModel, SecretStr
 from rich import box, table
+from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
 from rich.markup import escape
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 from rich.style import Style
+from rich.table import Table
 
 from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
@@ -69,6 +72,7 @@ from zenml.models import (
     BoolFilter,
     NumericFilter,
     Page,
+    ServiceConnectorRequirements,
     StrFilter,
     UUIDFilter,
 )
@@ -582,6 +586,23 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
+
+    if not stack.labels:
+        declare("No labels are set for this stack.")
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Labels",
+            show_lines=True,
+        )
+        rich_table.add_column("LABEL")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        for label, value in stack.labels.items():
+            rich_table.add_row(label, str(value))
+
+        console.print(rich_table)
+
     declare(
         f"Stack '{stack.name}' with id '{stack.id}' is "
         f"{f'owned by user {stack.user.name}.' if stack.user else 'unowned.'}"
@@ -613,13 +634,18 @@ def print_flavor_list(flavors: Page["FlavorResponse"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "ComponentResponse", active_status: bool
+    component: "ComponentResponse",
+    active_status: bool,
+    connector_requirements: Optional[ServiceConnectorRequirements] = None,
 ) -> None:
     """Prints the configuration options of a stack component.
 
     Args:
         component: The stack component to print.
         active_status: Whether the stack component is active.
+        connector_requirements: Connector requirements for the component, taken
+            from the component flavor. Only needed if the component has a
+            connector.
     """
     if component.user:
         user_name = component.user.name
@@ -675,7 +701,7 @@ def print_stack_component_configuration(
         rich_table.add_column("VALUE", overflow="fold")
 
         for label, value in component.labels.items():
-            rich_table.add_row(label, value)
+            rich_table.add_row(label, str(value))
 
         console.print(rich_table)
 
@@ -690,11 +716,17 @@ def print_stack_component_configuration(
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
 
+        resource_type = (
+            connector_requirements.resource_type
+            if connector_requirements
+            else component.connector.resource_types[0]
+        )
+
         connector_dict = {
             "ID": str(component.connector.id),
             "NAME": component.connector.name,
             "TYPE": component.connector.type,
-            "RESOURCE TYPE": component.connector.resource_types[0],
+            "RESOURCE TYPE": resource_type,
             "RESOURCE NAME": component.connector_resource_id
             or component.connector.resource_id
             or "N/A",
@@ -1276,9 +1308,11 @@ def pretty_print_model_version_table(
             "NAME": model_version.registered_model.name,
             "MODEL_VERSION": model_version.version,
             "VERSION_DESCRIPTION": model_version.description,
-            "METADATA": model_version.metadata.model_dump()
-            if model_version.metadata
-            else {},
+            "METADATA": (
+                model_version.metadata.model_dump()
+                if model_version.metadata
+                else {}
+            ),
         }
         for model_version in model_versions
     ]
@@ -1318,9 +1352,11 @@ def pretty_print_model_version_details(
             if model_version.last_updated_at
             else "N/A"
         ),
-        "METADATA": model_version.metadata.model_dump()
-        if model_version.metadata
-        else {},
+        "METADATA": (
+            model_version.metadata.model_dump()
+            if model_version.metadata
+            else {}
+        ),
         "MODEL_SOURCE_URI": model_version.model_source_uri,
         "STAGE": model_version.stage.value,
     }
@@ -2748,3 +2784,93 @@ def is_jupyter_installed() -> bool:
         return True
     except pkg_resources.DistributionNotFound:
         return False
+
+
+def multi_choice_prompt(
+    object_type: str,
+    choices: List[List[Any]],
+    headers: List[str],
+    prompt_text: str,
+    allow_zero_be_a_new_object: bool = False,
+    default_choice: Optional[str] = None,
+) -> Optional[int]:
+    """Prompts the user to select a choice from a list of choices.
+
+    Args:
+        object_type: The type of the object
+        choices: The list of choices
+        prompt_text: The prompt text
+        headers: The list of headers.
+        allow_zero_be_a_new_object: Whether to allow zero as a new object
+        default_choice: The default choice
+
+    Returns:
+        The selected choice index or None for new object
+
+    Raises:
+        RuntimeError: If no choice is made.
+    """
+    table = Table(
+        title=f"Available {object_type}",
+        show_header=True,
+        border_style=None,
+        expand=True,
+        show_lines=True,
+    )
+    table.add_column("Choice", justify="left", width=1)
+    for h in headers:
+        table.add_column(
+            h.replace("_", " ").capitalize(), justify="left", width=10
+        )
+
+    i_shift = 0
+    if allow_zero_be_a_new_object:
+        i_shift = 1
+        table.add_row(
+            "[0]",
+            *([f"Create a new {object_type}"] * len(headers)),
+        )
+    for i, one_choice in enumerate(choices):
+        table.add_row(f"[{i+i_shift}]", *[str(x) for x in one_choice])
+    Console().print(table)
+
+    selected = Prompt.ask(
+        prompt_text,
+        choices=[str(i) for i in range(0, len(choices) + 1)],
+        default=default_choice,
+        show_choices=False,
+    )
+    if selected is None:
+        raise RuntimeError(f"No {object_type} was selected")
+
+    if selected == "0" and allow_zero_be_a_new_object:
+        return None
+    else:
+        return int(selected) - i_shift
+
+
+def requires_mac_env_var_warning() -> bool:
+    """Checks if a warning needs to be shown for a local Mac server.
+
+    This is for the case where a user is on a MacOS system, trying to run a
+    local server but is missing the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY`
+    environment variable.
+
+    Returns:
+        bool: True if a warning needs to be shown, False otherwise.
+    """
+    if mac_version := platform.mac_ver()[0]:
+        try:
+            major, minor, _ = mac_version.split(".")
+            mac_version_tuple = (int(major), int(minor))
+        except (ValueError, IndexError):
+            # If the version string is not in the expected format,
+            # assume the warning should be shown
+            return True
+    else:
+        mac_version_tuple = (0, 0)
+    return (
+        not os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY")
+        and sys.platform == "darwin"
+        and mac_version_tuple >= (10, 13)
+    )

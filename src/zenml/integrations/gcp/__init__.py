@@ -43,10 +43,11 @@ class GcpIntegration(Integration):
 
     NAME = GCP
     REQUIREMENTS = [
-        "kfp>=1.8.22",
+        "kfp>=2.6.0",
         "gcsfs",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
+        "google-cloud-artifact-registry>=1.11.3",
         "google-cloud-storage>=2.9.0",
         "google-cloud-aiplatform>=1.34.0",  # includes shapely pin fix
         "google-cloud-build>=3.11.0",

@@ -408,3 +408,9 @@ class OnboardingStep(StrEnum):
         "pipeline_run_with_remote_orchestrator"
     )
     PRODUCTION_SETUP_COMPLETED = "production_setup_completed"
+
+
+class StackDeploymentProvider(StrEnum):
+    """All possible stack deployment providers."""
+
+    AWS = "aws"
