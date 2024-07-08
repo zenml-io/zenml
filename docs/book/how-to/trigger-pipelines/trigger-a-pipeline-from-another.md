@@ -45,6 +45,10 @@ def loads_data_and_triggers_training():
     trigger_pipeline(df)  # Will trigger the other pipeline
 ```
 
+{% hint style="info" %}
+The pipeline that you're triggering (i.e. `training_pipeline` in the above example) has to have been run previously on a remote stack. In other words, the functionality to trigger a pipeline from another only works when a Docker image has previously been built for that pipeline. In most cases this will be because you ran the pipeline already, but in some cases you might have built the image separately.
+{% endhint %}
+
 Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) object in the [SDK Docs](https://sdkdocs.zenml.io/).
 
 Read more about Unmaterialized Artifacts [here](../handle-data-artifacts/unmaterialized-artifacts.md).

@@ -142,7 +142,9 @@ class DockerSettings(BaseSettings):
         target_repository: Name of the Docker repository to which the
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
-            therefore **not** include any registry.
+            therefore **not** include any registry. If not specified, the
+            default repository name configured in the container registry
+            stack component settings will be used.
         python_package_installer: The package installer to use for python
             packages.
         python_package_installer_args: Arguments to pass to the python package
@@ -201,7 +203,7 @@ class DockerSettings(BaseSettings):
     build_options: Dict[str, Any] = {}
     parent_image_build_config: Optional[DockerBuildConfig] = None
     skip_build: bool = False
-    target_repository: str = "zenml"
+    target_repository: Optional[str] = None
     python_package_installer: PythonPackageInstaller = (
         PythonPackageInstaller.PIP
     )

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack class."""
 
-import functools
 import itertools
 import json
 import os
@@ -155,11 +154,9 @@ class Stack:
 
         # Run a hydrated list call once to avoid one request per component
         component_models = pagination_utils.depaginate(
-            list_method=functools.partial(
-                Client().list_stack_components,
-                stack_id=stack_model.id,
-                hydrate=True,
-            )
+            Client().list_stack_components,
+            stack_id=stack_model.id,
+            hydrate=True,
         )
 
         stack_components = {
