@@ -60,6 +60,7 @@ class Integration(metaclass=IntegrationMeta):
 
     REQUIREMENTS: List[str] = []
     APT_PACKAGES: List[str] = []
+    REQUIREMENTS_IGNORED_ON_UNINSTALL: List[str] = []
 
     @classmethod
     def check_installation(cls) -> bool:
@@ -142,6 +143,29 @@ class Integration(metaclass=IntegrationMeta):
             A list of requirements.
         """
         return cls.REQUIREMENTS
+
+    @classmethod
+    def get_uninstall_requirements(
+        cls, target_os: Optional[str] = None
+    ) -> List[str]:
+        """Method to get the uninstall requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        ret = []
+        for each in cls.get_requirements(target_os=target_os):
+            is_ignored = False
+            for ignored in cls.REQUIREMENTS_IGNORED_ON_UNINSTALL:
+                if each.startswith(ignored):
+                    is_ignored = True
+                    break
+            if not is_ignored:
+                ret.append(each)
+        return ret
 
     @classmethod
     def activate(cls) -> None:

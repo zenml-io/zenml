@@ -31,6 +31,7 @@ class WandbIntegration(Integration):
 
     NAME = WANDB
     REQUIREMENTS = ["wandb>=0.12.12", "Pillow>=9.1.0"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["Pillow"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
