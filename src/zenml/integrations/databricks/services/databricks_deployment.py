@@ -46,7 +46,10 @@ UUID_SLICE_LENGTH: int = 8
 class DatabricksDeploymentConfig(DatabricksBaseConfig, ServiceConfig):
     """Databricks service configurations."""
 
-    model_uri: str
+    model_uri: Optional[str] = Field(
+        None,
+        description="URI of the model to deploy. This can be a local path or a cloud storage path.",
+    )
 
     def get_databricks_deployment_labels(self) -> Dict[str, str]:
         """Generate labels for the Databricks deployment from the service configuration.
@@ -182,7 +185,9 @@ class DatabricksDeploymentService(BaseDeploymentService):
             The prediction URI exposed by the prediction service, or None if
             the service is not yet ready.
         """
-        return self.databricks_endpoint.endpoint_url if self.is_running else None
+        return (
+            self.databricks_endpoint.endpoint_url if self.is_running else None
+        )
 
     def provision(self) -> None:
         """Provision or update remote Databricks deployment instance.

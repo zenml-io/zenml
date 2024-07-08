@@ -25,8 +25,8 @@ from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor impo
     DatabricksModelDeployerFlavor,
 )
 from zenml.integrations.databricks.services.databricks_deployment import (
-    DatabricksDeploymentService,
     DatabricksDeploymentConfig,
+    DatabricksDeploymentService,
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer
