@@ -12,6 +12,8 @@ from zenml.zen_server.utils import server_config
 
 ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
 
+_cloud_connection: Optional["ZenMLCloudConnection"] = None
+
 
 class ZenMLCloudConfiguration(BaseModel):
     """ZenML Pro RBAC configuration."""
@@ -59,7 +61,7 @@ class ZenMLCloudConfiguration(BaseModel):
     )
 
 
-class ZenMLCloudSession:
+class ZenMLCloudConnection:
     """Class to use for communication between server and control plane."""
 
     def __init__(self) -> None:
@@ -67,7 +69,7 @@ class ZenMLCloudSession:
         self._config = ZenMLCloudConfiguration.from_environment()
         self._session: Optional[requests.Session] = None
 
-    def _get(
+    def get(
         self, endpoint: str, params: Optional[Dict[str, Any]]
     ) -> requests.Response:
         """Send a GET request using the active session.
@@ -105,7 +107,7 @@ class ZenMLCloudSession:
 
         return response
 
-    def _post(
+    def post(
         self,
         endpoint: str,
         params: Optional[Dict[str, Any]] = None,
@@ -217,3 +219,16 @@ class ZenMLCloudSession:
             raise RuntimeError("Could not fetch auth token from auth0.")
 
         return str(access_token)
+
+
+def cloud_connection() -> ZenMLCloudConnection:
+    """Return the initialized cloud connection.
+
+    Returns:
+        The cloud connection.
+    """
+    global _cloud_connection
+    if _cloud_connection is None:
+        _cloud_connection = ZenMLCloudConnection()
+
+    return _cloud_connection
