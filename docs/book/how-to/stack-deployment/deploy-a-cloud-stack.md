@@ -31,18 +31,37 @@ the CLI:
 In order to create a remote stack over the dashboard go to the stacks page 
 on the dashboard and click "Create New Stack".
 
+![The new stacks page](../../.gitbook/assets/register_stack_button.png)
+
+Since we will be deploying it from scratch, select "New Infrastructure" on the
+next page:
+
+![Options for registering a stack](../../.gitbook/assets/register_stack_page.png)
+
 {% hint style="warning" %}
 Currently, the 1-click deployment only works on AWS. We are working on 
 supporting GCP and Azure as well. Stay in touch for further updates.
+
+![Choosing a cloud provider](../../.gitbook/assets/deploy_stack_selection.png)
+
 {% endhint %}
 
 ### AWS
 
-If you choose `aws` as your provider, this command will redirect you to 
-a Cloud Formation page on AWS. You will have to log in to your AWS 
-account, review and confirm the pre-filled configuration and create the stack.
+If you choose `aws` as your provider, you will see a page where you will have 
+the select an authentication method and a name for your new stack:
 
-Screenshot of CloudFormation 
+![Configuring the new stack](../../.gitbook/assets/deploy_stack_aws.png)
+
+Once the configuration is finished, you will see a deployment page:
+
+![Deploying the new stack](../../.gitbook/assets/deploy_stack_aws_2.png)
+
+During this process, you  will be redirected you to a Cloud Formation page 
+on AWS. You will have to log in to your AWS account, review and confirm the 
+pre-filled configuration and create the stack.
+
+![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
 
 {% endtab %}
 {% tab title="CLI" %}
@@ -91,5 +110,8 @@ We are working on bringing the 1-click deployment to Azure! Stay in
 touch for further updates.
 {% endtab %}
 {% endtabs %}
+
+And, there you have it! With a single click, you just deployed a cloud stack 
+and, you can start running your pipelines on a remote setting.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
