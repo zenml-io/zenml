@@ -430,6 +430,15 @@ class PipelineRunResponse(
         """
         return self.get_resources().model_version
 
+    @property
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().tags
+
 
 # ------------------ Filter Model ------------------
 

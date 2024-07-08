@@ -13,12 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import Field
 
-from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.constants import (
+    SORT_PIPELINES_BY_LATEST_RUN_KEY,
+    STR_FIELD_MAX_LENGTH,
+    TEXT_FIELD_MAX_LENGTH,
+)
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
@@ -33,7 +37,11 @@ from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+    from zenml.zen_stores.schemas import BaseSchema
 
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
+AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 # ------------------ Request Model ------------------
 
@@ -230,12 +238,23 @@ class PipelineResponse(
         """
         return self.get_body().latest_run_status
 
+    @property
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().tags
+
 
 # ------------------ Filter Model ------------------
 
 
 class PipelineFilter(WorkspaceScopedTaggableFilter):
     """Pipeline filter model."""
+
+    CUSTOM_SORTING_OPTIONS = [SORT_PIPELINES_BY_LATEST_RUN_KEY]
 
     name: Optional[str] = Field(
         default=None,
@@ -251,3 +270,27 @@ class PipelineFilter(WorkspaceScopedTaggableFilter):
         description="User of the Pipeline",
         union_mode="left_to_right",
     )
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        column, _ = self.sorting_params
+
+        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
+            # If sorting by the latest run, the sorting is already done in the
+            # base query in `SqlZenStore.list_pipelines(...)` and we don't need
+            # to to anything here
+            return query
+        else:
+            return super().apply_sorting(query=query, table=table)

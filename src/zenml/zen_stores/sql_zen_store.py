@@ -51,7 +51,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, desc, func
+from sqlalchemy import asc, case, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -95,6 +95,7 @@ from zenml.constants import (
     ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
+    SORT_PIPELINES_BY_LATEST_RUN_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -983,16 +984,7 @@ class SqlZenStore(BaseZenStore):
                 total = 0
 
         # Sorting
-        column, operand = filter_model.sorting_params
-        if operand == SorterOps.DESCENDING:
-            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
-        else:
-            sort_clause = asc(getattr(table, column))
-
-        # We always add the `id` column as a tiebreaker to ensure a stable,
-        # repeatable order of items, otherwise subsequent pages might contain
-        # the same items.
-        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
+        query = filter_model.apply_sorting(query=query, table=table)
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
@@ -3963,8 +3955,45 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
+        query = select(PipelineSchema)
+
+        column, operand = pipeline_filter_model.sorting_params
+        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
+            with Session(self.engine) as session:
+                max_date_subquery = (
+                    select(
+                        PipelineSchema.id,
+                        case(
+                            (
+                                func.max(PipelineRunSchema.created).is_(None),
+                                PipelineSchema.created,
+                            ),
+                            else_=func.max(PipelineRunSchema.created),
+                        ).label("run_or_created"),
+                    )
+                    .outerjoin(
+                        PipelineRunSchema,
+                        PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
+                    )
+                    .group_by(PipelineSchema.id)
+                    .subquery()
+                )
+
+                if operand == SorterOps.DESCENDING:
+                    sort_clause = desc
+                else:
+                    sort_clause = asc
+
+                query = (
+                    query.where(PipelineSchema.id == max_date_subquery.c.id)
+                    .order_by(sort_clause(max_date_subquery.c.run_or_created))
+                    # We always add the `id` column as a tiebreaker to ensure a
+                    # stable, repeatable order of items, otherwise subsequent
+                    # pages might contain the same items.
+                    .order_by(PipelineSchema.id)
+                )
+
         with Session(self.engine) as session:
-            query = select(PipelineSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
