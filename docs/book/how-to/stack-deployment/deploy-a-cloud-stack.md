@@ -40,8 +40,7 @@ next page:
 
 {% hint style="warning" %}
 Currently, the 1-click deployment only works on AWS. We are working on 
-supporting GCP and Azure as well. Stay in touch for further updates.
-
+bringing support to GCP and Azure as well. Stay in touch for further updates.
 {% endhint %}
 
 ![Choosing a cloud provider](../../.gitbook/assets/deploy_stack_selection.png)
@@ -75,7 +74,7 @@ zenml stack deploy -p aws
 
 {% hint style="warning" %}
 Currently, the 1-click deployment only works on AWS. We are working on 
-supporting GCP and Azure as well. Stay in touch for further updates.
+bringing support to GCP and Azure as well. Stay in touch for further updates.
 {% endhint %}
 
 ### AWS 

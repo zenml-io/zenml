@@ -38,8 +38,8 @@ zenml stack register <STACK_NAME> -p aws
 ### AWS
 
 {% hint style="warning" %}
-Currently, the stack wizard only works on AWS. We are working on supporting 
-GCP and Azure as well. Stay in touch for further updates.
+Currently, the stack wizard only works on AWS. We are working on bringing 
+support to GCP and Azure as well. Stay in touch for further updates.
 {% endhint %}
 
 {% endtab %}
