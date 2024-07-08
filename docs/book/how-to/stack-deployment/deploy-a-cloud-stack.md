@@ -57,7 +57,12 @@ Once the configuration is finished, you will see a deployment page:
 ![Deploying the new stack](../../.gitbook/assets/deploy_stack_aws_2.png)
 
 During this process, you  will be redirected you to a Cloud Formation page 
-on AWS. You will have to log in to your AWS account, review and confirm the 
+on AWS. 
+
+![Cloudformation page](../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png)
+
+
+You will have to log in to your AWS account, review and confirm the 
 pre-filled configuration and create the stack.
 
 ![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
@@ -79,10 +84,15 @@ bringing support to GCP and Azure as well. Stay in touch for further updates.
 
 ### AWS 
 
-If you choose `aws` as your provider, this command will redirect you to 
-a Cloud Formation page on AWS. You will have to log in to your AWS 
-account, review and confirm the pre-filled configuration and create the stack.
+If you choose `aws` as your provider, this command will redirect you to a 
+Cloud Formation page on AWS: 
 
+![Cloudformation page](../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png)
+
+You will have to log in to your AWS account, review and confirm the 
+pre-filled configuration and create the stack.
+
+![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
 
 {% endtab %}
 {% endtabs %}
@@ -94,7 +104,10 @@ prepare for you:
 
 {% tabs %}
 {% tab title="AWS" %}
-- A ZenML AWS Service Connector based on your selected authentication method.
+- An IAM user and IAM role with the minimum necessary permissions to access 
+the resources listed below.
+- An AWS access key used to give access to ZenML to connect to the above 
+resources through a ZenML service connector.
 - A ZenML Sagemaker Orchestrator which is preconfigured.
 - An S3 bucket that will be used as a ZenML Artifact Store.
 - An ECR container registry that will be used as a ZenML Container Registry.
