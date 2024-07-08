@@ -1,5 +1,5 @@
 ---
-description: Deploy a cloud stack easily
+description: Deploy a cloud stack from scratch with a single click
 ---
 
 # Deploy a cloud stack with a single click
