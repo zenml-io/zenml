@@ -137,31 +137,21 @@ if __name__ == "__main__":
 
 The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals. 
 
-There are public templates to easily provision a simple MLOps stack that can be used with ZenML:
+ZenML provides different features to aid people to get started quickly on a remote setting as well. If you want to deploy a remote stack from scratch on your selected cloud provider, you can use the 1-click deployment feature either through the dashboard:
 
-<div align="center">
+<PLACEHOLDER_FOR_SCREENSHOT>
 
-[![Create an AWS MLOps Stack](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/create/review?stackName=zenml-stack&templateURL=https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml)
-
-[![Create a GCP MLOps Stack](https://img.shields.io/badge/GoogleCloud-%234285F4.svg?style=for-the-badge&logo=google-cloud&logoColor=white)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_working_dir=infra&cloudshell_open_in_editor=gcp-gar-gcs-vertex.yaml,gcp-gar-gcs-vertex-config.yaml&cloudshell_print=gcp-gar-gcs-vertex.txt&cloudshell_git_branch=feature/prd-482-one-click-stacks)
-
-[![Create an Azure MLOps Stack](https://img.shields.io/badge/azure-%230072C6.svg?style=for-the-badge&logo=microsoftazure&logoColor=white)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_working_dir=infra&cloudshell_open_in_editor=gcp-gar-gcs-vertex.yaml,gcp-gar-gcs-vertex-config.yaml&cloudshell_print=gcp-gar-gcs-vertex.txt&cloudshell_git_branch=feature/prd-482-one-click-stacks)
-
-</div>
-
-Or, use a simple CLI command:
+Or, through our CLI command:
 
 ```bash
-zenml stack deploy --provider aws  # can be gcp, azure
+zenml stack deploy --provider aws
 ```
 
-Already have existing resources? No problem, you can register them easily:
+Alternatively, if the necessary pieces of infrastructure is already deployed, you can register a cloud stack seamlessly through the stack wizard:
 
 ```bash
-zenml stack register <STACK_NAME> --provider aws  # can be gcp, azure
+zenml stack register <STACK_NAME> --provider aws
 ```
-
-TODO: Might be nice to have a GIF here of zenml stack register.
 
 Read more about [ZenML stacks](https://docs.zenml.io/user-guide/production-guide/understand-stacks).
 
