@@ -426,7 +426,6 @@ def register_stack(
                                 )
                             )
                         else:
-                            breakpoint()
                             _, service_connector_resource_model = (
                                 client.create_service_connector(
                                     name=stack_name,
