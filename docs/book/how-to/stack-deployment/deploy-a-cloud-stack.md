@@ -80,7 +80,12 @@ zenml stack deploy -p aws
 
 {% hint style="warning" %}
 Currently, the 1-click deployment only works on AWS. We are working on 
-bringing support to GCP and Azure as well. Stay in touch for further updates.
+bringing support to GCP and Azure as well. 
+
+In the meanwhile, you can still deploy a GCP or Azure stack manually, meaning
+you can deploy the infrastructure yourself and create the necessary ZenML 
+components yourself using the corresponding integrations. Check [our component 
+guide](../../component-guide/component-guide.md) for further details.
 {% endhint %}
 
 ### AWS 
