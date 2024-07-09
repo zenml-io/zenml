@@ -86,7 +86,7 @@ These are rough estimates and actual costs may vary based on your usage and spec
 Some services may be eligible for the GCP Free Tier. Use [the GCP Pricing Calculator](https://cloud.google.com/products/calculator)
 for a detailed estimate based on your usage.
 
-⚠️ **The Cloud Shell session will warn you that the ZenML GitHub repository is
+⚠️  **The Cloud Shell session will warn you that the ZenML GitHub repository is
 untrusted. We recommend that you review [the contents of the repository](https://github.com/zenml-io/zenml/tree/main/infra/gcp)
 and then check the `Trust repo` checkbox to proceed with the deployment,
 otherwise the Cloud Shell session will not be authenticated to access your
@@ -249,9 +249,6 @@ GCP project and to clean up the resources created by the stack by using
 ZENML_STACK_NAME={self.stack_name}
 ZENML_STACK_REGION={self.location or "europe-west3"}
 ZENML_SERVER_URL={self.zenml_server_url}
-# NOTE: For security reasons, the ZenML server API token is only valid for 1
-# hour. If you exceed this time limit, you will need to restart the stack
-# deployment process.
 ZENML_SERVER_API_TOKEN={self.zenml_server_api_token}
 ### END CONFIGURATION ###
 """

@@ -1553,12 +1553,18 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
-            if current_revisions and version.parse(
-                current_revisions[0]
-            ) < version.parse("0.57.1"):
-                # We want to send the missing user enriched events for users
-                # which were created pre 0.57.1 and only on one upgrade
-                self._should_send_user_enriched_events = True
+            try:
+                if current_revisions and version.parse(
+                    current_revisions[0]
+                ) < version.parse("0.57.1"):
+                    # We want to send the missing user enriched events for users
+                    # which were created pre 0.57.1 and only on one upgrade
+                    self._should_send_user_enriched_events = True
+            except version.InvalidVersion:
+                # This can happen if the database is not currently
+                # stamped with an official ZenML version (e.g. in
+                # development environments).
+                pass
 
             self._sync_flavors()
 

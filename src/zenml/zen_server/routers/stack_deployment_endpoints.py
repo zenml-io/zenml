@@ -24,6 +24,7 @@ from zenml.constants import (
     INFO,
     STACK,
     STACK_DEPLOYMENT,
+    STACK_DEPLOYMENT_API_TOKEN_EXPIRATION,
     VERSION_1,
 )
 from zenml.enums import StackDeploymentProvider
@@ -111,7 +112,9 @@ def get_stack_deployment_config(
     assert token is not None
 
     # A new API token is generated for the stack deployment
-    expires = datetime.datetime.utcnow() + datetime.timedelta(minutes=60)
+    expires = datetime.datetime.utcnow() + datetime.timedelta(
+        minutes=STACK_DEPLOYMENT_API_TOKEN_EXPIRATION
+    )
     api_token = token.encode(expires=expires)
 
     return stack_deployment_class(

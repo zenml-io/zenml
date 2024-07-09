@@ -1795,26 +1795,18 @@ Stack [{deployed_stack.stack.name}]({get_stack_url(deployed_stack.stack)}):\n"""
 
 {deployment.post_deploy_instructions}
 
-To use the '{deployed_stack.stack.name}' stack to run pipelines:
+To use the `{deployed_stack.stack.name}` stack to run pipelines:
 
-* install the required ZenML integrations:
-
-```bash
-zenml integration install {" ".join(deployment.integrations)}
-```
+* install the required ZenML integrations by running: `zenml integration install {" ".join(deployment.integrations)}`
 """
     if set_stack:
         client.activate_stack(deployed_stack.stack.id)
         follow_up += f"""
-        * the {deployed_stack.stack.name} stack has already been set as active
+* the `{deployed_stack.stack.name}` stack has already been set as active
 """
     else:
         follow_up += f"""
-        * set the {deployed_stack.stack.name} stack as active:
-
-        ```bash
-        zenml stack set {deployed_stack.stack.name}
-        ```
+* set the `{deployed_stack.stack.name}` stack as active by running: `zenml stack set {deployed_stack.stack.name}`
 """
 
     console.print(
