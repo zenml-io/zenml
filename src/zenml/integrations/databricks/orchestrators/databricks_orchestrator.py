@@ -447,7 +447,15 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         spark_conf[
             "spark.databricks.driver.dbfsLibraryInstallationAllowed"
         ] = "true"
-
+        
+        policy_id = self.settings_class().policy_id or None
+        for policy in databricks_client.cluster_policies.list():
+            if policy.name == "Power User Compute":
+                policy_id = policy.policy_id
+        if policy_id is None:
+            raise ValueError(
+                "Could not find the 'Power User Compute' policy in Databricks."
+            )
         cluster_config = {
             "spark_version": self.settings_class().spark_version
             or DATABRICKS_SPARK_DEFAULT_VERSION,
@@ -456,7 +464,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             or "Standard_DS5_v2",
             "cluster_name": self.settings_class().cluster_name
             or DATABRICKS_CLUSTER_DEFAULT_NAME,
-            "policy_id": self.settings_class().policy_id or "00166D9BEB5150FA",
+            "policy_id": policy_id,
             "autotermination_minutes": self.settings_class().autotermination_minutes
             or 30,
             "autoscale": AutoScale(
