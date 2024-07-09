@@ -3975,7 +3975,7 @@ class SqlZenStore(BaseZenStore):
                         PipelineRunSchema,
                         PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
                     )
-                    .group_by(PipelineSchema.id)
+                    .group_by(col(PipelineSchema.id))
                     .subquery()
                 )
 
@@ -3990,7 +3990,7 @@ class SqlZenStore(BaseZenStore):
                     # We always add the `id` column as a tiebreaker to ensure a
                     # stable, repeatable order of items, otherwise subsequent
                     # pages might contain the same items.
-                    .order_by(PipelineSchema.id)
+                    .order_by(col(PipelineSchema.id))
                 )
 
         with Session(self.engine) as session:
