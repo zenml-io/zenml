@@ -819,7 +819,7 @@ def test_compiling_a_pipeline_merges_schedule(
     with pipeline_instance:
         pipeline_instance.entrypoint()
 
-    _, _, schedule, _ = pipeline_instance._compile(
+    _, schedule, _ = pipeline_instance._compile(
         config_path=str(config_path),
         schedule=Schedule(cron_expression="5 * * * *", catchup=True),
     )
@@ -853,12 +853,12 @@ def test_compiling_a_pipeline_merges_build(
         pipeline_instance.entrypoint()
 
     # Config with ID
-    _, _, _, build = pipeline_instance._compile(
+    _, _, build = pipeline_instance._compile(
         config_path=str(config_path_with_build_id), build=in_code_build_id
     )
     assert build == in_code_build_id
     # Config with build object
-    _, _, _, build = pipeline_instance._compile(
+    _, _, build = pipeline_instance._compile(
         config_path=str(config_path_with_build), build=in_code_build_id
     )
     assert build == in_code_build_id
@@ -869,12 +869,12 @@ def test_compiling_a_pipeline_merges_build(
         contains_code=True,
     )
     # Config with ID
-    _, _, _, build = pipeline_instance._compile(
+    _, _, build = pipeline_instance._compile(
         config_path=str(config_path_with_build_id), build=in_code_build
     )
     assert build == in_code_build
     # Config with build object
-    _, _, _, build = pipeline_instance._compile(
+    _, _, build = pipeline_instance._compile(
         config_path=str(config_path_with_build), build=in_code_build
     )
     assert build == in_code_build

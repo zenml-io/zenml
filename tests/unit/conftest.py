@@ -444,6 +444,7 @@ def sample_pipeline_run(
             updated=datetime.now(),
             user=sample_user_model,
             status=ExecutionStatus.COMPLETED,
+            tags=[],
         ),
         metadata=PipelineRunResponseMetadata(
             workspace=sample_workspace_model,
@@ -607,6 +608,7 @@ def create_pipeline_model(
                 created=datetime.now(),
                 updated=datetime.now(),
                 user=sample_user_model,
+                tags=[],
             ),
             metadata=PipelineResponseMetadata(
                 **metadata_kwargs,

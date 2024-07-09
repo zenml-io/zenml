@@ -160,7 +160,7 @@ def test_step_sorting(empty_step, local_stack):
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=PipelineRunConfiguration(),
@@ -216,7 +216,7 @@ def test_stack_component_settings_merging(
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -266,7 +266,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -314,7 +314,7 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
     with pipeline_instance:
         pipeline_instance.entrypoint()
 
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -370,7 +370,7 @@ def test_success_hook_merging(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -422,7 +422,7 @@ def test_failure_hook_merging(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -467,7 +467,7 @@ def test_stack_component_settings_for_missing_component_are_ignored(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment, _ = Compiler().compile(
+    deployment = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -503,10 +503,14 @@ def test_spec_compilation(local_stack):
     pipeline_instance = p(step_1=s1(), step_2=s2())
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    _, spec = Compiler().compile(
-        pipeline=pipeline_instance,
-        stack=local_stack,
-        run_configuration=PipelineRunConfiguration(),
+    spec = (
+        Compiler()
+        .compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+        .pipeline_spec
     )
     other_spec = Compiler().compile_spec(pipeline=pipeline_instance)
 
