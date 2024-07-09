@@ -20,6 +20,8 @@ settings:
   docker:
     required_integrations:
       - evidently
+      - kubeflow
+      - kubernetes
       - mlflow
       - sklearn
       - databricks

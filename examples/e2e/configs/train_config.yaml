@@ -21,6 +21,8 @@ settings:
     required_integrations:
       - aws
       - evidently
+      - kubeflow
+      - kubernetes
       - mlflow
       - sklearn
       - databricks
