@@ -21,6 +21,13 @@ You should use the GCS Artifact Store when you decide to keep your ZenML artifac
 
 ### How do you deploy it?
 
+{% hint style="info" %}
+Don't want to deploy the artifact store manually? Check out the
+[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 The GCS Artifact Store flavor is provided by the GCP ZenML integration, you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
 
 ```shell
