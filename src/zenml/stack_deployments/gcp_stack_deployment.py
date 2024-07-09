@@ -210,7 +210,9 @@ GCP project and to clean up the resources created by the stack by using
         )
         # Encode the parameters as URL query parameters
         query_params = "&".join([f"{k}={v}" for k, v in params.items()])
-        url = f"https://shell.cloud.google.com/cloudshell/editor?{query_params}"
+        url = (
+            f"https://shell.cloud.google.com/cloudshell/editor?{query_params}"
+        )
 
         config = f"""
 ### BEGIN CONFIGURATION ###

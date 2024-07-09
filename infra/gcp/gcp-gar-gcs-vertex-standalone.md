@@ -57,7 +57,7 @@ Now, let's configure the ZenML stack deployment. You'll need to provide the
 following information:
 
 * <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-deploy.sh" regex="ZENML_STACK_NAME=.*">the name of the ZenML stack to deploy</walkthrough-editor-select-regex>
-* <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.sh" regex="ZENML_STACK_REGION=.*">the GCP region to deploy the resources to</walkthrough-editor-select-regex>. Pick one from the [list of available regions](https://cloud.google.com/compute/docs/regions-zones) (e.g., `europe-west3`).
+* <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-config.sh" regex="ZENML_STACK_REGION=.*">the GCP region to deploy the resources to</walkthrough-editor-select-regex>. Pick one from the [list of available regions](https://cloud.google.com/about/locations) (e.g., `europe-west3`).
 
 ## Deploy the ZenML stack
 

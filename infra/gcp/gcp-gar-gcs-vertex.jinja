@@ -72,6 +72,9 @@ resources:
 
   - name: zenml-gcs-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       resource: {{ project }}
       role: roles/storage.objectUser
@@ -84,6 +87,9 @@ resources:
 
   - name: zenml-gar-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       resource: {{ project }}
       role: roles/artifactregistry.createOnPushWriter
@@ -95,6 +101,9 @@ resources:
 
   - name: zenml-vertex-user-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       resource: {{ project }}
       role: roles/aiplatform.user
@@ -102,6 +111,9 @@ resources:
 
   - name: zenml-vertex-agent-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       resource: {{ project }}
       role: roles/aiplatform.serviceAgent
@@ -109,6 +121,9 @@ resources:
 
   - name: zenml-service-account-key
     type: iam.v1.serviceAccounts.key
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       parent: $(ref.zenml-service-account.name)
 

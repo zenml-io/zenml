@@ -10,7 +10,7 @@ set -e
 # * ZENML_STACK_NAME - The name of the ZenML stack to deploy. This name will be
 # used to identify the stack in the ZenML server and the GCP Deployment Manager.
 # * ZENML_STACK_REGION - The GCP region to deploy the resources to. Pick one
-# from the list of available regions documented at: https://cloud.google.com/compute/docs/regions-zones
+# from the list of available regions documented at: https://cloud.google.com/about/locations
 # * ZENML_SERVER_URL: The URL where your ZenML server is running
 # * ZENML_SERVER_API_TOKEN: The API token used to authenticate with your ZenML
 # server. This would have been provided to you in the ZenML CLI or the ZenML
@@ -43,19 +43,26 @@ PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNum
 # * Artifact Registry API - ZenML uses the Artifact Registry GCP service to store and manage Docker images.
 # * Cloud Storage API - ZenML uses the Cloud Storage GCP service to store and manage data.
 # * Vertex AI API - ZenML uses the Vertex AI GCP service to manage machine learning resources.
-# * Cloud Functions API - used to automatically register the ZenML stack in the ZenML server. 
+# * Cloud Functions and Cloud Build API - used to automatically register the ZenML stack in the ZenML server.
 echo
 echo "##################################################"
 echo "Enabling necessary GCP services..."
 echo "##################################################"
 echo
-gcloud services enable \
-    deploymentmanager.googleapis.com \
-    iam.googleapis.com \
-    artifactregistry.googleapis.com \
-    storage-api.googleapis.com \
-    ml.googleapis.com \
-    cloudfunctions.googleapis.com
+# Array of services to enable
+services=(
+    "deploymentmanager.googleapis.com"
+    "iam.googleapis.com"
+    "artifactregistry.googleapis.com"
+    "storage-api.googleapis.com"
+    "ml.googleapis.com"
+    "cloudfunctions.googleapis.com"
+    "cloudbuild.googleapis.com"
+    "cloudresourcemanager.googleapis.com"
+)
+
+# Enable the services
+gcloud services enable "${services[@]}"
 
 # Grant Deployment Manager the necessary permissions
 #
@@ -74,6 +81,23 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --role="roles/resourcemanager.projectIamAdmin" \
     --condition=None
 
+# Grant the Compute Engine default service account the necessary permissions
+#
+# The GCP Cloud Functions uses the default compute service account
+# (https://cloud.google.com/functions/docs/securing/function-identity#runtime-sa)
+# to run. You must first grant this service the appropriate permissions to
+# create and manage Artifact Registry resources.
+echo
+echo "##################################################"
+echo "Granting Deployment Manager the necessary permissions..."
+echo "##################################################"
+echo
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PROJECT_NUMBER-compute@cloudservices.gserviceaccount.com" \
+    --role="roles/artifactregistry.admin" \
+    --condition=None
+
+
 # Create the Deployment Manager deployment
 #
 # The following command deploys the stack with Deployment Manager
@@ -81,6 +105,8 @@ echo
 echo "##################################################"
 echo "Creating the Deployment Manager deployment..."
 echo "##################################################"
+echo
+echo echo "Deployment will be created at: https://console.cloud.google.com/dm/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
 echo
 gcloud deployment-manager deployments create \
     --template gcp-gar-gcs-vertex.jinja $ZENML_STACK_NAME \

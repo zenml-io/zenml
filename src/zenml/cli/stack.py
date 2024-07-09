@@ -1687,6 +1687,12 @@ def deploy(
             provider=StackDeploymentProvider(provider),
         )
 
+        if location and location not in deployment.locations.values():
+            cli_utils.error(
+                f"Invalid location '{location}' for provider '{provider}'. "
+                f"Valid locations are: {', '.join(deployment.locations.values())}"
+            )
+
         console.print(
             Markdown(
                 f"# {provider.upper()} ZenML Cloud Stack Deployment\n"
@@ -1716,6 +1722,7 @@ def deploy(
                     deployment_config.configuration,
                     "bash",
                     theme="monokai",
+                    word_wrap=True,
                 ),
             )
 
