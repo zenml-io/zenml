@@ -109,7 +109,7 @@ echo "##################################################"
 echo "Creating the Deployment Manager deployment..."
 echo "##################################################"
 echo
-echo echo "Deployment will be created at: https://console.cloud.google.com/dm/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
+echo "Deployment will be created at: https://console.cloud.google.com/dm/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
 echo
 
 set +e
