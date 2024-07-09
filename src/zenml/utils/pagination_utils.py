@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pagination utilities."""
 
-from typing import Callable, List, TypeVar
+from typing import Any, Callable, List, TypeVar
 
 from zenml.models import BaseIdentifiedResponse, Page
 
@@ -21,20 +21,22 @@ AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: igno
 
 
 def depaginate(
-    list_method: Callable[..., Page[AnyResponse]],
+    list_method: Callable[..., Page[AnyResponse]], **kwargs: Any
 ) -> List[AnyResponse]:
     """Depaginate the results from a client or store method that returns pages.
 
     Args:
-        list_method: The list method to wrap around.
+        list_method: The list method to depaginate.
+        **kwargs: Arguments for the list method.
 
     Returns:
         A list of the corresponding Response Models.
     """
-    page = list_method()
+    page = list_method(**kwargs)
     items = list(page.items)
     while page.index < page.total_pages:
-        page = list_method(page=page.index + 1)
+        kwargs["page"] = page.index + 1
+        page = list_method(**kwargs)
         items += list(page.items)
 
     return items

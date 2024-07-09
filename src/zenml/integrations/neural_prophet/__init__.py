@@ -26,6 +26,7 @@ class NeuralProphetIntegration(Integration):
         "holidays>=0.4.1,<0.25.0",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity"]
 
     @classmethod
     def activate(cls) -> None:

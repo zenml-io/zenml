@@ -231,7 +231,7 @@ class StackResponse(
         if self.labels is not None:
             metadata.update(
                 {
-                    label: value
+                    label[6:]: value
                     for label, value in self.labels.items()
                     if label.startswith("zenml:")
                 }
