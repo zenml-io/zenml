@@ -91,7 +91,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 # create and manage Artifact Registry resources.
 echo
 echo "##################################################"
-echo "Granting Deployment Manager the necessary permissions..."
+echo "Granting Cloud Functions the necessary permissions..."
 echo "##################################################"
 echo
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -110,9 +110,26 @@ echo "##################################################"
 echo
 echo echo "Deployment will be created at: https://console.cloud.google.com/dm/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
 echo
+
+set +e
 gcloud deployment-manager deployments create \
     --template gcp-gar-gcs-vertex.jinja $ZENML_STACK_NAME \
     --properties region:"$ZENML_STACK_REGION",zenmlServerURL:"$ZENML_SERVER_URL",zenmlServerAPIToken:"$ZENML_SERVER_API_TOKEN"
+# Fetch the exit code of the deployment
+DEPLOYMENT_EXIT_CODE=$?
+set -e
+
+if [ $DEPLOYMENT_EXIT_CODE -ne 0 ]; then
+    echo "ERROR: Deployment failed. Please check the logs for more information."
+    echo
+    echo "The deployment can be found at: https://console.cloud.google.com/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
+    echo
+    echo "Hint: sometimes it helps if you retry the deployment. You can do this by running the following commands:"
+    echo
+    echo "gcloud deployment-manager deployments delete $ZENML_STACK_NAME"
+    echo "./gcp-gar-gcs-vertex-deploy.sh"
+    exit 1
+fi
 
 # Print the deployment URL
 #

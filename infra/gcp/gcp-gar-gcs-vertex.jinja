@@ -61,7 +61,7 @@ resources:
   - name: zenml-{{ project_number }}-{{ resourceNameSuffix }}
     type: storage.v1.bucket
     properties:
-      name: "zenml-{{ resourceNameSuffix }}"
+      name: "zenml-{{ project_number }}-{{ resourceNameSuffix }}"
       location: {{ region }}
 
   - name: zenml-service-account
