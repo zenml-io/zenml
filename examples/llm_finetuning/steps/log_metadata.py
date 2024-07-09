@@ -15,17 +15,28 @@
 # limitations under the License.
 #
 
-import gc
+from typing import Any, Dict
 
-import torch
-
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
+from zenml import get_step_context, log_model_metadata, step
 
 
-def cleanup_memory() -> None:
-    """Clean up GPU memory."""
-    logger.info("Cleaning up GPU memory on the machine...")
-    while gc.collect():
-        torch.cuda.empty_cache()
+@step(enable_cache=False)
+def log_metadata_from_step_artifact(
+    step_name: str,
+    artifact_name: str,
+) -> None:
+    """Log metadata to the model from saved artifact.
+
+    Args:
+        step_name: The name of the step.
+        artifact_name: The name of the artifact.
+    """
+
+    context = get_step_context()
+    metadata_dict: Dict[str, Any] = (
+        context.pipeline_run.steps[step_name].outputs[artifact_name].load()
+    )
+
+    metadata = {artifact_name: metadata_dict}
+
+    log_model_metadata(metadata)

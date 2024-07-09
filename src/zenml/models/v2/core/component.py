@@ -238,6 +238,24 @@ class ComponentResponse(
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the component labels to analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+
+        if self.labels is not None:
+            metadata.update(
+                {
+                    label[6:]: value
+                    for label, value in self.labels.items()
+                    if label.startswith("zenml:")
+                }
+            )
+        return metadata
+
     def get_hydrated_version(self) -> "ComponentResponse":
         """Get the hydrated version of this component.
 

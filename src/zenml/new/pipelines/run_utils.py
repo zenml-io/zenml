@@ -3,16 +3,7 @@
 import time
 from collections import defaultdict
 from datetime import datetime
-from types import FunctionType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, Union
 from uuid import UUID
 
 from zenml import constants
@@ -36,13 +27,11 @@ from zenml.utils import cloud_utils
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
-    from zenml.config.source import Source
     from zenml.model.model import Model
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
-    HookSpecification = Union[str, "Source", FunctionType]
 
 logger = get_logger(__name__)
 

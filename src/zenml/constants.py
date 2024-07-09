@@ -326,7 +326,7 @@ REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline", "pipeline_run"]
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
-ACTIONS = "/action-flavors"
+ACTIONS = "/actions"
 API = "/api"
 API_KEYS = "/api_keys"
 API_KEY_ROTATE = "/rotate"
@@ -346,6 +346,7 @@ EMAIL_ANALYTICS = "/email-opt-in"
 EVENT_FLAVORS = "/event-flavors"
 EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
+FULL_STACK = "/full-stack"
 GET_OR_CREATE = "/get-or-create"
 GRAPH = "/graph"
 HEALTH = "/health"
@@ -372,13 +373,14 @@ SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
-SERVICE_CONNECTOR_RESOURCES = "/resources"
 MODELS = "/models"
 MODEL_VERSIONS = "/model_versions"
 MODEL_VERSION_ARTIFACTS = "/model_version_artifacts"
 MODEL_VERSION_PIPELINE_RUNS = "/model_version_pipeline_runs"
 SERVICES = "/services"
 SERVICE_CONNECTORS = "/service_connectors"
+STACK = "/stack"
+STACK_DEPLOYMENT = "/stack-deployment"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STATISTICS = "/statistics"
@@ -389,6 +391,7 @@ TAGS = "/tags"
 TRIGGERS = "/triggers"
 TRIGGER_EXECUTIONS = "/trigger_executions"
 USERS = "/users"
+URL = "/url"
 VERSION_1 = "/v1"
 VISUALIZE = "/visualize"
 WEBHOOKS = "/webhooks"
@@ -457,6 +460,7 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "mlops_platform",
     "step_operator",
 ]
+
 
 # Parameters for internal ZenML Models
 TEXT_FIELD_MAX_LENGTH = 65535

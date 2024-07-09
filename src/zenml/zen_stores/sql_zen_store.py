@@ -111,12 +111,14 @@ from zenml.enums import (
     SecretsStoreType,
     SorterOps,
     StackComponentType,
+    StackDeploymentProvider,
     StepRunInputArtifactType,
     StepRunOutputArtifactType,
     StoreType,
     TaggableResourceTypes,
 )
 from zenml.exceptions import (
+    ActionExistsError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
@@ -130,6 +132,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyInternalResponse,
     APIKeyInternalUpdate,
@@ -159,6 +165,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -167,6 +174,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -237,6 +245,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -289,6 +298,7 @@ from zenml.zen_stores.migrations.alembic import (
 )
 from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
+    ActionSchema,
     APIKeySchema,
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -1738,6 +1748,205 @@ class SqlZenStore(BaseZenStore):
             )
 
         self.activate_server(request)
+
+    # -------------------- Actions  --------------------
+
+    def _fail_if_action_with_name_exists(
+        self, action_name: str, workspace_id: UUID, session: Session
+    ) -> None:
+        """Raise an exception if an action with same name exists.
+
+        Args:
+            action_name: The name of the action.
+            workspace_id: Workspace ID of the action.
+            session: DB Session.
+
+        Raises:
+            ActionExistsError: If an action with the given name already exists.
+        """
+        existing_domain_action = session.exec(
+            select(ActionSchema)
+            .where(ActionSchema.name == action_name)
+            .where(ActionSchema.workspace_id == workspace_id)
+        ).first()
+        if existing_domain_action is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=workspace_id, session=session
+            )
+            raise ActionExistsError(
+                f"Unable to register action with name "
+                f"'{action_name}': Found an existing action with "
+                f"the same name in the active workspace, '{workspace.name}'."
+            )
+
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+        with Session(self.engine) as session:
+            self._fail_if_action_with_name_exists(
+                action_name=action.name,
+                workspace_id=action.workspace,
+                session=session,
+            )
+
+            # Verify that the given service account exists
+            self._get_account_schema(
+                account_name_or_id=action.service_account_id,
+                session=session,
+                service_account=True,
+            )
+
+            new_action = ActionSchema.from_request(action)
+            session.add(new_action)
+            session.commit()
+            session.refresh(new_action)
+
+            return new_action.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _get_action(
+        self,
+        action_id: UUID,
+        session: Session,
+    ) -> ActionSchema:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            session: The DB session.
+
+        Returns:
+            The action schema.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=action_id,
+            schema_class=ActionSchema,
+            schema_name="action",
+            session=session,
+        )
+
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(action_id=action_id, session=session)
+
+            return action.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
+
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of actions matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ActionSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ActionSchema,
+                filter_model=action_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(session=session, action_id=action_id)
+
+            if action_update.service_account_id:
+                # Verify that the given service account exists
+                self._get_account_schema(
+                    account_name_or_id=action_update.service_account_id,
+                    session=session,
+                    service_account=True,
+                )
+
+            # In case of a renaming update, make sure no action already exists
+            # with that name
+            if action_update.name:
+                if action.name != action_update.name:
+                    self._fail_if_action_with_name_exists(
+                        action_name=action_update.name,
+                        workspace_id=action.workspace.id,
+                        session=session,
+                    )
+
+            action.update(action_update=action_update)
+            session.add(action)
+            session.commit()
+
+            session.refresh(action)
+
+            return action.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+
+        Raises:
+            IllegalOperationError: If the action can't be deleted
+                because it's used by triggers.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(action_id=action_id, session=session)
+
+            # Prevent deletion of action if it is used by a trigger
+            if action.triggers:
+                raise IllegalOperationError(
+                    f"Unable to delete action with ID `{action_id}` "
+                    f"as it is used by {len(action.triggers)} triggers."
+                )
+
+            session.delete(action)
+            session.commit()
 
     # ------------------------- API Keys -------------------------
 
@@ -4183,11 +4392,9 @@ class SqlZenStore(BaseZenStore):
             event_source: The event_source to create.
             session: The Session
 
-        Returns:
-            None
-
         Raises:
-            EventSourceExistsError: In case the event source already exists
+            EventSourceExistsError: If an event source with the given name
+                already exists.
         """
         existing_domain_event_source = session.exec(
             select(EventSourceSchema)
@@ -4203,7 +4410,6 @@ class SqlZenStore(BaseZenStore):
                 f"'{event_source.name}': Found an existing event source with "
                 f"the same name in the active workspace, '{workspace.name}'."
             )
-        return None
 
     def create_event_source(
         self, event_source: EventSourceRequest
@@ -4269,7 +4475,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_event_source(
                 event_source_id=event_source_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=True)
+            ).to_model(include_metadata=hydrate, include_resources=hydrate)
 
     def list_event_sources(
         self,
@@ -4333,6 +4539,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the event_source doesn't exist.
+            IllegalOperationError: If the event source can't be deleted
+                because it's used by triggers.
         """
         with Session(self.engine) as session:
             event_source = self._get_event_source(
@@ -4343,11 +4551,16 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to delete event_source with ID `{event_source_id}`: "
                     f"No event_source with this ID found."
                 )
+
+            # Prevent deletion of event source if it is used by a trigger
+            if event_source.triggers:
+                raise IllegalOperationError(
+                    f"Unable to delete event_source with ID `{event_source_id}`"
+                    f" as it is used by {len(event_source.triggers)} triggers."
+                )
+
             session.delete(event_source)
             session.commit()
-
-            # TODO: catch and throw proper error if it can't be deleted due to
-            #  not-null constraints on triggers
 
     # ----------------------------- Pipeline runs -----------------------------
 
@@ -6702,6 +6915,9 @@ class SqlZenStore(BaseZenStore):
                 name=stack.name,
                 description=stack.description,
                 components=defined_components,
+                labels=base64.b64encode(
+                    json.dumps(stack.labels).encode("utf-8")
+                ),
             )
 
             session.add(new_stack_schema)
@@ -6709,6 +6925,219 @@ class SqlZenStore(BaseZenStore):
             session.refresh(new_stack_schema)
 
             return new_stack_schema.to_model(include_metadata=True)
+
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Register a full stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The registered stack.
+
+        Raises:
+            ValueError: If the full stack creation fails, due to the corrupted
+                input.
+            RuntimeError: If the full stack creation fails, due to unforeseen
+                errors.
+        """
+        # For clean-up purposes, each created entity is tracked here
+        service_connectors_created_ids: List[UUID] = []
+        components_created_ids: List[UUID] = []
+
+        try:
+            # Validate the name of the new stack
+            validate_name(full_stack)
+
+            if full_stack.labels is None:
+                full_stack.labels = {}
+
+            full_stack.labels.update({"zenml:full_stack": True})
+
+            # Service Connectors
+            service_connectors: List[ServiceConnectorResponse] = []
+
+            for connector_id_or_info in full_stack.service_connectors:
+                # Fetch an existing service connector
+                if isinstance(connector_id_or_info, UUID):
+                    service_connectors.append(
+                        self.get_service_connector(connector_id_or_info)
+                    )
+                # Create a new service connector
+                else:
+                    connector_name = full_stack.name
+                    while True:
+                        try:
+                            service_connector_request = ServiceConnectorRequest(
+                                name=connector_name,
+                                connector_type=connector_id_or_info.type,
+                                auth_method=connector_id_or_info.auth_method,
+                                configuration=connector_id_or_info.configuration,
+                                user=full_stack.user,
+                                workspace=full_stack.workspace,
+                                labels={
+                                    k: str(v)
+                                    for k, v in full_stack.labels.items()
+                                },
+                            )
+                            service_connector_response = (
+                                self.create_service_connector(
+                                    service_connector=service_connector_request
+                                )
+                            )
+                            service_connectors.append(
+                                service_connector_response
+                            )
+                            service_connectors_created_ids.append(
+                                service_connector_response.id
+                            )
+                            break
+                        except EntityExistsError:
+                            connector_name = (
+                                f"{full_stack.name}-{random_str(4)}".lower()
+                            )
+                            continue
+
+            # Stack Components
+            components_mapping: Dict[StackComponentType, List[UUID]] = {}
+
+            for (
+                component_type,
+                component_info,
+            ) in full_stack.components.items():
+                # Fetch an existing component
+                if isinstance(component_info, UUID):
+                    component = self.get_stack_component(
+                        component_id=component_info
+                    )
+                # Create a new component
+                else:
+                    component_name = full_stack.name
+                    while True:
+                        try:
+                            component_request = ComponentRequest(
+                                name=component_name,
+                                type=component_type,
+                                flavor=component_info.flavor,
+                                configuration=component_info.configuration,
+                                user=full_stack.user,
+                                workspace=full_stack.workspace,
+                                labels=full_stack.labels,
+                            )
+                            component = self.create_stack_component(
+                                component=component_request
+                            )
+                            components_created_ids.append(component.id)
+                            break
+                        except EntityExistsError:
+                            component_name = (
+                                f"{full_stack.name}-{random_str(4)}".lower()
+                            )
+                            continue
+
+                    if component_info.service_connector_index is not None:
+                        service_connector = service_connectors[
+                            component_info.service_connector_index
+                        ]
+                        flavor_list = self.list_flavors(
+                            flavor_filter_model=FlavorFilter(
+                                name=component_info.flavor,
+                                type=component_type,
+                            )
+                        )
+                        assert len(flavor_list) == 1
+
+                        flavor_model = flavor_list[0]
+
+                        requirements = flavor_model.connector_requirements
+
+                        if not requirements:
+                            raise ValueError(
+                                f"The '{flavor_model.name}' implementation "
+                                "does not support using a service connector to "
+                                "connect to resources."
+                            )
+
+                        if component_info.service_connector_resource_id:
+                            resource_id = (
+                                component_info.service_connector_resource_id
+                            )
+                        else:
+                            resource_id = None
+                            resource_type = requirements.resource_type
+                            if requirements.resource_id_attr is not None:
+                                resource_id = component_info.configuration.get(
+                                    requirements.resource_id_attr
+                                )
+
+                        satisfied, msg = requirements.is_satisfied_by(
+                            connector=service_connector,
+                            component=component,
+                        )
+
+                        if not satisfied:
+                            raise ValueError(
+                                "Please pick a connector that is "
+                                "compatible with the component flavor and "
+                                "try again.."
+                            )
+
+                        if not resource_id:
+                            if service_connector.resource_id:
+                                resource_id = service_connector.resource_id
+                            elif service_connector.supports_instances:
+                                raise ValueError(
+                                    f"Multiple {resource_type} resources "
+                                    "are available for the selected "
+                                    "connector. Please use a `resource_id` "
+                                    "to configure a "
+                                    f"{resource_type} resource."
+                                )
+
+                        component_update = ComponentUpdate(
+                            connector=service_connector.id,
+                            connector_resource_id=resource_id,
+                        )
+                        self.update_stack_component(
+                            component_id=component.id,
+                            component_update=component_update,
+                        )
+
+                components_mapping[component_type] = [
+                    component.id,
+                ]
+
+            # Stack
+            stack_name = full_stack.name
+            while True:
+                try:
+                    stack_request = StackRequest(
+                        user=full_stack.user,
+                        workspace=full_stack.workspace,
+                        name=stack_name,
+                        description=full_stack.description,
+                        components=components_mapping,
+                        labels=full_stack.labels,
+                    )
+                    stack_response = self.create_stack(stack_request)
+
+                    break
+                except EntityExistsError:
+                    stack_name = f"{full_stack.name}-{random_str(4)}".lower()
+
+            return stack_response
+
+        except Exception as e:
+            for component_id in components_created_ids:
+                self.delete_stack_component(component_id=component_id)
+            for service_connector_id in service_connectors_created_ids:
+                self.delete_service_connector(
+                    service_connector_id=service_connector_id
+                )
+            raise RuntimeError(
+                f"Full Stack creation has failed {e}. Cleaning up the "
+                f"created entities."
+            ) from e
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -6985,6 +7414,69 @@ class SqlZenStore(BaseZenStore):
             return self._create_default_stack(
                 workspace_id=workspace.id,
             )
+
+    # ---------------- Stack deployments-----------------
+
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
+    def get_stack_deployment_url(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> Tuple[str, str]:
+        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
 
     # ----------------------------- Step runs -----------------------------
 
@@ -7478,19 +7970,19 @@ class SqlZenStore(BaseZenStore):
             The newly created trigger.
         """
         with Session(self.engine) as session:
-            # Verify that the given event_source exists
-            self._get_event_source(
-                event_source_id=trigger.event_source_id, session=session
-            )
+            # Verify that the given action exists
+            self._get_action(action_id=trigger.action_id, session=session)
 
-            # Verify that the given service account exists
-            self._get_account_schema(
-                account_name_or_id=trigger.service_account_id,
-                session=session,
-                service_account=True,
-            )
+            if trigger.event_source_id:
+                # Verify that the given event_source exists
+                self._get_event_source(
+                    event_source_id=trigger.event_source_id, session=session
+                )
 
-            # Verify that the trigger won't validate Unique
+            # Verify that the action exists
+            self._get_action(action_id=trigger.action_id, session=session)
+
+            # Verify that the trigger name is unique
             self._fail_if_trigger_with_name_exists(
                 trigger_name=trigger.name,
                 workspace_id=trigger.workspace,
@@ -7520,7 +8012,7 @@ class SqlZenStore(BaseZenStore):
             The trigger with the given ID.
 
         Raises:
-            KeyError: if the trigger doesn't exist.
+            KeyError: If the trigger doesn't exist.
         """
         with Session(self.engine) as session:
             trigger = session.exec(
@@ -7573,7 +8065,8 @@ class SqlZenStore(BaseZenStore):
             The updated trigger.
 
         Raises:
-            KeyError: if the trigger doesn't exist.
+            KeyError: If the trigger doesn't exist.
+            ValueError: If both a schedule and an event source are provided.
         """
         with Session(self.engine) as session:
             # Check if trigger with the domain key (name, workspace, owner)
@@ -7583,16 +8076,16 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_trigger is None:
                 raise KeyError(
-                    f"Unable to update trigger with id '{trigger_id}': Found no"
-                    f"existing trigger with this id."
+                    f"Unable to update trigger with id '{trigger_id}': No "
+                    f"existing trigger with this id exists."
                 )
 
-            if trigger_update.service_account_id:
-                # Verify that the given service account exists
-                self._get_account_schema(
-                    account_name_or_id=trigger_update.service_account_id,
-                    session=session,
-                    service_account=True,
+            # Verify that either a schedule or an event source is provided, not
+            # both
+            if existing_trigger.event_source and trigger_update.schedule:
+                raise ValueError(
+                    "Unable to update trigger: A trigger cannot have both a "
+                    "schedule and an event source."
                 )
 
             # In case of a renaming update, make sure no trigger already exists

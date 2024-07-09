@@ -40,6 +40,7 @@ from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
+    actions_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
@@ -62,6 +63,7 @@ from zenml.zen_server.routers import (
     service_connectors_endpoints,
     service_endpoints,
     stack_components_endpoints,
+    stack_deployment_endpoints,
     stacks_endpoints,
     steps_endpoints,
     tags_endpoints,
@@ -262,6 +264,7 @@ async def dashboard(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+app.include_router(actions_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
@@ -288,6 +291,7 @@ app.include_router(service_accounts_endpoints.router)
 app.include_router(service_connectors_endpoints.router)
 app.include_router(service_connectors_endpoints.types_router)
 app.include_router(service_endpoints.router)
+app.include_router(stack_deployment_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)

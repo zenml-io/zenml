@@ -40,7 +40,7 @@ class SkypilotLambdaOrchestratorSettings(SkypilotBaseOrchestratorSettings):
 
     _UNSUPPORTED_FEATURES = {
         "use_spot": "Spot instances not supported for Lambda orchestrator.",
-        "spot_recovery": "Spot recovery not supported for Lambda orchestrator.",
+        "job_recovery": "Job recovery not supported for Lambda orchestrator.",
         "image_id": "Custom image IDs not supported for Lambda orchestrator.",
         # Add other unsupported features as needed
     }

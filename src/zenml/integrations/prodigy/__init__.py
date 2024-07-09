@@ -29,6 +29,7 @@ class ProdigyIntegration(Integration):
         "prodigy",
         "urllib3<2",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["urllib3"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

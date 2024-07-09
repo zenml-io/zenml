@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import SettingsConfigDict
 
 from zenml.config.base_settings import BaseSettings
@@ -65,6 +65,23 @@ class PythonPackageInstaller(Enum):
     UV = "uv"
 
 
+class DockerBuildConfig(BaseModel):
+    """Configuration for a Docker build.
+
+    Attributes:
+        build_options: Additional options that will be passed unmodified to the
+            Docker build call when building an image. You can use this to for
+            example specify build args or a target stage. See
+            https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
+            for a full list of available options.
+        dockerignore: Path to a dockerignore file to use when building the
+            Docker image.
+    """
+
+    build_options: Dict[str, Any] = {}
+    dockerignore: Optional[str] = None
+
+
 class DockerSettings(BaseSettings):
     """Settings for building Docker images to run ZenML pipelines.
 
@@ -85,10 +102,11 @@ class DockerSettings(BaseSettings):
     Depending on the configuration of this object, requirements will be
     installed in the following order (each step optional):
     - The packages installed in your local python environment
-    - The packages specified via the `requirements` attribute
-    - The packages specified via the `required_integrations` and potentially
-      stack requirements
     - The packages specified via the `required_hub_plugins` attribute
+    - The packages required by the stack unless this is disabled by setting
+      `install_stack_requirements=False`.
+    - The packages specified via the `required_integrations`
+    - The packages specified via the `requirements` attribute
 
     Attributes:
         parent_image: Full name of the Docker image that should be
@@ -116,18 +134,17 @@ class DockerSettings(BaseSettings):
         build_context_root: Build context root for the Docker build, only used
             when the `dockerfile` attribute is set. If this is left empty, the
             build context will only contain the Dockerfile.
-        build_options: Additional options that will be passed unmodified to the
-            Docker build call when building an image using the specified
-            `dockerfile`. You can use this to for example specify build
-            args or a target stage. See
-            https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
-            for a full list of available options.
+        parent_image_build_config: Configuration for the parent image build.
+        build_options: DEPRECATED, use parent_image_build_config.build_options
+            instead.
         skip_build: If set to `True`, the parent image will be used directly to
             run the steps of your pipeline.
         target_repository: Name of the Docker repository to which the
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
-            therefore **not** include any registry.
+            therefore **not** include any registry. If not specified, the
+            default repository name configured in the container registry
+            stack component settings will be used.
         python_package_installer: The package installer to use for python
             packages.
         python_package_installer_args: Arguments to pass to the python package
@@ -158,8 +175,8 @@ class DockerSettings(BaseSettings):
         apt_packages: APT packages to install inside the Docker image.
         environment: Dictionary of environment variables to set inside the
             Docker image.
-        dockerignore: Path to a dockerignore file to use when building the
-            Docker image.
+        build_config: Configuration for the main image build.
+        dockerignore: DEPRECATED, use build_config.dockerignore instead.
         copy_files: DEPRECATED, use the `source_files` attribute instead.
         copy_global_config: DEPRECATED/UNUSED.
         user: If not `None`, will set the user, make it owner of the `/app`
@@ -184,8 +201,9 @@ class DockerSettings(BaseSettings):
     dockerfile: Optional[str] = None
     build_context_root: Optional[str] = None
     build_options: Dict[str, Any] = {}
+    parent_image_build_config: Optional[DockerBuildConfig] = None
     skip_build: bool = False
-    target_repository: str = "zenml"
+    target_repository: Optional[str] = None
     python_package_installer: PythonPackageInstaller = (
         PythonPackageInstaller.PIP
     )
@@ -205,6 +223,7 @@ class DockerSettings(BaseSettings):
     copy_files: bool = True
     copy_global_config: bool = True
     user: Optional[str] = None
+    build_config: Optional[DockerBuildConfig] = None
 
     source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
 

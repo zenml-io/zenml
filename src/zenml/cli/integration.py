@@ -263,13 +263,6 @@ def install(
         # no integrations specified, use all registered integrations
         integrations = set(integration_registry.integrations.keys())
 
-        # TODO: remove once python 3.11 gcp integration issue is resolved
-        if sys.version_info >= (3, 11) and "gcp" in integrations:
-            warning(
-                "We are aware of dependency resolution issues when using "
-                "Python 3.11.x with the GCP integration. For now, please use "
-                "Python 3.10 or lower instead while we work on a fix."
-            )
         for i in ignore_integration:
             try:
                 integrations.remove(i)
@@ -278,6 +271,14 @@ def install(
                     f"Integration {i} does not exist. Available integrations: "
                     f"{list(integration_registry.integrations.keys())}"
                 )
+    # TODO: remove once python 3.8 is deprecated
+    if sys.version_info.minor == 8 and "tensorflow" in integrations:
+        warning(
+            "Python 3.8 with TensorFlow is not fully compatible with "
+            "Pydantic 2 requirements. Consider upgrading to a "
+            "higher Python version if you would like to use the "
+            "Tensorflow integration."
+        )
 
     requirements = []
     integrations_to_install = []
@@ -360,7 +361,7 @@ def uninstall(
         try:
             if integration_registry.is_installed(integration_name):
                 requirements += (
-                    integration_registry.select_integration_requirements(
+                    integration_registry.select_uninstall_requirements(
                         integration_name
                     )
                 )

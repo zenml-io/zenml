@@ -13,12 +13,18 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 
+import datetime
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.enums import StackDeploymentProvider
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -42,6 +48,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -50,6 +57,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -111,6 +119,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -260,6 +269,87 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The updated server settings.
+        """
+
+    # -------------------- Actions  --------------------
+
+    @abstractmethod
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+
+    @abstractmethod
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+
+        Raises:
+            KeyError: If the action doesn't exist.
+        """
+
+    @abstractmethod
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all actions matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+
+        Raises:
+            KeyError: If the action doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+
+        Raises:
+            KeyError: If the action doesn't exist.
         """
 
     # -------------------- API Keys --------------------
@@ -2082,6 +2172,24 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Create a full stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The created stack.
+
+        Raises:
+            EntityExistsError: If a service connector with the same name
+                already exists.
+            StackComponentExistsError: If a stack component with the same name
+                already exists.
+            StackExistsError: If a stack with the same name already exists.
+        """
+
+    @abstractmethod
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
 
@@ -2141,6 +2249,62 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the stack doesn't exist.
+        """
+
+    # ---------------- Stack deployments-----------------
+
+    @abstractmethod
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Returns:
+            Information about the stack deployment provider.
+        """
+
+    @abstractmethod
+    def get_stack_deployment_url(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> Tuple[str, str]:
+        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Returns:
+            The URL to deploy the ZenML stack to the specified cloud provider
+            and a text description of the URL.
+        """
+
+    @abstractmethod
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime.datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Returns:
+            The ZenML stack that was deployed and registered or None if the
+            stack was not found.
         """
 
     # -------------------- Step runs --------------------

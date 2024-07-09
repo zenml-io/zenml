@@ -33,7 +33,7 @@ class MlflowIntegration(Integration):
     NAME = MLFLOW
 
     REQUIREMENTS = [
-        "mlflow>=2.1.1,<=2.12.2",
+        "mlflow>=2.1.1,<=2.14.1",
         "mlserver>=1.3.3",
         "mlserver-mlflow>=1.3.3",
         # TODO: remove this requirement once rapidjson is fixed
@@ -45,8 +45,10 @@ class MlflowIntegration(Integration):
         # This downgrades pydantic to v1 even though mlflow does not have
         # any issues with v2. This is why we have to pin it here so a downgrade
         # will not happen.
-        "pydantic>=2.7.0,<2.8.0"
+        "pydantic>=2.7.0,<2.8.0",
     ]
+
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["python-rapidjson", "pydantic"]
 
     @classmethod
     def activate(cls) -> None:

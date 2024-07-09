@@ -15,6 +15,7 @@
 
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -47,6 +48,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    ACTIONS,
     API,
     API_KEY_ROTATE,
     API_KEYS,
@@ -64,6 +66,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
+    FULL_STACK,
     GET_OR_CREATE,
     INFO,
     LOGIN,
@@ -90,24 +93,32 @@ from zenml.constants import (
     SERVICE_CONNECTOR_VERIFY,
     SERVICE_CONNECTORS,
     SERVICES,
+    STACK,
     STACK_COMPONENTS,
+    STACK_DEPLOYMENT,
     STACKS,
     STEPS,
     TAGS,
     TRIGGER_EXECUTIONS,
     TRIGGERS,
+    URL,
     USERS,
     VERSION_1,
     WORKSPACES,
 )
 from zenml.enums import (
     OAuthGrantTypes,
+    StackDeploymentProvider,
     StoreType,
 )
 from zenml.exceptions import AuthorizationException, MethodNotAllowedError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -134,6 +145,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -142,6 +154,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -203,6 +216,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -479,6 +493,100 @@ class RestZenStore(BaseZenStore):
         """
         response_body = self.put(SERVER_SETTINGS, body=settings_update)
         return ServerSettingsResponse.model_validate(response_body)
+
+    # -------------------- Actions  --------------------
+
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+        return self._create_resource(
+            resource=action,
+            route=ACTIONS,
+            response_model=ActionResponse,
+        )
+
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+        """
+        return self._get_resource(
+            resource_id=action_id,
+            route=ACTIONS,
+            response_model=ActionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all actions matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=ACTIONS,
+            response_model=ActionResponse,
+            filter_model=action_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+        """
+        return self._update_resource(
+            resource_id=action_id,
+            resource_update=action_update,
+            route=ACTIONS,
+            response_model=ActionResponse,
+        )
+
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+        """
+        self._delete_resource(
+            resource_id=action_id,
+            route=ACTIONS,
+        )
 
     # ----------------------------- API Keys -----------------------------
 
@@ -1434,14 +1542,14 @@ class RestZenStore(BaseZenStore):
         run_configuration = run_configuration or PipelineRunConfiguration()
         try:
             response_body = self.post(
-                f"{PIPELINE_BUILDS}/{build_id}/run", body=run_configuration
+                f"{PIPELINE_BUILDS}/{build_id}/runs", body=run_configuration
             )
         except MethodNotAllowedError as e:
             raise RuntimeError(
                 "Running a build is not supported for this server."
             ) from e
 
-        return PipelineRunResponse.parse_obj(response_body)
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------------- Pipeline Deployments --------------------------
 
@@ -1538,7 +1646,7 @@ class RestZenStore(BaseZenStore):
 
         try:
             response_body = self.post(
-                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/run",
+                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
                 body=run_configuration,
             )
         except MethodNotAllowedError as e:
@@ -1546,7 +1654,7 @@ class RestZenStore(BaseZenStore):
                 "Running a deployment is not supported for this server."
             ) from e
 
-        return PipelineRunResponse.parse_obj(response_body)
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------- Event Sources  --------------------
 
@@ -2645,6 +2753,23 @@ class RestZenStore(BaseZenStore):
             response_model=StackResponse,
         )
 
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Register a full-stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The registered stack.
+        """
+        assert full_stack.workspace is not None
+
+        return self._create_resource(
+            resource=full_stack,
+            response_model=StackResponse,
+            route=f"{WORKSPACES}/{str(full_stack.workspace)}{FULL_STACK}",
+        )
+
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
 
@@ -2713,6 +2838,97 @@ class RestZenStore(BaseZenStore):
             resource_id=stack_id,
             route=STACKS,
         )
+
+    # ---------------- Stack deployments-----------------
+
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Returns:
+            Information about the stack deployment provider.
+        """
+        body = self.get(
+            f"{STACK_DEPLOYMENT}{INFO}",
+            params={"provider": provider.value},
+        )
+        return StackDeploymentInfo.model_validate(body)
+
+    def get_stack_deployment_url(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> Tuple[str, str]:
+        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Returns:
+            The URL to deploy the ZenML stack to the specified cloud provider
+            and a text description of the URL.
+
+        Raises:
+            ValueError: If the response body is not as expected.
+        """
+        params = {
+            "provider": provider.value,
+            "stack_name": stack_name,
+        }
+        if location:
+            params["location"] = location
+        body = self.get(f"{STACK_DEPLOYMENT}{URL}", params=params)
+
+        if not isinstance(body, list) or len(body) != 2:
+            raise ValueError(
+                "Bad response body received from the stack deployment URL "
+                "endpoint."
+            )
+        return body[0], body[1]
+
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Returns:
+            The ZenML stack that was deployed and registered or None if the
+            stack was not found.
+        """
+        params = {
+            "provider": provider.value,
+            "stack_name": stack_name,
+        }
+        if location:
+            params["location"] = location
+        if date_start:
+            params["date_start"] = str(date_start)
+        body = self.get(
+            f"{STACK_DEPLOYMENT}{STACK}",
+            params=params,
+        )
+        if body:
+            return DeployedStack.model_validate(body)
+
+        return None
 
     # ----------------------------- Step runs -----------------------------
 

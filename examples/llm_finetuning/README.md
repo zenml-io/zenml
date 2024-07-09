@@ -34,6 +34,11 @@ pip install -r requirements.txt
 
 ### 👷 Combined feature engineering and finetuning pipeline
 
+> [!WARNING]  
+> All steps of this pipeline have a `clean_gpu_memory(force=True)` at the beginning. This is used to ensure that the memory is properly cleared after previous steps.
+>
+> This functionality might affect other GPU processes running on the same environment, so if you don't want to clean the GPU memory between the steps, you can delete those utility calls from all steps.
+
 The easiest way to get started with just a single command is to run the finetuning pipeline with the `orchestrator_finetune.yaml` configuration file, which will do data preparation, model finetuning, evaluation with [Rouge](https://huggingface.co/spaces/evaluate-metric/rouge) and promotion:
 
 ```shell
@@ -49,6 +54,17 @@ When running the pipeline like this, the trained model will be stored in the Zen
     </a>
   <br/>
 </div>
+
+### ⚡ Accelerate your finetuning
+
+Do you want to benefit from multi-GPU-training with Distributed Data Parallelism (DDP)? Then you can use other configuration files prepared for this purpose.
+For example, `orchestrator_finetune.yaml` can run a finetuning of the [`microsoft/phi-2`](https://huggingface.co/microsoft/phi-2) powered by [Hugging Face Accelerate](https://huggingface.co/docs/accelerate/en/index) on all GPUs available in the environment. To do so, just call:
+
+```shell
+python run.py --config orchestrator_finetune.yaml --accelerate
+```
+
+Under the hood, the finetuning step will spin up the accelerated job using the step code, which will run on all available GPUs.
 
 ## ☁️ Running with a step operator in the stack
 
@@ -80,26 +96,26 @@ The project loosely follows [the recommended ZenML project structure](https://do
 
 ```
 .
-├── configs                         # pipeline configuration files
-│   ├── orchestrator_finetune.yaml  # default local or remote orchestrator
-│   └── remote_finetune.yaml        # default step operator configuration
+├── configs                                       # pipeline configuration files
+│   ├── orchestrator_finetune.yaml                # default local or remote orchestrator configuration
+│   └── remote_finetune.yaml                      # default step operator configuration
 ├── materializers
-│   └── directory_materializer.py   # custom materializer to push whole directories to the artifact store and back
-├── pipelines                       # `zenml.pipeline` implementations
-│   └── train.py                    # Finetuning and evaluation pipeline
-├── steps                           # logically grouped `zenml.steps` implementations
-│   ├── evaluate_model.py           # evaluate base and finetuned models using Rouge metrics
-│   ├── finetune.py                 # finetune the base model
-│   ├── prepare_datasets.py         # load and tokenize dataset
-│   └── promote.py                  # promote good models to target environment
-├── utils                           # utility functions
-│   ├── callbacks.py                # custom callbacks
-│   ├── cuda.py                     # helpers for CUDA
-│   ├── loaders.py                  # loaders for models and data
-│   ├── logging.py                  # logging helpers
-│   └── tokenizer.py                # load and tokenize
+│   └── directory_materializer.py                 # custom materializer to push whole directories to the artifact store and back
+├── pipelines                                     # `zenml.pipeline` implementations
+│   └── train.py                                  # Finetuning and evaluation pipeline
+├── steps                                         # logically grouped `zenml.steps` implementations
+│   ├── evaluate_model.py                         # evaluate base and finetuned models using Rouge metrics
+│   ├── finetune.py                               # finetune the base model
+│   ├── log_metadata.py                           # helper step to ensure that model metadata is always logged
+│   ├── prepare_datasets.py                       # load and tokenize dataset
+│   └── promote.py                                # promote good models to target environment
+├── utils                                         # utility functions
+│   ├── callbacks.py                              # custom callbacks
+│   ├── loaders.py                                # loaders for models and data
+│   ├── logging.py                                # logging helpers
+│   └── tokenizer.py                              # load and tokenize
 ├── .dockerignore
-├── README.md                       # this file
-├── requirements.txt                # extra Python dependencies 
-└── run.py                          # CLI tool to run pipelines on ZenML Stack
+├── README.md                                     # this file
+├── requirements.txt                              # extra Python dependencies 
+└── run.py                                        # CLI tool to run pipelines on ZenML Stack
 ```

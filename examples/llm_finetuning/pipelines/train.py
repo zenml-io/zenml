@@ -16,7 +16,13 @@
 #
 
 
-from steps import evaluate_model, finetune, prepare_data, promote
+from steps import (
+    evaluate_model,
+    finetune,
+    log_metadata_from_step_artifact,
+    prepare_data,
+    promote,
+)
 
 from zenml import pipeline
 
@@ -29,7 +35,7 @@ def llm_peft_full_finetune(
     load_in_8bit: bool = False,
     load_in_4bit: bool = False,
 ):
-    """Pipeline for finetuning an LLM with peft.
+    """Pipeline for finetuning an LLM with PEFT.
 
     It will run the following steps:
 
@@ -38,28 +44,21 @@ def llm_peft_full_finetune(
     - evaluate_model: evaluate the base and finetuned model
     - promote: promote the model to the target stage, if evaluation was successful
     """
+    if not load_in_8bit and not load_in_4bit:
+        raise ValueError(
+            "At least one of `load_in_8bit` and `load_in_4bit` must be True."
+        )
+    if load_in_4bit and load_in_8bit:
+        raise ValueError(
+            "Only one of `load_in_8bit` and `load_in_4bit` can be True."
+        )
+
     datasets_dir = prepare_data(
         base_model_id=base_model_id,
         system_prompt=system_prompt,
         use_fast=use_fast,
     )
-    ft_model_dir = finetune(
-        base_model_id,
-        datasets_dir,
-        use_fast=use_fast,
-        load_in_4bit=load_in_4bit,
-        load_in_8bit=load_in_8bit,
-    )
-    evaluate_model(
-        base_model_id,
-        system_prompt,
-        datasets_dir,
-        ft_model_dir,
-        use_fast=use_fast,
-        load_in_8bit=load_in_8bit,
-        load_in_4bit=load_in_4bit,
-        id="evaluate_finetuned",
-    )
+
     evaluate_model(
         base_model_id,
         system_prompt,
@@ -70,4 +69,41 @@ def llm_peft_full_finetune(
         load_in_4bit=load_in_4bit,
         id="evaluate_base",
     )
-    promote(after=["evaluate_finetuned", "evaluate_base"])
+    log_metadata_from_step_artifact(
+        "evaluate_base",
+        "base_model_rouge_metrics",
+        after=["evaluate_base"],
+        id="log_metadata_evaluation_base",
+    )
+
+    ft_model_dir = finetune(
+        base_model_id,
+        datasets_dir,
+        use_fast=use_fast,
+        load_in_8bit=load_in_8bit,
+        load_in_4bit=load_in_4bit,
+    )
+
+    evaluate_model(
+        base_model_id,
+        system_prompt,
+        datasets_dir,
+        ft_model_dir,
+        use_fast=use_fast,
+        load_in_8bit=load_in_8bit,
+        load_in_4bit=load_in_4bit,
+        id="evaluate_finetuned",
+    )
+    log_metadata_from_step_artifact(
+        "evaluate_finetuned",
+        "finetuned_model_rouge_metrics",
+        after=["evaluate_finetuned"],
+        id="log_metadata_evaluation_finetuned",
+    )
+
+    promote(
+        after=[
+            "log_metadata_evaluation_finetuned",
+            "log_metadata_evaluation_base",
+        ]
+    )
