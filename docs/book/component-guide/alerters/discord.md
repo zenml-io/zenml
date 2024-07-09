@@ -2,6 +2,11 @@
 description: Sending automated alerts to a Discord channel.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Discord Alerter
 
 The `DiscordAlerter` enables you to send messages to a dedicated Discord channel 

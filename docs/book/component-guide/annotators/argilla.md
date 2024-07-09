@@ -2,6 +2,11 @@
 description: Annotating data using Argilla.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Argilla
 
 [Argilla](https://github.com/argilla-io/argilla) is an open-source data curation

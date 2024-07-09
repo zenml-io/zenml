@@ -2,6 +2,11 @@
 description: Building container images for your ML workflow.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Image Builders
 
 The image builder is an essential part of most remote MLOps stacks. It is used to build container images such that your

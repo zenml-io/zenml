@@ -2,6 +2,11 @@
 description: A simple guide to quickly set up a minimal stack on GCP.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Set up a minimal GCP stack
 
 {% hint style="warning" %}
