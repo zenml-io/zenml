@@ -57,6 +57,8 @@ ZENML_SERVER_API_TOKEN=
 To configure your deployment, you need to simply copy these values and paste
 them <walkthrough-editor-select-regex filePath="gcp-gar-gcs-vertex-deploy.sh" regex="### BEGIN CONFIGURATION(\n|.)*?END CONFIGURATION ###">into the stack deployment script</walkthrough-editor-select-regex>.
 
+⚠️ Please make sure the `ZENML_SERVER_API_TOKEN` value is not broken into multiple lines as this will lead to errors !
+
 ## Deploy the ZenML stack
 
 Run the deployment script to deploy the stack with Deployment Manager:

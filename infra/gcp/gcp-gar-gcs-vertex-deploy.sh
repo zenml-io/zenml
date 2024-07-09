@@ -57,6 +57,7 @@ services=(
     "artifactregistry.googleapis.com"
     "storage-api.googleapis.com"
     "ml.googleapis.com"
+    "aiplatform.googleapis.com"
     "cloudfunctions.googleapis.com"
     "cloudbuild.googleapis.com"
     "cloudresourcemanager.googleapis.com"
@@ -128,6 +129,7 @@ if [ $DEPLOYMENT_EXIT_CODE -ne 0 ]; then
     echo
     echo "gcloud deployment-manager deployments delete $ZENML_STACK_NAME"
     echo "./gcp-gar-gcs-vertex-deploy.sh"
+    echo
     exit 1
 fi
 
@@ -136,6 +138,7 @@ fi
 echo "##################################################"
 echo
 echo
-echo "Congratulations ! The ZenML stack has been deployed. You can access it at the following URL:"
+echo "Congratulations ! The ZenML Deployment Manager stack has been deployed. You can access it at the following URL:"
 echo
 echo "https://console.cloud.google.com/dm/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
+echo
