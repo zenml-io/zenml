@@ -18,23 +18,12 @@
 
 from typing import Optional
 
-from databricks.sdk.service.serving import (
-    ServedModelInputWorkloadSize,
-    ServedModelInputWorkloadType,
-)
+import pandas as pd
 from typing_extensions import Annotated
 
-from zenml import ArtifactConfig, get_step_context, step
-from zenml.client import Client
-from zenml.integrations.databricks.services.databricks_deployment import (
-    DatabricksDeploymentConfig,
-    DatabricksDeploymentService,
-)
+from zenml import get_step_context, step
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
-)
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    mlflow_model_registry_deployer_step,
 )
 from zenml.logger import get_logger
 
@@ -42,12 +31,9 @@ logger = get_logger(__name__)
 
 
 @step
-def deployment_deploy() -> (
-    Annotated[
-        Optional[MLFlowDeploymentService],
-        ArtifactConfig(name="mlflow_deployment", is_deployment_artifact=True),
-    ]
-):
+def inference_predict(
+    dataset_inf: pd.DataFrame,
+) -> Annotated[pd.Series, "predictions"]:
     """Predictions step.
 
     This is an example of a predictions step that takes the data in and returns
@@ -69,23 +55,23 @@ def deployment_deploy() -> (
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     model = get_step_context().model
 
-    # deploy predictor service
-    zenml_client = Client()
-    model_deployer = zenml_client.active_stack.model_deployer
-    databricks_deployment_config = DatabricksDeploymentConfig(
-        model_name=model.name,
-        model_version=model.version,
-        workload_size=ServedModelInputWorkloadSize.SMALL,
-        workload_type=ServedModelInputWorkloadType.CPU,
-        scale_to_zero_enabled=True,
-        endpoint_secret_name="databricks_token",
+    # get predictor
+    predictor_service: Optional[MLFlowDeploymentService] = model.load_artifact(
+        "mlflow_deployment"
     )
-    deployment_service = model_deployer.deploy_model(
-        config=databricks_deployment_config,
-        service_type=DatabricksDeploymentService.SERVICE_TYPE,
-        timeout=1200,
-    )
-    logger.info(
-        f"The deployed service info: {model_deployer.get_model_server_info(deployment_service)}"
-    )
-    return deployment_service
+    if predictor_service is not None:
+        # run prediction from service
+        predictions = predictor_service.predict(request=dataset_inf)
+    else:
+        logger.warning(
+            "Predicting from loaded model instead of deployment service "
+            "as the orchestrator is not local."
+        )
+        # run prediction from memory
+        predictor = model.load_artifact("model")
+        predictions = predictor.predict(dataset_inf)
+
+    predictions = pd.Series(predictions, name="predicted")
+    ### YOUR CODE ENDS HERE ###
+
+    return predictions

@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
-from .batch_inference import e2e_use_case_batch_inference
-from .training import e2e_use_case_training
-from .deployment import e2e_use_case_deployment
+from .compute_performance_metrics_on_current_data import (
+    compute_performance_metrics_on_current_data,
+)
+from .promote_with_metric_compare import promote_with_metric_compare

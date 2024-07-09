@@ -16,6 +16,5 @@
 #
 
 
-from .batch_inference import e2e_use_case_batch_inference
-from .training import e2e_use_case_training
-from .deployment import e2e_use_case_deployment
+from .model_evaluator import model_evaluator
+from .model_trainer import model_trainer

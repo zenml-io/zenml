@@ -16,6 +16,5 @@
 #
 
 
-from .batch_inference import e2e_use_case_batch_inference
-from .training import e2e_use_case_training
-from .deployment import e2e_use_case_deployment
+from .hp_tuning_select_best_model import hp_tuning_select_best_model
+from .hp_tuning_single_search import hp_tuning_single_search

@@ -16,6 +16,4 @@
 #
 
 
-from .batch_inference import e2e_use_case_batch_inference
-from .training import e2e_use_case_training
-from .deployment import e2e_use_case_deployment
+from .notify_on import notify_on_failure, notify_on_success

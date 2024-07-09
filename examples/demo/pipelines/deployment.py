@@ -15,7 +15,23 @@
 # limitations under the License.
 #
 
+from steps import deployment_deploy, notify_on_failure, notify_on_success
 
-from .batch_inference import e2e_use_case_batch_inference
-from .training import e2e_use_case_training
-from .deployment import e2e_use_case_deployment
+from zenml import pipeline
+
+
+@pipeline(on_failure=notify_on_failure)
+def e2e_use_case_deployment():
+    """
+    Model deployment pipeline.
+
+    This is a pipeline deploys trained model for future inference.
+    """
+    ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
+    # Link all the steps together by calling them and passing the output
+    # of one step as the input of the next step.
+    ########## Deployment stage ##########
+    deployment_deploy()
+
+    notify_on_success(after=["deployment_deploy"])
+    ### YOUR CODE ENDS HERE ###

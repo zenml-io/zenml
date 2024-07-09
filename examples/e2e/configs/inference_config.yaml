@@ -21,11 +21,9 @@ settings:
     required_integrations:
       - aws
       - evidently
-      - kubeflow
-      - kubernetes
       - mlflow
       - sklearn
-      - slack
+      - databricks
 
 # configuration of steps  
 steps:
