@@ -15,6 +15,7 @@
 import pathlib
 import sys
 from contextlib import ExitStack as does_not_raise
+from types import BuiltinFunctionType, FunctionType
 from uuid import uuid4
 
 import pytest
@@ -22,7 +23,12 @@ import pytest
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
-from zenml.config.source import CodeRepositorySource, Source, SourceType
+from zenml.config.source import (
+    CodeRepositorySource,
+    DistributionPackageSource,
+    Source,
+    SourceType,
+)
 from zenml.utils import code_repository_utils, source_utils
 
 CURRENT_MODULE_PARENT_DIR = str(pathlib.Path(__file__).resolve().parent)
@@ -54,6 +60,22 @@ def test_basic_source_loading():
         module="zenml.client", attribute=None, type=SourceType.INTERNAL
     )
     assert source_utils.load(client_module_source) is client
+
+    function_type_source = Source(
+        module=FunctionType.__module__,
+        attribute=FunctionType.__name__,
+        type=SourceType.BUILTIN,
+    )
+    assert source_utils.load(function_type_source) is FunctionType
+
+    builtin_function_type_source = Source(
+        module=BuiltinFunctionType.__module__,
+        attribute=BuiltinFunctionType.__name__,
+        type=SourceType.BUILTIN,
+    )
+    assert (
+        source_utils.load(builtin_function_type_source) is BuiltinFunctionType
+    )
 
     with pytest.raises(ModuleNotFoundError):
         source_utils.load("zenml.not_a_module.Class")
@@ -116,12 +138,22 @@ def test_basic_source_resolving(mocker):
         attribute=None,
         type=SourceType.INTERNAL,
     )
-    assert source_utils.resolve(pytest) == Source(
+    assert source_utils.resolve(pytest) == DistributionPackageSource(
         module=pytest.__name__,
         attribute=None,
         package_name="pytest",
         version=pytest.__version__,
         type=SourceType.DISTRIBUTION_PACKAGE,
+    )
+    assert source_utils.resolve(type(empty_function)) == Source(
+        module=FunctionType.__module__,
+        attribute=FunctionType.__name__,
+        type=SourceType.BUILTIN,
+    )
+    assert source_utils.resolve(type(len)) == Source(
+        module=BuiltinFunctionType.__module__,
+        attribute=BuiltinFunctionType.__name__,
+        type=SourceType.BUILTIN,
     )
 
     # User sources

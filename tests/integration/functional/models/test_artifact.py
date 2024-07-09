@@ -104,7 +104,7 @@ def test_artifact_versioning(one_step_pipeline):
     pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
     pipe.run(enable_cache=False)
     artifact = pipe.model.last_run.steps["step_"].output
-    assert artifact.version == "1"
+    assert str(artifact.version) == "1"
 
     # Manual version should be applied
     pipe: BasePipeline = one_step_pipeline(manual_string_version_step)
@@ -116,19 +116,19 @@ def test_artifact_versioning(one_step_pipeline):
     pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
     pipe.run(enable_cache=False)
     artifact = pipe.model.last_run.steps["step_"].output
-    assert artifact.version == "2"
+    assert str(artifact.version) == "2"
 
     # Manual int version should be applied too
     pipe: BasePipeline = one_step_pipeline(manual_int_version_step)
     pipe.run(enable_cache=False)
     artifact = pipe.model.last_run.steps["step_"].output
-    assert artifact.version == "10"
+    assert str(artifact.version) == "10"
 
     # Next auto-incremented artifact version is 11
     pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
     pipe.run(enable_cache=False)
     artifact = pipe.model.last_run.steps["step_"].output
-    assert artifact.version == "11"
+    assert str(artifact.version) == "11"
 
 
 @step

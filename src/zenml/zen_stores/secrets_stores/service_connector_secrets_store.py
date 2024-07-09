@@ -25,7 +25,7 @@ from typing import (
 )
 from uuid import uuid4
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.logger import get_logger
@@ -36,6 +36,7 @@ from zenml.service_connectors.service_connector import ServiceConnector
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -54,12 +55,14 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
     auth_method: str
     auth_config: Dict[str, Any] = Field(default_factory=dict)
 
-    @root_validator(pre=True)
-    def validate_auth_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def validate_auth_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Convert the authentication configuration if given in JSON format.
 
         Args:
-            values: The configuration values.
+            data: The configuration values.
 
         Returns:
             The validated configuration values.
@@ -68,15 +71,15 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
             ValueError: If the authentication configuration is not a valid
                 JSON object.
         """
-        if isinstance(values.get("auth_config"), str):
+        if isinstance(data.get("auth_config"), str):
             try:
-                values["auth_config"] = json.loads(values["auth_config"])
+                data["auth_config"] = json.loads(data["auth_config"])
             except json.JSONDecodeError as e:
                 raise ValueError(
                     f"The authentication configuration is not a valid JSON "
                     f"object: {e}"
                 )
-        return values
+        return data
 
 
 class ServiceConnectorSecretsStore(BaseSecretsStore):

@@ -41,8 +41,10 @@ class DeepchecksIntegration(Integration):
         "pandas<2.0.0",
         "opencv-python==4.5.5.64",  # pin to same version
         "opencv-python-headless==4.5.5.64",  # pin to same version
+        "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
     APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas","torchvision","tenacity"]
 
     @staticmethod
     def activate() -> None:

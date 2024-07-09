@@ -38,7 +38,7 @@ def test_input_resolution(
             index=1, max_size=50, total_pages=1, total=1, items=[step_run]
         ),
     )
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",
@@ -69,7 +69,7 @@ def test_input_resolution_with_missing_step_run(mocker):
             index=1, max_size=50, total_pages=1, total=0, items=[]
         ),
     )
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",
@@ -102,7 +102,7 @@ def test_input_resolution_with_missing_artifact(mocker, create_step_run):
             index=1, max_size=50, total_pages=1, total=1, items=[step_run]
         ),
     )
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",
@@ -147,7 +147,7 @@ def test_input_resolution_fetches_all_run_steps(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
         side_effect=return_values,
     )
-    step = Step.parse_obj(
+    step = Step.model_validate(
         {
             "spec": {
                 "source": "module.step_class",

@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Service class."""
 
+import json
 import time
 from abc import abstractmethod
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -26,23 +28,28 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
-    cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from pydantic import Field
+from pydantic import ConfigDict
 
 from zenml.console import console
 from zenml.logger import get_logger
 from zenml.services.service_endpoint import BaseServiceEndpoint
-from zenml.services.service_registry import ServiceRegistry
+from zenml.services.service_monitor import HTTPEndpointHealthMonitor
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
-from zenml.utils.typed_model import BaseTypedModel, BaseTypedModelMeta
+from zenml.utils import source_utils
+from zenml.utils.typed_model import BaseTypedModel
 
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound=Callable[..., Any])
+
+if TYPE_CHECKING:
+    from zenml.models.v2.core.service import ServiceResponse
+
+ZENM_ENDPOINT_PREFIX = "zenml-"
 
 
 def update_service_status(
@@ -108,107 +115,50 @@ class ServiceConfig(BaseTypedModel):
     description: str = ""
     pipeline_name: str = ""
     pipeline_step_name: str = ""
-    run_name: str = ""
+    model_name: str = ""
+    model_version: str = ""
+    service_name: str = ""
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
-class BaseServiceMeta(BaseTypedModelMeta):
-    """Metaclass responsible for registering different BaseService subclasses.
-
-    This metaclass has two main responsibilities:
-    1. register all BaseService types in the service registry. This is relevant
-    when services are deserialized and instantiated from their JSON or dict
-    representation, because their type needs to be known beforehand.
-    2. ensuring BaseService instance uniqueness by enforcing that no two
-    service instances have the same UUID value. Implementing this at the
-    constructor level guarantees that deserializing a service instance from
-    a JSON representation multiple times always returns the same service object.
-    """
-
-    def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
-    ) -> "BaseServiceMeta":
-        """Creates a BaseService class and registers it in the `ServiceRegistry`.
+    def __init__(self, **data: Any):
+        """Initialize the service configuration.
 
         Args:
-            name: name of the class.
-            bases: tuple of base classes.
-            dct: dictionary of class attributes.
-
-        Returns:
-            the created BaseServiceMeta class.
+            **data: keyword arguments.
 
         Raises:
-            TypeError: if the 'service_type' reserved attribute name is used.
+            ValueError: if neither 'name' nor 'model_name' is set.
         """
-        service_type = dct.get("SERVICE_TYPE", None)
-
-        # register only classes of concrete service implementations
-        if service_type:
-            # add the service type class attribute to the class as a regular
-            # immutable attribute to include it in the JSON representation
-            if "service_type" in dct:
-                raise TypeError(
-                    "`service_type` is a reserved attribute name for BaseService "
-                    "subclasses"
-                )
-            dct.setdefault("__annotations__", dict())["service_type"] = (
-                ServiceType
+        super().__init__(**data)
+        if self.name or self.model_name:
+            self.service_name = data.get(
+                "service_name",
+                f"{ZENM_ENDPOINT_PREFIX}{self.name or self.model_name}",
             )
-            dct["service_type"] = Field(service_type, allow_mutation=False)
+        else:
+            raise ValueError("Either 'name' or 'model_name' must be set.")
 
-        cls = cast(Type["BaseService"], super().__new__(mcs, name, bases, dct))
-
-        # register only classes of concrete service implementations
-        if service_type:
-            # register the service type in the service registry
-            ServiceRegistry().register_service_type(cls)
-        return cls
-
-    def __call__(cls, *args: Any, **kwargs: Any) -> "BaseServiceMeta":
-        """Validate the creation of a service.
-
-        Args:
-            *args: positional arguments.
-            **kwargs: keyword arguments.
+    def get_service_labels(self) -> Dict[str, str]:
+        """Get the service labels.
 
         Returns:
-            the created BaseServiceMeta class.
-
-        Raises:
-            AttributeError: if the service UUID is untyped.
-            ValueError: if the service UUID is not a UUID type.
+            a dictionary of service labels.
         """
-        if not getattr(cls, "SERVICE_TYPE", None):
-            raise AttributeError(
-                f"Untyped service instances are not allowed. Please set the "
-                f"SERVICE_TYPE class attribute for {cls}."
-            )
-        uuid = kwargs.get("uuid", None)
-        if uuid:
-            if isinstance(uuid, str):
-                uuid = UUID(uuid)
-            if not isinstance(uuid, UUID):
-                raise ValueError(
-                    f"The `uuid` argument for {cls} must be a UUID instance or a "
-                    f"string representation of a UUID."
-                )
-
-            # if a service instance with the same UUID is already registered,
-            # return the existing instance rather than the newly created one
-            existing_service = ServiceRegistry().get_service(uuid)
-            if existing_service:
-                logger.debug(
-                    f"Reusing existing service '{existing_service}' "
-                    f"instead of creating a new service with the same UUID."
-                )
-                return cast("BaseServiceMeta", existing_service)
-
-        svc = cast("BaseService", super().__call__(*args, **kwargs))
-        ServiceRegistry().register_service(svc)
-        return cast("BaseServiceMeta", svc)
+        labels = {}
+        for k, v in self.model_dump().items():
+            label = f"zenml_{k}".upper()
+            labels[label] = str(v)
+        return labels
 
 
-class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
+class BaseService(BaseTypedModel):
     """Base service class.
 
     This class implements generic functionality concerning the life-cycle
@@ -227,12 +177,12 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
 
     SERVICE_TYPE: ClassVar[ServiceType]
 
-    uuid: UUID = Field(default_factory=uuid4, allow_mutation=False)
+    uuid: UUID
     admin_state: ServiceState = ServiceState.INACTIVE
     config: ServiceConfig
     status: ServiceStatus
     # TODO [ENG-703]: allow multiple endpoints per service
-    endpoint: Optional[BaseServiceEndpoint]
+    endpoint: Optional[BaseServiceEndpoint] = None
 
     def __init__(
         self,
@@ -245,6 +195,49 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
         super().__init__(**attrs)
         self.config.name = self.config.name or self.__class__.__name__
+
+    @classmethod
+    def from_model(cls, model: "ServiceResponse") -> "BaseService":
+        """Loads a service from a model.
+
+        Args:
+            model: The ServiceResponse to load from.
+
+        Returns:
+            The loaded service object.
+
+        Raises:
+            ValueError: if the service source is not found in the model.
+        """
+        if not model.service_source:
+            raise ValueError("Service source not found in the model.")
+        class_: Type[BaseService] = source_utils.load_and_validate_class(
+            source=model.service_source, expected_class=BaseService
+        )
+        return class_(
+            uuid=model.id,
+            admin_state=model.admin_state,
+            config=model.config,
+            status=model.status,
+            service_type=model.service_type.model_dump(),
+            endpoint=model.endpoint,
+        )
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "BaseTypedModel":
+        """Loads a service from a JSON string.
+
+        Args:
+            json_str: the JSON string to load from.
+
+        Returns:
+            The loaded service object.
+        """
+        service_dict = json.loads(json_str)
+        class_: Type[BaseService] = source_utils.load_and_validate_class(
+            source=service_dict["type"], expected_class=BaseService
+        )
+        return class_.from_dict(service_dict)
 
     @abstractmethod
     def check_status(self) -> Tuple[ServiceState, str]:
@@ -449,19 +442,15 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             timeout: amount of time to wait for the service to become active.
                 If set to 0, the method will return immediately after checking
                 the service status.
-
-        Raises:
-            RuntimeError: if the service cannot be started
         """
         with console.status(f"Starting service '{self}'.\n"):
             self.admin_state = ServiceState.ACTIVE
             self.provision()
-            if timeout > 0:
-                if not self.poll_service_status(timeout):
-                    raise RuntimeError(
-                        f"Failed to start service {self}\n"
-                        + self.get_service_status_message()
-                    )
+            if timeout > 0 and not self.poll_service_status(timeout):
+                logger.error(
+                    f"Failed to start service {self}\n"
+                    + self.get_service_status_message()
+                )
 
     @update_service_status(
         pre_status=ServiceState.PENDING_SHUTDOWN,
@@ -476,9 +465,6 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
                 the service status.
             force: if True, the service will be stopped even if it is not
                 currently running.
-
-        Raises:
-            RuntimeError: if the service cannot be stopped
         """
         with console.status(f"Stopping service '{self}'.\n"):
             self.admin_state = ServiceState.INACTIVE
@@ -486,11 +472,39 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             if timeout > 0:
                 self.poll_service_status(timeout)
                 if not self.is_stopped:
-                    raise RuntimeError(
+                    logger.error(
                         f"Failed to stop service {self}. Last state: "
                         f"'{self.status.state.value}'. Last error: "
                         f"'{self.status.last_error}'"
                     )
+
+    def get_prediction_url(self) -> Optional[str]:
+        """Gets the prediction URL for the endpoint.
+
+        Returns:
+            the prediction URL for the endpoint
+        """
+        prediction_url = None
+        if isinstance(self, BaseDeploymentService) and self.prediction_url:
+            prediction_url = self.prediction_url
+        elif self.endpoint:
+            prediction_url = (
+                self.endpoint.status.uri if self.endpoint.status else None
+            )
+        return prediction_url
+
+    def get_healthcheck_url(self) -> Optional[str]:
+        """Gets the healthcheck URL for the endpoint.
+
+        Returns:
+            the healthcheck URL for the endpoint
+        """
+        return (
+            self.endpoint.monitor.get_healthcheck_uri(self.endpoint)
+            if (self.endpoint and self.endpoint.monitor)
+            and isinstance(self.endpoint.monitor, HTTPEndpointHealthMonitor)
+            else None
+        )
 
     def __repr__(self) -> str:
         """String representation of the service.
@@ -508,14 +522,10 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
         return self.__repr__()
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # validate attribute assignments
-        validate_assignment = True
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+        validate_assignment=True,
+    )
 
 
 class BaseDeploymentService(BaseService):
@@ -527,5 +537,14 @@ class BaseDeploymentService(BaseService):
 
         Returns:
             the prediction URL for the endpoint
+        """
+        return None
+
+    @property
+    def healthcheck_url(self) -> Optional[str]:
+        """Gets the healthcheck URL for the endpoint.
+
+        Returns:
+            the healthcheck URL for the endpoint
         """
         return None

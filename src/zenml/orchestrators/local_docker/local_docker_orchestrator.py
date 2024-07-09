@@ -14,15 +14,13 @@
 """Implementation of the ZenML local Docker orchestrator."""
 
 import copy
-import json
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 from uuid import uuid4
 
 from docker.errors import ContainerError
-from pydantic import validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
@@ -38,7 +36,7 @@ from zenml.orchestrators import (
     ContainerizedOrchestrator,
 )
 from zenml.stack import Stack, StackValidator
-from zenml.utils import string_utils
+from zenml.utils import docker_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -117,9 +115,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        from docker.client import DockerClient
+        docker_client = docker_utils._try_get_docker_client_from_env()
 
-        docker_client = DockerClient.from_env()
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
         # Add the local stores path as a volume mount
@@ -208,42 +205,8 @@ class LocalDockerOrchestratorSettings(BaseSettings):
 
     run_args: Dict[str, Any] = {}
 
-    @validator("run_args", pre=True)
-    def _convert_json_string(
-        cls, value: Union[None, str, Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
-        """Converts potential JSON strings passed via the CLI to dictionaries.
 
-        Args:
-            value: The value to convert.
-
-        Returns:
-            The converted value.
-
-        Raises:
-            TypeError: If the value is not a `str`, `Dict` or `None`.
-            ValueError: If the value is an invalid json string or a json string
-                that does not decode into a dictionary.
-        """
-        if isinstance(value, str):
-            try:
-                dict_ = json.loads(value)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{value}'") from e
-
-            if not isinstance(dict_, Dict):
-                raise ValueError(
-                    f"Json string '{value}' did not decode into a dictionary."
-                )
-
-            return dict_
-        elif isinstance(value, Dict) or value is None:
-            return value
-        else:
-            raise TypeError(f"{value} is not a json string or a dictionary.")
-
-
-class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class LocalDockerOrchestratorConfig(
     BaseOrchestratorConfig, LocalDockerOrchestratorSettings
 ):
     """Local Docker orchestrator config."""

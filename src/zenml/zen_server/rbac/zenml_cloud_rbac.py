@@ -13,13 +13,9 @@
 #  permissions and limitations under the License.
 """Cloud RBAC implementation."""
 
-import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Set, Tuple
 
-import requests
-from pydantic import BaseModel, validator
-from requests.adapters import HTTPAdapter, Retry
-
+from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.rbac.models import Action, Resource
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.utils import server_config
@@ -28,7 +24,6 @@ if TYPE_CHECKING:
     from zenml.models import UserResponse
 
 
-ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
 PERMISSIONS_ENDPOINT = "/rbac/check_permissions"
 ALLOWED_RESOURCE_IDS_ENDPOINT = "/rbac/allowed_resource_ids"
 RESOURCE_MEMBERSHIP_ENDPOINT = "/rbac/resource_members"
@@ -39,7 +34,7 @@ SERVER_ID = server_config().external_server_id
 
 
 def _convert_to_cloud_resource(resource: Resource) -> str:
-    """Convert a resource to a ZenML Cloud API resource.
+    """Convert a resource to a ZenML Pro Management Plane resource.
 
     Args:
         resource: The resource to convert.
@@ -79,59 +74,12 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
         return Resource(type=resource_type_and_id)
 
 
-class ZenMLCloudRBACConfiguration(BaseModel):
-    """ZenML Cloud RBAC configuration."""
-
-    api_url: str
-
-    oauth2_client_id: str
-    oauth2_client_secret: str
-    oauth2_audience: str
-    auth0_domain: str
-
-    @validator("api_url")
-    def _strip_trailing_slashes_url(cls, url: str) -> str:
-        """Strip any trailing slashes on the API URL.
-
-        Args:
-            url: The API URL.
-
-        Returns:
-            The API URL with potential trailing slashes removed.
-        """
-        return url.rstrip("/")
-
-    @classmethod
-    def from_environment(cls) -> "ZenMLCloudRBACConfiguration":
-        """Get the RBAC configuration from environment variables.
-
-        Returns:
-            The RBAC configuration.
-        """
-        env_config: Dict[str, Any] = {}
-        for k, v in os.environ.items():
-            if v == "":
-                continue
-            if k.startswith(ZENML_CLOUD_RBAC_ENV_PREFIX):
-                env_config[k[len(ZENML_CLOUD_RBAC_ENV_PREFIX) :].lower()] = v
-
-        return ZenMLCloudRBACConfiguration(**env_config)
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extra attributes from configs of previous ZenML versions to
-        # permit downgrading
-        extra = "allow"
-
-
 class ZenMLCloudRBAC(RBACInterface):
-    """RBAC implementation that uses the ZenML Cloud API as a backend."""
+    """RBAC implementation that uses the ZenML Pro Management Plane as a backend."""
 
     def __init__(self) -> None:
-        """Initialize the RBAC component."""
-        self._config = ZenMLCloudRBACConfiguration.from_environment()
-        self._session: Optional[requests.Session] = None
+        """Initialize the object."""
+        self._connection = cloud_connection()
 
     def check_permissions(
         self, user: "UserResponse", resources: Set[Resource], action: Action
@@ -155,7 +103,7 @@ class ZenMLCloudRBAC(RBACInterface):
             # Service accounts have full permissions for now
             return {resource: True for resource in resources}
 
-        # At this point it's a regular user, which in the ZenML cloud with RBAC
+        # At this point it's a regular user, which in a ZenML Pro with RBAC
         # enabled is always authenticated using external authentication
         assert user.external_user_id
 
@@ -166,7 +114,9 @@ class ZenMLCloudRBAC(RBACInterface):
             ],
             "action": str(action),
         }
-        response = self._get(endpoint=PERMISSIONS_ENDPOINT, params=params)
+        response = self._connection.get(
+            endpoint=PERMISSIONS_ENDPOINT, params=params
+        )
         value = response.json()
 
         assert isinstance(value, dict)
@@ -195,7 +145,7 @@ class ZenMLCloudRBAC(RBACInterface):
             # Service accounts have full permissions for now
             return True, []
 
-        # At this point it's a regular user, which in the ZenML cloud with RBAC
+        # At this point it's a regular user, which in the ZenML Pro with RBAC
         # enabled is always authenticated using external authentication
         assert user.external_user_id
         params = {
@@ -203,7 +153,7 @@ class ZenMLCloudRBAC(RBACInterface):
             "resource": _convert_to_cloud_resource(resource),
             "action": str(action),
         }
-        response = self._get(
+        response = self._connection.get(
             endpoint=ALLOWED_RESOURCE_IDS_ENDPOINT, params=params
         )
         response_json = response.json()
@@ -233,130 +183,4 @@ class ZenMLCloudRBAC(RBACInterface):
             "resource": _convert_to_cloud_resource(resource),
             "actions": [str(action) for action in actions],
         }
-        self._post(endpoint=RESOURCE_MEMBERSHIP_ENDPOINT, data=data)
-
-    def _get(self, endpoint: str, params: Dict[str, Any]) -> requests.Response:
-        """Send a GET request using the active session.
-
-        Args:
-            endpoint: The endpoint to send the request to. This will be appended
-                to the base URL.
-            params: Parameters to include in the request.
-
-        Raises:
-            RuntimeError: If the request failed.
-
-        Returns:
-            The response.
-        """
-        url = self._config.api_url + endpoint
-
-        response = self.session.get(url=url, params=params, timeout=7)
-        if response.status_code == 401:
-            # Refresh the auth token and try again
-            self._clear_session()
-            response = self.session.get(url=url, params=params, timeout=7)
-
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            raise RuntimeError(
-                f"Failed while trying to contact RBAC service: {e}"
-            )
-
-        return response
-
-    def _post(
-        self,
-        endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-    ) -> requests.Response:
-        """Send a POST request using the active session.
-
-        Args:
-            endpoint: The endpoint to send the request to. This will be appended
-                to the base URL.
-            params: Parameters to include in the request.
-            data: Data to include in the request.
-
-        Raises:
-            RuntimeError: If the request failed.
-
-        Returns:
-            The response.
-        """
-        url = self._config.api_url + endpoint
-
-        response = self.session.post(
-            url=url, params=params, json=data, timeout=7
-        )
-        if response.status_code == 401:
-            # Refresh the auth token and try again
-            self._clear_session()
-            response = self.session.post(
-                url=url, params=params, json=data, timeout=7
-            )
-
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            raise RuntimeError(
-                f"Failed while trying to contact RBAC service: {e}"
-            )
-
-        return response
-
-    @property
-    def session(self) -> requests.Session:
-        """Authenticate to the ZenML Cloud API.
-
-        Returns:
-            A requests session with the authentication token.
-        """
-        if self._session is None:
-            self._session = requests.Session()
-            token = self._fetch_auth_token()
-            self._session.headers.update({"Authorization": "Bearer " + token})
-
-            retries = Retry(total=5, backoff_factor=0.1)
-            self._session.mount("https://", HTTPAdapter(max_retries=retries))
-
-        return self._session
-
-    def _clear_session(self) -> None:
-        """Clear the authentication session."""
-        self._session = None
-
-    def _fetch_auth_token(self) -> str:
-        """Fetch an auth token for the Cloud API from auth0.
-
-        Raises:
-            RuntimeError: If the auth token can't be fetched.
-
-        Returns:
-            Auth token.
-        """
-        # Get an auth token from auth0
-        auth0_url = f"https://{self._config.auth0_domain}/oauth/token"
-        headers = {"content-type": "application/x-www-form-urlencoded"}
-        payload = {
-            "client_id": self._config.oauth2_client_id,
-            "client_secret": self._config.oauth2_client_secret,
-            "audience": self._config.oauth2_audience,
-            "grant_type": "client_credentials",
-        }
-        try:
-            response = requests.post(
-                auth0_url, headers=headers, data=payload, timeout=7
-            )
-            response.raise_for_status()
-        except Exception as e:
-            raise RuntimeError(f"Error fetching auth token from auth0: {e}")
-
-        access_token = response.json().get("access_token", "")
-
-        if not access_token or not isinstance(access_token, str):
-            raise RuntimeError("Could not fetch auth token from auth0.")
-
-        return str(access_token)
+        self._connection.post(endpoint=RESOURCE_MEMBERSHIP_ENDPOINT, data=data)

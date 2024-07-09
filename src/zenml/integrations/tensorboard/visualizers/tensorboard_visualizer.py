@@ -113,6 +113,7 @@ class TensorboardVisualizer:
                     service = TensorboardService(
                         TensorboardServiceConfig(
                             logdir=logdir,
+                            name=f"zenml-tensorboard-{logdir}",
                         )
                     )
                     service.start(timeout=60)
@@ -193,19 +194,19 @@ def get_step(pipeline_name: str, step_name: str) -> "StepRunResponse":
     Raises:
         RuntimeError: If the step is not found.
     """
-    pipeline = Client().get_pipeline(pipeline_name)
-    if pipeline is None:
+    runs = Client().list_pipeline_runs(pipeline_name=pipeline_name)
+    if runs.total == 0:
         raise RuntimeError(
-            f"No pipeline with name `{pipeline_name}` was found"
+            f"No pipeline runs for pipeline `{pipeline_name}` were found"
         )
 
-    last_run = pipeline.runs[0]
-    step = last_run.steps[step_name]
-    if step is None:
+    last_run = runs[0]
+    if step_name not in last_run.steps:
         raise RuntimeError(
             f"No pipeline step with name `{step_name}` was found in "
             f"pipeline `{pipeline_name}`"
         )
+    step = last_run.steps[step_name]
     return step
 
 

@@ -14,16 +14,15 @@
 """Models representing stacks."""
 
 import json
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
-from sqlalchemy import and_
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from sqlmodel import and_
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.internal import server_owned_request_model
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -32,8 +31,11 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.component import ComponentResponse
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
 
 # ------------------ Request Model ------------------
 
@@ -58,6 +60,10 @@ class StackRequest(WorkspaceScopedRequest):
         title="A mapping of stack component types to the actual"
         "instances of components of this type.",
     )
+    labels: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The stack labels.",
+    )
 
     @property
     def is_valid(self) -> bool:
@@ -74,19 +80,44 @@ class StackRequest(WorkspaceScopedRequest):
         )
 
 
-@server_owned_request_model
 class InternalStackRequest(StackRequest):
     """Internal stack request model."""
 
-    pass
+    user: Optional[UUID] = Field(  # type: ignore[assignment]
+        title="The id of the user that created this resource.",
+        default=None,
+    )
 
 
 # ------------------ Update Model ------------------
 
 
-@update_model
-class StackUpdate(StackRequest):
+class StackUpdate(BaseUpdate):
     """Update model for stacks."""
+
+    name: Optional[str] = Field(
+        title="The name of the stack.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    description: Optional[str] = Field(
+        title="The description of the stack",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    stack_spec_path: Optional[str] = Field(
+        title="The path to the stack spec used for mlstacks deployments.",
+        default=None,
+    )
+    components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
+        title="A mapping of stack component types to the actual"
+        "instances of components of this type.",
+        default=None,
+    )
+    labels: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The stack labels.",
+    )
 
 
 # ------------------ Response Model ------------------
@@ -111,6 +142,10 @@ class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     stack_spec_path: Optional[str] = Field(
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
+    )
+    labels: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The stack labels.",
     )
 
 
@@ -167,7 +202,9 @@ class StackResponse(
                 flavor=component.flavor,
             )
             configuration = json.loads(
-                component.get_metadata().json(include={"configuration"})
+                component.get_metadata().model_dump_json(
+                    include={"configuration"}
+                )
             )
             component_dict.update(configuration)
 
@@ -190,6 +227,15 @@ class StackResponse(
         """
         metadata = super().get_analytics_metadata()
         metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
+
+        if self.labels is not None:
+            metadata.update(
+                {
+                    label[6:]: value
+                    for label, value in self.labels.items()
+                    if label.startswith("zenml:")
+                }
+            )
         return metadata
 
     @property
@@ -218,6 +264,15 @@ class StackResponse(
             the value of the property.
         """
         return self.get_metadata().components
+
+    @property
+    def labels(self) -> Optional[Dict[str, Any]]:
+        """The `labels` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().labels
 
 
 # ------------------ Filter Model ------------------
@@ -248,18 +303,22 @@ class StackFilter(WorkspaceScopedFilter):
         default=None, description="Description of the stack"
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the stack"
+        default=None,
+        description="Workspace of the stack",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the stack"
+        default=None,
+        description="User of the stack",
+        union_mode="left_to_right",
     )
     component_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Component in the stack"
+        default=None,
+        description="Component in the stack",
+        union_mode="left_to_right",
     )
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         Returns:
@@ -273,7 +332,7 @@ class StackFilter(WorkspaceScopedFilter):
         )
 
         if self.component_id:
-            component_id_filter = and_(  # type: ignore[type-var]
+            component_id_filter = and_(
                 StackCompositionSchema.stack_id == StackSchema.id,
                 StackCompositionSchema.component_id == self.component_id,
             )

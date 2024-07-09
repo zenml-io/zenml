@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML model deployers."""
 
+import contextlib
 from abc import ABC, abstractmethod
 from typing import (
-    TYPE_CHECKING,
+    Any,
     ClassVar,
     Dict,
     Generator,
@@ -27,19 +28,16 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.constants import METADATA_DEPLOYED_MODEL_URL
 from zenml.enums import StackComponentType
-from zenml.metadata.metadata_types import Uri
+from zenml.logger import get_logger
 from zenml.services import BaseService, ServiceConfig
 from zenml.services.service import BaseDeploymentService
+from zenml.services.service_type import ServiceType
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 
-if TYPE_CHECKING:
-    from zenml.config.step_run_info import StepRunInfo
-    from zenml.metadata.metadata_types import MetadataType
-
+logger = get_logger(__name__)
 
 DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
@@ -125,11 +123,120 @@ class BaseModelDeployer(StackComponent, ABC):
 
         return model_deployer
 
-    @abstractmethod
     def deploy_model(
         self,
         config: ServiceConfig,
+        service_type: ServiceType,
         replace: bool = False,
+        continuous_deployment_mode: bool = False,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+    ) -> BaseService:
+        """Deploy a model.
+
+        the deploy_model method is the main entry point for deploying models
+        using the model deployer. It is used to deploy a model to a model server
+        instance that is running on a remote serving platform or service. The
+        method is responsible for detecting if there is an existing model server
+        instance running serving one or more previous versions of the same model
+        and deploying the model to the serving platform or updating the existing
+        model server instance to include the new model version. The method
+        returns a Service object that is a representation of the external model
+        server instance. The Service object must implement basic operational
+        state tracking and lifecycle management operations for the model server
+        (e.g. start, stop, etc.).
+
+        Args:
+            config: Custom Service configuration parameters for the model
+                deployer. Can include the pipeline name, the run id, the step
+                name, the model name, the model uri, the model type etc.
+            replace: If True, it will replace any existing model server instances
+                that serve the same model. If False, it does not replace any
+                existing model server instance.
+            continuous_deployment_mode: If True, it will replace any existing
+                model server instances that serve the same model, regardless of
+                the configuration. If False, it will only replace existing model
+                server instances that serve the same model if the configuration
+                is exactly the same.
+            timeout: The maximum time in seconds to wait for the model server
+                to start serving the model.
+            service_type: The type of the service to deploy. If not provided,
+                the default service type of the model deployer will be used.
+
+        Raises:
+            RuntimeError: if the model deployment fails.
+
+        Returns:
+            The deployment Service object.
+        """
+        # Instantiate the client
+        client = Client()
+        if not continuous_deployment_mode:
+            # Find existing model server
+            services = self.find_model_server(
+                config=config.model_dump(),
+                service_type=service_type,
+            )
+            if len(services) > 0:
+                logger.info(
+                    f"Existing model server found for {config.name or config.model_name} with the exact same configuration. Returning the existing service named {services[0].config.service_name}."
+                )
+                return services[0]
+        else:
+            # Find existing model server
+            services = self.find_model_server(
+                pipeline_name=config.pipeline_name,
+                pipeline_step_name=config.pipeline_step_name,
+                model_name=config.model_name,
+                service_type=service_type,
+            )
+            if len(services) > 0:
+                logger.info(
+                    f"Existing model server found for {config.pipeline_name} and {config.pipeline_step_name}, since continuous deployment mode is enabled, replacing the existing service named {services[0].config.service_name}."
+                )
+                service = services[0]
+                self.delete_model_server(service.uuid)
+        logger.info(
+            f"Deploying model server for {config.model_name} with the following configuration: {config.model_dump()}"
+        )
+        service_response = client.create_service(
+            config=config,
+            service_type=service_type,
+            model_version_id=get_model_version_id_if_exists(
+                config.model_name, config.model_version
+            ),
+        )
+        try:
+            service = self.perform_deploy_model(
+                id=service_response.id,
+                config=config,
+                timeout=timeout,
+            )
+        except Exception as e:
+            client.delete_service(service_response.id)
+            raise RuntimeError(
+                f"Failed to deploy model server for {config.model_name}: {e}"
+            ) from e
+        # Update the service in store
+        client.update_service(
+            id=service.uuid,
+            name=service.config.service_name,
+            service_source=service.model_dump().get("type"),
+            admin_state=service.admin_state,
+            status=service.status.model_dump(),
+            endpoint=service.endpoint.model_dump()
+            if service.endpoint
+            else None,
+            # labels=service.config.get_service_labels()  # TODO: fix labels in services and config
+            prediction_url=service.get_prediction_url(),
+            health_check_url=service.get_healthcheck_url(),
+        )
+        return service
+
+    @abstractmethod
+    def perform_deploy_model(
+        self,
+        id: UUID,
+        config: ServiceConfig,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
         """Abstract method to deploy a model.
@@ -146,12 +253,10 @@ class BaseModelDeployer(StackComponent, ABC):
         start, stop, etc.)
 
         Args:
+            id: UUID of the service that was originally used to deploy the model.
             config: Custom Service configuration parameters for the model
                 deployer. Can include the pipeline name, the run id, the step
                 name, the model name, the model uri, the model type etc.
-            replace: If True, it will replace any existing model server instances
-                that serve the same model. If False, it does not replace any
-                existing model server instance.
             timeout: The maximum time in seconds to wait for the model server
                 to start serving the model.
 
@@ -173,17 +278,20 @@ class BaseModelDeployer(StackComponent, ABC):
             A dictionary containing the relevant model server properties.
         """
 
-    @abstractmethod
     def find_model_server(
         self,
-        running: bool = False,
+        config: Optional[Dict[str, Any]] = None,
+        running: Optional[bool] = None,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
+        service_name: Optional[str] = None,
         model_name: Optional[str] = None,
-        model_uri: Optional[str] = None,
-        model_type: Optional[str] = None,
+        model_version: Optional[str] = None,
+        service_type: Optional[ServiceType] = None,
+        type: Optional[str] = None,
+        flavor: Optional[str] = None,
+        pipeline_run_id: Optional[str] = None,
     ) -> List[BaseService]:
         """Abstract method to find one or more a model servers that match the given criteria.
 
@@ -191,23 +299,91 @@ class BaseModelDeployer(StackComponent, ABC):
             running: If true, only running services will be returned.
             service_uuid: The UUID of the service that was originally used
                 to deploy the model.
-            pipeline_name: name of the pipeline that the deployed model was part
-                of.
-            run_name: Name of the pipeline run which the deployed model was
-                part of.
-            pipeline_step_name: the name of the pipeline model deployment step
-                that deployed the model.
-            model_name: the name of the deployed model.
-            model_uri: URI of the deployed model.
-            model_type: the implementation specific type/format of the deployed
-                model.
+            pipeline_step_name: The name of the pipeline step that was originally used
+                to deploy the model.
+            pipeline_name: The name of the pipeline that was originally used to deploy
+                the model from the model registry.
+            model_name: The name of the model that was originally used to deploy
+                the model from the model registry.
+            model_version: The version of the model that was originally used to
+                deploy the model from the model registry.
+            service_type: The type of the service to find.
+            type: The type of the service to find.
+            flavor: The flavor of the service to find.
+            pipeline_run_id: The UUID of the pipeline run that was originally used
+                to deploy the model.
+            config: Custom Service configuration parameters for the model
+                deployer. Can include the pipeline name, the run id, the step
+                name, the model name, the model uri, the model type etc.
+            service_name: The name of the service to find.
 
         Returns:
             One or more Service objects representing model servers that match
             the input search criteria.
         """
+        client = Client()
+        service_responses = client.list_services(
+            sort_by="desc:created",
+            id=service_uuid,
+            running=running,
+            service_name=service_name,
+            pipeline_name=pipeline_name,
+            pipeline_step_name=pipeline_step_name,
+            model_version_id=get_model_version_id_if_exists(
+                model_name, model_version
+            ),
+            pipeline_run_id=pipeline_run_id,
+            config=config,
+            type=type or service_type.type if service_type else None,
+            flavor=flavor or service_type.flavor if service_type else None,
+            hydrate=True,
+        )
+        services = []
+        for service_response in service_responses.items:
+            if not service_response.service_source:
+                client.delete_service(service_response.id)
+                continue
+            service = BaseDeploymentService.from_model(service_response)
+            service.update_status()
+            if service.status.model_dump() != service_response.status:
+                client.update_service(
+                    id=service.uuid,
+                    admin_state=service.admin_state,
+                    status=service.status.model_dump(),
+                    endpoint=service.endpoint.model_dump()
+                    if service.endpoint
+                    else None,
+                )
+            if running and not service.is_running:
+                logger.warning(
+                    f"Service {service.uuid} is in an unexpected state. "
+                    f"Expected running={running}, but found running={service.is_running}."
+                )
+                continue
+            services.append(service)
+        return services
 
     @abstractmethod
+    def perform_stop_model(
+        self,
+        service: BaseService,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+        force: bool = False,
+    ) -> BaseService:
+        """Abstract method to stop a model server.
+
+        This operation should be reversible. A stopped model server should still
+        show up in the list of model servers returned by `find_model_server` and
+        it should be possible to start it again by calling `start_model_server`.
+
+        Args:
+            service: The service to stop.
+            timeout: timeout in seconds to wait for the service to stop. If
+                set to 0, the method will return immediately after
+                deprovisioning the service, without waiting for it to stop.
+            force: if True, force the service to stop.
+        """
+
     def stop_model_server(
         self,
         uuid: UUID,
@@ -226,9 +402,43 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 deprovisioning the service, without waiting for it to stop.
             force: if True, force the service to stop.
+
+        Raises:
+            RuntimeError: if the model server is not found.
         """
+        client = Client()
+        try:
+            service = self.find_model_server(service_uuid=uuid)[0]
+            updated_service = self.perform_stop_model(service, timeout, force)
+            client.update_service(
+                id=updated_service.uuid,
+                admin_state=updated_service.admin_state,
+                status=updated_service.status.model_dump(),
+                endpoint=updated_service.endpoint.model_dump()
+                if updated_service.endpoint
+                else None,
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to stop model server with UUID {uuid}: {e}"
+            ) from e
 
     @abstractmethod
+    def perform_start_model(
+        self,
+        service: BaseService,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+    ) -> BaseService:
+        """Abstract method to start a model server.
+
+        Args:
+            service: The service to start.
+            timeout: timeout in seconds to wait for the service to start. If
+                set to 0, the method will return immediately after
+                provisioning the service, without waiting for it to become
+                active.
+        """
+
     def start_model_server(
         self,
         uuid: UUID,
@@ -242,9 +452,47 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 provisioning the service, without waiting for it to become
                 active.
+
+        Raises:
+            RuntimeError: if the model server is not found.
         """
+        client = Client()
+        try:
+            service = self.find_model_server(service_uuid=uuid)[0]
+            updated_service = self.perform_start_model(service, timeout)
+            client.update_service(
+                id=updated_service.uuid,
+                admin_state=updated_service.admin_state,
+                status=updated_service.status.model_dump(),
+                endpoint=updated_service.endpoint.model_dump()
+                if updated_service.endpoint
+                else None,
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to start model server with UUID {uuid}: {e}"
+            ) from e
 
     @abstractmethod
+    def perform_delete_model(
+        self,
+        service: BaseService,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+        force: bool = False,
+    ) -> None:
+        """Abstract method to delete a model server.
+
+        This operation is irreversible. A deleted model server must no longer
+        show up in the list of model servers returned by `find_model_server`.
+
+        Args:
+            service: The service to delete.
+            timeout: timeout in seconds to wait for the service to stop. If
+                set to 0, the method will return immediately after
+                deprovisioning the service, without waiting for it to stop.
+            force: if True, force the service to stop.
+        """
+
     def delete_model_server(
         self,
         uuid: UUID,
@@ -262,7 +510,19 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 deprovisioning the service, without waiting for it to stop.
             force: if True, force the service to stop.
+
+        Raises:
+            RuntimeError: if the model server is not found.
         """
+        client = Client()
+        try:
+            service = self.find_model_server(service_uuid=uuid)[0]
+            self.perform_delete_model(service, timeout, force)
+            client.delete_service(uuid)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to delete model server with UUID {uuid}: {e}"
+            ) from e
 
     def get_model_server_logs(
         self,
@@ -288,32 +548,21 @@ class BaseModelDeployer(StackComponent, ABC):
             raise RuntimeError(f"No model server found with UUID {uuid}")
         return services[0].get_logs(follow=follow, tail=tail)
 
-    def get_step_run_metadata(
-        self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
-        """Get component- and step-specific metadata after a step ran.
-
-        For model deployers, this extracts the prediction URL of the deployed
-        model.
+    def load_service(
+        self,
+        service_id: UUID,
+    ) -> BaseService:
+        """Load a service from a URI.
 
         Args:
-            info: Info about the step that was executed.
+            service_id: The ID of the service to load.
 
         Returns:
-            A dictionary of metadata.
+            The loaded service.
         """
-        existing_services = self.find_model_server(
-            run_name=info.run_name,
-        )
-        if existing_services:
-            existing_service = existing_services[0]
-            if (
-                isinstance(existing_service, BaseDeploymentService)
-                and existing_service.is_running
-            ):
-                deployed_model_url = existing_service.prediction_url
-                return {METADATA_DEPLOYED_MODEL_URL: Uri(deployed_model_url)}
-        return {}
+        client = Client()
+        service = client.get_service(service_id)
+        return BaseDeploymentService.from_model(service)
 
 
 class BaseModelDeployerFlavor(Flavor):
@@ -341,3 +590,26 @@ class BaseModelDeployerFlavor(Flavor):
     @abstractmethod
     def implementation_class(self) -> Type[BaseModelDeployer]:
         """The class that implements the model deployer."""
+
+
+def get_model_version_id_if_exists(
+    model_name: Optional[str],
+    model_version: Optional[str],
+) -> Optional[UUID]:
+    """Get the model version id if it exists.
+
+    Args:
+        model_name: The name of the model.
+        model_version: The version of the model.
+
+    Returns:
+        The model version id if it exists.
+    """
+    client = Client()
+    if model_name:
+        with contextlib.suppress(KeyError):
+            return client.get_model_version(
+                model_name_or_id=model_name,
+                model_version_name_or_number_or_id=model_version,
+            ).id
+    return None

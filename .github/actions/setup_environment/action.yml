@@ -109,7 +109,7 @@ runs:
       shell: bash
       run: choco install terraform -y
     - name: Install Terraform (Mac)
-      if: ${{ inputs.os == 'macos-latest' }}
+      if: ${{ inputs.os == 'macos-13' || inputs.os == 'macos-latest' }}
       shell: bash
       run: |
         brew tap hashicorp/tap
@@ -117,10 +117,10 @@ runs:
     - name: Install ZenML and dependencies
       shell: bash
       run: |
-        scripts/install-zenml-dev.sh --integrations ${{ inputs.install_integrations }}
+        scripts/install-zenml-dev.sh --system --integrations ${{ inputs.install_integrations }}
     - name: Check Python environment
       shell: bash
       run: |-
         zenml integration list
         uv pip list
-        pip check || true
+        uv pip check || true

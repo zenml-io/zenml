@@ -28,7 +28,13 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import email_opt_int, track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.cli.utils import (
+    confirmation,
+    declare,
+    error,
+    is_jupyter_installed,
+    warning,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
@@ -73,15 +79,19 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2024.01.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.06",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.01.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.06",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
-        github_tag="2024.01.12",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.06.14",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+    ),
+    llm_finetuning=ZenMLProjectTemplateLocation(
+        github_url="zenml-io/template-llm-finetuning",
+        github_tag="2024.06.20",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -98,9 +108,9 @@ ZENML_PROJECT_TEMPLATES = dict(
     type=str,
     required=False,
     help="Name or URL of the ZenML project template to use to initialize the "
-    "repository, Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a "
-    "copier URL like gh:owner/repo_name. If not specified, no template is "
-    "used.",
+    "repository, Can be a string like `e2e_batch`, `nlp`, `llm_finetuning`, "
+    "`starter` etc. or a copier URL like gh:owner/repo_name. If not specified, "
+    "no template is used.",
 )
 @click.option(
     "--template-tag",
@@ -397,6 +407,7 @@ def go() -> None:
 
     Raises:
         GitNotFoundError: If git is not installed.
+        e: when Jupyter Notebook fails to launch.
     """
     from zenml.cli.text_utils import (
         zenml_cli_privacy_message,
@@ -420,6 +431,13 @@ def go() -> None:
         metadata = {"gave_email": gave_email}
 
     zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
+
+    if not is_jupyter_installed():
+        cli_utils.error(
+            "Jupyter Notebook or JupyterLab is not installed. "
+            "Please install the 'notebook' package with `pip` "
+            "first so you can run the tutorial notebooks."
+        )
 
     with track_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
         console.print(zenml_cli_privacy_message, width=80)
@@ -448,6 +466,7 @@ def go() -> None:
                         TUTORIAL_REPO,
                         tmp_cloned_dir,
                         branch=f"release/{zenml_version}",
+                        depth=1,  # to prevent timeouts when downloading
                     )
                 example_dir = os.path.join(
                     tmp_cloned_dir, "examples/quickstart"
@@ -471,7 +490,18 @@ def go() -> None:
             zenml_go_notebook_tutorial_message(ipynb_files), width=80
         )
         input("Press ENTER to continue...")
-    subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+
+    try:
+        subprocess.check_call(
+            ["jupyter", "notebook", "--ContentsManager.allow_hidden=True"],
+            cwd=zenml_tutorial_path,
+        )
+    except subprocess.CalledProcessError as e:
+        cli_utils.error(
+            "An error occurred while launching Jupyter Notebook. "
+            "Please make sure Jupyter is properly installed and try again."
+        )
+        raise e
 
 
 def _prompt_email(event_source: AnalyticsEventSource) -> bool:
@@ -503,6 +533,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
             email_opt_int(opted_in=True, email=email, source=event_source)
 
             GlobalConfiguration().user_email_opt_in = True
+            GlobalConfiguration().user_email = email
 
             # Add consent and email to user model
             client.update_user(
@@ -625,7 +656,15 @@ def info(
         cli_utils.print_user_info(user_info)
 
     if stack:
-        cli_utils.print_debug_stack()
+        try:
+            cli_utils.print_debug_stack()
+        except ModuleNotFoundError as e:
+            cli_utils.warning(
+                "Could not print debug stack information. Please make sure "
+                "you have the necessary dependencies and integrations "
+                "installed for all your stack components."
+            )
+            cli_utils.warning(f"The missing package is: '{e.name}'")
 
 
 @cli.command(

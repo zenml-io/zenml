@@ -87,15 +87,7 @@ def bentoml_model_deployer_step(
     # get pipeline name, step name and run id
     step_context = get_step_context()
     pipeline_name = step_context.pipeline.name
-    run_name = step_context.pipeline_run.name
     step_name = step_context.step_run.name
-
-    # fetch existing services with same pipeline name, step name and model name
-    existing_services = model_deployer.find_model_server(
-        pipeline_name=pipeline_name,
-        pipeline_step_name=step_name,
-        model_name=model_name,
-    )
 
     # Return the apis endpoint of the defined service to use in the predict.
     # This is a workaround to get the endpoints of the service defined as functions
@@ -123,7 +115,6 @@ def bentoml_model_deployer_step(
         working_dir=working_dir or source_utils.get_source_root(),
         port=port,
         pipeline_name=pipeline_name,
-        run_name=run_name,
         pipeline_step_name=step_name,
         ssl_parameters=SSLBentoMLParametersConfig(
             ssl_certfile=ssl_certfile,
@@ -136,8 +127,13 @@ def bentoml_model_deployer_step(
         ),
     )
 
+    # fetch existing services with same pipeline name, step name and model name
+    existing_services = model_deployer.find_model_server(
+        config=predictor_cfg.model_dump(),
+        service_type=BentoMLDeploymentService.SERVICE_TYPE,
+    )
+
     # Creating a new service with inactive state and status by default
-    service = BentoMLDeploymentService(predictor_cfg)
     if existing_services:
         service = cast(BentoMLDeploymentService, existing_services[0])
 
@@ -159,6 +155,7 @@ def bentoml_model_deployer_step(
             replace=True,
             config=predictor_cfg,
             timeout=timeout,
+            service_type=BentoMLDeploymentService.SERVICE_TYPE,
         ),
     )
 

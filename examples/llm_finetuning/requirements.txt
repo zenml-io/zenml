@@ -1,0 +1,11 @@
+zenml
+torch>=2.2.0
+datasets
+transformers
+peft
+bitsandbytes>=0.41.3
+scipy
+evaluate
+rouge_score
+nltk
+accelerate

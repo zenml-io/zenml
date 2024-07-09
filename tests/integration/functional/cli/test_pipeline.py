@@ -29,7 +29,7 @@ from zenml.models import (
 )
 from zenml.pipelines import pipeline
 from zenml.stack import Stack
-from zenml.steps import step
+from zenml.steps import BaseStep, step
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -44,7 +44,6 @@ def test_pipeline_list(client_with_run):
 
 
 def test_pipeline_delete(client_with_run: Client):
-    """Test that zenml pipeline delete works as expected."""
     """Test that zenml pipeline delete works as expected."""
     existing_pipelines = client_with_run.list_pipelines()
     existing_deployments = client_with_run.list_deployments()
@@ -77,6 +76,36 @@ def test_pipeline_run_list(client_with_run):
     list_command = cli.commands["pipeline"].commands["runs"].commands["list"]
     result = runner.invoke(list_command)
     assert result.exit_code == 0
+
+
+def test_pipeline_delete_all_versions(mocker, clean_client: Client):
+    """Test that zenml pipeline delete can delete all versions."""
+    pipeline_instance.run()
+    mocker.patch.object(
+        BaseStep,
+        "source_code",
+        new_callable=mocker.PropertyMock,
+        return_value="random",
+    )
+    pipeline_instance.run()
+
+    existing_pipelines = clean_client.list_pipelines()
+    assert len(existing_pipelines) == 2
+    pipeline_name = existing_pipelines[0].name
+    runner = CliRunner()
+    delete_command = cli.commands["pipeline"].commands["delete"]
+    result = runner.invoke(
+        delete_command, [pipeline_name, "--all-versions", "-y"]
+    )
+    assert result.exit_code == 0
+
+    # Ensure the specific pipeline no longer exists
+    with pytest.raises(KeyError):
+        clean_client.get_pipeline(name_id_or_prefix=pipeline_name)
+
+    # Ensure there are no other pipelines after deletion
+    updated_pipelines = clean_client.list_pipelines()
+    assert len(updated_pipelines) == 0
 
 
 def test_pipeline_run_delete(client_with_run):

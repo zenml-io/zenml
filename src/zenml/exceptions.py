@@ -197,6 +197,10 @@ class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register an entity that already exists."""
 
 
+class ActionExistsError(EntityExistsError):
+    """Raised when registering an action with a name that already exists."""
+
+
 class TriggerExistsError(EntityExistsError):
     """Raised when registering a trigger with name that already exists."""
 
@@ -245,12 +249,20 @@ class IllegalOperationError(ZenMLBaseException):
     """Raised when an illegal operation is attempted."""
 
 
+class MethodNotAllowedError(ZenMLBaseException):
+    """Raised when the server does not allow a request method."""
+
+
 class SettingsResolvingError(ZenMLBaseException):
     """Raised when resolving settings failed."""
 
 
 class InputResolutionError(ZenMLBaseException):
     """Raised when step input resolving failed."""
+
+
+class SubscriptionUpgradeRequiredError(ZenMLBaseException):
+    """Raised when user tries to perform an action outside their current subscription tier."""
 
 
 class HydrationError(ZenMLBaseException):

@@ -22,6 +22,9 @@ class AnalyticsEvent(str, Enum):
     # Login
     DEVICE_VERIFIED = "Device verified"
 
+    # Onboarding
+    USER_ENRICHED = "User Enriched"
+
     # Pipelines
     RUN_PIPELINE = "Pipeline run"
     RUN_PIPELINE_ENDED = "Pipeline run ended"
@@ -82,6 +85,9 @@ class AnalyticsEvent(str, Enum):
     DEPLOY_STACK_COMPONENT = "Stack component deployed"
     DESTROY_STACK_COMPONENT = "Stack component destroyed"
 
+    # Full stack infrastructure deployment
+    DEPLOY_FULL_STACK = "Full stack deployed"
+
     # Tag created
     CREATED_TAG = "Tag created"
 
@@ -94,3 +100,6 @@ class AnalyticsEvent(str, Enum):
     ZENML_HUB_PLUGIN_UNINSTALL = "ZenML Hub plugin uninstalled"
     ZENML_HUB_PLUGIN_CLONE = "ZenML Hub plugin pulled"
     ZENML_HUB_PLUGIN_SUBMIT = "ZenML Hub plugin pushed"
+
+    # Server Settings
+    SERVER_SETTINGS_UPDATED = "Server Settings Updated"

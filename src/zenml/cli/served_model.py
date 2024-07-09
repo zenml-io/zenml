@@ -72,14 +72,6 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "component.",
     )
     @click.option(
-        "--pipeline",
-        "-p",
-        type=click.STRING,
-        default=None,
-        help="Show only served models that were deployed by the indicated "
-        "pipeline.",
-    )
-    @click.option(
         "--step",
         "-s",
         type=click.STRING,
@@ -88,12 +80,20 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "pipeline step.",
     )
     @click.option(
-        "--run-name",
+        "--pipeline-run-id",
         "-r",
         type=click.STRING,
         default=None,
         help="Show only served models that were deployed by the indicated "
         "pipeline run.",
+    )
+    @click.option(
+        "--pipeline-name",
+        "-p",
+        type=click.STRING,
+        default=None,
+        help="Show only served models that were deployed by the indicated "
+        "pipeline.",
     )
     @click.option(
         "--model",
@@ -103,6 +103,20 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         help="Show only served model versions for the given model name.",
     )
     @click.option(
+        "--model-version",
+        "-v",
+        type=click.STRING,
+        default=None,
+        help="Show only served model versions for the given model version.",
+    )
+    @click.option(
+        "--flavor",
+        "-f",
+        type=click.STRING,
+        default=None,
+        help="Show only served model versions for the given model flavor.",
+    )
+    @click.option(
         "--running",
         is_flag=True,
         help="Show only model servers that are currently running.",
@@ -110,31 +124,38 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
     @click.pass_obj
     def list_models(
         model_deployer: "BaseModelDeployer",
-        pipeline: Optional[str],
         step: Optional[str],
-        run_name: Optional[str],
+        pipeline_name: Optional[str],
+        pipeline_run_id: Optional[str],
         model: Optional[str],
+        model_version: Optional[str],
+        flavor: Optional[str],
         running: bool,
     ) -> None:
         """List of all served models within the model-deployer stack component.
 
         Args:
             model_deployer: The model-deployer stack component.
-            pipeline: Show only served models that were deployed by the
-                indicated pipeline.
             step: Show only served models that were deployed by the indicated
                 pipeline step.
-            run_name: Show only served models that were deployed by the
+            pipeline_run_id: Show only served models that were deployed by the
                 indicated pipeline run.
+            pipeline_name: Show only served models that were deployed by the
+                indicated pipeline.
             model: Show only served model versions for the given model name.
             running: Show only model servers that are currently running.
+            model_version: Show only served model versions for the given model
+                version.
+            flavor: Show only served model versions for the given model flavor.
         """
         services = model_deployer.find_model_server(
             running=running,
-            pipeline_name=pipeline,
-            run_name=run_name,
+            pipeline_name=pipeline_name,
+            pipeline_run_id=pipeline_run_id if pipeline_run_id else None,
             pipeline_step_name=step,
             model_name=model,
+            model_version=model_version,
+            flavor=flavor,
         )
         if services:
             pretty_print_model_deployer(
@@ -386,14 +407,16 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
             )
             return
 
-        for line in model_deployer.get_model_server_logs(
+        model_logs = model_deployer.get_model_server_logs(
             served_models[0].uuid, follow=follow, tail=tail
-        ):
-            # don't pretty-print log lines that are already pretty-printed
-            if raw or line.startswith("\x1b["):
-                console.print(line, markup=False)
-            else:
-                try:
-                    console.print(line)
-                except MarkupError:
+        )
+        if model_logs:
+            for line in model_logs:
+                # don't pretty-print log lines that are already pretty-printed
+                if raw or line.startswith("\x1b["):
                     console.print(line, markup=False)
+                else:
+                    try:
+                        console.print(line)
+                    except MarkupError:
+                        console.print(line, markup=False)

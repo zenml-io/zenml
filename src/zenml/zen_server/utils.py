@@ -16,9 +16,18 @@
 import inspect
 import os
 from functools import wraps
-from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 from urllib.parse import urlparse
 
+import secure
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -35,6 +44,9 @@ from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
+from zenml.zen_server.feature_gate.feature_gate_interface import (
+    FeatureGateInterface,
+)
 from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
     WorkloadManagerInterface,
 )
@@ -45,8 +57,10 @@ logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
+_feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
+_secure_headers: Optional[secure.Secure] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -92,6 +106,50 @@ def rbac() -> RBACInterface:
     return _rbac
 
 
+def initialize_rbac() -> None:
+    """Initialize the RBAC component."""
+    global _rbac
+
+    if rbac_source := server_config().rbac_implementation_source:
+        from zenml.utils import source_utils
+
+        implementation_class = source_utils.load_and_validate_class(
+            rbac_source, expected_class=RBACInterface
+        )
+        _rbac = implementation_class()
+
+
+def feature_gate() -> FeatureGateInterface:
+    """Return the initialized Feature Gate component.
+
+    Raises:
+        RuntimeError: If the RBAC component is not initialized.
+
+    Returns:
+        The RBAC component.
+    """
+    global _feature_gate
+    if _feature_gate is None:
+        raise RuntimeError("Feature gate component not initialized.")
+    return _feature_gate
+
+
+def initialize_feature_gate() -> None:
+    """Initialize the Feature Gate component."""
+    global _feature_gate
+
+    if (
+        feature_gate_source
+        := server_config().feature_gate_implementation_source
+    ):
+        from zenml.utils import source_utils
+
+        implementation_class = source_utils.load_and_validate_class(
+            feature_gate_source, expected_class=FeatureGateInterface
+        )
+        _feature_gate = implementation_class()
+
+
 def workload_manager() -> WorkloadManagerInterface:
     """Return the initialized workload manager component.
 
@@ -105,19 +163,6 @@ def workload_manager() -> WorkloadManagerInterface:
     if _workload_manager is None:
         raise RuntimeError("Workload manager component not initialized")
     return _workload_manager
-
-
-def initialize_rbac() -> None:
-    """Initialize the RBAC component."""
-    global _rbac
-
-    if rbac_source := server_config().rbac_implementation_source:
-        from zenml.utils import source_utils
-
-        implementation_class = source_utils.load_and_validate_class(
-            rbac_source, expected_class=RBACInterface
-        )
-        _rbac = implementation_class()
 
 
 def initialize_workload_manager() -> None:
@@ -169,6 +214,104 @@ def initialize_zen_store() -> None:
 
     global _zen_store
     _zen_store = zen_store_
+
+
+def secure_headers() -> secure.Secure:
+    """Return the secure headers component.
+
+    Returns:
+        The secure headers component.
+
+    Raises:
+        RuntimeError: If the secure headers component is not initialized.
+    """
+    global _secure_headers
+    if _secure_headers is None:
+        raise RuntimeError("Secure headers component not initialized")
+    return _secure_headers
+
+
+def initialize_secure_headers() -> None:
+    """Initialize the secure headers component."""
+    global _secure_headers
+
+    config = server_config()
+
+    # For each of the secure headers supported by the `secure` library, we
+    # check if the corresponding configuration is set in the server
+    # configuration:
+    #
+    # - if set to `True`, we use the default value for the header
+    # - if set to a string, we use the string as the value for the header
+    # - if set to `False`, we don't set the header
+
+    server: Optional[secure.Server] = None
+    if config.secure_headers_server:
+        server = secure.Server()
+        if isinstance(config.secure_headers_server, str):
+            server.set(config.secure_headers_server)
+        else:
+            server.set(str(config.deployment_id))
+
+    hsts: Optional[secure.StrictTransportSecurity] = None
+    if config.secure_headers_hsts:
+        hsts = secure.StrictTransportSecurity()
+        if isinstance(config.secure_headers_hsts, str):
+            hsts.set(config.secure_headers_hsts)
+
+    xfo: Optional[secure.XFrameOptions] = None
+    if config.secure_headers_xfo:
+        xfo = secure.XFrameOptions()
+        if isinstance(config.secure_headers_xfo, str):
+            xfo.set(config.secure_headers_xfo)
+
+    xxp: Optional[secure.XXSSProtection] = None
+    if config.secure_headers_xxp:
+        xxp = secure.XXSSProtection()
+        if isinstance(config.secure_headers_xxp, str):
+            xxp.set(config.secure_headers_xxp)
+
+    csp: Optional[secure.ContentSecurityPolicy] = None
+    if config.secure_headers_csp:
+        csp = secure.ContentSecurityPolicy()
+        if isinstance(config.secure_headers_csp, str):
+            csp.set(config.secure_headers_csp)
+
+    content: Optional[secure.XContentTypeOptions] = None
+    if config.secure_headers_content:
+        content = secure.XContentTypeOptions()
+        if isinstance(config.secure_headers_content, str):
+            content.set(config.secure_headers_content)
+
+    referrer: Optional[secure.ReferrerPolicy] = None
+    if config.secure_headers_referrer:
+        referrer = secure.ReferrerPolicy()
+        if isinstance(config.secure_headers_referrer, str):
+            referrer.set(config.secure_headers_referrer)
+
+    cache: Optional[secure.CacheControl] = None
+    if config.secure_headers_cache:
+        cache = secure.CacheControl()
+        if isinstance(config.secure_headers_cache, str):
+            cache.set(config.secure_headers_cache)
+
+    permissions: Optional[secure.PermissionsPolicy] = None
+    if config.secure_headers_permissions:
+        permissions = secure.PermissionsPolicy()
+        if isinstance(config.secure_headers_permissions, str):
+            permissions.value = config.secure_headers_permissions
+
+    _secure_headers = secure.Secure(
+        server=server,
+        hsts=hsts,
+        xfo=xfo,
+        xxp=xxp,
+        csp=csp,
+        content=content,
+        referrer=referrer,
+        cache=cache,
+        permissions=permissions,
+    )
 
 
 _server_config: Optional[ServerConfiguration] = None

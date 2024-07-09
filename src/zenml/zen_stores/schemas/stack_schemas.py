@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Stacks."""
 
+import base64
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
@@ -75,6 +77,7 @@ class StackSchema(NamedSchema, table=True):
 
     __tablename__ = "stack"
     stack_spec_path: Optional[str]
+    labels: Optional[bytes]
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -119,11 +122,15 @@ class StackSchema(NamedSchema, table=True):
         Returns:
             The updated StackSchema.
         """
-        for field, value in stack_update.dict(
+        for field, value in stack_update.model_dump(
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "components":
                 self.components = components
+            elif field == "labels":
+                self.labels = base64.b64encode(
+                    json.dumps(stack_update.labels).encode("utf-8")
+                )
             else:
                 setattr(self, field, value)
 
@@ -158,6 +165,9 @@ class StackSchema(NamedSchema, table=True):
                 workspace=self.workspace.to_model(),
                 components={c.type: [c.to_model()] for c in self.components},
                 stack_spec_path=self.stack_spec_path,
+                labels=json.loads(base64.b64decode(self.labels).decode())
+                if self.labels
+                else None,
             )
 
         return StackResponse(

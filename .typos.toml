@@ -7,6 +7,7 @@ extend-exclude = [
     "tests/unit/materializers/test_built_in_materializer.py",
     "tests/integration/functional/cli/test_pipeline.py",
     "src/zenml/zen_server/dashboard/",
+    "examples/llm_finetuning/lit_gpt/"
 ]
 
 [default.extend-identifiers]
@@ -31,6 +32,9 @@ prev = "prev"
 creat = "creat"
 ret = "ret"
 daa = "daa"
+arange = "arange"
+cachable = "cachable"
+OT = "OT"
 
 [default]
 locale = "en-us"

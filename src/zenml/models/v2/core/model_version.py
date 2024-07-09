@@ -16,11 +16,12 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, PrivateAttr, validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
 from zenml.models.v2.base.filter import AnyQuery
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -29,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
+from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -68,12 +70,14 @@ class ModelVersionRequest(WorkspaceScopedRequest):
 
     number: Optional[int] = Field(
         description="The number of the model version",
+        default=None,
     )
     model: UUID = Field(
         description="The ID of the model containing version",
     )
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model version",
+        default=None,
     )
 
 
@@ -87,7 +91,9 @@ class ModelVersionUpdate(BaseModel):
         description="The ID of the model containing version",
     )
     stage: Optional[Union[str, ModelStages]] = Field(
-        description="Target model version stage to be set", default=None
+        description="Target model version stage to be set",
+        default=None,
+        union_mode="left_to_right",
     )
     force: bool = Field(
         description="Whether existing model version in target stage should be "
@@ -111,7 +117,8 @@ class ModelVersionUpdate(BaseModel):
         default=None,
     )
 
-    @validator("stage")
+    @field_validator("stage")
+    @classmethod
     def _validate_stage(cls, stage: str) -> str:
         stage = getattr(stage, "value", stage)
         if stage is not None and stage not in [
@@ -158,6 +165,14 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
         title="Tags associated with the model version", default=[]
     )
 
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
+
 
 class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for model versions."""
@@ -175,6 +190,10 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ModelVersionResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the model version entity."""
+
+    services: Page[ServiceResponse] = Field(
+        description="Services linked to the model version",
+    )
 
 
 class ModelVersionResponse(
@@ -325,7 +344,7 @@ class ModelVersionResponse(
             was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
         )
-        mv._id = self.id
+        mv.model_version_id = self.id
 
         return mv
 
@@ -572,13 +591,19 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
         description="The number of the Model Version",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="The workspace of the Model Version"
+        default=None,
+        description="The workspace of the Model Version",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="The user of the Model Version"
+        default=None,
+        description="The user of the Model Version",
+        union_mode="left_to_right",
     )
     stage: Optional[Union[str, ModelStages]] = Field(
-        description="The model version stage", default=None
+        description="The model version stage",
+        default=None,
+        union_mode="left_to_right",
     )
 
     _model_id: UUID = PrivateAttr(None)

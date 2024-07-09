@@ -54,6 +54,13 @@ class VisualizationType(StrEnum):
     MARKDOWN = "markdown"
 
 
+class ZenMLServiceType(StrEnum):
+    """All possible types a service can have."""
+
+    ZEN_SERVER = "zen_server"
+    MODEL_SERVING = "model-serving"
+
+
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 
@@ -275,6 +282,7 @@ class SourceContextTypes(StrEnum):
     CLI = "cli"
     PYTHON = "python"
     DASHBOARD = "dashboard"
+    DASHBOARD_V2 = "dashboard-v2"
     API = "api"
     UNKNOWN = "unknown"
 
@@ -376,3 +384,9 @@ class PluginSubType(StrEnum):
     WEBHOOK = "webhook"
     # Action Subtypes
     PIPELINE_RUN = "pipeline_run"
+
+
+class StackDeploymentProvider(StrEnum):
+    """All possible stack deployment providers."""
+
+    AWS = "aws"

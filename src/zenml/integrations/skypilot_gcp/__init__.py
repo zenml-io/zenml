@@ -26,12 +26,13 @@ from zenml.stack import Flavor
 
 SKYPILOT_GCP_ORCHESTRATOR_FLAVOR = "vm_gcp"
 
+
 class SkypilotGCPIntegration(Integration):
     """Definition of Skypilot (GCP) Integration for ZenML."""
 
     NAME = SKYPILOT_GCP
-    REQUIREMENTS = ["skypilot[gcp]<=0.4.1"]
-    APT_PACKAGES = ["openssh-client","rsync"]
+    REQUIREMENTS = ["skypilot[gcp]~=0.6.0"]
+    APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

@@ -58,21 +58,17 @@ def huggingface_model_deployer_step(
     # get pipeline name, step name and run id
     context = get_step_context()
     pipeline_name = context.pipeline.name
-    run_name = context.pipeline_run.name
     step_name = context.step_run.name
 
     # update the step configuration with the real pipeline runtime information
-    service_config = service_config.copy()
+    service_config = service_config.model_copy()
     service_config.pipeline_name = pipeline_name
-    service_config.run_name = run_name
     service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
-        pipeline_name=pipeline_name,
-        pipeline_step_name=step_name,
-        model_name=service_config.model_name,
+        config=service_config.model_dump()
     )
 
     # even when the deploy decision is negative, if an existing model server
@@ -99,7 +95,10 @@ def huggingface_model_deployer_step(
     service = cast(
         HuggingFaceDeploymentService,
         model_deployer.deploy_model(
-            service_config, replace=True, timeout=timeout
+            service_config,
+            replace=True,
+            timeout=timeout,
+            service_type=HuggingFaceDeploymentService.SERVICE_TYPE,
         ),
     )
 

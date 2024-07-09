@@ -14,11 +14,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
       - name: zenserver-Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.16.1
+        uses: aquasecurity/trivy-action@0.19.0
         with:
           image-ref: docker.io/zenmldocker/zenml-server:latest
           format: sarif
           output: trivy-results-zenserver.sarif
+          # Ignore unfixed vulnerabilities (i.e. vulnerabilities that have no
+          # fix available and that we can't fix by updating the container
+          # packages)
+          ignore-unfixed: true
       - name: Upload Trivy zenserver scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:

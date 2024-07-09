@@ -39,10 +39,11 @@ class AWSIntegration(Integration):
 
     NAME = AWS
     REQUIREMENTS = [
-        "sagemaker==2.117.0",
+        "sagemaker>=2.117.0",
         "kubernetes",
         "aws-profile-manager",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
     @staticmethod
     def activate() -> None:

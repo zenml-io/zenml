@@ -14,9 +14,10 @@
 """SQLModel implementation of model tables."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
+from pydantic import ConfigDict
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
@@ -38,6 +39,8 @@ from zenml.models import (
     ModelVersionResponse,
     ModelVersionResponseBody,
     ModelVersionResponseMetadata,
+    ModelVersionResponseResources,
+    Page,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -46,7 +49,11 @@ from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import get_page_from_list
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import ServiceSchema
 
 
 class ModelSchema(NamedSchema, table=True):
@@ -200,7 +207,7 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The updated `ModelSchema`.
         """
-        for field, value in model_update.dict(
+        for field, value in model_update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
             setattr(self, field, value)
@@ -263,6 +270,10 @@ class ModelVersionSchema(NamedSchema, table=True):
         ),
     )
 
+    services: List["ServiceSchema"] = Relationship(
+        back_populates="model_version",
+    )
+
     number: int = Field(sa_column=Column(INTEGER, nullable=False))
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
@@ -275,6 +286,14 @@ class ModelVersionSchema(NamedSchema, table=True):
             overlaps="run_metadata",
         ),
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(
@@ -315,6 +334,8 @@ class ModelVersionSchema(NamedSchema, table=True):
         Returns:
             The created `ModelVersionResponse`.
         """
+        from zenml.models import ServiceResponse
+
         # Construct {name: {version: id}} dicts for all linked artifacts
         model_artifact_ids: Dict[str, Dict[str, UUID]] = {}
         deployment_artifact_ids: Dict[str, Dict[str, UUID]] = {}
@@ -347,7 +368,6 @@ class ModelVersionSchema(NamedSchema, table=True):
             pipeline_run_ids[pipeline_run.name] = pipeline_run.id
 
         metadata = None
-
         if include_metadata:
             metadata = ModelVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
@@ -356,6 +376,21 @@ class ModelVersionSchema(NamedSchema, table=True):
                     rm.key: rm.to_model(include_metadata=True)
                     for rm in self.run_metadata
                 },
+            )
+
+        resources = None
+        if include_resources:
+            services = cast(
+                Page[ServiceResponse],
+                get_page_from_list(
+                    items_list=self.services,
+                    response_model=ServiceResponse,
+                    include_resources=include_resources,
+                    include_metadata=include_metadata,
+                ),
+            )
+            resources = ModelVersionResponseResources(
+                services=services,
             )
 
         body = ModelVersionResponseBody(
@@ -377,6 +412,7 @@ class ModelVersionSchema(NamedSchema, table=True):
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(
@@ -470,6 +506,14 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     is_deployment_artifact: bool = Field(
         sa_column=Column(BOOLEAN, nullable=True)
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(
@@ -586,6 +630,14 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
     pipeline_run: "PipelineRunSchema" = Relationship(
         back_populates="model_versions_pipeline_runs_links"
     )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
     def from_request(

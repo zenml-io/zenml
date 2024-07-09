@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 
 
 @pipeline
-def inference(random_state: str, target: str):
+def inference(random_state: int, target: str):
     """
     Model inference pipeline.
 

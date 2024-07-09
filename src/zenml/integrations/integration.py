@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
+import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
@@ -59,6 +60,7 @@ class Integration(metaclass=IntegrationMeta):
 
     REQUIREMENTS: List[str] = []
     APT_PACKAGES: List[str] = []
+    REQUIREMENTS_IGNORED_ON_UNINSTALL: List[str] = []
 
     @classmethod
     def check_installation(cls) -> bool:
@@ -83,7 +85,7 @@ class Integration(metaclass=IntegrationMeta):
                         try:
                             requirements = dist.requires(extras=[extra])  # type: ignore[arg-type]
                         except pkg_resources.UnknownExtra as e:
-                            logger.debug("Unknown extra: " + str(e))
+                            logger.debug(f"Unknown extra: {str(e)}")
                             return False
                         deps.extend(requirements)
                 else:
@@ -91,7 +93,11 @@ class Integration(metaclass=IntegrationMeta):
 
                 for ri in deps:
                     try:
-                        pkg_resources.get_distribution(ri)
+                        # Remove the "extra == ..." part from the requirement string
+                        cleaned_req = re.sub(
+                            r"; extra == \"\w+\"", "", str(ri)
+                        )
+                        pkg_resources.get_distribution(cleaned_req)
                     except pkg_resources.DistributionNotFound as e:
                         logger.debug(
                             f"Unable to find required dependency "
@@ -137,6 +143,29 @@ class Integration(metaclass=IntegrationMeta):
             A list of requirements.
         """
         return cls.REQUIREMENTS
+
+    @classmethod
+    def get_uninstall_requirements(
+        cls, target_os: Optional[str] = None
+    ) -> List[str]:
+        """Method to get the uninstall requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        ret = []
+        for each in cls.get_requirements(target_os=target_os):
+            is_ignored = False
+            for ignored in cls.REQUIREMENTS_IGNORED_ON_UNINSTALL:
+                if each.startswith(ignored):
+                    is_ignored = True
+                    break
+            if not is_ignored:
+                ret.append(each)
+        return ret
 
     @classmethod
     def activate(cls) -> None:

@@ -9,7 +9,7 @@ with the following properties:
 - Project name: ZenML E2E project
 - Technical Name: e2e_use_case
 - Version: `0.0.1`
-- Licensed with apache to ZenML GmbH<>
+- Licensed with apache to ZenML GmbH<info@zenml.io>
 - Deployment environment: `staging`
 
 Settings of your project are:
@@ -127,7 +127,7 @@ to indicate where you can add your code:
 
 ## 📜 Project Structure
 
-The project loosely follows [the recommended ZenML project structure](https://docs.zenml.io/user-guide/starter-guide/follow-best-practices):
+The project loosely follows [the recommended ZenML project structure](https://docs.zenml.io/how-to/setting-up-a-project-repository/best-practices):
 
 ```
 .

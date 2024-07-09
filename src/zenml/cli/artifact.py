@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 
-from functools import partial
 from typing import Any, Dict, List, Optional
 
 import click
@@ -229,8 +228,17 @@ def update_artifact_version(
     is_flag=True,
     help="Don't ask for confirmation.",
 )
+@click.option(
+    "--ignore-errors",
+    "-i",
+    is_flag=True,
+    help="Ignore errors and continue with the next artifact version.",
+)
 def prune_artifacts(
-    only_artifact: bool = False, only_metadata: bool = False, yes: bool = False
+    only_artifact: bool = False,
+    only_metadata: bool = False,
+    yes: bool = False,
+    ignore_errors: bool = False,
 ) -> None:
     """Delete all unused artifacts and artifact versions.
 
@@ -244,10 +252,12 @@ def prune_artifacts(
         only_metadata: If set, only delete metadata and not the actual artifact
             objects stored in the artifact store.
         yes: If set, don't ask for confirmation.
+        ignore_errors: If set, ignore errors and continue with the next
+            artifact version.
     """
     client = Client()
     unused_artifact_versions = depaginate(
-        partial(client.list_artifact_versions, only_unused=True)
+        client.list_artifact_versions, only_unused=True
     )
 
     if not unused_artifact_versions:
@@ -275,7 +285,14 @@ def prune_artifacts(
                 Client().delete_artifact(unused_artifact.id)
 
         except Exception as e:
-            cli_utils.error(str(e))
+            if ignore_errors:
+                cli_utils.warning(
+                    f"Failed to delete artifact version {unused_artifact_version.id}: {str(e)}"
+                )
+            else:
+                cli_utils.error(
+                    f"Failed to delete artifact version {unused_artifact_version.id}: {str(e)}"
+                )
     cli_utils.declare("All unused artifacts and artifact versions deleted.")
 
 

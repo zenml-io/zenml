@@ -21,9 +21,14 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import is_sorted_or_filtered, list_options
 from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
-from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.exceptions import (
+    AuthorizationException,
+    EntityExistsError,
+    IllegalOperationError,
+)
 from zenml.models import UserFilter
 
 
@@ -156,6 +161,11 @@ def create_user(
                 default="",
                 hide_input=True,
             )
+    else:
+        cli_utils.warning(
+            "Supplying password values in the command line is not safe. "
+            "Please consider using the prompt option."
+        )
 
     try:
         new_user = client.create_user(
@@ -167,10 +177,14 @@ def create_user(
         cli_utils.error(str(err))
     else:
         if not new_user.active and new_user.activation_token is not None:
+            user_info = f"?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token}"
             cli_utils.declare(
                 f"The created user account is currently inactive. You can "
                 f"activate it by visiting the dashboard at the following URL:\n"
-                f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token}\n"
+                # TODO: keep only `activate-user` once legacy dashboard is gone
+                f"{client.zen_store.url}/activate-user{user_info}\n\n"
+                "If you are using Legacy dashboard visit the following URL:\n"
+                f"{client.zen_store.url}/signup{user_info}\n"
             )
 
 
@@ -205,14 +219,6 @@ def create_user(
     help="New user email.",
 )
 @click.option(
-    "--password",
-    "-p",
-    "updated_password",
-    type=str,
-    required=False,
-    help="New user password.",
-)
-@click.option(
     "--admin",
     "-a",
     "make_admin",
@@ -230,14 +236,22 @@ def create_user(
     default=None,
     help="Whether the user should be a regular user.",
 )
+@click.option(
+    "--active",
+    "active",
+    type=bool,
+    required=False,
+    default=None,
+    help="Use to activate or deactivate a user account.",
+)
 def update_user(
     user_name_or_id: str,
     updated_name: Optional[str] = None,
     updated_full_name: Optional[str] = None,
     updated_email: Optional[str] = None,
-    updated_password: Optional[str] = None,
     make_admin: Optional[bool] = None,
     make_user: Optional[bool] = None,
+    active: Optional[bool] = None,
 ) -> None:
     """Update an existing user.
 
@@ -246,9 +260,9 @@ def update_user(
         updated_name: The name of the user to create.
         updated_full_name: The name of the user to create.
         updated_email: The name of the user to create.
-        updated_password: The name of the user to create.
         make_admin: Whether the user should be an admin.
         make_user: Whether the user should be a regular user.
+        active: Use to activate or deactivate a user account.
     """
     if make_admin is not None and make_user is not None:
         cli_utils.error(
@@ -260,7 +274,8 @@ def update_user(
         )
         if current_user.is_admin and make_user:
             confirmation = cli_utils.confirmation(
-                f"Currently user `{current_user.name}` is an admin. Are you sure you want to make them a regular user?"
+                f"Currently user `{current_user.name}` is an admin. Are you "
+                "sure you want to make them a regular user?"
             )
             if not confirmation:
                 cli_utils.declare("User update canceled.")
@@ -276,11 +291,139 @@ def update_user(
             updated_name=updated_name,
             updated_full_name=updated_full_name,
             updated_email=updated_email,
-            updated_password=updated_password,
             updated_is_admin=updated_is_admin,
+            active=active,
         )
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
+
+
+@user.command(
+    "change-password",
+    help="Change the password for the current user account.",
+)
+@click.option(
+    "--password",
+    help=(
+        "The new user password. If omitted, a prompt will be shown to enter "
+        "the password."
+    ),
+    required=False,
+    type=str,
+)
+@click.option(
+    "--old-password",
+    help=(
+        "The old user password. If omitted, a prompt will be shown to enter "
+        "the old password."
+    ),
+    required=False,
+    type=str,
+)
+def change_user_password(
+    password: Optional[str] = None, old_password: Optional[str] = None
+) -> None:
+    """Change the password of the current user.
+
+    Args:
+        password: The new password for the current user.
+        old_password: The old password for the current user.
+    """
+    active_user = Client().active_user
+
+    if old_password is not None or password is not None:
+        cli_utils.warning(
+            "Supplying password values in the command line is not safe. "
+            "Please consider using the prompt option."
+        )
+
+    if old_password is None:
+        old_password = click.prompt(
+            f"Current password for user {active_user.name}",
+            hide_input=True,
+        )
+    if password is None:
+        password = click.prompt(
+            f"New password for user {active_user.name}",
+            hide_input=True,
+        )
+        password_again = click.prompt(
+            f"Please re-enter the new password for user {active_user.name}",
+            hide_input=True,
+        )
+        if password != password_again:
+            cli_utils.error("Passwords do not match.")
+
+    try:
+        Client().update_user(
+            name_id_or_prefix=active_user.id,
+            old_password=old_password,
+            updated_password=password,
+        )
+    except (KeyError, IllegalOperationError, AuthorizationException) as err:
+        cli_utils.error(str(err))
+
+    cli_utils.declare(
+        f"Successfully updated password for active user '{active_user.name}'."
+    )
+
+    store = GlobalConfiguration().store_configuration
+    if store.type == StoreType.REST:
+        from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+
+        assert isinstance(store, RestZenStoreConfiguration)
+
+        if store.password is not None:
+            cli_utils.declare(
+                "You may need to log in again with your new password by "
+                "running `zenml connect`."
+            )
+
+
+@user.command(
+    "deactivate",
+    help="Generate an activation token to reset the password for a user account",
+)
+@click.argument("user_name_or_id", type=str, required=True)
+def deactivate_user(
+    user_name_or_id: str,
+) -> None:
+    """Reset the password of a user.
+
+    Args:
+        user_name_or_id: The name or ID of the user to reset the password for.
+    """
+    client = Client()
+
+    store = GlobalConfiguration().store_configuration
+    if store.type != StoreType.REST:
+        cli_utils.error(
+            "Deactivating users is only supported when connected to a ZenML "
+            "server."
+        )
+
+    try:
+        if not client.active_user.is_admin:
+            cli_utils.error(
+                "Only admins can reset the password of other users."
+            )
+
+        user = client.deactivate_user(
+            name_id_or_prefix=user_name_or_id,
+        )
+    except (KeyError, IllegalOperationError) as err:
+        cli_utils.error(str(err))
+
+    user_info = f"?user={str(user.id)}&username={user.name}&token={user.activation_token}"
+    cli_utils.declare(
+        f"Successfully deactivated user account '{user.name}'."
+        f"To reactivate the account, please visit the dashboard at the "
+        "following URL:\n"
+        # TODO: keep only `activate-user` once legacy dashboard is gone
+        f"{client.zen_store.url}/activate-user{user_info}\n\n"
+        "If you are using Legacy dashboard visit the following URL:\n"
+        f"{client.zen_store.url}/signup{user_info}\n"
+    )
 
 
 @user.command("delete")

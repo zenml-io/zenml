@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of a ZenML ServiceType class."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ServiceType(BaseModel):
@@ -24,15 +24,16 @@ class ServiceType(BaseModel):
         flavor: service flavor
         name: name of the service type
         description: description of the service type
+        logo_url: logo of the service type
     """
 
     type: str
     flavor: str
     name: str = ""
     description: str = ""
+    logo_url: str = ""
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # make the service type immutable and hashable
-        frozen = True
+        frozen=True
+    )

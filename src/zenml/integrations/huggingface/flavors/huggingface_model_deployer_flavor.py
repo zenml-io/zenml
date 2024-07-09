@@ -33,7 +33,6 @@ if TYPE_CHECKING:
 class HuggingFaceBaseConfig(BaseModel):
     """Hugging Face Inference Endpoint configuration."""
 
-    endpoint_name: str = "zenml-"
     repository: Optional[str] = None
     framework: Optional[str] = None
     accelerator: Optional[str] = None
@@ -41,15 +40,15 @@ class HuggingFaceBaseConfig(BaseModel):
     instance_type: Optional[str] = None
     region: Optional[str] = None
     vendor: Optional[str] = None
-    token: Optional[str] = None
     account_id: Optional[str] = None
     min_replica: int = 0
     max_replica: int = 1
     revision: Optional[str] = None
     task: Optional[str] = None
     custom_image: Optional[Dict[str, Any]] = None
-    namespace: Optional[str] = None
     endpoint_type: str = "public"
+    secret_name: Optional[str] = None
+    namespace: Optional[str] = None
 
 
 class HuggingFaceModelDeployerConfig(
@@ -62,7 +61,7 @@ class HuggingFaceModelDeployerConfig(
         namespace: Hugging Face namespace used to list endpoints
     """
 
-    token: str = SecretField()
+    token: Optional[str] = SecretField(default=None)
 
     # The namespace to list endpoints for. Set to `"*"` to list all endpoints
     # from all namespaces (i.e. personal namespace and all orgs the user belongs to).

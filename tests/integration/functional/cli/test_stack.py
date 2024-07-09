@@ -117,7 +117,7 @@ def test_update_stack_update_on_default_fails() -> None:
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
+        configuration=new_artifact_store.config.model_dump(),
     )
 
     runner = CliRunner()
@@ -163,7 +163,7 @@ def test_update_stack_active_stack_succeeds() -> None:
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
+        configuration=new_artifact_store.config.model_dump(),
     )
     runner = CliRunner()
 
@@ -207,7 +207,7 @@ def test_updating_non_active_stack_succeeds() -> None:
         name=orchestrator.name,
         flavor=orchestrator.flavor,
         component_type=orchestrator.type,
-        configuration=orchestrator.config.dict(),
+        configuration=orchestrator.config.model_dump(),
     )
 
     runner = CliRunner()
@@ -256,7 +256,7 @@ def test_update_stack_adding_component_succeeds() -> None:
         name=local_image_builder.name,
         flavor=local_image_builder.flavor,
         component_type=local_image_builder.type,
-        configuration=local_image_builder.config.dict(),
+        configuration=local_image_builder.config.model_dump(),
     )
 
     runner = CliRunner()
@@ -303,7 +303,7 @@ def test_update_stack_adding_to_default_stack_fails() -> None:
         name=local_image_builder.name,
         flavor=local_image_builder.flavor,
         component_type=local_image_builder.type,
-        configuration=local_image_builder.config.dict(),
+        configuration=local_image_builder.config.model_dump(),
     )
 
     runner = CliRunner()
@@ -328,7 +328,7 @@ def test_update_stack_nonexistent_stack_fails() -> None:
         name=local_image_builder.name,
         flavor=local_image_builder.flavor,
         component_type=local_image_builder.type,
-        configuration=local_image_builder.config.dict(),
+        configuration=local_image_builder.config.model_dump(),
     )
 
     runner = CliRunner()
@@ -442,7 +442,7 @@ def test_remove_component_core_component_fails() -> None:
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
+        configuration=new_artifact_store.config.model_dump(),
     )
 
     new_orchestrator = _create_local_orchestrator(client)
@@ -451,7 +451,7 @@ def test_remove_component_core_component_fails() -> None:
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
+        configuration=new_orchestrator.config.model_dump(),
     )
 
     new_stack = client.create_stack(
@@ -481,7 +481,7 @@ def test_remove_component_non_core_component_succeeds() -> None:
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
+        configuration=new_artifact_store.config.model_dump(),
     )
 
     new_orchestrator = _create_local_orchestrator(client)
@@ -490,7 +490,7 @@ def test_remove_component_non_core_component_succeeds() -> None:
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
+        configuration=new_orchestrator.config.model_dump(),
     )
 
     new_image_builder = _create_local_image_builder(client)
@@ -499,7 +499,7 @@ def test_remove_component_non_core_component_succeeds() -> None:
         name=new_image_builder.name,
         flavor=new_image_builder.flavor,
         component_type=new_image_builder.type,
-        configuration=new_image_builder.config.dict(),
+        configuration=new_image_builder.config.model_dump(),
     )
     new_stack = client.create_stack(
         name="arias_new_stack",
@@ -598,7 +598,7 @@ def test_delete_stack_recursively_with_flag_succeeds() -> None:
         name=new_image_builder.name,
         flavor=new_image_builder.flavor,
         component_type=new_image_builder.type,
-        configuration=new_image_builder.config.dict(),
+        configuration=new_image_builder.config.model_dump(),
     )
     new_stack = client.create_stack(
         name="arias_new_stack",
@@ -646,7 +646,7 @@ def test_stack_export_delete_import() -> None:
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
+        configuration=new_artifact_store.config.model_dump(),
     )
 
     new_orchestrator = _create_local_orchestrator(client)
@@ -655,7 +655,7 @@ def test_stack_export_delete_import() -> None:
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
+        configuration=new_orchestrator.config.model_dump(),
     )
 
     new_stack_model = client.create_stack(
@@ -707,7 +707,7 @@ def test_stack_export_import_reuses_components() -> None:
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
+        configuration=new_artifact_store.config.model_dump(),
     )
 
     new_orchestrator = _create_local_orchestrator(client)
@@ -716,7 +716,7 @@ def test_stack_export_import_reuses_components() -> None:
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
+        configuration=new_orchestrator.config.model_dump(),
     )
 
     stack_name = "arias_new_stack"

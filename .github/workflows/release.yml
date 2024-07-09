@@ -1,7 +1,5 @@
 ---
-# This is a basic workflow to help you get started with Actions
 name: Release Package & Docker Image
-# Controls when the action will run. Triggers the workflow on push of a tag
 on:
   push:
     tags: ['*']
@@ -22,14 +20,25 @@ jobs:
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.8'
-      - name: Install current package as editable
+      - name: Install uv
         run: |
-          pip install -U uv
-          uv pip install --system -e .
-      - name: Install mlstacks package
-        run: uv pip install --system mlstacks
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
+      - name: Create virtual environment
+        run: |
+          source $HOME/.cargo/env
+          uv venv
+      - name: Check mlstacks compatibility
+        run: |
+          source .venv/bin/activate
+          source $HOME/.cargo/env
+          uv pip install -e .
+          uv pip install mlstacks
       - name: Check for broken dependencies
-        run: pip check
+        run: |
+          source .venv/bin/activate
+          source $HOME/.cargo/env
+          uv pip check
   mysql-db-migration-testing:
     runs-on: arc-runner-set
     env:
@@ -44,8 +53,13 @@ jobs:
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.9'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mysql.sh mysql
+        run: bash scripts/test-migrations.sh mysql
   sqlite-db-migration-testing:
     runs-on: arc-runner-set
     env:
@@ -61,7 +75,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mysql.sh sqlite
+        run: bash scripts/test-migrations.sh sqlite
   mariadb-db-migration-testing:
     runs-on: arc-runner-set
     env:
@@ -76,8 +90,13 @@ jobs:
         uses: actions/setup-python@v4.8.0
         with:
           python-version: '3.9'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test migrations across versions
-        run: bash scripts/test-migrations-mariadb.sh
+        run: bash scripts/test-migrations.sh mariadb
   publish-python-package:
     if: github.repository == 'zenml-io/zenml'
     needs:
@@ -105,3 +124,38 @@ jobs:
     needs: publish-docker-image
     uses: ./.github/workflows/publish_helm_chart.yml
     secrets: inherit
+  wait-for-package-release-again:
+    runs-on: arc-runner-set
+    needs: publish-helm-chart
+    steps:
+      - name: Sleep for 4 minutes
+        run: sleep 240
+        shell: bash
+  publish-stack-templates:
+    if: github.repository == 'zenml-io/zenml'
+    needs: publish-python-package
+    uses: ./.github/workflows/publish_stack_templates.yml
+    secrets: inherit
+  # create a tag on the ZenML cloud plugins repo
+  create_tag_on_cloud_plugins_repo:
+    runs-on: ubuntu-latest
+    needs: wait-for-package-release-again
+    steps:
+      - name: Get the sha of the latest commit on plugins/main
+        id: get_sha
+        run: |
+          echo "::set-output name=sha::$(curl -s -H "Authorization: token ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}" https://api.github.com/repos/zenml-io/zenml-cloud-plugins/commits/main | jq -r '.sha')"
+      - name: Get the version from the github tag ref
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - name: Create a tag on ZenML Cloud plugins repo
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}
+          script: |-
+            await github.rest.git.createRef({
+              owner: 'zenml-io',
+              repo: 'zenml-cloud-plugins',
+              ref: 'refs/tags/${{ steps.get_version.outputs.VERSION }}',
+              sha: '${{ steps.get_sha.outputs.sha }}'
+            })

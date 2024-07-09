@@ -21,7 +21,12 @@ class NeuralProphetIntegration(Integration):
     """Definition of NeuralProphet integration for ZenML."""
 
     NAME = NEURAL_PROPHET
-    REQUIREMENTS = ["neuralprophet>=0.3.2,<0.5.0", "holidays>=0.4.1,<0.25.0"]
+    REQUIREMENTS = [
+        "neuralprophet>=0.3.2,<0.5.0",
+        "holidays>=0.4.1,<0.25.0",
+        "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
+    ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity"]
 
     @classmethod
     def activate(cls) -> None:

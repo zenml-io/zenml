@@ -39,7 +39,7 @@ class SkypilotAzureOrchestratorSettings(SkypilotBaseOrchestratorSettings):
     """Skypilot orchestrator settings for Azure."""
 
 
-class SkypilotAzureOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SkypilotAzureOrchestratorConfig(
     SkypilotBaseOrchestratorConfig, SkypilotAzureOrchestratorSettings
 ):
     """Skypilot orchestrator config for Azure."""

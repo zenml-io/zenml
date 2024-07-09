@@ -17,7 +17,7 @@ import urllib
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.enums import SecretScope
 from zenml.event_sources.base_event import (
@@ -111,14 +111,10 @@ class GithubEvent(BaseEvent):
     after: str
     repository: Repository
     commits: List[Commit]
-    head_commit: Optional[Commit]
-    tags: Optional[List[Tag]]
-    pull_requests: Optional[List[PullRequest]]
-
-    class Config:
-        """Pydantic configuration class."""
-
-        extra = Extra.allow
+    head_commit: Optional[Commit] = None
+    tags: Optional[List[Tag]] = None
+    pull_requests: Optional[List[PullRequest]] = None
+    model_config = ConfigDict(extra="allow")
 
     @property
     def branch(self) -> Optional[str]:
@@ -157,9 +153,9 @@ class GithubEvent(BaseEvent):
 class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
     """Configuration for github event filters."""
 
-    repo: Optional[str]
-    branch: Optional[str]
-    event_type: Optional[GithubEventType]
+    repo: Optional[str] = None
+    branch: Optional[str] = None
+    event_type: Optional[GithubEventType] = None
 
     def event_matches_filter(self, event: BaseEvent) -> bool:
         """Checks the filter against the inbound event.
@@ -442,7 +438,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         if config.rotate_secret:
             # In case the secret is being rotated
             secret_key_value = random_str(12)
-            webhook_secret = SecretUpdate(  # type: ignore[call-arg]
+            webhook_secret = SecretUpdate(
                 values={"webhook_secret": secret_key_value}
             )
             self.zen_store.update_secret(

@@ -15,8 +15,7 @@
 
 import os
 import shutil
-from pathlib import Path
-from typing import ClassVar, Dict, List, Optional, Type, cast
+from typing import ClassVar, Dict, Optional, Type, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -31,8 +30,6 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
-from zenml.services import ServiceRegistry
-from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
@@ -120,12 +117,15 @@ class MLFlowModelDeployer(BaseModelDeployer):
             "REGISTRY_MODEL_VERSION": service_instance.config.registry_model_version,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
+            "HEALTH_CHECK_URL": service_instance.endpoint.monitor.get_healthcheck_uri(
+                service_instance.endpoint
+            ),
         }
 
-    def deploy_model(
+    def perform_deploy_model(
         self,
+        id: UUID,
         config: ServiceConfig,
-        replace: bool = False,
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ) -> BaseService:
         """Create a new MLflow deployment service or update an existing one.
@@ -157,10 +157,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
         and the others are deleted.
 
         Args:
+            id: the ID of the MLflow deployment service to be created or updated.
             config: the configuration of the model to be deployed with MLflow.
-            replace: set this flag to True to find and update an equivalent
-                MLflow deployment server with the new model instead of
-                creating and starting a new deployment server.
             timeout: the timeout in seconds to wait for the MLflow server
                 to be provisioned and successfully started or updated. If set
                 to 0, the method will return immediately after the MLflow
@@ -171,49 +169,11 @@ class MLFlowModelDeployer(BaseModelDeployer):
             interact with the MLflow model server.
         """
         config = cast(MLFlowDeploymentConfig, config)
-        service = None
-
-        # if replace is True, remove all existing services
-        if replace is True:
-            existing_services = self.find_model_server(
-                pipeline_name=config.pipeline_name,
-                pipeline_step_name=config.pipeline_step_name,
-                model_name=config.model_name,
-            )
-
-            for existing_service in existing_services:
-                if service is None:
-                    # keep the most recently created service
-                    service = cast(MLFlowDeploymentService, existing_service)
-                try:
-                    # delete the older services and don't wait for them to
-                    # be deprovisioned
-                    self._clean_up_existing_service(
-                        existing_service=cast(
-                            MLFlowDeploymentService, existing_service
-                        ),
-                        timeout=timeout,
-                        force=True,
-                    )
-                except RuntimeError:
-                    # ignore errors encountered while stopping old services
-                    pass
-        if service:
-            logger.info(
-                f"Updating an existing MLflow deployment service: {service}"
-            )
-
-            # set the root runtime path with the stack component's UUID
-            config.root_runtime_path = self.local_path
-            service.stop(timeout=timeout, force=True)
-            service.update(config)
-            service.start(timeout=timeout)
-        else:
-            # create a new MLFlowDeploymentService instance
-            service = self._create_new_service(timeout, config)
-            logger.info(f"Created a new MLflow deployment service: {service}")
-
-        return cast(BaseService, service)
+        service = self._create_new_service(
+            id=id, timeout=timeout, config=config
+        )
+        logger.info(f"Created a new MLflow deployment service: {service}")
+        return service
 
     def _clean_up_existing_service(
         self,
@@ -232,11 +192,12 @@ class MLFlowModelDeployer(BaseModelDeployer):
     # of workers etc.the step implementation will create a new config using
     # all values from the user and add values like pipeline name, model_uri
     def _create_new_service(
-        self, timeout: int, config: MLFlowDeploymentConfig
+        self, id: UUID, timeout: int, config: MLFlowDeploymentConfig
     ) -> MLFlowDeploymentService:
         """Creates a new MLFlowDeploymentService.
 
         Args:
+            id: the ID of the MLflow deployment service to be created or updated.
             timeout: the timeout in seconds to wait for the MLflow server
                 to be provisioned and successfully started or updated.
             config: the configuration of the model to be deployed with MLflow.
@@ -248,213 +209,61 @@ class MLFlowModelDeployer(BaseModelDeployer):
         # set the root runtime path with the stack component's UUID
         config.root_runtime_path = self.local_path
         # create a new service for the new model
-        service = MLFlowDeploymentService(config)
+        service = MLFlowDeploymentService(uuid=id, config=config)
         service.start(timeout=timeout)
 
         return service
 
-    def find_model_server(
+    def perform_stop_model(
         self,
-        running: bool = False,
-        service_uuid: Optional[UUID] = None,
-        pipeline_name: Optional[str] = None,
-        run_name: Optional[str] = None,
-        pipeline_step_name: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_uri: Optional[str] = None,
-        model_type: Optional[str] = None,
-        registry_model_name: Optional[str] = None,
-        registry_model_version: Optional[str] = None,
-    ) -> List[BaseService]:
-        """Finds one or more model servers that match the given criteria.
-
-        Args:
-            running: If true, only running services will be returned.
-            service_uuid: The UUID of the service that was originally used
-                to deploy the model.
-            pipeline_name: Name of the pipeline that the deployed model was part
-                of.
-            run_name: Name of the pipeline run which the deployed model
-                was part of.
-            pipeline_step_name: The name of the pipeline model deployment step
-                that deployed the model.
-            model_name: Name of the deployed model.
-            model_uri: URI of the deployed model.
-            model_type: Type/format of the deployed model. Not used in this
-                MLflow case.
-            registry_model_name: Name of the registered model that the
-                deployed model belongs to.
-            registry_model_version: Version of the registered model that
-                the deployed model belongs to.
-
-        Returns:
-            One or more Service objects representing model servers that match
-            the input search criteria.
-
-        Raises:
-            TypeError: if any of the input arguments are of an invalid type.
-        """
-        services = []
-        config = MLFlowDeploymentConfig(
-            model_name=model_name or "",
-            model_uri=model_uri or "",
-            pipeline_name=pipeline_name or "",
-            pipeline_run_id=run_name or "",
-            run_name=run_name or "",
-            pipeline_step_name=pipeline_step_name or "",
-            registry_model_name=registry_model_name,
-            registry_model_version=registry_model_version,
-        )
-
-        # find all services that match the input criteria
-        for root, _, files in os.walk(self.local_path):
-            if service_uuid and Path(root).name != str(service_uuid):
-                continue
-            for file in files:
-                if file == SERVICE_DAEMON_CONFIG_FILE_NAME:
-                    service_config_path = os.path.join(root, file)
-                    logger.debug(
-                        "Loading service daemon configuration from %s",
-                        service_config_path,
-                    )
-                    existing_service_config = None
-                    with open(service_config_path, "r") as f:
-                        existing_service_config = f.read()
-                    existing_service = (
-                        ServiceRegistry().load_service_from_json(
-                            existing_service_config
-                        )
-                    )
-                    if not isinstance(
-                        existing_service, MLFlowDeploymentService
-                    ):
-                        raise TypeError(
-                            f"Expected service type MLFlowDeploymentService but got "
-                            f"{type(existing_service)} instead"
-                        )
-                    existing_service.update_status()
-                    if self._matches_search_criteria(existing_service, config):
-                        if not running or existing_service.is_running:
-                            services.append(
-                                cast(BaseService, existing_service)
-                            )
-
-        return services
-
-    def _matches_search_criteria(
-        self,
-        existing_service: MLFlowDeploymentService,
-        config: MLFlowDeploymentConfig,
-    ) -> bool:
-        """Returns true if a service matches the input criteria.
-
-        If any of the values in the input criteria are None, they are ignored.
-        This allows listing services just by common pipeline names or step
-        names, etc.
-
-        Args:
-            existing_service: The materialized Service instance derived from
-                the config of the older (existing) service
-            config: The MLFlowDeploymentConfig object passed to the
-                deploy_model function holding parameters of the new service
-                to be created.
-
-        Returns:
-            True if the service matches the input criteria.
-        """
-        existing_service_config = existing_service.config
-        # check if the existing service matches the input criteria
-        if (
-            (
-                not config.pipeline_name
-                or existing_service_config.pipeline_name
-                == config.pipeline_name
-            )
-            and (
-                not config.model_name
-                or existing_service_config.model_name == config.model_name
-            )
-            and (
-                not config.pipeline_step_name
-                or existing_service_config.pipeline_step_name
-                == config.pipeline_step_name
-            )
-            and (
-                not config.run_name
-                or existing_service_config.run_name == config.run_name
-            )
-            and (
-                (
-                    not config.registry_model_name
-                    and not config.registry_model_version
-                )
-                or (
-                    existing_service_config.registry_model_name
-                    == config.registry_model_name
-                    and existing_service_config.registry_model_version
-                    == config.registry_model_version
-                )
-            )
-        ):
-            return True
-
-        return False
-
-    def stop_model_server(
-        self,
-        uuid: UUID,
+        service: BaseService,
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
         force: bool = False,
-    ) -> None:
+    ) -> BaseService:
         """Method to stop a model server.
 
         Args:
-            uuid: UUID of the model server to stop.
+            service: The service to stop.
             timeout: Timeout in seconds to wait for the service to stop.
             force: If True, force the service to stop.
+
+        Returns:
+            The service that was stopped.
         """
-        # get list of all services
-        existing_services = self.find_model_server(service_uuid=uuid)
+        service.stop(timeout=timeout, force=force)
+        return service
 
-        # if the service exists, stop it
-        if existing_services:
-            existing_services[0].stop(timeout=timeout, force=force)
-
-    def start_model_server(
-        self, uuid: UUID, timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
-    ) -> None:
+    def perform_start_model(
+        self,
+        service: BaseService,
+        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
+    ) -> BaseService:
         """Method to start a model server.
 
         Args:
-            uuid: UUID of the model server to start.
+            service: The service to start.
             timeout: Timeout in seconds to wait for the service to start.
+
+        Returns:
+            The service that was started.
         """
-        # get list of all services
-        existing_services = self.find_model_server(service_uuid=uuid)
+        service.start(timeout=timeout)
+        return service
 
-        # if the service exists, start it
-        if existing_services:
-            existing_services[0].start(timeout=timeout)
-
-    def delete_model_server(
+    def perform_delete_model(
         self,
-        uuid: UUID,
+        service: BaseService,
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
         """Method to delete all configuration of a model server.
 
         Args:
-            uuid: UUID of the model server to delete.
+            service: The service to delete.
             timeout: Timeout in seconds to wait for the service to stop.
             force: If True, force the service to stop.
         """
-        # get list of all services
-        existing_services = self.find_model_server(service_uuid=uuid)
-
-        # if the service exists, clean it up
-        if existing_services:
-            service = cast(MLFlowDeploymentService, existing_services[0])
-            self._clean_up_existing_service(
-                existing_service=service, timeout=timeout, force=force
-            )
+        service = cast(MLFlowDeploymentService, service)
+        self._clean_up_existing_service(
+            existing_service=service, timeout=timeout, force=force
+        )

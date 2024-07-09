@@ -29,6 +29,7 @@ from typing import (
 )
 
 from docker.client import DockerClient
+from docker.errors import DockerException
 from docker.utils import build as docker_build_utils
 
 from zenml.io import fileio
@@ -227,7 +228,8 @@ def build_image(
 
     logger.info("Building the image might take a while...")
 
-    docker_client = DockerClient.from_env()
+    docker_client = _try_get_docker_client_from_env()
+
     # We use the client api directly here, so we can stream the logs
     output_stream = docker_client.images.client.api.build(
         fileobj=build_context,
@@ -258,7 +260,7 @@ def push_image(
         RuntimeError: If fetching the repository digest of the image failed.
     """
     logger.info("Pushing Docker image `%s`.", image_name)
-    docker_client = docker_client or DockerClient.from_env()
+    docker_client = docker_client or _try_get_docker_client_from_env()
     output_stream = docker_client.images.push(image_name, stream=True)
     aux_info = _process_stream(output_stream)
     logger.info("Finished pushing Docker image.")
@@ -283,7 +285,7 @@ def tag_image(image_name: str, target: str) -> None:
         image_name: The name of the image to tag.
         target: The full target name including a tag.
     """
-    docker_client = DockerClient.from_env()
+    docker_client = _try_get_docker_client_from_env()
     image = docker_client.images.get(image_name)
     image.tag(target)
 
@@ -298,7 +300,8 @@ def get_image_digest(image_name: str) -> Optional[str]:
         Returns the repo digest for the given image if there exists exactly one.
         If there are zero or multiple repo digests, returns `None`.
     """
-    docker_client = DockerClient.from_env()
+    docker_client = _try_get_docker_client_from_env()
+
     image = docker_client.images.get(image_name)
     repo_digests = image.attrs["RepoDigests"]
     if len(repo_digests) == 1:
@@ -321,7 +324,7 @@ def is_local_image(image_name: str) -> bool:
     Returns:
         `True` if the image was pulled from a registry, `False` otherwise.
     """
-    docker_client = DockerClient.from_env()
+    docker_client = _try_get_docker_client_from_env()
     images = docker_client.images.list(name=image_name)
     if images:
         # An image with this name is available locally -> now check whether it
@@ -331,6 +334,23 @@ def is_local_image(image_name: str) -> bool:
     else:
         # no image with this name found locally
         return False
+
+
+def _try_get_docker_client_from_env() -> DockerClient:
+    """Tries to create a Docker client from the environment.
+
+    Raises:
+        RuntimeError: If creating a Docker client from the environment failed.
+
+    Returns:
+        A Docker client created from the environment.
+    """
+    try:
+        return DockerClient.from_env()
+    except DockerException as e:
+        raise RuntimeError(
+            "Could not create a Docker client from the environment. Is your Docker daemon running?"
+        ) from e
 
 
 def _process_stream(stream: Iterable[bytes]) -> List[Dict[str, Any]]:

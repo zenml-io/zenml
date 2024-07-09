@@ -23,11 +23,16 @@ from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
+
+ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
+    ENV_ZENML_LOGGING_COLORS_DISABLED, False
+)
 
 
 class CustomFormatter(logging.Formatter):
@@ -67,23 +72,29 @@ class CustomFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
-        log_fmt = (
-            self.COLORS[LoggingLevels(record.levelno)]
-            + self.format_template
-            + self.reset
-        )
-        formatter = logging.Formatter(log_fmt)
-        formatted_message = formatter.format(record)
-        quoted_groups = re.findall("`([^`]*)`", formatted_message)
-        for quoted in quoted_groups:
-            formatted_message = formatted_message.replace(
-                "`" + quoted + "`",
-                self.reset
-                + self.cyan
-                + quoted
-                + self.COLORS.get(LoggingLevels(record.levelno)),
+        if ZENML_LOGGING_COLORS_DISABLED:
+            # If color formatting is disabled, use the default format without colors
+            formatter = logging.Formatter(self.format_template)
+            return formatter.format(record)
+        else:
+            # Use color formatting
+            log_fmt = (
+                self.COLORS[LoggingLevels(record.levelno)]
+                + self.format_template
+                + self.reset
             )
-        return formatted_message
+            formatter = logging.Formatter(log_fmt)
+            formatted_message = formatter.format(record)
+            quoted_groups = re.findall("`([^`]*)`", formatted_message)
+            for quoted in quoted_groups:
+                formatted_message = formatted_message.replace(
+                    "`" + quoted + "`",
+                    self.reset
+                    + self.cyan
+                    + quoted
+                    + self.COLORS.get(LoggingLevels(record.levelno)),
+                )
+            return formatted_message
 
 
 def get_logging_level() -> LoggingLevels:

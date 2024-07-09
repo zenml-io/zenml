@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for webhooks."""
 
+from typing import Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import PluginSubType, PluginType
@@ -52,19 +53,25 @@ async def get_body(request: Request) -> bytes:
 
 @router.post(
     "/{event_source_id}",
+    response_model=Dict[str, str],
 )
 @handle_exceptions
 def webhook(
     event_source_id: UUID,
     request: Request,
+    background_tasks: BackgroundTasks,
     raw_body: bytes = Depends(get_body),
-) -> None:
+) -> Dict[str, str]:
     """Webhook to receive events from external event sources.
 
     Args:
         event_source_id: The event_source_id
         request: The request object
+        background_tasks: Background task handler
         raw_body: The raw request body
+
+    Returns:
+        Static dict stating that event is received.
 
     Raises:
         AuthorizationException: If the Event Source does not exist.
@@ -111,8 +118,11 @@ def webhook(
         )
 
     # Pass the raw event and headers to the plugin
-    plugin.process_webhook_event(
+    background_tasks.add_task(
+        plugin.process_webhook_event,
         event_source=event_source,
         raw_body=raw_body,
         headers=dict(request.headers.items()),
     )
+
+    return {"status": "Event Received."}

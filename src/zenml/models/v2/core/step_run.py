@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -30,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.model_version import ModelVersionResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
@@ -218,6 +219,16 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class StepRunResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
+
+    model_version: Optional[ModelVersionResponse] = None
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class StepRunResponse(
@@ -435,6 +446,15 @@ class StepRunResponse(
         """
         return self.get_metadata().run_metadata
 
+    @property
+    def model_version(self) -> Optional[ModelVersionResponse]:
+        """The `model_version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().model_version
+
 
 # ------------------ Filter Model ------------------
 
@@ -459,20 +479,32 @@ class StepRunFilter(WorkspaceScopedFilter):
         description="Status of the Step Run",
     )
     start_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="Start time for this run"
+        default=None,
+        description="Start time for this run",
+        union_mode="left_to_right",
     )
     end_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="End time for this run"
+        default=None,
+        description="End time for this run",
+        union_mode="left_to_right",
     )
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Pipeline run of this step run"
+        default=None,
+        description="Pipeline run of this step run",
+        union_mode="left_to_right",
     )
     original_step_run_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Original id for this step run"
+        default=None,
+        description="Original id for this step run",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that produced this step run"
+        default=None,
+        description="User that produced this step run",
+        union_mode="left_to_right",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of this step run"
+        default=None,
+        description="Workspace of this step run",
+        union_mode="left_to_right",
     )

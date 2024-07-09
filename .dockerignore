@@ -4,3 +4,5 @@
 !/src/**
 !/scripts
 !/tests
+!/.trivyignore
+!/trivy-secret.yaml

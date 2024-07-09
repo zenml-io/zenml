@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization for TensorBoard integration."""
 
-import sys
 from typing import List, Optional
 from zenml.integrations.constants import TENSORBOARD
 from zenml.integrations.integration import Integration
@@ -35,18 +34,7 @@ class TensorBoardIntegration(Integration):
         Returns:
             A list of requirements.
         """
-        if sys.version_info > (3, 11):
-            tf_version = "2.13"
-        else:
-            # Capping tensorflow to 2.11 for Python 3.10 and below because it
-            # is not compatible with Pytorch
-            # (see https://github.com/pytorch/pytorch/issues/99637).
-            tf_version = "2.11"
-
-        requirements = [
-            f"tensorboard=={tf_version}",
-            "protobuf>=3.6.0,<4.0.0",
-        ]
+        requirements = ["tensorboard>=2.12,<=2.15"]
         return requirements
 
     @classmethod

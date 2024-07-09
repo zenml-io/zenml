@@ -24,12 +24,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, PrivateAttr, root_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
 from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -60,6 +61,8 @@ class Model(BaseModel):
         to a specific version/stage. If skipped new version will be created.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
+    model_version_id: The ID of a specific Model Version, if given - it will override
+        `name` and `version` settings. Used mostly internally.
     """
 
     name: str
@@ -71,15 +74,25 @@ class Model(BaseModel):
     trade_offs: Optional[str] = None
     ethics: Optional[str] = None
     tags: Optional[List[str]] = None
-    version: Optional[Union[ModelStages, int, str]] = None
+    version: Optional[Union[ModelStages, int, str]] = Field(
+        default=None, union_mode="smart"
+    )
     save_models_to_registry: bool = True
+    model_version_id: Optional[UUID] = None
 
     suppress_class_validation_warnings: bool = False
     was_created_in_this_run: bool = False
 
     _model_id: UUID = PrivateAttr(None)
-    _id: UUID = PrivateAttr(None)
     _number: int = PrivateAttr(None)
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
     #########################
     #    Public methods     #
@@ -93,16 +106,21 @@ class Model(BaseModel):
                 doesn't exist and can only be read given current
                 config (you used stage name or number as
                 a version name).
+
+        Raises:
+            RuntimeError: if model version doesn't exist and
+                cannot be fetched from the Model Control Plane.
         """
-        if self._id is None:
+        if self.model_version_id is None:
             try:
-                self._get_or_create_model_version()
-            except RuntimeError:
-                logger.info(
-                    f"Version `{self.version}` of `{self.name}` model doesn't exist "
-                    "and cannot be fetched from the Model Control Plane."
-                )
-        return self._id
+                mv = self._get_or_create_model_version()
+                self.model_version_id = mv.id
+            except RuntimeError as e:
+                raise RuntimeError(
+                    f"Version `{self.version}` of `{self.name}` model doesn't "
+                    "exist and cannot be fetched from the Model Control Plane."
+                ) from e
+        return self.model_version_id
 
     @property
     def model_id(self) -> UUID:
@@ -130,8 +148,8 @@ class Model(BaseModel):
                 self._get_or_create_model_version()
             except RuntimeError:
                 logger.info(
-                    f"Version `{self.version}` of `{self.name}` model doesn't exist "
-                    "and cannot be fetched from the Model Control Plane."
+                    f"Version `{self.version}` of `{self.name}` model doesn't "
+                    "exist and cannot be fetched from the Model Control Plane."
                 )
         return self._number
 
@@ -151,8 +169,8 @@ class Model(BaseModel):
                 return ModelStages(stage)
         except RuntimeError:
             logger.info(
-                f"Version `{self.version}` of `{self.name}` model doesn't exist "
-                "and cannot be fetched from the Model Control Plane."
+                f"Version `{self.version}` of `{self.name}` model doesn't "
+                "exist and cannot be fetched from the Model Control Plane."
             )
         return None
 
@@ -192,10 +210,12 @@ class Model(BaseModel):
 
         Args:
             name: The name of the artifact to retrieve.
-            version: The version of the artifact to retrieve (None for latest/non-versioned)
+            version: The version of the artifact to retrieve (None for
+                latest/non-versioned)
 
         Returns:
-            Specific version of the artifact or placeholder in the design time of the pipeline.
+            Specific version of the artifact or placeholder in the design time
+                of the pipeline.
         """
         if lazy := self._lazy_artifact_get(name, version):
             return lazy
@@ -214,10 +234,12 @@ class Model(BaseModel):
 
         Args:
             name: The name of the model artifact to retrieve.
-            version: The version of the model artifact to retrieve (None for latest/non-versioned)
+            version: The version of the model artifact to retrieve (None for
+                latest/non-versioned)
 
         Returns:
-            Specific version of the model artifact or placeholder in the design time of the pipeline.
+            Specific version of the model artifact or placeholder in the design
+                time of the pipeline.
         """
         if lazy := self._lazy_artifact_get(name, version):
             return lazy
@@ -236,10 +258,12 @@ class Model(BaseModel):
 
         Args:
             name: The name of the data artifact to retrieve.
-            version: The version of the data artifact to retrieve (None for latest/non-versioned)
+            version: The version of the data artifact to retrieve (None for
+                latest/non-versioned)
 
         Returns:
-            Specific version of the data artifact or placeholder in the design time of the pipeline.
+            Specific version of the data artifact or placeholder in the design
+            time of the pipeline.
         """
         if lazy := self._lazy_artifact_get(name, version):
             return lazy
@@ -258,10 +282,12 @@ class Model(BaseModel):
 
         Args:
             name: The name of the deployment artifact to retrieve.
-            version: The version of the deployment artifact to retrieve (None for latest/non-versioned)
+            version: The version of the deployment artifact to retrieve (None
+                for latest/non-versioned)
 
         Returns:
-            Specific version of the deployment artifact or placeholder in the design time of the pipeline.
+            Specific version of the deployment artifact or placeholder in the
+            design time of the pipeline.
         """
         if lazy := self._lazy_artifact_get(name, version):
             return lazy
@@ -289,7 +315,8 @@ class Model(BaseModel):
 
         Args:
             stage: the target stage for model version.
-            force: whether to force archiving of current model version in target stage or raise.
+            force: whether to force archiving of current model version in
+                target stage or raise.
         """
         self._get_or_create_model_version().set_stage(stage=stage, force=force)
 
@@ -355,7 +382,8 @@ class Model(BaseModel):
             The model version run metadata.
         """
         logger.warning(
-            "Model `metadata` property is deprecated. Please use `run_metadata` instead."
+            "Model `metadata` property is deprecated. Please use "
+            "`run_metadata` instead."
         )
         return {k: v.value for k, v in self.run_metadata.items()}
 
@@ -371,10 +399,12 @@ class Model(BaseModel):
 
         Args:
             name: The name of the artifact to delete.
-            version: The version of the artifact to delete (None for latest/non-versioned)
+            version: The version of the artifact to delete (None for
+                latest/non-versioned)
             only_link: Whether to only delete the link to the artifact.
             delete_metadata: Whether to delete the metadata of the artifact.
-            delete_from_artifact_store: Whether to delete the artifact from the artifact store.
+            delete_from_artifact_store: Whether to delete the artifact from the
+                artifact store.
         """
         from zenml.client import Client
         from zenml.models import ArtifactVersionResponse
@@ -402,7 +432,8 @@ class Model(BaseModel):
 
         Args:
             only_link: Whether to only delete the link to the artifact.
-            delete_from_artifact_store: Whether to delete the artifact from the artifact store.
+            delete_from_artifact_store: Whether to delete the artifact from
+                the artifact store.
         """
         from zenml.client import Client
 
@@ -422,15 +453,6 @@ class Model(BaseModel):
 
         client.delete_all_model_version_artifact_links(self.id, only_link)
 
-    #########################
-    #   Internal methods    #
-    #########################
-
-    class Config:
-        """Config class."""
-
-        smart_union = True
-
     def _lazy_artifact_get(
         self,
         name: str,
@@ -444,9 +466,9 @@ class Model(BaseModel):
         try:
             get_pipeline_context()
             return LazyArtifactVersionResponse(
-                _lazy_load_name=name,
-                _lazy_load_version=version,
-                _lazy_load_model=Model(
+                lazy_load_name=name,
+                lazy_load_version=version,
+                lazy_load_model=Model(
                     name=self.name, version=self.version or self.number
                 ),
             )
@@ -474,38 +496,46 @@ class Model(BaseModel):
         other_mv = other._get_or_create_model_version()
         return self_mv.id == other_mv.id
 
-    @root_validator(pre=True)
-    def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _root_validator(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate all in one.
 
         Args:
-            values: Dict of values.
+            data: Dict of values.
 
         Returns:
             Dict of validated values.
         """
-        suppress_class_validation_warnings = values.get(
+        suppress_class_validation_warnings = data.get(
             "suppress_class_validation_warnings", False
         )
-        version = values.get("version", None)
+        version = data.get("version", None)
 
         if (
             version in [stage.value for stage in ModelStages]
             and not suppress_class_validation_warnings
         ):
             logger.info(
-                f"`version` `{version}` matches one of the possible `ModelStages` and will be fetched using stage."
+                f"`version` `{version}` matches one of the possible "
+                "`ModelStages` and will be fetched using stage."
             )
         if str(version).isnumeric() and not suppress_class_validation_warnings:
             logger.info(
-                f"`version` `{version}` is numeric and will be fetched using version number."
+                f"`version` `{version}` is numeric and will be fetched "
+                "using version number."
             )
-        values["suppress_class_validation_warnings"] = True
-        return values
+        data["suppress_class_validation_warnings"] = True
+        return data
 
-    def _validate_config_in_runtime(self) -> None:
-        """Validate that config doesn't conflict with runtime environment."""
-        self._get_or_create_model_version()
+    def _validate_config_in_runtime(self) -> "ModelVersionResponse":
+        """Validate that config doesn't conflict with runtime environment.
+
+        Returns:
+            The model version based on configuration.
+        """
+        return self._get_or_create_model_version()
 
     def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.
@@ -519,43 +549,55 @@ class Model(BaseModel):
         from zenml.models import ModelRequest
 
         zenml_client = Client()
-        try:
-            model = zenml_client.zen_store.get_model(
-                model_name_or_id=self.name
+        if self.model_version_id:
+            mv = zenml_client.get_model_version(
+                model_version_name_or_number_or_id=self.model_version_id,
             )
-        except KeyError:
-            model_request = ModelRequest(
-                name=self.name,
-                license=self.license,
-                description=self.description,
-                audience=self.audience,
-                use_cases=self.use_cases,
-                limitations=self.limitations,
-                trade_offs=self.trade_offs,
-                ethics=self.ethics,
-                tags=self.tags,
-                user=zenml_client.active_user.id,
-                workspace=zenml_client.active_workspace.id,
-                save_models_to_registry=self.save_models_to_registry,
-            )
-            model_request = ModelRequest.parse_obj(model_request)
+            model = mv.model
+        else:
             try:
-                model = zenml_client.zen_store.create_model(
-                    model=model_request
-                )
-                logger.info(f"New model `{self.name}` was created implicitly.")
-            except EntityExistsError:
-                # this is backup logic, if model was created somehow in between get and create calls
-                pass
-            finally:
                 model = zenml_client.zen_store.get_model(
                     model_name_or_id=self.name
                 )
+            except KeyError:
+                model_request = ModelRequest(
+                    name=self.name,
+                    license=self.license,
+                    description=self.description,
+                    audience=self.audience,
+                    use_cases=self.use_cases,
+                    limitations=self.limitations,
+                    trade_offs=self.trade_offs,
+                    ethics=self.ethics,
+                    tags=self.tags,
+                    user=zenml_client.active_user.id,
+                    workspace=zenml_client.active_workspace.id,
+                    save_models_to_registry=self.save_models_to_registry,
+                )
+                model_request = ModelRequest.model_validate(model_request)
+                try:
+                    model = zenml_client.zen_store.create_model(
+                        model=model_request
+                    )
+                    logger.info(
+                        f"New model `{self.name}` was created implicitly."
+                    )
+                except EntityExistsError:
+                    model = zenml_client.zen_store.get_model(
+                        model_name_or_id=self.name
+                    )
+
         self._model_id = model.id
         return model
 
-    def _get_model_version(self) -> "ModelVersionResponse":
+    def _get_model_version(
+        self, hydrate: bool = True
+    ) -> "ModelVersionResponse":
         """This method gets a model version from Model Control Plane.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model version based on configuration.
@@ -563,19 +605,26 @@ class Model(BaseModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        mv = zenml_client.get_model_version(
-            model_name_or_id=self.name,
-            model_version_name_or_number_or_id=self.version,
-        )
-        if not self._id:
-            self._id = mv.id
+        if self.model_version_id:
+            mv = zenml_client.get_model_version(
+                model_version_name_or_number_or_id=self.model_version_id,
+                hydrate=hydrate,
+            )
+        else:
+            mv = zenml_client.get_model_version(
+                model_name_or_id=self.name,
+                model_version_name_or_number_or_id=self.version,
+                hydrate=hydrate,
+            )
+            self.model_version_id = mv.id
 
         difference: Dict[str, Any] = {}
-        if self.description and mv.description != self.description:
-            difference["description"] = {
-                "config": self.description,
-                "db": mv.description,
-            }
+        if mv.metadata:
+            if self.description and mv.description != self.description:
+                difference["description"] = {
+                    "config": self.description,
+                    "db": mv.description,
+                }
         if self.tags:
             configured_tags = set(self.tags)
             db_tags = {t.name for t in mv.tags}
@@ -597,15 +646,20 @@ class Model(BaseModel):
     ) -> "ModelVersionResponse":
         """This method should get or create a model and a model version from Model Control Plane.
 
-        A new model is created implicitly if missing, otherwise existing model is fetched. Model
-        name is controlled by the `name` parameter.
+        A new model is created implicitly if missing, otherwise existing model
+        is fetched. Model name is controlled by the `name` parameter.
 
         Model Version returned by this method is resolved based on model version:
-        - If `version` is None, a new model version is created, if not created by other steps in same run.
-        - If `version` is not None a model version will be fetched based on the version:
-            - If `version` is set to an integer or digit string, the model version with the matching number will be fetched.
-            - If `version` is set to a string, the model version with the matching version will be fetched.
-            - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
+        - If `version` is None, a new model version is created, if not created
+            by other steps in same run.
+        - If `version` is not None a model version will be fetched based on the
+            version:
+            - If `version` is set to an integer or digit string, the model
+                version with the matching number will be fetched.
+            - If `version` is set to a string, the model version with the
+                matching version will be fetched.
+            - If `version` is set to a `ModelStage`, the model version with the
+                matching stage will be fetched.
 
         Args:
             hydrate: Whether to return a hydrated version of the model version.
@@ -614,8 +668,9 @@ class Model(BaseModel):
             The model version based on configuration.
 
         Raises:
-            RuntimeError: if the model version needs to be created, but provided name is reserved
-            RuntimeError: if the model version cannot be created
+            RuntimeError: if the model version needs to be created, but
+                provided name is reserved.
+            RuntimeError: if the model version cannot be created.
         """
         from zenml.client import Client
         from zenml.models import ModelVersionRequest
@@ -626,12 +681,12 @@ class Model(BaseModel):
         model_version_request = ModelVersionRequest(
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
-            name=self.version,
+            name=str(self.version) if self.version else None,
             description=self.description,
             model=model.id,
             tags=self.tags,
         )
-        mv_request = ModelVersionRequest.parse_obj(model_version_request)
+        mv_request = ModelVersionRequest.model_validate(model_version_request)
         try:
             if not self.version:
                 try:
@@ -654,6 +709,7 @@ class Model(BaseModel):
                         and pipeline_mv.version is not None
                     ):
                         self.version = pipeline_mv.version
+                        self.model_version_id = pipeline_mv.model_version_id
                     else:
                         for step in context.pipeline_run.steps.values():
                             step_mv = step.config.model
@@ -664,8 +720,11 @@ class Model(BaseModel):
                                 and step_mv.version is not None
                             ):
                                 self.version = step_mv.version
+                                self.model_version_id = (
+                                    step_mv.model_version_id
+                                )
                                 break
-            if self.version:
+            if self.version or self.model_version_id:
                 model_version = self._get_model_version()
             else:
                 raise KeyError
@@ -681,7 +740,7 @@ class Model(BaseModel):
                     "model version in given stage exists. It might be missing, if "
                     "the pipeline promoting model version to this stage failed,"
                     " as an example. You can explore model versions using "
-                    f"`zenml model version list {self.name}` CLI command."
+                    f"`zenml model version list -n {self.name}` CLI command."
                 )
             if str(self.version).isnumeric():
                 raise RuntimeError(
@@ -691,7 +750,7 @@ class Model(BaseModel):
                     "model version with given number exists. It might be missing, if "
                     "the pipeline creating model version failed,"
                     " as an example. You can explore model versions using "
-                    f"`zenml model version list {self.name}` CLI command."
+                    f"`zenml model version list -n {self.name}` CLI command."
                 )
             retries_made = 0
             for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
@@ -722,8 +781,10 @@ class Model(BaseModel):
                     retries_made += 1
             self.version = model_version.name
             self.was_created_in_this_run = True
+
             logger.info(f"New model version `{self.version}` was created.")
-        self._id = model_version.id
+
+        self.model_version_id = model_version.id
         self._model_id = model_version.model.id
         self._number = model_version.number
         return model_version

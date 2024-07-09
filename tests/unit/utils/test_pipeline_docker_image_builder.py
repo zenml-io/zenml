@@ -14,6 +14,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
@@ -110,26 +112,28 @@ def test_requirements_file_generation(
     files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
-    assert len(files) == 5
+    assert len(files) == 6
     # first up the local python requirements
     assert files[0][1] == "local_requirements"
-    # then the user requirements
-    assert files[1][1] == "user_requirements"
-    # then the integration requirements
-    expected_integration_requirements = "\n".join(
-        sorted(SklearnIntegration.REQUIREMENTS + ["stack_requirements"])
-    )
-    assert files[2][1] == expected_integration_requirements
-    # last the hub requirements
+    # then the hub requirements
     expected_hub_internal_requirements = (
         f"-i {sample_hub_plugin_response_model.index_url}\n"
         f"{sample_hub_plugin_response_model.package_name}"
     )
-    assert files[3][1] == expected_hub_internal_requirements
+    assert files[1][1] == expected_hub_internal_requirements
     expected_hub_pypi_requirements = "\n".join(
         sample_hub_plugin_response_model.requirements
     )
-    assert files[4][1] == expected_hub_pypi_requirements
+    assert files[2][1] == expected_hub_pypi_requirements
+    # then the stack requirements
+    assert files[3][1] == "stack_requirements"
+    # then the integration requirements
+    expected_integration_requirements = "\n".join(
+        sorted(SklearnIntegration.REQUIREMENTS)
+    )
+    assert files[4][1] == expected_integration_requirements
+    # last the user requirements
+    assert files[5][1] == "user_requirements"
 
 
 def test_build_skipping():
@@ -144,3 +148,46 @@ def test_build_skipping():
         download_files=False,
     )
     assert image_digest
+
+
+def test_python_package_installer_args():
+    """Tests that the python package installer args get passed correctly."""
+    docker_settings = DockerSettings(
+        python_package_installer_args={
+            "default-timeout": 99,
+            "other-arg": "value",
+            "option": None,
+        }
+    )
+
+    requirements_files = [("requirements.txt", "numpy", [])]
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+            download_files=False,
+            requirements_files=requirements_files,
+        )
+    )
+
+    assert (
+        "RUN pip install --no-cache-dir --default-timeout=99 --other-arg=value --option"
+        in generated_dockerfile
+    )
+
+
+def test_dockerfile_needs_to_exist():
+    """Tests that an error gets raised if the Dockerfile specified in the
+    DockerSettings does not exist."""
+    docker_settings = DockerSettings(
+        dockerfile="/a/file/that/does/not/exist.random"
+    )
+
+    with pytest.raises(ValueError):
+        PipelineDockerImageBuilder().build_docker_image(
+            docker_settings=docker_settings,
+            tag="tag",
+            stack=Client().active_stack,
+            include_files=True,
+            download_files=False,
+        )

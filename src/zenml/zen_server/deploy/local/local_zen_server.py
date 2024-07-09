@@ -17,15 +17,20 @@ import ipaddress
 import os
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+from pydantic import ConfigDict, Field
+
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD,
     ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import StoreType
@@ -57,16 +62,15 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     """
 
     port: int = 8237
-    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = (
-        ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = Field(
+        default=ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS),
+        union_mode="left_to_right",
     )
     blocking: bool = False
     store: Optional[StoreConfiguration] = None
+    use_legacy_dashboard: bool = DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD
 
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class LocalZenServerConfig(LocalDaemonServiceConfig):
@@ -127,14 +131,11 @@ class LocalZenServer(LocalDaemonService):
             The local ZenML server service or None, if the local server
             deployment is not found.
         """
-        from zenml.services import ServiceRegistry
-
         config_filename = os.path.join(cls.config_path(), "service.json")
         try:
             with open(config_filename, "r") as f:
                 return cast(
-                    LocalZenServer,
-                    ServiceRegistry().load_service_from_json(f.read()),
+                    "LocalZenServer", LocalZenServer.from_json(f.read())
                 )
         except FileNotFoundError:
             return None
@@ -159,6 +160,10 @@ class LocalZenServer(LocalDaemonService):
             GlobalConfiguration().local_stores_path
         )
         env[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "True"
+        env[ENV_ZENML_SERVER_USE_LEGACY_DASHBOARD] = str(
+            self.config.server.use_legacy_dashboard
+        )
+        env[ENV_ZENML_SERVER_AUTO_ACTIVATE] = "True"
 
         return cmd, env
 
@@ -231,6 +236,7 @@ class LocalZenServer(LocalDaemonService):
                 host=self.endpoint.config.ip_address,
                 port=self.endpoint.config.port or 8000,
                 log_level="info",
+                server_header=False,
             )
         except KeyboardInterrupt:
             logger.info("ZenML Server stopped. Resuming normal execution.")

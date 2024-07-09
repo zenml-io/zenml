@@ -30,11 +30,7 @@ on:
       os:
         description: OS
         type: choice
-        options:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-          - arc-runner-set
+        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
         required: false
         default: ubuntu-latest
       python-version:
@@ -98,7 +94,8 @@ jobs:
       GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+    # TODO: add Windows testing for Python 3.11 back in
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') }}
     defaults:
       run:
         shell: bash
@@ -120,6 +117,14 @@ jobs:
         if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: contains(inputs.test_environment, 'docker') || contains(inputs.test_environment,
+          'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment,
+          'kubernetes')
       - uses: actions/checkout@v4.1.1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -151,15 +156,25 @@ jobs:
         run: |
           pip install uv
           uv pip install --system "pyyaml==5.3.1" docker-compose
-      - name: Install Linux System Dependencies
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
-        run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
-        run: brew install graphviz
-      - name: Install Windows System Dependencies
-        if: runner.os=='Windows'
-        run: choco install graphviz
+        run: brew install libomp
+      - name: Unbreak Python in GHA for 3.8-3.10
+        if: runner.os=='macOS' && inputs.python-version != '3.11'
+        # github actions overwrites brew's python. Force it to reassert itself, by
+        # running in a separate step.
+        # Workaround GitHub Actions Python issues
+        # see https://github.com/Homebrew/homebrew-core/issues/165793#issuecomment-1989441193
+        run: |
+          find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
+          sudo rm -rf /Library/Frameworks/Python.framework/
+          brew install --force python3 && brew unlink python3 && brew unlink python3 && brew link --overwrite python3
+      - name: Unbreak Python in GHA for 3.11
+        if: runner.os=='macOS' && inputs.python-version == '3.11'
+        run: |
+          # Unlink and re-link to prevent errors when github mac runner images
+          # https://github.com/actions/setup-python/issues/577
+          brew list -1 | grep python | while read formula; do brew unlink $formula; brew link --overwrite $formula; done
       - name: Install Docker and Colima on MacOS
         if: runner.os=='macOS'
         run: |
@@ -214,13 +229,7 @@ jobs:
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
         timeout-minutes: ${{ inputs.tmate_timeout }}
-      - name: Integration Tests (Ubuntu) - Slow CI
-          # Ubuntu Slow CI integration tests run on single machines
-        if: runner.os != 'macOS' && runner.os != 'Windows'
-        run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
-      - name: Integration Tests (Non-Ubuntu) - Slow CI
-        if: runner.os == 'macOS' || runner.os == 'Windows'
+      - name: Integration Tests - Slow CI
         run: |
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
       - name: Setup tmate session after tests
@@ -231,4 +240,4 @@ jobs:
         run: |-
           zenml integration list
           uv pip list
-          pip check || true
+          uv pip check || true

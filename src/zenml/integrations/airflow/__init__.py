@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Airflow integration for ZenML.
 
-The Airflow integration sub-module powers an alternative to the local
-orchestrator. You can enable it by registering the Airflow orchestrator with
-the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
+The Airflow integration powers an alternative orchestrator.
 """
 from typing import List, Type
 
@@ -30,16 +28,7 @@ class AirflowIntegration(Integration):
     """Definition of Airflow Integration for ZenML."""
 
     NAME = AIRFLOW
-    # remove pendulum version requirement once Airflow supports
-    # pendulum>-3.0.0
-    REQUIREMENTS = [
-        "apache-airflow~=2.4.0",
-        "pendulum<3.0.0",
-        # We need to add this as an extra dependency to manually downgrade
-        # SQLModel. Otherwise, the initial installation of ZenML installs
-        # a higher version SQLModel and a version mismatch is created.
-        "sqlmodel>=0.0.9,<=0.0.16",
-    ]
+    REQUIREMENTS = []
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

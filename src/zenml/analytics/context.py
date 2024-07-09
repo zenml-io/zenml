@@ -17,6 +17,8 @@ This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
 
+import datetime
+import locale
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
@@ -74,13 +76,18 @@ class AnalyticsContext:
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
 
-        gc = GlobalConfiguration()
-        self.analytics_opt_in = gc.analytics_opt_in
-
-        if not self.analytics_opt_in:
-            return self
-
         try:
+            gc = GlobalConfiguration()
+            store_info = gc.zen_store.get_store_info()
+
+            if self.in_server:
+                self.analytics_opt_in = store_info.analytics_enabled
+            else:
+                self.analytics_opt_in = gc.analytics_opt_in
+
+            if not self.analytics_opt_in:
+                return self
+
             # Fetch the `user_id`
             if self.in_server:
                 from zenml.zen_server.auth import get_auth_context
@@ -112,9 +119,6 @@ class AnalyticsContext:
             else:
                 # If the code is running on the client, attach the client id.
                 self.client_id = gc.user_id
-
-            # Fetch the store information including the `server_id`
-            store_info = gc.zen_store.get_store_info()
 
             self.server_id = store_info.id
             self.deployment_type = store_info.deployment_type
@@ -209,15 +213,10 @@ class AnalyticsContext:
         """
         success = False
         if self.analytics_opt_in and self.user_id is not None:
-            if traits is None:
-                traits = {}
-
-            traits.update({"group_id": group_id})
-
             success, _ = default_client.group(
                 user_id=self.user_id,
                 group_id=group_id,
-                traits=traits,
+                traits=traits or {},
             )
 
         return success
@@ -267,6 +266,23 @@ class AnalyticsContext:
                 "executed_by_service_account": self.executed_by_service_account,
             }
         )
+
+        try:
+            # Timezone as tzdata
+            tz = (
+                datetime.datetime.now(datetime.timezone.utc)
+                .astimezone()
+                .tzname()
+            )
+            if tz is not None:
+                properties.update({"timezone": tz})
+
+            # Language code such as "en_DE"
+            language_code, encoding = locale.getlocale()
+            if language_code is not None:
+                properties.update({"locale": language_code})
+        except Exception:
+            pass
 
         if self.external_user_id:
             properties["external_user_id"] = self.external_user_id

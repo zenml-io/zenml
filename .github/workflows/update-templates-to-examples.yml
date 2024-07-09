@@ -16,11 +16,7 @@ on:
       os:
         description: OS
         type: choice
-        options:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-          - arc-runner-set
+        options: [ubuntu-latest, macos-13, windows-latest, arc-runner-set]
         required: false
         default: ubuntu-latest
       python-version:
@@ -50,7 +46,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.01.22  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.06.06  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -122,7 +118,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.01.12  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.06.14  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -193,7 +189,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.01.22  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.06.06  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -245,4 +241,75 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: 'Quickstart template updates in `examples/quickstart` have been pushed.'
+            })
+  update-llm-finetuning-template-to-examples:
+    name: update-llm-finetuning-template-to-examples
+    runs-on: ${{ inputs.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
+      'GitBook:')
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Run template tests for zenml-io/template-llm-finetuning
+        uses: zenml-io/template-llm-finetuning/.github/actions/llm_finetuning_template_test@main
+        with:
+          python-version: ${{ inputs.python-version }}
+          ref-zenml: ${{ github.ref }}
+          ref-template: 2024.06.20  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+      - name: Clean-up
+        run: |
+          rm -rf ./local_checkout
+      - name: message-on-error
+        if: failure()
+        run: |
+          echo "::error title=zenml-io/template-llm-finetuning project template testing failed with new version of ZenML core!::\
+            Breaking changes affecting templates have been introduced. To mitigate this issue,\
+            please make the code in zenml-io/template-llm-finetuning compatible with new version of\
+            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
+      - uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Check-out fresh LLM Finetuning template
+        run: |
+          rm -rf examples/llm_finetuning
+          mkdir -p examples/llm_finetuning
+          printf 'info@zenml.io' | zenml init --path examples/llm_finetuning --template llm_finetuning --template-with-defaults
+          pip install yamlfix
+          bash scripts/format.sh examples/llm_finetuning
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet "origin/${{ github.event.pull_request.head.ref }}"; then
+            echo "No active Git changes found."
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "vvv Active Git changes found vvv"
+            echo "changes=true" >> $GITHUB_OUTPUT
+            git diff "origin/${{ github.event.pull_request.head.ref }}"
+          fi
+      - name: Commit and push template
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -am "Auto-update of LLM Finetuning template"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      - name: Create PR comment
+        if: steps.check_changes.outputs.changes == 'true'
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |-
+            github.rest.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'LLM Finetuning template updates in `examples/llm_finetuning` have been pushed.'
             })

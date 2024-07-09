@@ -13,12 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the TensorBoard service."""
 
+import uuid
 from typing import Any, Dict, Union
 
 from tensorboard import default, program  # type: ignore [import-untyped]
-from tensorboard.uploader import (  # type: ignore [import-untyped]
-    uploader_subcommand,
-)
 
 from zenml.logger import get_logger
 from zenml.services import (
@@ -103,6 +101,8 @@ class TensorboardService(LocalDaemonService):
                 ),
             )
             attrs["endpoint"] = endpoint
+        if "uuid" not in attrs:
+            attrs["uuid"] = uuid.uuid4()
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
@@ -117,7 +117,6 @@ class TensorboardService(LocalDaemonService):
         try:
             tensorboard = program.TensorBoard(
                 plugins=default.get_plugins(),
-                subcommands=[uploader_subcommand.UploaderSubcommand()],
             )
             tensorboard.configure(
                 logdir=self.config.logdir,

@@ -90,7 +90,7 @@ def test_that_argument_can_be_a_get_artifact_of_model_in_pipeline_context():
 
 def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not_found():
     producer_pipe(False)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(KeyError):
         consumer_pipe()
 
 

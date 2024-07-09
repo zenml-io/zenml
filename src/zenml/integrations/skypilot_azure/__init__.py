@@ -33,8 +33,8 @@ class SkypilotAzureIntegration(Integration):
     """Definition of Skypilot (Azure) Integration for ZenML."""
 
     NAME = SKYPILOT_AZURE
-    REQUIREMENTS = ["skypilot[azure]<=0.4.1"]
-    APT_PACKAGES = ["openssh-client","rsync"]
+    REQUIREMENTS = ["skypilot[azure]~=0.6.0"]
+    APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

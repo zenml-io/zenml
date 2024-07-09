@@ -23,7 +23,7 @@ from typing import Any, List, Optional
 
 from docker.client import DockerClient
 from docker.errors import DockerException
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.exceptions import AuthorizationException
@@ -37,7 +37,9 @@ from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
     ServiceConnector,
 )
+from zenml.utils import docker_utils
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
 
@@ -45,10 +47,10 @@ logger = get_logger(__name__)
 class DockerCredentials(AuthenticationConfig):
     """Docker client authentication credentials."""
 
-    username: SecretStr = Field(
+    username: PlainSerializedSecretStr = Field(
         title="Username",
     )
-    password: SecretStr = Field(
+    password: PlainSerializedSecretStr = Field(
         title="Password",
     )
 
@@ -258,7 +260,9 @@ class DockerServiceConnector(ServiceConnector):
             An authenticated python-docker client object.
         """
         assert self.resource_id is not None
-        docker_client = DockerClient.from_env()
+
+        docker_client = docker_utils._try_get_docker_client_from_env()
+
         self._authorize_client(docker_client, self.resource_id)
 
         return docker_client

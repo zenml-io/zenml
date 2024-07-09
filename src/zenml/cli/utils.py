@@ -17,6 +17,7 @@ import contextlib
 import datetime
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -39,14 +40,17 @@ from typing import (
 )
 
 import click
+import pkg_resources
 import yaml
 from pydantic import BaseModel, SecretStr
 from rich import box, table
+from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
 from rich.markup import escape
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 from rich.style import Style
+from rich.table import Table
 
 from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
@@ -68,6 +72,7 @@ from zenml.models import (
     BoolFilter,
     NumericFilter,
     Page,
+    ServiceConnectorRequirements,
     StrFilter,
     UUIDFilter,
 )
@@ -289,29 +294,31 @@ def print_pydantic_models(
             if isinstance(model, BaseIdentifiedResponse):
                 include_columns = ["id"]
 
-                if "name" in model.__fields__:
+                if "name" in model.model_fields:
                     include_columns.append("name")
 
                 include_columns.extend(
                     [
                         k
-                        for k in model.__fields__[
-                            "body"
-                        ].type_.__fields__.keys()
-                        if k not in exclude_columns
-                    ]
-                    + [
-                        k
-                        for k in model.__fields__[
-                            "metadata"
-                        ].type_.__fields__.keys()
+                        for k in model.get_body().model_fields.keys()
                         if k not in exclude_columns
                     ]
                 )
 
+                if model.metadata is not None:
+                    include_columns.extend(
+                        [
+                            k
+                            for k in model.get_metadata().model_fields.keys()
+                            if k not in exclude_columns
+                        ]
+                    )
+
             else:
                 include_columns = [
-                    k for k in model.dict().keys() if k not in exclude_columns
+                    k
+                    for k in model.model_dump().keys()
+                    if k not in exclude_columns
                 ]
         else:
             include_columns = columns
@@ -324,7 +331,7 @@ def print_pydantic_models(
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
             if isinstance(value, BaseIdentifiedResponse):
-                if "name" in value.__fields__:
+                if "name" in value.model_fields:
                     items[k] = str(getattr(value, "name"))
                 else:
                     items[k] = str(value.id)
@@ -334,7 +341,7 @@ def print_pydantic_models(
             elif isinstance(value, list):
                 for v in value:
                     if isinstance(v, BaseIdentifiedResponse):
-                        if "name" in v.__fields__:
+                        if "name" in v.model_fields:
                             items.setdefault(k, []).append(
                                 str(getattr(v, "name"))
                             )
@@ -353,9 +360,11 @@ def print_pydantic_models(
             marker = "current"
         if active_models is not None and show_active_column:
             return {
-                marker: ":point_right:"
-                if any(model.id == a.id for a in active_models)
-                else "",
+                marker: (
+                    ":point_right:"
+                    if any(model.id == a.id for a in active_models)
+                    else ""
+                ),
                 **items,
             }
 
@@ -422,27 +431,31 @@ def print_pydantic_model(
         if isinstance(model, BaseIdentifiedResponse):
             include_columns = ["id"]
 
-            if "name" in model.__fields__:
+            if "name" in model.model_fields:
                 include_columns.append("name")
 
             include_columns.extend(
                 [
                     k
-                    for k in model.__fields__["body"].type_.__fields__.keys()
-                    if k not in exclude_columns
-                ]
-                + [
-                    k
-                    for k in model.__fields__[
-                        "metadata"
-                    ].type_.__fields__.keys()
+                    for k in model.get_body().model_fields.keys()
                     if k not in exclude_columns
                 ]
             )
 
+            if model.metadata is not None:
+                include_columns.extend(
+                    [
+                        k
+                        for k in model.get_metadata().model_fields.keys()
+                        if k not in exclude_columns
+                    ]
+                )
+
         else:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns
+                k
+                for k in model.model_dump().keys()
+                if k not in exclude_columns
             ]
     else:
         include_columns = list(columns)
@@ -452,7 +465,7 @@ def print_pydantic_model(
     for k in include_columns:
         value = getattr(model, k)
         if isinstance(value, BaseIdentifiedResponse):
-            if "name" in value.__fields__:
+            if "name" in value.model_fields:
                 items[k] = str(getattr(value, "name"))
             else:
                 items[k] = str(value.id)
@@ -462,7 +475,7 @@ def print_pydantic_model(
         elif isinstance(value, list):
             for v in value:
                 if isinstance(v, BaseIdentifiedResponse):
-                    if "name" in v.__fields__:
+                    if "name" in v.model_fields:
                         items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:
                         items.setdefault(k, []).append(str(v.id))
@@ -573,6 +586,23 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
+
+    if not stack.labels:
+        declare("No labels are set for this stack.")
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Labels",
+            show_lines=True,
+        )
+        rich_table.add_column("LABEL")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        for label, value in stack.labels.items():
+            rich_table.add_row(label, str(value))
+
+        console.print(rich_table)
+
     declare(
         f"Stack '{stack.name}' with id '{stack.id}' is "
         f"{f'owned by user {stack.user.name}.' if stack.user else 'unowned.'}"
@@ -604,13 +634,18 @@ def print_flavor_list(flavors: Page["FlavorResponse"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "ComponentResponse", active_status: bool
+    component: "ComponentResponse",
+    active_status: bool,
+    connector_requirements: Optional[ServiceConnectorRequirements] = None,
 ) -> None:
     """Prints the configuration options of a stack component.
 
     Args:
         component: The stack component to print.
         active_status: Whether the stack component is active.
+        connector_requirements: Connector requirements for the component, taken
+            from the component flavor. Only needed if the component has a
+            connector.
     """
     if component.user:
         user_name = component.user.name
@@ -666,7 +701,7 @@ def print_stack_component_configuration(
         rich_table.add_column("VALUE", overflow="fold")
 
         for label, value in component.labels.items():
-            rich_table.add_row(label, value)
+            rich_table.add_row(label, str(value))
 
         console.print(rich_table)
 
@@ -681,11 +716,17 @@ def print_stack_component_configuration(
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
 
+        resource_type = (
+            connector_requirements.resource_type
+            if connector_requirements
+            else component.connector.resource_types[0]
+        )
+
         connector_dict = {
             "ID": str(component.connector.id),
             "NAME": component.connector.name,
             "TYPE": component.connector.type,
-            "RESOURCE TYPE": component.connector.resource_types[0],
+            "RESOURCE TYPE": resource_type,
             "RESOURCE NAME": component.connector_resource_id
             or component.connector.resource_id
             or "N/A",
@@ -1004,12 +1045,19 @@ def prompt_configuration(
 def install_packages(
     packages: List[str],
     upgrade: bool = False,
+    use_uv: bool = False,
 ) -> None:
-    """Installs pypi packages into the current environment with pip.
+    """Installs pypi packages into the current environment with pip or uv.
+
+    When using with `uv`, a virtual environment is required.
 
     Args:
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
+        use_uv: Whether to use uv for package installation.
+
+    Raises:
+        e: If the package installation fails.
     """
     if "neptune" in packages:
         declare(
@@ -1018,53 +1066,107 @@ def install_packages(
         )
         uninstall_package("neptune-client")
 
+    if "prodigy" in packages:
+        packages.remove("prodigy")
+        declare(
+            "The `prodigy` package should be installed manually using your "
+            "license key. Please visit https://prodi.gy/docs/install for more "
+            "information."
+        )
+    if not packages:
+        # if user only tried to install prodigy, we can
+        # just return without doing anything
+        return
+
+    pip_command = ["uv", "pip"] if use_uv else ["pip"]
     if upgrade:
-        command = [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--upgrade",
-        ] + packages
+        command = (
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "install",
+                "--upgrade",
+            ]
+            + packages
+        )
     else:
-        command = [sys.executable, "-m", "pip", "install"] + packages
+        command = [sys.executable, "-m"] + pip_command + ["install"] + packages
 
     if not IS_DEBUG_ENV:
-        command += [
-            "-qqq",
-            "--no-warn-conflicts",
-        ]
+        quiet_flag = "-q" if use_uv else "-qqq"
+        command.append(quiet_flag)
+        if not use_uv:
+            command.append("--no-warn-conflicts")
 
-    subprocess.check_call(command)
+    try:
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError as e:
+        if (
+            use_uv
+            and "Failed to locate a virtualenv or Conda environment" in str(e)
+        ):
+            error(
+                "Failed to locate a virtualenv or Conda environment. "
+                "When using uv, a virtual environment is required. "
+                "Run `uv venv` to create a virtualenv and retry."
+            )
+        else:
+            raise e
 
-    if "label-studio" in packages:
-        warning(
-            "There is a known issue with Label Studio installations "
-            "via zenml. You might find that the Label Studio "
-            "installation breaks the ZenML CLI. In this case, please "
-            "run `pip install 'pydantic<1.11,>=1.9.0'` to fix the "
-            "issue or message us on Slack if you need help with this. "
-            "We are working on a more definitive fix."
-        )
 
-
-def uninstall_package(package: str) -> None:
-    """Uninstalls pypi package from the current environment with pip.
+def uninstall_package(package: str, use_uv: bool = False) -> None:
+    """Uninstalls pypi package from the current environment with pip or uv.
 
     Args:
         package: The package to uninstall.
+        use_uv: Whether to use uv for package uninstallation.
     """
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "uninstall",
-            "-qqq",
-            "-y",
-            package,
-        ]
-    )
+    pip_command = ["uv", "pip"] if use_uv else ["pip"]
+    quiet_flag = "-q" if use_uv else "-qqq"
+
+    if use_uv:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "uninstall",
+                quiet_flag,
+                package,
+            ]
+        )
+    else:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+            ]
+            + pip_command
+            + [
+                "uninstall",
+                quiet_flag,
+                "-y",
+                package,
+            ]
+        )
+
+
+def is_uv_installed() -> bool:
+    """Check if uv is installed in the current environment.
+
+    Returns:
+        True if uv is installed, False otherwise.
+    """
+    try:
+        pkg_resources.get_distribution("uv")
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
 
 
 def pretty_print_secret(
@@ -1132,6 +1234,10 @@ def get_service_state_emoji(state: "ServiceState") -> str:
         return ":pause_button:"
     if state == ServiceState.ERROR:
         return ":heavy_exclamation_mark:"
+    if state == ServiceState.PENDING_STARTUP:
+        return ":hourglass:"
+    if state == ServiceState.SCALED_TO_ZERO:
+        return ":chart_decreasing:"
     return ":hourglass_not_done:"
 
 
@@ -1146,15 +1252,18 @@ def pretty_print_model_deployer(
     """
     model_service_dicts = []
     for model_service in model_services:
-        served_model_info = model_deployer.get_model_server_info(model_service)
         dict_uuid = str(model_service.uuid)
         dict_pl_name = model_service.config.pipeline_name
         dict_pl_stp_name = model_service.config.pipeline_step_name
-        dict_model_name = served_model_info.get("MODEL_NAME", "")
+        dict_model_name = model_service.config.model_name
+        type = model_service.SERVICE_TYPE.type
+        flavor = model_service.SERVICE_TYPE.flavor
         model_service_dicts.append(
             {
                 "STATUS": get_service_state_emoji(model_service.status.state),
                 "UUID": dict_uuid,
+                "TYPE": type,
+                "FLAVOR": flavor,
                 "PIPELINE_NAME": dict_pl_name,
                 "PIPELINE_STEP_NAME": dict_pl_stp_name,
                 "MODEL_NAME": dict_model_name,
@@ -1199,9 +1308,11 @@ def pretty_print_model_version_table(
             "NAME": model_version.registered_model.name,
             "MODEL_VERSION": model_version.version,
             "VERSION_DESCRIPTION": model_version.description,
-            "METADATA": model_version.metadata.dict()
-            if model_version.metadata
-            else {},
+            "METADATA": (
+                model_version.metadata.model_dump()
+                if model_version.metadata
+                else {}
+            ),
         }
         for model_version in model_versions
     ]
@@ -1231,15 +1342,21 @@ def pretty_print_model_version_details(
         "REGISTERED_MODEL_NAME": model_version.registered_model.name,
         "VERSION": model_version.version,
         "VERSION_DESCRIPTION": model_version.description,
-        "CREATED_AT": str(model_version.created_at)
-        if model_version.created_at
-        else "N/A",
-        "UPDATED_AT": str(model_version.last_updated_at)
-        if model_version.last_updated_at
-        else "N/A",
-        "METADATA": model_version.metadata.dict()
-        if model_version.metadata
-        else {},
+        "CREATED_AT": (
+            str(model_version.created_at)
+            if model_version.created_at
+            else "N/A"
+        ),
+        "UPDATED_AT": (
+            str(model_version.last_updated_at)
+            if model_version.last_updated_at
+            else "N/A"
+        ),
+        "METADATA": (
+            model_version.metadata.model_dump()
+            if model_version.metadata
+            else {}
+        ),
         "MODEL_SOURCE_URI": model_version.model_source_uri,
         "STAGE": model_version.stage.value,
     }
@@ -1281,9 +1398,10 @@ def print_served_model_configuration(
         **served_model_info,
         "UUID": str(model_service.uuid),
         "STATUS": get_service_state_emoji(model_service.status.state),
+        "TYPE": model_service.SERVICE_TYPE.type,
+        "FLAVOR": model_service.SERVICE_TYPE.flavor,
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 
@@ -1598,7 +1716,7 @@ def expires_in(
         expires_at -= datetime.timedelta(seconds=skew_tolerance)
     if expires_at < now:
         return expired_str
-    return seconds_to_human_readable((expires_at - now).seconds)
+    return seconds_to_human_readable(int((expires_at - now).total_seconds()))
 
 
 def print_service_connectors_table(
@@ -1661,13 +1779,15 @@ def print_service_connectors_table(
             "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
             "RESOURCE NAME": resource_name,
             "OWNER": f"{connector.user.name if connector.user else '-'}",
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else ""
+            ),
             "LABELS": "\n".join(labels),
         }
         configurations.append(connector_config)
@@ -1723,15 +1843,17 @@ def print_service_connector_resource_table(
             resource_row = {}
             if not show_resources_only:
                 resource_row = {
-                    "CONNECTOR ID": str(resource_model.id)
-                    if not printed_connector
-                    else "",
-                    "CONNECTOR NAME": resource_model.name
-                    if not printed_connector
-                    else "",
-                    "CONNECTOR TYPE": resource_model.emojified_connector_type
-                    if not printed_connector
-                    else "",
+                    "CONNECTOR ID": (
+                        str(resource_model.id) if not printed_connector else ""
+                    ),
+                    "CONNECTOR NAME": (
+                        resource_model.name if not printed_connector else ""
+                    ),
+                    "CONNECTOR TYPE": (
+                        resource_model.emojified_connector_type
+                        if not printed_connector
+                        else ""
+                    ),
                 }
             resource_row.update(
                 {
@@ -1807,16 +1929,20 @@ def print_service_connector_configuration(
             "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "N/A",
-            "EXPIRES_SKEW_TOLERANCE": connector.expires_skew_tolerance
-            if connector.expires_skew_tolerance
-            else "N/A",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else "N/A"
+            ),
+            "EXPIRES_SKEW_TOLERANCE": (
+                connector.expires_skew_tolerance
+                if connector.expires_skew_tolerance
+                else "N/A"
+            ),
             "OWNER": user_name,
             "WORKSPACE": connector.workspace.name,
             "CREATED_AT": connector.created,
@@ -1830,16 +1956,20 @@ def print_service_connector_configuration(
             "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
             "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SESSION DURATION": expiration,
-            "EXPIRES IN": expires_in(
-                connector.expires_at,
-                ":name_badge: Expired!",
-                connector.expires_skew_tolerance,
-            )
-            if connector.expires_at
-            else "N/A",
-            "EXPIRES_SKEW_TOLERANCE": connector.expires_skew_tolerance
-            if connector.expires_skew_tolerance
-            else "N/A",
+            "EXPIRES IN": (
+                expires_in(
+                    connector.expires_at,
+                    ":name_badge: Expired!",
+                    connector.expires_skew_tolerance,
+                )
+                if connector.expires_at
+                else "N/A"
+            ),
+            "EXPIRES_SKEW_TOLERANCE": (
+                connector.expires_skew_tolerance
+                if connector.expires_skew_tolerance
+                else "N/A"
+            ),
         }
 
     for item in properties.items():
@@ -2158,7 +2288,7 @@ def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
         A configuration with secret values removed.
     """
     config_dict = {}
-    config_fields = dict(config.__class__.__fields__)
+    config_fields = config.__class__.model_fields
     for key, value in config_fields.items():
         if secret_utils.is_secret_field(value):
             config_dict[key] = "********"
@@ -2435,7 +2565,7 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     def inner_decorator(func: F) -> F:
         options = []
         data_type_descriptors = set()
-        for k, v in filter_model.__fields__.items():
+        for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
                 options.append(
                     click.option(
@@ -2641,3 +2771,97 @@ def verify_mlstacks_prerequisites_installation() -> None:
         error(NOT_INSTALLED_MESSAGE)
     except subprocess.CalledProcessError:
         error(TERRAFORM_NOT_INSTALLED_MESSAGE)
+
+
+def is_jupyter_installed() -> bool:
+    """Checks if Jupyter notebook is installed.
+
+    Returns:
+        bool: True if Jupyter notebook is installed, False otherwise.
+    """
+    try:
+        pkg_resources.get_distribution("notebook")
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
+
+
+def multi_choice_prompt(
+    object_type: str,
+    choices: List[List[Any]],
+    headers: List[str],
+    prompt_text: str,
+    allow_zero_be_a_new_object: bool = False,
+    default_choice: Optional[str] = None,
+) -> Optional[int]:
+    """Prompts the user to select a choice from a list of choices.
+
+    Args:
+        object_type: The type of the object
+        choices: The list of choices
+        prompt_text: The prompt text
+        headers: The list of headers.
+        allow_zero_be_a_new_object: Whether to allow zero as a new object
+        default_choice: The default choice
+
+    Returns:
+        The selected choice index or None for new object
+
+    Raises:
+        RuntimeError: If no choice is made.
+    """
+    table = Table(
+        title=f"Available {object_type}",
+        show_header=True,
+        border_style=None,
+        expand=True,
+        show_lines=True,
+    )
+    table.add_column("Choice", justify="left", width=1)
+    for h in headers:
+        table.add_column(
+            h.replace("_", " ").capitalize(), justify="left", width=10
+        )
+
+    i_shift = 0
+    if allow_zero_be_a_new_object:
+        i_shift = 1
+        table.add_row(
+            "[0]",
+            *([f"Create a new {object_type}"] * len(headers)),
+        )
+    for i, one_choice in enumerate(choices):
+        table.add_row(f"[{i+i_shift}]", *[str(x) for x in one_choice])
+    Console().print(table)
+
+    selected = Prompt.ask(
+        prompt_text,
+        choices=[str(i) for i in range(0, len(choices) + 1)],
+        default=default_choice,
+        show_choices=False,
+    )
+    if selected is None:
+        raise RuntimeError(f"No {object_type} was selected")
+
+    if selected == "0" and allow_zero_be_a_new_object:
+        return None
+    else:
+        return int(selected) - i_shift
+
+
+def requires_mac_env_var_warning() -> bool:
+    """Checks if a warning needs to be shown for a local Mac server.
+
+    This is for the case where a user is on a macOS system, trying to run a
+    local server but is missing the `OBJC_DISABLE_INITIALIZE_FORK_SAFETY`
+    environment variable.
+
+    Returns:
+        bool: True if a warning needs to be shown, False otherwise.
+    """
+    if sys.platform == "darwin":
+        mac_version_tuple = tuple(map(int, platform.release().split(".")[:2]))
+        return not os.getenv(
+            "OBJC_DISABLE_INITIALIZE_FORK_SAFETY"
+        ) and mac_version_tuple >= (10, 13)
+    return False

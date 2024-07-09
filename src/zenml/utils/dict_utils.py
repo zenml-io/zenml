@@ -13,7 +13,11 @@
 #  permissions and limitations under the License.
 """Util functions for dictionaries."""
 
+import base64
+import json
 from typing import Any, Dict
+
+from zenml.utils.json_utils import pydantic_encoder
 
 
 def recursive_update(
@@ -69,3 +73,21 @@ def remove_none_values(
             return value
 
     return {k: _maybe_recurse(v) for k, v in dict_.items() if v is not None}
+
+
+def dict_to_bytes(dict_: Dict[str, Any]) -> bytes:
+    """Converts a dictionary to bytes.
+
+    Args:
+        dict_: The dictionary to convert.
+
+    Returns:
+        The dictionary as bytes.
+    """
+    return base64.b64encode(
+        json.dumps(
+            dict_,
+            sort_keys=False,
+            default=pydantic_encoder,
+        ).encode("utf-8")
+    )

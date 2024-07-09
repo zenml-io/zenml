@@ -1,5 +1,5 @@
 steps:
-# build base image - python 3.10
+# build client base image - python 3.10
 - name: gcr.io/cloud-builders/docker
   args:
   - '-c'
@@ -7,7 +7,8 @@ steps:
     docker build \
       --build-arg ZENML_VERSION=$TAG_NAME \
       --build-arg PYTHON_VERSION=3.10 \
-      --target base \
+      --build-arg ZENML_NIGHTLY=true \
+      --target client \
       -f docker/base.Dockerfile . \
       -t $$USERNAME/zenml:$TAG_NAME-py3.10-nightly
 
@@ -20,11 +21,18 @@ steps:
   secretEnv:
   - USERNAME
 
-# build server image - python 3.8 only
+# build server image - python 3.11 only
 - name: gcr.io/cloud-builders/docker
   args:
   - '-c'
-  - "docker build \\\n--build-arg ZENML_VERSION=$TAG_NAME \\\n--build-arg PYTHON_VERSION=3.8 \\\n-f docker/base.Dockerfile . \\\n-t $$USERNAME/zenml-server:$TAG_NAME-nightly\n  #magic___^_^___line\n# use latest tags only for official releases"
+  - |
+    docker build \
+      --build-arg ZENML_VERSION=$TAG_NAME \
+      --build-arg PYTHON_VERSION=3.11 \
+      --build-arg ZENML_NIGHTLY=true \
+      --target server \
+      -f docker/base.Dockerfile . \
+      -t $$USERNAME/zenml-server:$TAG_NAME-nightly
   id: build-server-nightly
   waitFor: ['-']
   entrypoint: bash

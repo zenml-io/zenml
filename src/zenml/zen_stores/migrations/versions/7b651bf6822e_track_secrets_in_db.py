@@ -58,7 +58,7 @@ class BaseSecretsStoreBackend(BaseModel):
     """Base class for accessing and listing ZenML secrets."""
 
     server_id: UUID
-    client: Any
+    client: Any = None
 
     def _get_secret_metadata(
         self,
@@ -603,15 +603,17 @@ def upgrade() -> None:
     # Transfer secrets from the external secrets store to the db
 
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("secret", "user", "workspace", "identity"))
+    meta = sa.MetaData()
+    meta.reflect(
+        only=("secret", "user", "workspace", "identity"), bind=op.get_bind()
+    )
     secrets = sa.Table("secret", meta)
     users = sa.Table("user", meta)
     workspaces = sa.Table("workspace", meta)
     identity = sa.Table("identity", meta)
 
     # Extract the ZenML deployment ID from the identity table
-    server_id = UUID(conn.execute(identity.select()).first()["id"])  # type: ignore[index]
+    server_id = UUID(conn.execute(sa.select(identity.c.id)).scalar_one())
 
     # Initialize the secrets store backend based on the backend client extracted
     # from the secrets store.

@@ -21,27 +21,18 @@ from pydantic import Field
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
-from zenml.models import (
-    BaseFilter,
-    BaseResponseMetadata,
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.base import (
-    BaseResponse,
-    BaseResponseBody,
-    BaseResponseResources,
-)
-from zenml.models.v2.base.scoped import WorkspaceScopedResponseResources
-from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.pipeline_run import (
-        PipelineRunResponse,
-    )
+    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 
 # ------------------ Request Model ------------------
@@ -65,6 +56,7 @@ class PipelineRequest(WorkspaceScopedRequest):
     docstring: Optional[str] = Field(
         title="The docstring of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     spec: PipelineSpec = Field(title="The spec of the pipeline.")
 
@@ -72,9 +64,33 @@ class PipelineRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class PipelineUpdate(PipelineRequest):
+class PipelineUpdate(BaseUpdate):
     """Update model for pipelines."""
+
+    name: Optional[str] = Field(
+        title="The name of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    version: Optional[str] = Field(
+        title="The version of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    version_hash: Optional[str] = Field(
+        title="The version hash of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    docstring: Optional[str] = Field(
+        title="The docstring of the pipeline.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    spec: Optional[PipelineSpec] = Field(
+        title="The spec of the pipeline.",
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------
@@ -103,6 +119,7 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     docstring: Optional[str] = Field(
         title="The docstring of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
 
 
@@ -277,64 +294,12 @@ class PipelineFilter(WorkspaceScopedFilter):
         description="Docstring of the Pipeline",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Pipeline"
+        default=None,
+        description="Workspace of the Pipeline",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the Pipeline"
-    )
-
-
-# ------------------ Pipeline Namespaces ------------------
-
-
-class PipelineNamespaceResponseBody(BaseResponseBody):
-    """Response body for pipeline namespaces."""
-
-    latest_run_id: Optional[UUID] = Field(
         default=None,
-        title="The ID of the latest run of the pipeline namespace.",
-    )
-    latest_run_status: Optional[ExecutionStatus] = Field(
-        default=None,
-        title="The status of the latest run of the pipeline namespace.",
-    )
-
-
-class PipelineNamespaceResponseMetadata(BaseResponseMetadata):
-    """Response metadata for pipeline namespaces."""
-
-
-class PipelineNamespaceResponseResources(BaseResponseResources):
-    """Class for all resource models associated with the pipeline namespace entity."""
-
-
-class PipelineNamespaceResponse(
-    BaseResponse[
-        PipelineNamespaceResponseBody,
-        PipelineNamespaceResponseMetadata,
-        PipelineNamespaceResponseResources,
-    ]
-):
-    """Response model for pipeline namespaces."""
-
-    name: str = Field(
-        title="The name of the pipeline namespace.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-
-    def get_hydrated_version(self) -> "PipelineNamespaceResponse":
-        """Get the hydrated version of this pipeline namespace.
-
-        Returns:
-            an instance of the same entity with the metadata field attached.
-        """
-        return self
-
-
-class PipelineNamespaceFilter(BaseFilter):
-    """Pipeline namespace filter model."""
-
-    name: Optional[str] = Field(
-        default=None,
-        description="Name of the pipeline namespace.",
+        description="User of the Pipeline",
+        union_mode="left_to_right",
     )

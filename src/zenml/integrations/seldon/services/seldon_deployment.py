@@ -86,8 +86,6 @@ class SeldonDeploymentConfig(ServiceConfig):
         labels = {}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
-        if self.run_name:
-            labels["zenml.run_name"] = self.run_name
         if self.pipeline_step_name:
             labels["zenml.pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
@@ -115,7 +113,7 @@ class SeldonDeploymentConfig(ServiceConfig):
             The annotations for the Seldon Core deployment.
         """
         annotations = {
-            "zenml.service_config": self.json(),
+            "zenml.service_config": self.model_dump_json(),
             "zenml.version": __version__,
         }
         return annotations
@@ -135,7 +133,7 @@ class SeldonDeploymentConfig(ServiceConfig):
 
         Raises:
             ValueError: if the given deployment resource does not contain
-                the expected annotations or it contains an invalid or
+                the expected annotations, or it contains an invalid or
                 incompatible Seldon Core service configuration.
         """
         config_data = deployment.metadata.annotations.get(
@@ -147,7 +145,7 @@ class SeldonDeploymentConfig(ServiceConfig):
                 f"'zenml.service_config' annotation: {deployment}"
             )
         try:
-            service_config = cls.parse_raw(config_data)
+            service_config = cls.model_validate_json(config_data)
         except ValidationError as e:
             raise ValueError(
                 f"The loaded Seldon Core deployment resource contains an "
@@ -174,6 +172,7 @@ class SeldonDeploymentService(BaseDeploymentService):
         type="model-serving",
         flavor="seldon",
         description="Seldon Core prediction service",
+        logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/seldon.png",
     )
 
     config: SeldonDeploymentConfig

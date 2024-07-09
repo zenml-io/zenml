@@ -36,6 +36,8 @@ def test_schedule_requires_cron_or_interval():
             start_time=datetime.datetime.now(),
             interval_second=datetime.timedelta(seconds=5),
         )
+        # run once start time
+        Schedule(run_once_start_time=datetime.datetime.now())
 
     with pytest.raises(ValidationError):
         # no cron and no periodic

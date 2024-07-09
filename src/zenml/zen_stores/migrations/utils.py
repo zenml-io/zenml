@@ -15,6 +15,7 @@
 
 import json
 import os
+import re
 import shutil
 from typing import (
     Any,
@@ -27,8 +28,7 @@ from typing import (
 )
 
 import pymysql
-from pydantic import BaseModel
-from pydantic.json import pydantic_encoder
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import MetaData, func, text
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
@@ -41,6 +41,7 @@ from sqlmodel import (
 )
 
 from zenml.logger import get_logger
+from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
 
@@ -223,6 +224,55 @@ class MigrationUtils(BaseModel):
                 # with backticks
                 create_table_stmt = create_table_stmt.replace('"', "") + ";"
 
+                # enclose all table names in backticks. This is because some
+                # table names are reserved keywords in MySQL (e.g key
+                # and trigger).
+                create_table_stmt = create_table_stmt.replace(
+                    f"CREATE TABLE {table.name}",
+                    f"CREATE TABLE `{table.name}`",
+                )
+                # do the same for references to other tables
+                # (i.e. foreign key constraints) by replacing REFERENCES <word>
+                # with REFERENCES `<word>`
+                # use a regular expression for this
+                create_table_stmt = re.sub(
+                    r"REFERENCES\s+(\w+)",
+                    r"REFERENCES `\1`",
+                    create_table_stmt,
+                )
+
+                # In SQLAlchemy, the CreateTable statement may not always
+                # include unique constraints explicitly if they are implemented
+                # as unique indexes instead. To make sure we get all unique
+                # constraints, including those implemented as indexes, we
+                # extract the unique constraints from the table schema and add
+                # them to the create table statement.
+
+                # Extract the unique constraints from the table schema
+                unique_constraints = []
+                for index in table.indexes:
+                    if index.unique:
+                        unique_columns = [
+                            f"`{column.name}`" for column in index.columns
+                        ]
+                        unique_constraints.append(
+                            f"UNIQUE KEY `{index.name}` ({', '.join(unique_columns)})"
+                        )
+
+                # Add the unique constraints to the create table statement
+                if unique_constraints:
+                    # Remove the closing parenthesis, semicolon and any
+                    # whitespaces at the end of the create table statement
+                    create_table_stmt = re.sub(
+                        r"\s*\)\s*;\s*$", "", create_table_stmt
+                    )
+                    create_table_stmt = (
+                        create_table_stmt
+                        + ", \n\t"
+                        + ", \n\t".join(unique_constraints)
+                        + "\n);"
+                    )
+
                 # Store the table schema
                 store_db_info(
                     dict(table=table.name, create_stmt=create_table_stmt)
@@ -236,31 +286,40 @@ class MigrationUtils(BaseModel):
                 # correct order, since some tables have inner foreign key
                 # constraints.
                 if "created" in table.columns:
-                    order_by = table.columns["created"]
+                    order_by = [table.columns["created"]]
                 else:
-                    order_by = None
+                    order_by = []
+                if "id" in table.columns:
+                    # If the table has an `id` column, we also use it to sort
+                    # the rows in the table, even if we already use "created"
+                    # to sort the rows. We need a unique field to sort the rows,
+                    # to break the tie between rows with the same "created"
+                    # date, otherwise the same entry might end up multiple times
+                    # in subsequent pages.
+                    order_by.append(table.columns["id"])
 
                 # Fetch the number of rows in the table
                 row_count = conn.scalar(
-                    select([func.count("*")]).select_from(table)
+                    select(func.count()).select_from(table)
                 )
 
                 # Fetch the data from the table in batches
-                batch_size = 50
-                for i in range(0, row_count, batch_size):
-                    rows = conn.execute(
-                        table.select()
-                        .order_by(order_by)
-                        .limit(batch_size)
-                        .offset(i)
-                    ).fetchall()
+                if row_count is not None:
+                    batch_size = 50
+                    for i in range(0, row_count, batch_size):
+                        rows = conn.execute(
+                            table.select()
+                            .order_by(*order_by)
+                            .limit(batch_size)
+                            .offset(i)
+                        ).fetchall()
 
-                    store_db_info(
-                        dict(
-                            table=table.name,
-                            data=[row._asdict() for row in rows],
-                        ),
-                    )
+                        store_db_info(
+                            dict(
+                                table=table.name,
+                                data=[row._asdict() for row in rows],
+                            ),
+                        )
 
     def restore_database_from_storage(
         self, load_db_info: Callable[[], Generator[Dict[str, Any], None, None]]
@@ -284,11 +343,9 @@ class MigrationUtils(BaseModel):
                 information.
         """
         # Drop and re-create the primary database
-        self.create_database(
-            drop=True,
-        )
+        self.create_database(drop=True)
 
-        metadata = MetaData(bind=self.engine)
+        metadata = MetaData()
 
         with self.engine.begin() as connection:
             # read the DB information one JSON object at a time
@@ -298,7 +355,7 @@ class MigrationUtils(BaseModel):
                     # execute the table creation statement
                     connection.execute(text(table_dump["create_stmt"]))
                     # Reload the database metadata after creating the table
-                    metadata.reflect()
+                    metadata.reflect(bind=self.engine)
 
                 if "data" in table_dump:
                     # insert the data into the database
@@ -307,7 +364,7 @@ class MigrationUtils(BaseModel):
                         # Convert column values to the correct type
                         for column in table.columns:
                             # Blob columns are stored as binary strings
-                            if column.type.python_type == bytes and isinstance(
+                            if column.type.python_type is bytes and isinstance(
                                 row[column.name], str
                             ):
                                 # Convert the string to bytes
@@ -546,11 +603,11 @@ class MigrationUtils(BaseModel):
             src_engine: The source SQLAlchemy engine.
             dst_engine: The destination SQLAlchemy engine.
         """
-        src_metadata = MetaData(bind=src_engine)
-        src_metadata.reflect()
+        src_metadata = MetaData()
+        src_metadata.reflect(bind=src_engine)
 
-        dst_metadata = MetaData(bind=dst_engine)
-        dst_metadata.reflect()
+        dst_metadata = MetaData()
+        dst_metadata.reflect(bind=dst_engine)
 
         # @event.listens_for(src_metadata, "column_reflect")
         # def generalize_datatypes(inspector, tablename, column_dict):
@@ -562,7 +619,7 @@ class MigrationUtils(BaseModel):
 
         # Refresh target metadata after creating the tables
         dst_metadata.clear()
-        dst_metadata.reflect()
+        dst_metadata.reflect(bind=dst_engine)
 
         # Copy all data from the source database to the destination database
         with src_engine.begin() as src_conn:
@@ -570,33 +627,43 @@ class MigrationUtils(BaseModel):
                 for src_table in src_metadata.sorted_tables:
                     dst_table = dst_metadata.tables[src_table.name]
                     insert = dst_table.insert()
+
                     # If the table has a `created` column, we use it to sort
                     # the rows in the table starting with the oldest rows.
                     # This is to ensure that the rows are inserted in the
                     # correct order, since some tables have inner foreign key
                     # constraints.
                     if "created" in src_table.columns:
-                        order_by = src_table.columns["created"]
+                        order_by = [src_table.columns["created"]]
                     else:
-                        order_by = None
+                        order_by = []
+                    if "id" in src_table.columns:
+                        # If the table has an `id` column, we also use it to
+                        # sort the rows in the table, even if we already use
+                        # "created" to sort the rows. We need a unique field to
+                        # sort the rows, to break the tie between rows with the
+                        # same "created" date, otherwise the same entry might
+                        # end up multiple times in subsequent pages.
+                        order_by.append(src_table.columns["id"])
 
                     row_count = src_conn.scalar(
-                        select([func.count("*")]).select_from(src_table)
+                        select(func.count()).select_from(src_table)
                     )
 
                     # Copy rows in batches
-                    batch_size = 50
-                    for i in range(0, row_count, batch_size):
-                        rows = src_conn.execute(
-                            src_table.select()
-                            .order_by(order_by)
-                            .limit(batch_size)
-                            .offset(i)
-                        ).fetchall()
+                    if row_count is not None:
+                        batch_size = 50
+                        for i in range(0, row_count, batch_size):
+                            rows = src_conn.execute(
+                                src_table.select()
+                                .order_by(*order_by)
+                                .limit(batch_size)
+                                .offset(i)
+                            ).fetchall()
 
-                        dst_conn.execute(
-                            insert, [row._asdict() for row in rows]
-                        )
+                            dst_conn.execute(
+                                insert, [row._asdict() for row in rows]
+                            )
 
     def backup_database_to_db(self, backup_db_name: str) -> None:
         """Backup the database to a backup database.
@@ -646,8 +713,4 @@ class MigrationUtils(BaseModel):
             "backup database."
         )
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # all attributes with leading underscore are private
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)

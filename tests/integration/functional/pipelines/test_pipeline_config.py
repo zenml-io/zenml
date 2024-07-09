@@ -64,7 +64,7 @@ def test_pipeline_with_model_from_yaml(tmp_path):
     config_path = tmp_path / "config.yaml"
     file_config = dict(
         run_name="run_name_in_file",
-        model=model.dict(),
+        model=model.model_dump(),
     )
     config_path.write_text(yaml.dump(file_config))
 
@@ -111,7 +111,7 @@ def test_pipeline_config_from_file_not_overridden_for_model(tmp_path):
     config_path = tmp_path / "config.yaml"
     file_config = dict(
         run_name="run_name_in_file",
-        model=initial_model.dict(),
+        model=initial_model.model_dump(),
     )
     config_path.write_text(yaml.dump(file_config))
 
@@ -232,7 +232,7 @@ def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_wi
     file_config = dict(
         parameters={"foo": "bar"},
         steps={
-            "assert_input_params": {"parameters": {"bar": 1}}
+            "assert_input_params": {"parameters": {"bar": "1"}}
         },  # here we set `bar` for `assert_input_params`
         enable_cache=False,
     )

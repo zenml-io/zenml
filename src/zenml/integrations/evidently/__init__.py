@@ -31,10 +31,9 @@ from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-
 # Fix numba errors in Docker and suppress logs and deprecation warning spam
 try:
-    from numba.core.errors import (  # type: ignore[import-untyped]
+    from numba.core.errors import (  # type: ignore[import-not-found]
         NumbaDeprecationWarning,
         NumbaPendingDeprecationWarning,
     )
@@ -55,12 +54,10 @@ class EvidentlyIntegration(Integration):
 
     NAME = EVIDENTLY
     REQUIREMENTS = [
-        "evidently>0.2.6,<0.4.5",  # supports pyyaml 6
-        # We need to add this as an extra dependency to manually downgrade
-        # SQLModel. Otherwise, the initial installation of ZenML installs
-        # a higher version SQLModel and a version mismatch is created.
-        "sqlmodel>=0.0.9,<=0.0.16"
+        "evidently>=0.4.16,<=0.4.22",
+        "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

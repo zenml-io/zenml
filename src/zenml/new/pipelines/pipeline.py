@@ -19,7 +19,6 @@ import inspect
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -38,7 +37,7 @@ from typing import (
 from uuid import UUID
 
 import yaml
-from pydantic import ValidationError
+from pydantic import ConfigDict, ValidationError
 
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
@@ -98,11 +97,11 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
+    from zenml.types import HookSpecification
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
-    HookSpecification = Union[str, "Source", FunctionType]
 
 logger = get_logger(__name__)
 
@@ -282,7 +281,7 @@ class Pipeline:
         raise RuntimeError(
             f"Cannot get the model of pipeline '{self.name}' because it has "
             f"not been registered yet. Please ensure that the pipeline has "
-            f"been run and that at least one step has been executed."
+            f"been run or built and try again."
         )
 
     @contextmanager
@@ -378,7 +377,7 @@ class Pipeline:
             to_be_reapplied = []
             for param_, value_ in values.items():
                 if (
-                    param_ in PipelineRunConfiguration.__fields__
+                    param_ in PipelineRunConfiguration.model_fields
                     and param_ in self._from_config_file
                     and value_ != self._from_config_file[param_]
                 ):
@@ -389,16 +388,17 @@ class Pipeline:
                 msg = ""
                 reapply_during_run_warning = (
                     "The value of parameter '{name}' has changed from "
-                    "'{file_value}' to '{new_value}' set in your configuration file.\n"
+                    "'{file_value}' to '{new_value}' set in your configuration "
+                    "file.\n"
                 )
                 for name, file_value, new_value in to_be_reapplied:
                     msg += reapply_during_run_warning.format(
                         name=name, file_value=file_value, new_value=new_value
                     )
                 msg += (
-                    "Configuration file value will be used during pipeline run, "
-                    "so you change will not be efficient. Consider updating your "
-                    "configuration file instead."
+                    "Configuration file value will be used during pipeline "
+                    "run, so you change will not be efficient. Consider "
+                    "updating your configuration file instead."
                 )
                 logger.warning(msg)
 
@@ -501,7 +501,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._prepare_if_possible()
         integration_registry.activate_integrations()
 
-        if self.configuration.dict(exclude_defaults=True, exclude={"name"}):
+        if self.configuration.model_dump(
+            exclude_defaults=True, exclude={"name"}
+        ):
             logger.warning(
                 f"The pipeline `{self.name}` that you're registering has "
                 "custom configurations applied to it. These will not be "
@@ -675,6 +677,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     end_time=schedule.end_time,
                     interval_second=schedule.interval_second,
                     catchup=schedule.catchup,
+                    run_once_start_time=schedule.run_once_start_time,
                 )
                 schedule_id = (
                     Client().zen_store.create_schedule(schedule_model).id
@@ -728,7 +731,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 build=build_id,
                 schedule=schedule_id,
                 code_reference=code_reference,
-                **deployment.dict(),
+                **deployment.model_dump(),
             )
             deployment_model = Client().zen_store.create_deployment(
                 deployment=deployment_request
@@ -743,10 +746,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 run_id=run.id if run else None,
             )
 
-            deploy_pipeline(
-                deployment=deployment_model, stack=stack, placeholder_run=run
-            )
-
             if run:
                 run_url = dashboard_utils.get_run_url(run)
                 if run_url:
@@ -758,7 +757,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         "`zenml up`."
                     )
 
-            return run
+            deploy_pipeline(
+                deployment=deployment_model, stack=stack, placeholder_run=run
+            )
+            if run:
+                return Client().get_pipeline_run(run.id)
+            return None
 
     @staticmethod
     def log_pipeline_deployment_metadata(
@@ -1004,13 +1008,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         self._parse_config_file(
             config_path=config_path,
-            matcher=list(PipelineRunConfiguration.__fields__.keys()),
+            matcher=list(PipelineRunConfiguration.model_fields.keys()),
         )
 
         run_config = PipelineRunConfiguration(**self._from_config_file)
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
-        update = PipelineRunConfiguration.parse_obj(new_values)
+        update = PipelineRunConfiguration.model_validate(new_values)
 
         # Update with the values in code so they take precedence
         run_config = pydantic_utils.update_model(run_config, update=update)
@@ -1289,7 +1293,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 else:
                     from zenml.model.model import Model
 
-                    _from_config_file["model"] = Model.parse_obj(
+                    _from_config_file["model"] = Model.model_validate(
                         _from_config_file["model"]
                     )
         self._from_config_file = _from_config_file
@@ -1302,6 +1306,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]
         ] = None,
+        steps: Optional[Mapping[str, "StepConfigurationUpdateOrDict"]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
@@ -1314,6 +1319,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             step_configurations: Configurations for steps of the pipeline.
+            steps: Configurations for steps of the pipeline. This is equivalent
+                to `step_configurations`, and will be ignored if
+                `step_configurations` is set as well.
             config_path: Path to a yaml configuration file. This file will
                 be parsed as a
                 `zenml.config.pipeline_configurations.PipelineRunConfiguration`
@@ -1329,6 +1337,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The copied pipeline instance.
         """
+        if steps and step_configurations:
+            logger.warning(
+                "Step configurations were passed using both the "
+                "`step_configurations` and `steps` keywords, ignoring the "
+                "values passed using the `steps` keyword."
+            )
+
         pipeline_copy = self.copy()
 
         pipeline_copy._parse_config_file(
@@ -1348,7 +1363,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "run_name": run_name,
                 "schedule": schedule,
                 "build": build,
-                "step_configurations": step_configurations,
+                "step_configurations": step_configurations or steps,
                 "config_path": config_path,
                 "unlisted": unlisted,
                 "prevent_build_reuse": prevent_build_reuse,
@@ -1408,14 +1423,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         try:
             validated_args = pydantic_utils.validate_function_args(
                 self.entrypoint,
-                {"arbitrary_types_allowed": False, "smart_union": True},
+                ConfigDict(arbitrary_types_allowed=False),
                 *args,
                 **kwargs,
             )
         except ValidationError as e:
             raise ValueError(
-                "Invalid or missing inputs for pipeline entrypoint function. "
+                "Invalid or missing pipeline function entrypoint arguments. "
                 "Only JSON serializable inputs are allowed as pipeline inputs."
+                "Check out the pydantic error above for more details."
             ) from e
 
         self._parameters = validated_args

@@ -30,6 +30,7 @@ from zenml.models import (
     PipelineRunResponseMetadata,
     PipelineRunUpdate,
 )
+from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
         ModelVersionPipelineRunSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
@@ -182,6 +184,10 @@ class PipelineRunSchema(NamedSchema, table=True):
     pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
     trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
 
+    services: List["ServiceSchema"] = Relationship(
+        back_populates="pipeline_run",
+    )
+
     @classmethod
     def from_request(
         cls, request: "PipelineRunRequest"
@@ -253,7 +259,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             code_reference = deployment.code_reference
 
         elif self.pipeline_configuration is not None:
-            config = PipelineConfiguration.parse_raw(
+            config = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )
             client_environment = (
@@ -305,11 +311,22 @@ class PipelineRunSchema(NamedSchema, table=True):
                 orchestrator_environment=orchestrator_environment,
                 orchestrator_run_id=self.orchestrator_run_id,
             )
+
+        resources = None
+        if include_resources:
+            model_version = None
+            if config.model and config.model.model_version_id:
+                model_version = config.model._get_model_version(hydrate=False)
+            resources = PipelineRunResponseResources(
+                model_version=model_version
+            )
+
         return PipelineRunResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, run_update: "PipelineRunUpdate") -> "PipelineRunSchema":

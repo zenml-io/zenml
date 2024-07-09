@@ -15,6 +15,7 @@
 
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -32,14 +33,22 @@ from uuid import UUID
 
 import requests
 import urllib3
-from pydantic import BaseModel, root_validator, validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 from requests.adapters import HTTPAdapter, Retry
 
 import zenml
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    ACTIONS,
     API,
     API_KEY_ROTATE,
     API_KEYS,
@@ -50,12 +59,14 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CURRENT_USER,
+    DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
+    FULL_STACK,
     GET_OR_CREATE,
     INFO,
     LOGIN,
@@ -74,32 +85,40 @@ from zenml.constants import (
     SECRETS_BACKUP,
     SECRETS_OPERATIONS,
     SECRETS_RESTORE,
+    SERVER_SETTINGS,
     SERVICE_ACCOUNTS,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTOR_TYPES,
     SERVICE_CONNECTOR_VERIFY,
     SERVICE_CONNECTORS,
+    SERVICES,
+    STACK,
     STACK_COMPONENTS,
+    STACK_DEPLOYMENT,
     STACKS,
     STEPS,
     TAGS,
     TRIGGER_EXECUTIONS,
     TRIGGERS,
+    URL,
     USERS,
     VERSION_1,
     WORKSPACES,
 )
 from zenml.enums import (
     OAuthGrantTypes,
+    StackDeploymentProvider,
     StoreType,
 )
-from zenml.exceptions import (
-    AuthorizationException,
-)
+from zenml.exceptions import AuthorizationException, MethodNotAllowedError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -126,6 +145,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -134,6 +154,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -179,6 +200,8 @@ from zenml.models import (
     SecretResponse,
     SecretUpdate,
     ServerModel,
+    ServerSettingsResponse,
+    ServerSettingsUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -189,6 +212,11 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponse,
+    ServiceUpdate,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -265,15 +293,12 @@ class RestZenStoreConfiguration(StoreConfiguration):
     password: Optional[str] = None
     api_key: Optional[str] = None
     api_token: Optional[str] = None
-    verify_ssl: Union[bool, str] = True
+    verify_ssl: Union[bool, str] = Field(True, union_mode="left_to_right")
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
-    @root_validator
-    def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def validate_credentials(self) -> "RestZenStoreConfiguration":
         """Validates the credentials provided in the values dictionary.
-
-        Args:
-            values: A dictionary containing the values to be validated.
 
         Raises:
             ValueError: If neither api_token nor username nor api_key is set.
@@ -283,18 +308,15 @@ class RestZenStoreConfiguration(StoreConfiguration):
         """
         # Check if the values dictionary contains either an API token, an API
         # key or a username as non-empty strings.
-        if (
-            values.get("api_token")
-            or values.get("username")
-            or values.get("api_key")
-        ):
-            return values
+        if self.api_token or self.username or self.api_key:
+            return self
         raise ValueError(
             "Neither api_token nor username nor api_key is set in the "
             "store config."
         )
 
-    @validator("url")
+    @field_validator("url")
+    @classmethod
     def validate_url(cls, url: str) -> str:
         """Validates that the URL is a well-formed REST store URL.
 
@@ -322,7 +344,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         return url
 
-    @validator("verify_ssl")
+    @field_validator("verify_ssl")
+    @classmethod
     def validate_verify_ssl(
         cls, verify_ssl: Union[bool, str]
     ) -> Union[bool, str]:
@@ -349,9 +372,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         fileio.makedirs(str(secret_folder))
         file_path = Path(secret_folder, "ca_bundle.pem")
-        with open(file_path, "w") as f:
+        with os.fdopen(
+            os.open(file_path, flags=os.O_RDWR | os.O_CREAT, mode=0o600), "w"
+        ) as f:
             f.write(verify_ssl)
-        file_path.chmod(0o600)
         verify_ssl = str(file_path)
 
         return verify_ssl
@@ -377,15 +401,14 @@ class RestZenStoreConfiguration(StoreConfiguration):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
 
-    class Config:
-        """Pydantic configuration class."""
-
+    model_config = ConfigDict(
         # Don't validate attributes when assigning them. This is necessary
         # because the `verify_ssl` attribute can be expanded to the contents
         # of the certificate file.
-        validate_assignment = False
+        validate_assignment=False,
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra="forbid",
+    )
 
 
 class RestZenStore(BaseZenStore):
@@ -430,7 +453,7 @@ class RestZenStore(BaseZenStore):
             Information about the server.
         """
         body = self.get(INFO)
-        return ServerModel.parse_obj(body)
+        return ServerModel.model_validate(body)
 
     def get_deployment_id(self) -> UUID:
         """Get the ID of the deployment.
@@ -439,6 +462,131 @@ class RestZenStore(BaseZenStore):
             The ID of the deployment.
         """
         return self.get_store_info().id
+
+    # -------------------- Server Settings --------------------
+
+    def get_server_settings(
+        self, hydrate: bool = True
+    ) -> ServerSettingsResponse:
+        """Get the server settings.
+
+        Args:
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The server settings.
+        """
+        response_body = self.get(SERVER_SETTINGS, params={"hydrate": hydrate})
+        return ServerSettingsResponse.model_validate(response_body)
+
+    def update_server_settings(
+        self, settings_update: ServerSettingsUpdate
+    ) -> ServerSettingsResponse:
+        """Update the server settings.
+
+        Args:
+            settings_update: The server settings update.
+
+        Returns:
+            The updated server settings.
+        """
+        response_body = self.put(SERVER_SETTINGS, body=settings_update)
+        return ServerSettingsResponse.model_validate(response_body)
+
+    # -------------------- Actions  --------------------
+
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+        return self._create_resource(
+            resource=action,
+            route=ACTIONS,
+            response_model=ActionResponse,
+        )
+
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+        """
+        return self._get_resource(
+            resource_id=action_id,
+            route=ACTIONS,
+            response_model=ActionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all actions matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=ACTIONS,
+            response_model=ActionResponse,
+            filter_model=action_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+        """
+        return self._update_resource(
+            resource_id=action_id,
+            resource_update=action_update,
+            route=ACTIONS,
+            response_model=ActionResponse,
+        )
+
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+        """
+        self._delete_resource(
+            resource_id=action_id,
+            route=ACTIONS,
+        )
 
     # ----------------------------- API Keys -----------------------------
 
@@ -571,7 +719,7 @@ class RestZenStore(BaseZenStore):
             f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}/{str(api_key_name_or_id)}{API_KEY_ROTATE}",
             body=rotate_request,
         )
-        return APIKeyResponse.parse_obj(response_body)
+        return APIKeyResponse.model_validate(response_body)
 
     def delete_api_key(
         self,
@@ -589,6 +737,93 @@ class RestZenStore(BaseZenStore):
             resource_id=api_key_name_or_id,
             route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
         )
+
+    # ----------------------------- Services -----------------------------
+
+    def create_service(
+        self, service_request: ServiceRequest
+    ) -> ServiceResponse:
+        """Create a new service.
+
+        Args:
+            service_request: The service to create.
+
+        Returns:
+            The created service.
+        """
+        return self._create_resource(
+            resource=service_request,
+            response_model=ServiceResponse,
+            route=SERVICES,
+        )
+
+    def get_service(
+        self, service_id: UUID, hydrate: bool = True
+    ) -> ServiceResponse:
+        """Get a service.
+
+        Args:
+            service_id: The ID of the service to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The service.
+        """
+        return self._get_resource(
+            resource_id=service_id,
+            route=SERVICES,
+            response_model=ServiceResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_services(
+        self, filter_model: ServiceFilter, hydrate: bool = False
+    ) -> Page[ServiceResponse]:
+        """List all services matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all services matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=SERVICES,
+            response_model=ServiceResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_service(
+        self, service_id: UUID, update: ServiceUpdate
+    ) -> ServiceResponse:
+        """Update a service.
+
+        Args:
+            service_id: The ID of the service to update.
+            update: The update to be applied to the service.
+
+        Returns:
+            The updated service.
+        """
+        return self._update_resource(
+            resource_id=service_id,
+            resource_update=update,
+            response_model=ServiceResponse,
+            route=SERVICES,
+        )
+
+    def delete_service(self, service_id: UUID) -> None:
+        """Delete a service.
+
+        Args:
+            service_id: The ID of the service to delete.
+        """
+        self._delete_resource(resource_id=service_id, route=SERVICES)
 
     # ----------------------------- Artifacts -----------------------------
 
@@ -1287,9 +1522,34 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
         )
 
-        # ----------------------
-        # Pipeline Deployments
-        # ----------------------
+    def run_build(
+        self,
+        build_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a build.
+
+        Args:
+            build_id: The ID of the build to run.
+            run_configuration: Configuration for the run.
+
+        Raises:
+            RuntimeError: If the server does not support running a build.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run_configuration = run_configuration or PipelineRunConfiguration()
+        try:
+            response_body = self.post(
+                f"{PIPELINE_BUILDS}/{build_id}/runs", body=run_configuration
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a build is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------------- Pipeline Deployments --------------------------
 
@@ -1364,6 +1624,37 @@ class RestZenStore(BaseZenStore):
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
         )
+
+    def run_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to run.
+            run_configuration: Configuration for the run.
+
+        Raises:
+            RuntimeError: If the server does not support running a deployment.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run_configuration = run_configuration or PipelineRunConfiguration()
+
+        try:
+            response_body = self.post(
+                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
+                body=run_configuration,
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a deployment is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------- Event Sources  --------------------
 
@@ -1593,7 +1884,7 @@ class RestZenStore(BaseZenStore):
         result: List[RunMetadataResponse] = []
         if isinstance(response_body, list):
             for metadata in response_body or []:
-                result.append(RunMetadataResponse.parse_obj(metadata))
+                result.append(RunMetadataResponse.model_validate(metadata))
         return result
 
     def get_run_metadata(
@@ -2187,7 +2478,9 @@ class RestZenStore(BaseZenStore):
             params={"list_resources": list_resources},
         )
 
-        resources = ServiceConnectorResourcesModel.parse_obj(response_body)
+        resources = ServiceConnectorResourcesModel.model_validate(
+            response_body
+        )
         self._populate_connector_type(resources)
         return resources
 
@@ -2222,7 +2515,9 @@ class RestZenStore(BaseZenStore):
             params=params,
         )
 
-        resources = ServiceConnectorResourcesModel.parse_obj(response_body)
+        resources = ServiceConnectorResourcesModel.model_validate(
+            response_body
+        )
         self._populate_connector_type(resources)
         return resources
 
@@ -2253,7 +2548,7 @@ class RestZenStore(BaseZenStore):
             params=params,
         )
 
-        connector = ServiceConnectorResponse.parse_obj(response_body)
+        connector = ServiceConnectorResponse.model_validate(response_body)
         self._populate_connector_type(connector)
         return connector
 
@@ -2290,7 +2585,7 @@ class RestZenStore(BaseZenStore):
 
         assert isinstance(response_body, list)
         resource_list = [
-            ServiceConnectorResourcesModel.parse_obj(item)
+            ServiceConnectorResourcesModel.model_validate(item)
             for item in response_body
         ]
 
@@ -2363,7 +2658,8 @@ class RestZenStore(BaseZenStore):
 
         assert isinstance(response_body, list)
         remote_connector_types = [
-            ServiceConnectorTypeModel.parse_obj(item) for item in response_body
+            ServiceConnectorTypeModel.model_validate(item)
+            for item in response_body
         ]
 
         # Mark the remote connector types as being only remotely available
@@ -2419,7 +2715,7 @@ class RestZenStore(BaseZenStore):
             response_body = self.get(
                 f"{SERVICE_CONNECTOR_TYPES}/{connector_type}",
             )
-            remote_connector_type = ServiceConnectorTypeModel.parse_obj(
+            remote_connector_type = ServiceConnectorTypeModel.model_validate(
                 response_body
             )
             if local_connector_type:
@@ -2455,6 +2751,23 @@ class RestZenStore(BaseZenStore):
             resource=stack,
             route=STACKS,
             response_model=StackResponse,
+        )
+
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Register a full-stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The registered stack.
+        """
+        assert full_stack.workspace is not None
+
+        return self._create_resource(
+            resource=full_stack,
+            response_model=StackResponse,
+            route=f"{WORKSPACES}/{str(full_stack.workspace)}{FULL_STACK}",
         )
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
@@ -2525,6 +2838,97 @@ class RestZenStore(BaseZenStore):
             resource_id=stack_id,
             route=STACKS,
         )
+
+    # ---------------- Stack deployments-----------------
+
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Returns:
+            Information about the stack deployment provider.
+        """
+        body = self.get(
+            f"{STACK_DEPLOYMENT}{INFO}",
+            params={"provider": provider.value},
+        )
+        return StackDeploymentInfo.model_validate(body)
+
+    def get_stack_deployment_url(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> Tuple[str, str]:
+        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Returns:
+            The URL to deploy the ZenML stack to the specified cloud provider
+            and a text description of the URL.
+
+        Raises:
+            ValueError: If the response body is not as expected.
+        """
+        params = {
+            "provider": provider.value,
+            "stack_name": stack_name,
+        }
+        if location:
+            params["location"] = location
+        body = self.get(f"{STACK_DEPLOYMENT}{URL}", params=params)
+
+        if not isinstance(body, list) or len(body) != 2:
+            raise ValueError(
+                "Bad response body received from the stack deployment URL "
+                "endpoint."
+            )
+        return body[0], body[1]
+
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Returns:
+            The ZenML stack that was deployed and registered or None if the
+            stack was not found.
+        """
+        params = {
+            "provider": provider.value,
+            "stack_name": stack_name,
+        }
+        if location:
+            params["location"] = location
+        if date_start:
+            params["date_start"] = str(date_start)
+        body = self.get(
+            f"{STACK_DEPLOYMENT}{STACK}",
+            params=params,
+        )
+        if body:
+            return DeployedStack.model_validate(body)
+
+        return None
 
     # ----------------------------- Step runs -----------------------------
 
@@ -2807,7 +3211,7 @@ class RestZenStore(BaseZenStore):
             )
         else:
             body = self.get(CURRENT_USER, params={"hydrate": hydrate})
-            return UserResponse.parse_obj(body)
+            return UserResponse.model_validate(body)
 
     def list_users(
         self,
@@ -2850,6 +3254,23 @@ class RestZenStore(BaseZenStore):
             route=USERS,
             response_model=UserResponse,
         )
+
+    def deactivate_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserResponse:
+        """Deactivates a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+
+        Returns:
+            The deactivated user containing the activation token.
+        """
+        response_body = self.put(
+            f"{USERS}/{str(user_name_or_id)}{DEACTIVATE}",
+        )
+
+        return UserResponse.model_validate(response_body)
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
@@ -3585,7 +4006,13 @@ class RestZenStore(BaseZenStore):
         return self._session
 
     def clear_session(self) -> None:
-        """Clear the authentication session and any cached API tokens."""
+        """Clear the authentication session and any cached API tokens.
+
+        Raises:
+            AuthorizationException: If the API token can't be reset because
+                the store configuration does not contain username and password
+                or an API key to fetch a new token.
+        """
         self._session = None
         self._api_token = None
         # Clear the configured API token only if it's possible to fetch a new
@@ -3597,6 +4024,16 @@ class RestZenStore(BaseZenStore):
             or self.config.api_key is not None
         ):
             self.config.api_token = None
+        elif self.config.api_token:
+            raise AuthorizationException(
+                "Unable to refresh invalid API token. This is probably "
+                "because you're connected to your ZenML server with device "
+                "authentication. Rerunning `zenml connect --url "
+                f"{self.config.url}` should solve this issue. "
+                "If you're seeing this error from an automated workload, "
+                "you should probably use a service account to start that "
+                "workload to prevent this error."
+            )
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:
@@ -3763,7 +4200,7 @@ class RestZenStore(BaseZenStore):
         return self._request(
             "POST",
             self.url + API + VERSION_1 + path,
-            data=body.json(),
+            data=body.model_dump_json(),
             params=params,
             **kwargs,
         )
@@ -3787,7 +4224,7 @@ class RestZenStore(BaseZenStore):
             The response body.
         """
         logger.debug(f"Sending PUT request to {path}...")
-        data = body.json(exclude_unset=True) if body else None
+        data = body.model_dump_json(exclude_unset=True) if body else None
         return self._request(
             "PUT",
             self.url + API + VERSION_1 + path,
@@ -3816,7 +4253,8 @@ class RestZenStore(BaseZenStore):
             The created resource.
         """
         response_body = self.post(f"{route}", body=resource, params=params)
-        return response_model.parse_obj(response_body)
+
+        return response_model.model_validate(response_body)
 
     def _create_workspace_scoped_resource(
         self,
@@ -3892,7 +4330,7 @@ class RestZenStore(BaseZenStore):
                 f"response from the {route}{GET_OR_CREATE} endpoint but got "
                 f"{type(was_created)} instead."
             )
-        return response_model.parse_obj(model_json), was_created
+        return response_model.model_validate(model_json), was_created
 
     def _get_or_create_workspace_scoped_resource(
         self,
@@ -3940,7 +4378,7 @@ class RestZenStore(BaseZenStore):
             The retrieved resource.
         """
         body = self.get(f"{route}/{str(resource_id)}", params=params)
-        return response_model.parse_obj(body)
+        return response_model.model_validate(body)
 
     def _list_paginated_resources(
         self,
@@ -3965,17 +4403,17 @@ class RestZenStore(BaseZenStore):
         """
         # leave out filter params that are not supplied
         params = params or {}
-        params.update(filter_model.dict(exclude_none=True))
+        params.update(filter_model.model_dump(exclude_none=True))
         body = self.get(f"{route}", params=params)
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         # The initial page of items will be of type BaseResponseModel
-        page_of_items: Page[AnyResponse] = Page.parse_obj(body)
+        page_of_items: Page[AnyResponse] = Page.model_validate(body)
         # So these items will be parsed into their correct types like here
         page_of_items.items = [
-            response_model.parse_obj(generic_item)
+            response_model.model_validate(generic_item)
             for generic_item in body["items"]
         ]
         return page_of_items
@@ -4006,7 +4444,7 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [response_model.parse_obj(entry) for entry in body]
+        return [response_model.model_validate(entry) for entry in body]
 
     def _update_resource(
         self,
@@ -4033,7 +4471,7 @@ class RestZenStore(BaseZenStore):
             f"{route}/{str(resource_id)}", body=resource_update, params=params
         )
 
-        return response_model.parse_obj(response_body)
+        return response_model.model_validate(response_body)
 
     def _delete_resource(
         self, resource_id: Union[str, UUID], route: str

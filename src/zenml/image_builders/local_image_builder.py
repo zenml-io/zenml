@@ -17,8 +17,6 @@ import shutil
 import tempfile
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
-from docker.client import DockerClient
-
 from zenml.image_builders import (
     BaseImageBuilder,
     BaseImageBuilderConfig,
@@ -106,7 +104,7 @@ class LocalImageBuilder(BaseImageBuilder):
             # authenticated to access additional registries
             docker_client = container_registry.docker_client
         else:
-            docker_client = DockerClient.from_env()
+            docker_client = docker_utils._try_get_docker_client_from_env()
 
         with tempfile.TemporaryFile(mode="w+b") as f:
             build_context.write_archive(f)

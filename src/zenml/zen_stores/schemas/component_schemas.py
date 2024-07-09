@@ -116,7 +116,7 @@ class StackComponentSchema(NamedSchema, table=True):
         Returns:
             The updated `StackComponentSchema`.
         """
-        for field, value in component_update.dict(
+        for field, value in component_update.model_dump(
             exclude_unset=True, exclude={"workspace", "user", "connector"}
         ).items():
             if field == "configuration":
@@ -128,7 +128,10 @@ class StackComponentSchema(NamedSchema, table=True):
                     json.dumps(component_update.labels).encode("utf-8")
                 )
             elif field == "type":
-                self.type = component_update.type.value
+                component_type = component_update.type
+
+                if component_type is not None:
+                    self.type = component_type
             else:
                 setattr(self, field, value)
 

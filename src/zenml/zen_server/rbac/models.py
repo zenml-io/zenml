@@ -16,7 +16,7 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -46,6 +46,7 @@ class Action(StrEnum):
 class ResourceType(StrEnum):
     """Resource types of the server API."""
 
+    ACTION = "action"
     ARTIFACT = "artifact"
     ARTIFACT_VERSION = "artifact_version"
     CODE_REPOSITORY = "code_repository"
@@ -58,6 +59,7 @@ class ResourceType(StrEnum):
     PIPELINE_DEPLOYMENT = "pipeline_deployment"
     PIPELINE_BUILD = "pipeline_build"
     USER = "user"
+    SERVICE = "service"
     RUN_METADATA = "run_metadata"
     SECRET = "secret"
     SERVICE_ACCOUNT = "service_account"
@@ -88,7 +90,4 @@ class Resource(BaseModel):
 
         return representation
 
-    class Config:
-        """Pydantic configuration class."""
-
-        frozen = True
+    model_config = ConfigDict(frozen=True)

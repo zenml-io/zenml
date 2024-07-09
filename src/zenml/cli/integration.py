@@ -226,35 +226,43 @@ def export_requirements(
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
 )
+@click.option(
+    "--uv",
+    "uv",
+    is_flag=True,
+    help="Experimental: Use uv for package installation.",
+    default=False,
+)
 def install(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
     force: bool = False,
+    uv: bool = False,
 ) -> None:
     """Installs the required packages for a given integration.
 
     If no integration is specified all required packages for all integrations
-    are installed using pip.
+    are installed using pip or uv.
 
     Args:
         integrations: The name of the integration to install the requirements
             for.
         ignore_integration: Integrations to ignore explicitly (passed in separately).
         force: Force the installation of the required packages.
+        uv: Use uv for package installation (experimental).
     """
+    from zenml.cli.utils import is_uv_installed
     from zenml.integrations.registry import integration_registry
+
+    if uv and not is_uv_installed():
+        error(
+            "UV is not installed but the uv flag was passed in. Please install uv or remove the uv flag."
+        )
 
     if not integrations:
         # no integrations specified, use all registered integrations
         integrations = set(integration_registry.integrations.keys())
 
-        # TODO: remove once python 3.11 gcp integration issue is resolved
-        if sys.version_info >= (3, 11) and "gcp" in integrations:
-            warning(
-                "We are aware of dependency resolution issues when using "
-                "Python 3.11.x with the GCP integration. For now, please use "
-                "Python 3.10 or lower instead while we work on a fix."
-            )
         for i in ignore_integration:
             try:
                 integrations.remove(i)
@@ -263,6 +271,14 @@ def install(
                     f"Integration {i} does not exist. Available integrations: "
                     f"{list(integration_registry.integrations.keys())}"
                 )
+    # TODO: remove once python 3.8 is deprecated
+    if sys.version_info.minor == 8 and "tensorflow" in integrations:
+        warning(
+            "Python 3.8 with TensorFlow is not fully compatible with "
+            "Pydantic 2 requirements. Consider upgrading to a "
+            "higher Python version if you would like to use the "
+            "Tensorflow integration."
+        )
 
     requirements = []
     integrations_to_install = []
@@ -294,7 +310,7 @@ def install(
         )
     ):
         with console.status("Installing integrations..."):
-            install_packages(requirements)
+            install_packages(requirements, use_uv=uv)
 
 
 @integration.command(
@@ -309,18 +325,32 @@ def install(
     help="Force the uninstallation of the required packages. This will skip "
     "the confirmation step",
 )
-def uninstall(integrations: Tuple[str], force: bool = False) -> None:
-    """Installs the required packages for a given integration.
+@click.option(
+    "--uv",
+    "uv",
+    is_flag=True,
+    help="Experimental: Use uv for package uninstallation.",
+    default=False,
+)
+def uninstall(
+    integrations: Tuple[str], force: bool = False, uv: bool = False
+) -> None:
+    """Uninstalls the required packages for a given integration.
 
     If no integration is specified all required packages for all integrations
-    are installed using pip.
+    are uninstalled using pip or uv.
 
     Args:
-        integrations: The name of the integration to install the requirements
+        integrations: The name of the integration to uninstall the requirements
             for.
         force: Force the uninstallation of the required packages.
+        uv: Use uv for package uninstallation (experimental).
     """
+    from zenml.cli.utils import is_uv_installed
     from zenml.integrations.registry import integration_registry
+
+    if uv and not is_uv_installed():
+        error("Package `uv` is not installed. Please install it and retry.")
 
     if not integrations:
         # no integrations specified, use all registered integrations
@@ -331,7 +361,7 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
         try:
             if integration_registry.is_installed(integration_name):
                 requirements += (
-                    integration_registry.select_integration_requirements(
+                    integration_registry.select_uninstall_requirements(
                         integration_name
                     )
                 )
@@ -355,7 +385,7 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
             range(len(requirements)),
             description="Uninstalling integrations...",
         ):
-            uninstall_package(requirements[n])
+            uninstall_package(requirements[n], use_uv=uv)
 
 
 @integration.command(
@@ -370,21 +400,34 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
     help="Force the upgrade of the required packages. This will skip the "
     "confirmation step and re-upgrade existing packages as well",
 )
+@click.option(
+    "--uv",
+    "uv",
+    is_flag=True,
+    help="Experimental: Use uv for package upgrade.",
+    default=False,
+)
 def upgrade(
     integrations: Tuple[str],
     force: bool = False,
+    uv: bool = False,
 ) -> None:
     """Upgrade the required packages for a given integration.
 
     If no integration is specified all required packages for all integrations
-    are installed using pip.
+    are installed using pip or uv.
 
     Args:
         integrations: The name of the integration to install the requirements
             for.
         force: Force the installation of the required packages.
+        uv: Use uv for package installation (experimental).
     """
+    from zenml.cli.utils import is_uv_installed
     from zenml.integrations.registry import integration_registry
+
+    if uv and not is_uv_installed():
+        error("Package `uv` is not installed. Please install it and retry.")
 
     if not integrations:
         # no integrations specified, use all registered integrations
@@ -418,4 +461,4 @@ def upgrade(
         )
     ):
         with console.status("Upgrading integrations..."):
-            install_packages(requirements, upgrade=True)
+            install_packages(requirements, upgrade=True, use_uv=uv)

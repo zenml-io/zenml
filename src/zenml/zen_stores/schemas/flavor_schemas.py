@@ -93,7 +93,7 @@ class FlavorSchema(NamedSchema, table=True):
         Returns:
             The updated `FlavorSchema`.
         """
-        for field, value in flavor_update.dict(
+        for field, value in flavor_update.model_dump(
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "config_schema":

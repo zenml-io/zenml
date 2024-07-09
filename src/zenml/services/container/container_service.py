@@ -33,6 +33,7 @@ from zenml.services.container.container_service_endpoint import (
 )
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
+from zenml.utils import docker_utils
 from zenml.utils.io_utils import (
     create_dir_recursive_if_not_exists,
     get_global_config_directory,
@@ -177,7 +178,9 @@ class ContainerService(BaseService):
             The docker client.
         """
         if self._docker_client is None:
-            self._docker_client = DockerClient.from_env()
+            self._docker_client = (
+                docker_utils._try_get_docker_client_from_env()
+            )
         return self._docker_client
 
     @property
@@ -286,7 +289,7 @@ class ContainerService(BaseService):
         assert self.status.log_file is not None
 
         with open(self.status.config_file, "w") as f:
-            f.write(self.json(indent=4))
+            f.write(self.model_dump_json(indent=4))
         pathlib.Path(self.status.log_file).touch()
 
         command = [

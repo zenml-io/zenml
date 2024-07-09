@@ -13,16 +13,19 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
+import os
 import time
 from contextlib import nullcontext
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from functools import partial
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_IGNORE_FAILURE_HOOK,
     STEP_SOURCE_PARAMETER_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -31,7 +34,6 @@ from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
-from zenml.model.utils import link_artifact_config_to_model
 from zenml.models import (
     ArtifactVersionResponse,
     LogsRequest,
@@ -53,7 +55,6 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.model.model import Model
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -226,20 +227,74 @@ class StepLauncher:
 
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
-                    try:
-                        self._run_step(
-                            pipeline_run=pipeline_run,
-                            step_run=step_run_response,
-                        )
-                    except BaseException as e:  # noqa: E722
-                        logger.error(
-                            f"Failed to run step `{self._step_name}`."
-                        )
-                        logger.exception(e)
-                        publish_utils.publish_failed_step_run(
-                            step_run_response.id
-                        )
-                        raise
+                    retries = 0
+                    last_retry = True
+                    max_retries = (
+                        step_run_response.config.retry.max_retries
+                        if step_run_response.config.retry
+                        else 1
+                    )
+                    delay = (
+                        step_run_response.config.retry.delay
+                        if step_run_response.config.retry
+                        else 0
+                    )
+                    backoff = (
+                        step_run_response.config.retry.backoff
+                        if step_run_response.config.retry
+                        else 1
+                    )
+
+                    while retries < max_retries:
+                        last_retry = retries == max_retries - 1
+                        try:
+                            # here pass a forced save_to_file callable to be
+                            # used as a dump function to use before starting
+                            # the external jobs in step operators
+                            if isinstance(
+                                logs_context,
+                                step_logging.StepLogsStorageContext,
+                            ):
+                                force_write_logs = partial(
+                                    logs_context.storage.save_to_file,
+                                    force=True,
+                                )
+                            else:
+
+                                def _bypass() -> None:
+                                    return None
+
+                                force_write_logs = _bypass
+                            self._run_step(
+                                pipeline_run=pipeline_run,
+                                step_run=step_run_response,
+                                last_retry=last_retry,
+                                force_write_logs=force_write_logs,
+                            )
+                            logger.info(
+                                f"Step `{self._step_name}` completed successfully."
+                            )
+                            break
+                        except BaseException as e:  # noqa: E722
+                            retries += 1
+                            if retries < max_retries:
+                                logger.error(
+                                    f"Failed to run step `{self._step_name}`. Retrying..."
+                                )
+                                logger.exception(e)
+                                logger.info(
+                                    f"Sleeping for {delay} seconds before retrying."
+                                )
+                                time.sleep(delay)
+                                delay *= backoff
+                            else:
+                                logger.error(
+                                    f"Failed to run step `{self._step_name}` after {max_retries} retries. Exiting."
+                                )
+                                publish_utils.publish_failed_step_run(
+                                    step_run_response.id
+                                )
+                                raise
 
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
@@ -288,9 +343,11 @@ class StepLauncher:
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             deployment=self._deployment.id,
-            pipeline=self._deployment.pipeline.id
-            if self._deployment.pipeline
-            else None,
+            pipeline=(
+                self._deployment.pipeline.id
+                if self._deployment.pipeline
+                else None
+            ),
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
             start_time=datetime.utcnow(),
@@ -360,58 +417,35 @@ class StepLauncher:
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
                 }
-                self._link_cached_artifacts_to_model(
+                orchestrator_utils._link_cached_artifacts_to_model(
                     model_from_context=model,
                     step_run=step_run,
+                    step_source=self._step.spec.source,
                 )
+                if self._step.config.model:
+                    orchestrator_utils._link_pipeline_run_to_model_from_context(
+                        pipeline_run_id=step_run.pipeline_run_id,
+                        model=self._step.config.model,
+                    )
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
         return execution_needed, step_run
 
-    def _link_cached_artifacts_to_model(
-        self,
-        model_from_context: Optional["Model"],
-        step_run: StepRunRequest,
-    ) -> None:
-        """Links the output artifacts of the cached step to the model version in Control Plane.
-
-        Args:
-            model_from_context: The model version of the current step.
-            step_run: The step to run.
-        """
-        from zenml.artifacts.artifact_config import ArtifactConfig
-        from zenml.steps.base_step import BaseStep
-        from zenml.steps.utils import parse_return_type_annotations
-
-        step_instance = BaseStep.load_from_source(self._step.spec.source)
-        output_annotations = parse_return_type_annotations(
-            step_instance.entrypoint
-        )
-        for output_name_, output_id in step_run.outputs.items():
-            if output_name_ in output_annotations:
-                annotation = output_annotations.get(output_name_, None)
-                if annotation and annotation.artifact_config is not None:
-                    artifact_config_ = annotation.artifact_config.copy()
-                else:
-                    artifact_config_ = ArtifactConfig(name=output_name_)
-
-                link_artifact_config_to_model(
-                    artifact_config=artifact_config_,
-                    model=model_from_context,
-                    artifact_version_id=output_id,
-                )
-
     def _run_step(
         self,
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,
+        force_write_logs: Callable[..., Any],
+        last_retry: bool = True,
     ) -> None:
         """Runs the current step.
 
         Args:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
+            force_write_logs: The context for the step logs.
+            last_retry: Whether this is the last retry of the step.
         """
         # Prepare step run information.
         step_run_info = StepRunInfo(
@@ -421,6 +455,7 @@ class StepLauncher:
             pipeline_step_name=self._step_name,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
+            force_write_logs=force_write_logs,
         )
 
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
@@ -434,6 +469,7 @@ class StepLauncher:
                 self._run_step_with_step_operator(
                     step_operator_name=self._step.config.step_operator,
                     step_run_info=step_run_info,
+                    last_retry=last_retry,
                 )
             else:
                 self._run_step_without_step_operator(
@@ -442,6 +478,7 @@ class StepLauncher:
                     step_run_info=step_run_info,
                     input_artifacts=step_run.inputs,
                     output_artifact_uris=output_artifact_uris,
+                    last_retry=last_retry,
                 )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
@@ -459,12 +496,14 @@ class StepLauncher:
         self,
         step_operator_name: str,
         step_run_info: StepRunInfo,
+        last_retry: bool,
     ) -> None:
         """Runs the current step with a step operator.
 
         Args:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
+            last_retry: Whether this is the last retry of the step.
         """
         step_operator = _get_step_operator(
             stack=self._stack,
@@ -482,6 +521,8 @@ class StepLauncher:
         environment = orchestrator_utils.get_config_environment_vars(
             deployment=self._deployment
         )
+        if last_retry:
+            environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(False)
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
@@ -500,6 +541,7 @@ class StepLauncher:
         step_run_info: StepRunInfo,
         input_artifacts: Dict[str, ArtifactVersionResponse],
         output_artifact_uris: Dict[str, str],
+        last_retry: bool,
     ) -> None:
         """Runs the current step without a step operator.
 
@@ -509,7 +551,10 @@ class StepLauncher:
             step_run_info: Additional information needed to run the step.
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
+            last_retry: Whether this is the last retry of the step.
         """
+        if last_retry:
+            os.environ[ENV_ZENML_IGNORE_FAILURE_HOOK] = "false"
         runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
             pipeline_run=pipeline_run,

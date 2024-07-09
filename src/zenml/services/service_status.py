@@ -25,11 +25,12 @@ logger = get_logger(__name__)
 class ServiceState(StrEnum):
     """Possible states for the service and service endpoint."""
 
+    INACTIVE = "inactive"
     ACTIVE = "active"
     PENDING_STARTUP = "pending_startup"
-    INACTIVE = "inactive"
     PENDING_SHUTDOWN = "pending_shutdown"
     ERROR = "error"
+    SCALED_TO_ZERO = "scaled_to_zero"
 
 
 class ServiceStatus(BaseTypedModel):

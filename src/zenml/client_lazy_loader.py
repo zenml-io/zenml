@@ -25,7 +25,7 @@ from typing import (
     Type,
 )
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from zenml.client import Client
@@ -44,8 +44,7 @@ class ClientLazyLoader(BaseModel):
 
     method_name: str
     call_chain: List[_CallStep] = []
-
-    _exclude_next_call: bool = PrivateAttr(False)
+    exclude_next_call: bool = False
 
     def __getattr__(self, name: str) -> "ClientLazyLoader":
         """Get attribute not defined in ClientLazyLoader.
@@ -63,7 +62,7 @@ class ClientLazyLoader(BaseModel):
         if name != "__deepcopy__":
             self_.call_chain.append(_CallStep(attribute_name=name))
         else:
-            self_._exclude_next_call = True
+            self_.exclude_next_call = True
         return self_
 
     def __call__(self, *args: Any, **kwargs: Any) -> "ClientLazyLoader":
@@ -77,11 +76,11 @@ class ClientLazyLoader(BaseModel):
             self
         """
         # workaround to protect from infinitely looping over in deepcopy called in invocations
-        if not self._exclude_next_call:
+        if not self.exclude_next_call:
             self.call_chain.append(
                 _CallStep(is_call=True, call_args=args, call_kwargs=kwargs)
             )
-        self._exclude_next_call = False
+        self.exclude_next_call = False
         return self
 
     def __getitem__(self, item: Any) -> "ClientLazyLoader":
@@ -108,18 +107,25 @@ class ClientLazyLoader(BaseModel):
             self: "ClientLazyLoader", self_: Any, call_chain_: List[_CallStep]
         ) -> Any:
             next_step = call_chain_.pop(0)
-            if next_step.is_call:
-                self_ = self_(*next_step.call_args, **next_step.call_kwargs)
-            elif next_step.selector:
-                self_ = self_[next_step.selector]
-            elif next_step.attribute_name:
-                self_ = getattr(self_, next_step.attribute_name)
-            else:
+            try:
+                if next_step.is_call:
+                    self_ = self_(
+                        *next_step.call_args, **next_step.call_kwargs
+                    )
+                elif next_step.selector:
+                    self_ = self_[next_step.selector]
+                elif next_step.attribute_name:
+                    self_ = getattr(self_, next_step.attribute_name)
+                else:
+                    raise ValueError(
+                        "Invalid call chain. Reach out to the ZenML team."
+                    )
+            except Exception as e:
                 raise RuntimeError(
                     f"Failed to evaluate lazy load chain `{self.method_name}` "
                     f"+ `{self.call_chain}`. Reach out to the ZenML team via "
                     "Slack or GitHub to check further."
-                )
+                ) from e
             return self_
 
         self_ = getattr(Client(), self.method_name)

@@ -18,7 +18,7 @@ Step svc_trainer has finished in 0.932s.
 
 ![DAG of a cached pipeline run](../../.gitbook/assets/CachedDag.png)
 
-ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md)). This behavior is known as **caching**.
+ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](../../component-guide/artifact-stores/artifact-stores.md)). This behavior is known as **caching**.
 
 In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters, or code of a step.
 
@@ -156,24 +156,22 @@ def training_pipeline(gamma: float = 0.002):
 if __name__ == "__main__":
     training_pipeline()
 
-    # Step one will use cache, step two will rerun due to caching
-    # being disabled on the @step decorator. Even if caching was
-    # enabled though, ZenML would detect a different value for the
-    # `gamma` input of the second step and disable caching
+    # Step one will use cache, step two will rerun. 
+    # ZenML will detect a different value for the
+    # `gamma` input of the second step and disable caching.
     logger.info("\n\nFirst step cached, second not due to parameter change")
     training_pipeline(gamma=0.0001)
 
-    # This will disable cache for all steps
+    # This will disable cache for the second step.
     logger.info("\n\nFirst step cached, second not due to settings")
     svc_trainer = svc_trainer.with_options(enable_cache=False)
-    training_pipeline.with_options(enable_cache=False)()
+    training_pipeline()
 
-    # This will disable cache for all steps
+    # This will disable cache for all steps.
     logger.info("\n\nCaching disabled for the entire pipeline")
     training_pipeline.with_options(enable_cache=False)()
 ```
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

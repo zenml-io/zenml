@@ -17,7 +17,7 @@ import os
 import re
 import tempfile
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import IO, TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import paramiko
 import yaml
@@ -129,6 +129,36 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         """
         return quote(command)
 
+    def _scp_to_hyperai_instance(
+        self,
+        paramiko_client: paramiko.SSHClient,
+        f: IO[str],
+        directory_name: str,
+        file_name: str,
+        description: str,
+    ) -> None:
+        """Copies a file to a HyperAI instance using SCP.
+
+        Args:
+            paramiko_client: The SSH client to use for the SCP transfer.
+            f: The file to transfer.
+            directory_name: The directory on the HyperAI instance to transfer
+                the file to.
+            file_name: The name of the file being transferred.
+            description: A description of the file being transferred.
+
+        Raises:
+            RuntimeError: If the file cannot be written to the HyperAI instance.
+        """
+        try:
+            scp_client = paramiko_client.open_sftp()
+            scp_client.put(f.name, f"{directory_name}/{file_name}")
+            scp_client.close()
+        except FileNotFoundError:
+            raise RuntimeError(
+                f"Failed to write {description} to HyperAI instance. Does the user have permissions to write?"
+            )
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -217,8 +247,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Depending on whether it is a scheduled or a realtime pipeline, add
             # potential .env file to service definition for deployment ID override.
             if deployment.schedule:
-                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment
-                del environment[ENV_ZENML_HYPERAI_RUN_ID]
+                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment but only if it is set
+                if ENV_ZENML_HYPERAI_RUN_ID in environment:
+                    del environment[ENV_ZENML_HYPERAI_RUN_ID]
                 compose_definition["services"][container_name]["env_file"] = [
                     ".env"
                 ]
@@ -229,17 +260,25 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps
-            for upstream_step_name in upstream_steps:
-                upstream_container_name = (
-                    f"{deployment_id}-{upstream_step_name}"
-                )
+
+            if len(upstream_steps) > 0:
                 compose_definition["services"][container_name][
                     "depends_on"
-                ] = {
-                    upstream_container_name: {
-                        "condition": "service_completed_successfully"
-                    }
-                }
+                ] = {}
+
+                for upstream_step_name in upstream_steps:
+                    upstream_container_name = (
+                        f"{deployment_id}-{upstream_step_name}"
+                    )
+                    compose_definition["services"][container_name][
+                        "depends_on"
+                    ].update(
+                        {
+                            upstream_container_name: {
+                                "condition": "service_completed_successfully"
+                            }
+                        }
+                    )
 
         # Convert into yaml
         logger.info("Finalizing Docker Compose definition.")
@@ -372,14 +411,33 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f_.write(compose_definition_yaml)
 
             # Scp Docker Compose file to HyperAI instance
-            try:
-                scp_client = paramiko_client.open_sftp()
-                scp_client.put(f.name, f"{directory_name}/docker-compose.yaml")
-                scp_client.close()
-            except FileNotFoundError:
-                raise RuntimeError(
-                    "Failed to write Docker Compose file to HyperAI instance. Does the user have permissions to write?"
-                )
+            self._scp_to_hyperai_instance(
+                paramiko_client,
+                f,
+                directory_name,
+                file_name="docker-compose.yml",
+                description="Docker Compose file",
+            )
+
+        # Create temporary file and write script to it
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
+            # Define bash line and command line
+            bash_line = "#!/bin/bash\n"
+            command_line = f'cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}="{deployment_id}_$(date +\%s)" > .env && docker compose up -d'
+
+            # Write script to temporary file
+            with f.file as f_:
+                f_.write(bash_line)
+                f_.write(command_line)
+
+            # Scp script to HyperAI instance
+            self._scp_to_hyperai_instance(
+                paramiko_client,
+                f,
+                directory_name,
+                file_name="run_pipeline.sh",
+                description="startup script",
+            )
 
         # Run or schedule Docker Compose file depending on settings
         if not deployment.schedule:
@@ -393,7 +451,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Log errors in case of failure
             for line in stderr.readlines():
                 logger.info(line)
-        else:
+        elif deployment.schedule and deployment.schedule.cron_expression:
             # Get cron expression for scheduled pipeline
             cron_expression = deployment.schedule.cron_expression
             if not cron_expression:
@@ -407,12 +465,46 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 )
 
             # Log about scheduling
-            logger.info("Scheduling ZenML pipeline on HyperAI instance.")
-            logger.info(f"Cron expression: {cron_expression}")
+            logger.info(f"Requested cron expression: {cron_expression}")
+            logger.info("Scheduling ZenML pipeline on HyperAI instance...")
 
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
-                f"(crontab -l ; echo '{cron_expression} cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}=\"{deployment_id}_$(date +\%s)\" > .env && docker compose up -d') | crontab -"
+                f"(crontab -l ; echo '{cron_expression} bash {directory_name}/run_pipeline.sh') | crontab -"
             )
 
-            logger.info("Pipeline scheduled successfully.")
+            logger.info(
+                f"Pipeline scheduled successfully in crontab with cron expression: {cron_expression}"
+            )
+        elif deployment.schedule and deployment.schedule.run_once_start_time:
+            # Get start time for scheduled pipeline
+            start_time = deployment.schedule.run_once_start_time
+
+            # Log about scheduling
+            logger.info(f"Requested start time: {start_time}")
+            logger.info("Scheduling ZenML pipeline on HyperAI instance...")
+
+            # Check if `at` is installed on HyperAI instance
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
+                "which at"
+            )
+            if not stdout.readlines():
+                raise RuntimeError(
+                    "The `at` command is not installed on the HyperAI instance. Please install it to use start times for scheduled pipelines."
+                )
+
+            # Convert start time into YYYYMMDDHHMM.SS format
+            start_time_str = start_time.strftime("%Y%m%d%H%M.%S")
+
+            # Create cron job for scheduled pipeline on HyperAI instance
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
+                f"echo 'bash {directory_name}/run_pipeline.sh' | at -t {start_time_str}"
+            )
+
+            logger.info(
+                f"Pipeline scheduled successfully to run once at: {start_time}"
+            )
+        else:
+            raise RuntimeError(
+                "A cron expression or start time is required for scheduled pipelines."
+            )

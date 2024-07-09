@@ -15,6 +15,7 @@
 
 import shutil
 from typing import ClassVar, List, Optional, Tuple, Type, cast
+from uuid import uuid4
 
 from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
@@ -131,7 +132,9 @@ class DockerServerProvider(BaseServerProvider):
                 config=monitor_cfg,
             ),
         )
-        service = DockerZenServer(config=service_config, endpoint=endpoint)
+        service = DockerZenServer(
+            uuid=uuid4(), config=service_config, endpoint=endpoint
+        )
 
         service.start(timeout=timeout)
         return service

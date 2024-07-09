@@ -23,34 +23,37 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Tuple,
     Type,
 )
 from uuid import UUID
 
-from pydantic.typing import get_origin, is_union
-
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.artifacts.utils import save_artifact
-from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_IGNORE_FAILURE_HOOK,
     handle_bool_env_var,
 )
 from zenml.exceptions import StepContextError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.model.utils import link_step_artifacts_to_model
+from zenml.model.utils import (
+    link_step_artifacts_to_model,
+)
 from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
     publish_successful_step_run,
 )
-from zenml.orchestrators.utils import is_setting_enabled
+from zenml.orchestrators.utils import (
+    _link_pipeline_run_to_model_from_artifacts,
+    _link_pipeline_run_to_model_from_context,
+    is_setting_enabled,
+)
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
     OutputSignature,
@@ -58,11 +61,9 @@ from zenml.steps.utils import (
     resolve_type_annotation,
 )
 from zenml.utils import materializer_utils, source_utils
+from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
-    from zenml.artifacts.external_artifact_config import (
-        ExternalArtifactConfiguration,
-    )
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
@@ -190,8 +191,8 @@ class StepRunner:
                     input_artifacts=input_artifacts,
                 )
 
-                self._link_pipeline_run_to_model_from_context(
-                    pipeline_run=pipeline_run
+                _link_pipeline_run_to_model_from_context(
+                    pipeline_run_id=pipeline_run.id
                 )
 
                 step_failed = False
@@ -201,15 +202,18 @@ class StepRunner:
                     )
                 except BaseException as step_exception:  # noqa: E722
                     step_failed = True
-                    failure_hook_source = (
-                        self.configuration.failure_hook_source
-                    )
-                    if failure_hook_source:
-                        logger.info("Detected failure hook. Running...")
-                        self.load_and_run_hook(
-                            failure_hook_source,
-                            step_exception=step_exception,
-                        )
+                    if not handle_bool_env_var(
+                        ENV_ZENML_IGNORE_FAILURE_HOOK, False
+                    ):
+                        if (
+                            failure_hook_source
+                            := self.configuration.failure_hook_source
+                        ):
+                            logger.info("Detected failure hook. Running...")
+                            self.load_and_run_hook(
+                                failure_hook_source,
+                                step_exception=step_exception,
+                            )
                     raise
                 finally:
                     step_run_metadata = self._stack.get_step_run_metadata(
@@ -223,10 +227,10 @@ class StepRunner:
                         info=step_run_info, step_failed=step_failed
                     )
                     if not step_failed:
-                        success_hook_source = (
-                            self.configuration.success_hook_source
-                        )
-                        if success_hook_source:
+                        if (
+                            success_hook_source
+                            := self.configuration.success_hook_source
+                        ):
                             logger.info("Detected success hook. Running...")
                             self.load_and_run_hook(
                                 success_hook_source,
@@ -256,8 +260,8 @@ class StepRunner:
                         link_step_artifacts_to_model(
                             artifact_version_ids=output_artifact_ids
                         )
-                        self._link_pipeline_run_to_model_from_artifacts(
-                            pipeline_run=pipeline_run,
+                        _link_pipeline_run_to_model_from_artifacts(
+                            pipeline_run_id=pipeline_run.id,
                             artifact_names=list(output_artifact_ids.keys()),
                             external_artifacts=list(
                                 step_run.config.external_input_artifacts.values()
@@ -343,7 +347,7 @@ class StepRunner:
                     "is deprecated and will be removed in a future release. "
                     f"Please adjust your '{step_name}' step to instead import "
                     "the `StepContext` inside your step, as shown here: "
-                    "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps"
+                    "https://docs.zenml.io/how-to/track-metrics-metadata/fetch-metadata-within-steps"
                 )
                 function_params[arg] = get_step_context()
             elif arg in input_artifacts:
@@ -391,7 +395,7 @@ class StepRunner:
 
             # Parse the parameters
             if issubclass(arg_type, BaseParameters):
-                step_params = arg_type.parse_obj(
+                step_params = arg_type.model_validate(
                     self.configuration.parameters[arg]
                 )
                 function_params[arg] = step_params
@@ -404,7 +408,7 @@ class StepRunner:
                     "is deprecated and will be removed in a future release. "
                     f"Please adjust your '{step_name}' hook to instead import "
                     "the `StepContext` inside your hook, as shown here: "
-                    "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps"
+                    "https://docs.zenml.io/how-to/track-metrics-metadata/fetch-metadata-within-steps"
                 )
                 function_params[arg] = get_step_context()
 
@@ -434,7 +438,9 @@ class StepRunner:
         """
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
-            return UnmaterializedArtifact.parse_obj(artifact)
+            return UnmaterializedArtifact(
+                **artifact.get_hydrated_version().model_dump()
+            )
 
         if data_type is Any or is_union(get_origin(data_type)):
             # Entrypoint function does not define a specific type for the input,
@@ -474,7 +480,7 @@ class StepRunner:
         if len(output_annotations) == 0:
             if return_values is not None:
                 raise StepInterfaceError(
-                    f"Wrong step function output type for step '{step_name}': "
+                    f"Wrong step function output type for step `{step_name}`: "
                     f"Expected no outputs but the function returned something: "
                     f"{return_values}."
                 )
@@ -490,7 +496,7 @@ class StepRunner:
         # or tuple.
         if not isinstance(return_values, (list, tuple)):
             raise StepInterfaceError(
-                f"Wrong step function output type for step '{step_name}': "
+                f"Wrong step function output type for step `{step_name}`: "
                 f"Expected multiple outputs ({output_annotations}) but "
                 f"the function did not return a list or tuple "
                 f"(actual return value: {return_values})."
@@ -505,8 +511,6 @@ class StepRunner:
                 f"but the function returned {len(return_values)} outputs"
                 f"(return values: {return_values})."
             )
-
-        from pydantic.typing import get_origin, is_union
 
         from zenml.steps.utils import get_args
 
@@ -640,115 +644,6 @@ class StepRunner:
             model._get_or_create_model_version()
         except StepContextError:
             return
-
-    def _get_model_versions_from_artifacts(
-        self,
-        artifact_names: List[str],
-    ) -> Set[Tuple[UUID, UUID]]:
-        """Gets the model versions from the artifacts.
-
-        Args:
-            artifact_names: The names of the published output artifacts.
-
-        Returns:
-            Set of tuples of (model_id, model_version_id).
-        """
-        models = set()
-        for artifact_name in artifact_names:
-            artifact_config = (
-                get_step_context()._get_output(artifact_name).artifact_config
-            )
-            if artifact_config is not None:
-                if (model := artifact_config._model) is not None:
-                    model_version_response = (
-                        model._get_or_create_model_version()
-                    )
-                    models.add(
-                        (
-                            model_version_response.model.id,
-                            model_version_response.id,
-                        )
-                    )
-                else:
-                    break
-        return models
-
-    def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:
-        """Gets the model versions from the step model version.
-
-        Returns:
-            Set of tuples of (model_id, model_version_id).
-        """
-        try:
-            mc = get_step_context().model
-            model_version = mc._get_or_create_model_version()
-            return {(model_version.model.id, model_version.id)}
-        except StepContextError:
-            return set()
-
-    def _link_pipeline_run_to_model_from_context(
-        self,
-        pipeline_run: "PipelineRunResponse",
-    ) -> None:
-        """Links the pipeline run to the model version using artifacts data.
-
-        Args:
-            pipeline_run: The response model of current pipeline run.
-        """
-        from zenml.models import ModelVersionPipelineRunRequest
-
-        models = self._get_model_versions_from_config()
-
-        client = Client()
-        for model in models:
-            client.zen_store.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequest(
-                    user=Client().active_user.id,
-                    workspace=Client().active_workspace.id,
-                    pipeline_run=pipeline_run.id,
-                    model=model[0],
-                    model_version=model[1],
-                )
-            )
-
-    def _link_pipeline_run_to_model_from_artifacts(
-        self,
-        pipeline_run: "PipelineRunResponse",
-        artifact_names: List[str],
-        external_artifacts: List["ExternalArtifactConfiguration"],
-    ) -> None:
-        """Links the pipeline run to the model version using artifacts data.
-
-        Args:
-            pipeline_run: The response model of current pipeline run.
-            artifact_names: The name of the published output artifacts.
-            external_artifacts: The external artifacts of the step.
-        """
-        from zenml.models import ModelVersionPipelineRunRequest
-
-        models = self._get_model_versions_from_artifacts(artifact_names)
-        client = Client()
-
-        # Add models from external artifacts
-        for external_artifact in external_artifacts:
-            if external_artifact.model:
-                models.add(
-                    (
-                        external_artifact.model.model_id,
-                        external_artifact.model.id,
-                    )
-                )
-
-        for model in models:
-            client.zen_store.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequest(
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
-                    pipeline_run=pipeline_run.id,
-                    model=model[0],
-                    model_version=model[1],
-                )
-            )
 
     def load_and_run_hook(
         self,

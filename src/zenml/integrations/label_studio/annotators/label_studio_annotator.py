@@ -17,13 +17,17 @@ import json
 import os
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
-from label_studio_sdk import Client, Project  # type: ignore[import-not-found]
+from label_studio_sdk import Client, Project
 
+from zenml import get_step_context
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.config.global_config import GlobalConfiguration
+from zenml.integrations.label_studio.flavors import (
+    LabelStudioAnnotatorSettings,
+)
 from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
     LabelStudioAnnotatorConfig,
 )
@@ -49,13 +53,26 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         return cast(LabelStudioAnnotatorConfig, self._config)
 
+    @property
+    def settings_class(self) -> Type[LabelStudioAnnotatorSettings]:
+        """Settings class for the Label Studio annotator.
+
+        Returns:
+            The settings class.
+        """
+        return LabelStudioAnnotatorSettings
+
     def get_url(self) -> str:
         """Gets the top-level URL of the annotation interface.
 
         Returns:
             The URL of the annotation interface.
         """
-        return f"{self.config.instance_url}:{self.config.port}"
+        return (
+            f"{self.config.instance_url}:{self.config.port}"
+            if self.config.port
+            else self.config.instance_url
+        )
 
     def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.
@@ -126,14 +143,14 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             f"`zenml annotator dataset list` to list all available datasets."
         )
 
-    def launch(self, url: Optional[str]) -> None:
+    def launch(self, **kwargs: Any) -> None:
         """Launches the annotation interface.
 
         Args:
-            url: The URL of the annotation interface.
+            **kwargs: Additional keyword arguments to pass to the
+                annotation client.
         """
-        if not url:
-            url = self.get_url()
+        url = kwargs.get("url") or self.get_url()
         if self._connection_available():
             webbrowser.open(url, new=1, autoraise=True)
         else:
@@ -151,12 +168,22 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             ValueError: when unable to access the Label Studio API key.
         """
-        secret = self.get_authentication_secret()
-        if not secret:
-            raise ValueError(
-                "Unable to access predefined secret to access Label Studio API key."
+        try:
+            settings = cast(
+                LabelStudioAnnotatorSettings,
+                self.get_settings(get_step_context().step_run),
             )
-        api_key = secret.secret_values.get("api_key")
+            if settings.api_key is None:
+                raise RuntimeError
+            else:
+                api_key = settings.api_key
+        except RuntimeError:
+            if secret := self.get_authentication_secret():
+                api_key = secret.secret_values.get("api_key", "")
+            else:
+                raise ValueError(
+                    "Unable to access predefined secret to access Label Studio API key."
+                )
         if not api_key:
             raise ValueError(
                 "Unable to access Label Studio API key from secret."
@@ -500,6 +527,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 aws_access_key_id,
                 aws_secret_access_key,
                 aws_session_token,
+                _,
             ) = artifact_store.get_credentials()
 
             if aws_access_key_id and aws_secret_access_key:
@@ -549,9 +577,13 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 file_path = Path(
                     secret_folder, "google_application_credentials.json"
                 )
-                with open(file_path, "w") as f:
+                with os.fdopen(
+                    os.open(
+                        file_path, flags=os.O_RDWR | os.O_CREAT, mode=0o600
+                    ),
+                    "w",
+                ) as f:
                     f.write(json.dumps(gcp_credentials))
-                    file_path.chmod(0o600)
 
                 params.google_application_credentials = str(file_path)
 

@@ -118,32 +118,30 @@ def mlflow_model_deployer_step(
             run_id=mlflow_run_id, artifact_path=model_name
         )
 
-    # Fetch existing services with same pipeline name, step name and model name
-    existing_services = model_deployer.find_model_server(
+    predictor_cfg = MLFlowDeploymentConfig(
+        model_name=model_name or "",
+        model_uri=model_uri,
+        workers=workers,
+        mlserver=mlserver,
         pipeline_name=pipeline_name,
         pipeline_step_name=step_name,
-        model_name=model_name,
+        timeout=timeout,
+    )
+
+    # Fetch existing services with same pipeline name, step name and model name
+    existing_services = model_deployer.find_model_server(
+        config=predictor_cfg.model_dump(),
     )
 
     # Check whether to deploy a new service
     if model_uri and deploy_decision:
-        predictor_cfg = MLFlowDeploymentConfig(
-            model_name=model_name or "",
-            model_uri=model_uri,
-            workers=workers,
-            mlserver=mlserver,
-            pipeline_name=pipeline_name,
-            run_name=run_name,
-            pipeline_run_id=run_name,
-            pipeline_step_name=step_name,
-            timeout=timeout,
-        )
         new_service = cast(
             MLFlowDeploymentService,
             model_deployer.deploy_model(
                 replace=True,
                 config=predictor_cfg,
                 timeout=timeout,
+                service_type=MLFlowDeploymentService.SERVICE_TYPE,
             ),
         )
         logger.info(
@@ -168,7 +166,7 @@ def mlflow_model_deployer_step(
                 "was negative."
             )
         logger.info(
-            f"Reusing last model server deployed by step '{step_name}' of "
+            f"Reusing last model server deployed by step `{step_name}` of "
             f"pipeline '{pipeline_name}' for model '{model_name}'..."
         )
         service = cast(MLFlowDeploymentService, existing_services[0])
@@ -277,26 +275,25 @@ def mlflow_model_registry_deployer_step(
             f"using this step."
         )
     # fetch existing services with same pipeline name, step name and model name
+
     existing_services = (
         model_deployer.find_model_server(
-            registry_model_name=model_version.registered_model.name,
+            model_name=registry_model_name,
+            model_version=model_version.version,
         )
         if replace_existing
         else None
     )
-
     # create a config for the new model service
     metadata = model_version.metadata or ModelRegistryModelMetadata()
     predictor_cfg = MLFlowDeploymentConfig(
-        model_name=model_name or "",
+        name=model_name or None,
+        model_name=registry_model_name,
+        model_version=model_version.version,
         model_uri=model_version.model_source_uri,
-        registry_model_name=model_version.registered_model.name,
-        registry_model_version=model_version.version,
-        registry_model_stage=model_version.stage.value,
         workers=workers,
         mlserver=mlserver,
         pipeline_name=metadata.zenml_pipeline_name or "",
-        run_name=metadata.zenml_run_name or "",
         pipeline_step_name=metadata.zenml_step_name or "",
         timeout=timeout,
     )
@@ -308,6 +305,7 @@ def mlflow_model_registry_deployer_step(
             replace=True,
             config=predictor_cfg,
             timeout=timeout,
+            service_type=MLFlowDeploymentService.SERVICE_TYPE,
         ),
     )
 

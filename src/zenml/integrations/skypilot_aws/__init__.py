@@ -31,8 +31,9 @@ class SkypilotAWSIntegration(Integration):
     """Definition of Skypilot AWS Integration for ZenML."""
 
     NAME = SKYPILOT_AWS
-    REQUIREMENTS = ["skypilot[aws]<=0.4.1"]
-    APT_PACKAGES = ["openssh-client","rsync"]
+    # all 0.6.x versions of skypilot[aws] are compatible
+    REQUIREMENTS = ["skypilot[aws]~=0.6.0"]
+    APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

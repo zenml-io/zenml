@@ -29,6 +29,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        ActionSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
         EventSourceSchema,
@@ -45,6 +46,7 @@ if TYPE_CHECKING:
         ScheduleSchema,
         SecretSchema,
         ServiceConnectorSchema,
+        ServiceSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -103,6 +105,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    actions: List["ActionSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     triggers: List["TriggerSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -117,6 +123,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     code_repositories: List["CodeRepositorySchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    services: List["ServiceSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -167,7 +177,9 @@ class WorkspaceSchema(NamedSchema, table=True):
         Returns:
             The updated `WorkspaceSchema`.
         """
-        for field, value in workspace_update.dict(exclude_unset=True).items():
+        for field, value in workspace_update.model_dump(
+            exclude_unset=True
+        ).items():
             setattr(self, field, value)
 
         self.updated = datetime.utcnow()

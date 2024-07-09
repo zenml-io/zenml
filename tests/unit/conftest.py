@@ -69,10 +69,17 @@ from zenml.models import (
     WorkspaceResponseBody,
     WorkspaceResponseMetadata,
 )
+from zenml.models.v2.core.service import (
+    ServiceResponse,
+    ServiceResponseBody,
+    ServiceResponseMetadata,
+)
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
+from zenml.services.service_status import ServiceState
+from zenml.services.service_type import ServiceType
 from zenml.stack.stack import Stack
 from zenml.stack.stack_component import (
     StackComponentConfig,
@@ -284,15 +291,15 @@ def sample_step_run_info(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
 ) -> StepRunInfo:
-    step_run_info = StepRunInfo(
+    return StepRunInfo(
         step_run_id=sample_step_run.id,
         run_id=sample_pipeline_run.id,
         run_name=sample_pipeline_run.name,
         pipeline_step_name=sample_step_run.name,
         config=sample_step_run.config,
         pipeline=sample_pipeline_run.config,
+        force_write_logs=lambda: None,
     )
-    return step_run_info
 
 
 @pytest.fixture
@@ -395,14 +402,14 @@ def sample_workspace_model() -> WorkspaceResponse:
 @pytest.fixture
 def sample_step_request_model() -> StepRunRequest:
     """Return a sample step model for testing purposes."""
-    spec = StepSpec.parse_obj(
+    spec = StepSpec.model_validate(
         {
             "source": "module.step_class",
             "upstream_steps": [],
             "inputs": {},
         }
     )
-    config = StepConfiguration.parse_obj(
+    config = StepConfiguration.model_validate(
         {"name": "step_name", "enable_cache": True}
     )
 
@@ -501,7 +508,7 @@ def sample_artifact_version_model(
         id=uuid4(),
         body=ArtifactVersionResponseBody(
             artifact=sample_artifact_model,
-            version=1,
+            version="1",
             user=sample_user_model,
             created=datetime.now(),
             updated=datetime.now(),
@@ -547,10 +554,10 @@ def create_step_run(
         output_artifacts: Optional[Dict[str, ArtifactVersionResponse]] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
-        spec = StepSpec.parse_obj(
+        spec = StepSpec.model_validate(
             {"source": "module.step_class", "upstream_steps": []}
         )
-        config = StepConfiguration.parse_obj(
+        config = StepConfiguration.model_validate(
             {
                 "name": step_name,
                 "outputs": outputs or {},
@@ -692,4 +699,67 @@ def sample_hub_plugin_response_model() -> HubPluginResponseModel:
         created=datetime.now(),
         updated=datetime.now(),
         requirements=["ploogin==0.0.1", "zenml>=0.1.0"],
+    )
+
+
+# Test data
+service_id = "12345678-1234-5678-1234-567812345678"
+service_name = "test_service"
+service_type = ServiceType(
+    type="model-serving", flavor="test_flavor", name="test_name"
+)
+service_source = "tests.unit.services.test_service.TestService"
+admin_state = ServiceState.ACTIVE
+config = {
+    "type": "zenml.services.service.ServiceConfig",
+    "name": "test_service",
+    "description": "",
+    "pipeline_name": "",
+    "pipeline_step_name": "",
+    "model_name": "",
+    "model_version": "",
+    "service_name": "zenml-test_service",
+}
+labels = {"label1": "value1", "label2": "value2"}
+status = {
+    "type": "zenml.services.service_status.ServiceStatus",
+    "state": ServiceState.ACTIVE,
+    "last_state": ServiceState.INACTIVE,
+    "last_error": "",
+}
+endpoint = None
+prediction_url = "http://example.com/predict"
+health_check_url = "http://example.com/health"
+created_time = datetime(2024, 3, 14, 10, 30)
+updated_time = datetime(2024, 3, 14, 11, 45)
+
+
+@pytest.fixture
+def service_response(
+    sample_user_model: UserResponse,
+    sample_workspace_model,
+):
+    body = ServiceResponseBody(
+        service_type=service_type,
+        labels=labels,
+        created=created_time,
+        updated=updated_time,
+        user=sample_user_model,
+        state=admin_state,
+    )
+    metadata = ServiceResponseMetadata(
+        service_source=service_source,
+        admin_state=admin_state,
+        config=config,
+        status=status,
+        endpoint=endpoint,
+        prediction_url=prediction_url,
+        health_check_url=health_check_url,
+        workspace=sample_workspace_model,
+    )
+    return ServiceResponse(
+        id=service_id,
+        name=service_name,
+        body=body,
+        metadata=metadata,
     )
