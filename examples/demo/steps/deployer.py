@@ -39,7 +39,7 @@ def deploy_to_databricks() -> Optional[DatabricksDeploymentService]:
         workload_size=ServedModelInputWorkloadSize.SMALL,
         workload_type=ServedModelInputWorkloadType.CPU,
         scale_to_zero_enabled=True,
-        endpoint_secret_name="databricks_token_us",
+        endpoint_secret_name="databricks_token",
     )
     service = model_deployer.deploy_model(
         config=databricks_deployment_config,
