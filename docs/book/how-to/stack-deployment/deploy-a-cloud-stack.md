@@ -24,8 +24,8 @@ you can also use [the stack wizard to seamlessly register your stack](register-a
 ## How to use the 1-click deployment tool?
 
 The first thing that you need in order to use this feature is a
-deployed instance of ZenML (not a local scenario via `zenml up`). If you do 
-not already have it set up, feel free to learn how to set it up 
+deployed instance of ZenML (not a local server via `zenml up`). If you do 
+not already have it set up for you, feel free to learn how to do so
 [here](../../getting-started/deploying-zenml/README.md).
 
 Once you are connected to your deployed ZenML instance, you can use the 
