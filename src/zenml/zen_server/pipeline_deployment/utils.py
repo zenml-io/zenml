@@ -366,8 +366,12 @@ def apply_run_config(
         step_config = StepConfiguration.model_validate(step_config_dict)
 
         if update := run_config.steps.get(invocation_id):
+            update_dict = update.model_dump()
+            # Get rid of deprecated name to prevent overriding the step name
+            # with `None`.
+            update_dict.pop("name", None)
             step_config = pydantic_utils.update_model(
-                step_config, update=update
+                step_config, update=update_dict
             )
         steps[invocation_id] = Step(spec=step.spec, config=step_config)
 

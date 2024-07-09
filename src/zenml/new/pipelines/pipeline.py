@@ -260,7 +260,7 @@ class Pipeline:
         raise RuntimeError(
             f"Cannot get the model of pipeline '{self.name}' because it has "
             f"not been registered yet. Please ensure that the pipeline has "
-            f"been run and that at least one step has been executed."
+            f"been run or built and try again."
         )
 
     @contextmanager
