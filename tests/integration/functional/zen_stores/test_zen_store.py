@@ -5139,7 +5139,6 @@ class TestTag:
         with pytest.raises(ValueError):
             Client().create_tag(TagRequest(color="yellow"))
 
-
     def test_create_duplicate(
         self,
     ):
