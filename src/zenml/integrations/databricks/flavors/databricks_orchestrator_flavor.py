@@ -54,13 +54,13 @@ class DatabricksOrchestratorSettings(BaseSettings):
     node_type_id: Optional[str] = None
     policy_id: Optional[str] = None
     autotermination_minutes: Optional[int] = None
-    autoscale: Optional[Tuple[int, int]] = None
+    autoscale: Tuple[int, int] = (1, 2)
     single_user_name: Optional[str] = None
     spark_conf: Optional[Dict[str, str]] = None
     spark_env_vars: Optional[Dict[str, str]] = None
 
 
-class DatabricksOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class DatabricksOrchestratorConfig(
     BaseOrchestratorConfig, DatabricksOrchestratorSettings
 ):
     """Databricks orchestrator base config.
@@ -72,8 +72,8 @@ class DatabricksOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     """
 
     host: str
-    client_id: Optional[str] = SecretField(default=None)
-    client_secret: Optional[str] = SecretField(default=None)
+    client_id: str = SecretField(default=None)
+    client_secret: str = SecretField(default=None)
 
     @property
     def is_local(self) -> bool:

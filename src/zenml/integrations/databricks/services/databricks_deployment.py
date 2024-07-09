@@ -29,6 +29,7 @@ from databricks.sdk.service.serving import (
 )
 from pydantic import Field
 
+from zenml import client
 from zenml.client import Client
 from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor import (
     DatabricksBaseConfig,
@@ -140,8 +141,8 @@ class DatabricksDeploymentService(BaseDeploymentService):
             )
         host = model_deployer.config.host
         self.config.host = host
-        if self.config.secret_name:
-            secret = client.get_secret(self.config.secret_name)
+        if model_deployer.config.secret_name:
+            secret = client.get_secret(model_deployer.config.secret_name)
             client_id = secret.secret_values["client_id"]
             client_secret = secret.secret_values["client_secret"]
 
@@ -248,16 +249,28 @@ class DatabricksDeploymentService(BaseDeploymentService):
         """
         try:
             status = self.databricks_endpoint.state or None
-            if status.ready == EndpointStateReady.READY:
+            if (
+                status
+                and status.ready
+                and status.ready == EndpointStateReady.READY
+            ):
                 return (ServiceState.ACTIVE, "")
             elif (
-                status.config_update == EndpointStateConfigUpdate.UPDATE_FAILED
+                status
+                and status.config_update
+                and status.config_update
+                == EndpointStateConfigUpdate.UPDATE_FAILED
             ):
                 return (
                     ServiceState.ERROR,
                     "Databricks Inference Endpoint deployment update failed",
                 )
-            elif status == EndpointStateConfigUpdate.IN_PROGRESS:
+            elif (
+                status
+                and status.config_update
+                and status.config_update
+                == EndpointStateConfigUpdate.IN_PROGRESS
+            ):
                 return (ServiceState.PENDING_STARTUP, "")
             return (ServiceState.PENDING_STARTUP, "")
         except Exception as e:
@@ -288,8 +301,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         """Make a prediction using the service.
 
         Args:
-            data: input data
-            max_new_tokens: Number of new tokens to generate
+            request: The input data for the prediction.
 
         Returns:
             The prediction result.
@@ -304,7 +316,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
                 "Please start the service before making predictions."
             )
         if self.prediction_url is not None:
-            databricks_token = Client().get_secret("databricks_token")
+            databricks_token = Client().get_secret(self.config.endpoint_secret_name)
             headers = {
                 "Authorization": f"Bearer {databricks_token.secret_values['token']}",
                 "Content-Type": "application/json",
@@ -350,7 +362,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
             )
 
             # Split the logs into lines
-            log_lines = logs.split("\n")
+            log_lines = logs.logs.split("\n")
 
             # Apply tail if specified
             if tail is not None:
@@ -366,7 +378,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
                         name=self._generate_an_endpoint_name(),
                         served_model_name=self.config.model_name,
                     )
-                    new_lines = new_logs.split("\n")
+                    new_lines = new_logs.logs.split("\n")
 
                     # Only yield new lines
                     for line in new_lines[len(log_lines) :]:

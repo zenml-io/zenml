@@ -19,7 +19,14 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
-from databricks.sdk.service.compute import AutoScale, ClusterDetails
+from databricks.sdk.service.compute import (
+    AutoScale,
+    ClusterAttributes,
+    ClusterDetails,
+    NodeType,
+    SparkVersion,
+    State,
+)
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml.client import Client
@@ -141,7 +148,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         """
         return DatabricksOrchestratorSettings
 
-    def get_orchestrator_run_id(self) -> Optional[str]:
+    def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
 
         Raises:
@@ -151,7 +158,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         Returns:
             The orchestrator run id.
         """
-        return os.getenv(ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID)
+        return os.getenv(ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID) or ""
 
     @property
     def root_directory(self) -> str:
@@ -232,6 +239,17 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 "orchestrator."
             )
 
+        # Get deployment id
+        deployment_id = deployment.id
+
+        # Set environment
+        os.environ[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = str(
+            deployment_id
+        )
+        environment[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = str(
+            deployment_id
+        )
+
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_databricks_pipeline(
             zenml_project_wheel: str, cluster_id: str
@@ -254,7 +272,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 # docker container when the step is called.
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
+                        step_name=step_name, deployment_id=deployment_id
                     )
                 )
 
@@ -266,7 +284,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     f"ZENML_DATABRICKS_SOURCE_PREFIX={self.package_name}"
                 )
                 env_vars.append(
-                    f"ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID={deployment.id}"
+                    f"ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID={deployment_id}"
                 )
                 env_arg = ",".join(env_vars)
 
@@ -275,7 +293,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 # Find the upstream container ops of the current step and
                 # configure the current container op to run after them
                 upstream_steps = [
-                    f"{deployment.id}_{upstream_step_name}"
+                    f"{deployment_id}_{upstream_step_name}"
                     for upstream_step_name in step.spec.upstream_steps
                 ]
 
@@ -301,7 +319,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 requirements = sorted(set(filter(None, requirements)))
 
                 task = convert_step_to_task(
-                    f"{deployment.id}_{step_name}",
+                    f"{deployment_id}_{step_name}",
                     ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND,
                     arguments,
                     requirements,
@@ -346,7 +364,10 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         )
 
         # Create an empty folder in a volume.
-        databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{deployment.pipeline.name}/{orchestrator_run_name}"
+        deployment_name = (
+            deployment.pipeline.name if deployment.pipeline else "default"
+        )
+        databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{deployment_name}/{orchestrator_run_name}"
         databricks_wheel_path = (
             f"{databricks_directory}/{wheel_path.rsplit('/', 1)[-1]}"
         )
@@ -434,29 +455,38 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             "spark.databricks.driver.dbfsLibraryInstallationAllowed"
         ] = "true"
 
-        cluster_config = {
-            "spark_version": self.settings_class().spark_version
-            or DATABRICKS_SPARK_DEFAULT_VERSION,
+        autoscale = AutoScale(
+            min_workers=self.settings_class().autoscale[0],
+            max_workers=self.settings_class().autoscale[1],
+        )
+
+        cluster_config: ClusterAttributes = {
+            "spark_version": SparkVersion(
+                self.settings_class().spark_version
+                or DATABRICKS_SPARK_DEFAULT_VERSION
+            ),
             "num_workers": self.settings_class().num_workers,
-            "node_type_id": self.settings_class().node_type_id
-            or "Standard_DS5_v2",
+            "node_type_id": NodeType(
+                self.settings_class().node_type_id or "Standard_DS5_v2"
+            ),
             "cluster_name": self.settings_class().cluster_name
             or DATABRICKS_CLUSTER_DEFAULT_NAME,
             "policy_id": self.settings_class().policy_id or "00166D9BEB5150FA",
             "autotermination_minutes": self.settings_class().autotermination_minutes
             or 30,
-            "autoscale": AutoScale(
-                min_workers=self.settings_class().autoscale[0]
-                if self.settings_class().autoscale
-                else 1,
-                max_workers=self.settings_class().autoscale[1]
-                if self.settings_class().autoscale
-                else 2,
-            ),
-            "single_user_name": self.settings_class().single_user_name,
-            "spark_env_vars": self.settings_class().spark_env_vars,
+            "autoscale": autoscale,
             "spark_conf": spark_conf,
         }
+
+        if self.settings_class().single_user_name:
+            cluster_config["single_user_name"] = (
+                self.settings_class().single_user_name
+            )
+
+        if self.settings_class().spark_env_vars:
+            cluster_config["spark_env_vars"] = (
+                self.settings_class().spark_env_vars
+            )
 
         # Check for existing clusters with the same configuration
         for existing_cluster in databricks_client.clusters.list():
@@ -466,63 +496,55 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     existing_cluster, cluster_config
                 ):
                     # If configurations match, use the existing cluster
-                    if existing_cluster.state != "RUNNING":
-                        # Start the cluster if it's terminated
-                        databricks_client.clusters.start_and_wait(
-                            existing_cluster.cluster_id
-                        )
-                    return existing_cluster
+                    if (
+                        existing_cluster.state
+                        and existing_cluster.state != State.RUNNING
+                    ):
+                        if existing_cluster.cluster_id:
+                            # Delete the cluster if it's terminated
+                            databricks_client.clusters.delete_and_wait(
+                                existing_cluster.cluster_id
+                            )
+                        else:
+                            raise RuntimeError(
+                                "Cluster is in an invalid state, can not retrieve cluster ID."
+                            )
 
         # If no matching cluster found, create a new one
         return databricks_client.clusters.create_and_wait(**cluster_config)
 
     def _compare_cluster_configs(
-        self, existing_cluster: Any, new_config: Dict[str, Any]
+        self,
+        existing_cluster: ClusterAttributes,
+        new_config: ClusterAttributes,
     ) -> bool:
-        """Compare existing cluster configuration with new configuration.
-
-        Args:
-            existing_cluster: Existing cluster configuration.
-            new_config: New cluster configuration.
-
-        Returns:
-            True if configurations are equivalent, False otherwise.
-        """
-        # Compare basic cluster properties
+        """Compare existing cluster configuration with new configuration."""
         if (
-            existing_cluster.spark_version != new_config["spark_version"]
-            or existing_cluster.num_workers != new_config["num_workers"]
-            or existing_cluster.node_type_id != new_config["node_type_id"]
-            or existing_cluster.cluster_name != new_config["cluster_name"]
-            or existing_cluster.policy_id != new_config["policy_id"]
+            existing_cluster.spark_version != new_config.spark_version
+            or existing_cluster.num_workers != new_config.num_workers
+            or existing_cluster.node_type_id != new_config.node_type_id
+            or existing_cluster.cluster_name != new_config.cluster_name
+            or existing_cluster.policy_id != new_config.policy_id
             or existing_cluster.autotermination_minutes
-            != new_config["autotermination_minutes"]
-            or existing_cluster.single_user_name
-            != new_config["single_user_name"]
+            != new_config.autotermination_minutes
+            or existing_cluster.single_user_name != new_config.single_user_name
         ):
             return False
 
         # Compare autoscale settings
-        if existing_cluster.autoscale:
-            if not new_config["autoscale"]:
-                return False
+        existing_autoscale = existing_cluster.autoscale
+        new_autoscale = new_config.autoscale
+        if existing_autoscale and new_autoscale:
             if (
-                existing_cluster.autoscale.min_workers
-                != new_config["autoscale"].min_workers
-                or existing_cluster.autoscale.max_workers
-                != new_config["autoscale"].max_workers
+                existing_autoscale.min_workers != new_autoscale.min_workers
+                or existing_autoscale.max_workers != new_autoscale.max_workers
             ):
                 return False
-        elif new_config["autoscale"]:
+        elif existing_autoscale != new_autoscale:
             return False
 
-        # Compare spark environment variables
-        if existing_cluster.spark_env_vars != new_config["spark_env_vars"]:
+        # Compare spark environment variables and configuration
+        if existing_cluster.spark_env_vars != new_config.spark_env_vars or existing_cluster.spark_conf != new_config.spark_conf:
             return False
 
-        # Compare spark configuration
-        if existing_cluster.spark_conf != new_config["spark_conf"]:
-            return False
-
-        # If all checks pass, configurations are considered equivalent
         return True
