@@ -62,7 +62,6 @@ on AWS.
 
 ![Cloudformation page](../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png)
 
-
 You will have to log in to your AWS account, review and confirm the 
 pre-filled configuration and create the stack.
 

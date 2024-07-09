@@ -139,7 +139,7 @@ The framework is a gentle entry point for practitioners to build complex ML pipe
 
 ZenML provides different features to aid people to get started quickly on a remote setting as well. If you want to deploy a remote stack from scratch on your selected cloud provider, you can use the 1-click deployment feature either through the dashboard:
 
-<PLACEHOLDER_FOR_SCREENSHOT>
+![Running a ZenML pipeline](/docs/book/.gitbook/assets/one-click-deployment.gif)
 
 Or, through our CLI command:
 
