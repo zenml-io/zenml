@@ -23,8 +23,13 @@ you can also use [the stack wizard to seamlessly register your stack](register-a
 
 ## How to use the 1-click deployment tool?
 
-To deploy a stack in 1-click, you can either use the dashboard or 
-the CLI:
+The first thing that you need in order to use this feature is a
+deployed instance of ZenML (not a local scenario via `zenml up`). If you do 
+not already have it set up, feel free to learn how to set it up 
+[here](../../getting-started/deploying-zenml/README.md).
+
+Once you are connected to your deployed ZenML instance, you can use the 
+1-click deployment tool either through the dashboard or the CLI:
 
 {% tabs %}
 {% tab title="Dashboard" %}
