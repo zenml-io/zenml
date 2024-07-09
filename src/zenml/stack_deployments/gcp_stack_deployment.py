@@ -90,7 +90,8 @@ for a detailed estimate based on your usage.
 untrusted. We recommend that you review [the contents of the repository](https://github.com/zenml-io/zenml/tree/main/infra/gcp)
 and then check the `Trust repo` checkbox to proceed with the deployment,
 otherwise the Cloud Shell session will not be authenticated to access your
-GCP projects.**
+GCP projects. You will also get a chance to review the scripts that will be
+executed in the Cloud Shell session before proceeding.**
 
 💡 **After the Deployment Manager deployment is complete, you can close the Cloud
 Shell session and return to the CLI to view details about the associated ZenML
@@ -138,7 +139,7 @@ GCP project and to clean up the resources created by the stack by using
             "GCS Bucket": [
                 "roles/storage.objectUser",
             ],
-            "ECR Repository": [
+            "GCP Artifact Registry": [
                 "roles/artifactregistry.createOnPushWriter",
             ],
             "Vertex AI (Client)": [
