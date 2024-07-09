@@ -3,6 +3,10 @@
 
 This release comes with a new and easy way to deploy an AWS ZenML stack from the dashboard and the CLI. Give it a try by going to the `Stacks` section in the dashboard or running the `zenml stack deploy` command!
 
+We hope this makes it super easy for existing and new users to set up the infrastructure required to run ZenML pipelines on the cloud in one click.
+
+Note: Only a simple AWS stack using Skypilot supported for now but GCP + Azure to come!
+
 Additionally, this release includes improvements to our documentation and bugfixes for some integrations.
 
 ## What's Changed
@@ -28,7 +32,7 @@ Additionally, this release includes improvements to our documentation and bugfix
 * Remove prefix for analytics labels by @schustmi in https://github.com/zenml-io/zenml/pull/2831
 
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.60.0...test
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.60.0...0.61.0
 
 # 0.60.0
 
