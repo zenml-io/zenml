@@ -106,7 +106,7 @@ create the stack.
 ## What will be deployed?
 
 Here is an overview of the infrastructure that the 1-click deployment will
-prepare for you:
+prepare for you based on your cloud provider:
 
 {% tabs %}
 {% tab title="AWS" %}
