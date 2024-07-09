@@ -47,10 +47,8 @@ flow through the ZenML dashboard or CLI that looks like the following:
 
 ```
 ### BEGIN CONFIGURATION ###
-ZENML_STACK_NAME=zenml-gcp-stack
-ZENML_STACK_REGION=europe-west3
-ZENML_SERVER_URL=
-ZENML_SERVER_API_TOKEN=
+...
+...
 ### END CONFIGURATION ###
 ```
 

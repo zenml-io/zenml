@@ -60,10 +60,6 @@ You will be redirected to a GCP Cloud Shell console in your browser where you'll
 be asked to log into your GCP project and then create a Deployment Manager
 deployment to provision the necessary cloud resources for ZenML.
 
-After the Deployment Manager deployment is complete, you can return to the CLI
-to view details about the associated ZenML stack automatically registered with
-ZenML.
-
 **NOTE**: The Deployment Manager deployment will create the following new
 resources in your GCP project. Please ensure you have the necessary permissions
 and are aware of any potential costs:
@@ -80,6 +76,16 @@ The Deployment Manager deployment will automatically create a GCP Service
 Account secret key and will share it with ZenML to give it permission to access
 the resources created by the stack. You can revoke these permissions at any time
 by deleting the Deployment Manager deployment in the GCP Cloud Console.
+
+⚠️ **The Cloud Shell session will warn you that the ZenML GitHub repository is
+untrusted. We recommend that you review [the contents of the repository](https://github.com/zenml-io/zenml/tree/main/infra/gcp)
+and then check the `Trust repo` checkbox to proceed with the deployment,
+otherwise the Cloud Shell session will not be authenticated to access your
+GCP projects.**
+
+💡 **After the Deployment Manager deployment is complete, you can close the Cloud
+Shell session and return to the CLI to view details about the associated ZenML
+stack automatically registered with ZenML.**
 """
 
     @classmethod
@@ -219,6 +225,9 @@ GCP project and to clean up the resources created by the stack by using
 ZENML_STACK_NAME={self.stack_name}
 ZENML_STACK_REGION={self.location or "europe-west3"}
 ZENML_SERVER_URL={self.zenml_server_url}
+# NOTE: For security reasons, the ZenML server API token is only valid for 1
+# hour. If you exceed this time limit, you will need to restart the stack
+# deployment process.
 ZENML_SERVER_API_TOKEN={self.zenml_server_api_token}
 ### END CONFIGURATION ###
 """

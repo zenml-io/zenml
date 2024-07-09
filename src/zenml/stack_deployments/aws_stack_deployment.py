@@ -62,9 +62,6 @@ to log into your AWS account and create a CloudFormation ZenML stack. The stack
 parameters will be pre-filled with the necessary information to connect ZenML to
 your AWS account, so you should only need to review and confirm the stack.
 
-After the CloudFormation stack is deployed, you can return to the CLI to view
-details about the associated ZenML stack automatically registered with ZenML.
-
 **NOTE**: The CloudFormation stack will create the following new resources in
 your AWS account. Please ensure you have the necessary permissions and are aware
 of any potential costs:
@@ -81,6 +78,10 @@ The CloudFormation stack will automatically create an AWS secret key and
 will share it with ZenML to give it permission to access the resources created
 by the stack. You can revoke these permissions at any time by deleting the
 CloudFormation stack.
+
+💡 **After the CloudFormation stack is deployed, you can return to the CLI to
+view details about the associated ZenML stack automatically registered with
+ZenML.**
 """
 
     @classmethod

@@ -109,7 +109,8 @@ echo "##################################################"
 echo "Creating the Deployment Manager deployment..."
 echo "##################################################"
 echo
-echo "Deployment will be created at: https://console.cloud.google.com/dm/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
+echo "Please wait for the deployment to complete. This should not take more than 1-2 minutes."
+echo "You may also monitor the deployment as it's being created at: https://console.cloud.google.com/dm/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
 echo
 
 set +e
@@ -121,11 +122,9 @@ DEPLOYMENT_EXIT_CODE=$?
 set -e
 
 if [ $DEPLOYMENT_EXIT_CODE -ne 0 ]; then
-    echo "ERROR: Deployment failed. Please check the logs for more information."
+    echo "ERROR: The deployment failed. Please check the logs for more information."
     echo
-    echo "The deployment can be found at: https://console.cloud.google.com/deployments/details/$ZENML_STACK_NAME?project=$PROJECT_ID"
-    echo
-    echo "Hint: sometimes it helps if you retry the deployment. You can do this by running the following commands:"
+    echo "Hint: sometimes it helps if you delete and retry the deployment. You can do this by running the following commands:"
     echo
     echo "gcloud deployment-manager deployments delete $ZENML_STACK_NAME"
     echo "./gcp-gar-gcs-vertex-deploy.sh"
