@@ -1,0 +1,5230 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://sdkdocs.zenml.io/0.61.0/core_code_docs/core-exceptions/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Exceptions - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<script>
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  analytics.page();
+  }}();
+</script>
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#exceptions" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Exceptions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Core code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Core code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-_hub/" class="md-nav__link">
+        Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-actions/" class="md-nav__link">
+        Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-alerter/" class="md-nav__link">
+        Alerter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-analytics/" class="md-nav__link">
+        Analytics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-annotators/" class="md-nav__link">
+        Annotators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-api/" class="md-nav__link">
+        Api
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client/" class="md-nav__link">
+        Client
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-client_lazy_loader/" class="md-nav__link">
+        Client Lazy Loader
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-code_repositories/" class="md-nav__link">
+        Code Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-console/" class="md-nav__link">
+        Console
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-data_validators/" class="md-nav__link">
+        Data Validators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-entrypoints/" class="md-nav__link">
+        Entrypoints
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_hub/" class="md-nav__link">
+        Event Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-event_sources/" class="md-nav__link">
+        Event Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Exceptions
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Exceptions
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.exceptions" class="md-nav__link">
+    exceptions
+  </a>
+  
+    <nav class="md-nav" aria-label="exceptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ActionExistsError" class="md-nav__link">
+    ActionExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ArtifactInterfaceError" class="md-nav__link">
+    ArtifactInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ArtifactStoreInterfaceError" class="md-nav__link">
+    ArtifactStoreInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.AuthorizationException" class="md-nav__link">
+    AuthorizationException
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.BackupSecretsStoreNotConfiguredError" class="md-nav__link">
+    BackupSecretsStoreNotConfiguredError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DoesNotExistException" class="md-nav__link">
+    DoesNotExistException
+  </a>
+  
+    <nav class="md-nav" aria-label="DoesNotExistException">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DoesNotExistException.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DuplicateRunNameError" class="md-nav__link">
+    DuplicateRunNameError
+  </a>
+  
+    <nav class="md-nav" aria-label="DuplicateRunNameError">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DuplicateRunNameError.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DuplicatedConfigurationError" class="md-nav__link">
+    DuplicatedConfigurationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.EntityExistsError" class="md-nav__link">
+    EntityExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.EventSourceExistsError" class="md-nav__link">
+    EventSourceExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.GitException" class="md-nav__link">
+    GitException
+  </a>
+  
+    <nav class="md-nav" aria-label="GitException">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.GitException.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.GitNotFoundError" class="md-nav__link">
+    GitNotFoundError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.HydrationError" class="md-nav__link">
+    HydrationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.IllegalOperationError" class="md-nav__link">
+    IllegalOperationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.InitializationException" class="md-nav__link">
+    InitializationException
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.InputResolutionError" class="md-nav__link">
+    InputResolutionError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.IntegrationError" class="md-nav__link">
+    IntegrationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.MaterializerInterfaceError" class="md-nav__link">
+    MaterializerInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.MethodNotAllowedError" class="md-nav__link">
+    MethodNotAllowedError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.MissingStepParameterError" class="md-nav__link">
+    MissingStepParameterError
+  </a>
+  
+    <nav class="md-nav" aria-label="MissingStepParameterError">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.MissingStepParameterError.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.OAuthError" class="md-nav__link">
+    OAuthError
+  </a>
+  
+    <nav class="md-nav" aria-label="OAuthError">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.OAuthError.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.OAuthError.__str__" class="md-nav__link">
+    __str__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.OAuthError.to_dict" class="md-nav__link">
+    to_dict()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.PipelineConfigurationError" class="md-nav__link">
+    PipelineConfigurationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.PipelineInterfaceError" class="md-nav__link">
+    PipelineInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.PipelineNotSucceededException" class="md-nav__link">
+    PipelineNotSucceededException
+  </a>
+  
+    <nav class="md-nav" aria-label="PipelineNotSucceededException">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.PipelineNotSucceededException.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ProvisioningError" class="md-nav__link">
+    ProvisioningError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.SecretExistsError" class="md-nav__link">
+    SecretExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.SecretsStoreNotConfiguredError" class="md-nav__link">
+    SecretsStoreNotConfiguredError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.SettingsResolvingError" class="md-nav__link">
+    SettingsResolvingError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackComponentDeploymentError" class="md-nav__link">
+    StackComponentDeploymentError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackComponentExistsError" class="md-nav__link">
+    StackComponentExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackComponentInterfaceError" class="md-nav__link">
+    StackComponentInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackComponentValidationError" class="md-nav__link">
+    StackComponentValidationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackExistsError" class="md-nav__link">
+    StackExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackValidationError" class="md-nav__link">
+    StackValidationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StepContextError" class="md-nav__link">
+    StepContextError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StepInterfaceError" class="md-nav__link">
+    StepInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.SubscriptionUpgradeRequiredError" class="md-nav__link">
+    SubscriptionUpgradeRequiredError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.TriggerExistsError" class="md-nav__link">
+    TriggerExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ValidationError" class="md-nav__link">
+    ValidationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.WebhookInactiveError" class="md-nav__link">
+    WebhookInactiveError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenKeyError" class="md-nav__link">
+    ZenKeyError
+  </a>
+  
+    <nav class="md-nav" aria-label="ZenKeyError">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenKeyError.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenKeyError.__str__" class="md-nav__link">
+    __str__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenMLBaseException" class="md-nav__link">
+    ZenMLBaseException
+  </a>
+  
+    <nav class="md-nav" aria-label="ZenMLBaseException">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenMLBaseException.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-experiment_trackers/" class="md-nav__link">
+        Experiment Trackers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-feature_stores/" class="md-nav__link">
+        Feature Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-hooks/" class="md-nav__link">
+        Hooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-image_builders/" class="md-nav__link">
+        Image Builders
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-lineage_graph/" class="md-nav__link">
+        Lineage Graph
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-metadata/" class="md-nav__link">
+        Metadata
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_deployers/" class="md-nav__link">
+        Model Deployers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-model_registries/" class="md-nav__link">
+        Model Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-new/" class="md-nav__link">
+        New
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-service_connectors/" class="md-nav__link">
+        Service Connectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-services/" class="md-nav__link">
+        Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-stack_deployments/" class="md-nav__link">
+        Stack Deployments
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-step_operators/" class="md-nav__link">
+        Step Operators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-types/" class="md-nav__link">
+        Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_server/" class="md-nav__link">
+        Zen Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-zen_stores/" class="md-nav__link">
+        Zen Stores
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Integration code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Integration code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Integration code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-airflow/" class="md-nav__link">
+        Airflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-argilla/" class="md-nav__link">
+        Argilla
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-aws/" class="md-nav__link">
+        Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bentoml/" class="md-nav__link">
+        Bentoml
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-bitbucket/" class="md-nav__link">
+        Bitbucket
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-comet/" class="md-nav__link">
+        Comet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-deepchecks/" class="md-nav__link">
+        Deepchecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-discord/" class="md-nav__link">
+        Discord
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-evidently/" class="md-nav__link">
+        Evidently
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-facets/" class="md-nav__link">
+        Facets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-feast/" class="md-nav__link">
+        Feast
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gcp/" class="md-nav__link">
+        Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-github/" class="md-nav__link">
+        Github
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-gitlab/" class="md-nav__link">
+        Gitlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-great_expectations/" class="md-nav__link">
+        Great Expectations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-huggingface/" class="md-nav__link">
+        Huggingface
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-hyperai/" class="md-nav__link">
+        Hyperai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kaniko/" class="md-nav__link">
+        Kaniko
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubeflow/" class="md-nav__link">
+        Kubeflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-kubernetes/" class="md-nav__link">
+        Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-label_studio/" class="md-nav__link">
+        Label Studio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-langchain/" class="md-nav__link">
+        Langchain
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-lightgbm/" class="md-nav__link">
+        Lightgbm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-llama_index/" class="md-nav__link">
+        Llama Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-mlflow/" class="md-nav__link">
+        Mlflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neptune/" class="md-nav__link">
+        Neptune
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-neural_prophet/" class="md-nav__link">
+        Neural Prophet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-openai/" class="md-nav__link">
+        Openai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pigeon/" class="md-nav__link">
+        Pigeon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pillow/" class="md-nav__link">
+        Pillow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-prodigy/" class="md-nav__link">
+        Prodigy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pycaret/" class="md-nav__link">
+        Pycaret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch/" class="md-nav__link">
+        Pytorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-pytorch_lightning/" class="md-nav__link">
+        Pytorch Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-registry/" class="md-nav__link">
+        Registry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-s3/" class="md-nav__link">
+        S3
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-scipy/" class="md-nav__link">
+        Scipy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-seldon/" class="md-nav__link">
+        Seldon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-sklearn/" class="md-nav__link">
+        Sklearn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot/" class="md-nav__link">
+        Skypilot
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_aws/" class="md-nav__link">
+        Skypilot Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_azure/" class="md-nav__link">
+        Skypilot Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_gcp/" class="md-nav__link">
+        Skypilot Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-skypilot_lambda/" class="md-nav__link">
+        Skypilot Lambda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-slack/" class="md-nav__link">
+        Slack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-spark/" class="md-nav__link">
+        Spark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tekton/" class="md-nav__link">
+        Tekton
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorboard/" class="md-nav__link">
+        Tensorboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-tensorflow/" class="md-nav__link">
+        Tensorflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-wandb/" class="md-nav__link">
+        Wandb
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-whylogs/" class="md-nav__link">
+        Whylogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration_code_docs/integrations-xgboost/" class="md-nav__link">
+        Xgboost
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.exceptions" class="md-nav__link">
+    exceptions
+  </a>
+  
+    <nav class="md-nav" aria-label="exceptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ActionExistsError" class="md-nav__link">
+    ActionExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ArtifactInterfaceError" class="md-nav__link">
+    ArtifactInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ArtifactStoreInterfaceError" class="md-nav__link">
+    ArtifactStoreInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.AuthorizationException" class="md-nav__link">
+    AuthorizationException
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.BackupSecretsStoreNotConfiguredError" class="md-nav__link">
+    BackupSecretsStoreNotConfiguredError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DoesNotExistException" class="md-nav__link">
+    DoesNotExistException
+  </a>
+  
+    <nav class="md-nav" aria-label="DoesNotExistException">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DoesNotExistException.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DuplicateRunNameError" class="md-nav__link">
+    DuplicateRunNameError
+  </a>
+  
+    <nav class="md-nav" aria-label="DuplicateRunNameError">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DuplicateRunNameError.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.DuplicatedConfigurationError" class="md-nav__link">
+    DuplicatedConfigurationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.EntityExistsError" class="md-nav__link">
+    EntityExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.EventSourceExistsError" class="md-nav__link">
+    EventSourceExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.GitException" class="md-nav__link">
+    GitException
+  </a>
+  
+    <nav class="md-nav" aria-label="GitException">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.GitException.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.GitNotFoundError" class="md-nav__link">
+    GitNotFoundError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.HydrationError" class="md-nav__link">
+    HydrationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.IllegalOperationError" class="md-nav__link">
+    IllegalOperationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.InitializationException" class="md-nav__link">
+    InitializationException
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.InputResolutionError" class="md-nav__link">
+    InputResolutionError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.IntegrationError" class="md-nav__link">
+    IntegrationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.MaterializerInterfaceError" class="md-nav__link">
+    MaterializerInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.MethodNotAllowedError" class="md-nav__link">
+    MethodNotAllowedError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.MissingStepParameterError" class="md-nav__link">
+    MissingStepParameterError
+  </a>
+  
+    <nav class="md-nav" aria-label="MissingStepParameterError">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.MissingStepParameterError.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.OAuthError" class="md-nav__link">
+    OAuthError
+  </a>
+  
+    <nav class="md-nav" aria-label="OAuthError">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.OAuthError.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.OAuthError.__str__" class="md-nav__link">
+    __str__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.OAuthError.to_dict" class="md-nav__link">
+    to_dict()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.PipelineConfigurationError" class="md-nav__link">
+    PipelineConfigurationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.PipelineInterfaceError" class="md-nav__link">
+    PipelineInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.PipelineNotSucceededException" class="md-nav__link">
+    PipelineNotSucceededException
+  </a>
+  
+    <nav class="md-nav" aria-label="PipelineNotSucceededException">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.PipelineNotSucceededException.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ProvisioningError" class="md-nav__link">
+    ProvisioningError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.SecretExistsError" class="md-nav__link">
+    SecretExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.SecretsStoreNotConfiguredError" class="md-nav__link">
+    SecretsStoreNotConfiguredError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.SettingsResolvingError" class="md-nav__link">
+    SettingsResolvingError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackComponentDeploymentError" class="md-nav__link">
+    StackComponentDeploymentError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackComponentExistsError" class="md-nav__link">
+    StackComponentExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackComponentInterfaceError" class="md-nav__link">
+    StackComponentInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackComponentValidationError" class="md-nav__link">
+    StackComponentValidationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackExistsError" class="md-nav__link">
+    StackExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StackValidationError" class="md-nav__link">
+    StackValidationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StepContextError" class="md-nav__link">
+    StepContextError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.StepInterfaceError" class="md-nav__link">
+    StepInterfaceError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.SubscriptionUpgradeRequiredError" class="md-nav__link">
+    SubscriptionUpgradeRequiredError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.TriggerExistsError" class="md-nav__link">
+    TriggerExistsError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ValidationError" class="md-nav__link">
+    ValidationError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.WebhookInactiveError" class="md-nav__link">
+    WebhookInactiveError
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenKeyError" class="md-nav__link">
+    ZenKeyError
+  </a>
+  
+    <nav class="md-nav" aria-label="ZenKeyError">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenKeyError.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenKeyError.__str__" class="md-nav__link">
+    __str__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenMLBaseException" class="md-nav__link">
+    ZenMLBaseException
+  </a>
+  
+    <nav class="md-nav" aria-label="ZenMLBaseException">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.exceptions.ZenMLBaseException.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/zenml-io/zenml/docs/core_code_docs/core-exceptions.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="exceptions">Exceptions</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.exceptions" class="doc doc-heading">
+        <code>zenml.exceptions</code>
+
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>ZenML specific exception definitions.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.ActionExistsError" class="doc doc-heading">
+        <code>
+ActionExistsError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.EntityExistsError" href="#zenml.exceptions.EntityExistsError">EntityExistsError</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when registering an action with a name that already exists.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ActionExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when registering an action with a name that already exists.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.ArtifactInterfaceError" class="doc doc-heading">
+        <code>
+ArtifactInterfaceError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when interacting with the Artifact interface in an unsupported way.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Artifact interface in an unsupported way.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.ArtifactStoreInterfaceError" class="doc doc-heading">
+        <code>
+ArtifactStoreInterfaceError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when interacting with the Artifact Store interface in an unsupported way.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactStoreInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Artifact Store interface in an unsupported way.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.AuthorizationException" class="doc doc-heading">
+        <code>
+AuthorizationException            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when an authorization error occurred while trying to access a ZenML resource .</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AuthorizationException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an authorization error occurred while trying to access a ZenML resource .&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.BackupSecretsStoreNotConfiguredError" class="doc doc-heading">
+        <code>
+BackupSecretsStoreNotConfiguredError            (<span title="NotImplementedError">NotImplementedError</span>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when a backup secrets store is not configured.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BackupSecretsStoreNotConfiguredError</span><span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a backup secrets store is not configured.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.DoesNotExistException" class="doc doc-heading">
+        <code>
+DoesNotExistException            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when the entity does not exist in the system but an action is being done that requires it to be present.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DoesNotExistException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when the entity does not exist in the system but an action is being done that requires it to be present.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message: Message with details of exception.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.DoesNotExistException.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initializes the exception.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>message</code></td>
+        <td><code>str</code></td>
+        <td><p>Message with details of exception.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message: Message with details of exception.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.DuplicateRunNameError" class="doc doc-heading">
+        <code>
+DuplicateRunNameError            (<span title="RuntimeError">RuntimeError</span>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when a run with the same name already exists.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DuplicateRunNameError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when a run with the same name already exists.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Unable to run a pipeline with a run name that &quot;</span>
+        <span class="s2">&quot;already exists.&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message: Message with details of exception.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.DuplicateRunNameError.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Unable to run a pipeline with a run name that already exists.&#39;</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initializes the exception.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>message</code></td>
+        <td><code>str</code></td>
+        <td><p>Message with details of exception.</p></td>
+        <td><code>&#39;Unable to run a pipeline with a run name that already exists.&#39;</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Unable to run a pipeline with a run name that &quot;</span>
+    <span class="s2">&quot;already exists.&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message: Message with details of exception.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.DuplicatedConfigurationError" class="doc doc-heading">
+        <code>
+DuplicatedConfigurationError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when a configuration parameter is set twice.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DuplicatedConfigurationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a configuration parameter is set twice.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.EntityExistsError" class="doc doc-heading">
+        <code>
+EntityExistsError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when trying to register an entity that already exists.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EntityExistsError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register an entity that already exists.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.EventSourceExistsError" class="doc doc-heading">
+        <code>
+EventSourceExistsError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.EntityExistsError" href="#zenml.exceptions.EntityExistsError">EntityExistsError</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when trying to register an event source with existing name.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EventSourceExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register an event source with existing name.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.GitException" class="doc doc-heading">
+        <code>
+GitException            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when a problem occurs in git resolution.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when a problem occurs in git resolution.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;There is a problem with git resolution. &quot;</span>
+        <span class="s2">&quot;Please make sure that all relevant files &quot;</span>
+        <span class="s2">&quot;are committed.&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message: Message with details of exception.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.GitException.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;There is a problem with git resolution. Please make sure that all relevant files are committed.&#39;</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initializes the exception.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>message</code></td>
+        <td><code>str</code></td>
+        <td><p>Message with details of exception.</p></td>
+        <td><code>&#39;There is a problem with git resolution. Please make sure that all relevant files are committed.&#39;</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;There is a problem with git resolution. &quot;</span>
+    <span class="s2">&quot;Please make sure that all relevant files &quot;</span>
+    <span class="s2">&quot;are committed.&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message: Message with details of exception.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.GitNotFoundError" class="doc doc-heading">
+        <code>
+GitNotFoundError            (<span title="ImportError">ImportError</span>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when ZenML CLI is used to interact with examples on a machine with no git installation.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitNotFoundError</span><span class="p">(</span><span class="ne">ImportError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when ZenML CLI is used to interact with examples on a machine with no git installation.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.HydrationError" class="doc doc-heading">
+        <code>
+HydrationError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when the model hydration failed.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HydrationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the model hydration failed.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.IllegalOperationError" class="doc doc-heading">
+        <code>
+IllegalOperationError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when an illegal operation is attempted.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">IllegalOperationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an illegal operation is attempted.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.InitializationException" class="doc doc-heading">
+        <code>
+InitializationException            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when an error occurred during initialization of a ZenML repository.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">InitializationException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an error occurred during initialization of a ZenML repository.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.InputResolutionError" class="doc doc-heading">
+        <code>
+InputResolutionError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when step input resolving failed.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">InputResolutionError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when step input resolving failed.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.IntegrationError" class="doc doc-heading">
+        <code>
+IntegrationError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exceptions when a requested integration can not be activated.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">IntegrationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exceptions when a requested integration can not be activated.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.MaterializerInterfaceError" class="doc doc-heading">
+        <code>
+MaterializerInterfaceError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when interacting with the Materializer interface in an unsupported way.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MaterializerInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Materializer interface in an unsupported way.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.MethodNotAllowedError" class="doc doc-heading">
+        <code>
+MethodNotAllowedError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when the server does not allow a request method.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MethodNotAllowedError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the server does not allow a request method.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.MissingStepParameterError" class="doc doc-heading">
+        <code>
+MissingStepParameterError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exceptions when a step parameter is missing when running a pipeline.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MissingStepParameterError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exceptions when a step parameter is missing when running a pipeline.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">missing_parameters</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">parameters_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseParameters&quot;</span><span class="p">],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a MissingStepParameterError object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            step_name: Name of the step for which one or more parameters</span>
+<span class="sd">                are missing.</span>
+<span class="sd">            missing_parameters: Names of all parameters which are missing.</span>
+<span class="sd">            parameters_class: Class of the parameters object for which</span>
+<span class="sd">                the parameters are missing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">textwrap</span>
+
+        <span class="n">message</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            Missing parameters </span><span class="si">{</span><span class="n">missing_parameters</span><span class="si">}</span><span class="s2"> for &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; step.</span>
+<span class="s2">            There are three ways to solve this issue:</span>
+<span class="s2">            (1) Specify a default value in the parameters class</span>
+<span class="s2">            `</span><span class="si">{</span><span class="n">parameters_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">`</span>
+<span class="s2">            (2) Specify the parameters in code when creating the pipeline:</span>
+<span class="s2">            `my_pipeline(</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">(params=</span><span class="si">{</span><span class="n">parameters_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(...))`</span>
+<span class="s2">            (3) Specify the parameters in a yaml configuration file and pass</span>
+<span class="s2">            it to the pipeline: `my_pipeline(...).run(config_path=&#39;path_to_yaml&#39;)`</span>
+<span class="s2">            &quot;&quot;&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.MissingStepParameterError.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">missing_parameters</span><span class="p">,</span> <span class="n">parameters_class</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initializes a MissingStepParameterError object.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>step_name</code></td>
+        <td><code>str</code></td>
+        <td><p>Name of the step for which one or more parameters
+are missing.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>missing_parameters</code></td>
+        <td><code>List[str]</code></td>
+        <td><p>Names of all parameters which are missing.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>parameters_class</code></td>
+        <td><code>Type[BaseParameters]</code></td>
+        <td><p>Class of the parameters object for which
+the parameters are missing.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">missing_parameters</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">parameters_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseParameters&quot;</span><span class="p">],</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a MissingStepParameterError object.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        step_name: Name of the step for which one or more parameters</span>
+<span class="sd">            are missing.</span>
+<span class="sd">        missing_parameters: Names of all parameters which are missing.</span>
+<span class="sd">        parameters_class: Class of the parameters object for which</span>
+<span class="sd">            the parameters are missing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">textwrap</span>
+
+    <span class="n">message</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+        <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        Missing parameters </span><span class="si">{</span><span class="n">missing_parameters</span><span class="si">}</span><span class="s2"> for &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; step.</span>
+<span class="s2">        There are three ways to solve this issue:</span>
+<span class="s2">        (1) Specify a default value in the parameters class</span>
+<span class="s2">        `</span><span class="si">{</span><span class="n">parameters_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">`</span>
+<span class="s2">        (2) Specify the parameters in code when creating the pipeline:</span>
+<span class="s2">        `my_pipeline(</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">(params=</span><span class="si">{</span><span class="n">parameters_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(...))`</span>
+<span class="s2">        (3) Specify the parameters in a yaml configuration file and pass</span>
+<span class="s2">        it to the pipeline: `my_pipeline(...).run(config_path=&#39;path_to_yaml&#39;)`</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.OAuthError" class="doc doc-heading">
+        <code>
+OAuthError            (<span title="ValueError">ValueError</span>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>OAuth2 error.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OAuthError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;OAuth2 error.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">error</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">status_code</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">400</span><span class="p">,</span>
+        <span class="n">error_description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">error_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the OAuthError.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            status_code: HTTP status code.</span>
+<span class="sd">            error: Error code.</span>
+<span class="sd">            error_description: Error description.</span>
+<span class="sd">            error_uri: Error URI.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_description</span> <span class="o">=</span> <span class="n">error_description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_uri</span> <span class="o">=</span> <span class="n">error_uri</span>
+
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the OAuthError as a dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The OAuthError as a dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+            <span class="s2">&quot;error_description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_description</span><span class="p">,</span>
+            <span class="s2">&quot;error_uri&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_uri</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;String function.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            the error message</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">error_description</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.OAuthError.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">error_description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error_uri</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initializes the OAuthError.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>status_code</code></td>
+        <td><code>int</code></td>
+        <td><p>HTTP status code.</p></td>
+        <td><code>400</code></td>
+      </tr>
+      <tr>
+        <td><code>error</code></td>
+        <td><code>str</code></td>
+        <td><p>Error code.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>error_description</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Error description.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>error_uri</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Error URI.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">error</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">400</span><span class="p">,</span>
+    <span class="n">error_description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">error_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the OAuthError.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        status_code: HTTP status code.</span>
+<span class="sd">        error: Error code.</span>
+<span class="sd">        error_description: Error description.</span>
+<span class="sd">        error_uri: Error URI.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">error</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">error_description</span> <span class="o">=</span> <span class="n">error_description</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">error_uri</span> <span class="o">=</span> <span class="n">error_uri</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.OAuthError.__str__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>String function.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>the error message</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;String function.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        the error message</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">error_description</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.OAuthError.to_dict" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the OAuthError as a dictionary.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Dict[str, Optional[str]]</code></td>
+      <td><p>The OAuthError as a dictionary.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the OAuthError as a dictionary.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The OAuthError as a dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+        <span class="s2">&quot;error_description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_description</span><span class="p">,</span>
+        <span class="s2">&quot;error_uri&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_uri</span><span class="p">,</span>
+    <span class="p">}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.PipelineConfigurationError" class="doc doc-heading">
+        <code>
+PipelineConfigurationError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exceptions when a pipeline configuration contains invalid values.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineConfigurationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exceptions when a pipeline configuration contains invalid values.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.PipelineInterfaceError" class="doc doc-heading">
+        <code>
+PipelineInterfaceError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when interacting with the Pipeline interface in an unsupported way.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Pipeline interface in an unsupported way.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.PipelineNotSucceededException" class="doc doc-heading">
+        <code>
+PipelineNotSucceededException            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when trying to fetch artifacts from a not succeeded pipeline.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineNotSucceededException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when trying to fetch artifacts from a not succeeded pipeline.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is not yet completed successfully.&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: Name of the pipeline.</span>
+<span class="sd">            message: Message with details of exception.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.PipelineNotSucceededException.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> is not yet completed successfully.&#39;</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initializes the exception.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>Name of the pipeline.</p></td>
+        <td><code>&#39;&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>message</code></td>
+        <td><code>str</code></td>
+        <td><p>Message with details of exception.</p></td>
+        <td><code>&#39;{} is not yet completed successfully.&#39;</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is not yet completed successfully.&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Name of the pipeline.</span>
+<span class="sd">        message: Message with details of exception.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.ProvisioningError" class="doc doc-heading">
+        <code>
+ProvisioningError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when an error occurs when provisioning resources for a StackComponent.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProvisioningError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an error occurs when provisioning resources for a StackComponent.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.SecretExistsError" class="doc doc-heading">
+        <code>
+SecretExistsError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.EntityExistsError" href="#zenml.exceptions.EntityExistsError">EntityExistsError</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when trying to register a secret with existing name.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SecretExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register a secret with existing name.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.SecretsStoreNotConfiguredError" class="doc doc-heading">
+        <code>
+SecretsStoreNotConfiguredError            (<span title="NotImplementedError">NotImplementedError</span>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when a secrets store is not configured.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SecretsStoreNotConfiguredError</span><span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a secrets store is not configured.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.SettingsResolvingError" class="doc doc-heading">
+        <code>
+SettingsResolvingError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when resolving settings failed.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SettingsResolvingError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when resolving settings failed.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.StackComponentDeploymentError" class="doc doc-heading">
+        <code>
+StackComponentDeploymentError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when deploying a stack component fails.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponentDeploymentError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when deploying a stack component fails.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.StackComponentExistsError" class="doc doc-heading">
+        <code>
+StackComponentExistsError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.EntityExistsError" href="#zenml.exceptions.EntityExistsError">EntityExistsError</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when trying to register a stack component with existing name.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponentExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register a stack component with existing name.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.StackComponentInterfaceError" class="doc doc-heading">
+        <code>
+StackComponentInterfaceError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when interacting with the stack components in an unsupported way.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponentInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the stack components in an unsupported way.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.StackComponentValidationError" class="doc doc-heading">
+        <code>
+StackComponentValidationError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when a stack component configuration is not valid.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponentValidationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a stack component configuration is not valid.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.StackExistsError" class="doc doc-heading">
+        <code>
+StackExistsError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.EntityExistsError" href="#zenml.exceptions.EntityExistsError">EntityExistsError</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when trying to register a stack with name that already exists.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register a stack with name that already exists.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.StackValidationError" class="doc doc-heading">
+        <code>
+StackValidationError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when a stack configuration is not valid.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackValidationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a stack configuration is not valid.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.StepContextError" class="doc doc-heading">
+        <code>
+StepContextError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when interacting with a StepContext in an unsupported way.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepContextError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with a StepContext in an unsupported way.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.StepInterfaceError" class="doc doc-heading">
+        <code>
+StepInterfaceError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raises exception when interacting with the Step interface in an unsupported way.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Step interface in an unsupported way.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.SubscriptionUpgradeRequiredError" class="doc doc-heading">
+        <code>
+SubscriptionUpgradeRequiredError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when user tries to perform an action outside their current subscription tier.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SubscriptionUpgradeRequiredError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when user tries to perform an action outside their current subscription tier.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.TriggerExistsError" class="doc doc-heading">
+        <code>
+TriggerExistsError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.EntityExistsError" href="#zenml.exceptions.EntityExistsError">EntityExistsError</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when registering a trigger with name that already exists.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TriggerExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when registering a trigger with name that already exists.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.ValidationError" class="doc doc-heading">
+        <code>
+ValidationError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when the Model passed to the ZenStore.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ValidationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the Model passed to the ZenStore.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.WebhookInactiveError" class="doc doc-heading">
+        <code>
+WebhookInactiveError            (<a class="autorefs autorefs-internal" title="zenml.exceptions.ZenMLBaseException" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Raised when source is inactive.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WebhookInactiveError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when source is inactive.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.ZenKeyError" class="doc doc-heading">
+        <code>
+ZenKeyError            (<span title="KeyError">KeyError</span>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Specialized key error which allows error messages with line breaks.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenKeyError</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Specialized key error which allows error messages with line breaks.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message:str, the error message</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;String function.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            the error message</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.ZenKeyError.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initialization.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>message</code></td>
+        <td><code>str</code></td>
+        <td><p>str, the error message</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message:str, the error message</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.ZenKeyError.__str__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>String function.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>the error message</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;String function.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        the error message</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.exceptions.ZenMLBaseException" class="doc doc-heading">
+        <code>
+ZenMLBaseException            (<span title="Exception">Exception</span>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Base exception for all ZenML Exceptions.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLBaseException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base exception for all ZenML Exceptions.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The BaseException used to format messages displayed to the user.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message: Message with details of exception. This message</span>
+<span class="sd">                     will be appended with another message directing user to</span>
+<span class="sd">                     `url` for more information. If `None`, then default</span>
+<span class="sd">                     Exception behavior is used.</span>
+<span class="sd">            url: URL to point to in exception message. If `None`, then no url</span>
+<span class="sd">                 is appended.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">url</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; For more information, visit </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.exceptions.ZenMLBaseException.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>The BaseException used to format messages displayed to the user.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>message</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Message with details of exception. This message
+     will be appended with another message directing user to
+     <code>url</code> for more information. If <code>None</code>, then default
+     Exception behavior is used.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>url</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>URL to point to in exception message. If <code>None</code>, then no url
+ is appended.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/exceptions.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The BaseException used to format messages displayed to the user.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message: Message with details of exception. This message</span>
+<span class="sd">                 will be appended with another message directing user to</span>
+<span class="sd">                 `url` for more information. If `None`, then default</span>
+<span class="sd">                 Exception behavior is used.</span>
+<span class="sd">        url: URL to point to in exception message. If `None`, then no url</span>
+<span class="sd">             is appended.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">url</span><span class="p">:</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; For more information, visit </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">.&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../core-event_sources/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Event Sources" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Event Sources
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../core-experiment_trackers/" class="md-footer__link md-footer__link--next" aria-label="Next: Experiment Trackers" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Experiment Trackers
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH – <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+    
+  
+
+
+
+
+<h4>This website uses cookies</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        <label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout(function(){document.querySelector("[data-md-component=consent]").hidden=!1},250);var action,form=document.forms.consent;for(action of["submit","reset"])form.addEventListener(action,function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map(function(e){return[e,!0]}))),location.hash="",location.reload()})</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>
