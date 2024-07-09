@@ -461,7 +461,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             or DATABRICKS_SPARK_DEFAULT_VERSION,
             "num_workers": self.settings_class().num_workers,
             "node_type_id": self.settings_class().node_type_id
-            or "Standard_DS5_v2",
+            or "Standard_D8ads_v5",
             "cluster_name": self.settings_class().cluster_name
             or DATABRICKS_CLUSTER_DEFAULT_NAME,
             "policy_id": policy_id,

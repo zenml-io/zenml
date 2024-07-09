@@ -24,6 +24,9 @@ settings:
       - mlflow
       - sklearn
       - databricks
+  orchestrator.databricks:
+    cluster_name: e2e_use_case
+    node_type_id: Standard_D8ads_v5
 
 # configuration of steps  
 steps:
