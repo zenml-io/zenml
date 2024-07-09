@@ -18,18 +18,10 @@
 
 from typing import Optional
 
-from databricks.sdk.service.serving import (
-    ServedModelInputWorkloadSize,
-    ServedModelInputWorkloadType,
-)
 from typing_extensions import Annotated
 
 from zenml import ArtifactConfig, get_step_context, step
 from zenml.client import Client
-from zenml.integrations.databricks.services.databricks_deployment import (
-    DatabricksDeploymentConfig,
-    DatabricksDeploymentService,
-)
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
@@ -67,25 +59,19 @@ def deployment_deploy() -> (
         The predictions as pandas series
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    model = get_step_context().model
+    if Client().active_stack.orchestrator.flavor == "local":
+        model = get_step_context().model
 
-    # deploy predictor service
-    zenml_client = Client()
-    model_deployer = zenml_client.active_stack.model_deployer
-    databricks_deployment_config = DatabricksDeploymentConfig(
-        model_name=model.name,
-        model_version=model.version,
-        workload_size=ServedModelInputWorkloadSize.SMALL,
-        workload_type=ServedModelInputWorkloadType.CPU,
-        scale_to_zero_enabled=True,
-        endpoint_secret_name="databricks_token",
-    )
-    deployment_service = model_deployer.deploy_model(
-        config=databricks_deployment_config,
-        service_type=DatabricksDeploymentService.SERVICE_TYPE,
-        timeout=1200,
-    )
-    logger.info(
-        f"The deployed service info: {model_deployer.get_model_server_info(deployment_service)}"
-    )
+        # deploy predictor service
+        deployment_service = mlflow_model_registry_deployer_step.entrypoint(
+            registry_model_name=model.name,
+            registry_model_version=model.run_metadata[
+                "model_registry_version"
+            ].value,
+            replace_existing=True,
+        )
+    else:
+        logger.warning("Skipping deployment as the orchestrator is not local.")
+        deployment_service = None
+    ### YOUR CODE ENDS HERE ###
     return deployment_service
