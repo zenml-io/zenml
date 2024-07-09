@@ -29,7 +29,6 @@ from databricks.sdk.service.serving import (
 )
 from pydantic import Field
 
-from zenml import client
 from zenml.client import Client
 from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor import (
     DatabricksBaseConfig,
@@ -316,7 +315,9 @@ class DatabricksDeploymentService(BaseDeploymentService):
                 "Please start the service before making predictions."
             )
         if self.prediction_url is not None:
-            databricks_token = Client().get_secret(self.config.endpoint_secret_name)
+            databricks_token = Client().get_secret(
+                self.config.endpoint_secret_name
+            )
             headers = {
                 "Authorization": f"Bearer {databricks_token.secret_values['token']}",
                 "Content-Type": "application/json",
