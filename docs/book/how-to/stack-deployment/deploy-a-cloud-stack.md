@@ -110,13 +110,48 @@ prepare for you:
 
 {% tabs %}
 {% tab title="AWS" %}
-- An IAM user and IAM role with the minimum necessary permissions to access 
-the resources listed below.
-- An AWS access key used to give access to ZenML to connect to the above 
-resources through a ZenML service connector.
-- A ZenML Sagemaker Orchestrator which is preconfigured.
+
+### Resources
+
 - An S3 bucket that will be used as a ZenML Artifact Store.
 - An ECR container registry that will be used as a ZenML Container Registry.
+- Permissions to use SageMaker as a ZenML Orchestrator.
+- An IAM user and IAM role with the minimum necessary permissions to access 
+the resources listed above.
+- An AWS access key used to give access to ZenML to connect to the above 
+resources through a ZenML service connector.
+
+### Permissions
+
+The configured IAM service account and AWS access key will grant ZenML the
+following AWS permissions in your AWS account:
+
+* S3 Bucket:
+  * s3:ListBucket
+  * s3:GetObject
+  * s3:PutObject
+  * s3:DeleteObject
+* ECR Repository:
+  * ecr:DescribeRepositories
+  * ecr:ListRepositories
+  * ecr:DescribeRegistry
+  * ecr:BatchGetImage
+  * ecr:DescribeImages
+  * ecr:BatchCheckLayerAvailability
+  * ecr:GetDownloadUrlForLayer
+  * ecr:InitiateLayerUpload
+  * ecr:UploadLayerPart
+  * ecr:CompleteLayerUpload
+  * ecr:PutImage
+  * ecr:GetAuthorizationToken
+* SageMaker (Client):
+  * sagemaker:CreatePipeline
+  * sagemaker:StartPipelineExecution
+  * sagemaker:DescribePipeline
+  * sagemaker:DescribePipelineExecution
+* SageMaker (Jobs):
+  * AmazonSageMakerFullAccess
+
 {% endtab %}
 {% tab title="GCP" %}
 We are working on bringing the support for the 1-click deployment feature 
