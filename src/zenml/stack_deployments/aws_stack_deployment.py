@@ -79,6 +79,14 @@ will share it with ZenML to give it permission to access the resources created
 by the stack. You can revoke these permissions at any time by deleting the
 CloudFormation stack.
 
+**Estimated costs**
+
+A small training job would cost around: $0.60
+
+These are rough estimates and actual costs may vary based on your usage and specific AWS pricing. 
+Some services may be eligible for the AWS Free Tier. Use [the AWS Pricing Calculator](https://calculator.aws)
+for a detailed estimate based on your usage.
+
 💡 **After the CloudFormation stack is deployed, you can return to the CLI to
 view details about the associated ZenML stack automatically registered with
 ZenML.**
@@ -100,6 +108,19 @@ the CloudFormation at any time to revoke ZenML's access to your AWS account and
 to clean up the resources created by the stack by using the AWS CloudFormation
 console.
 """
+
+    @classmethod
+    def integrations(cls) -> List[str]:
+        """Return the ZenML integrations required for the stack.
+
+        Returns:
+            The list of ZenML integrations that need to be installed for the
+            stack to be usable.
+        """
+        return [
+            "aws",
+            "s3",
+        ]
 
     @classmethod
     def permissions(cls) -> Dict[str, List[str]]:

@@ -1790,15 +1790,36 @@ Stack [{deployed_stack.stack.name}]({get_stack_url(deployed_stack.stack)}):\n"""
 
     console.print(Markdown(stack_desc))
 
-    console.print(
-        Markdown("## Follow-up\n" + deployment.post_deploy_instructions)
-    )
+    follow_up = f"""
+## Follow-up
 
+{deployment.post_deploy_instructions}
+
+To use the '{deployed_stack.stack.name}' stack to run pipelines:
+
+* install the required ZenML integrations:
+
+```bash
+zenml integration install {" ".join(deployment.integrations)}
+```
+"""
     if set_stack:
         client.activate_stack(deployed_stack.stack.id)
-        cli_utils.declare(
-            f"\nStack `{deployed_stack.stack.name}` set as active"
-        )
+        follow_up += f"""
+        * the {deployed_stack.stack.name} stack has already been set as active
+"""
+    else:
+        follow_up += f"""
+        * set the {deployed_stack.stack.name} stack as active:
+
+        ```bash
+        zenml stack set {deployed_stack.stack.name}
+        ```
+"""
+
+    console.print(
+        Markdown(follow_up),
+    )
 
 
 @stack.command(help="[DEPRECATED] Deploy a stack using mlstacks.")

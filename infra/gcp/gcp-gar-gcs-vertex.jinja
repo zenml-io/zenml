@@ -51,6 +51,9 @@
         "location": "{{ region }}",
         "workload_service_account": "zenml-{{ resourceNameSuffix }}@{{ project }}.iam.gserviceaccount.com"
       }
+    },
+    "image_builder": {
+      "flavor": "gcp"
     }
   }
 }
@@ -108,6 +111,16 @@ resources:
     properties:
       resource: {{ project }}
       role: roles/aiplatform.serviceAgent
+      member: serviceAccount:$(ref.zenml-service-account.email)
+
+  - name: zenml-cloud-build-iam-role-binding
+    type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
+    properties:
+      resource: {{ project }}
+      role: roles/cloudbuild.builds.editor
       member: serviceAccount:$(ref.zenml-service-account.email)
 
   - name: zenml-service-account-key

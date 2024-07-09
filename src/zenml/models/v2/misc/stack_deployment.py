@@ -40,6 +40,11 @@ class StackDeploymentInfo(BaseModel):
         title="The instructions for post-deployment.",
         description="The instructions for post-deployment.",
     )
+    integrations: List[str] = Field(
+        title="ZenML integrations required for the stack.",
+        description="The list of ZenML integrations that need to be installed "
+        "for the stack to be usable.",
+    )
     permissions: Dict[str, List[str]] = Field(
         title="The permissions granted to ZenML to access the cloud resources.",
         description="The permissions granted to ZenML to access the cloud "

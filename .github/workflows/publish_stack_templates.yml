@@ -7,6 +7,9 @@ jobs:
   publish_stack_templates:
     name: Publish Cloud Stack Templates
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4.1.1

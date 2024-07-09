@@ -67,6 +67,7 @@ and are aware of any potential costs:
 - A GCS bucket registered as a [ZenML artifact store](https://docs.zenml.io/stack-components/artifact-stores/gcp).
 - A Google Artifact Registry registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/gcp).
 - Vertex AI registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/vertex).
+- GCP Cloud Build registered as a [ZenML image builder](https://docs.zenml.io/stack-components/image-builders/gcp).
 - A GCP Service Account with the minimum necessary permissions to access the
 above resources.
 - An GCP Service Account access key used to give access to ZenML to connect to
@@ -76,6 +77,14 @@ The Deployment Manager deployment will automatically create a GCP Service
 Account secret key and will share it with ZenML to give it permission to access
 the resources created by the stack. You can revoke these permissions at any time
 by deleting the Deployment Manager deployment in the GCP Cloud Console.
+
+**Estimated costs**
+
+A small training job would cost around: $0.60
+
+These are rough estimates and actual costs may vary based on your usage and specific GCP pricing. 
+Some services may be eligible for the GCP Free Tier. Use [the GCP Pricing Calculator](https://cloud.google.com/products/calculator)
+for a detailed estimate based on your usage.
 
 ⚠️ **The Cloud Shell session will warn you that the ZenML GitHub repository is
 untrusted. We recommend that you review [the contents of the repository](https://github.com/zenml-io/zenml/tree/main/infra/gcp)
@@ -106,6 +115,18 @@ GCP project and to clean up the resources created by the stack by using
 """
 
     @classmethod
+    def integrations(cls) -> List[str]:
+        """Return the ZenML integrations required for the stack.
+
+        Returns:
+            The list of ZenML integrations that need to be installed for the
+            stack to be usable.
+        """
+        return [
+            "gcp",
+        ]
+
+    @classmethod
     def permissions(cls) -> Dict[str, List[str]]:
         """Return the permissions granted to ZenML to access the cloud resources.
 
@@ -125,6 +146,9 @@ GCP project and to clean up the resources created by the stack by using
             ],
             "Vertex AI (Jobs)": [
                 "roles/aiplatform.serviceAgent",
+            ],
+            "Cloud Build (Client)": [
+                "roles/cloudbuild.builds.editor",
             ],
         }
 

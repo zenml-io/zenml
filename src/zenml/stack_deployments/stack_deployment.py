@@ -77,6 +77,16 @@ class ZenMLCloudStackDeployment(BaseModel):
 
     @classmethod
     @abstractmethod
+    def integrations(cls) -> List[str]:
+        """Return the ZenML integrations required for the stack.
+
+        Returns:
+            The list of ZenML integrations that need to be installed for the
+            stack to be usable.
+        """
+
+    @classmethod
+    @abstractmethod
     def permissions(cls) -> Dict[str, List[str]]:
         """Return the permissions granted to ZenML to access the cloud resources.
 
@@ -107,6 +117,7 @@ class ZenMLCloudStackDeployment(BaseModel):
             description=cls.description(),
             instructions=cls.instructions(),
             post_deploy_instructions=cls.post_deploy_instructions(),
+            integrations=cls.integrations(),
             permissions=cls.permissions(),
             locations=cls.locations(),
         )
