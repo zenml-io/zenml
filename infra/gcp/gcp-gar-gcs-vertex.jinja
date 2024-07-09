@@ -79,11 +79,9 @@ resources:
       resource: {{ project }}
       role: roles/storage.objectUser
       member: serviceAccount:$(ref.zenml-service-account.email)
-      #condition:
-      #  title: TimeBoundAccess
-      #  description: "Grant access only during working hours"
-      #  grant only on bucket
-      #  expression: "
+      condition:
+        title: "Limit access to zenml-{{ project_number }}-{{ resourceNameSuffix }} GCS bucket"
+        expression: "resource.name.startsWith('projects/{{ project }}/buckets/zenml-{{ project_number }}-{{ resourceNameSuffix }}/')"
 
   - name: zenml-gar-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
@@ -94,10 +92,9 @@ resources:
       resource: {{ project }}
       role: roles/artifactregistry.createOnPushWriter
       member: serviceAccount:$(ref.zenml-service-account.email)
-      #condition:
-      #  title: TimeBoundAccess
-      #  description: "Grant access only during working hours"
-      #  expression: "request.time < timestamp('2024-12-31T23:59:59Z')"
+      condition:
+        title: "Limit access to zenml-{{ resourceNameSuffix }} GAR registry"
+        expression: "resource.name.startsWith('projects/{{ project }}/locations/{{ region }}/repositories/zenml-{{ resourceNameSuffix }}')"
 
   - name: zenml-vertex-user-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
