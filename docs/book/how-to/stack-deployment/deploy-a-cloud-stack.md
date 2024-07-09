@@ -23,7 +23,7 @@ you can also use [the stack wizard to seamlessly register your stack](register-a
 
 ## How to use the 1-click deployment tool?
 
-To access the 1-click deployment tool, you can either use the dashboard or 
+To deploy a stack in 1-click, you can either use the dashboard or 
 the CLI:
 
 {% tabs %}
