@@ -23,6 +23,7 @@ from pipelines.registry_pipelines.registry_training_pipeline import (
 
 @click.command()
 def main(type: str) -> None:
+        mlflow_registry_training_pipeline()
         mlflow_registry_inference_pipeline()
 
 

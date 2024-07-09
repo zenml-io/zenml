@@ -19,13 +19,19 @@ from steps.predictor_step import predictor
 from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, SKLEARN
+from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import DatabricksOrchestratorSettings
+    
 
 docker_settings = DockerSettings(
     required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
 )
 
+databricks_settings = DatabricksOrchestratorSettings(
+    cluster_name="inferencing-cluster",
+    node_type_id="standard_d8ads_v5",
+)
 
-@pipeline(enable_cache=True, settings={"docker": docker_settings})
+@pipeline(enable_cache=True, settings={"docker": docker_settings, "orchestrator.databricks": DatabricksOrchestratorSettings()})
 def mlflow_registry_inference_pipeline():
     # Link all the steps artifacts together
     deployed_model = deploy_to_databricks()
