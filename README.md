@@ -133,9 +133,36 @@ if __name__ == "__main__":
 
 ![Running a ZenML pipeline](/docs/book/.gitbook/assets/readme_basic_pipeline.gif)
 
-### Deploy workloads easily on your production infrastructure
+### Easily provision an MLOps stack or reuse your existing infrastructure
 
-The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals.
+The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals. 
+
+ZenML provides different features to aid people to get started quickly on a remote setting as well. If you want to deploy a remote stack from scratch on your selected cloud provider, you can use the 1-click deployment feature either through the dashboard:
+
+![Running a ZenML pipeline](/docs/book/.gitbook/assets/one-click-deployment.gif)
+
+Or, through our CLI command:
+
+```bash
+zenml stack deploy --provider aws
+```
+
+Alternatively, if the necessary pieces of infrastructure is already deployed, you can register a cloud stack seamlessly through the stack wizard:
+
+```bash
+zenml stack register <STACK_NAME> --provider aws
+```
+
+Read more about [ZenML stacks](https://docs.zenml.io/user-guide/production-guide/understand-stacks).
+
+### Run workloads easily on your production infrastructure
+
+Once you have your MLOps stack configured, you can easily run workloads on it:
+
+```bash
+zenml stack set <STACK_NAME>
+python run.py
+```
 
 ```python
 from zenml.config import ResourceSettings, DockerSettings
@@ -150,13 +177,7 @@ def training(...):
 	...
 ```
 
-```bash
-zenml stack set k8s  # Set a stack with kubernetes orchestrator
-python run.py
-```
-
 ![Workloads with ZenML](/docs/book/.gitbook/assets/readme_compute.gif)
-
 
 ### Track models, pipeline, and artifacts
 
