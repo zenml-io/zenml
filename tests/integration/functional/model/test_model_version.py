@@ -739,10 +739,3 @@ class TestModel:
     #     assert {mv.number for mv in mvs} == {
     #         i for i in range(1, process_count + 1)
     #     }
-
-    def test_archive_model(self):
-        """Test that model version can be archived."""
-        with ModelContext(create_model=True) as (mdl_name, model, _):
-            pass
-            # model.archive()
-            # assert model.is_archived
