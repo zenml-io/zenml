@@ -1,7 +1,7 @@
 """Migrate onboarding state [b4fca5241eea].
 
 Revision ID: b4fca5241eea
-Revises: 0d707865f404
+Revises: 0.61.0
 Create Date: 2024-06-20 15:01:22.414801
 
 """
@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b4fca5241eea"
-down_revision = "0d707865f404"
+down_revision = "0.61.0"
 branch_labels = None
 depends_on = None
 
