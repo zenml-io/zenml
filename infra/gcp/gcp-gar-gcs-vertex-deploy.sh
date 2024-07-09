@@ -43,7 +43,8 @@ PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNum
 # * Artifact Registry API - ZenML uses the Artifact Registry GCP service to store and manage Docker images.
 # * Cloud Storage API - ZenML uses the Cloud Storage GCP service to store and manage data.
 # * Vertex AI API - ZenML uses the Vertex AI GCP service to manage machine learning resources.
-# * Cloud Functions and Cloud Build API - used to automatically register the ZenML stack in the ZenML server.
+# * Cloud Functions API - used to automatically register the ZenML stack in the ZenML server.
+# * Cloud Build and Compute Engine API - required for the Cloud Functions to run.
 echo
 echo "##################################################"
 echo "Enabling necessary GCP services..."
@@ -59,6 +60,7 @@ services=(
     "cloudfunctions.googleapis.com"
     "cloudbuild.googleapis.com"
     "cloudresourcemanager.googleapis.com"
+    "compute.googleapis.com"
 )
 
 # Enable the services
@@ -93,7 +95,7 @@ echo "Granting Deployment Manager the necessary permissions..."
 echo "##################################################"
 echo
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$PROJECT_NUMBER-compute@cloudservices.gserviceaccount.com" \
+    --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
     --role="roles/artifactregistry.admin" \
     --condition=None
 
