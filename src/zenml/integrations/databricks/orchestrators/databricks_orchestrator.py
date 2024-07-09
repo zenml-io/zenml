@@ -447,7 +447,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         spark_conf[
             "spark.databricks.driver.dbfsLibraryInstallationAllowed"
         ] = "true"
-        
+
         policy_id = self.settings_class().policy_id or None
         for policy in databricks_client.cluster_policies.list():
             if policy.name == "Power User Compute":

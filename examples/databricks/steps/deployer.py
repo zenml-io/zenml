@@ -18,7 +18,6 @@ from databricks.sdk.service.serving import (
     ServedModelInputWorkloadSize,
     ServedModelInputWorkloadType,
 )
-
 from zenml import logger, step
 from zenml.client import Client
 from zenml.integrations.databricks.services.databricks_deployment import (

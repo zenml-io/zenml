@@ -19,9 +19,6 @@ from pipelines.deployment_pipelines.deployment_inference_pipeline import (
 from pipelines.deployment_pipelines.deployment_training_pipeline import (
     mlflow_train_deploy_pipeline,
 )
-from pipelines.registry_pipelines.registry_inference_pipeline import (
-    mlflow_registry_inference_pipeline,
-)
 from pipelines.registry_pipelines.registry_training_pipeline import (
     mlflow_registry_training_pipeline,
 )
@@ -42,7 +39,7 @@ def main(type: str) -> None:
         mlflow_tracking_pipeline()
     elif type == "registry":
         mlflow_registry_training_pipeline()
-        #mlflow_registry_inference_pipeline()
+        # mlflow_registry_inference_pipeline()
     elif type == "deployment":
         mlflow_train_deploy_pipeline()
         mlflow_deployment_inference_pipeline()
