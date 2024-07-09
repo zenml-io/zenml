@@ -95,8 +95,9 @@ Cloud Formation page on AWS:
 
 ![Cloudformation page](../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png)
 
-You will have to log in to your AWS account, review and confirm the 
-pre-filled configuration and create the stack.
+You will have to log in to your AWS account, have permission to deploy an AWS 
+CloudFormation script, review and confirm the pre-filled configuration and 
+create the stack.
 
 ![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
 
