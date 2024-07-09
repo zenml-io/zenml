@@ -43,7 +43,7 @@ class GcpIntegration(Integration):
 
     NAME = GCP
     REQUIREMENTS = [
-        "kfp>=1.8.22",
+        "kfp>=2.6.0",
         "gcsfs",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
@@ -53,6 +53,7 @@ class GcpIntegration(Integration):
         "google-cloud-build>=3.11.0",
         "kubernetes",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes","kfp"]
 
     @staticmethod
     def activate() -> None:

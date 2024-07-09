@@ -136,7 +136,7 @@ def main() -> None:
             settings.disk_size,  # Assuming disk_size is part of the settings
             settings.disk_tier,  # Assuming disk_tier is part of the settings
             settings.use_spot,
-            settings.spot_recovery,
+            settings.job_recovery,
             settings.region,
             settings.zone,
             accelerators_hashable,
@@ -213,7 +213,7 @@ def main() -> None:
                 accelerators=settings.accelerators,
                 accelerator_args=settings.accelerator_args,
                 use_spot=settings.use_spot,
-                spot_recovery=settings.spot_recovery,
+                job_recovery=settings.job_recovery,
                 region=settings.region,
                 zone=settings.zone,
                 image_id=settings.image_id,

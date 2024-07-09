@@ -36,6 +36,7 @@ from zenml.models.v2.core.component import ComponentResponse
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
+
 # ------------------ Request Model ------------------
 
 
@@ -58,6 +59,10 @@ class StackRequest(WorkspaceScopedRequest):
         default=None,
         title="A mapping of stack component types to the actual"
         "instances of components of this type.",
+    )
+    labels: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The stack labels.",
     )
 
     @property
@@ -109,6 +114,10 @@ class StackUpdate(BaseUpdate):
         "instances of components of this type.",
         default=None,
     )
+    labels: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The stack labels.",
+    )
 
 
 # ------------------ Response Model ------------------
@@ -133,6 +142,10 @@ class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     stack_spec_path: Optional[str] = Field(
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
+    )
+    labels: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The stack labels.",
     )
 
 
@@ -214,6 +227,15 @@ class StackResponse(
         """
         metadata = super().get_analytics_metadata()
         metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
+
+        if self.labels is not None:
+            metadata.update(
+                {
+                    label[6:]: value
+                    for label, value in self.labels.items()
+                    if label.startswith("zenml:")
+                }
+            )
         return metadata
 
     @property
@@ -242,6 +264,15 @@ class StackResponse(
             the value of the property.
         """
         return self.get_metadata().components
+
+    @property
+    def labels(self) -> Optional[Dict[str, Any]]:
+        """The `labels` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().labels
 
 
 # ------------------ Filter Model ------------------

@@ -149,7 +149,7 @@ class KubeflowOrchestratorConfig(
 
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: Optional[str]  # TODO: Potential setting
+    kubernetes_context: Optional[str] = None  # TODO: Potential setting
 
     @model_validator(mode="before")
     @classmethod

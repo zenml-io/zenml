@@ -22,6 +22,7 @@ class FacetsIntegration(Integration):
 
     NAME = FACETS
     REQUIREMENTS = ["facets-overview>=1.0.0", "pandas"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pandas"]
 
     @staticmethod
     def activate() -> None:

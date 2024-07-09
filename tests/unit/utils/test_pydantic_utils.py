@@ -75,8 +75,8 @@ def test_update_model_works_recursively():
     assert updated.b["c"]["d"] == "f"
 
 
-def test_update_model_works_with_none_exclusion():
-    """'None' values in the update dictionary don't get removed.'"""
+def test_update_model_works_with_dict_none_exclusion():
+    """'None' values in the update dictionary get removed if specified."""
 
     class TestModel(BaseModel):
         a: int
@@ -92,6 +92,30 @@ def test_update_model_works_with_none_exclusion():
     # Case: when exclude_none is False
     original2 = TestModel(a=1, b=2)
     update2 = {"a": 3, "b": None}
+    updated2 = pydantic_utils.update_model(
+        original2, update2, exclude_none=False
+    )
+    assert updated2.a == 3
+    assert updated2.b is None
+
+
+def test_update_model_works_with_model_none_exclusion():
+    """'None' values in the update model get removed if specified"""
+
+    class TestModel(BaseModel):
+        a: int
+        b: Optional[int] = None
+
+    # Case: when exclude_none is True
+    original = TestModel(a=1, b=2)
+    update = TestModel(a=3, b=None)
+    updated = pydantic_utils.update_model(original, update, exclude_none=True)
+    assert updated.a == 3
+    assert updated.b == 2
+
+    # Case: when exclude_none is False
+    original2 = TestModel(a=1, b=2)
+    update2 = TestModel(a=3, b=None)
     updated2 = pydantic_utils.update_model(
         original2, update2, exclude_none=False
     )

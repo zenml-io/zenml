@@ -46,8 +46,12 @@ if __name__ == "__main__":
 
     from datasets import load_dataset
 
-    trn_dataset = load_dataset("imdb", split="train[:10]")
-    eval_dataset = load_dataset("imdb", split="test[:10]")
+    trn_dataset = load_dataset(
+        "imdb", split="train[:10]", trust_remote_code=True
+    )
+    eval_dataset = load_dataset(
+        "imdb", split="test[:10]", trust_remote_code=True
+    )
 
     from transformers import AutoTokenizer
 

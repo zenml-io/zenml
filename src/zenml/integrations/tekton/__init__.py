@@ -32,6 +32,7 @@ class TektonIntegration(Integration):
 
     NAME = TEKTON
     REQUIREMENTS = ["kfp>=2.6.0", "kfp-kubernetes>=1.1.0"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kfp"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
