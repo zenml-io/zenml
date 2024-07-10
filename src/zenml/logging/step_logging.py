@@ -277,13 +277,16 @@ class StepLogsStorage:
             or time.time() - self.last_save_time >= self.time_interval
         )
 
-    def _get_timestamped_filename(self) -> str:
+    def _get_timestamped_filename(self, suffix: str = "") -> str:
         """Returns a timestamped filename.
+
+        Args:
+            suffix: optional suffix for the file name
 
         Returns:
             The timestamped filename.
         """
-        return f"{time.time()}{LOGS_EXTENSION}"
+        return f"{time.time()}{suffix}{LOGS_EXTENSION}"
 
     def save_to_file(self, force: bool = False) -> None:
         """Method to save the buffer to the given URI.
@@ -345,19 +348,28 @@ class StepLogsStorage:
             finally:
                 self.last_merge_time = time.time()
 
-    def merge_log_files(self) -> None:
+    def merge_log_files(self, merge_all_files: bool = False) -> None:
         """Merges all log files into one in the given URI.
 
         Called on the logging context exit.
+
+        Args:
+            merge_all_files: whether to merge all files or only raw files
         """
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+            merged_file_suffix = "_merged"
             files_ = self.artifact_store.listdir(self.logs_uri)
-            file_name_ = self._get_timestamped_filename()
+            if not merge_all_files:
+                # already merged files will not be merged again
+                files_ = [f for f in files_ if merged_file_suffix not in f]
+            file_name_ = self._get_timestamped_filename(
+                suffix=merged_file_suffix
+            )
             if len(files_) > 1:
                 files_.sort()
                 logger.debug("Log files count: %s", len(files_))
 
-                missing_files = []
+                missing_files = set()
                 # dump all logs to a local file first
                 with self.artifact_store.open(
                     os.path.join(self.logs_uri, file_name_), "w"
@@ -374,7 +386,7 @@ class StepLogsStorage:
                                 )
                             )
                         except DoesNotExistException:
-                            missing_files.append(file)
+                            missing_files.add(file)
 
                 # clean up left over files
                 for file in files_:
@@ -435,7 +447,6 @@ class StepLogsStorageContext:
         Restores the `write` method of both stderr and stdout.
         """
         self.storage.save_to_file(force=True)
-        self.storage.merge_log_files()
 
         setattr(sys.stdout, "write", self.stdout_write)
         setattr(sys.stdout, "flush", self.stdout_flush)
@@ -444,6 +455,11 @@ class StepLogsStorageContext:
         setattr(sys.stderr, "flush", self.stderr_flush)
 
         redirected.set(False)
+
+        try:
+            self.storage.merge_log_files(merge_all_files=True)
+        except (OSError, IOError) as e:
+            logger.warning(f"Step logs roll-up failed: {e}")
 
     def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
         """Wrapper function that utilizes the storage object to store logs.
