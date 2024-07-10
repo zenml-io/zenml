@@ -20,9 +20,12 @@ from abc import ABC
 
 from zenml import __version__
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.utils.io_utils import copy_dir
 from zenml.utils.source_utils import get_source_root
+
+logger = get_logger(__name__)
 
 DEFAULT_PACKAGE_NAME = "zenmlproject"
 
@@ -94,8 +97,8 @@ setup(
             result = subprocess.run(
                 ["pip", "wheel", "."], check=True, capture_output=True
             )
-            print(f"Wheel creation stdout: {result.stdout.decode()}")
-            print(f"Wheel creation stderr: {result.stderr.decode()}")
+            logger.debug(f"Wheel creation stdout: {result.stdout.decode()}")
+            logger.debug(f"Wheel creation stderr: {result.stderr.decode()}")
 
             # Find the created wheel file
             wheel_file = next(
