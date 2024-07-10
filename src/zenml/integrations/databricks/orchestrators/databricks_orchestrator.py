@@ -364,14 +364,13 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             for key, value in self.settings_class().spark_env_vars:
                 env_vars[key] = value
 
-        env_vars.append(
-            f"ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID={deployment_id}"
-        )
+        env_vars[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = deployment_id
 
         fileio.rmtree(repository_temp_dir)
 
         logger.info(
-            "Writing Databricks workflow definition to `%s`.", pipeline_file_path
+            "Writing Databricks workflow definition to `%s`.",
+            pipeline_file_path,
         )
 
         # using the databricks client uploads the pipeline to databricks
