@@ -8,7 +8,7 @@ SRC=""
 
 # Initialize SKIP_YAMLFIX and SKIP_UPGRADE as false
 SKIP_YAMLFIX=false
-SKIP_UPGRADE=false
+SKIP_UPGRADE=true
 
 # Process arguments
 for arg in "$@"

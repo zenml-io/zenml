@@ -15,6 +15,13 @@ You should use the AWS container registry if:
 
 ### How to deploy it
 
+{% hint style="info" %}
+Don't want to deploy the container registry manually? Check out the
+[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 The ECR registry is automatically activated once you create an AWS account. However, you'll need to create a `Repository` in order to push container images to it:
 
 * Go to the [ECR website](https://console.aws.amazon.com/ecr).
