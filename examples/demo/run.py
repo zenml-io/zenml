@@ -197,7 +197,9 @@ def main(
         pipeline_args["run_name"] = (
             f"adas_computer_vision_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         )
-        adas_computer_vision_training.with_options(**pipeline_args)(**run_args_train)
+        adas_computer_vision_training.with_options(**pipeline_args)(
+            **run_args_train
+        )
         logger.info("Training pipeline finished successfully!")
 
     if deployment:
