@@ -62,7 +62,7 @@ Once the configuration is finished, you will see a deployment page:
 
 ![Deploying the new stack](../../.gitbook/assets/deploy_stack_aws_2.png)
 
-During this process, you will be redirected to a Cloud Formation page on AWS. 
+During this process, you will be redirected to a Cloud Formation page on AWS Console. 
 
 ![Cloudformation page](../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png)
 
@@ -113,7 +113,7 @@ values that were provided to you in the ZenML dashboard:
 You can take this opportunity to review the script that will be executed at the
 next step. You will notice that this script starts by enabling some necessary
 GCP service APIs and configuring some basic permissions for the service accounts
-involved in the stack deployment and then deploys the stack using a GCP
+involved in the stack deployment, and then deploys the stack using a GCP
 Deployment Manager template. You can proceed with the deployment by running the
 script in your terminal:
 
@@ -134,7 +134,7 @@ to the ZenML dashboard to view the newly created stack:
 {% endtab %}
 {% tab title="CLI" %}
 
-In order to create a remote stack over the CLI you can use the following 
+In order to create a remote stack over the CLI, you can use the following 
 command:
 
 ```shell
