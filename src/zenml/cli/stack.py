@@ -35,6 +35,7 @@ import click
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Confirm
+from rich.style import Style
 from rich.syntax import Syntax
 
 import zenml
@@ -1718,12 +1719,11 @@ def deploy(
 
             console.print(
                 "\n",
-                Syntax(
-                    deployment_config.configuration,
-                    "bash",
-                    theme="monokai",
-                    word_wrap=True,
-                ),
+                deployment_config.configuration,
+                no_wrap=True,
+                overflow="ignore",
+                crop=False,
+                style=Style(bgcolor="grey15"),
             )
 
         if not cli_utils.confirmation(
