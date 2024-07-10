@@ -16,11 +16,11 @@
 import itertools
 import os
 import re
-from datetime import datetime as dt
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
-from databricks.sdk.service.compute import AutoScale, ClusterDetails, State
+from databricks.sdk.service.compute import AutoScale, ClusterSpec
+from databricks.sdk.service.jobs import JobCluster
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml.client import Client
@@ -246,7 +246,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_databricks_pipeline(
-            zenml_project_wheel: str, cluster_id: str
+            zenml_project_wheel: str, job_cluster_key: str
         ) -> List[DatabricksTask]:
             """Create a databrcks task for each step.
 
@@ -269,20 +269,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                         step_name=step_name, deployment_id=deployment_id
                     )
                 )
-
-                # Construct the --env argument
-                env_vars = []
-                for key, value in environment.items():
-                    env_vars.append(f"{key}={value}")
-                env_vars.append(
-                    f"ZENML_DATABRICKS_SOURCE_PREFIX={self.package_name}"
-                )
-                env_vars.append(
-                    f"ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID={deployment_id}"
-                )
-                env_arg = ",".join(env_vars)
-
-                arguments.extend(["--env", env_arg])
 
                 # Find the upstream container ops of the current step and
                 # configure the current container op to run after them
@@ -319,7 +305,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     requirements,
                     depends_on=upstream_steps,
                     zenml_project_wheel=zenml_project_wheel,
-                    cluster_id=cluster_id,
+                    job_cluster_key=job_cluster_key,
                 )
                 tasks.append(task)
                 # Create a container_op - the kubeflow equivalent of a step. It
@@ -372,38 +358,45 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             databricks_wheel_path,
         )
 
-        cluster = self.create_or_use_cluster()
+        # Construct the env variables for the pipeline
+        env_vars = environment.copy()
+        if self.settings_class().spark_env_vars:
+            for key, value in self.settings_class().spark_env_vars:
+                env_vars[key] = value
+
+        env_vars.append(
+            f"ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID={deployment_id}"
+        )
+
         fileio.rmtree(repository_temp_dir)
 
         logger.info(
             "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
         )
 
-        # using the databricks client uploads the pipeline to kubeflow pipelines and
-        # runs it there
-        assert cluster.cluster_id is not None
+        # using the databricks client uploads the pipeline to databricks
+        job_cluster_key = self.sanitize_cluster_name(
+            f"{DATABRICKS_CLUSTER_DEFAULT_NAME}_{deployment_id}"
+        )
         self._upload_and_run_pipeline(
             pipeline_name=orchestrator_run_name,
             tasks=_construct_databricks_pipeline(
-                databricks_wheel_path, cluster.cluster_id
+                databricks_wheel_path, job_cluster_key
             ),
-            run_name=orchestrator_run_name,
+            env_vars=env_vars,
+            job_cluster_key=job_cluster_key,
             settings=cast(
                 DatabricksOrchestratorSettings, self.get_settings(deployment)
             ),
         )
 
-        # databricks_client.clusters.delete_and_wait(
-        #    cluster_id=cluster.cluster_id
-        # )
-        # databricks_client.cluster_policies.delete(policy_id=policy.policy_id)
-
     def _upload_and_run_pipeline(
         self,
         pipeline_name: str,
         tasks: List[DatabricksTask],
-        run_name: str,
+        env_vars: Dict[str, str],
         settings: DatabricksOrchestratorSettings,
+        job_cluster_key: str,
         schedule: Optional["ScheduleResponse"] = None,
     ) -> None:
         """Uploads and run the pipeline on the Databricks jobs.
@@ -411,15 +404,50 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         Args:
             pipeline_name: Name of the pipeline.
             tasks: List of tasks to run.
-            run_name: Orchestrator run name.
-            settings: Pipeline level settings for this orchestrator.
-            schedule: The schedule the pipeline will run on.
+            env_vars: Environment variables.
+            settings: Orchestrator settings.
+            job_cluster_key: ID of the Databricks job_cluster_key.
+            schedule: Schedule to run the pipeline on.
         """
         databricks_client = self._get_databricks_client(settings)
+        spark_conf = self.settings_class().spark_conf or {}
+        spark_conf[
+            "spark.databricks.driver.dbfsLibraryInstallationAllowed"
+        ] = "true"
+
+        policy_id = self.settings_class().policy_id or None
+        for policy in databricks_client.cluster_policies.list():
+            if policy.name == "Power User Compute":
+                policy_id = policy.policy_id
+        if policy_id is None:
+            raise ValueError(
+                "Could not find the 'Power User Compute' policy in Databricks."
+            )
+        job_cluster = JobCluster(
+            job_cluster_key=job_cluster_key,
+            new_cluster=ClusterSpec(
+                spark_version=self.settings_class().spark_version
+                or DATABRICKS_SPARK_DEFAULT_VERSION,
+                num_workers=self.settings_class().num_workers,
+                node_type_id=self.settings_class().node_type_id
+                or "Standard_D4s_v5",
+                policy_id=policy_id,
+                autotermination_minutes=self.settings_class().autotermination_minutes
+                or 5,
+                autoscale=AutoScale(
+                    min_workers=self.settings_class().autoscale[0],
+                    max_workers=self.settings_class().autoscale[1],
+                ),
+                single_user_name=self.settings_class().single_user_name,
+                spark_env_vars=env_vars,
+                spark_conf=spark_conf,
+            ),
+        )
 
         job = databricks_client.jobs.create(
             name=pipeline_name,
             tasks=tasks,
+            job_clusters=[job_cluster],
         )
         assert job.job_id is not None
         databricks_client.jobs.run_now(job_id=job.job_id)
@@ -439,110 +467,3 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         name = re.sub(r"^[-]+", "", name)  # trim leading hyphens
         name = re.sub(r"[-]+$", "", name)  # trim trailing hyphens
         return name
-
-    def create_or_use_cluster(self) -> ClusterDetails:
-        """Create or use an existing Databricks cluster."""
-        databricks_client = self._get_databricks_client(self.settings_class())
-
-        spark_conf = self.settings_class().spark_conf or {}
-        spark_conf[
-            "spark.databricks.driver.dbfsLibraryInstallationAllowed"
-        ] = "true"
-
-        policy_id = self.settings_class().policy_id or None
-        for policy in databricks_client.cluster_policies.list():
-            if policy.name == "Power User Compute":
-                policy_id = policy.policy_id
-        if policy_id is None:
-            raise ValueError(
-                "Could not find the 'Power User Compute' policy in Databricks."
-            )
-        cluster_config = {
-            "spark_version": self.settings_class().spark_version
-            or DATABRICKS_SPARK_DEFAULT_VERSION,
-            "num_workers": self.settings_class().num_workers,
-            "node_type_id": self.settings_class().node_type_id
-            or "Standard_D8ads_v5",
-            "cluster_name": self.settings_class().cluster_name
-            or f"{DATABRICKS_CLUSTER_DEFAULT_NAME}_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}",
-            "policy_id": policy_id,
-            "autotermination_minutes": self.settings_class().autotermination_minutes
-            or 30,
-            "autoscale": AutoScale(
-                min_workers=self.settings_class().autoscale[0],
-                max_workers=self.settings_class().autoscale[1],
-            ),
-            "single_user_name": self.settings_class().single_user_name,
-            "spark_env_vars": self.settings_class().spark_env_vars,
-            "spark_conf": spark_conf,
-        }
-
-        # Check for existing clusters with the same configuration
-        for existing_cluster in databricks_client.clusters.list():
-            if existing_cluster.cluster_name == cluster_config["cluster_name"]:
-                # Compare configurations
-                if self._compare_cluster_configs(
-                    existing_cluster, cluster_config
-                ):
-                    # If configurations match, use the existing cluster
-                    if (
-                        existing_cluster.state
-                        and existing_cluster.state != State.RUNNING
-                    ):
-                        # Start the cluster if it's terminated
-                        databricks_client.clusters.start_and_wait(
-                            existing_cluster.cluster_id
-                        )
-        # If no matching cluster found, create a new one
-        return databricks_client.clusters.create_and_wait(**cluster_config)
-
-    def _compare_cluster_configs(
-        self, existing_cluster: Any, new_config: Dict[str, Any]
-    ) -> bool:
-        """Compare existing cluster configuration with new configuration.
-
-        Args:
-            existing_cluster: Existing cluster configuration.
-            new_config: New cluster configuration.
-
-        Returns:
-            True if configurations are equivalent, False otherwise.
-        """
-        # Compare basic cluster properties
-        if (
-            existing_cluster.spark_version != new_config["spark_version"]
-            or existing_cluster.num_workers != new_config["num_workers"]
-            or existing_cluster.node_type_id != new_config["node_type_id"]
-            or existing_cluster.cluster_name != new_config["cluster_name"]
-            or existing_cluster.policy_id != new_config["policy_id"]
-            or existing_cluster.autotermination_minutes
-            != new_config["autotermination_minutes"]
-            or existing_cluster.single_user_name
-            != new_config["single_user_name"]
-        ):
-            return False
-
-        # Compare autoscale settings
-        if existing_cluster.autoscale:
-            if not new_config["autoscale"]:
-                return False
-            if (
-                existing_cluster.autoscale.min_workers
-                != new_config["autoscale"].min_workers
-                or existing_cluster.autoscale.max_workers
-                != new_config["autoscale"].max_workers
-            ):
-                return False
-        elif new_config["autoscale"]:
-            return False
-
-        # Compare spark environment variables
-        if existing_cluster.spark_env_vars != new_config["spark_env_vars"]:
-            return False
-
-        # Compare spark configuration
-        if existing_cluster.spark_conf != new_config["spark_conf"]:
-            return False
-
-        # If all checks pass, configurations are considered equivalent
-        return True

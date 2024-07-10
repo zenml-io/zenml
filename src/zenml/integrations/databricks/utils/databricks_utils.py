@@ -28,7 +28,7 @@ def convert_step_to_task(
     libraries: Optional[List[str]] = None,
     depends_on: Optional[List[str]] = None,
     zenml_project_wheel: Optional[str] = None,
-    cluster_id: Optional[str] = None,
+    job_cluster_key: Optional[str] = None,
 ) -> DatabricksTask:
     """Convert a ZenML step to a Databricks task.
 
@@ -39,7 +39,7 @@ def convert_step_to_task(
         libraries: List of libraries to install.
         depends_on: List of tasks to depend on.
         zenml_project_wheel: Path to the ZenML project wheel.
-        cluster_id: ID of the Databricks cluster.
+        job_cluster_key: ID of the Databricks job_cluster_key.
 
     Returns:
         Databricks task.
@@ -59,7 +59,7 @@ def convert_step_to_task(
     )
     return DatabricksTask(
         task_key=task_name,
-        existing_cluster_id=cluster_id,
+        job_cluster_key=job_cluster_key,
         libraries=db_libraries,
         python_wheel_task=PythonWheelTask(
             package_name="zenml",

@@ -16,8 +16,6 @@
 import copy
 import hashlib
 import inspect
-import os
-import sys
 from abc import abstractmethod
 from collections import defaultdict
 from typing import (
@@ -35,7 +33,6 @@ from typing import (
     cast,
 )
 
-import pkg_resources
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
@@ -277,18 +274,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             ValueError: If the source is not a valid step source.
         """
-
-        if prefix := os.environ.get("ZENML_DATABRICKS_SOURCE_PREFIX"):
-            distribution = pkg_resources.get_distribution(prefix)
-            project_root = os.path.join(distribution.location, prefix)
-            if project_root not in sys.path:
-                sys.path.insert(0, project_root)
-                sys.path.insert(-1, project_root)
-            step_source = source
-        else:
-            step_source = source
-
-        obj = source_utils.load(step_source)
+        obj = source_utils.load(source)
 
         if isinstance(obj, BaseStep):
             return obj

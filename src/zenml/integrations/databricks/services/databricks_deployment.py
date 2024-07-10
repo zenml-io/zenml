@@ -315,9 +315,15 @@ class DatabricksDeploymentService(BaseDeploymentService):
                 "Please start the service before making predictions."
             )
         if self.prediction_url is not None:
+            if not self.config.endpoint_secret_name:
+                raise ValueError(
+                    "No endpoint secret name is provided for prediction."
+                )
             databricks_token = Client().get_secret(
                 self.config.endpoint_secret_name
             )
+            if not databricks_token.secret_values["token"]:
+                raise ValueError("No databricks token found.")
             headers = {
                 "Authorization": f"Bearer {databricks_token.secret_values['token']}",
                 "Content-Type": "application/json",
