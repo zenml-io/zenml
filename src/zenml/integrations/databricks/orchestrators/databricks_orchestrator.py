@@ -19,18 +19,23 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
-from databricks.sdk.service.compute import AutoScale, ClusterSpec
+from databricks.sdk.service.compute import (
+    AutoScale,
+    ClientsTypes,
+    ClusterSpec,
+    WorkloadType,
+)
 from databricks.sdk.service.jobs import JobCluster
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml.client import Client
-from zenml.entrypoints.step_entrypoint_configuration import (
-    StepEntrypointConfiguration,
-)
 from zenml.environment import Environment
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
     DatabricksOrchestratorConfig,
     DatabricksOrchestratorSettings,
+)
+from zenml.integrations.databricks.orchestrators.databricks_orchestrator_entrypoint_config import (
+    DatabricksEntrypointConfiguration,
 )
 from zenml.integrations.databricks.utils.databricks_utils import (
     convert_step_to_task,
@@ -258,15 +263,13 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             """
             tasks = []
             for step_name, step in deployment.step_configurations.items():
-                # image = self.get_image(
-                #    deployment=deployment, step_name=step_name
-                # )
-
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
                 arguments = (
-                    StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment_id
+                    DatabricksEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name,
+                        deployment_id=deployment_id,
+                        wheel_package=self.package_name,
                     )
                 )
 
@@ -308,16 +311,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     job_cluster_key=job_cluster_key,
                 )
                 tasks.append(task)
-                # Create a container_op - the kubeflow equivalent of a step. It
-                # contains the name of the step, the name of the docker image,
-                # the command to use to run the step entrypoint
-                # (e.g. `python -m zenml.entrypoints.step_entrypoint`)
-                # and the arguments to be passed along with the command. Find
-                # out more about how these arguments are parsed and used
-                # in the base entrypoint `run()` method.
-                # settings = cast(
-                #    DatabricksOrchestratorSettings, self.get_settings(step)
-                # )
             return tasks
 
         # Get the orchestrator run name
@@ -364,7 +357,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             for key, value in self.settings_class().spark_env_vars:
                 env_vars[key] = value
 
-        env_vars[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = deployment_id
+        env_vars[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = str(deployment_id)
 
         fileio.rmtree(repository_temp_dir)
 
@@ -416,23 +409,22 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         policy_id = self.settings_class().policy_id or None
         for policy in databricks_client.cluster_policies.list():
-            if policy.name == "Power User Compute":
+            if policy.name == "Job Compute":
                 policy_id = policy.policy_id
         if policy_id is None:
             raise ValueError(
-                "Could not find the 'Power User Compute' policy in Databricks."
+                "Could not find the `Job Compute` policy in Databricks."
             )
         job_cluster = JobCluster(
             job_cluster_key=job_cluster_key,
             new_cluster=ClusterSpec(
+                cluster_name=job_cluster_key,
                 spark_version=self.settings_class().spark_version
                 or DATABRICKS_SPARK_DEFAULT_VERSION,
                 num_workers=self.settings_class().num_workers,
                 node_type_id=self.settings_class().node_type_id
                 or "Standard_D4s_v5",
                 policy_id=policy_id,
-                autotermination_minutes=self.settings_class().autotermination_minutes
-                or 5,
                 autoscale=AutoScale(
                     min_workers=self.settings_class().autoscale[0],
                     max_workers=self.settings_class().autoscale[1],
@@ -440,9 +432,11 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 single_user_name=self.settings_class().single_user_name,
                 spark_env_vars=env_vars,
                 spark_conf=spark_conf,
+                workload_type=WorkloadType(
+                    clients=ClientsTypes(jobs=True, notebooks=False)
+                ),
             ),
         )
-
         job = databricks_client.jobs.create(
             name=pipeline_name,
             tasks=tasks,
