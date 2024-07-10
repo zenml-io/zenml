@@ -518,7 +518,7 @@ class Model(BaseModel):
             and not suppress_class_validation_warnings
         ):
             logger.info(
-                f"`version` `{version}` matches one of the possible "
+                f"Version `{version}` matches one of the possible "
                 "`ModelStages` and will be fetched using stage."
             )
         if str(version).isnumeric() and not suppress_class_validation_warnings:
