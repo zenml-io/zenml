@@ -7459,10 +7459,6 @@ class SqlZenStore(BaseZenStore):
             stack_name: The name of the stack.
             location: The location where the stack should be deployed.
 
-        Returns:
-            The cloud provider console URL and configuration needed to deploy
-            the ZenML stack to the specified cloud provider.
-
         Raises:
             NotImplementedError: Stack deployments are not supported by the
                 local ZenML deployment.
