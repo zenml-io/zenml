@@ -24,7 +24,7 @@ settings:
       - sklearn
       - databricks
   orchestrator.databricks:
-    cluster_name: e2e_use_case
+    cluster_name: adas_computer_vision
     node_type_id: Standard_D8ads_v5
 
 # configuration of steps  
@@ -35,7 +35,7 @@ steps:
 
 # configuration of the Model Control Plane
 model:
-  name: e2e_use_case
+  name: adas_computer_vision
   version: staging
 
 # pipeline level extra configurations

@@ -25,26 +25,26 @@ settings:
       - sklearn
       - databricks
   orchestrator.databricks:
-    cluster_name: e2e_use_case
+    cluster_name: adas_
     node_type_id: Standard_D8ads_v5
 
 # configuration of steps  
 steps:
   model_trainer:
     parameters:
-      name: e2e_use_case
+      name: adas_computer_vision
   promote_with_metric_compare:
     parameters:
-      mlflow_model_name: e2e_use_case
+      mlflow_model_name: adas_computer_vision
   notify_on_success:
     parameters:
       notify_on_success: False
 
 # configuration of the Model Control Plane
 model:
-  name: e2e_use_case
+  name: adas_computer_vision
   license: apache
-  description: e2e_use_case E2E Batch Use Case
+  description: adas_computer_vision E2E Batch Use Case
   audience: All ZenML users
   use_cases: |
     The ZenML E2E project project demonstrates how the most important steps of 

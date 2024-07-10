@@ -16,6 +16,6 @@
 #
 
 
-from .batch_inference import e2e_use_case_batch_inference
-from .training import e2e_use_case_training
-from .deployment import e2e_use_case_deployment
+from .batch_inference import adas_computer_vision_batch_inference
+from .training import adas_computer_vision_training
+from .deployment import adas_computer_vision_deployment

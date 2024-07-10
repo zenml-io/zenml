@@ -7,7 +7,7 @@ classification datasets provided by the scikit-learn library. The project was
 generated from the [E2E Batch ZenML project template](https://github.com/zenml-io/template-e2e-batch)
 with the following properties:
 - Project name: ZenML E2E project
-- Technical Name: e2e_use_case
+- Technical Name: adas_computer_vision
 - Version: `0.0.1`
 - Licensed with apache to ZenML GmbH<info@zenml.io>
 - Deployment environment: `staging`

@@ -21,7 +21,7 @@ from zenml import pipeline
 
 
 @pipeline(on_failure=notify_on_failure)
-def e2e_use_case_deployment():
+def adas_computer_vision_deployment():
     """
     Model deployment pipeline.
 

@@ -21,9 +21,9 @@ from typing import Optional
 
 import click
 from pipelines import (
-    e2e_use_case_batch_inference,
-    e2e_use_case_deployment,
-    e2e_use_case_training,
+    adas_computer_vision_batch_inference,
+    adas_computer_vision_deployment,
+    adas_computer_vision_training,
 )
 
 from zenml.logger import get_logger
@@ -195,9 +195,9 @@ def main(
             "train_config.yaml",
         )
         pipeline_args["run_name"] = (
-            f"e2e_use_case_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+            f"adas_computer_vision_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         )
-        e2e_use_case_training.with_options(**pipeline_args)(**run_args_train)
+        adas_computer_vision_training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline finished successfully!")
 
     if deployment:
@@ -209,9 +209,9 @@ def main(
             "deployer_config.yaml",
         )
         pipeline_args["run_name"] = (
-            f"e2e_use_case_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+            f"adas_computer_vision_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         )
-        e2e_use_case_deployment.with_options(**pipeline_args)(
+        adas_computer_vision_deployment.with_options(**pipeline_args)(
             **run_args_inference
         )
 
@@ -224,9 +224,9 @@ def main(
             "inference_config.yaml",
         )
         pipeline_args["run_name"] = (
-            f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+            f"adas_computer_vision_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         )
-        e2e_use_case_batch_inference.with_options(**pipeline_args)(
+        adas_computer_vision_batch_inference.with_options(**pipeline_args)(
             **run_args_inference
         )
 
