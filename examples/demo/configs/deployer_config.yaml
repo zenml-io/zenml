@@ -25,7 +25,7 @@ settings:
       - sklearn
       - databricks
   orchestrator.databricks:
-    cluster_name: adas_computer_vision
+    cluster_name: production_line_qa
     node_type_id: Standard_D8ads_v5
 
   
@@ -38,7 +38,7 @@ steps:
 
 # configuration of the Model Control Plane
 model:
-  name: adas_computer_vision
+  name: production_line_qa
   version: staging
 
 # pipeline level extra configurations

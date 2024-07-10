@@ -16,6 +16,6 @@
 #
 
 
-from .batch_inference import adas_computer_vision_batch_inference
-from .training import adas_computer_vision_training
-from .deployment import adas_computer_vision_deployment
+from .batch_inference import production_line_qa_batch_inference
+from .training import production_line_qa_training
+from .deployment import production_line_qa_deployment

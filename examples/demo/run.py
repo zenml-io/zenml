@@ -21,9 +21,9 @@ from typing import Optional
 
 import click
 from pipelines import (
-    adas_computer_vision_batch_inference,
-    adas_computer_vision_deployment,
-    adas_computer_vision_training,
+    production_line_qa_batch_inference,
+    production_line_qa_deployment,
+    production_line_qa_training,
 )
 
 from zenml.logger import get_logger
@@ -195,9 +195,9 @@ def main(
             "train_config.yaml",
         )
         pipeline_args["run_name"] = (
-            f"adas_computer_vision_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+            f"production_line_qa_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         )
-        adas_computer_vision_training.with_options(**pipeline_args)(
+        production_line_qa_training.with_options(**pipeline_args)(
             **run_args_train
         )
         logger.info("Training pipeline finished successfully!")
@@ -211,9 +211,9 @@ def main(
             "deployer_config.yaml",
         )
         pipeline_args["run_name"] = (
-            f"adas_computer_vision_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+            f"production_line_qa_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         )
-        adas_computer_vision_deployment.with_options(**pipeline_args)(
+        production_line_qa_deployment.with_options(**pipeline_args)(
             **run_args_inference
         )
 
@@ -226,9 +226,9 @@ def main(
             "inference_config.yaml",
         )
         pipeline_args["run_name"] = (
-            f"adas_computer_vision_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+            f"production_line_qa_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         )
-        adas_computer_vision_batch_inference.with_options(**pipeline_args)(
+        production_line_qa_batch_inference.with_options(**pipeline_args)(
             **run_args_inference
         )
 

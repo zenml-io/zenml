@@ -32,19 +32,19 @@ settings:
 steps:
   model_trainer:
     parameters:
-      name: adas_computer_vision
+      name: production_line_qa
   promote_with_metric_compare:
     parameters:
-      mlflow_model_name: adas_computer_vision
+      mlflow_model_name: production_line_qa
   notify_on_success:
     parameters:
       notify_on_success: False
 
 # configuration of the Model Control Plane
 model:
-  name: adas_computer_vision
+  name: production_line_qa
   license: apache
-  description: adas_computer_vision E2E Batch Use Case
+  description: production_line_qa E2E Batch Use Case
   audience: All ZenML users
   use_cases: |
     The ZenML E2E project project demonstrates how the most important steps of 

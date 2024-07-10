@@ -9,7 +9,7 @@ metric_compare_promotion: true
 notify_on_failures: true
 notify_on_successes: false
 open_source_license: apache
-product_name: adas_computer_vision
+product_name: production_line_qa
 project_name: ZenML E2E project
 target_environment: staging
 version: 0.0.1

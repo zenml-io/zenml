@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 
 
 @pipeline(on_failure=notify_on_failure)
-def adas_computer_vision_batch_inference():
+def production_line_qa_batch_inference():
     """
     Model batch inference pipeline.
 
