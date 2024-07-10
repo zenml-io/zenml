@@ -12,4 +12,11 @@ zenml init
 cd feast_feature_repo
 feast apply
 
+# inspect the data we just loaded into the feature store
+feast ui
 
+# run the pipeline
+cd ..
+python run.py
+
+# check out the code + dashboard
