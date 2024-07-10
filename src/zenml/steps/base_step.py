@@ -277,7 +277,6 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             ValueError: If the source is not a valid step source.
         """
-        logger.info("Loading step from source: %s", source)
 
         if prefix := os.environ.get("ZENML_DATABRICKS_SOURCE_PREFIX"):
             distribution = pkg_resources.get_distribution(prefix)
@@ -289,7 +288,6 @@ class BaseStep(metaclass=BaseStepMeta):
         else:
             step_source = source
 
-        logger.info("Loading step from source: %s", step_source)
         obj = source_utils.load(step_source)
 
         if isinstance(obj, BaseStep):
