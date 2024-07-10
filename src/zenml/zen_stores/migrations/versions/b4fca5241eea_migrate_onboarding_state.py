@@ -100,6 +100,27 @@ def upgrade() -> None:
     ):
         new_state.append("stack_with_remote_orchestrator_created")
 
+    pipeline_run_with_remote_artifact_store_count = connection.execute(
+        sa.select(sa.func.count(pipeline_run_table.c.id))
+        .where(
+            pipeline_run_table.c.deployment_id
+            == pipeline_deployment_table.c.id
+        )
+        .where(pipeline_deployment_table.c.stack_id == stack_table.c.id)
+        .where(stack_composition_table.c.stack_id == stack_table.c.id)
+        .where(
+            stack_composition_table.c.component_id
+            == stack_component_table.c.id
+        )
+        .where(stack_component_table.c.flavor != "local")
+        .where(stack_component_table.c.type == "artifact_store")
+    ).scalar()
+    if (
+        pipeline_run_with_remote_artifact_store_count
+        and pipeline_run_with_remote_artifact_store_count > 0
+    ):
+        new_state.append("production_setup_completed")
+
     pipeline_run_with_remote_orchestrator_count = connection.execute(
         sa.select(sa.func.count(pipeline_run_table.c.id))
         .where(
