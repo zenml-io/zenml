@@ -81,8 +81,12 @@ def hp_tuning_single_search(
     X_tst = dataset_tst.drop(columns=[target])
     y_tst = dataset_tst[target]
     logger.info("Running Hyperparameter tuning...")
+    if model_class == "RandomForestClassifier":
+        model_class = model_class(warm_start=True)
+    else:
+        model_class = model_class()
     cv = RandomizedSearchCV(
-        estimator=model_class(),
+        estimator=model_class,
         param_distributions=search_grid,
         cv=3,
         n_jobs=-1,

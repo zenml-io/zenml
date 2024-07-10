@@ -24,6 +24,9 @@ settings:
       - mlflow
       - sklearn
       - databricks
+  orchestrator.databricks:
+    cluster_name: e2e_use_case
+    node_type_id: Standard_D8ads_v5
 
 # configuration of steps  
 steps:
@@ -65,29 +68,6 @@ parameters:
   # This set contains all the model configurations that you want 
   # to evaluate during hyperparameter tuning stage.
   model_search_space:
-    random_forest:
-      model_package: sklearn.ensemble
-      model_class: RandomForestClassifier
-      search_grid:
-        criterion:
-          - gini
-          - entropy
-        max_depth:
-          - 2
-          - 4
-          - 6
-          - 8
-          - 10
-          - 12
-        min_samples_leaf:
-          range:
-            start: 1
-            end: 10
-        n_estimators:
-          range:
-            start: 50
-            end: 500
-            step: 25
     decision_tree:
       model_package: sklearn.tree
       model_class: DecisionTreeClassifier

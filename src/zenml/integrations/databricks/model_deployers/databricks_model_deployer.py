@@ -108,7 +108,6 @@ class DatabricksModelDeployer(BaseModelDeployer):
         """
         # create a new service for the new model
         service = DatabricksDeploymentService(uuid=id, config=config)
-
         logger.info(
             f"Creating an artifact {DATABRICKS_SERVICE_ARTIFACT} with service instance attached as metadata."
             " If there's an active pipeline and/or model this artifact will be associated with it."

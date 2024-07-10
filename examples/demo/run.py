@@ -117,10 +117,22 @@ Examples:
     "finds that the model is not accurate enough.",
 )
 @click.option(
-    "--only-inference",
+    "--inference",
     is_flag=True,
     default=False,
     help="Whether to run only inference pipeline.",
+)
+@click.option(
+    "--training",
+    is_flag=True,
+    default=False,
+    help="Whether to run only training pipeline.",
+)
+@click.option(
+    "--deployment",
+    is_flag=True,
+    default=False,
+    help="Whether to run only deployment pipeline.",
 )
 def main(
     no_cache: bool = False,
@@ -131,7 +143,9 @@ def main(
     min_train_accuracy: float = 0.8,
     min_test_accuracy: float = 0.8,
     fail_on_accuracy_quality_gates: bool = False,
-    only_inference: bool = False,
+    inference: bool = False,
+    training: bool = False,
+    deployment: bool = False,
 ):
     """Main entry point for the pipeline execution.
 
@@ -162,7 +176,7 @@ def main(
     if no_cache:
         pipeline_args["enable_cache"] = False
 
-    if not only_inference:
+    if training:
         # Execute Training Pipeline
         run_args_train = {
             "drop_na": not no_drop_na,
@@ -186,31 +200,33 @@ def main(
         e2e_use_case_training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline finished successfully!")
 
-    # Execute Deployment Pipeline
-    run_args_inference = {}
-    pipeline_args["config_path"] = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "configs",
-        "deployer_config.yaml",
-    )
-    pipeline_args["run_name"] = (
-        f"e2e_use_case_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    )
-    e2e_use_case_deployment.with_options(**pipeline_args)(**run_args_inference)
+    if deployment:
+        # Execute Deployment Pipeline
+        run_args_inference = {}
+        pipeline_args["config_path"] = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "configs",
+            "deployer_config.yaml",
+        )
+        pipeline_args["run_name"] = (
+            f"e2e_use_case_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        )
+        e2e_use_case_deployment.with_options(**pipeline_args)(**run_args_inference)
 
-    # Execute Batch Inference Pipeline
-    run_args_inference = {}
-    pipeline_args["config_path"] = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "configs",
-        "inference_config.yaml",
-    )
-    pipeline_args["run_name"] = (
-        f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    )
-    e2e_use_case_batch_inference.with_options(**pipeline_args)(
-        **run_args_inference
-    )
+    if inference:
+        # Execute Batch Inference Pipeline
+        run_args_inference = {}
+        pipeline_args["config_path"] = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "configs",
+            "inference_config.yaml",
+        )
+        pipeline_args["run_name"] = (
+            f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        )
+        e2e_use_case_batch_inference.with_options(**pipeline_args)(
+            **run_args_inference
+        )
 
 
 if __name__ == "__main__":

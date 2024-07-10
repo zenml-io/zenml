@@ -30,22 +30,16 @@ from zenml.integrations.databricks.services.databricks_deployment import (
     DatabricksDeploymentConfig,
     DatabricksDeploymentService,
 )
-from zenml.integrations.mlflow.services.mlflow_deployment import (
-    MLFlowDeploymentService,
-)
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    mlflow_model_registry_deployer_step,
-)
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-@step
+@step(enable_cache=False)
 def deployment_deploy() -> (
     Annotated[
-        Optional[MLFlowDeploymentService],
-        ArtifactConfig(name="mlflow_deployment", is_deployment_artifact=True),
+        Optional[DatabricksDeploymentService],
+        ArtifactConfig(name="databricks_deployment", is_deployment_artifact=True),
     ]
 ):
     """Predictions step.
@@ -74,7 +68,7 @@ def deployment_deploy() -> (
     model_deployer = zenml_client.active_stack.model_deployer
     databricks_deployment_config = DatabricksDeploymentConfig(
         model_name=model.name,
-        model_version=model.version,
+        model_version=model.run_metadata["model_registry_version"].value,
         workload_size=ServedModelInputWorkloadSize.SMALL,
         workload_type=ServedModelInputWorkloadType.CPU,
         scale_to_zero_enabled=True,
