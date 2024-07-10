@@ -114,6 +114,9 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 
         Returns:
             The validated configuration values.
+
+        Raises:
+            ValueError: If the user account credentials JSON is invalid.
         """
         user_account_json = data.get("user_account_json")
         if isinstance(user_account_json, dict):
@@ -207,6 +210,9 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
 
         Returns:
             The validated configuration values.
+
+        Raises:
+            ValueError: If the service account credentials JSON is invalid.
         """
         service_account_json = data.get("service_account_json")
         if isinstance(service_account_json, dict):
@@ -311,6 +317,9 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
 
         Returns:
             The validated configuration values.
+
+        Raises:
+            ValueError: If the external account credentials JSON is invalid.
         """
         external_account_json = data.get("external_account_json")
         if isinstance(external_account_json, dict):
