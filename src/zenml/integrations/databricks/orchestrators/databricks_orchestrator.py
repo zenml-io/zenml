@@ -16,6 +16,7 @@
 import itertools
 import os
 import re
+from datetime import datetime as dt
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
@@ -463,7 +464,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             "node_type_id": self.settings_class().node_type_id
             or "Standard_D8ads_v5",
             "cluster_name": self.settings_class().cluster_name
-            or DATABRICKS_CLUSTER_DEFAULT_NAME,
+            or f"{DATABRICKS_CLUSTER_DEFAULT_NAME}_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}",
             "policy_id": policy_id,
             "autotermination_minutes": self.settings_class().autotermination_minutes
             or 30,
@@ -492,8 +493,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                         databricks_client.clusters.start_and_wait(
                             existing_cluster.cluster_id
                         )
-                    return existing_cluster
-
         # If no matching cluster found, create a new one
         return databricks_client.clusters.create_and_wait(**cluster_config)
 

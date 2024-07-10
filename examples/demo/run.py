@@ -211,7 +211,9 @@ def main(
         pipeline_args["run_name"] = (
             f"e2e_use_case_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         )
-        e2e_use_case_deployment.with_options(**pipeline_args)(**run_args_inference)
+        e2e_use_case_deployment.with_options(**pipeline_args)(
+            **run_args_inference
+        )
 
     if inference:
         # Execute Batch Inference Pipeline

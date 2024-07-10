@@ -56,8 +56,8 @@ def inference_predict(
     model = get_step_context().model
 
     # get predictor
-    predictor_service: Optional[DatabricksDeploymentService] = model.load_artifact(
-        "databricks_deployment"
+    predictor_service: Optional[DatabricksDeploymentService] = (
+        model.load_artifact("databricks_deployment")
     )
     if predictor_service is not None:
         # run prediction from service

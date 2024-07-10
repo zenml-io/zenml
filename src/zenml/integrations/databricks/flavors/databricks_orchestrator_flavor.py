@@ -54,7 +54,7 @@ class DatabricksOrchestratorSettings(BaseSettings):
     node_type_id: Optional[str] = None
     policy_id: Optional[str] = None
     autotermination_minutes: Optional[int] = None
-    autoscale: Tuple[int, int] = (1, 2)
+    autoscale: Tuple[int, int] = (2, 3)
     single_user_name: Optional[str] = None
     spark_conf: Optional[Dict[str, str]] = None
     spark_env_vars: Optional[Dict[str, str]] = None

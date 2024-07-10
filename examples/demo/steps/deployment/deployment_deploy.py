@@ -39,7 +39,9 @@ logger = get_logger(__name__)
 def deployment_deploy() -> (
     Annotated[
         Optional[DatabricksDeploymentService],
-        ArtifactConfig(name="databricks_deployment", is_deployment_artifact=True),
+        ArtifactConfig(
+            name="databricks_deployment", is_deployment_artifact=True
+        ),
     ]
 ):
     """Predictions step.
