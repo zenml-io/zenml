@@ -27,7 +27,6 @@ from typing import (
     List,
     Optional,
     Set,
-    Tuple,
     Union,
 )
 from uuid import UUID
@@ -2447,7 +2446,7 @@ def _get_stack_component_info(
             generic_types_mapping: List[str],
             generic_docs_link: str,
             k8s_docs_link: str,
-        ) -> List[Tuple[str, str]]:
+        ) -> List[List[str]]:
             available_orchestrators = []
 
             for each in service_connector_resource_models:
