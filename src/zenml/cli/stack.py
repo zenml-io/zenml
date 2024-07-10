@@ -377,6 +377,7 @@ def register_stack(
         if provider:
             labels["zenml:provider"] = provider
         service_connector_resource_model = None
+        generate_temporary_tokens = True
         # create components
         needed_components = (
             (StackComponentType.ARTIFACT_STORE, artifact_store),
@@ -428,6 +429,14 @@ def register_stack(
                                         service_connector, timeout=120
                                     )
                                 )
+                                existing_service_connector_info = (
+                                    client.get_service_connector(
+                                        service_connector
+                                    )
+                                )
+                                generate_temporary_tokens = existing_service_connector_info.configuration.get(
+                                    "generate_temporary_tokens", True
+                                )
                             else:
                                 _, service_connector_resource_model = (
                                     client.create_service_connector(
@@ -439,6 +448,7 @@ def register_stack(
                                         timeout=120,
                                     )
                                 )
+                                generate_temporary_tokens = False
                         if service_connector_resource_model is None:
                             cli_utils.error(
                                 f"Failed to validate service connector {service_connector}..."
@@ -459,6 +469,7 @@ def register_stack(
                         cloud_provider=provider,
                         service_connector_resource_models=service_connector_resource_model.resources,
                         service_connector_index=0,
+                        generate_temporary_tokens=generate_temporary_tokens,
                     )
                     component_name = stack_name
                     created_objects.add(component_type.value)
@@ -474,6 +485,18 @@ def register_stack(
                 artifact_store = component_name
             if component_type == StackComponentType.ORCHESTRATOR:
                 orchestrator = component_name
+                if not isinstance(
+                    component_info, UUID
+                ) and component_info.flavor.startswith("vm"):
+                    if isinstance(
+                        service_connector, ServiceConnectorInfo
+                    ) and service_connector.auth_method in {
+                        "service-account",
+                        "external-account",
+                    }:
+                        service_connector.configuration[
+                            "generate_temporary_tokens"
+                        ] = False
             if component_type == StackComponentType.CONTAINER_REGISTRY:
                 container_registry = component_name
 
@@ -2311,11 +2334,6 @@ def _get_service_connector_info(
                 password="format" in properties[req_field]
                 and properties[req_field]["format"] == "password",
             )
-    if cloud_provider == "gcp" and auth_type in {
-        "service-account",
-        "external-account",
-    }:
-        answers["generate_temporary_tokens"] = False
 
     return ServiceConnectorInfo(
         type=cloud_provider,
@@ -2330,6 +2348,7 @@ def _get_stack_component_info(
     service_connector_resource_models: List[
         ServiceConnectorTypedResourcesModel
     ],
+    generate_temporary_tokens: bool,
     service_connector_index: Optional[int] = None,
 ) -> ComponentInfo:
     """Get a stack component info with given type and service connector.
@@ -2338,6 +2357,7 @@ def _get_stack_component_info(
         component_type: The type of component to create.
         cloud_provider: The cloud provider to use.
         service_connector_resource_models: The list of the available service connector resource models.
+        generate_temporary_tokens: Whether to generate temporary tokens in connector.
         service_connector_index: The index of the service connector to use.
 
     Returns:
@@ -2425,7 +2445,10 @@ def _get_stack_component_info(
             for each in service_connector_resource_models:
                 types = []
                 if each.resource_type == "aws-generic":
-                    types = ["Sagemaker", "Skypilot (EC2)"]
+                    if generate_temporary_tokens:
+                        types = ["Sagemaker"]
+                    else:
+                        types = ["Sagemaker", "Skypilot (EC2)"]
                 if each.resource_type == "kubernetes-cluster":
                     types = ["Kubernetes"]
 
@@ -2450,7 +2473,10 @@ def _get_stack_component_info(
             for each in service_connector_resource_models:
                 types = []
                 if each.resource_type == "gcp-generic":
-                    types = ["Vertex AI", "Skypilot (Compute)"]
+                    if generate_temporary_tokens:
+                        types = ["Vertex AI"]
+                    else:
+                        types = ["Vertex AI", "Skypilot (Compute)"]
                 if each.resource_type == "kubernetes-cluster":
                     types = ["Kubernetes"]
 
