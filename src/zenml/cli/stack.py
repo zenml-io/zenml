@@ -27,6 +27,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 from uuid import UUID
@@ -2262,7 +2263,7 @@ def _get_service_connector_info(
     """
     from rich.prompt import Prompt
 
-    if cloud_provider not in {"aws", "gcp"}:
+    if cloud_provider not in {"aws", "gcp", "azure"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
     client = Client()
@@ -2368,42 +2369,53 @@ def _get_stack_component_info(
     GCP_DOCS = (
         "https://docs.zenml.io/how-to/auth-management/gcp-service-connector"
     )
+    AZURE_DOCS = (
+        "https://docs.zenml.io/how-to/auth-management/azure-service-connector"
+    )
 
     flavor = "undefined"
     service_connector_resource_id = None
     config = {}
     if component_type == "artifact_store":
+
+        def get_available_storages(
+            resource_type_name: str, name_in_error: str, docs_link: str
+        ) -> List[str]:
+            available_storages: List[str] = []
+            for each in service_connector_resource_models:
+                if each.resource_type == resource_type_name:
+                    available_storages = each.resource_ids or []
+            if not available_storages:
+                cli_utils.error(
+                    f"We were unable to find any {name_in_error} available "
+                    "to configured service connector. Please, verify "
+                    "that needed permission are granted for the "
+                    "service connector.\nDocumentation for the "
+                    f"{name_in_error} configuration can be found at "
+                    + docs_link
+                )
+            return available_storages
+
         available_storages: List[str] = []
         if cloud_provider == "aws":
-            for each in service_connector_resource_models:
-                if each.resource_type == "s3-bucket":
-                    available_storages = each.resource_ids or []
             flavor = "s3"
-            if not available_storages:
-                cli_utils.error(
-                    "We were unable to find any S3 buckets available "
-                    "to configured service connector. Please, verify "
-                    "that needed permission are granted for the "
-                    "service connector.\nDocumentation for the S3 "
-                    "Buckets configuration can be found at "
-                    f"{AWS_DOCS}#s3-bucket"
-                )
+            available_storages = get_available_storages(
+                "s3-bucket", "S3 bucket", f"{AWS_DOCS}#s3-bucket"
+            )
         elif cloud_provider == "azure":
             flavor = "azure"
+            available_storages = get_available_storages(
+                "blob-container",
+                "Blob container",
+                f"{AZURE_DOCS}#azure-blob-storage-container",
+            )
         elif cloud_provider == "gcp":
             flavor = "gcp"
-            for each in service_connector_resource_models:
-                if each.resource_type == "gcs-bucket":
-                    available_storages = each.resource_ids or []
-            if not available_storages:
-                cli_utils.error(
-                    "We were unable to find any GCS buckets available "
-                    "to configured service connector. Please, verify "
-                    "that needed permission are granted for the "
-                    "service connector.\nDocumentation for the GCS "
-                    "Buckets configuration can be found at "
-                    f"{GCP_DOCS}#gcs-bucket"
-                )
+            available_storages = get_available_storages(
+                "gcs-bucket",
+                "GCS bucket",
+                f"{GCP_DOCS}#gcs-bucket",
+            )
 
         selected_storage_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} storages",
@@ -2430,12 +2442,18 @@ def _get_stack_component_info(
             )
             return region
 
-        if cloud_provider == "aws":
+        def get_available_orchestrators(
+            generic_name: str,
+            generic_types_mapping: List[str],
+            generic_docs_link: str,
+            k8s_docs_link: str,
+        ) -> List[Tuple[str, str]]:
             available_orchestrators = []
+
             for each in service_connector_resource_models:
                 types = []
-                if each.resource_type == "aws-generic":
-                    types = ["Sagemaker", "Skypilot (EC2)"]
+                if each.resource_type == generic_name:
+                    types = generic_types_mapping
                 if each.resource_type == "kubernetes-cluster":
                     types = ["Kubernetes"]
 
@@ -2449,39 +2467,35 @@ def _get_stack_component_info(
                     "available to the service connector. Please, verify "
                     "that needed permission are granted for the "
                     "service connector.\nDocumentation for the Generic "
-                    "AWS resource configuration can be found at "
-                    f"{AWS_DOCS}#generic-aws-resource\n"
+                    "resource configuration can be found at "
+                    f"{generic_docs_link}\n"
                     "Documentation for the Kubernetes resource "
-                    "configuration can be found at "
-                    f"{AWS_DOCS}#eks-kubernetes-cluster"
+                    "configuration can be found at " + k8s_docs_link
                 )
-        elif cloud_provider == "gcp":
-            available_orchestrators = []
-            for each in service_connector_resource_models:
-                types = []
-                if each.resource_type == "gcp-generic":
-                    types = ["Vertex AI", "Skypilot (Compute)"]
-                if each.resource_type == "kubernetes-cluster":
-                    types = ["Kubernetes"]
 
-                if each.resource_ids:
-                    for orchestrator in each.resource_ids:
-                        for t in types:
-                            available_orchestrators.append([t, orchestrator])
-            if not available_orchestrators:
-                cli_utils.error(
-                    "We were unable to find any orchestrator engines "
-                    "available to the service connector. Please, verify "
-                    "that needed permission are granted for the "
-                    "service connector.\nDocumentation for the Generic "
-                    "GCP resource configuration can be found at "
-                    f"{GCP_DOCS}#generic-gcp-resource\n"
-                    "Documentation for the GKE Kubernetes resource "
-                    "configuration can be found at "
-                    f"{GCP_DOCS}#gke-kubernetes-cluster"
-                )
+            return available_orchestrators
+
+        if cloud_provider == "aws":
+            available_orchestrators = get_available_orchestrators(
+                "aws-generic",
+                ["Sagemaker", "Skypilot (EC2)"],
+                f"{AWS_DOCS}#generic-aws-resource",
+                f"{AWS_DOCS}#eks-kubernetes-cluster",
+            )
+        elif cloud_provider == "gcp":
+            available_orchestrators = get_available_orchestrators(
+                "gcp-generic",
+                ["Vertex AI", "Skypilot (Compute)"],
+                f"{AWS_DOCS}#generic-aws-resource",
+                f"{AWS_DOCS}#eks-kubernetes-cluster",
+            )
         elif cloud_provider == "azure":
-            pass
+            available_orchestrators = get_available_orchestrators(
+                "azure-generic",
+                ["Skypilot (VM)"],
+                f"{AZURE_DOCS}#generic-azure-resource",
+                f"{AZURE_DOCS}#aks-kubernetes-cluster",
+            )
 
         selected_orchestrator_idx = cli_utils.multi_choice_prompt(
             object_type=f"orchestrators on {cloud_provider.upper()}",
@@ -2507,6 +2521,8 @@ def _get_stack_component_info(
         elif selected_orchestrator[0] == "Skypilot (Compute)":
             flavor = "vm_gcp"
             config["region"] = query_gcp_region()
+        elif selected_orchestrator[0] == "Skypilot (VM)":
+            flavor = "vm_azure"
         elif selected_orchestrator[0] == "Vertex AI":
             flavor = "vertex"
             config["location"] = query_gcp_region()
@@ -2547,6 +2563,9 @@ def _get_stack_component_info(
             )
         if cloud_provider == "azure":
             flavor = "azure"
+            available_registries = _get_registries(
+                "ACR", f"{AZURE_DOCS}#acr-container-registry"
+            )
 
         selected_registry_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} registries",
