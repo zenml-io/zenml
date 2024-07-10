@@ -98,7 +98,6 @@ from zenml.utils.mlstacks_utils import (
     verify_spec_and_tf_files_exist,
 )
 from zenml.utils.yaml_utils import read_yaml, write_yaml
-from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
     from zenml.models import StackResponse
@@ -426,16 +425,10 @@ def register_stack(
                             if isinstance(service_connector, UUID):
                                 service_connector_resource_model = (
                                     client.verify_service_connector(
-                                        service_connector
+                                        service_connector, timeout=120
                                     )
                                 )
                             else:
-                                default_http_timeout = 30
-                                if isinstance(client.zen_store, RestZenStore):
-                                    default_http_timeout = (
-                                        client.zen_store.config.http_timeout
-                                    )
-                                    client.zen_store.config.http_timeout = 120
                                 _, service_connector_resource_model = (
                                     client.create_service_connector(
                                         name=stack_name,
@@ -443,12 +436,9 @@ def register_stack(
                                         auth_method=service_connector.auth_method,
                                         configuration=service_connector.configuration,
                                         register=False,
+                                        timeout=120,
                                     )
                                 )
-                                if isinstance(client.zen_store, RestZenStore):
-                                    client.zen_store.config.http_timeout = (
-                                        default_http_timeout
-                                    )
                         if service_connector_resource_model is None:
                             cli_utils.error(
                                 f"Failed to validate service connector {service_connector}..."

@@ -86,6 +86,7 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    DEFAULT_HTTP_TIMEOUT,
     DEFAULT_PASSWORD,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
@@ -6644,6 +6645,7 @@ class SqlZenStore(BaseZenStore):
         self,
         service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
+        timeout: int = DEFAULT_HTTP_TIMEOUT,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
 
@@ -6651,6 +6653,7 @@ class SqlZenStore(BaseZenStore):
             service_connector: The service connector configuration to verify.
             list_resources: If True, the list of all resources accessible
                 through the service connector is returned.
+            timeout: not used.
 
         Returns:
             The list of resources that the service connector configuration has
@@ -6667,6 +6670,7 @@ class SqlZenStore(BaseZenStore):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         list_resources: bool = True,
+        timeout: int = DEFAULT_HTTP_TIMEOUT,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
 
@@ -6677,6 +6681,7 @@ class SqlZenStore(BaseZenStore):
             list_resources: If True, the list of all resources accessible
                 through the service connector and matching the supplied resource
                 type and ID are returned.
+            timeout: not used
 
         Returns:
             The list of resources that the service connector has access to,

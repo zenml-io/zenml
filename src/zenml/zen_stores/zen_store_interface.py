@@ -19,6 +19,7 @@ from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.constants import DEFAULT_HTTP_TIMEOUT
 from zenml.enums import StackDeploymentProvider
 from zenml.models import (
     ActionFilter,
@@ -2029,6 +2030,7 @@ class ZenStoreInterface(ABC):
         self,
         service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
+        timeout: int = DEFAULT_HTTP_TIMEOUT,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
 
@@ -2036,6 +2038,7 @@ class ZenStoreInterface(ABC):
             service_connector: The service connector configuration to verify.
             list_resources: If True, the list of all resources accessible
                 through the service connector is returned.
+            timeout: The timeout in seconds for the HTTP request.
 
         Returns:
             The list of resources that the service connector configuration has
@@ -2053,6 +2056,7 @@ class ZenStoreInterface(ABC):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         list_resources: bool = True,
+        timeout: int = DEFAULT_HTTP_TIMEOUT,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
 
@@ -2063,6 +2067,7 @@ class ZenStoreInterface(ABC):
             list_resources: If True, the list of all resources accessible
                 through the service connector and matching the supplied resource
                 type and ID are returned.
+            timeout: The timeout in seconds for the HTTP request.
 
         Returns:
             The list of resources that the service connector has access to,
