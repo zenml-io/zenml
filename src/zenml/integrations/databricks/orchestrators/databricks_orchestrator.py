@@ -371,7 +371,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         fileio.rmtree(repository_temp_dir)
 
         logger.info(
-            "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
+            "Writing Databricks workflow definition to `%s`.", pipeline_file_path
         )
 
         # using the databricks client uploads the pipeline to databricks
