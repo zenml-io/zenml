@@ -20,10 +20,6 @@ In order to use the ZenML Google Cloud image builder you need to enable Google C
 
 ### How to use it
 
-{% hint style="warning" %}
-The GCP image builder (and GCP integration in general) currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
-{% endhint %}
-
 To use the Google Cloud image builder, we need:
 
 *   The ZenML `gcp` integration installed. If you haven't done so, run:

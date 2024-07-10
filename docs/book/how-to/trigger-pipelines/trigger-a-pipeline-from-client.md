@@ -26,7 +26,7 @@ if __name__ == "__main__":
 The pipeline that you're triggering (i.e. `training_pipeline` in the above example) has to have been run previously on a remote stack. In other words, the functionality to trigger a pipeline from another only works when a Docker image has previously been built for that pipeline. In most cases this will be because you ran the pipeline already, but in some cases you might have built the image separately.
 {% endhint %}
 
-Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) object in the [SDK Docs](https://sdkdocs.zenml.io/).
+Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) and [`trigger_pipeline`](https://sdkdocs.zenml.io/0.60.0/core_code_docs/core-client/#zenml.client.Client) in the [SDK Docs](https://sdkdocs.zenml.io/).
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Learn how to run a pipeline directly from another</td><td></td><td></td><td><a href="trigger-a-pipeline-from-another.md">orchestrators.md</a></td></tr><tr><td>Learn how to run a pipeline from the REST API</td><td></td><td></td><td><a href="trigger-a-pipeline-from-rest-api.md">orchestrators.md</a></td></tr></tbody></table>
 

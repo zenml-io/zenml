@@ -22,6 +22,13 @@ You should use the Vertex orchestrator if:
 
 ## How to deploy it
 
+{% hint style="info" %}
+Don't want to deploy the orchestrator manually? Check out the
+[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/README.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
 
 The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex-relevant APIs on the Google Cloud project.
@@ -29,10 +36,6 @@ The only other thing necessary to use the ZenML Vertex orchestrator is enabling 
 In order to quickly enable APIs, and create other resources necessary for using this integration, you can also consider using [mlstacks](https://mlstacks.zenml.io/vertex), which helps you set up the infrastructure with one click.
 
 ## How to use it
-
-{% hint style="warning" %}
-The Vertex Orchestrator (and GCP integration in general) currently only works for Python versions <3.11. The ZenML team is aware of this dependency clash/issue and is working on a fix. For now, please use Python <3.11 together with the GCP integration.
-{% endhint %}
 
 To use the Vertex orchestrator, we need:
 

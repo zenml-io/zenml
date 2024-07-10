@@ -31,6 +31,7 @@ class DiscordIntegration(Integration):
 
     NAME = DISCORD
     REQUIREMENTS = ["discord.py>=2.3.2", "aiohttp>=3.8.1", "asyncio"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["aiohttp","asyncio"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
