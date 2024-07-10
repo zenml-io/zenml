@@ -19,15 +19,13 @@
 settings:
   docker:
     required_integrations:
+      - aws
       - evidently
       - kubeflow
       - kubernetes
       - mlflow
       - sklearn
-      - databricks
-  orchestrator.databricks:
-    cluster_name: e2e_use_case
-    node_type_id: Standard_D8ads_v5
+      - slack
 
 # configuration of steps  
 steps:
