@@ -175,21 +175,21 @@ jobs:
           # Unlink and re-link to prevent errors when github mac runner images
           # https://github.com/actions/setup-python/issues/577
           brew list -1 | grep python | while read formula; do brew unlink $formula; brew link --overwrite $formula; done
-      - name: Install Docker and Colima on MacOS
-        if: runner.os=='macOS'
-        run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew install docker colima
-          brew reinstall --force qemu
+      # - name: Install Docker and Colima on MacOS
+      #   if: runner.os=='macOS'
+      #   run: |
+      #     export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+      #     brew update
+      #     brew install docker colima
+      #     brew reinstall --force qemu
 
-          # We need to mount the /private/tmp/zenml-test/ folder because
-          # this folder is also mounted in the Docker containers that are
-          # started by local ZenML orchestrators.
-          colima start --mount /private/tmp/zenml-test/:w
+      #     # We need to mount the /private/tmp/zenml-test/ folder because
+      #     # this folder is also mounted in the Docker containers that are
+      #     # started by local ZenML orchestrators.
+      #     colima start --mount /private/tmp/zenml-test/:w
 
-          # This is required for the Docker Python SDK to work
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+      #     # This is required for the Docker Python SDK to work
+      #     sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Install kubectl on Linux
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
