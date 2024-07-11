@@ -2,7 +2,8 @@
 
 ```bash
 # install zenml
-zenml integration install gcp feast -y --uv
+zenml integration install feast -y --uv
+zenml feature-store update ...
 zenml stack set feast
 
 cd examples/feast_feature_store
