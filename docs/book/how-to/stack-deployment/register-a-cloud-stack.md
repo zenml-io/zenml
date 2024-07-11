@@ -33,21 +33,21 @@ In order to register a remote stack over the CLI with the stack wizard,
 you can use the following command:
 
 ```shell
-zenml stack register <STACK_NAME> -p aws
+zenml stack register <STACK_NAME> -p {aws|gcp}
 ```
 
 To register the cloud stack, the first thing that the wizard needs is a service 
-connector. You can either use an existing connector by providing its ID 
-`-c <CONNECTOR_ID>` or the wizard will create one for you.
+connector. You can either use an existing connector by providing its ID or name 
+`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` or the wizard will create one for you.
 
 Similar to the service connector, you can also use existing stack components.
-However, this is only possible if these component are already configured with 
+However, this is only possible if these components are already configured with 
 the same service connector that you provided through the parameter 
 described above.
 
 {% hint style="warning" %}
-Currently, the stack wizard only works on AWS. We are working on bringing 
-support to GCP and Azure as well. Stay in touch for further updates.
+Currently, the stack wizard only works on AWS and GCP. We are working on bringing 
+support to Azure as well. Stay in touch for further updates.
 {% endhint %}
 
 ### AWS
@@ -108,6 +108,67 @@ you as follows:
 ├────────┼─────────────────────────────────────────────────────────────┤
 │ [1]    │ s3://**************                                         │
 └────────┴─────────────────────────────────────────────────────────────┘
+```
+{% endcode %}
+
+### GCP
+
+If you select `gcp` as your cloud provider, and you haven't selected a connector
+yet, you will be prompted to select an authentication method for your stack.
+
+{% code title="Example Command Output" %}
+```
+                    Available authentication methods for gcp                                                                                           
+┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice ┃ Name                 ┃ Required                                          ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]    │ GCP User Account     │ user_account_json  (GCP User Account Credentials  │
+│        │                      │       JSON optionally base64 encoded.)            │
+│        │                      │ project_id  (GCP Project ID where the target      │
+│        │                      │       resource is located.)                       │
+│        │                      │                                                   │
+├────────┼──────────────────────┼───────────────────────────────────────────────────┤
+│ [1]    │ GCP Service Account  │ service_account_json  (GCP Service Account Key    │
+│        │                      │       JSON optionally base64 encoded.)            │
+│        │                      │                                                   │
+├────────┼──────────────────────┼───────────────────────────────────────────────────┤
+│ [2]    │ GCP External Account │ external_account_json  (GCP External Account      │
+│        │                      │       JSON optionally base64 encoded.)            │
+│        │                      │ project_id  (GCP Project ID where the target      │
+│        │                      │       resource is located.)                       │ 
+│        │                      │                                                   │
+├────────┼──────────────────────┼───────────────────────────────────────────────────┤
+│ [3]    │ GCP Oauth 2.0 Token  │ token  (GCP OAuth 2.0 Token)                      │
+│        │                      │ project_id  (GCP Project ID where the target      │
+│        │                      │       resource is located.)                       │
+│        │                      │                                                   │
+├────────┼──────────────────────┼───────────────────────────────────────────────────┤
+│ [4]    │ GCP Service Account  │ service_account_json  (GCP Service Account Key    │
+│        │                      │       JSON optionally base64 encoded.)            │
+│        │ Impersonation        │ target_principal  (GCP Service Account Email to   │
+│        │                      │       impersonate)                                │
+│        │                      │                                                   │
+└────────┴──────────────────────┴───────────────────────────────────────────────────┘
+```
+{% endcode %}
+
+Based on your selection, you will have to provide the required parameters listed 
+above. This will allow ZenML to create a Service Connector and 
+authenticate you to use your cloud resources.
+
+Next, for each missing component, the available resources will be listed to 
+you as follows:
+
+{% code title="Example Command Output for Artifact Stores" %}
+```
+        Available GCP storages                                                                                                   
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice  ┃ Storage               ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]     │ gs://**************   │
+├─────────┼───────────────────────┤
+│ [1]     │ gs://**************   │
+└─────────┴───────────────────────┘
 ```
 {% endcode %}
 
