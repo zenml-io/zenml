@@ -50,7 +50,13 @@ Currently, the stack wizard only works on AWS and GCP. We are working on bringin
 support to Azure as well. Stay in touch for further updates.
 {% endhint %}
 
-### AWS
+### Define Service Connector
+
+Below you will find cloud-specific selection options. Based on your selection, you will have to provide the required parameters listed 
+below. This will allow ZenML to create a Service Connector and 
+authenticate you to use your cloud resources.
+
+#### AWS
 
 If you select `aws` as your cloud provider, and you haven't selected a connector
 yet, you will be prompted to select an authentication method for your stack.
@@ -102,27 +108,7 @@ yet, you will be prompted to select an authentication method for your stack.
 ```
 {% endcode %}
 
-Based on your selection, you will have to provide the required parameters listed 
-above. This will allow ZenML to create a Service Connector and 
-authenticate you to use your cloud resources.
-
-Next, for each missing component, the available resources will be listed to 
-you as follows:
-
-{% code title="Example Command Output for Artifact Stores" %}
-```
-                           Available AWS storages                            
-┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Choice        ┃ Storage                                                   ┃
-┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ [0]           │ s3://***************************                          │
-├───────────────┼───────────────────────────────────────────────────────────┤
-│ [1]           │ s3://***************************                          │
-└───────────────┴───────────────────────────────────────────────────────────┘
-```
-{% endcode %}
-
-### GCP
+#### GCP
 
 If you select `gcp` as your cloud provider, and you haven't selected a connector
 yet, you will be prompted to select an authentication method for your stack.
@@ -170,9 +156,7 @@ yet, you will be prompted to select an authentication method for your stack.
 ```
 {% endcode %}
 
-Based on your selection, you will have to provide the required parameters listed 
-above. This will allow ZenML to create a Service Connector and 
-authenticate you to use your cloud resources.
+### Defining cloud components
 
 Next, for each missing component, the available resources will be listed to 
 you as follows:
@@ -189,6 +173,8 @@ you as follows:
 └───────────────┴───────────────────────────────────────────────────────────┘
 ```
 {% endcode %}
+
+### Final steps
 
 Based on your selection, ZenML will create the stack component and ultimately 
 register the stack for you.
