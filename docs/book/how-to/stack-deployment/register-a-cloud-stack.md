@@ -57,37 +57,48 @@ yet, you will be prompted to select an authentication method for your stack.
 
 {% code title="Example Command Output" %}
 ```
-                    Available authentication methods for aws
-┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Choice ┃ Name                 ┃ Required                                       ┃
-┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ [0]    │ AWS Secret Key       │ aws_access_key_id  (AWS Access Key ID)         │
-│        │                      │ aws_secret_access_key  (AWS Secret Access Key) │
-│        │                      │ region  (AWS Region)                           │
-│        │                      │                                                │
-├────────┼──────────────────────┼────────────────────────────────────────────────┤
-│ [1]    │ AWS STS Token        │ aws_access_key_id  (AWS Access Key ID)         │
-│        │                      │ aws_secret_access_key  (AWS Secret Access Key) │
-│        │                      │ aws_session_token  (AWS Session Token)         │
-│        │                      │ region  (AWS Region)                           │
-│        │                      │                                                │
-├────────┼──────────────────────┼────────────────────────────────────────────────┤
-│ [2]    │ AWS IAM Role         │ aws_access_key_id  (AWS Access Key ID)         │
-│        │                      │ aws_secret_access_key  (AWS Secret Access Key) │
-│        │                      │ region  (AWS Region)                           │
-│        │                      │ role_arn  (AWS IAM Role ARN)                   │
-│        │                      │                                                │
-├────────┼──────────────────────┼────────────────────────────────────────────────┤
-│ [3]    │ AWS Session Token    │ aws_access_key_id  (AWS Access Key ID)         │
-│        │                      │ aws_secret_access_key  (AWS Secret Access Key) │
-│        │                      │ region  (AWS Region)                           │
-│        │                      │                                                │
-├────────┼──────────────────────┼────────────────────────────────────────────────┤
-│ [4]    │ AWS Federation Token │ aws_access_key_id  (AWS Access Key ID)         │
-│        │                      │ aws_secret_access_key  (AWS Secret Access Key) │
-│        │                      │ region  (AWS Region)                           │
-│        │                      │                                                │
-└────────┴──────────────────────┴────────────────────────────────────────────────┘
+                  Available authentication methods for aws                   
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice  ┃ Name                           ┃ Required                       ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]     │ AWS Secret Key                 │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ region  (AWS Region)           │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [1]     │ AWS STS Token                  │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ aws_session_token  (AWS        │
+│         │                                │ Session Token)                 │
+│         │                                │ region  (AWS Region)           │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [2]     │ AWS IAM Role                   │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ region  (AWS Region)           │
+│         │                                │ role_arn  (AWS IAM Role ARN)   │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [3]     │ AWS Session Token              │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ region  (AWS Region)           │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [4]     │ AWS Federation Token           │ aws_access_key_id  (AWS Access │
+│         │                                │ Key ID)                        │
+│         │                                │ aws_secret_access_key  (AWS    │
+│         │                                │ Secret Access Key)             │
+│         │                                │ region  (AWS Region)           │
+│         │                                │                                │
+└─────────┴────────────────────────────────┴────────────────────────────────┘
 ```
 {% endcode %}
 
@@ -100,14 +111,14 @@ you as follows:
 
 {% code title="Example Command Output for Artifact Stores" %}
 ```
-                       Available AWS storages
-┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Choice ┃ Storage                                                     ┃
-┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ [0]    │ s3://**************                                         │
-├────────┼─────────────────────────────────────────────────────────────┤
-│ [1]    │ s3://**************                                         │
-└────────┴─────────────────────────────────────────────────────────────┘
+                           Available AWS storages                            
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice        ┃ Storage                                                   ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]           │ s3://***************************                          │
+├───────────────┼───────────────────────────────────────────────────────────┤
+│ [1]           │ s3://***************************                          │
+└───────────────┴───────────────────────────────────────────────────────────┘
 ```
 {% endcode %}
 
@@ -118,44 +129,44 @@ yet, you will be prompted to select an authentication method for your stack.
 
 {% code title="Example Command Output" %}
 ```
-            Available authentication methods for gcp
-┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Choice  ┃ Name                 ┃ Required                       ┃
-┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ [0]     │ GCP User Account     │ *user_account_json*  (GCP User   │
-│         │                      │ Account Credentials JSON       │
-│         │                      │ optionally base64 encoded.)    │
-│         │                      │ *project_id*  (GCP Project ID    │
-│         │                      │ where the target resource is   │
-│         │                      │ located.)                      │
-│         │                      │                                │
-├─────────┼──────────────────────┼────────────────────────────────┤
-│ [1]     │ GCP Service Account  │ *service_account_json*  (GCP     │
-│         │                      │ Service Account Key JSON       │
-│         │                      │ optionally base64 encoded.)    │
-│         │                      │                                │
-├─────────┼──────────────────────┼────────────────────────────────┤
-│ [2]     │ GCP External Account │ *external_account_json*  (GCP    │
-│         │                      │ External Account JSON          │
-│         │                      │ optionally base64 encoded.)    │
-│         │                      │ *project_id*  (GCP Project ID    │
-│         │                      │ where the target resource is   │
-│         │                      │ located.)                      │
-│         │                      │                                │
-├─────────┼──────────────────────┼────────────────────────────────┤
-│ [3]     │ GCP Oauth 2.0 Token  │ *token*  (GCP OAuth 2.0 Token)   │
-│         │                      │ *project_id*  (GCP Project ID    │
-│         │                      │ where the target resource is   │
-│         │                      │ located.)                      │
-│         │                      │                                │
-├─────────┼──────────────────────┼────────────────────────────────┤
-│ [4]     │ GCP Service Account  │ *service_account_json*  (GCP     │
-│         │ Impersonation        │ Service Account Key JSON       │
-│         │                      │ optionally base64 encoded.)    │
-│         │                      │ *target_principal*  (GCP Service │
-│         │                      │ Account Email to impersonate)  │
-│         │                      │                                │
-└─────────┴──────────────────────┴────────────────────────────────┘
+                  Available authentication methods for gcp                   
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice  ┃ Name                           ┃ Required                       ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]     │ GCP User Account               │ user_account_json  (GCP User   │
+│         │                                │ Account Credentials JSON       │
+│         │                                │ optionally base64 encoded.)    │
+│         │                                │ project_id  (GCP Project ID    │
+│         │                                │ where the target resource is   │
+│         │                                │ located.)                      │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [1]     │ GCP Service Account            │ service_account_json  (GCP     │
+│         │                                │ Service Account Key JSON       │
+│         │                                │ optionally base64 encoded.)    │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [2]     │ GCP External Account           │ external_account_json  (GCP    │
+│         │                                │ External Account JSON          │
+│         │                                │ optionally base64 encoded.)    │
+│         │                                │ project_id  (GCP Project ID    │
+│         │                                │ where the target resource is   │
+│         │                                │ located.)                      │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [3]     │ GCP Oauth 2.0 Token            │ token  (GCP OAuth 2.0 Token)   │
+│         │                                │ project_id  (GCP Project ID    │
+│         │                                │ where the target resource is   │
+│         │                                │ located.)                      │
+│         │                                │                                │
+├─────────┼────────────────────────────────┼────────────────────────────────┤
+│ [4]     │ GCP Service Account            │ service_account_json  (GCP     │
+│         │ Impersonation                  │ Service Account Key JSON       │
+│         │                                │ optionally base64 encoded.)    │
+│         │                                │ target_principal  (GCP Service │
+│         │                                │ Account Email to impersonate)  │
+│         │                                │                                │
+└─────────┴────────────────────────────────┴────────────────────────────────┘
 ```
 {% endcode %}
 
@@ -168,14 +179,14 @@ you as follows:
 
 {% code title="Example Command Output for Artifact Stores" %}
 ```
-        Available GCP storages
-┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Choice  ┃ Storage               ┃
-┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━┩
-│ [0]     │ gs://**************   │
-├─────────┼───────────────────────┤
-│ [1]     │ gs://**************   │
-└─────────┴───────────────────────┘
+                           Available GCP storages                            
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice        ┃ Storage                                                   ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]           │ gs://***************************                          │
+├───────────────┼───────────────────────────────────────────────────────────┤
+│ [1]           │ gs://***************************                          │
+└───────────────┴───────────────────────────────────────────────────────────┘
 ```
 {% endcode %}
 
