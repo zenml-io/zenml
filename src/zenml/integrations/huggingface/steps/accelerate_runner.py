@@ -112,7 +112,7 @@ def run_with_accelerate(
                         if v:
                             commands.append(f"--{k}")
                     elif isinstance(v, str):
-                        commands += [f"--{k}", '"{v}"']
+                        commands += [f"--{k}", f'"{v}"']
                     elif type(v) in (list, tuple, set):
                         for each in v:
                             commands.append(f"--{k}")
