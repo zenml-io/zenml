@@ -96,7 +96,7 @@ jobs:
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
     # TODO: add Windows testing for Python 3.11 back in
     # TODO: add macos testing back in
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') }} && (inputs.os == 'macos-13' || inputs.os == 'macos-latest')
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') }} && ! (inputs.os == 'macos-13' || inputs.os == 'macos-latest')
     defaults:
       run:
         shell: bash
