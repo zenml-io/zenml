@@ -288,6 +288,19 @@ def register_stack(
 
     client = Client()
 
+    if provider is not None or connector is not None:
+        if client.zen_store.is_local_store():
+            cli_utils.error(
+                "You are registering a stack using a service connector, but "
+                "this feature cannot be used with a local ZenML deployment. "
+                "ZenML needs to be accessible from the cloud provider to allow the "
+                "stack and its components to be registered automatically. "
+                "Please deploy ZenML in a remote environment as described in the "
+                "documentation: https://docs.zenml.io/getting-started/deploying-zenml "
+                "or use a managed ZenML Pro server instance for quick access to "
+                "this feature and more: https://www.zenml.io/pro"
+            )
+
     try:
         client.get_stack(
             name_id_or_prefix=stack_name,
