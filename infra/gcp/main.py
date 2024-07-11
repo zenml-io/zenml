@@ -39,8 +39,6 @@ def run_script(request: Request) -> Tuple[Any, int]:
             secret_key = secret_key.replace("ZENML_STACK_SECRET_", "")
             payload = payload.replace(f"${secret_key}", secret_value)
 
-    print(f"Received payload: {payload}")
-
     try:
         url = (
             os.environ["ZENML_SERVER_URL"].lstrip("/")

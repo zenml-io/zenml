@@ -35,6 +35,24 @@ fi
 
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 
+echo
+echo "##################################################"
+echo "Checking region for availability..."
+echo "##################################################"
+echo
+# Fetch the list of regions where Cloud Functions are available
+regions=$(gcloud functions regions list --no-gen2 | cut -d'/' -f4 | sort -u | tr '\n' ' ')
+# The configured region must be one of them
+if [[ ! $regions =~ $ZENML_STACK_REGION ]]; then
+    echo "ERROR: The configured region '$ZENML_STACK_REGION' cannot be used "
+    echo "because Cloud Functions gen-1 are not available in this region."
+    echo "Please choose a region from the list of available regions:"
+    echo
+    echo "$regions"
+    echo
+    exit 1
+fi
+
 # Enable the necessary services
 #
 # The following services must be enabled in your GCP project:
