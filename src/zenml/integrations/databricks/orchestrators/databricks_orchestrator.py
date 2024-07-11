@@ -366,9 +366,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         )
 
         # using the databricks client uploads the pipeline to databricks
-        job_cluster_key = self.sanitize_name(
-            f"{DATABRICKS_CLUSTER_DEFAULT_NAME}_{deployment_id}"
-        )
+        job_cluster_key = self.sanitize_name(f"{deployment_id}")
         self._upload_and_run_pipeline(
             pipeline_name=orchestrator_run_name,
             tasks=_construct_databricks_pipeline(
@@ -433,7 +431,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         )
         job_parameter = JobParameterDefinition(
             name="job_id",
-            default="{{job_id}}",
+            default="{{job.id}}",
         )
         job = databricks_client.jobs.create(
             name=pipeline_name,
