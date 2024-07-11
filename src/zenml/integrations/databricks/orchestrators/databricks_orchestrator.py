@@ -36,6 +36,7 @@ from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import
     DatabricksOrchestratorSettings,
 )
 from zenml.integrations.databricks.orchestrators.databricks_orchestrator_entrypoint_config import (
+    ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID,
     DatabricksEntrypointConfiguration,
 )
 from zenml.integrations.databricks.utils.databricks_utils import (
@@ -60,14 +61,12 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID = (
-    "ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID"
-)
 ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
 DATABRICKS_WHEELS_DIRECTORY_PREFIX = "dbfs:/FileStore/zenml"
 DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
 DATABRICKS_CLUSTER_DEFAULT_NAME = "zenml-databricks-cluster"
 DATABRICKS_SPARK_DEFAULT_VERSION = "15.3.x-scala2.12"
+DATABRICKS_JOB_ID_PARAMETER_REFERENCE = "{{job.id}}"
 
 
 class DatabricksOrchestrator(WheeledOrchestrator):
@@ -157,8 +156,17 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         Returns:
             The orchestrator run id.
+
+        Raises:
+            RuntimeError: If the run id cannot be read from the environment.
         """
-        return os.getenv(ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID) or ""
+        try:
+            return os.environ[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID}."
+            )
 
     @property
     def root_directory(self) -> str:
@@ -242,14 +250,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         # Get deployment id
         deployment_id = deployment.id
 
-        # Set environment
-        os.environ[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = str(
-            deployment_id
-        )
-        environment[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = str(
-            deployment_id
-        )
-
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_databricks_pipeline(
             zenml_project_wheel: str, job_cluster_key: str
@@ -266,12 +266,11 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             for step_name, step in deployment.step_configurations.items():
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
-                arguments = (
-                    DatabricksEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
-                        deployment_id=deployment_id,
-                        wheel_package=self.package_name,
-                    )
+                arguments = DatabricksEntrypointConfiguration.get_entrypoint_arguments(
+                    step_name=step_name,
+                    deployment_id=deployment_id,
+                    wheel_package=self.package_name,
+                    databricks_job_id=DATABRICKS_JOB_ID_PARAMETER_REFERENCE,
                 )
 
                 # Find the upstream container ops of the current step and
@@ -355,8 +354,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         if spark_env_vars:
             for key, value in spark_env_vars.items():
                 env_vars[key] = value
-
-        env_vars[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = str(deployment_id)
 
         fileio.rmtree(repository_temp_dir)
 
@@ -453,10 +450,8 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        databricks_client = self._get_databricks_client()
         run_url = (
-            f"{self.config.host}/jobs/"
-            f"{databricks_client.dbutils.widgets.get('job_id')}"
+            f"{self.config.host}/jobs/" f"{self.get_orchestrator_run_id()}"
         )
         return {
             METADATA_ORCHESTRATOR_URL: Uri(run_url),

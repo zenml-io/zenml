@@ -24,6 +24,10 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 
 WHEEL_PACKAGE_OPTION = "wheel_package"
+DATABRICKS_JOB_ID_OPTION = "job_id"
+ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID = (
+    "ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID"
+)
 
 
 class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
@@ -41,7 +45,11 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
         Returns:
             The superclass options as well as an option for the wheel package.
         """
-        return super().get_entrypoint_options() | {WHEEL_PACKAGE_OPTION}
+        return (
+            super().get_entrypoint_options()
+            | {WHEEL_PACKAGE_OPTION}
+            | {DATABRICKS_JOB_ID_OPTION}
+        )
 
     @classmethod
     def get_entrypoint_arguments(
@@ -65,6 +73,8 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
         return super().get_entrypoint_arguments(**kwargs) + [
             f"--{WHEEL_PACKAGE_OPTION}",
             kwargs[WHEEL_PACKAGE_OPTION],
+            f"--{DATABRICKS_JOB_ID_OPTION}",
+            kwargs[DATABRICKS_JOB_ID_OPTION],
         ]
 
     def run(self) -> None:
@@ -76,6 +86,12 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
             sys.path.insert(-1, project_root)
+
+        # Get the job id and add it to the environment
+        databricks_job_id = self.entrypoint_args[DATABRICKS_JOB_ID_OPTION]
+        os.environ[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = (
+            databricks_job_id
+        )
 
         # Run the step
         super().run()
