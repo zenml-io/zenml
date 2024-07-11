@@ -24,7 +24,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 
 WHEEL_PACKAGE_OPTION = "wheel_package"
-DATABRICKS_JOB_ID_OPTION = "job_id"
+DATABRICKS_JOB_ID_OPTION = "databricks_job_id"
 ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID = (
     "ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID"
 )
