@@ -459,7 +459,6 @@ def register_stack(
                                         auth_method=service_connector.auth_method,
                                         configuration=service_connector.configuration,
                                         register=False,
-                                        timeout=120,
                                     )
                                 )
                                 can_generate_long_tokens = True

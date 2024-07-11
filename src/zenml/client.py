@@ -46,7 +46,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
-    DEFAULT_HTTP_TIMEOUT,
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -4975,7 +4974,6 @@ class Client(metaclass=ClientMetaClass):
         verify: bool = True,
         list_resources: bool = True,
         register: bool = True,
-        timeout: int = DEFAULT_HTTP_TIMEOUT,
     ) -> Tuple[
         Optional[
             Union[
@@ -5008,7 +5006,6 @@ class Client(metaclass=ClientMetaClass):
             list_resources: Whether to also list the resources that the service
                 connector can give access to (if verify is True).
             register: Whether to register the service connector or not.
-            timeout: The timeout in seconds for the HTTP request.
 
         Returns:
             The model of the registered service connector and the resources
