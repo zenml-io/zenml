@@ -316,7 +316,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
         )
-        breakpoint()
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
@@ -352,8 +351,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         # Construct the env variables for the pipeline
         env_vars = environment.copy()
-        if self.settings_class().spark_env_vars:
-            for key, value in self.settings_class().spark_env_vars:
+        spark_env_vars = self.settings_class().spark_env_vars
+        if spark_env_vars:
+            for key, value in spark_env_vars.items():
                 env_vars[key] = value
 
         env_vars[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = str(deployment_id)

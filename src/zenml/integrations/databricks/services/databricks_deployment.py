@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Databricks Deployment service."""
 
+import time
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
 
 import numpy as np
@@ -355,7 +356,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
 
-        Returns:
+        Yields:
             A generator that can be accessed to get the service logs.
         """
         logger.info(
@@ -363,42 +364,32 @@ class DatabricksDeploymentService(BaseDeploymentService):
         )
 
         def log_generator() -> Generator[str, bool, None]:
-            logs = self.databricks_client.serving_endpoints.logs(
-                name=self._generate_an_endpoint_name(),
-                served_model_name=self.config.model_name,
-            )
+            last_log_count = 0
+            while True:
+                logs = self.databricks_client.serving_endpoints.logs(
+                    name=self._generate_an_endpoint_name(),
+                    served_model_name=self.config.model_name,
+                )
 
-            # Split the logs into lines
-            log_lines = logs.logs.split("\n")
+                log_lines = logs.logs.split("\n")
 
-            # Apply tail if specified
-            if tail is not None:
-                log_lines = log_lines[-tail:]
+                # Apply tail if specified and it's the first iteration
+                if tail is not None and last_log_count == 0:
+                    log_lines = log_lines[-tail:]
 
-            for line in log_lines:
-                yield line
+                # Yield only new lines
+                for line in log_lines[last_log_count:]:
+                    yield line
 
-            # If follow is True, continuously check for new logs
-            if follow:
-                while True:
-                    new_logs = self.databricks_client.serving_endpoints.logs(
-                        name=self._generate_an_endpoint_name(),
-                        served_model_name=self.config.model_name,
-                    )
-                    new_lines = new_logs.logs.split("\n")
+                last_log_count = len(log_lines)
 
-                    # Only yield new lines
-                    for line in new_lines[len(log_lines) :]:
-                        yield line
+                if not follow:
+                    break
 
-                    log_lines = new_lines
+                # Add a small delay to avoid excessive API calls
+                time.sleep(1)
 
-                    # Check if we should continue
-                    should_continue = yield
-                    if not should_continue:
-                        break
-
-        return log_generator()
+        yield from log_generator()
 
     def _generate_an_endpoint_name(self) -> str:
         """Generate a unique name for the Databricks Inference Endpoint.
