@@ -35,7 +35,6 @@ class DatabricksOrchestratorSettings(BaseSettings):
     """Databricks orchestrator base settings.
 
     Attributes:
-        cluster_name: Databricks cluster name.
         spark_version: Spark version.
         num_workers: Number of workers.
         node_type_id: Node type id.
@@ -48,7 +47,6 @@ class DatabricksOrchestratorSettings(BaseSettings):
     """
 
     # Resources
-    cluster_name: Optional[str] = None
     spark_version: Optional[str] = None
     num_workers: Optional[int] = None
     node_type_id: Optional[str] = None

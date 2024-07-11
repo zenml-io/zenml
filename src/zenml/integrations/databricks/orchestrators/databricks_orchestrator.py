@@ -16,6 +16,7 @@
 import itertools
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from uuid import UUID
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
 from databricks.sdk.service.compute import (
@@ -24,10 +25,11 @@ from databricks.sdk.service.compute import (
     ClusterSpec,
     WorkloadType,
 )
-from databricks.sdk.service.jobs import JobCluster
+from databricks.sdk.service.jobs import JobCluster, JobParameterDefinition
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml.client import Client
+from zenml.constants import METADATA_ORCHESTRATOR_URL
 from zenml.environment import Environment
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
     DatabricksOrchestratorConfig,
@@ -41,6 +43,7 @@ from zenml.integrations.databricks.utils.databricks_utils import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
@@ -112,7 +115,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
     def _get_databricks_client(
         self,
-        settings: DatabricksOrchestratorSettings,
     ) -> DatabricksClient:
         """Creates a Databricks client.
 
@@ -330,9 +332,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         # Create a wheel for the package in the temporary directory
         wheel_path = self.create_wheel(temp_dir=repository_temp_dir)
 
-        databricks_client = self._get_databricks_client(
-            cast(DatabricksOrchestratorSettings, self.get_settings(deployment))
-        )
+        databricks_client = self._get_databricks_client()
 
         # Create an empty folder in a volume.
         deployment_name = (
@@ -376,9 +376,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             ),
             env_vars=env_vars,
             job_cluster_key=job_cluster_key,
-            settings=cast(
-                DatabricksOrchestratorSettings, self.get_settings(deployment)
-            ),
         )
 
     def _upload_and_run_pipeline(
@@ -386,7 +383,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         pipeline_name: str,
         tasks: List[DatabricksTask],
         env_vars: Dict[str, str],
-        settings: DatabricksOrchestratorSettings,
         job_cluster_key: str,
         schedule: Optional["ScheduleResponse"] = None,
     ) -> None:
@@ -400,7 +396,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             job_cluster_key: ID of the Databricks job_cluster_key.
             schedule: Schedule to run the pipeline on.
         """
-        databricks_client = self._get_databricks_client(settings)
+        databricks_client = self._get_databricks_client()
         spark_conf = self.settings_class().spark_conf or {}
         spark_conf[
             "spark.databricks.driver.dbfsLibraryInstallationAllowed"
@@ -435,10 +431,35 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 ),
             ),
         )
+        job_parameter = JobParameterDefinition(
+            name="job_id",
+            default="{{job_id}}",
+        )
         job = databricks_client.jobs.create(
             name=pipeline_name,
             tasks=tasks,
             job_clusters=[job_cluster],
+            parameters=[job_parameter],
         )
         assert job.job_id is not None
         databricks_client.jobs.run_now(job_id=job.job_id)
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        databricks_client = self._get_databricks_client()
+        run_url = (
+            f"{self.config.host}/jobs/"
+            f"{databricks_client.dbutils.widgets.get('job_id')}"
+        )
+        return {
+            METADATA_ORCHESTRATOR_URL: Uri(run_url),
+        }
