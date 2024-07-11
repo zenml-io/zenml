@@ -11,11 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from unittest.mock import patch
+
 import pytest
 from click import ClickException
 
 from zenml import __version__ as current_zenml_version
 from zenml.cli import utils as cli_utils
+from zenml.cli.utils import requires_mac_env_var_warning
 
 
 def test_error_raises_exception():
@@ -115,3 +118,37 @@ def test_validate_keys():
     with pytest.raises(ClickException):
         cli_utils.validate_keys("")
     assert cli_utils.validate_keys("abcd") is None
+
+
+@pytest.mark.parametrize(
+    "mac_version, env_var, expected_output",
+    [
+        ("10.12", "", False),
+        ("10.13", "", True),
+        ("10.14", "", True),
+        ("10.15", "", True),
+        ("11.0", "", True),
+        ("12.3", "", True),
+        ("13.3.5", "", True),
+        ("14.5", "", True),
+        ("10.12", "1", False),
+        ("10.13", "1", False),
+        ("10.14", "1", False),
+        ("10.15", "1", False),
+    ],
+)
+def test_requires_mac_env_var_warning(mac_version, env_var, expected_output):
+    with patch("sys.platform", "darwin"):
+        with patch("platform.release", return_value=mac_version):
+            with patch.dict(
+                "os.environ",
+                {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": env_var},
+                clear=True,
+            ):
+                assert requires_mac_env_var_warning() == expected_output
+
+
+@pytest.mark.parametrize("platform", ["win32", "linux"])
+def test_requires_mac_env_var_warning_non_mac(platform):
+    with patch("sys.platform", platform):
+        assert not requires_mac_env_var_warning()

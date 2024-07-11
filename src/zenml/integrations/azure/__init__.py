@@ -48,6 +48,7 @@ class AzureIntegration(Integration):
         "azure-storage-blob==12.17.0",  # temporary fix for https://github.com/Azure/azure-sdk-for-python/issues/32056
         "kubernetes",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
     @staticmethod
     def activate() -> None:

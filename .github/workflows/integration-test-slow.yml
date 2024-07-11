@@ -122,9 +122,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: contains(inputs.test_environment, 'docker') || contains(inputs.test_environment,
-          'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment,
-          'kubernetes')
+        if: github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
+          'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
+          'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - uses: actions/checkout@v4.1.1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -229,13 +229,7 @@ jobs:
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
         timeout-minutes: ${{ inputs.tmate_timeout }}
-      - name: Integration Tests (Ubuntu) - Slow CI
-          # Ubuntu Slow CI integration tests run on single machines
-        if: runner.os != 'macOS' && runner.os != 'Windows'
-        run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
-      - name: Integration Tests (Non-Ubuntu) - Slow CI
-        if: runner.os == 'macOS' || runner.os == 'Windows'
+      - name: Integration Tests - Slow CI
         run: |
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
       - name: Setup tmate session after tests

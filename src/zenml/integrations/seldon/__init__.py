@@ -33,6 +33,7 @@ class SeldonIntegration(Integration):
     REQUIREMENTS = [
         "kubernetes==18.20.0",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
     @classmethod
     def activate(cls) -> None:

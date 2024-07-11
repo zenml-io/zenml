@@ -1,23 +1,72 @@
+{%- macro random_int(len) -%}
+  {%- for _ in range(len) -%}
+    {{ range(10) | random }}
+  {%- endfor -%}
+{%- endmacro -%}
+
 {% set deployment = env['deployment'] %}
 {% set project = env['project'] %}
-{% set resourceNameSuffix = properties['resourceNameSuffix'] %}
-{% set region = properties['region'] %}
+{% set project_number = env['project_number'] %}
+{% set resourceNameSuffix = random_int(6) %}
+{% set region = properties['region'] | default('europe-west3') %}
 {% set zenmlServerURL = properties['zenmlServerURL'] %}
 {% set zenmlServerAPIToken = properties['zenmlServerAPIToken'] %}
 
+{%- macro zenml_stack_json(service_account_json) -%}
+{
+  "name": "{{ deployment }}",
+  "description": "Deployed by GCP Deployment Manager deployment {{ deployment }} in the {{ project }} and {{ region }} region.",
+  "labels": {
+    "zenml:provider": "gcp",
+    "zenml:deployment": "deployment-manager"
+  },
+  "service_connectors": [
+    {
+      "type": "gcp",
+      "auth_method": "service-account",
+      "configuration": {
+        "service_account_json": "{{ service_account_json }}"
+      }
+    }
+  ],
+  "components": {
+    "artifact_store": {
+      "flavor": "gcp",
+      "service_connector_index": 0,
+      "configuration": {
+        "path": "gs://zenml-{{ project_number }}-{{ resourceNameSuffix }}"
+      }
+    },
+    "container_registry":{
+      "flavor": "gcp",
+      "service_connector_index": 0,
+      "configuration": {
+        "uri": "{{ region }}-docker.pkg.dev/{{ project }}/zenml-{{ resourceNameSuffix }}"
+      }
+    },
+    "orchestrator": {
+      "flavor": "vertex",
+      "service_connector_index": 0,
+      "configuration": {
+        "location": "{{ region }}",
+        "workload_service_account": "zenml-{{ resourceNameSuffix }}@{{ project }}.iam.gserviceaccount.com"
+      }
+    },
+    "image_builder": {
+      "flavor": "gcp",
+      "service_connector_index": 0
+    }
+  }
+}
+{%- endmacro -%}
+
 resources:
 
-  - name: zenml-{{ resourceNameSuffix }}
+  - name: zenml-{{ project_number }}-{{ resourceNameSuffix }}
     type: storage.v1.bucket
     properties:
-      name: "zenml-{{ resourceNameSuffix }}"
+      name: "zenml-{{ project_number }}-{{ resourceNameSuffix }}"
       location: {{ region }}
-
-  - name: enable-iam-api
-    type: deploymentmanager.v2.virtual.enableService
-    properties:
-      consumerId: "project:{{ project }}"
-      serviceName: iam.googleapis.com
 
   - name: zenml-service-account
     type: iam.v1.serviceAccount
@@ -27,29 +76,29 @@ resources:
 
   - name: zenml-gcs-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       resource: {{ project }}
       role: roles/storage.objectUser
       member: serviceAccount:$(ref.zenml-service-account.email)
-      #condition:
-      #  title: TimeBoundAccess
-      #  description: "Grant access only during working hours"
-      #  grant only on bucket
-      #  expression: "
 
   - name: zenml-gar-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       resource: {{ project }}
-      role: roles/artifactregistry.writer
+      role: roles/artifactregistry.createOnPushWriter
       member: serviceAccount:$(ref.zenml-service-account.email)
-      #condition:
-      #  title: TimeBoundAccess
-      #  description: "Grant access only during working hours"
-      #  expression: "request.time < timestamp('2024-12-31T23:59:59Z')"
 
   - name: zenml-vertex-user-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       resource: {{ project }}
       role: roles/aiplatform.user
@@ -57,21 +106,31 @@ resources:
 
   - name: zenml-vertex-agent-iam-role-binding
     type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       resource: {{ project }}
       role: roles/aiplatform.serviceAgent
       member: serviceAccount:$(ref.zenml-service-account.email)
 
+  - name: zenml-cloud-build-iam-role-binding
+    type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+    metadata:
+      dependsOn:
+        - zenml-service-account
+    properties:
+      resource: {{ project }}
+      role: roles/cloudbuild.builds.editor
+      member: serviceAccount:$(ref.zenml-service-account.email)
+
   - name: zenml-service-account-key
     type: iam.v1.serviceAccounts.key
+    metadata:
+      dependsOn:
+        - zenml-service-account
     properties:
       parent: $(ref.zenml-service-account.name)
-
-  - name: enable-artifactregistry-api
-    type: deploymentmanager.v2.virtual.enableService
-    properties:
-      consumerId: "project:{{ project }}"
-      serviceName: artifactregistry.googleapis.com
 
   - name: zenml-artifact-registry
     type: gcp-types/artifactregistry-v1beta1:projects.locations.repositories
@@ -79,6 +138,8 @@ resources:
       location: {{ region }}
       repositoryId: zenml-{{ resourceNameSuffix }}
       format: DOCKER
+
+{% if properties['zenmlServerURL'] and properties['zenmlServerAPIToken'] %} 
 
   - name: zenml-cloud-function
     type: gcp-types/cloudfunctions-v1:projects.locations.functions
@@ -92,6 +153,7 @@ resources:
       environmentVariables:
         ZENML_SERVER_URL: {{ zenmlServerURL }}
         ZENML_SERVER_API_TOKEN: {{ zenmlServerAPIToken }}
+        ZENML_STACK_SECRET_SERVICE_ACCOUNT_JSON: "$(ref.zenml-service-account-key.privateKeyData)"
 
   - name: zenml-cloud-function-call
     type: gcp-types/cloudfunctions-v1:cloudfunctions.projects.locations.functions.call
@@ -102,58 +164,25 @@ resources:
     properties:
       name: projects/{{ project }}/locations/{{ region }}/functions/zenml-invoke-api-{{ resourceNameSuffix }}
       data: |
-        {
-          "name": "{{ deployment }}",
-          "description": "Deployed by GCP Deployment Manager deployment {{ deployment }} in the {{ project }} and {{ region }} region.",
-          "labels": {
-            "zenml:provider": "gcp",
-            "zenml:deployment": "deployment-manager",
-          },
-          "service_connectors": [
-            {
-              "type": "gcp",
-              "auth_method": "service-account",
-              "configuration": {
-                "service_account_json": {{ ref.zenml-service-account-key.privateKeyData }}
-              }
-            }
-          ],
-          "components": {
-            "artifact_store": {
-              "flavor": "gcs",
-              "service_connector_index": 0,
-              "configuration": {
-                "path": "gs://zenml-{{ resourceNameSuffix }}"
-              }
-            },
-            "container_registry":{
-              "flavor": "gcp",
-              "service_connector_index": 0,
-              "configuration": {
-                "uri": "{{ region }}-docker.pkg.dev/{{ project }}/zenml-{{ resourceNameSuffix }}"
-              }
-            },
-            "orchestrator": {
-              "flavor": "vertex",
-              "service_connector_index": 0,
-              "configuration": {
-                "location": "{{ region }}",
-                "workload_service_account": "zenml-{{ resourceNameSuffix }}@{{ project }}.iam.gserviceaccount.com"
-              }
-            }
-          }
-        }
+        {{ zenml_stack_json("$SERVICE_ACCOUNT_JSON") | indent(8) }}
 
+{% endif %}
 
 outputs:
-#- name: GCSBucket
-#  value: $(ref.zenml-{{ resourceNameSuffix }}.name)
-#
-#- name: ServiceAccountEmail
-#  value: $(ref.service-account.email)
-#
-#- name: ServiceAccountKey
-#  value: $(ref.service-account-key.privateKeyData)
+- name: GCSBucket
+  value: zenml-{{ resourceNameSuffix }}
 
-#- name: ArtifactRegistry
-#  value: $(ref.zenml-artifact-registry.name)
+- name: ServiceAccountEmail
+  value: $(ref.zenml-service-account.email)
+
+- name: ServiceAccountKey
+  value: $(ref.zenml-service-account-key.privateKeyData)
+
+- name: ArtifactRegistry
+  value: $(ref.zenml-artifact-registry.name)
+
+{% if not properties['zenmlServerURL'] or not properties['zenmlServerAPIToken'] %} 
+- name: ZenMLStack
+  value: |
+    {{ zenml_stack_json("$(ref.zenml-service-account-key.privateKeyData)") | indent(4) }}
+{% endif %}

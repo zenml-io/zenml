@@ -20,6 +20,6 @@ from zenml import step
 @step
 def data_importer(dataset_name: str) -> DatasetDict:
     """Load dataset using huggingface datasets."""
-    datasets = load_dataset(dataset_name)
+    datasets = load_dataset(dataset_name, trust_remote_code=True)
     print("Sample Example :", datasets["train"][7])
     return datasets
