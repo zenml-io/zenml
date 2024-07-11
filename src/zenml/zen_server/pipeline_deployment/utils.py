@@ -17,7 +17,7 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.integrations.utils import get_integration_for_module
 from zenml.models import (
     CodeReferenceRequest,
@@ -26,6 +26,7 @@ from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
     PipelineRunResponse,
+    PipelineRunUpdate,
     StackResponse,
 )
 from zenml.new.pipelines.run_utils import (
@@ -88,8 +89,6 @@ def run_pipeline(
     ensure_async_orchestrator(deployment=deployment_request, stack=stack)
 
     new_deployment = zen_store().create_deployment(deployment_request)
-    placeholder_run = create_placeholder_run(deployment=new_deployment)
-    assert placeholder_run
 
     if auth_context.access_token:
         token = auth_context.access_token
@@ -125,52 +124,62 @@ def run_pipeline(
         deployment_id=new_deployment.id
     )
 
-    def _task() -> None:
-        pypi_requirements, apt_packages = get_requirements_for_stack(
-            stack=stack
-        )
+    placeholder_run = create_placeholder_run(deployment=new_deployment)
+    assert placeholder_run
 
-        if build.python_version:
-            version_info = version.parse(build.python_version)
-            python_version = f"{version_info.major}.{version_info.minor}"
-        else:
-            python_version = (
-                f"{sys.version_info.major}.{sys.version_info.minor}"
+    def _task() -> None:
+        try:
+            pypi_requirements, apt_packages = get_requirements_for_stack(
+                stack=stack
             )
 
-        dockerfile = generate_dockerfile(
-            pypi_requirements=pypi_requirements,
-            apt_packages=apt_packages,
-            zenml_version=zenml_version,
-            python_version=python_version,
-        )
+            if build.python_version:
+                version_info = version.parse(build.python_version)
+                python_version = f"{version_info.major}.{version_info.minor}"
+            else:
+                python_version = (
+                    f"{sys.version_info.major}.{sys.version_info.minor}"
+                )
 
-        image_hash = generate_image_hash(dockerfile=dockerfile)
+            dockerfile = generate_dockerfile(
+                pypi_requirements=pypi_requirements,
+                apt_packages=apt_packages,
+                zenml_version=zenml_version,
+                python_version=python_version,
+            )
 
-        runner_image = workload_manager().build_and_push_image(
-            workload_id=new_deployment.id,
-            dockerfile=dockerfile,
-            image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
-            sync=True,
-        )
+            image_hash = generate_image_hash(dockerfile=dockerfile)
 
-        workload_manager().log(
-            workload_id=new_deployment.id,
-            message="Starting pipeline deployment.",
-        )
-        workload_manager().run(
-            workload_id=new_deployment.id,
-            image=runner_image,
-            command=command,
-            arguments=args,
-            environment=environment,
-            timeout_in_seconds=30,
-            sync=True,
-        )
-        workload_manager().log(
-            workload_id=new_deployment.id,
-            message="Pipeline deployed successfully.",
-        )
+            runner_image = workload_manager().build_and_push_image(
+                workload_id=new_deployment.id,
+                dockerfile=dockerfile,
+                image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
+                sync=True,
+            )
+
+            workload_manager().log(
+                workload_id=new_deployment.id,
+                message="Starting pipeline deployment.",
+            )
+            workload_manager().run(
+                workload_id=new_deployment.id,
+                image=runner_image,
+                command=command,
+                arguments=args,
+                environment=environment,
+                timeout_in_seconds=30,
+                sync=True,
+            )
+            workload_manager().log(
+                workload_id=new_deployment.id,
+                message="Pipeline deployed successfully.",
+            )
+        except Exception:
+            zen_store().update_run(
+                run_id=placeholder_run.id,
+                run_update=PipelineRunUpdate(status=ExecutionStatus.FAILED),
+            )
+            raise
 
     if background_tasks:
         background_tasks.add_task(_task)
@@ -357,8 +366,12 @@ def apply_run_config(
         step_config = StepConfiguration.model_validate(step_config_dict)
 
         if update := run_config.steps.get(invocation_id):
+            update_dict = update.model_dump()
+            # Get rid of deprecated name to prevent overriding the step name
+            # with `None`.
+            update_dict.pop("name", None)
             step_config = pydantic_utils.update_model(
-                step_config, update=update
+                step_config, update=update_dict
             )
         steps[invocation_id] = Step(spec=step.spec, config=step_config)
 

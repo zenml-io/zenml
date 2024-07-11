@@ -34,7 +34,7 @@ def test_basic_type_materialization():
         result = _test_materializer(
             step_output_type=type_,
             step_output=example,
-            expected_metadata_size=1 if type_ == str else 2,
+            expected_metadata_size=1 if type_ is str else 2,
         )
         assert result == example
 

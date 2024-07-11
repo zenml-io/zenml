@@ -43,7 +43,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
             `{'tpu_vm': True, 'runtime_version': 'tpu-vm-base'}` for TPUs.
         use_spot: whether to use spot instances. If None, defaults to
             False.
-        spot_recovery: the spot recovery strategy to use for the managed
+        job_recovery: the spot recovery strategy to use for the managed
             spot to recover the cluster from preemption. Refer to
             `recovery_strategy module <https://github.com/skypilot-org/skypilot/blob/master/sky/spot/recovery_strategy.py>`__ # pylint: disable=line-too-long
             for more details.
@@ -103,7 +103,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     )
     accelerator_args: Optional[Dict[str, str]] = None
     use_spot: Optional[bool] = None
-    spot_recovery: Optional[str] = None
+    job_recovery: Optional[str] = None
     region: Optional[str] = None
     zone: Optional[str] = None
     image_id: Union[Dict[str, str], str, None] = Field(

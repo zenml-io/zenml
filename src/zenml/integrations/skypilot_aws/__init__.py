@@ -31,7 +31,8 @@ class SkypilotAWSIntegration(Integration):
     """Definition of Skypilot AWS Integration for ZenML."""
 
     NAME = SKYPILOT_AWS
-    REQUIREMENTS = ["skypilot[aws]<=0.5.0"]
+    # all 0.6.x versions of skypilot[aws] are compatible
+    REQUIREMENTS = ["skypilot[aws]~=0.6.0"]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod

@@ -263,6 +263,7 @@ DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS = 3
 DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING = 5  # seconds
 DEFAULT_HTTP_TIMEOUT = 30
+SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT = 120  # seconds
 ZENML_API_KEY_PREFIX = "ZENKEY_"
 DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE = 5
@@ -337,6 +338,7 @@ ARTIFACT_VISUALIZATIONS = "/artifact_visualizations"
 CODE_REFERENCES = "/code_references"
 CODE_REPOSITORIES = "/code_repositories"
 COMPONENT_TYPES = "/component-types"
+CONFIG = "/config"
 CURRENT_USER = "/current-user"
 DEACTIVATE = "/deactivate"
 DEVICES = "/devices"
@@ -346,6 +348,7 @@ EMAIL_ANALYTICS = "/email-opt-in"
 EVENT_FLAVORS = "/event-flavors"
 EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
+FULL_STACK = "/full-stack"
 GET_OR_CREATE = "/get-or-create"
 GRAPH = "/graph"
 HEALTH = "/health"
@@ -372,13 +375,14 @@ SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
-SERVICE_CONNECTOR_RESOURCES = "/resources"
 MODELS = "/models"
 MODEL_VERSIONS = "/model_versions"
 MODEL_VERSION_ARTIFACTS = "/model_version_artifacts"
 MODEL_VERSION_PIPELINE_RUNS = "/model_version_pipeline_runs"
 SERVICES = "/services"
 SERVICE_CONNECTORS = "/service_connectors"
+STACK = "/stack"
+STACK_DEPLOYMENT = "/stack-deployment"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STATISTICS = "/statistics"
@@ -389,6 +393,7 @@ TAGS = "/tags"
 TRIGGERS = "/triggers"
 TRIGGER_EXECUTIONS = "/trigger_executions"
 USERS = "/users"
+URL = "/url"
 VERSION_1 = "/v1"
 VISUALIZE = "/visualize"
 WEBHOOKS = "/webhooks"
@@ -458,6 +463,7 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "step_operator",
 ]
 
+
 # Parameters for internal ZenML Models
 TEXT_FIELD_MAX_LENGTH = 65535
 STR_FIELD_MAX_LENGTH = 255
@@ -480,3 +486,6 @@ FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"
 
 # Name validation
 BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
+
+
+STACK_DEPLOYMENT_API_TOKEN_EXPIRATION = 60 * 6  # 6 hours

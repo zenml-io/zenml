@@ -31,7 +31,9 @@ class KubernetesIntegration(Integration):
 
     NAME = KUBERNETES
     REQUIREMENTS = ["kubernetes>=21.7,<26"]
-
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = [
+        "kfp", # it is used by many others
+    ]
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Kubernetes integration.

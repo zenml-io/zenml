@@ -21,11 +21,11 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
     # Deploy ZenML to any cloud
     zenml deploy --provider aws
 
-    # Deploy MLOps tools and infrastructure to any cloud
-    zenml orchestrator deploy kfp --flavor kubeflow --provider gcp
+    # Connect cloud resources with a simple wizard
+    zenml stack register <STACK_NAME> --provider aws
 
     # Deploy entire MLOps stacks at once
-    zenml stack deploy gcp-vertexai --provider gcp -o kubeflow ...
+    zenml stack deploy  --provider gcp
     ```
 *   **Standardization:** With ZenML, you can standardize MLOps infrastructure and tooling across your organization. Simply register your staging and production environments as ZenML stacks and invite your colleagues to run ML workflows on them.
 
@@ -35,9 +35,6 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 
     # Register your production environment
     zenml stack register production --orchestrator kubeflow ...
-
-    # Make it available to your colleagues
-    zenml stack share production  
     ```
 * Registering your environments as ZenML stacks also enables you to browse and explore them in a convenient user interface. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
 *   **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives you the freedom to switch to a different tooling stack whenever it suits you. By avoiding vendor lock-in, you have the flexibility to transition between cloud providers or services, ensuring that you receive the best performance and pricing available in the market at any time.

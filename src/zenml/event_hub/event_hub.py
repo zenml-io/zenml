@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base class for all the Event Hub."""
 
-from functools import partial
 from typing import List
 
 from pydantic import ValidationError
@@ -125,13 +124,11 @@ class InternalEventHub(BaseEventHub):
         """
         # get all event sources configured for this flavor
         triggers: List[TriggerResponse] = depaginate(
-            partial(
-                self.zen_store.list_triggers,
-                trigger_filter_model=TriggerFilter(
-                    event_source_id=event_source.id, is_active=True
-                ),
-                hydrate=True,
-            )
+            self.zen_store.list_triggers,
+            trigger_filter_model=TriggerFilter(
+                event_source_id=event_source.id, is_active=True
+            ),
+            hydrate=True,
         )
 
         trigger_list: List[TriggerResponse] = []

@@ -15,6 +15,7 @@
 
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -57,6 +58,7 @@ from zenml.constants import (
     ARTIFACTS,
     CODE_REFERENCES,
     CODE_REPOSITORIES,
+    CONFIG,
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
@@ -65,6 +67,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
+    FULL_STACK,
     GET_OR_CREATE,
     INFO,
     LOGIN,
@@ -89,9 +92,12 @@ from zenml.constants import (
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTOR_TYPES,
     SERVICE_CONNECTOR_VERIFY,
+    SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT,
     SERVICE_CONNECTORS,
     SERVICES,
+    STACK,
     STACK_COMPONENTS,
+    STACK_DEPLOYMENT,
     STACKS,
     STEPS,
     TAGS,
@@ -103,6 +109,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     OAuthGrantTypes,
+    StackDeploymentProvider,
     StoreType,
 )
 from zenml.exceptions import AuthorizationException, MethodNotAllowedError
@@ -139,6 +146,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -147,6 +155,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -208,6 +217,8 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -2467,6 +2478,10 @@ class RestZenStore(BaseZenStore):
             f"{SERVICE_CONNECTORS}{SERVICE_CONNECTOR_VERIFY}",
             body=service_connector,
             params={"list_resources": list_resources},
+            timeout=max(
+                self.config.http_timeout,
+                SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT,
+            ),
         )
 
         resources = ServiceConnectorResourcesModel.model_validate(
@@ -2504,6 +2519,10 @@ class RestZenStore(BaseZenStore):
         response_body = self.put(
             f"{SERVICE_CONNECTORS}/{str(service_connector_id)}{SERVICE_CONNECTOR_VERIFY}",
             params=params,
+            timeout=max(
+                self.config.http_timeout,
+                SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT,
+            ),
         )
 
         resources = ServiceConnectorResourcesModel.model_validate(
@@ -2744,6 +2763,23 @@ class RestZenStore(BaseZenStore):
             response_model=StackResponse,
         )
 
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Register a full-stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The registered stack.
+        """
+        assert full_stack.workspace is not None
+
+        return self._create_resource(
+            resource=full_stack,
+            response_model=StackResponse,
+            route=f"{WORKSPACES}/{str(full_stack.workspace)}{FULL_STACK}",
+        )
+
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
 
@@ -2812,6 +2848,88 @@ class RestZenStore(BaseZenStore):
             resource_id=stack_id,
             route=STACKS,
         )
+
+    # ---------------- Stack deployments-----------------
+
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Returns:
+            Information about the stack deployment provider.
+        """
+        body = self.get(
+            f"{STACK_DEPLOYMENT}{INFO}",
+            params={"provider": provider.value},
+        )
+        return StackDeploymentInfo.model_validate(body)
+
+    def get_stack_deployment_config(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Returns:
+            The cloud provider console URL and configuration needed to deploy
+            the ZenML stack to the specified cloud provider.
+        """
+        params = {
+            "provider": provider.value,
+            "stack_name": stack_name,
+        }
+        if location:
+            params["location"] = location
+        body = self.get(f"{STACK_DEPLOYMENT}{CONFIG}", params=params)
+        return StackDeploymentConfig.model_validate(body)
+
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Returns:
+            The ZenML stack that was deployed and registered or None if the
+            stack was not found.
+        """
+        params = {
+            "provider": provider.value,
+            "stack_name": stack_name,
+        }
+        if location:
+            params["location"] = location
+        if date_start:
+            params["date_start"] = str(date_start)
+        body = self.get(
+            f"{STACK_DEPLOYMENT}{STACK}",
+            params=params,
+        )
+        if body:
+            return DeployedStack.model_validate(body)
+
+        return None
 
     # ----------------------------- Step runs -----------------------------
 
@@ -3964,6 +4082,7 @@ class RestZenStore(BaseZenStore):
         method: str,
         url: str,
         params: Optional[Dict[str, Any]] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> Json:
         """Make a request to the REST API.
@@ -3972,6 +4091,7 @@ class RestZenStore(BaseZenStore):
             method: The HTTP method to use.
             url: The URL to request.
             params: The query parameters to pass to the endpoint.
+            timeout: The request timeout in seconds.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
@@ -3994,7 +4114,7 @@ class RestZenStore(BaseZenStore):
                     url,
                     params=params,
                     verify=self.config.verify_ssl,
-                    timeout=self.config.http_timeout,
+                    timeout=timeout or self.config.http_timeout,
                     **kwargs,
                 )
             )
@@ -4023,13 +4143,18 @@ class RestZenStore(BaseZenStore):
             raise
 
     def get(
-        self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs: Any
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
     ) -> Json:
         """Make a GET request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
             params: The query parameters to pass to the endpoint.
+            timeout: The request timeout in seconds.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
@@ -4037,17 +4162,26 @@ class RestZenStore(BaseZenStore):
         """
         logger.debug(f"Sending GET request to {path}...")
         return self._request(
-            "GET", self.url + API + VERSION_1 + path, params=params, **kwargs
+            "GET",
+            self.url + API + VERSION_1 + path,
+            params=params,
+            timeout=timeout,
+            **kwargs,
         )
 
     def delete(
-        self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs: Any
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
     ) -> Json:
         """Make a DELETE request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
             params: The query parameters to pass to the endpoint.
+            timeout: The request timeout in seconds.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
@@ -4058,6 +4192,7 @@ class RestZenStore(BaseZenStore):
             "DELETE",
             self.url + API + VERSION_1 + path,
             params=params,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -4066,6 +4201,7 @@ class RestZenStore(BaseZenStore):
         path: str,
         body: BaseModel,
         params: Optional[Dict[str, Any]] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> Json:
         """Make a POST request to the given endpoint path.
@@ -4074,6 +4210,7 @@ class RestZenStore(BaseZenStore):
             path: The path to the endpoint.
             body: The body to send.
             params: The query parameters to pass to the endpoint.
+            timeout: The request timeout in seconds.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
@@ -4085,6 +4222,7 @@ class RestZenStore(BaseZenStore):
             self.url + API + VERSION_1 + path,
             data=body.model_dump_json(),
             params=params,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -4093,6 +4231,7 @@ class RestZenStore(BaseZenStore):
         path: str,
         body: Optional[BaseModel] = None,
         params: Optional[Dict[str, Any]] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> Json:
         """Make a PUT request to the given endpoint path.
@@ -4101,6 +4240,7 @@ class RestZenStore(BaseZenStore):
             path: The path to the endpoint.
             body: The body to send.
             params: The query parameters to pass to the endpoint.
+            timeout: The request timeout in seconds.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
@@ -4113,6 +4253,7 @@ class RestZenStore(BaseZenStore):
             self.url + API + VERSION_1 + path,
             data=data,
             params=params,
+            timeout=timeout,
             **kwargs,
         )
 

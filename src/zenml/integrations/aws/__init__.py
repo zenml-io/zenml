@@ -43,6 +43,7 @@ class AWSIntegration(Integration):
         "kubernetes",
         "aws-profile-manager",
     ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
     @staticmethod
     def activate() -> None:

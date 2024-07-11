@@ -493,6 +493,23 @@ class ServiceConnectorResponse(
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the service connector labels to analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+
+        metadata.update(
+            {
+                label[6:]: value
+                for label, value in self.labels.items()
+                if label.startswith("zenml:")
+            }
+        )
+        return metadata
+
     def get_hydrated_version(self) -> "ServiceConnectorResponse":
         """Get the hydrated version of this service connector.
 

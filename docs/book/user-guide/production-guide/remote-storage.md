@@ -12,6 +12,23 @@ When using a stack with remote storage, nothing changes except the fact that the
 
 <figure><img src="../../.gitbook/assets/local_run_with_remote_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
 
+{% hint style="info" %}
+**Don't want to learn how to deploy and register stack components manually? 
+Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+and learn how to use:**
+
+```shell
+zenml stack deploy --provider aws
+```
+
+**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
+and learn how to use:**
+
+```shell
+zenml stack register <STACK_NAME> --provider aws
+```
+{% endhint %}
+
 ## Provisioning and registering a remote artifact store
 
 Out of the box, ZenML ships with [many different supported artifact store flavors](../../component-guide/artifact-stores/artifact-stores.md). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:

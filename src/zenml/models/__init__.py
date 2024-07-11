@@ -327,6 +327,7 @@ from zenml.models.v2.misc.service_connector_type import (
     ResourceTypeModel,
 )
 from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
+from zenml.models.v2.misc.full_stack import FullStackRequest
 from zenml.models.v2.core.trigger import (
     TriggerRequest,
     TriggerFilter,
@@ -386,6 +387,11 @@ from zenml.models.v2.core.server_settings import (
     ServerSettingsResponseMetadata,
     ServerSettingsUpdate,
 )
+from zenml.models.v2.misc.stack_deployment import (
+    DeployedStack,
+    StackDeploymentConfig,
+    StackDeploymentInfo,
+)
 
 # ----------------------------- Forward References -----------------------------
 
@@ -405,6 +411,7 @@ EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
+FullStackRequest.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
 LazyRunMetadataResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
@@ -701,11 +708,13 @@ __all__ = [
     "WorkspaceResponseMetadata",
     # V2 Misc
     "AuthenticationMethodModel",
+    "DeployedStack",
     "ServiceConnectorResourcesModel",
     "ServiceConnectorTypeModel",
     "ServiceConnectorTypedResourcesModel",
     "ServiceConnectorRequirements",
     "ResourceTypeModel",
+    "FullStackRequest",
     "UserAuthModel",
     "ExternalUserModel",
     "BuildItem",
@@ -718,6 +727,8 @@ __all__ = [
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
+    "StackDeploymentConfig",
+    "StackDeploymentInfo",
     "OAuthDeviceAuthorizationRequest",
     "OAuthDeviceAuthorizationResponse",
     "OAuthDeviceTokenRequest",

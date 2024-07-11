@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization for TensorBoard integration."""
 
-import sys
 from typing import List, Optional
 from zenml.integrations.constants import TENSORBOARD
 from zenml.integrations.integration import Integration

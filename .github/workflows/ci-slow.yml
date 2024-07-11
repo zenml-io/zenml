@@ -71,6 +71,12 @@ jobs:
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.9'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: github.event.pull_request.head.repo.fork == false
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mysql full
   mysql-db-migration-testing-random:
@@ -88,6 +94,12 @@ jobs:
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.9'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: github.event.pull_request.head.repo.fork == false
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mysql random
   sqlite-db-migration-testing-full:
@@ -123,6 +135,12 @@ jobs:
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.9'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: github.event.pull_request.head.repo.fork == false
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mariadb full
   small-checks:
@@ -142,12 +160,11 @@ jobs:
       - name: Create virtual environment
         run: |
           uv venv
-#      TODO: REACTIVATE BEFORE THE RELEASE
-#      - name: Check mlstacks compatibility
-#        run: |
-#          source .venv/bin/activate
-#          uv pip install -e .
-#          uv pip install mlstacks
+      - name: Check mlstacks compatibility
+        run: |
+          source .venv/bin/activate
+          uv pip install -e .
+          uv pip install mlstacks
       - name: Check for broken dependencies
         run: |
           source .venv/bin/activate

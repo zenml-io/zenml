@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 
+import datetime
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.enums import StackDeploymentProvider
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -46,6 +48,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -54,6 +57,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -115,6 +119,8 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -2167,6 +2173,24 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Create a full stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The created stack.
+
+        Raises:
+            EntityExistsError: If a service connector with the same name
+                already exists.
+            StackComponentExistsError: If a stack component with the same name
+                already exists.
+            StackExistsError: If a stack with the same name already exists.
+        """
+
+    @abstractmethod
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
 
@@ -2226,6 +2250,62 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the stack doesn't exist.
+        """
+
+    # ---------------- Stack deployments-----------------
+
+    @abstractmethod
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Returns:
+            Information about the stack deployment provider.
+        """
+
+    @abstractmethod
+    def get_stack_deployment_config(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Returns:
+            The cloud provider console URL and configuration needed to deploy
+            the ZenML stack to the specified cloud provider.
+        """
+
+    @abstractmethod
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime.datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Returns:
+            The ZenML stack that was deployed and registered or None if the
+            stack was not found.
         """
 
     # -------------------- Step runs --------------------

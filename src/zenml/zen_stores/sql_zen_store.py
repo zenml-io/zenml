@@ -111,6 +111,7 @@ from zenml.enums import (
     SecretsStoreType,
     SorterOps,
     StackComponentType,
+    StackDeploymentProvider,
     StepRunInputArtifactType,
     StepRunOutputArtifactType,
     StoreType,
@@ -164,6 +165,7 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -172,6 +174,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -242,6 +245,8 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
+    StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -1548,12 +1553,18 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
-            if current_revisions and version.parse(
-                current_revisions[0]
-            ) < version.parse("0.57.1"):
-                # We want to send the missing user enriched events for users
-                # which were created pre 0.57.1 and only on one upgrade
-                self._should_send_user_enriched_events = True
+            try:
+                if current_revisions and version.parse(
+                    current_revisions[0]
+                ) < version.parse("0.57.1"):
+                    # We want to send the missing user enriched events for users
+                    # which were created pre 0.57.1 and only on one upgrade
+                    self._should_send_user_enriched_events = True
+            except version.InvalidVersion:
+                # This can happen if the database is not currently
+                # stamped with an official ZenML version (e.g. in
+                # development environments).
+                pass
 
             self._sync_flavors()
 
@@ -6911,6 +6922,9 @@ class SqlZenStore(BaseZenStore):
                 name=stack.name,
                 description=stack.description,
                 components=defined_components,
+                labels=base64.b64encode(
+                    json.dumps(stack.labels).encode("utf-8")
+                ),
             )
 
             session.add(new_stack_schema)
@@ -6918,6 +6932,223 @@ class SqlZenStore(BaseZenStore):
             session.refresh(new_stack_schema)
 
             return new_stack_schema.to_model(include_metadata=True)
+
+    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
+        """Register a full stack.
+
+        Args:
+            full_stack: The full stack configuration.
+
+        Returns:
+            The registered stack.
+
+        Raises:
+            ValueError: If the full stack creation fails, due to the corrupted
+                input.
+            RuntimeError: If the full stack creation fails, due to unforeseen
+                errors.
+        """
+        # For clean-up purposes, each created entity is tracked here
+        service_connectors_created_ids: List[UUID] = []
+        components_created_ids: List[UUID] = []
+
+        try:
+            # Validate the name of the new stack
+            validate_name(full_stack)
+
+            if full_stack.labels is None:
+                full_stack.labels = {}
+
+            full_stack.labels.update({"zenml:full_stack": True})
+
+            # Service Connectors
+            service_connectors: List[ServiceConnectorResponse] = []
+
+            for connector_id_or_info in full_stack.service_connectors:
+                # Fetch an existing service connector
+                if isinstance(connector_id_or_info, UUID):
+                    service_connectors.append(
+                        self.get_service_connector(connector_id_or_info)
+                    )
+                # Create a new service connector
+                else:
+                    connector_name = full_stack.name
+                    while True:
+                        try:
+                            service_connector_request = ServiceConnectorRequest(
+                                name=connector_name,
+                                connector_type=connector_id_or_info.type,
+                                auth_method=connector_id_or_info.auth_method,
+                                configuration=connector_id_or_info.configuration,
+                                user=full_stack.user,
+                                workspace=full_stack.workspace,
+                                labels={
+                                    k: str(v)
+                                    for k, v in full_stack.labels.items()
+                                },
+                            )
+                            service_connector_response = (
+                                self.create_service_connector(
+                                    service_connector=service_connector_request
+                                )
+                            )
+                            service_connectors.append(
+                                service_connector_response
+                            )
+                            service_connectors_created_ids.append(
+                                service_connector_response.id
+                            )
+                            break
+                        except EntityExistsError:
+                            connector_name = (
+                                f"{full_stack.name}-{random_str(4)}".lower()
+                            )
+                            continue
+
+            # Stack Components
+            components_mapping: Dict[StackComponentType, List[UUID]] = {}
+            for (
+                component_type,
+                component_info,
+            ) in full_stack.components.items():
+                # Fetch an existing component
+                if isinstance(component_info, UUID):
+                    component = self.get_stack_component(
+                        component_id=component_info
+                    )
+                # Create a new component
+                else:
+                    flavor_list = self.list_flavors(
+                        flavor_filter_model=FlavorFilter(
+                            name=component_info.flavor,
+                            type=component_type,
+                        )
+                    )
+                    if not len(flavor_list):
+                        raise ValueError(
+                            f"Flavor '{component_info.flavor}' not found "
+                            f"for component type '{component_type}'."
+                        )
+
+                    flavor_model = flavor_list[0]
+
+                    component_name = full_stack.name
+                    while True:
+                        try:
+                            component_request = ComponentRequest(
+                                name=component_name,
+                                type=component_type,
+                                flavor=component_info.flavor,
+                                configuration=component_info.configuration,
+                                user=full_stack.user,
+                                workspace=full_stack.workspace,
+                                labels=full_stack.labels,
+                            )
+                            component = self.create_stack_component(
+                                component=component_request
+                            )
+                            components_created_ids.append(component.id)
+                            break
+                        except EntityExistsError:
+                            component_name = (
+                                f"{full_stack.name}-{random_str(4)}".lower()
+                            )
+                            continue
+
+                    if component_info.service_connector_index is not None:
+                        service_connector = service_connectors[
+                            component_info.service_connector_index
+                        ]
+
+                        requirements = flavor_model.connector_requirements
+
+                        if not requirements:
+                            raise ValueError(
+                                f"The '{flavor_model.name}' implementation "
+                                "does not support using a service connector to "
+                                "connect to resources."
+                            )
+
+                        if component_info.service_connector_resource_id:
+                            resource_id = (
+                                component_info.service_connector_resource_id
+                            )
+                        else:
+                            resource_id = None
+                            resource_type = requirements.resource_type
+                            if requirements.resource_id_attr is not None:
+                                resource_id = component_info.configuration.get(
+                                    requirements.resource_id_attr
+                                )
+
+                        satisfied, msg = requirements.is_satisfied_by(
+                            connector=service_connector,
+                            component=component,
+                        )
+
+                        if not satisfied:
+                            raise ValueError(
+                                "Please pick a connector that is "
+                                "compatible with the component flavor and "
+                                "try again.."
+                            )
+
+                        if not resource_id:
+                            if service_connector.resource_id:
+                                resource_id = service_connector.resource_id
+                            elif service_connector.supports_instances:
+                                raise ValueError(
+                                    f"Multiple {resource_type} resources "
+                                    "are available for the selected "
+                                    "connector. Please use a `resource_id` "
+                                    "to configure a "
+                                    f"{resource_type} resource."
+                                )
+
+                        component_update = ComponentUpdate(
+                            connector=service_connector.id,
+                            connector_resource_id=resource_id,
+                        )
+                        self.update_stack_component(
+                            component_id=component.id,
+                            component_update=component_update,
+                        )
+
+                components_mapping[component_type] = [
+                    component.id,
+                ]
+
+            # Stack
+            stack_name = full_stack.name
+            while True:
+                try:
+                    stack_request = StackRequest(
+                        user=full_stack.user,
+                        workspace=full_stack.workspace,
+                        name=stack_name,
+                        description=full_stack.description,
+                        components=components_mapping,
+                        labels=full_stack.labels,
+                    )
+                    stack_response = self.create_stack(stack_request)
+
+                    break
+                except EntityExistsError:
+                    stack_name = f"{full_stack.name}-{random_str(4)}".lower()
+
+            return stack_response
+
+        except Exception as e:
+            for component_id in components_created_ids:
+                self.delete_stack_component(component_id=component_id)
+            for service_connector_id in service_connectors_created_ids:
+                self.delete_service_connector(
+                    service_connector_id=service_connector_id
+                )
+            raise RuntimeError(
+                f"Full Stack creation has failed {e}. Cleaning up the "
+                f"created entities."
+            ) from e
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -7194,6 +7425,69 @@ class SqlZenStore(BaseZenStore):
             return self._create_default_stack(
                 workspace_id=workspace.id,
             )
+
+    # ---------------- Stack deployments-----------------
+
+    def get_stack_deployment_info(
+        self,
+        provider: StackDeploymentProvider,
+    ) -> StackDeploymentInfo:
+        """Get information about a stack deployment provider.
+
+        Args:
+            provider: The stack deployment provider.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
+    def get_stack_deployment_config(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
+
+    def get_stack_deployment_stack(
+        self,
+        provider: StackDeploymentProvider,
+        stack_name: str,
+        location: Optional[str] = None,
+        date_start: Optional[datetime] = None,
+    ) -> Optional[DeployedStack]:
+        """Return a matching ZenML stack that was deployed and registered.
+
+        Args:
+            provider: The stack deployment provider.
+            stack_name: The name of the stack.
+            location: The location where the stack should be deployed.
+            date_start: The date when the deployment started.
+
+        Raises:
+            NotImplementedError: Stack deployments are not supported by the
+                local ZenML deployment.
+        """
+        raise NotImplementedError(
+            "Stack deployments are not supported by local ZenML deployments."
+        )
 
     # ----------------------------- Step runs -----------------------------
 
