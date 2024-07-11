@@ -1752,12 +1752,12 @@ def deploy(
                 Markdown(
                     "## Configuration\n"
                     "You will be asked to provide the following configuration "
-                    "values during the deployment process:\n"
-                )
+                    "values during the deployment process:"
+                ),
+                "\n",
             )
 
             console.print(
-                "\n",
                 deployment_config.configuration,
                 no_wrap=True,
                 overflow="ignore",

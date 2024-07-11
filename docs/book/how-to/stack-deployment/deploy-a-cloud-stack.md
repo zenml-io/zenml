@@ -162,20 +162,44 @@ guide](../../component-guide/component-guide.md) for further details.
 
 ### AWS
 
-If you choose `aws` as your provider, this command will redirect you to a 
-Cloud Formation page on AWS: 
+If you choose `aws` as your provider, the command will walk you through
+deploying a Cloud Formation stack on AWS. It will start by showing some
+information about the stack that will be created:
+
+![CLI AWS stack deploy](../../.gitbook/assets/deploy_stack_aws_cli.png)
+
+Upon confirmation, the command will redirect you to a Cloud Formation page on
+AWS Console where you will have to deploy the stack:
 
 ![Cloudformation page](../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png)
 
 You will have to log in to your AWS account, have permission to deploy an AWS 
-CloudFormation script, review and confirm the pre-filled configuration and 
+Cloud Formation stack, review and confirm the pre-filled configuration and 
 create the stack.
 
 ![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
 
+The Cloud Formation stack will provision the necessary resources for your new
+AWS stack and automatically register the stack with your ZenML server. You can
+monitor the progress of the stack in your AWS console:
+
+![AWS Cloud Formation progress](../../.gitbook/assets/deploy_stack_aws_cf_progress.png)
+
+Once the provisioning is complete, you may close the AWS Cloud Formation page
+and return to the ZenML CLI to view the newly created stack:
+
+![AWS Stack CLI output](../../.gitbook/assets/deploy_stack_aws_cli_output.png)
+
+
 ### GCP
 
-If you choose `gcp` as your provider, this command will redirect you to a Cloud Shell session on GCP.
+If you choose `gcp` as your provider, the command will walk you through
+deploying a Deployment Manager template on GCP. It will start by showing some
+information about the stack that will be created:
+
+![CLI GCP stack deploy](../../.gitbook/assets/deploy_stack_gcp_cli.png)
+
+Upon confirmation, the command will redirect you to a Cloud Shell session on GCP.
 
 ![GCP Cloud Shell start page](../../.gitbook/assets/deploy_stack_gcp_cloudshell_start.png)
 
@@ -201,7 +225,8 @@ enabled and to configure your terminal with the selected project:
 ![GCP Cloud Shell tutorial step 1](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_1.png)
 
 Next, you will be asked to configure your deployment by pasting the configuration
-values that were provided to you in the ZenML CLI:
+values that were provided to you in the ZenML CLI. You may need to switch back
+to the ZenML CLI to copy these values if you did not do so earlier:
 
 ![GCP Cloud Shell tutorial step 2](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_2.png)
 

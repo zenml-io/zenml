@@ -248,8 +248,8 @@ ZENML_STACK_NAME={self.stack_name}
 ZENML_STACK_REGION={self.location or "europe-west3"}
 ZENML_SERVER_URL={self.zenml_server_url}
 ZENML_SERVER_API_TOKEN={self.zenml_server_api_token}
-### END CONFIGURATION ###
-"""
+### END CONFIGURATION ###"""
+
         return StackDeploymentConfig(
             deployment_url=url,
             deployment_url_text="GCP Cloud Shell Console",
