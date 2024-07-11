@@ -91,6 +91,7 @@ from zenml.constants import (
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTOR_TYPES,
     SERVICE_CONNECTOR_VERIFY,
+    SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT,
     SERVICE_CONNECTORS,
     SERVICES,
     STACK,
@@ -2459,7 +2460,6 @@ class RestZenStore(BaseZenStore):
         self,
         service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
-        timeout: Optional[int] = None,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
 
@@ -2468,7 +2468,6 @@ class RestZenStore(BaseZenStore):
             list_resources: If True, the list of all resources accessible
                 through the service connector and matching the supplied resource
                 type and ID are returned.
-            timeout: The timeout in seconds for the HTTP request.
 
         Returns:
             The list of resources that the service connector configuration has
@@ -2478,7 +2477,10 @@ class RestZenStore(BaseZenStore):
             f"{SERVICE_CONNECTORS}{SERVICE_CONNECTOR_VERIFY}",
             body=service_connector,
             params={"list_resources": list_resources},
-            timeout=timeout,
+            timeout=max(
+                self.config.http_timeout,
+                SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT,
+            ),
         )
 
         resources = ServiceConnectorResourcesModel.model_validate(
@@ -2493,7 +2495,6 @@ class RestZenStore(BaseZenStore):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         list_resources: bool = True,
-        timeout: Optional[int] = None,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
 
@@ -2504,7 +2505,6 @@ class RestZenStore(BaseZenStore):
             list_resources: If True, the list of all resources accessible
                 through the service connector and matching the supplied resource
                 type and ID are returned.
-            timeout: The timeout in seconds for the HTTP request.
 
         Returns:
             The list of resources that the service connector has access to,
@@ -2518,7 +2518,10 @@ class RestZenStore(BaseZenStore):
         response_body = self.put(
             f"{SERVICE_CONNECTORS}/{str(service_connector_id)}{SERVICE_CONNECTOR_VERIFY}",
             params=params,
-            timeout=timeout,
+            timeout=max(
+                self.config.http_timeout,
+                SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT,
+            ),
         )
 
         resources = ServiceConnectorResourcesModel.model_validate(

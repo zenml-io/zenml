@@ -426,7 +426,7 @@ def register_stack(
                             if isinstance(service_connector, UUID):
                                 service_connector_resource_model = (
                                     client.verify_service_connector(
-                                        service_connector, timeout=120
+                                        service_connector
                                     )
                                 )
                                 existing_service_connector_info = (

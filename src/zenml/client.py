@@ -5141,7 +5141,6 @@ class Client(metaclass=ClientMetaClass):
                         self.zen_store.verify_service_connector_config(
                             connector_request,
                             list_resources=list_resources,
-                            timeout=timeout,
                         )
                     )
                 else:
@@ -5581,7 +5580,6 @@ class Client(metaclass=ClientMetaClass):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         list_resources: bool = True,
-        timeout: int = DEFAULT_HTTP_TIMEOUT,
     ) -> "ServiceConnectorResourcesModel":
         """Verifies if a service connector has access to one or more resources.
 
@@ -5596,7 +5594,6 @@ class Client(metaclass=ClientMetaClass):
                 configuration will be used.
             list_resources: Whether to list the resources that the service
                 connector has access to.
-            timeout: The timeout in seconds for the HTTP request.
 
         Returns:
             The list of resources that the service connector has access to,
@@ -5631,7 +5628,6 @@ class Client(metaclass=ClientMetaClass):
                 resource_type=resource_type,
                 resource_id=resource_id,
                 list_resources=list_resources,
-                timeout=timeout,
             )
         else:
             connector_instance = (
