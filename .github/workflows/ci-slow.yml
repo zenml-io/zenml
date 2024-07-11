@@ -254,7 +254,7 @@ jobs:
   #   secrets: inherit
   macos-integration-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    # needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [macos-latest]
