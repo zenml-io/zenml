@@ -323,6 +323,9 @@ class PipelineRunSchema(NamedSchema, table=True):
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 orchestrator_run_id=self.orchestrator_run_id,
+                template_id=self.deployment.template_id
+                if self.deployment
+                else None,
             )
 
         resources = None

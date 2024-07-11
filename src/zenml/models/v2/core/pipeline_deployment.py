@@ -125,6 +125,10 @@ class PipelineDeploymentRequest(
         default=None,
         title="The code reference associated with the deployment.",
     )
+    template_id: Optional[UUID] = Field(
+        default=None,
+        description="Template used for the deployment.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -182,6 +186,10 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     code_reference: Optional[CodeReferenceResponse] = Field(
         default=None,
         title="The code reference associated with the deployment.",
+    )
+    template_id: Optional[UUID] = Field(
+        default=None,
+        description="Template used for the pipeline run.",
     )
 
 
@@ -331,6 +339,15 @@ class PipelineDeploymentResponse(
         return self.get_metadata().code_reference
 
     @property
+    def template_id(self) -> Optional[UUID]:
+        """The `template_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().template_id
+
+    @property
     def requires_code_download(self) -> bool:
         """Whether the deployment requires downloading some code files.
 
@@ -377,5 +394,10 @@ class PipelineDeploymentFilter(WorkspaceScopedFilter):
     schedule_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Schedule associated with the deployment.",
+        union_mode="left_to_right",
+    )
+    template_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Template used as base for the deployment.",
         union_mode="left_to_right",
     )

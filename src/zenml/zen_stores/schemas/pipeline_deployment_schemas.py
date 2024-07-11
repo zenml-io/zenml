@@ -38,6 +38,7 @@ from zenml.zen_stores.schemas.code_repository_schemas import (
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.run_template_schemas import RunTemplateSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
@@ -138,6 +139,14 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         source=__tablename__,
         target=CodeReferenceSchema.__tablename__,
         source_column="code_reference_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    template_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=RunTemplateSchema.__tablename__,
+        source_column="template_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
@@ -257,6 +266,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 )
                 if self.pipeline_spec
                 else None,
+                template_id=self.template_id,
             )
         return PipelineDeploymentResponse(
             id=self.id,

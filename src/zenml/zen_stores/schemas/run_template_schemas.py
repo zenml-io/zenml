@@ -110,7 +110,7 @@ class RunTemplateSchema(BaseSchema, table=True):
         target=PipelineBuildSchema.__tablename__,
         source_column="build_id",
         target_column="id",
-        ondelete="SET NULL",  # TODO
+        ondelete="CASCADE",
         nullable=False,
     )
     code_reference_id: Optional[UUID] = build_foreign_key_field(
@@ -125,14 +125,17 @@ class RunTemplateSchema(BaseSchema, table=True):
     user: Optional["UserSchema"] = Relationship()
     workspace: "WorkspaceSchema" = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()
-    build: "PipelineBuildSchema" = Relationship(
-        sa_relationship_kwargs={"foreign_keys": "[RunTemplateSchema.build_id]"}
-    )
+    build: "PipelineBuildSchema" = Relationship()
     code_reference: Optional["CodeReferenceSchema"] = Relationship()
 
     runs: List["PipelineRunSchema"] = Relationship(
-        sa_relationship_kwargs={"cascade": "delete"}
+        sa_relationship_kwargs={
+            "secondary": "pipeline_deployment",
+            "cascade": "delete",
+            "viewonly": True,
+        }
     )
+
     tags: List["TagResourceSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.RUN_TEMPLATE.value}', foreign(TagResourceSchema.resource_id)==RunTemplateSchema.id)",

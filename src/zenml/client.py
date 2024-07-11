@@ -3369,6 +3369,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
+        template_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineDeploymentResponse]:
         """List all deployments.
@@ -3386,6 +3387,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
+            template_id: The ID of the template to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3405,6 +3407,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
+            template_id=template_id,
         )
         deployment_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_deployments(
@@ -3760,6 +3763,7 @@ class Client(metaclass=ClientMetaClass):
         build_id: Optional[Union[str, UUID]] = None,
         deployment_id: Optional[Union[str, UUID]] = None,
         code_repository_id: Optional[Union[str, UUID]] = None,
+        template_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -3788,6 +3792,7 @@ class Client(metaclass=ClientMetaClass):
             build_id: The id of the build to filter by.
             deployment_id: The id of the deployment to filter by.
             code_repository_id: The id of the code repository to filter by.
+            template_id: The ID of the template to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -3818,6 +3823,7 @@ class Client(metaclass=ClientMetaClass):
             build_id=build_id,
             deployment_id=deployment_id,
             code_repository_id=code_repository_id,
+            template_id=template_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
             stack_id=stack_id,

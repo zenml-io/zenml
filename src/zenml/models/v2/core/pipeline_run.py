@@ -209,6 +209,10 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
+    template_id: Optional[UUID] = Field(
+        default=None,
+        description="Template used for the pipeline run.",
+    )
 
 
 class PipelineRunResponseResources(WorkspaceScopedResponseResources):
@@ -422,6 +426,15 @@ class PipelineRunResponse(
         return self.get_metadata().orchestrator_run_id
 
     @property
+    def template_id(self) -> Optional[UUID]:
+        """The `template_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().template_id
+
+    @property
     def model_version(self) -> Optional[ModelVersionResponse]:
         """The `model_version` property.
 
@@ -453,6 +466,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "build_id",
         "schedule_id",
         "stack_id",
+        "template_id",
         "pipeline_name",
     ]
     name: Optional[str] = Field(
@@ -505,6 +519,11 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     code_repository_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Code repository used for the Pipeline Run",
+        union_mode="left_to_right",
+    )
+    template_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Template used for the pipeline run.",
         union_mode="left_to_right",
     )
     status: Optional[str] = Field(
@@ -598,5 +617,12 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 PipelineBuildSchema.id == self.build_id,
             )
             custom_filters.append(pipeline_build_filter)
+
+        if self.template_id:
+            run_template_filter = and_(
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.template_id == self.template_id,
+            )
+            custom_filters.append(run_template_filter)
 
         return custom_filters
