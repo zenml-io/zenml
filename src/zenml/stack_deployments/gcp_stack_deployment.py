@@ -243,7 +243,8 @@ GCP project and to clean up the resources created by the stack by using
             f"https://shell.cloud.google.com/cloudshell/editor?{query_params}"
         )
 
-        config = f"""### BEGIN CONFIGURATION ###
+        config = f"""
+### BEGIN CONFIGURATION ###
 ZENML_STACK_NAME={self.stack_name}
 ZENML_STACK_REGION={self.location or "europe-west3"}
 ZENML_SERVER_URL={self.zenml_server_url}
