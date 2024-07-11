@@ -7007,7 +7007,6 @@ class SqlZenStore(BaseZenStore):
 
             # Stack Components
             components_mapping: Dict[StackComponentType, List[UUID]] = {}
-
             for (
                 component_type,
                 component_info,
