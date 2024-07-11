@@ -338,6 +338,7 @@ ARTIFACT_VISUALIZATIONS = "/artifact_visualizations"
 CODE_REFERENCES = "/code_references"
 CODE_REPOSITORIES = "/code_repositories"
 COMPONENT_TYPES = "/component-types"
+CONFIG = "/config"
 CURRENT_USER = "/current-user"
 DEACTIVATE = "/deactivate"
 DEVICES = "/devices"
@@ -485,3 +486,6 @@ FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"
 
 # Name validation
 BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
+
+
+STACK_DEPLOYMENT_API_TOKEN_EXPIRATION = 60 * 6  # 6 hours

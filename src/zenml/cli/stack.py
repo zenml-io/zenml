@@ -35,6 +35,7 @@ import click
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Confirm
+from rich.style import Style
 from rich.syntax import Syntax
 
 import zenml
@@ -1714,6 +1715,12 @@ def deploy(
             provider=StackDeploymentProvider(provider),
         )
 
+        if location and location not in deployment.locations.values():
+            cli_utils.error(
+                f"Invalid location '{location}' for provider '{provider}'. "
+                f"Valid locations are: {', '.join(deployment.locations.values())}"
+            )
+
         console.print(
             Markdown(
                 f"# {provider.upper()} ZenML Cloud Stack Deployment\n"
@@ -1722,55 +1729,71 @@ def deploy(
         )
         console.print(Markdown("## Instructions\n" + deployment.instructions))
 
+        deployment_config = client.zen_store.get_stack_deployment_config(
+            provider=StackDeploymentProvider(provider),
+            stack_name=stack_name,
+            location=location,
+        )
+
+        if deployment_config.configuration:
+            console.print(
+                Markdown(
+                    "## Configuration\n"
+                    "You will be asked to provide the following configuration "
+                    "values during the deployment process:\n"
+                )
+            )
+
+            console.print(
+                "\n",
+                deployment_config.configuration,
+                no_wrap=True,
+                overflow="ignore",
+                crop=False,
+                style=Style(bgcolor="grey15"),
+            )
+
         if not cli_utils.confirmation(
             "\n\nProceed to continue with the deployment. You will be "
             f"automatically redirected to {provider.upper()} in your browser.",
         ):
             raise click.Abort()
 
-        deployment_url, deployment_url_title = (
-            client.zen_store.get_stack_deployment_url(
-                provider=StackDeploymentProvider(provider),
-                stack_name=stack_name,
-                location=location,
-            )
-        )
-
         date_start = datetime.utcnow()
 
-        webbrowser.open(deployment_url)
+        webbrowser.open(deployment_config.deployment_url)
         console.print(
             Markdown(
                 f"If your browser did not open automatically, please open "
                 f"the following URL into your browser to deploy the stack to "
                 f"{provider.upper()}: "
-                f"[{deployment_url_title}]({deployment_url}).\n\n"
+                f"[{deployment_config.deployment_url_text}]"
+                f"({deployment_config.deployment_url}).\n\n"
             )
         )
 
         try:
-            with console.status(
-                "Waiting for the deployment to complete and the stack to be "
+            cli_utils.declare(
+                "\n\nWaiting for the deployment to complete and the stack to be "
                 "registered. Press CTRL+C to abort...\n"
-            ):
-                while True:
-                    deployed_stack = (
-                        client.zen_store.get_stack_deployment_stack(
-                            provider=StackDeploymentProvider(provider),
-                            stack_name=stack_name,
-                            location=location,
-                            date_start=date_start,
-                        )
-                    )
-                    if deployed_stack:
-                        break
-                    time.sleep(10)
+            )
 
-                analytics_handler.metadata.update(
-                    {
-                        "stack_id": deployed_stack.stack.id,
-                    }
+            while True:
+                deployed_stack = client.zen_store.get_stack_deployment_stack(
+                    provider=StackDeploymentProvider(provider),
+                    stack_name=stack_name,
+                    location=location,
+                    date_start=date_start,
                 )
+                if deployed_stack:
+                    break
+                time.sleep(10)
+
+            analytics_handler.metadata.update(
+                {
+                    "stack_id": deployed_stack.stack.id,
+                }
+            )
 
         except KeyboardInterrupt:
             cli_utils.declare("Stack deployment aborted.")
@@ -1794,15 +1817,28 @@ Stack [{deployed_stack.stack.name}]({get_stack_url(deployed_stack.stack)}):\n"""
 
     console.print(Markdown(stack_desc))
 
-    console.print(
-        Markdown("## Follow-up\n" + deployment.post_deploy_instructions)
-    )
+    follow_up = f"""
+## Follow-up
 
+{deployment.post_deploy_instructions}
+
+To use the `{deployed_stack.stack.name}` stack to run pipelines:
+
+* install the required ZenML integrations by running: `zenml integration install {" ".join(deployment.integrations)}`
+"""
     if set_stack:
         client.activate_stack(deployed_stack.stack.id)
-        cli_utils.declare(
-            f"\nStack `{deployed_stack.stack.name}` set as active"
-        )
+        follow_up += f"""
+* the `{deployed_stack.stack.name}` stack has already been set as active
+"""
+    else:
+        follow_up += f"""
+* set the `{deployed_stack.stack.name}` stack as active by running: `zenml stack set {deployed_stack.stack.name}`
+"""
+
+    console.print(
+        Markdown(follow_up),
+    )
 
 
 @stack.command(help="[DEPRECATED] Deploy a stack using mlstacks.")
