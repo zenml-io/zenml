@@ -2466,12 +2466,16 @@ def _get_stack_component_info(
         service_connector_resource_id = selected_storage
     elif component_type == "orchestrator":
 
-        def query_gcp_region() -> str:
-            from google.cloud.aiplatform.constants import base as constants
-
+        def query_gcp_region(compute_type: str) -> str:
             region = Prompt.ask(
-                "Select a location for your Vertex AI jobs:",
-                choices=sorted(list(constants.SUPPORTED_REGIONS)),
+                f"Select the location for your {compute_type}:",
+                choices=sorted(
+                    Client()
+                    .zen_store.get_stack_deployment_info(
+                        StackDeploymentProvider.GCP
+                    )
+                    .locations.values()
+                ),
                 show_choices=True,
             )
             return region
@@ -2556,10 +2560,10 @@ def _get_stack_component_info(
             config["region"] = selected_orchestrator[1]
         elif selected_orchestrator[0] == "Skypilot (Compute)":
             flavor = "vm_gcp"
-            config["region"] = query_gcp_region()
+            config["region"] = query_gcp_region("Skypilot cluster")
         elif selected_orchestrator[0] == "Vertex AI":
             flavor = "vertex"
-            config["location"] = query_gcp_region()
+            config["location"] = query_gcp_region("Vertex AI job")
         elif selected_orchestrator[0] == "Kubernetes":
             flavor = "kubernetes"
         else:
