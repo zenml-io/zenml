@@ -20,6 +20,7 @@ services:
 
 """
 
+import base64
 import datetime
 import json
 import os
@@ -89,7 +90,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
     """GCP user account credentials."""
 
     user_account_json: PlainSerializedSecretStr = Field(
-        title="GCP User Account Credentials JSON",
+        title="GCP User Account Credentials JSON optionally base64 encoded.",
     )
 
     generate_temporary_tokens: bool = Field(
@@ -113,9 +114,24 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 
         Returns:
             The validated configuration values.
+
+        Raises:
+            ValueError: If the user account credentials JSON is invalid.
         """
-        if isinstance(data.get("user_account_json"), dict):
+        user_account_json = data.get("user_account_json")
+        if isinstance(user_account_json, dict):
             data["user_account_json"] = json.dumps(data["user_account_json"])
+        elif isinstance(user_account_json, str):
+            # Check if the user account JSON is base64 encoded and decode it
+            if re.match(r"^[A-Za-z0-9+/=]+$", user_account_json):
+                try:
+                    data["user_account_json"] = base64.b64decode(
+                        user_account_json
+                    ).decode("utf-8")
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to decode base64 encoded user account JSON: {e}"
+                    )
         return data
 
     @field_validator("user_account_json")
@@ -170,7 +186,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
     """GCP service account credentials."""
 
     service_account_json: PlainSerializedSecretStr = Field(
-        title="GCP Service Account Key JSON",
+        title="GCP Service Account Key JSON optionally base64 encoded.",
     )
 
     generate_temporary_tokens: bool = Field(
@@ -194,11 +210,27 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
 
         Returns:
             The validated configuration values.
+
+        Raises:
+            ValueError: If the service account credentials JSON is invalid.
         """
-        if isinstance(data.get("service_account_json"), dict):
+        service_account_json = data.get("service_account_json")
+        if isinstance(service_account_json, dict):
             data["service_account_json"] = json.dumps(
                 data["service_account_json"]
             )
+        elif isinstance(service_account_json, str):
+            # Check if the service account JSON is base64 encoded and decode it
+            if re.match(r"^[A-Za-z0-9+/=]+$", service_account_json):
+                try:
+                    data["service_account_json"] = base64.b64decode(
+                        service_account_json
+                    ).decode("utf-8")
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to decode base64 encoded service account JSON: {e}"
+                    )
+
         return data
 
     @field_validator("service_account_json")
@@ -261,7 +293,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
     """GCP external account credentials."""
 
     external_account_json: PlainSerializedSecretStr = Field(
-        title="GCP External Account JSON",
+        title="GCP External Account JSON optionally base64 encoded.",
     )
 
     generate_temporary_tokens: bool = Field(
@@ -285,11 +317,27 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
 
         Returns:
             The validated configuration values.
+
+        Raises:
+            ValueError: If the external account credentials JSON is invalid.
         """
-        if isinstance(data.get("external_account_json"), dict):
+        external_account_json = data.get("external_account_json")
+        if isinstance(external_account_json, dict):
             data["external_account_json"] = json.dumps(
                 data["external_account_json"]
             )
+        elif isinstance(external_account_json, str):
+            # Check if the external account JSON is base64 encoded and decode it
+            if re.match(r"^[A-Za-z0-9+/=]+$", external_account_json):
+                try:
+                    data["external_account_json"] = base64.b64decode(
+                        external_account_json
+                    ).decode("utf-8")
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to decode base64 encoded external account JSON: {e}"
+                    )
+
         return data
 
     @field_validator("external_account_json")

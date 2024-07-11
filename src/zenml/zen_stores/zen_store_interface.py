@@ -119,6 +119,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
     StackDeploymentInfo,
     StackFilter,
     StackRequest,
@@ -2268,13 +2269,13 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack_deployment_url(
+    def get_stack_deployment_config(
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
         location: Optional[str] = None,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
 
         Args:
             provider: The stack deployment provider.
@@ -2282,8 +2283,8 @@ class ZenStoreInterface(ABC):
             location: The location where the stack should be deployed.
 
         Returns:
-            The URL to deploy the ZenML stack to the specified cloud provider
-            and a text description of the URL.
+            The cloud provider console URL and configuration needed to deploy
+            the ZenML stack to the specified cloud provider.
         """
 
     @abstractmethod
