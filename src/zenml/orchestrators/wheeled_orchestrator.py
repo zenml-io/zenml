@@ -14,6 +14,7 @@
 """Wheeled orchestrator class."""
 
 import os
+import re
 import subprocess
 import tempfile
 from abc import ABC
@@ -44,9 +45,7 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
         """
         repo_path = get_source_root()
 
-        self.package_name = (
-            f"{DEFAULT_PACKAGE_NAME}_{os.path.basename(repo_path)}"
-        )
+        self.package_name = f"{DEFAULT_PACKAGE_NAME}_{self.sanitize_name(os.path.basename(repo_path))}"
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -127,3 +126,19 @@ setup(
         finally:
             # Change back to the original directory
             os.chdir(original_dir)
+
+    def sanitize_name(self, name: str) -> str:
+        """Sanitize the value to be used in a cluster name.
+
+        Args:
+            name: Arbitrary input cluster name.
+
+        Returns:
+            Sanitized cluster name.
+        """
+        name = re.sub(
+            r"[^a-z0-9-]", "-", name.lower()
+        )  # replaces any character that is not a lowercase letter, digit, or hyphen with a hyphen
+        name = re.sub(r"^[-]+", "", name)  # trim leading hyphens
+        name = re.sub(r"[-]+$", "", name)  # trim trailing hyphens
+        return name

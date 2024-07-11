@@ -15,7 +15,6 @@
 
 import itertools
 import os
-import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
@@ -317,7 +316,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
         )
-
+        breakpoint()
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
@@ -367,7 +366,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         )
 
         # using the databricks client uploads the pipeline to databricks
-        job_cluster_key = self.sanitize_cluster_name(
+        job_cluster_key = self.sanitize_name(
             f"{DATABRICKS_CLUSTER_DEFAULT_NAME}_{deployment_id}"
         )
         self._upload_and_run_pipeline(
@@ -418,7 +417,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         job_cluster = JobCluster(
             job_cluster_key=job_cluster_key,
             new_cluster=ClusterSpec(
-                cluster_name=job_cluster_key,
                 spark_version=self.settings_class().spark_version
                 or DATABRICKS_SPARK_DEFAULT_VERSION,
                 num_workers=self.settings_class().num_workers,
@@ -444,19 +442,3 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         )
         assert job.job_id is not None
         databricks_client.jobs.run_now(job_id=job.job_id)
-
-    def sanitize_cluster_name(self, name: str) -> str:
-        """Sanitize the value to be used in a cluster name.
-
-        Args:
-            name: Arbitrary input cluster name.
-
-        Returns:
-            Sanitized cluster name.
-        """
-        name = re.sub(
-            r"[^a-z0-9-]", "-", name.lower()
-        )  # replaces any character that is not a lowercase letter, digit, or hyphen with a hyphen
-        name = re.sub(r"^[-]+", "", name)  # trim leading hyphens
-        name = re.sub(r"[-]+$", "", name)  # trim trailing hyphens
-        return name
