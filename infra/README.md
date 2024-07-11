@@ -1,17 +1,26 @@
 # Assisted ZenML Stack Deployment
 
-These are a set of scripts that can be used to provision infrastructure for **ZenML stacks directly in your browser** in AWS and GCP with minimal user input. The scripts are designed to be run with a single click and will deploy the ZenML stack in your AWS or GCP account.
+These are a set of scripts that can be used to provision infrastructure for **ZenML stacks directly in your browser** in AWS and GCP with minimal user input. The scripts are used by the ZenML CLI and dashboard stack deployment feature to not only provision the infrastructure but also to configure the ZenML stack, components and service connectors with the necessary credentials.
 
-## Deploy a full ZenML Stack on AWS
+## AWS
 
-Click the button below to deploy a ZenML stack in your AWS account using AWS Cloud Formation. Log in to AWS and follow the instructions in the Cloud Formation console to deploy the stack.
+A Cloud Formation template is used to provision the infrastructure in AWS. The template is parameterized and the user is prompted to provide the necessary values during the CLI / dashboard deployment process. The values are embedded in a Cloud Formation template creation URL that the user can follow to deploy the stack.
 
-[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/create/review?stackName=zenml-stack&templateURL=https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml)
+Files:
 
+* [aws/aws-ecr-s3-sagemaker.yaml](aws/aws-ecr-s3-sagemaker.yaml): Cloud Formation template for provisioning ECR and S3 resources along with a IAM user, IAM role and AWS secret key. The template also uses a Lambda function to register the ZenML stack with the ZenML server.
 
-## Deploy a full ZenML Stack on GCP
+The Cloud Formation template is uploaded to AWS S3 using a GitHub action during the release process at the following location: https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml
 
-Click the button below to deploy a ZenML stack on your GCP project using Google Cloud Shell. Google Cloud Shell will open and clone this repository. Follow the instructions in the Cloud Shell terminal to deploy the stack.
+## GCP
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/zenml-io/zenml&cloudshell_working_dir=infra&cloudshell_open_in_editor=gcp-gar-gcs-vertex.yaml,gcp-gar-gcs-vertex-config.yaml&cloudshell_print=gcp-gar-gcs-vertex.txt&cloudshell_git_branch=feature/prd-482-one-click-stacks)
+A Deployment Manager template is used to provision the infrastructure in GCP. The template is parameterized and the user is prompted to provide the necessary values during the CLI / dashboard deployment process. Given that there is no way to trigger a Deployment Manager template creation directly using a URL, a GCP Cloud Shell session is opened instead and the user is provided with a set of configuration values that they have to manually copy and paste into the deployment script.
 
+Files:
+
+* [gcp/gcp-gar-gcs-vertex.jinja](gcp/gcp-gar-gcs-vertex.jinja): Deployment Manager template for provisioning GCS and GCR resources along with a GCP service account and credentials. The template also uses a Cloud Function instance to register the ZenML stack with the ZenML server.
+* [gcp/main.py](gcp/main.py): The Python script that is used by the Cloud Function instance to register the ZenML stack with the ZenML server. The script is triggered by a Cloud Function call that is sent by the Deployment Manager template after the stack resources have been provisioned.
+* [gcp/gcp-gar-gcs-vertex-deploy.sh](gcp/gcp-gar-gcs-vertex-deploy.sh): Deployment script that the user must run in the Cloud Shell to deploy the stack. In addition to deploying the Deployment Manager template, the script also takes care of enabling the necessary GCP APIs and configuring the necessary permissions for the various service accounts involved.
+* [gcp/gcp-gar-gcs-vertex.md](gcp/gcp-gar-gcs-vertex.md): A markdown file that provides the user with instructions on how to deploy the stack using the deployment script. This is powered by the tutorial walkthrough feature in the Google Cloud Shell.
+
+The Cloud Function script is uploaded to GCP GCS using a GitHub action during the release process at the following location: gs://zenml-public-bucket/zenml-gcp-dm-templates/gcp-dm-stack-register.zip

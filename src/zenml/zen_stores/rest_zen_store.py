@@ -58,6 +58,7 @@ from zenml.constants import (
     ARTIFACTS,
     CODE_REFERENCES,
     CODE_REPOSITORIES,
+    CONFIG,
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
@@ -101,7 +102,6 @@ from zenml.constants import (
     TAGS,
     TRIGGER_EXECUTIONS,
     TRIGGERS,
-    URL,
     USERS,
     VERSION_1,
     WORKSPACES,
@@ -216,6 +216,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
     StackDeploymentInfo,
     StackFilter,
     StackRequest,
@@ -2859,13 +2860,13 @@ class RestZenStore(BaseZenStore):
         )
         return StackDeploymentInfo.model_validate(body)
 
-    def get_stack_deployment_url(
+    def get_stack_deployment_config(
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
         location: Optional[str] = None,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
 
         Args:
             provider: The stack deployment provider.
@@ -2873,11 +2874,8 @@ class RestZenStore(BaseZenStore):
             location: The location where the stack should be deployed.
 
         Returns:
-            The URL to deploy the ZenML stack to the specified cloud provider
-            and a text description of the URL.
-
-        Raises:
-            ValueError: If the response body is not as expected.
+            The cloud provider console URL and configuration needed to deploy
+            the ZenML stack to the specified cloud provider.
         """
         params = {
             "provider": provider.value,
@@ -2885,14 +2883,8 @@ class RestZenStore(BaseZenStore):
         }
         if location:
             params["location"] = location
-        body = self.get(f"{STACK_DEPLOYMENT}{URL}", params=params)
-
-        if not isinstance(body, list) or len(body) != 2:
-            raise ValueError(
-                "Bad response body received from the stack deployment URL "
-                "endpoint."
-            )
-        return body[0], body[1]
+        body = self.get(f"{STACK_DEPLOYMENT}{CONFIG}", params=params)
+        return StackDeploymentConfig.model_validate(body)
 
     def get_stack_deployment_stack(
         self,

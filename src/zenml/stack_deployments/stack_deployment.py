@@ -15,13 +15,16 @@
 
 import datetime
 from abc import abstractmethod
-from typing import ClassVar, Dict, List, Optional, Tuple
+from typing import ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from zenml.enums import StackDeploymentProvider
+from zenml.client import Client
+from zenml.enums import StackComponentType, StackDeploymentProvider
 from zenml.models import (
     DeployedStack,
+    StackDeploymentConfig,
+    StackDeploymentInfo,
 )
 
 
@@ -29,7 +32,10 @@ class ZenMLCloudStackDeployment(BaseModel):
     """ZenML Cloud Stack CLI Deployment base class."""
 
     provider: ClassVar[StackDeploymentProvider]
+    deployment: ClassVar[str]
     stack_name: str
+    zenml_server_url: str
+    zenml_server_api_token: str
     location: Optional[str] = None
 
     @classmethod
@@ -71,6 +77,16 @@ class ZenMLCloudStackDeployment(BaseModel):
 
     @classmethod
     @abstractmethod
+    def integrations(cls) -> List[str]:
+        """Return the ZenML integrations required for the stack.
+
+        Returns:
+            The list of ZenML integrations that need to be installed for the
+            stack to be usable.
+        """
+
+    @classmethod
+    @abstractmethod
     def permissions(cls) -> Dict[str, List[str]]:
         """Return the permissions granted to ZenML to access the cloud resources.
 
@@ -89,42 +105,104 @@ class ZenMLCloudStackDeployment(BaseModel):
             names to region descriptions.
         """
 
-    @abstractmethod
-    def deploy_url(
-        self,
-        zenml_server_url: str,
-        zenml_server_api_token: str,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
-
-        The URL should point to a cloud provider console where the user can
-        deploy the ZenML stack and should include as many pre-filled parameters
-        as possible.
-
-        Args:
-            zenml_server_url: The URL of the ZenML server.
-            zenml_server_api_token: The API token to authenticate with the ZenML
-                server.
+    @classmethod
+    def get_deployment_info(cls) -> StackDeploymentInfo:
+        """Return information about the ZenML Cloud Stack Deployment.
 
         Returns:
-            The URL to deploy the ZenML stack to the specified cloud provider
-            and a text description of the URL.
+            Information about the ZenML Cloud Stack Deployment.
         """
+        return StackDeploymentInfo(
+            provider=cls.provider,
+            description=cls.description(),
+            instructions=cls.instructions(),
+            post_deploy_instructions=cls.post_deploy_instructions(),
+            integrations=cls.integrations(),
+            permissions=cls.permissions(),
+            locations=cls.locations(),
+        )
 
     @abstractmethod
-    def get_stack(
+    def get_deployment_config(
         self,
-        date_start: Optional[datetime.datetime] = None,
+    ) -> StackDeploymentConfig:
+        """Return the configuration to deploy the ZenML stack to the specified cloud provider.
+
+        The configuration should include:
+
+        * a cloud provider console URL where the user will be redirected to
+        deploy the ZenML stack. The URL should include as many pre-filled
+        URL query parameters as possible.
+        * a textual description of the URL
+        * some deployment providers may require additional configuration
+        parameters to be passed to the cloud provider in addition to the
+        deployment URL query parameters. Where that is the case, this method
+        should also return a string that the user can copy and paste into the
+        cloud provider console to deploy the ZenML stack (e.g. a set of
+        environment variables, or YAML configuration snippet etc.).
+
+        Returns:
+            The configuration to deploy the ZenML stack to the specified cloud
+            provider.
+        """
+
+    def get_stack(
+        self, date_start: Optional[datetime.datetime] = None
     ) -> Optional[DeployedStack]:
         """Return the ZenML stack that was deployed and registered.
 
         This method is called to retrieve a ZenML stack matching the deployment
-        provider and stack name.
+        provider.
 
         Args:
-            date_start: The start date of the deployment.
+            date_start: The date when the deployment started.
 
         Returns:
-            The ZenML stack that was deployed and registered or None if the
-            stack was not found.
+            The ZenML stack that was deployed and registered or None if a
+            matching stack was not found.
         """
+        client = Client()
+
+        # It's difficult to find a stack that matches the CloudFormation
+        # deployment 100% because the user can change the stack name before they
+        # deploy the stack in GCP.
+        #
+        # We try to find a full GCP stack that matches the deployment provider
+        # that was registered after this deployment was created.
+
+        # Get all stacks created after the start date
+        stacks = client.list_stacks(
+            created=f"gt:{str(date_start.replace(microsecond=0))}"
+            if date_start
+            else None,
+            sort_by="desc:created",
+            size=50,
+        )
+
+        if not stacks.items:
+            return None
+
+        # Find a stack that best matches the deployment provider
+        for stack in stacks.items:
+            if not stack.labels:
+                continue
+
+            if stack.labels.get("zenml:provider") != self.provider.value:
+                continue
+
+            if stack.labels.get("zenml:deployment") != self.deployment:
+                continue
+
+            artifact_store = stack.components[
+                StackComponentType.ARTIFACT_STORE
+            ][0]
+
+            if not artifact_store.connector:
+                continue
+
+            return DeployedStack(
+                stack=stack,
+                service_connector=artifact_store.connector,
+            )
+
+        return None

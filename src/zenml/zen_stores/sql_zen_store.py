@@ -245,6 +245,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
     StackDeploymentInfo,
     StackFilter,
     StackRequest,
@@ -1552,12 +1553,18 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
-            if current_revisions and version.parse(
-                current_revisions[0]
-            ) < version.parse("0.57.1"):
-                # We want to send the missing user enriched events for users
-                # which were created pre 0.57.1 and only on one upgrade
-                self._should_send_user_enriched_events = True
+            try:
+                if current_revisions and version.parse(
+                    current_revisions[0]
+                ) < version.parse("0.57.1"):
+                    # We want to send the missing user enriched events for users
+                    # which were created pre 0.57.1 and only on one upgrade
+                    self._should_send_user_enriched_events = True
+            except version.InvalidVersion:
+                # This can happen if the database is not currently
+                # stamped with an official ZenML version (e.g. in
+                # development environments).
+                pass
 
             self._sync_flavors()
 
@@ -7012,6 +7019,20 @@ class SqlZenStore(BaseZenStore):
                     )
                 # Create a new component
                 else:
+                    flavor_list = self.list_flavors(
+                        flavor_filter_model=FlavorFilter(
+                            name=component_info.flavor,
+                            type=component_type,
+                        )
+                    )
+                    if not len(flavor_list):
+                        raise ValueError(
+                            f"Flavor '{component_info.flavor}' not found "
+                            f"for component type '{component_type}'."
+                        )
+
+                    flavor_model = flavor_list[0]
+
                     component_name = full_stack.name
                     while True:
                         try:
@@ -7039,15 +7060,6 @@ class SqlZenStore(BaseZenStore):
                         service_connector = service_connectors[
                             component_info.service_connector_index
                         ]
-                        flavor_list = self.list_flavors(
-                            flavor_filter_model=FlavorFilter(
-                                name=component_info.flavor,
-                                type=component_type,
-                            )
-                        )
-                        assert len(flavor_list) == 1
-
-                        flavor_model = flavor_list[0]
 
                         requirements = flavor_model.connector_requirements
 
@@ -7434,13 +7446,13 @@ class SqlZenStore(BaseZenStore):
             "Stack deployments are not supported by local ZenML deployments."
         )
 
-    def get_stack_deployment_url(
+    def get_stack_deployment_config(
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
         location: Optional[str] = None,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
 
         Args:
             provider: The stack deployment provider.
