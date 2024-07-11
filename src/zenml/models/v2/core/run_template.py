@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline templates."""
 
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -38,6 +38,9 @@ from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
 )
 from zenml.models.v2.core.tag import TagResponse
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
 
 # ------------------ Request Model ------------------
 
@@ -252,6 +255,12 @@ class RunTemplateResponse(
 class RunTemplateFilter(WorkspaceScopedTaggableFilter):
     """Model for filtering of run templates."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "code_repository_id",
+        "stack_id",
+    ]
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the run template.",
@@ -276,3 +285,48 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         description="Build associated with the template.",
         union_mode="left_to_right",
     )
+    stack_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Stack associated with the template.",
+        union_mode="left_to_right",
+    )
+    code_repository_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Code repository associated with the template.",
+        union_mode="left_to_right",
+    )
+
+    def get_custom_filters(
+        self,
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            CodeReferenceSchema,
+            PipelineBuildSchema,
+            RunTemplateSchema,
+        )
+
+        if self.code_repository_id:
+            code_repo_filter = and_(
+                RunTemplateSchema.code_reference_id == CodeReferenceSchema.id,
+                CodeReferenceSchema.code_repository_id
+                == self.code_repository_id,
+            )
+            custom_filters.append(code_repo_filter)
+
+        if self.stack_id:
+            stack_filter = and_(
+                RunTemplateSchema.build_id == PipelineBuildSchema.id,
+                PipelineBuildSchema.stack_id == self.stack_id,
+            )
+            custom_filters.append(stack_filter)
+
+        return custom_filters

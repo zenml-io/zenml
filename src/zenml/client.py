@@ -3493,6 +3493,8 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        code_repository_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[RunTemplateResponse]:
         """Get a page of run templates.
@@ -3510,6 +3512,8 @@ class Client(metaclass=ClientMetaClass):
             user_id: Filter by user ID.
             pipeline_id: Filter by pipeline ID.
             build_id: Filter by build ID.
+            stack_id: Filter by stack ID.
+            code_repository_id: Filter by code repository ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3529,6 +3533,8 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             pipeline_id=pipeline_id,
             build_id=build_id,
+            stack_id=stack_id,
+            code_repository_id=code_repository_id,
         )
 
         return self.zen_store.list_run_templates(
