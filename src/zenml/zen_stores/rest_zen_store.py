@@ -1674,9 +1674,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created template.
-
-        Raises:
-            EntityExistsError: If a template with the same name already exists.
         """
         return self._create_workspace_scoped_resource(
             resource=template,
@@ -1696,9 +1693,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The template.
-
-        Raises:
-            KeyError: If the template does not exist.
         """
         return self._get_resource(
             resource_id=template_id,
@@ -1743,9 +1737,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated template.
-
-        Raises:
-            KeyError: If the template does not exist.
         """
         return self._update_resource(
             resource_id=template_id,
@@ -1759,9 +1750,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             template_id: The ID of the template to delete.
-
-        Raises:
-            KeyError: If the template does not exist.
         """
         self._delete_resource(
             resource_id=template_id,

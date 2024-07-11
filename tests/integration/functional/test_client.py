@@ -476,7 +476,7 @@ def test_listing_pipelines(clean_client):
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
     request.name = "other_pipeline"
-    response_2 = clean_client.zen_store.create_pipeline(request)
+    clean_client.zen_store.create_pipeline(request)
 
     assert clean_client.list_pipelines().total == 2
 

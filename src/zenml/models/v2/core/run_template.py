@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -64,16 +64,12 @@ class RunTemplateRequest(WorkspaceScopedRequest):
     )
 
 
-class InternalRunTemplateRequest(RunTemplateRequest):
-    """Internal request model for run templates."""
-
-    ...
-
-
 # ------------------ Update Model ------------------
 
 
 class RunTemplateUpdate(BaseUpdate):
+    """Run template update model."""
+
     name: Optional[str] = Field(
         default=None,
         title="The name of the run template.",

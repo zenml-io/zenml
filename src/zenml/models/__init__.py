@@ -227,7 +227,6 @@ from zenml.models.v2.core.pipeline_run import (
 )
 from zenml.models.v2.core.run_template import (
     RunTemplateRequest,
-    InternalRunTemplateRequest,
     RunTemplateUpdate,
     RunTemplateResponse,
     RunTemplateResponseBody,
@@ -615,7 +614,6 @@ __all__ = [
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
     "RunTemplateRequest",
-    "InternalRunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",
     "RunTemplateResponseBody",
