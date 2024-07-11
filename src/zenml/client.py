@@ -139,6 +139,10 @@ from zenml.models import (
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleResponse,
     SecretFilter,
@@ -3416,6 +3420,177 @@ class Client(metaclass=ClientMetaClass):
         """
         deployment = self.get_deployment(id_or_prefix=id_or_prefix)
         self.zen_store.delete_deployment(deployment_id=deployment.id)
+
+    # ------------------------------ Run templates -----------------------------
+
+    def create_run_template(
+        self,
+        name: str,
+        deployment_id: UUID,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> RunTemplateResponse:
+        """Create a run template.
+
+        Args:
+            name: The name of the run template.
+            deployment_id: ID of the deployment which this template should be
+                based off of.
+            description: The description of the run template.
+            tags: Tags associated with the run template.
+
+        Returns:
+            The created run template.
+        """
+        return self.zen_store.create_run_template(
+            template=RunTemplateRequest(
+                name=name,
+                description=description,
+                deployment_id=deployment_id,
+                tags=tags,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+            )
+        )
+
+    def get_run_template(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> RunTemplateResponse:
+        """Get a run template.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the template to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The run template.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_run_template,
+            list_method=self.list_run_templates,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            hydrate=hydrate,
+        )
+
+    def list_run_templates(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        tag: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        build_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """Get a page of run templates.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            created: Filter by the creation date.
+            updated: Filter by the last updated date.
+            name: Filter by run template name.
+            tag: Filter by run template tags.
+            workspace_id: Filter by workspace ID.
+            user_id: Filter by user ID.
+            pipeline_id: Filter by pipeline ID.
+            build_id: Filter by build ID.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of run templates.
+        """
+        filter = RunTemplateFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            created=created,
+            updated=updated,
+            name=name,
+            tag=tag,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            build_id=build_id,
+        )
+
+        return self.zen_store.list_run_templates(
+            template_filter_model=filter, hydrate=hydrate
+        )
+
+    def update_run_template(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> RunTemplateResponse:
+        """Update a run template.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the template to update.
+            name: The new name of the run template.
+            description: The new description of the run template.
+            add_tags: Tags to add to the run template.
+            remove_tags: Tags to remove from the run template.
+
+        Returns:
+            The updated run template.
+        """
+        if is_valid_uuid(name_id_or_prefix):
+            template_id = (
+                UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
+            )
+        else:
+            template_id = self.get_run_template(
+                name_id_or_prefix, hydrate=False
+            ).id
+
+        return self.zen_store.update_run_template(
+            template_id=template_id,
+            template_update=RunTemplateUpdate(
+                name=name,
+                description=description,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
+            ),
+        )
+
+    def delete_run_template(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Delete a run template.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the template to delete.
+        """
+        if is_valid_uuid(name_id_or_prefix):
+            template_id = (
+                UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
+            )
+        else:
+            template_id = self.get_run_template(
+                name_id_or_prefix, hydrate=False
+            ).id
+
+        self.zen_store.delete_run_template(template_id=template_id)
 
     # ------------------------------- Schedules --------------------------------
 

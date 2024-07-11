@@ -225,6 +225,16 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
 )
+from zenml.models.v2.core.run_template import (
+    RunTemplateRequest,
+    InternalRunTemplateRequest,
+    RunTemplateUpdate,
+    RunTemplateResponse,
+    RunTemplateResponseBody,
+    RunTemplateResponseMetadata,
+    RunTemplateResponseResources,
+    RunTemplateFilter,
+)
 from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
     LazyRunMetadataResponse,
@@ -426,6 +436,9 @@ PipelineDeploymentResponseMetadata.model_rebuild()
 PipelineDeploymentResponseResources.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
+RunTemplateResponseBody.model_rebuild()
+RunTemplateResponseResources.model_rebuild()
+RunTemplateResponseBody.model_rebuild()
 RunMetadataResponseBody.model_rebuild()
 RunMetadataResponseMetadata.model_rebuild()
 ScheduleResponseBody.model_rebuild()
@@ -601,6 +614,14 @@ __all__ = [
     "PipelineRunResponse",
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
+    "RunTemplateRequest",
+    "InternalRunTemplateRequest",
+    "RunTemplateUpdate",
+    "RunTemplateResponse",
+    "RunTemplateResponseBody",
+    "RunTemplateResponseMetadata",
+    "RunTemplateResponseResources",
+    "RunTemplateFilter",
     "RunMetadataRequest",
     "RunMetadataFilter",
     "RunMetadataResponse",

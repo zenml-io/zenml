@@ -215,6 +215,10 @@ from zenml.models import (
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -316,6 +320,7 @@ from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     PipelineSchema,
     RunMetadataSchema,
+    RunTemplateSchema,
     ScheduleSchema,
     SecretSchema,
     ServerSettingsSchema,
@@ -4354,6 +4359,204 @@ class SqlZenStore(BaseZenStore):
         raise NotImplementedError(
             "Running a deployment is not possible with a local store."
         )
+
+    # -------------------- Run templates --------------------
+
+    def create_run_template(
+        self,
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
+
+        Args:
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+
+        Raises:
+            EntityExistsError: If a template with the same name already exists.
+            KeyError: If the deployment specified in the template does not
+                exist.
+        """
+        with Session(self.engine) as session:
+            existing_template = session.exec(
+                select(RunTemplateSchema)
+                .where(RunTemplateSchema.name == template.name)
+                .where(RunTemplateSchema.workspace_id == template.workspace)
+            ).first()
+            if existing_template is not None:
+                raise EntityExistsError(
+                    f"Unable to create run template in workspace "
+                    f"'{existing_template.workspace.name}': A run template "
+                    "with this name already exists."
+                )
+
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id == template.deployment_id
+                )
+            ).first()
+            if deployment is None:
+                raise KeyError(
+                    "Unable to get get deployment with ID "
+                    f"{template.deployment_id}."
+                )
+
+            template_schema = RunTemplateSchema.from_request(
+                request=template, deployment=deployment
+            )
+
+            if template.tags:
+                self._attach_tags_to_resource(
+                    tag_names=template.tags,
+                    resource_id=template_schema.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+
+            session.add(template_schema)
+            session.commit()
+            session.refresh(template_schema)
+
+            return template_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to get run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            return template.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
+
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(RunTemplateSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunTemplateSchema,
+                filter_model=template_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to update run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            template = template.update(template_update)
+
+            if template_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=template_update.add_tags,
+                    resource_id=template.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+            template_update.add_tags = None
+
+            if template_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=template_update.remove_tags,
+                    resource_id=template.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+            template_update.remove_tags = None
+
+            session.add(template)
+            session.commit()
+
+            return template.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to delete run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            session.delete(template)
+            session.commit()
 
     # -------------------- Event Sources  --------------------
 

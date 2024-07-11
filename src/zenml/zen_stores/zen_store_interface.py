@@ -94,6 +94,10 @@ from zenml.models import (
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -1359,6 +1363,91 @@ class ZenStoreInterface(ABC):
 
         Returns:
             Model of the pipeline run.
+        """
+
+    # -------------------- Run templates --------------------
+
+    @abstractmethod
+    def create_run_template(
+        self,
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
+
+        Args:
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+
+        Raises:
+            EntityExistsError: If a template with the same name already exists.
+        """
+
+    @abstractmethod
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+
+    @abstractmethod
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+
+    @abstractmethod
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+
+        Raises:
+            KeyError: If the template does not exist.
         """
 
     # -------------------- Event Sources  --------------------

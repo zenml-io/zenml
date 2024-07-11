@@ -79,6 +79,7 @@ from zenml.constants import (
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
     RUN_METADATA,
+    RUN_TEMPLATES,
     RUNS,
     SCHEDULES,
     SECRETS,
@@ -191,6 +192,10 @@ from zenml.models import (
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -1655,6 +1660,113 @@ class RestZenStore(BaseZenStore):
             ) from e
 
         return PipelineRunResponse.model_validate(response_body)
+
+    # -------------------- Run templates --------------------
+
+    def create_run_template(
+        self,
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
+
+        Args:
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+
+        Raises:
+            EntityExistsError: If a template with the same name already exists.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=template,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+        )
+
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        return self._get_resource(
+            resource_id=template_id,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+            filter_model=template_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        return self._update_resource(
+            resource_id=template_id,
+            resource_update=template_update,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+        )
+
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        self._delete_resource(
+            resource_id=template_id,
+            route=RUN_TEMPLATES,
+        )
 
     # -------------------- Event Sources  --------------------
 

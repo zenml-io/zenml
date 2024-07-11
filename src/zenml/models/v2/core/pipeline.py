@@ -91,11 +91,11 @@ class PipelineResponseBody(WorkspaceScopedResponseBody):
 
     latest_run_id: Optional[UUID] = Field(
         default=None,
-        title="The ID of the latest run of the pipeline namespace.",
+        title="The ID of the latest run of the pipeline.",
     )
     latest_run_status: Optional[ExecutionStatus] = Field(
         default=None,
-        title="The status of the latest run of the pipeline namespace.",
+        title="The status of the latest run of the pipeline.",
     )
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline.",

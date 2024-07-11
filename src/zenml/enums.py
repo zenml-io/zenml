@@ -340,6 +340,7 @@ class TaggableResourceTypes(StrEnum):
     MODEL_VERSION = "model_version"
     PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
+    RUN_TEMPLATE = "run_template"
 
 
 class ResponseUpdateStrategy(StrEnum):
