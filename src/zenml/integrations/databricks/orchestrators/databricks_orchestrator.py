@@ -25,7 +25,7 @@ from databricks.sdk.service.compute import (
     ClusterSpec,
     WorkloadType,
 )
-from databricks.sdk.service.jobs import JobCluster, JobParameterDefinition
+from databricks.sdk.service.jobs import JobCluster
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml.client import Client
@@ -426,15 +426,10 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 ),
             ),
         )
-        job_parameter = JobParameterDefinition(
-            name="job_id",
-            default="{{job.id}}",
-        )
         job = databricks_client.jobs.create(
             name=pipeline_name,
             tasks=tasks,
             job_clusters=[job_cluster],
-            parameters=[job_parameter],
         )
         assert job.job_id is not None
         databricks_client.jobs.run_now(job_id=job.job_id)
