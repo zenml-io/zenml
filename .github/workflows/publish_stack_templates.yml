@@ -23,14 +23,4 @@ jobs:
       - name: Push CloudFormation template to S3
         run: |-
           aws s3 cp infra/aws/aws-ecr-s3-sagemaker.yaml s3://zenml-cf-templates/aws-ecr-s3-sagemaker.yaml
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@v0
-        with:
-          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
-          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
-          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
-      # Publish the Deployment Manager function code to GCS
-      - name: Push Deployment Manager function to GCS
-        run: |-
-          zip -j gcp-dm-stack-register.zip infra/gcp/main.py infra/gcp/requirements.txt
-          gsutil cp gcp-dm-stack-register.zip gs://zenml-public-bucket/zenml-gcp-dm-templates/
+
