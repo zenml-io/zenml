@@ -240,8 +240,6 @@ class StepLogsStorage:
 
         # Immutable filesystems state
         self.last_merge_time = time.time()
-        self.log_files_not_merged: List[str] = []
-        self.next_merged_file_name: str = self._get_timestamped_filename()
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
@@ -279,13 +277,16 @@ class StepLogsStorage:
             or time.time() - self.last_save_time >= self.time_interval
         )
 
-    def _get_timestamped_filename(self) -> str:
+    def _get_timestamped_filename(self, suffix: str = "") -> str:
         """Returns a timestamped filename.
+
+        Args:
+            suffix: optional suffix for the file name
 
         Returns:
             The timestamped filename.
         """
-        return f"{time.time()}{LOGS_EXTENSION}"
+        return f"{time.time()}{suffix}{LOGS_EXTENSION}"
 
     def save_to_file(self, force: bool = False) -> None:
         """Method to save the buffer to the given URI.
@@ -302,12 +303,7 @@ class StepLogsStorage:
             try:
                 if self.buffer:
                     if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-                        if not self.log_files_not_merged:
-                            self.next_merged_file_name = (
-                                self._get_timestamped_filename()
-                            )
                         _logs_uri = self._get_timestamped_filename()
-                        self.log_files_not_merged.append(_logs_uri)
                         with self.artifact_store.open(
                             os.path.join(
                                 self.logs_uri,
@@ -346,42 +342,40 @@ class StepLogsStorage:
             and time.time() - self.last_merge_time > self.merge_files_interval
         ):
             try:
-                self.merge_log_files(
-                    self.next_merged_file_name, self.log_files_not_merged
-                )
+                self.merge_log_files()
             except (OSError, IOError) as e:
                 logger.error(f"Error while trying to roll up logs: {e}")
-            else:
-                self.log_files_not_merged = []
             finally:
                 self.last_merge_time = time.time()
 
-    def merge_log_files(
-        self,
-        file_name: Optional[str] = None,
-        files: Optional[List[str]] = None,
-    ) -> None:
+    def merge_log_files(self, merge_all_files: bool = False) -> None:
         """Merges all log files into one in the given URI.
 
         Called on the logging context exit.
 
         Args:
-            file_name: The name of the merged log file.
-            files: The list of log files to merge.
+            merge_all_files: whether to merge all files or only raw files
         """
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-            files_ = files or self.artifact_store.listdir(self.logs_uri)
-            file_name_ = file_name or self._get_timestamped_filename()
+            merged_file_suffix = "_merged"
+            files_ = self.artifact_store.listdir(self.logs_uri)
+            if not merge_all_files:
+                # already merged files will not be merged again
+                files_ = [f for f in files_ if merged_file_suffix not in f]
+            file_name_ = self._get_timestamped_filename(
+                suffix=merged_file_suffix
+            )
             if len(files_) > 1:
                 files_.sort()
                 logger.debug("Log files count: %s", len(files_))
 
-                try:
-                    # dump all logs to a local file first
-                    with self.artifact_store.open(
-                        os.path.join(self.logs_uri, file_name_), "w"
-                    ) as merged_file:
-                        for file in files_:
+                missing_files = set()
+                # dump all logs to a local file first
+                with self.artifact_store.open(
+                    os.path.join(self.logs_uri, file_name_), "w"
+                ) as merged_file:
+                    for file in files_:
+                        try:
                             merged_file.write(
                                 str(
                                     _load_file_from_artifact_store(
@@ -391,11 +385,12 @@ class StepLogsStorage:
                                     )
                                 )
                             )
-                except Exception as e:
-                    logger.warning(f"Failed to merge log files. {e}")
-                else:
-                    # clean up left over files
-                    for file in files_:
+                        except DoesNotExistException:
+                            missing_files.add(file)
+
+                # clean up left over files
+                for file in files_:
+                    if file not in missing_files:
                         self.artifact_store.remove(
                             os.path.join(self.logs_uri, str(file))
                         )
@@ -452,7 +447,6 @@ class StepLogsStorageContext:
         Restores the `write` method of both stderr and stdout.
         """
         self.storage.save_to_file(force=True)
-        self.storage.merge_log_files()
 
         setattr(sys.stdout, "write", self.stdout_write)
         setattr(sys.stdout, "flush", self.stdout_flush)
@@ -461,6 +455,11 @@ class StepLogsStorageContext:
         setattr(sys.stderr, "flush", self.stderr_flush)
 
         redirected.set(False)
+
+        try:
+            self.storage.merge_log_files(merge_all_files=True)
+        except (OSError, IOError) as e:
+            logger.warning(f"Step logs roll-up failed: {e}")
 
     def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
         """Wrapper function that utilizes the storage object to store logs.
