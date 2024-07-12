@@ -14,7 +14,7 @@ ZenML provides a centralized secrets management system that allows you to regist
 
 In a local ZenML deployment, secret values are also stored in the local SQLite database. When connected to a remote ZenML server, the secret values are stored in the secrets management back-end that the server's Secrets Store is configured to use, while all access to the secrets is done through the ZenML server API.
 
-<figure><img src="../../../../.gitbook/assets/secrets-store-architecture.png" alt=""><figcaption><p>Basic Secrets Store Architecture</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/secrets-store-architecture.png" alt=""><figcaption><p>Basic Secrets Store Architecture</p></figcaption></figure>
 
 Currently, the ZenML server can be configured to use one of the following supported secrets store back-ends:
 
