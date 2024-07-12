@@ -16,7 +16,7 @@
     * [Troubleshoot the deployed server](getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server.md)
     * [Troubleshoot stack components](getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-stack-components.md)
     * [Custom secret stores](getting-started/deploying-zenml/manage-the-deployed-services/custom-secret-stores.md)
-    * [Secret management](getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md)
+  * [Secret management](getting-started/deploying-zenml/secret-management.md)
 * [☁️ ZenML Pro](getting-started/zenml-pro/README.md)
   * [System Architectures](getting-started/zenml-pro/system-architectures.md)
   * [ZenML SaaS](getting-started/zenml-pro/zenml-cloud.md)
