@@ -76,6 +76,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: github.event.pull_request.head.repo.fork == false
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mysql full
   mysql-db-migration-testing-random:
@@ -98,6 +99,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: github.event.pull_request.head.repo.fork == false
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mysql random
   sqlite-db-migration-testing-full:
@@ -138,6 +140,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: github.event.pull_request.head.repo.fork == false
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mariadb full
   small-checks:
