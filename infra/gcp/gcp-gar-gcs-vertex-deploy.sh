@@ -53,6 +53,7 @@ fi
 
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 
+
 # Enable the necessary services
 #
 # The following services must be enabled in your GCP project:
@@ -123,7 +124,7 @@ set -e
 if [ $DEPLOYMENT_EXIT_CODE -ne 0 ]; then
     echo "ERROR: The deployment failed. Please check the logs for more information."
     echo
-    echo "Hint: sometimes it helps if you delete and retry the deployment. You can do this by running the following commands:"
+    echo "Hint: Please check that the services are available in the GCP region you selected."
     echo
     echo "gcloud deployment-manager deployments delete $ZENML_STACK_NAME"
     echo "./gcp-gar-gcs-vertex-deploy.sh"
