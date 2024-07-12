@@ -2513,7 +2513,7 @@ def _get_stack_component_info(
             available_orchestrators = []
 
             for each in service_connector_resource_models:
-                types = []
+                types: List[str] = []
                 if each.resource_type == generic_name:
                     types = []
                     if native_orchestrator is not None:
