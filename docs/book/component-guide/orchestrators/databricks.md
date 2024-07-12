@@ -26,15 +26,13 @@ You should use the Databricks orchestrator if:
 You will need to do the following to start using the Databricks orchestrator:
 
 * An Active Databricks workspace
-* Active Databricks account or service account with sufficiant permession to create and run jobs
+* Active Databricks account or service account with sufficient permission to create and run jobs
 
 
 ## How it works
 
 The HyperAI orchestrator works with Wheel Packages. Under the hood, ZenML Creates a python wheel from your project that get's uploaded to databricks to be executed, it also creates 
-a job using Databricks SDK, this databricks job definition contains all neccsary information such as the steps and ensure that pipeline steps will only run if their connected upstream steps have successfully finished., dependencies needed to run the pipeline and the provided extra configuration in case we want to run on gpu
-
-
+a job using Databricks SDK, this Databricks job definition contains all necessary information such as the steps and ensure that pipeline steps will only run if their connected upstream steps have successfully finished.
 ### How to use it
 
 To use the Databricks orchestrator, you first need to register it and add it to your stack, we must configure the host and a client_id and client_secret as authentication methods. For example, we can register the orchestrator and use it in our active stack:
