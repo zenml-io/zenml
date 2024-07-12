@@ -124,7 +124,14 @@ set -e
 if [ $DEPLOYMENT_EXIT_CODE -ne 0 ]; then
     echo "ERROR: The deployment failed. Please check the logs for more information."
     echo
-    echo "Hint: Please check that the services are available in the GCP region you selected."
+    echo "This usually happens for one of the following reasons:"
+    echo
+    echo "1. Temporary issues related to enabling services or granting permissions in newly created projects. This is "
+    echo "usually solved by deleting and retrying the deployment."
+    echo "2. One of the GCP services required for the stack (S3 or GCP Artifact Registry) is not available in the "
+    echo "region you selected. In this case, please configure a different region and try again."
+    echo
+    echo "To retry the deployment after you addressed the possible cause, you can run the following commands:"
     echo
     echo "gcloud deployment-manager deployments delete $ZENML_STACK_NAME"
     echo "./gcp-gar-gcs-vertex-deploy.sh"
