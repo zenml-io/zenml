@@ -386,6 +386,21 @@ class PluginSubType(StrEnum):
     PIPELINE_RUN = "pipeline_run"
 
 
+class OnboardingStep(StrEnum):
+    """All onboarding steps."""
+
+    DEVICE_VERIFIED = "device_verified"
+    PIPELINE_RUN = "pipeline_run"
+    STARTER_SETUP_COMPLETED = "starter_setup_completed"
+    STACK_WITH_REMOTE_ORCHESTRATOR_CREATED = (
+        "stack_with_remote_orchestrator_created"
+    )
+    PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR = (
+        "pipeline_run_with_remote_orchestrator"
+    )
+    PRODUCTION_SETUP_COMPLETED = "production_setup_completed"
+
+
 class StackDeploymentProvider(StrEnum):
     """All possible stack deployment providers."""
 
