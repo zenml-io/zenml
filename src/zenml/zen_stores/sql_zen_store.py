@@ -33,6 +33,7 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -107,6 +108,7 @@ from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
     ModelStages,
+    OnboardingStep,
     SecretScope,
     SecretsStoreType,
     SorterOps,
@@ -797,6 +799,7 @@ class SqlZenStore(BaseZenStore):
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
     _should_send_user_enriched_events: bool = False
+    _cached_onboarding_state: Optional[Set[str]] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1687,6 +1690,60 @@ class SqlZenStore(BaseZenStore):
             session.refresh(settings)
 
             return settings.to_model(include_metadata=True)
+
+    def get_onboarding_state(self) -> List[str]:
+        """Get the server onboarding state.
+
+        Returns:
+            The server onboarding state.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+            if settings.onboarding_state:
+                self._cached_onboarding_state = set(
+                    json.loads(settings.onboarding_state)
+                )
+                return list(self._cached_onboarding_state)
+            else:
+                return []
+
+    def _update_onboarding_state(
+        self, completed_steps: Set[str], session: Session
+    ) -> None:
+        """Update the server onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+            session: DB session.
+        """
+        if self._cached_onboarding_state and completed_steps.issubset(
+            self._cached_onboarding_state
+        ):
+            # All the onboarding steps are already completed, no need to query
+            # the DB
+            return
+
+        settings = self._get_server_settings(session=session)
+        settings.update_onboarding_state(completed_steps=completed_steps)
+        session.add(settings)
+        session.commit()
+        session.refresh(settings)
+
+        assert settings.onboarding_state
+        self._cached_onboarding_state = set(
+            json.loads(settings.onboarding_state)
+        )
+
+    def update_onboarding_state(self, completed_steps: Set[str]) -> None:
+        """Update the server onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+        """
+        with Session(self.engine) as session:
+            self._update_onboarding_state(
+                completed_steps=completed_steps, session=session
+            )
 
     def activate_server(
         self, request: ServerActivationRequest
@@ -6156,6 +6213,7 @@ class SqlZenStore(BaseZenStore):
 
             connector = new_service_connector.to_model(include_metadata=True)
             self._populate_connector_type(connector)
+
             return connector
 
     def get_service_connector(
@@ -6930,6 +6988,16 @@ class SqlZenStore(BaseZenStore):
             session.add(new_stack_schema)
             session.commit()
             session.refresh(new_stack_schema)
+
+            for component in defined_components:
+                if component.type == StackComponentType.ORCHESTRATOR:
+                    if component.flavor not in {"local", "local_docker"}:
+                        self._update_onboarding_state(
+                            completed_steps={
+                                OnboardingStep.STACK_WITH_REMOTE_ORCHESTRATOR_CREATED
+                            },
+                            session=session,
+                        )
 
             return new_stack_schema.to_model(include_metadata=True)
 
@@ -7965,6 +8033,25 @@ class SqlZenStore(BaseZenStore):
                         "duration_seconds": duration_seconds,
                         **stack_metadata,
                     }
+
+                completed_onboarding_steps: Set[str] = {
+                    OnboardingStep.PIPELINE_RUN,
+                    OnboardingStep.STARTER_SETUP_COMPLETED,
+                }
+                if stack_metadata["orchestrator"] not in {
+                    "local",
+                    "local_docker",
+                }:
+                    completed_onboarding_steps.update(
+                        {
+                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
+                            OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                        }
+                    )
+
+                self._update_onboarding_state(
+                    completed_steps=completed_onboarding_steps, session=session
+                )
             pipeline_run.update(run_update)
             session.add(pipeline_run)
 
