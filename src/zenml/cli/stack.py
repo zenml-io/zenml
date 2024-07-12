@@ -2504,11 +2504,11 @@ def _get_stack_component_info(
 
         def get_available_orchestrators(
             generic_name: str,
-            skypilot_orchestrator: str,
             generic_docs_link: str,
             k8s_docs_link: str,
             can_generate_long_tokens: bool,
             native_orchestrator: Optional[str] = None,
+            skypilot_orchestrator: Optional[str] = None,
         ) -> List[List[str]]:
             available_orchestrators = []
 
@@ -2518,7 +2518,10 @@ def _get_stack_component_info(
                     types = []
                     if native_orchestrator is not None:
                         types.append(native_orchestrator)
-                    if can_generate_long_tokens:
+                    if (
+                        skypilot_orchestrator is not None
+                        and can_generate_long_tokens
+                    ):
                         types.append(skypilot_orchestrator)
 
                 if each.resource_type == "kubernetes-cluster":
@@ -2563,8 +2566,10 @@ def _get_stack_component_info(
         elif cloud_provider == "azure":
             available_orchestrators = get_available_orchestrators(
                 generic_name="azure-generic",
+                # TODO: set to AzureML value, once we have it
                 native_orchestrator=None,
-                skypilot_orchestrator="Skypilot (VM)",
+                # TODO: set to "Skypilot (VM)" once 0.6.1 is released
+                skypilot_orchestrator=None,
                 generic_docs_link=f"{AZURE_DOCS}#generic-azure-resource",
                 k8s_docs_link=f"{AZURE_DOCS}#aks-kubernetes-cluster",
                 can_generate_long_tokens=can_generate_long_tokens,
@@ -2591,12 +2596,14 @@ def _get_stack_component_info(
         elif selected_orchestrator[0] == "Skypilot (EC2)":
             flavor = "vm_aws"
             config["region"] = selected_orchestrator[1]
-        elif selected_orchestrator[0] == "Skypilot (Compute)":
-            flavor = "vm_gcp"
-            config["region"] = query_gcp_region("Skypilot cluster")
         elif selected_orchestrator[0] == "Vertex AI":
             flavor = "vertex"
             config["location"] = query_gcp_region("Vertex AI job")
+        elif selected_orchestrator[0] == "Skypilot (Compute)":
+            flavor = "vm_gcp"
+            config["region"] = query_gcp_region("Skypilot cluster")
+        # TODO: add AzureML, once we have it
+        # TODO: add Skypilot (VM), once 0.6.1 is released
         elif selected_orchestrator[0] == "Kubernetes":
             flavor = "kubernetes"
         else:
