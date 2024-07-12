@@ -59,9 +59,10 @@ manual configuration.
 
 {% code title="Example prompt for AWS auto-configuration" %}
 ```
-AWS cloud service connector has detected connection credentials in your environment.
-Would you like to use these credentials or create a new configuration by providing 
-connection details? [y/n] (y):
+AWS cloud service connector has detected connection 
+credentials in your environment.
+Would you like to use these credentials or create a new 
+configuration by providing connection details? [y/n] (y):
 ```
 {% endcode %}
 
