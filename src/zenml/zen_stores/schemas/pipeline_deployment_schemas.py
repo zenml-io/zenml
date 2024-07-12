@@ -155,8 +155,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     # SQLModel Relationships
     user: Optional["UserSchema"] = Relationship()
     workspace: "WorkspaceSchema" = Relationship()
-    stack: "StackSchema" = Relationship()
-    pipeline: "PipelineSchema" = Relationship()
+    stack: Optional["StackSchema"] = Relationship()
+    pipeline: Optional["PipelineSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship(
         sa_relationship_kwargs={

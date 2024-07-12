@@ -1,7 +1,7 @@
 """Simplify pipelines [b59aa68fdb1f].
 
 Revision ID: b59aa68fdb1f
-Revises: 0.61.0
+Revises: b4fca5241eea
 Create Date: 2024-07-04 14:00:32.830722
 
 """
@@ -15,7 +15,7 @@ from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "b59aa68fdb1f"
-down_revision = "0.61.0"
+down_revision = "b4fca5241eea"
 branch_labels = None
 depends_on = None
 

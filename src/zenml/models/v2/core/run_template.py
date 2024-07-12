@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline templates."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -36,6 +36,9 @@ from zenml.models.v2.core.code_reference import (
 from zenml.models.v2.core.pipeline import PipelineResponse
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
+)
+from zenml.models.v2.core.pipeline_deployment import (
+    PipelineDeploymentResponse,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -97,6 +100,9 @@ class RunTemplateUpdate(BaseUpdate):
 class RunTemplateResponseBody(WorkspaceScopedResponseBody):
     """Response body for run templates."""
 
+    runnable: bool = Field(
+        title="If a run can be started from the template.",
+    )
     latest_run_id: Optional[UUID] = Field(
         default=None,
         title="The ID of the latest run of the run template.",
@@ -123,15 +129,23 @@ class RunTemplateResponseMetadata(WorkspaceScopedResponseMetadata):
     pipeline_spec: Optional[PipelineSpec] = Field(
         default=None, title="The pipeline spec of the template."
     )
+    config_template: Dict[str, Any] = Field(
+        default={}, title="Configuration template for the run."
+    )
 
 
 class RunTemplateResponseResources(WorkspaceScopedResponseResources):
     """All resource models associated with the run template."""
 
+    source_deployment: Optional[PipelineDeploymentResponse] = Field(
+        default=None,
+        title="The deployment that is the source of the template.",
+    )
     pipeline: Optional[PipelineResponse] = Field(
         default=None, title="The pipeline associated with the template."
     )
-    build: PipelineBuildResponse = Field(
+    build: Optional[PipelineBuildResponse] = Field(
+        default=None,
         title="The pipeline build associated with the template.",
     )
     code_reference: Optional[CodeReferenceResponse] = Field(
@@ -222,6 +236,24 @@ class RunTemplateResponse(
         return self.get_metadata().pipeline_spec
 
     @property
+    def config_template(self) -> Dict[str, Any]:
+        """The `config_template` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().config_template
+
+    @property
+    def source_deployment(self) -> Optional[PipelineDeploymentResponse]:
+        """The `source_deployment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().source_deployment
+
+    @property
     def pipeline(self) -> Optional[PipelineResponse]:
         """The `pipeline` property.
 
@@ -231,7 +263,7 @@ class RunTemplateResponse(
         return self.get_resources().pipeline
 
     @property
-    def build(self) -> PipelineBuildResponse:
+    def build(self) -> Optional[PipelineBuildResponse]:
         """The `build` property.
 
         Returns:
@@ -259,6 +291,7 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "code_repository_id",
         "stack_id",
+        "build_id" "pipeline_id",
     ]
 
     name: Optional[str] = Field(
@@ -310,13 +343,16 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
-            PipelineBuildSchema,
+            PipelineDeploymentSchema,
             RunTemplateSchema,
         )
 
         if self.code_repository_id:
             code_repo_filter = and_(
-                RunTemplateSchema.code_reference_id == CodeReferenceSchema.id,
+                RunTemplateSchema.source_deployment_id
+                == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.code_reference_id
+                == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
                 == self.code_repository_id,
             )
@@ -324,9 +360,26 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
 
         if self.stack_id:
             stack_filter = and_(
-                RunTemplateSchema.build_id == PipelineBuildSchema.id,
-                PipelineBuildSchema.stack_id == self.stack_id,
+                RunTemplateSchema.source_deployment_id
+                == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == self.stack_id,
             )
             custom_filters.append(stack_filter)
+
+        if self.build_id:
+            build_filter = and_(
+                RunTemplateSchema.source_deployment_id
+                == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.build_id == self.build_id,
+            )
+            custom_filters.append(build_filter)
+
+        if self.pipeline_id:
+            pipeline_filter = and_(
+                RunTemplateSchema.source_deployment_id
+                == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.pipeline_id == self.pipeline_id,
+            )
+            custom_filters.append(pipeline_filter)
 
         return custom_filters

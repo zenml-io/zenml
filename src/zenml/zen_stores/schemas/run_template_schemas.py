@@ -33,11 +33,6 @@ from zenml.models import (
     RunTemplateUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
-from zenml.zen_stores.schemas.code_repository_schemas import (
-    CodeReferenceSchema,
-)
-from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
-from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -71,15 +66,6 @@ class RunTemplateSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
-    pipeline_version_hash: Optional[str] = Field(nullable=True, default=None)
-    pipeline_spec: Optional[str] = Field(
-        sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
-            nullable=True,
-        )
-    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -97,26 +83,10 @@ class RunTemplateSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    pipeline_id: Optional[UUID] = build_foreign_key_field(
+    source_deployment_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineSchema.__tablename__,
-        source_column="pipeline_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    build_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=PipelineBuildSchema.__tablename__,
-        source_column="build_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    code_reference_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=CodeReferenceSchema.__tablename__,
-        source_column="code_reference_id",
+        target="pipeline_deployment",
+        source_column="source_deployment_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
@@ -124,12 +94,16 @@ class RunTemplateSchema(BaseSchema, table=True):
 
     user: Optional["UserSchema"] = Relationship()
     workspace: "WorkspaceSchema" = Relationship()
-    pipeline: Optional["PipelineSchema"] = Relationship()
-    build: "PipelineBuildSchema" = Relationship()
-    code_reference: Optional["CodeReferenceSchema"] = Relationship()
+    source_deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "foreign_keys": "[RunTemplateSchema.source_deployment_id]"
+        }
+    )
 
     runs: List["PipelineRunSchema"] = Relationship(
         sa_relationship_kwargs={
+            "primaryjoin": "RunTemplateSchema.id==PipelineDeploymentSchema.template_id",
+            "secondaryjoin": "PipelineDeploymentSchema.id==PipelineRunSchema.deployment_id",
             "secondary": "pipeline_deployment",
             "cascade": "delete",
             "viewonly": True,
@@ -148,14 +122,11 @@ class RunTemplateSchema(BaseSchema, table=True):
     def from_request(
         cls,
         request: RunTemplateRequest,
-        deployment: "PipelineDeploymentSchema",
     ) -> "RunTemplateSchema":
         """Create a schema from a request.
 
         Args:
             request: The request to convert.
-            deployment: Schema of the deployment that is the base of the
-                template.
 
         Raises:
             ValueError: If the deployment does not have an associated build.
@@ -163,21 +134,12 @@ class RunTemplateSchema(BaseSchema, table=True):
         Returns:
             The created schema.
         """
-        if not deployment.build_id:
-            raise ValueError(
-                "Unable to create run template from deployment without build."
-            )
-
         return cls(
             user_id=request.user,
             workspace_id=request.workspace,
             name=request.name,
             description=request.description,
-            pipeline_version_hash=deployment.pipeline_version_hash,
-            pipeline_spec=deployment.pipeline_spec,
-            pipeline_id=deployment.pipeline_id,
-            build_id=deployment.build_id,
-            code_reference_id=deployment.code_reference_id,
+            source_deployment_id=request.deployment_id,
         )
 
     def update(self, update: RunTemplateUpdate) -> "RunTemplateSchema":
@@ -214,34 +176,103 @@ class RunTemplateSchema(BaseSchema, table=True):
         Returns:
             Model representing this schema.
         """
+        runnable = False
+        if (
+            self.source_deployment
+            and self.source_deployment.build
+            and self.source_deployment.stack
+        ):
+            runnable = True
+
         body = RunTemplateResponseBody(
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
+            runnable=runnable,
             latest_run_id=self.runs[-1].id if self.runs else None,
             latest_run_status=self.runs[-1].status if self.runs else None,
             tags=[t.tag.to_model() for t in self.tags],
         )
+
         metadata = None
         if include_metadata:
+            if self.source_deployment:
+                pipeline_version_hash = (
+                    self.source_deployment.pipeline_version_hash
+                )
+                pipeline_spec = (
+                    PipelineSpec.model_validate_json(
+                        self.source_deployment.pipeline_spec
+                    )
+                    if self.source_deployment.pipeline_spec
+                    else None
+                )
+                from zenml.config.pipeline_run_configuration import (
+                    PipelineRunConfiguration,
+                )
+                from zenml.config.step_configurations import (
+                    StepConfigurationUpdate,
+                )
+
+                steps_configs = {
+                    name: step.config.model_dump(
+                        include=set(StepConfigurationUpdate.model_fields),
+                        exclude={"name", "outputs"},
+                    )
+                    for name, step in self.source_deployment.to_model().step_configurations.items()
+                }
+
+                config_template = {
+                    "run_name": self.source_deployment.run_name_template,
+                    "steps": steps_configs,
+                    **self.source_deployment.to_model().pipeline_configuration.model_dump(
+                        include=set(PipelineRunConfiguration.model_fields),
+                        exclude={"schedule", "build", "parameters"},
+                    ),
+                }
+            else:
+                pipeline_version_hash = None
+                pipeline_spec = None
+                config_template = None
+
             metadata = RunTemplateResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
-                pipeline_version_hash=self.pipeline_version_hash,
-                pipeline_spec=PipelineSpec.model_validate_json(
-                    self.pipeline_spec
-                )
-                if self.pipeline_spec
-                else None,
+                pipeline_version_hash=pipeline_version_hash,
+                pipeline_spec=pipeline_spec,
+                config_template=config_template,
             )
+
         resources = None
         if include_resources:
+            if self.source_deployment:
+                pipeline = (
+                    self.source_deployment.pipeline.to_model()
+                    if self.source_deployment.pipeline
+                    else None
+                )
+                build = (
+                    self.source_deployment.build.to_model()
+                    if self.source_deployment.build
+                    else None
+                )
+                code_reference = (
+                    self.source_deployment.code_reference.to_model()
+                    if self.source_deployment.code_reference
+                    else None
+                )
+            else:
+                pipeline = None
+                build = None
+                code_reference = None
+
             resources = RunTemplateResponseResources(
-                pipeline=self.pipeline.to_model() if self.pipeline else None,
-                build=self.build.to_model(),
-                code_reference=self.code_reference.to_model()
-                if self.code_reference
+                source_deployment=self.source_deployment.to_model()
+                if self.source_deployment
                 else None,
+                pipeline=pipeline,
+                build=build,
+                code_reference=code_reference,
             )
 
         return RunTemplateResponse(

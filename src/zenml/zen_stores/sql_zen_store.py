@@ -4440,8 +4440,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a template with the same name already exists.
-            KeyError: If the deployment specified in the template does not
-                exist.
         """
         with Session(self.engine) as session:
             existing_template = session.exec(
@@ -4456,20 +4454,7 @@ class SqlZenStore(BaseZenStore):
                     "with this name already exists."
                 )
 
-            deployment = session.exec(
-                select(PipelineDeploymentSchema).where(
-                    PipelineDeploymentSchema.id == template.deployment_id
-                )
-            ).first()
-            if deployment is None:
-                raise KeyError(
-                    "Unable to get get deployment with ID "
-                    f"{template.deployment_id}."
-                )
-
-            template_schema = RunTemplateSchema.from_request(
-                request=template, deployment=deployment
-            )
+            template_schema = RunTemplateSchema.from_request(request=template)
 
             if template.tags:
                 self._attach_tags_to_resource(
