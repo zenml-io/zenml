@@ -56,12 +56,14 @@ As the very first step the configuration wizard will check if the selected
 cloud provider credentials can be acquired automatically from the local environment.
 If the credentials are found, you will be offered to use them or proceed to 
 manual configuration.
+
 {% code title="Example prompt for AWS auto-configuration" %}
 ```
 AWS cloud service connector has detected connection credentials in your environment.
 Would you like to use these credentials or create a new configuration by providing 
-connection details? [y/n] (y): <input>
+connection details? [y/n] (y):
 ```
+{% endcode %}
 
 If you decline auto-configuration next you might be offered the list of already 
 created service connectors available on the server: pick one of them and proceed or pick 
@@ -191,34 +193,36 @@ For each component, you will be asked:
 - if you would like to reuse one of the existing components connected via a defined 
 service connector (if any)
 
-    {% code title="Example Command Output for available orchestrator" %}
-    ```
-                        Available orchestrator
-    ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ Choice           ┃ Name                                               ┃
-    ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ [0]              │ Create a new orchestrator                          │
-    ├──────────────────┼────────────────────────────────────────────────────┤
-    │ [1]              │ existing_orchestrator_1                            │
-    ├──────────────────┼────────────────────────────────────────────────────┤
-    │ [2]              │ existing_orchestrator_2                            │
-    └──────────────────┴────────────────────────────────────────────────────┘
-    ```
+{% code title="Example Command Output for available orchestrator" %}
+```
+                    Available orchestrator
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice           ┃ Name                                               ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]              │ Create a new orchestrator                          │
+├──────────────────┼────────────────────────────────────────────────────┤
+│ [1]              │ existing_orchestrator_1                            │
+├──────────────────┼────────────────────────────────────────────────────┤
+│ [2]              │ existing_orchestrator_2                            │
+└──────────────────┴────────────────────────────────────────────────────┘
+```
+{% endcode %}
+
 - to create a new one from available to the service connector resources 
 (if the existing not picked)
 
-    {% code title="Example Command Output for Artifact Stores" %}
-    ```
-                            Available GCP storages                            
-    ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ Choice        ┃ Storage                                               ┃
-    ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ [0]           │ gs://***************************                      │
-    ├───────────────┼───────────────────────────────────────────────────────┤
-    │ [1]           │ gs://***************************                      │
-    └───────────────┴───────────────────────────────────────────────────────┘
-    ```
-    {% endcode %}
+{% code title="Example Command Output for Artifact Stores" %}
+```
+                        Available GCP storages                            
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Choice        ┃ Storage                                               ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ [0]           │ gs://***************************                      │
+├───────────────┼───────────────────────────────────────────────────────┤
+│ [1]           │ gs://***************************                      │
+└───────────────┴───────────────────────────────────────────────────────┘
+```
+{% endcode %}
 
 
 
