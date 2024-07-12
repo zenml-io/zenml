@@ -52,18 +52,30 @@ support to Azure as well. Stay in touch for further updates.
 
 ### Define Service Connector
 
-Below you will find cloud-specific selection options. Based on your selection, you will have to provide the required parameters listed 
-below. This will allow ZenML to create a Service Connector and 
-authenticate you to use your cloud resources.
+As the very first step the configuration wizard will check if the selected 
+cloud provider credentials can be acquired automatically from the local environment.
+If the credentials are found, you will be offered to use them or proceed to 
+manual configuration.
+{% code title="Example prompt for AWS auto-configuration" %}
+```
+AWS cloud service connector has detected connection credentials in your environment.
+Would you like to use these credentials or create a new configuration by providing 
+connection details? [y/n] (y): <input>
+```
 
-#### AWS
+If you decline auto-configuration next you might be offered the list of already 
+created service connectors available on the server: pick one of them and proceed or pick 
+`0` to create a new one.
+
+#### AWS connection options
 
 If you select `aws` as your cloud provider, and you haven't selected a connector
-yet, you will be prompted to select an authentication method for your stack.
+or declined auto-configuration, you will be prompted to select an authentication 
+method for your cloud connector.
 
-{% code title="Example Command Output" %}
+{% code title="Available authentication methods for AWS" %}
 ```
-                  Available authentication methods for aws                   
+                  Available authentication methods for AWS                   
 ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Choice  ┃ Name                           ┃ Required                       ┃
 ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -108,14 +120,19 @@ yet, you will be prompted to select an authentication method for your stack.
 ```
 {% endcode %}
 
+Based on your selection, you will have to provide the required parameters 
+listed below. This will allow ZenML to create a Service Connector and authenticate 
+you to use your cloud resources.
+
 #### GCP
 
 If you select `gcp` as your cloud provider, and you haven't selected a connector
-yet, you will be prompted to select an authentication method for your stack.
+or declined auto-configuration, you will be prompted to select an authentication 
+method for your cloud connector.
 
-{% code title="Example Command Output" %}
+{% code title="Available authentication methods for GCP" %}
 ```
-                  Available authentication methods for gcp                   
+                  Available authentication methods for GCP                   
 ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Choice  ┃ Name                           ┃ Required                       ┃
 ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -156,23 +173,54 @@ yet, you will be prompted to select an authentication method for your stack.
 ```
 {% endcode %}
 
+Based on your selection, you will have to provide the required parameters 
+listed below. This will allow ZenML to create a Service Connector and authenticate 
+you to use your cloud resources.
+
 ### Defining cloud components
 
-Next, for each missing component, the available resources will be listed to 
-you as follows:
+Next, you will define three major components of your target stack:
+- artifact store
+- orchestrator
+- container registry
 
-{% code title="Example Command Output for Artifact Stores" %}
-```
-                           Available GCP storages                            
-┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Choice        ┃ Storage                                                   ┃
-┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ [0]           │ gs://***************************                          │
-├───────────────┼───────────────────────────────────────────────────────────┤
-│ [1]           │ gs://***************************                          │
-└───────────────┴───────────────────────────────────────────────────────────┘
-```
-{% endcode %}
+All three are crucial for a basic cloud stack. Extra components can be added later 
+if they are needed.
+
+For each component, you will be asked:
+- if you would like to reuse one of the existing components connected via a defined 
+service connector (if any)
+
+    {% code title="Example Command Output for available orchestrator" %}
+    ```
+                        Available orchestrator
+    ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ Choice           ┃ Name                                               ┃
+    ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ [0]              │ Create a new orchestrator                          │
+    ├──────────────────┼────────────────────────────────────────────────────┤
+    │ [1]              │ existing_orchestrator_1                            │
+    ├──────────────────┼────────────────────────────────────────────────────┤
+    │ [2]              │ existing_orchestrator_2                            │
+    └──────────────────┴────────────────────────────────────────────────────┘
+    ```
+- to create a new one from available to the service connector resources 
+(if the existing not picked)
+
+    {% code title="Example Command Output for Artifact Stores" %}
+    ```
+                            Available GCP storages                            
+    ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ Choice        ┃ Storage                                               ┃
+    ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ [0]           │ gs://***************************                      │
+    ├───────────────┼───────────────────────────────────────────────────────┤
+    │ [1]           │ gs://***************************                      │
+    └───────────────┴───────────────────────────────────────────────────────┘
+    ```
+    {% endcode %}
+
+
 
 ### Final steps
 

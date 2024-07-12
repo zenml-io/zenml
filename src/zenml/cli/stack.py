@@ -329,6 +329,13 @@ def register_stack(
                 auto_configure=True,
                 verify=False,
             )
+        except NotImplementedError:
+            cli_utils.warning(
+                f"The {provider.upper()} service connector libraries are not "
+                "installed properly. Please run `zenml integration install "
+                f"{provider}` and try again to enable auto-discovery of the "
+                "connection configuration."
+            )
         except Exception:
             pass
         if service_connector_response:
@@ -2349,7 +2356,7 @@ def _get_service_connector_info(
             choices.append([value.name, required])
 
         selected_auth_idx = cli_utils.multi_choice_prompt(
-            object_type=f"authentication methods for {cloud_provider}",
+            object_type=f"authentication methods for {cloud_provider.upper()}",
             choices=choices,
             headers=headers,
             prompt_text="Please choose one of the authentication option above",
