@@ -12,8 +12,10 @@ To ensure heightened security measures, this connector also enables [the generat
 
 This connector serves as a general means of accessing any AWS service by issuing pre-authenticated boto3 sessions. Additionally, the connector can handle specialized authentication for S3, Docker, and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
-```
+```shell
 $ zenml service-connector list-types --type aws
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
 ┠───────────────────────┼────────┼───────────────────────┼──────────────────┼───────┼────────┨
