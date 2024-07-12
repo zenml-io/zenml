@@ -13,8 +13,10 @@ This connector also supports [automatic configuration and detection of credentia
 
 This connector serves as a general means of accessing any Azure service by issuing credentials to clients. Additionally, the connector can handle specialized authentication for Azure blob storage, Docker and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
-```
+```shell
 $ zenml service-connector list-types --type azure
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃          NAME           │ TYPE     │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
 ┠─────────────────────────┼──────────┼───────────────────────┼───────────────────┼───────┼────────┨

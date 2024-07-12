@@ -6,8 +6,10 @@ description: Configuring HyperAI Connectors to connect ZenML to HyperAI instance
 
 The ZenML HyperAI Service Connector allows authenticating with a HyperAI instance for deployment of pipeline runs. This connector provides pre-authenticated Paramiko SSH clients to Stack Components that are linked to it.
 
-```
+```shell
 $ zenml service-connector list-types --type hyperai
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃           NAME            │ TYPE       │ RESOURCE TYPES     │ AUTH METHODS │ LOCAL │ REMOTE ┃
 ┠───────────────────────────┼────────────┼────────────────────┼──────────────┼───────┼────────┨

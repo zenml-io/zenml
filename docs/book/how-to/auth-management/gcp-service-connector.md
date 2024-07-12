@@ -12,8 +12,10 @@ To ensure heightened security measures, this connector always issues [short-live
 
 This connector serves as a general means of accessing any GCP service by issuing OAuth 2.0 credential objects to clients. Additionally, the connector can handle specialized authentication for GCS, Docker, and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
-```
+```shell
 $ zenml service-connector list-types --type gcp
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
 ┠───────────────────────┼────────┼───────────────────────┼──────────────────┼───────┼────────┨
