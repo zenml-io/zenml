@@ -223,8 +223,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 environment.
 
         Raises:
-            RuntimeError: If trying to run a pipeline in a notebook
-                environment.
             ValueError: If the schedule is not set or if the cron expression
                 is not set.
         """

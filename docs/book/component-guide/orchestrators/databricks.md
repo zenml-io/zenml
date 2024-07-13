@@ -59,7 +59,7 @@ zenml orchestrator register databricks_orchestrator --flavor=databricks --host="
 ```
 
 {% hint style="info" %}
-We recommand creating a Databricks service account with the necessary permissions to create and run jobs. You can find more information on how to create a service account [here](https://docs.databricks.com/dev-tools/api/latest/authentication.html). You can generate a client_id and client_secret for the service account and use them to authenticate with Databricks.
+We recommend creating a Databricks service account with the necessary permissions to create and run jobs. You can find more information on how to create a service account [here](https://docs.databricks.com/dev-tools/api/latest/authentication.html). You can generate a client_id and client_secret for the service account and use them to authenticate with Databricks.
 {% endhint %}
 
 ```shell
