@@ -25,12 +25,11 @@ from databricks.sdk.service.compute import (
     ClusterSpec,
     WorkloadType,
 )
-from databricks.sdk.service.jobs import JobCluster
+from databricks.sdk.service.jobs import CronSchedule, JobCluster
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml.client import Client
 from zenml.constants import METADATA_ORCHESTRATOR_URL
-from zenml.environment import Environment
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
     DatabricksOrchestratorConfig,
     DatabricksOrchestratorSettings,
@@ -117,9 +116,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
     ) -> DatabricksClient:
         """Creates a Databricks client.
 
-        Args:
-            settings: The orchestrator settings.
-
         Returns:
             The Databricks client.
         """
@@ -202,7 +198,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
-        """Creates a databricks yaml file.
+        """Creates a wheel and uploads the pipeline to Databricks.
 
         This functions as an intermediary representation of the pipeline which
         is then deployed to the kubeflow pipelines instance.
@@ -214,17 +210,11 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         pipeline, all steps the context around these files.
 
         Based on this docker image a callable is created which builds
-        container_ops for each step (`_construct_databricks_pipeline`).
+        task for each step (`_construct_databricks_pipeline`).
         To do this the entrypoint of the docker image is configured to
         run the correct step within the docker image. The dependencies
-        between these container_ops are then also configured onto each
-        container_op by pointing at the downstream steps.
-
-        This callable is then compiled into a databricks yaml file that is used as
-        the intermediary representation of the kubeflow pipeline.
-
-        This file, together with some metadata, runtime configurations is
-        then uploaded into the kubeflow pipelines cluster for execution.
+        between these task are then also configured onto each
+        task by pointing at the downstream steps.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
@@ -235,17 +225,34 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         Raises:
             RuntimeError: If trying to run a pipeline in a notebook
                 environment.
+            ValueError: If the schedule is not set or if the cron expression
+                is not set.
         """
-        # First check whether the code running in a notebook
-        if Environment.in_notebook():
-            raise RuntimeError(
-                "The Kubeflow orchestrator cannot run pipelines in a notebook "
-                "environment. The reason is that it is non-trivial to create "
-                "a Docker image of a notebook. Please consider refactoring "
-                "your notebook cells into separate scripts in a Python module "
-                "and run the code outside of a notebook when using this "
-                "orchestrator."
-            )
+        if deployment.schedule:
+            if (
+                deployment.schedule.catchup
+                or deployment.schedule.interval_second
+            ):
+                logger.warning(
+                    "Databricks orchestrator only uses schedules with the "
+                    "`cron_expression` property, with optional `start_time` and/or `end_time`. "
+                    "All other properties are ignored."
+                )
+            if deployment.schedule.cron_expression is None:
+                raise ValueError(
+                    "Property `cron_expression` must be set when passing "
+                    "schedule to a Databricks orchestrator."
+                )
+            if (
+                deployment.schedule.cron_expression
+                and self.settings_class().schedule_timezone is None
+            ):
+                raise ValueError(
+                    "Property `schedule_timezone` must be set when passing "
+                    "`cron_expression` to a Databricks orchestrator."
+                    "Databricks orchestrator requires a Java Timezone ID to run the pipeline on schedule."
+                    "Please refer to https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html for more information."
+                )
 
         # Get deployment id
         deployment_id = deployment.id
@@ -261,6 +268,14 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
             Additionally, this gives each task information about its
             direct downstream steps.
+
+            Args:
+                zenml_project_wheel: The wheel package containing the ZenML
+                    project.
+                job_cluster_key: The ID of the Databricks job cluster.
+
+            Returns:
+                A list of Databricks tasks.
             """
             tasks = []
             for step_name, step in deployment.step_configurations.items():
@@ -371,6 +386,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             ),
             env_vars=env_vars,
             job_cluster_key=job_cluster_key,
+            schedule=deployment.schedule,
         )
 
     def _upload_and_run_pipeline(
@@ -384,12 +400,16 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         """Uploads and run the pipeline on the Databricks jobs.
 
         Args:
-            pipeline_name: Name of the pipeline.
-            tasks: List of tasks to run.
-            env_vars: Environment variables.
-            settings: Orchestrator settings.
-            job_cluster_key: ID of the Databricks job_cluster_key.
-            schedule: Schedule to run the pipeline on.
+            pipeline_name: The name of the pipeline.
+            tasks: The list of tasks to run.
+            env_vars: The environment variables.
+            job_cluster_key: The ID of the Databricks job cluster.
+            schedule: The schedule to run the pipeline
+
+        Raises:
+            ValueError: If the `Job Compute` policy is not found.
+            ValueError: If the `schedule_timezone` is not set when passing
+
         """
         databricks_client = self._get_databricks_client()
         spark_conf = self.settings_class().spark_conf or {}
@@ -426,13 +446,33 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 ),
             ),
         )
+        if schedule and schedule.cron_expression:
+            schedule_timezone = self.settings_class().schedule_timezone
+            if schedule_timezone:
+                databricks_schedule = CronSchedule(
+                    quartz_cron_expression=schedule.cron_expression,
+                    timezone_id=schedule_timezone,
+                )
+            else:
+                raise ValueError(
+                    "Property `schedule_timezone` must be set when passing "
+                    "`cron_expression` to a Databricks orchestrator. "
+                    "Databricks orchestrator requires a Java Timezone ID to run the pipeline on schedule. "
+                    "Please refer to https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html for more information."
+                )
+        else:
+            databricks_schedule = None
+
         job = databricks_client.jobs.create(
             name=pipeline_name,
             tasks=tasks,
             job_clusters=[job_cluster],
+            schedule=databricks_schedule,
         )
-        assert job.job_id is not None
-        databricks_client.jobs.run_now(job_id=job.job_id)
+        if job.job_id:
+            databricks_client.jobs.run_now(job_id=job.job_id)
+        else:
+            raise ValueError("An error accured while getting the job id.")
 
     def get_pipeline_run_metadata(
         self, run_id: UUID

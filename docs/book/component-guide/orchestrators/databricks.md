@@ -25,17 +25,34 @@ You should use the Databricks orchestrator if:
 
 You will need to do the following to start using the Databricks orchestrator:
 
-* An Active Databricks workspace
+* An Active Databricks workspace, depends on the cloud provider you are using, you can find more information on how to create a workspace:
+    * [AWS](https://docs.databricks.com/en/getting-started/onboarding-account.html)
+    * [Azure](https://learn.microsoft.com/en-us/azure/databricks/getting-started/#--create-an-azure-databricks-workspace)
+    * [GCP](https://docs.gcp.databricks.com/en/getting-started/index.html)
 * Active Databricks account or service account with sufficient permission to create and run jobs
-
 
 ## How it works
 
-The HyperAI orchestrator works with Wheel Packages. Under the hood, ZenML Creates a python wheel from your project that get's uploaded to databricks to be executed, it also creates 
-a job using Databricks SDK, this Databricks job definition contains all necessary information such as the steps and ensure that pipeline steps will only run if their connected upstream steps have successfully finished.
+The Databricks orchestrator in ZenML leverages the concept of Wheel Packages. When you run a pipeline with the Databricks orchestrator, ZenML creates a Python wheel package from your project. This wheel package contains all the necessary code and dependencies for your pipeline.
+
+Once the wheel package is created, ZenML uploads it to Databricks. ZenML leverage Databricks SDK to create a job definition, This job definition includes information about the pipeline steps and ensures that each step is executed only after its upstream steps have successfully completed.
+
+The Databricks job is also configured with the necessary cluster settings to run. This includes specifying the version of Spark to use, the number of workers, the node type, and other configuration options.
+
+When the Databricks job is executed, it retrieves the wheel package from Databricks and runs the pipeline using the specified cluster configuration. The job ensures that the steps are executed in the correct order based on their dependencies.
+
+Once the job is completed, ZenML retrieves the logs and status of the job and updates the pipeline run accordingly. This allows you to monitor the progress of your pipeline and view the logs of each step.
+
+
 ### How to use it
 
-To use the Databricks orchestrator, you first need to register it and add it to your stack, we must configure the host and a client_id and client_secret as authentication methods. For example, we can register the orchestrator and use it in our active stack:
+To use the Databricks orchestrator, you first need to register it and add it to your stack, we must configure the host and a client_id and client_secret as authentication methods. Before registering the orchestrator, you need to install the Databricks integration by running:
+
+```shell
+zenml integration install databricks
+```
+
+Then, we can register the orchestrator and use it in our active stack:
 
 ```shell
 zenml orchestrator register databricks_orchestrator --flavor=databricks --host="https://xxxxx.x.azuredatabricks.net" --client_id={{databricks.client_id}} --client_secret={{databricks.client_secret}}
@@ -44,7 +61,7 @@ zenml orchestrator register databricks_orchestrator --flavor=databricks --host="
 zenml stack register databricks_stack -o databricks_orchestrator ... --set
 ```
 
-You can now run any ZenML pipeline using the HyperAI orchestrator:
+You can now run any ZenML pipeline using the Databricks orchestrator:
 
 ```shell
 python run.py
@@ -65,6 +82,40 @@ pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
 orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 ```
 
+![Databricks Run UI](../../.gitbook/assets/DatabricksRunUI.png)
+
+
+### Run pipelines on a schedule
+
+The Databricks Pipelines orchestrator supports running pipelines on a schedule using its [native scheduling capability](https://docs.databricks.com/en/workflows/jobs/schedule-jobs.html).
+
+**How to schedule a pipeline**
+
+```python
+from zenml.config.schedule import Schedule
+
+# Run a pipeline every 5th minute
+pipeline_instance.run(
+    schedule=Schedule(
+        cron_expression="*/5 * * * *"
+    )
+)
+```
+
+{% hint style="warning" %}
+The Databricks orchestrator only supports the `cron_expression`, in the `Schedule` object, and will ignore all other parameters supplied to define the schedule.
+{% endhint %}
+
+{% hint style="warning" %}
+The Databricks orchestrator requires Java Timezone IDs to be used in the `cron_expression`. You can find a list of supported timezones [here](https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html), the timezone ID must be set in the settings of the orchestrator (see below for more imformation how to set settings for the orchestrator).
+{% endhint %}
+
+**How to delete a scheduled pipeline**
+
+Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule is the responsibility of the user.
+
+In order to cancel a scheduled Databricks pipeline, you need to manually delete the schedule in Databricks (via the UI or the CLI).
+
 ### Additional configuration
 
 For additional configuration of the Databricks orchestrator, you can pass `DatabricksOrchestratorSettings` which allows you to configure node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
@@ -73,13 +124,14 @@ For additional configuration of the Databricks orchestrator, you can pass `Datab
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import DatabricksOrchestratorSettings
 
 databricks_settings = DatabricksOrchestratorSettings(
-    spark_version="15.3.x-scala2.12"
-    num_workers="3"
-    node_type_id="Standard_D4s_v5"
-    policy_id=POLICY_ID
-    autoscale=(2, 3)
-    spark_conf={}
-    spark_env_vars={}
+    spark_version="15.3.x-scala2.12",
+    num_workers="3",
+    node_type_id="Standard_D4s_v5",
+    policy_id=POLICY_ID,
+    autoscale=(2, 3),
+    spark_conf={},
+    spark_env_vars={},
+    schedule_timezone="America/Los_Angeles" or "PST" # You can get the timezone ID from here: https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html
 )
 ```
 

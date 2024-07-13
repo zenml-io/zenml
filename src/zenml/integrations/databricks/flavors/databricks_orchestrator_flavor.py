@@ -44,6 +44,7 @@ class DatabricksOrchestratorSettings(BaseSettings):
         single_user_name: Single user name.
         spark_conf: Spark configuration.
         spark_env_vars: Spark environment variables.
+        schedule_timezone: Schedule timezone.
     """
 
     # Resources
@@ -56,6 +57,7 @@ class DatabricksOrchestratorSettings(BaseSettings):
     single_user_name: Optional[str] = None
     spark_conf: Optional[Dict[str, str]] = None
     spark_env_vars: Optional[Dict[str, str]] = None
+    schedule_timezone: Optional[str] = None
 
 
 class DatabricksOrchestratorConfig(

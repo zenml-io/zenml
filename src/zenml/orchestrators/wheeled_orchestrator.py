@@ -84,6 +84,9 @@ setup(
         Args:
             temp_dir (str): Path to the temporary directory containing the package.
 
+        Raises:
+            RuntimeError: If the wheel file could not be created.
+
         Returns:
             str: Path to the created wheel file.
         """

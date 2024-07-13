@@ -203,11 +203,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         return f"{self.config.host}/serving-endpoints/{self._generate_an_endpoint_name()}/invocations"
 
     def provision(self) -> None:
-        """Provision or update remote Databricks deployment instance.
-
-        Raises:
-            Exception: If any unexpected error while creating inference endpoint.
-        """
+        """Provision or update remote Databricks deployment instance."""
         tags = []
         for key, value in self._get_databricks_deployment_labels().items():
             tags.append(EndpointTag(key=key, value=value))
@@ -308,7 +304,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
 
         Raises:
             Exception: if the service is not running
-            NotImplementedError: if task is not supported.
+            ValueError: if the endpoint secret name is not provided.
         """
         if not self.is_running:
             raise Exception(
