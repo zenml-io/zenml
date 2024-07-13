@@ -11,16 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Functionality to deploy a ZenML stack to a cloud provider."""
+"""Functionality to deploy a ZenML stack to AWS."""
 
-import datetime
-from typing import ClassVar, Dict, List, Optional, Tuple
+from typing import ClassVar, Dict, List
 
-from zenml.client import Client
-from zenml.enums import StackComponentType, StackDeploymentProvider
-from zenml.models import (
-    DeployedStack,
-)
+from zenml.enums import StackDeploymentProvider
+from zenml.models import StackDeploymentConfig
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 from zenml.utils.string_utils import random_str
 
@@ -31,6 +27,7 @@ class AWSZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
     """AWS ZenML Cloud Stack Deployment."""
 
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.AWS
+    deployment: ClassVar[str] = AWS_DEPLOYMENT_TYPE
 
     @classmethod
     def description(cls) -> str:
@@ -65,9 +62,6 @@ to log into your AWS account and create a CloudFormation ZenML stack. The stack
 parameters will be pre-filled with the necessary information to connect ZenML to
 your AWS account, so you should only need to review and confirm the stack.
 
-After the CloudFormation stack is deployed, you can return to the CLI to view
-details about the associated ZenML stack automatically registered with ZenML.
-
 **NOTE**: The CloudFormation stack will create the following new resources in
 your AWS account. Please ensure you have the necessary permissions and are aware
 of any potential costs:
@@ -84,6 +78,18 @@ The CloudFormation stack will automatically create an AWS secret key and
 will share it with ZenML to give it permission to access the resources created
 by the stack. You can revoke these permissions at any time by deleting the
 CloudFormation stack.
+
+**Estimated costs**
+
+A small training job would cost around: $0.60
+
+These are rough estimates and actual costs may vary based on your usage and specific AWS pricing. 
+Some services may be eligible for the AWS Free Tier. Use [the AWS Pricing Calculator](https://calculator.aws)
+for a detailed estimate based on your usage.
+
+💡 **After the CloudFormation stack is deployed, you can return to the CLI to
+view details about the associated ZenML stack automatically registered with
+ZenML.**
 """
 
     @classmethod
@@ -102,6 +108,19 @@ the CloudFormation at any time to revoke ZenML's access to your AWS account and
 to clean up the resources created by the stack by using the AWS CloudFormation
 console.
 """
+
+    @classmethod
+    def integrations(cls) -> List[str]:
+        """Return the ZenML integrations required for the stack.
+
+        Returns:
+            The list of ZenML integrations that need to be installed for the
+            stack to be usable.
+        """
+        return [
+            "aws",
+            "s3",
+        ]
 
     @classmethod
     def permissions(cls) -> Dict[str, List[str]]:
@@ -187,32 +206,34 @@ console.
             "South America (São Paulo)": "sa-east-1",
         }
 
-    def deploy_url(
+    def get_deployment_config(
         self,
-        zenml_server_url: str,
-        zenml_server_api_token: str,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+    ) -> StackDeploymentConfig:
+        """Return the configuration to deploy the ZenML stack to the specified cloud provider.
 
-        The URL should point to a cloud provider console where the user can
-        deploy the ZenML stack and should include as many pre-filled parameters
-        as possible.
+        The configuration should include:
 
-        Args:
-            zenml_server_url: The URL of the ZenML server.
-            zenml_server_api_token: The API token to authenticate with the ZenML
-                server.
+        * a cloud provider console URL where the user will be redirected to
+        deploy the ZenML stack. The URL should include as many pre-filled
+        URL query parameters as possible.
+        * a textual description of the URL
+        * some deployment providers may require additional configuration
+        parameters to be passed to the cloud provider in addition to the
+        deployment URL query parameters. Where that is the case, this method
+        should also return a string that the user can copy and paste into the
+        cloud provider console to deploy the ZenML stack (e.g. a set of
+        environment variables, or YAML configuration snippet etc.).
 
         Returns:
-            The URL to deploy the ZenML stack to the specified cloud provider
-            and a text description of the URL.
+            The configuration to deploy the ZenML stack to the specified cloud
+            provider.
         """
         params = dict(
             stackName=self.stack_name,
             templateURL="https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml",
             param_ResourceName=f"zenml-{random_str(6).lower()}",
-            param_ZenMLServerURL=zenml_server_url,
-            param_ZenMLServerAPIToken=zenml_server_api_token,
+            param_ZenMLServerURL=self.zenml_server_url,
+            param_ZenMLServerAPIToken=self.zenml_server_api_token,
         )
         # Encode the parameters as URL query parameters
         query_params = "&".join([f"{k}={v}" for k, v in params.items()])
@@ -221,69 +242,13 @@ console.
         if self.location:
             region = f"region={self.location}"
 
-        return (
+        url = (
             f"https://console.aws.amazon.com/cloudformation/home?"
-            f"{region}#/stacks/create/review?{query_params}",
-            "AWS CloudFormation Console",
+            f"{region}#/stacks/create/review?{query_params}"
         )
 
-    def get_stack(
-        self, date_start: Optional[datetime.datetime] = None
-    ) -> Optional[DeployedStack]:
-        """Return the ZenML stack that was deployed and registered.
-
-        This method is called to retrieve a ZenML stack matching the deployment
-        provider.
-
-        Args:
-            date_start: The date when the deployment started.
-
-        Returns:
-            The ZenML stack that was deployed and registered or None if a
-            matching stack was not found.
-        """
-        client = Client()
-
-        # It's difficult to find a stack that matches the CloudFormation
-        # deployment 100% because the user can change the stack name before they
-        # deploy the stack in AWS.
-        #
-        # We try to find a full AWS stack that matches the deployment provider
-        # that was registered after this deployment was created.
-
-        # Get all stacks created after the start date
-        stacks = client.list_stacks(
-            created=f"gt:{str(date_start.replace(microsecond=0))}"
-            if date_start
-            else None,
-            sort_by="desc:created",
-            size=50,
+        return StackDeploymentConfig(
+            deployment_url=url,
+            deployment_url_text="AWS CloudFormation Console",
+            configuration=None,
         )
-
-        if not stacks.items:
-            return None
-
-        # Find a stack that best matches the deployment provider
-        for stack in stacks.items:
-            if not stack.labels:
-                continue
-
-            if stack.labels.get("zenml:provider") != self.provider.value:
-                continue
-
-            if stack.labels.get("zenml:deployment") != AWS_DEPLOYMENT_TYPE:
-                continue
-
-            artifact_store = stack.components[
-                StackComponentType.ARTIFACT_STORE
-            ][0]
-
-            if not artifact_store.connector:
-                continue
-
-            return DeployedStack(
-                stack=stack,
-                service_connector=artifact_store.connector,
-            )
-
-        return None

@@ -10,16 +10,15 @@ be set:
     Server.
 """
 
-import json
 import os
 import urllib.error
 import urllib.request
-from typing import Dict
+from typing import Any, Tuple
 
 from flask import Request
 
 
-def run_script(request: Request) -> Dict[str, str]:
+def run_script(request: Request) -> Tuple[Any, int]:
     """Main function to run the script.
 
     Args:
@@ -31,10 +30,16 @@ def run_script(request: Request) -> Dict[str, str]:
             message.
     """
     payload = request.get_data(as_text=True)
-    if payload:
-        print(f"Received payload: {payload}")
-    else:
-        return {"status": "error", "message": "No payload received"}
+    if not payload:
+        return {"status": "error", "message": "No payload received"}, 400
+
+    # Expand secret values in the payload
+    for secret_key, secret_value in os.environ.items():
+        if secret_key.startswith("ZENML_STACK_SECRET_"):
+            secret_key = secret_key.replace("ZENML_STACK_SECRET_", "")
+            payload = payload.replace(f"${secret_key}", secret_value)
+
+    print(f"Received payload: {payload}")
 
     try:
         url = (
@@ -64,24 +69,26 @@ def run_script(request: Request) -> Dict[str, str]:
         print(response_body)
 
         if status_code == 200:
-            result = {
-                "status": "success",
-                "message": "Stack successfully registered with ZenML",
-            }
+            return (
+                {
+                    "status": "success",
+                    "message": "Stack successfully registered with ZenML",
+                },
+                200,
+            )
         else:
-            result = {
+            return {
                 "status": "failed",
                 "message": (
                     f"Failed to register the ZenML stack. The ZenML Server "
                     f"replied with HTTP status code {status_code}: "
                     f"{response_body}"
                 ),
-            }
+            }, 400
 
     except Exception as e:
         print(f"Error: {str(e)}")
-        result = {
+        return {
             "status": "failed",
             "message": f"Failed to register the ZenML stack: {str(e)}",
-        }
-    return result
+        }, 500
