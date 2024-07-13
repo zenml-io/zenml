@@ -56,7 +56,13 @@ Then, we can register the orchestrator and use it in our active stack:
 
 ```shell
 zenml orchestrator register databricks_orchestrator --flavor=databricks --host="https://xxxxx.x.azuredatabricks.net" --client_id={{databricks.client_id}} --client_secret={{databricks.client_secret}}
+```
 
+{% hint style="info" %}
+We recommand creating a Databricks service account with the necessary permissions to create and run jobs. You can find more information on how to create a service account [here](https://docs.databricks.com/dev-tools/api/latest/authentication.html). You can generate a client_id and client_secret for the service account and use them to authenticate with Databricks.
+{% endhint %}
+
+```shell
 # Add the orchestrator to your stack
 zenml stack register databricks_stack -o databricks_orchestrator ... --set
 ```

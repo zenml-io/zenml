@@ -49,6 +49,7 @@ class DatabricksModelDeployerConfig(BaseModelDeployerConfig):
 
     Attributes:
         host: Databricks host.
+        secret_name: Secret name to use for authentication.
         client_id: Databricks client id.
         client_secret: Databricks client secret.
     """
@@ -57,7 +58,6 @@ class DatabricksModelDeployerConfig(BaseModelDeployerConfig):
     secret_name: Optional[str] = None
     client_id: Optional[str] = SecretField(default=None)
     client_secret: Optional[str] = SecretField(default=None)
-    scale_to_zero_enabled: bool = False
 
 
 class DatabricksModelDeployerFlavor(BaseModelDeployerFlavor):

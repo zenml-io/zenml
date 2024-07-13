@@ -472,7 +472,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         if job.job_id:
             databricks_client.jobs.run_now(job_id=job.job_id)
         else:
-            raise ValueError("An error accured while getting the job id.")
+            raise ValueError("An error occurred while getting the job id.")
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
