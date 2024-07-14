@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     ARTIFACTS,
     CODE_REPOSITORIES,
+    FULL_STACK,
     GET_OR_CREATE,
     MODEL_VERSIONS,
     MODELS,
@@ -51,6 +52,7 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
+    FullStackRequest,
     ModelRequest,
     ModelResponse,
     ModelVersionArtifactRequest,
@@ -347,6 +349,68 @@ def create_stack(
         resource_type=ResourceType.STACK,
         create_method=zen_store().create_stack,
     )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + FULL_STACK,
+    response_model=StackResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_full_stack(
+    workspace_name_or_id: Union[str, UUID],
+    full_stack: FullStackRequest,
+    auth_context: AuthContext = Security(authorize),
+) -> StackResponse:
+    """Creates a stack for a particular workspace.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        full_stack: Stack to register.
+        auth_context: Authentication context.
+
+    Returns:
+        The created stack.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    is_connector_create_needed = False
+    for connector_id_or_info in full_stack.service_connectors:
+        if isinstance(connector_id_or_info, UUID):
+            service_connector = zen_store().get_service_connector(
+                connector_id_or_info, hydrate=False
+            )
+            verify_permission_for_model(
+                model=service_connector, action=Action.READ
+            )
+        else:
+            is_connector_create_needed = True
+    if is_connector_create_needed:
+        verify_permission(
+            resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
+        )
+
+    is_component_create_needed = False
+    for component_id_or_info in full_stack.components.values():
+        if isinstance(component_id_or_info, UUID):
+            component = zen_store().get_stack_component(
+                component_id_or_info, hydrate=False
+            )
+            verify_permission_for_model(model=component, action=Action.READ)
+        else:
+            is_component_create_needed = True
+    if is_component_create_needed:
+        verify_permission(
+            resource_type=ResourceType.STACK_COMPONENT,
+            action=Action.CREATE,
+        )
+
+    verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
+
+    full_stack.user = auth_context.user.id
+    full_stack.workspace = workspace.id
+
+    return zen_store().create_full_stack(full_stack)
 
 
 @router.get(
@@ -1067,7 +1131,7 @@ def create_code_repository(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + STATISTICS,
-    response_model=Dict[str, str],
+    response_model=Dict[str, int],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

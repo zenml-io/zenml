@@ -27,7 +27,7 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseConfig, ValidationError, create_model
+from pydantic import ConfigDict, ValidationError, create_model
 
 from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
@@ -115,7 +115,7 @@ class StepArtifact:
             "you're trying to unpack the return value of your step but the "
             "step only returns a single artifact. For more information on how "
             "to add type annotations to your step to indicate multiple "
-            "artifacts visit https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/managing-steps#type-annotations."
+            "artifacts visit https://docs.zenml.io/how-to/build-pipelines/step-output-typing-and-annotation#type-annotations."
         )
 
 
@@ -214,7 +214,7 @@ class EntrypointFunctionDefinition(NamedTuple):
                 f"'{key}' is not JSON serializable and can not be passed as "
                 "a parameter. This input can either be provided by the "
                 "output of another step or as an external artifact: "
-                "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines#pass-any-kind-of-data-to-your-steps"
+                "https://docs.zenml.io/user-guide/starter-guide/manage-artifacts#managing-artifacts-not-produced-by-zenml-pipelines"
             )
 
         try:
@@ -235,16 +235,14 @@ class EntrypointFunctionDefinition(NamedTuple):
             parameter: The function parameter for which the value was provided.
             value: The input value.
         """
-
-        class ModelConfig(BaseConfig):
-            arbitrary_types_allowed = False
+        config_dict = ConfigDict(arbitrary_types_allowed=False)
 
         # Create a pydantic model with just a single required field with the
         # type annotation of the parameter to verify the input type including
         # pydantics type coercion
         validation_model_class = create_model(
             "input_validation_model",
-            __config__=ModelConfig,
+            __config__=config_dict,
             value=(parameter.annotation, ...),
         )
         validation_model_class(value=value)

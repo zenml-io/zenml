@@ -75,6 +75,14 @@
 
 ---
 
+## ⭐️ Show Your Support
+
+If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out. 
+
+Thank you for your support! 🌟
+
+[![Star this project](https://img.shields.io/github/stars/zenml-io/zenml?style=social)](https://github.com/zenml-io/zenml/stargazers)
+
 ## 🤸 Quickstart
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb)
 
@@ -125,9 +133,36 @@ if __name__ == "__main__":
 
 ![Running a ZenML pipeline](/docs/book/.gitbook/assets/readme_basic_pipeline.gif)
 
-### Deploy workloads easily on your production infrastructure
+### Easily provision an MLOps stack or reuse your existing infrastructure
 
-The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals.
+The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals. 
+
+ZenML provides different features to aid people to get started quickly on a remote setting as well. If you want to deploy a remote stack from scratch on your selected cloud provider, you can use the 1-click deployment feature either through the dashboard:
+
+![Running a ZenML pipeline](/docs/book/.gitbook/assets/one-click-deployment.gif)
+
+Or, through our CLI command:
+
+```bash
+zenml stack deploy --provider aws
+```
+
+Alternatively, if the necessary pieces of infrastructure is already deployed, you can register a cloud stack seamlessly through the stack wizard:
+
+```bash
+zenml stack register <STACK_NAME> --provider aws
+```
+
+Read more about [ZenML stacks](https://docs.zenml.io/user-guide/production-guide/understand-stacks).
+
+### Run workloads easily on your production infrastructure
+
+Once you have your MLOps stack configured, you can easily run workloads on it:
+
+```bash
+zenml stack set <STACK_NAME>
+python run.py
+```
 
 ```python
 from zenml.config import ResourceSettings, DockerSettings
@@ -142,13 +177,7 @@ def training(...):
 	...
 ```
 
-```bash
-zenml stack set k8s  # Set a stack with kubernetes orchestrator
-python run.py
-```
-
 ![Workloads with ZenML](/docs/book/.gitbook/assets/readme_compute.gif)
-
 
 ### Track models, pipeline, and artifacts
 
@@ -206,12 +235,13 @@ enable collaborative features as the central MLOps interface for teams.
 
 Currently, there are two main ways to deploy ZenML:
 
-- **ZenML Cloud**: With [ZenML Cloud](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link),
-you can make use of a control plane to create ZenML servers, also known as tenants.
-These tenants are managed and maintained by ZenML’s dedicated team, alleviating
-the burden of server management from your end.
+- **ZenML Pro**: [ZenML Pro](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link),
+offers a SaaS version which comes with a control plane to create and manage multiple ZenML servers.
+These servers are managed and maintained by ZenML’s dedicated team, alleviating
+the burden of server management from your end. They also come with additional features like RBAC, a Model Control Plane
+and [much more](https://zenml-io.gitbook.io/zenml-documentation/getting-started/zenml-pro.
 - **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy
-ZenML on your own self-hosted environment](https://docs.zenml.io/deploying-zenml/zenml-self-hosted).
+ZenML on your own self-hosted environment](https://docs.zenml.io/getting-started/deploying-zenml#deploying-a-zenml-server).
 This can be achieved through various methods, including using our CLI, Docker,
 Helm, or HuggingFace Spaces.
 
@@ -259,6 +289,14 @@ Or, if you
 prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
 our GitHub repo.
 
+## ⭐️ Show Your Support
+
+If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out. 
+
+Thank you for your support! 🌟
+
+[![Star this project](https://img.shields.io/github/stars/zenml-io/zenml?style=social)](https://github.com/zenml-io/zenml/stargazers)
+
 ## 📜 License
 
 ZenML is distributed under the terms of the Apache License Version 2.0.
@@ -280,7 +318,7 @@ the Apache License Version 2.0.
     ·
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
     ·
-    <a href="https://zenml.io/cloud">Sign up for Cloud</a>
+    <a href="https://zenml.io/cloud">Sign up for ZenML Pro</a>
     ·
     <a href="https://www.zenml.io/blog">Read Blog</a>
     ·
@@ -289,7 +327,7 @@ the Apache License Version 2.0.
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.58.0 is out. Check out the release notes
+    🎉 Version 0.61.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.

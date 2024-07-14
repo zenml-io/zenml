@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -24,6 +24,7 @@ from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
@@ -52,8 +53,6 @@ class KubeflowOrchestratorSettings(BaseSettings):
         and `client_password` need to be set together.
         user_namespace: The user namespace to use when creating experiments
             and runs.
-        node_selectors: Deprecated: Node selectors to apply to KFP pods.
-        node_affinity: Deprecated: Node affinities to apply to KFP pods.
         pod_settings: Pod settings to apply.
     """
 
@@ -61,99 +60,75 @@ class KubeflowOrchestratorSettings(BaseSettings):
     timeout: int = 1200
 
     client_args: Dict[str, Any] = {}
-    client_username: Optional[str] = SecretField()
-    client_password: Optional[str] = SecretField()
+    client_username: Optional[str] = SecretField(default=None)
+    client_password: Optional[str] = SecretField(default=None)
     user_namespace: Optional[str] = None
-    node_selectors: Dict[str, str] = {}
-    node_affinity: Dict[str, List[str]] = {}
     pod_settings: Optional[KubernetesPodSettings] = None
 
-    @root_validator
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def _validate_and_migrate_pod_settings(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Validates settings and migrates pod settings from older version.
 
         Args:
-            values: Dict representing user-specified runtime settings.
+            data: Dict representing user-specified runtime settings.
 
         Returns:
             Validated settings.
 
         Raises:
-            AssertionError: If old and new settings are used together.
             ValueError: If username and password are not specified together.
         """
-        has_pod_settings = bool(values.get("pod_settings"))
-
-        node_selectors = cast(
-            Dict[str, str], values.get("node_selectors") or {}
-        )
+        node_selectors = cast(Dict[str, str], data.get("node_selectors") or {})
         node_affinity = cast(
-            Dict[str, List[str]], values.get("node_affinity") or {}
+            Dict[str, List[str]], data.get("node_affinity") or {}
         )
 
-        has_old_settings = any([node_selectors, node_affinity])
-
-        if has_old_settings:
-            logger.warning(
-                "The attributes `node_selectors` and `node_affinity` of the "
-                "Kubeflow settings will be deprecated soon. Use the "
-                "attribute `pod_settings` instead.",
-            )
-
-        if has_pod_settings and has_old_settings:
-            raise AssertionError(
-                "Got Kubeflow pod settings using both the deprecated "
-                "attributes `node_selectors` and `node_affinity` as well as "
-                "the new attribute `pod_settings`. Please specify Kubeflow "
-                "pod settings only using the new `pod_settings` attribute."
-            )
-        elif has_old_settings:
+        affinity = {}
+        if node_affinity:
             from kubernetes import client as k8s_client
 
-            affinity = {}
-            if node_affinity:
-                match_expressions = [
-                    k8s_client.V1NodeSelectorRequirement(
-                        key=key,
-                        operator="In",
-                        values=values,
-                    )
-                    for key, values in node_affinity.items()
-                ]
+            match_expressions = [
+                k8s_client.V1NodeSelectorRequirement(
+                    key=key,
+                    operator="In",
+                    values=values,
+                )
+                for key, values in node_affinity.items()
+            ]
 
-                affinity = k8s_client.V1Affinity(
-                    node_affinity=k8s_client.V1NodeAffinity(
-                        required_during_scheduling_ignored_during_execution=k8s_client.V1NodeSelector(
-                            node_selector_terms=[
-                                k8s_client.V1NodeSelectorTerm(
-                                    match_expressions=match_expressions
-                                )
-                            ]
-                        )
+            affinity = k8s_client.V1Affinity(
+                node_affinity=k8s_client.V1NodeAffinity(
+                    required_during_scheduling_ignored_during_execution=k8s_client.V1NodeSelector(
+                        node_selector_terms=[
+                            k8s_client.V1NodeSelectorTerm(
+                                match_expressions=match_expressions
+                            )
+                        ]
                     )
                 )
-            pod_settings = KubernetesPodSettings(
-                node_selectors=node_selectors, affinity=affinity
             )
-            values["pod_settings"] = pod_settings
-            values["node_affinity"] = {}
-            values["node_selectors"] = {}
+        pod_settings = KubernetesPodSettings(
+            node_selectors=node_selectors, affinity=affinity
+        )
+        data["pod_settings"] = pod_settings
 
         # Validate username and password for auth cookie logic
-        username = values.get("client_username")
-        password = values.get("client_password")
+        username = data.get("client_username")
+        password = data.get("client_password")
         client_creds_error = "`client_username` and `client_password` both need to be set together."
         if username and password is None:
             raise ValueError(client_creds_error)
         if password and username is None:
             raise ValueError(client_creds_error)
 
-        return values
+        return data
 
 
-class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class KubeflowOrchestratorConfig(
     BaseOrchestratorConfig, KubeflowOrchestratorSettings
 ):
     """Configuration for the Kubeflow orchestrator.
@@ -170,25 +145,17 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             Kubeflow Pipelines deployment (i.e. when `kubeflow_hostname` is
             set) or if the stack component is linked to a Kubernetes service
             connector.
-        local: If `True`, the orchestrator will assume it is connected to a
-            local kubernetes cluster and will perform additional validations and
-            operations to allow using the orchestrator in combination with other
-            local stack components that store data in the local filesystem
-            (i.e. it will mount the local stores directory into the pipeline
-            containers).
-        skip_local_validations: If `True`, the local validations will be
-            skipped.
     """
 
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: Optional[str]  # TODO: Potential setting
-    local: bool = False
-    skip_local_validations: bool = False
+    kubernetes_context: Optional[str] = None  # TODO: Potential setting
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
     def _validate_deprecated_attrs(
-        cls, values: Dict[str, Any]
+        cls, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Pydantic root_validator for deprecated attributes.
 
@@ -197,7 +164,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         mandatory in the meantime.
 
         Args:
-            values: Values passed to the object constructor
+            data: Values passed to the object constructor
 
         Returns:
             Values passed to the object constructor
@@ -210,10 +177,10 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
 
         # remove deprecated attributes from values dict
         for attr in provisioning_attrs:
-            if attr in values:
-                del values[attr]
+            if attr in data:
+                del data[attr]
 
-        return values
+        return data
 
     @property
     def is_remote(self) -> bool:
@@ -226,7 +193,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return not self.local
+        return True
 
     @property
     def is_local(self) -> bool:
@@ -235,7 +202,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        return self.local
+        return False
 
     @property
     def is_synchronous(self) -> bool:

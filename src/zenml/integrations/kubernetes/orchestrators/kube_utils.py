@@ -225,8 +225,11 @@ def wait_pod(
             response = core_api.read_namespaced_pod_log(
                 name=pod_name,
                 namespace=namespace,
+                _preload_content=False,
             )
-            logs = response.splitlines()
+            raw_data = response.data
+            decoded_log = raw_data.decode("utf-8", errors="replace")
+            logs = decoded_log.splitlines()
             if len(logs) > logged_lines:
                 for line in logs[logged_lines:]:
                     logger.info(line)

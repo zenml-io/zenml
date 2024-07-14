@@ -16,7 +16,7 @@
 import re
 from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.enums import StackComponentType
@@ -41,8 +41,10 @@ class BaseContainerRegistryConfig(AuthenticationConfigMixin):
     """
 
     uri: str
+    default_repository: Optional[str] = None
 
-    @validator("uri")
+    @field_validator("uri")
+    @classmethod
     def strip_trailing_slash(cls, uri: str) -> str:
         """Removes trailing slashes from the URI.
 

@@ -16,3 +16,6 @@
 from zenml.integrations.huggingface.steps.huggingface_deployer import (
     huggingface_model_deployer_step,
 )
+from zenml.integrations.huggingface.steps.accelerate_runner import (
+    run_with_accelerate,
+)

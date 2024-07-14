@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from typing import Dict
+from typing import Any, Dict
 
 from zenml import get_step_context, step
 from zenml.client import Client
@@ -28,8 +28,8 @@ model_registry = Client().active_stack.model_registry
 
 @step
 def promote_metric_compare_promoter(
-    latest_metrics: Dict[str, str],
-    current_metrics: Dict[str, str],
+    latest_metrics: Dict[str, Any],
+    current_metrics: Dict[str, Any],
     metric_to_compare: str = "accuracy",
 ):
     """Try to promote trained model.
@@ -48,7 +48,7 @@ def promote_metric_compare_promoter(
     In this example, the step can be configured to use different input data.
     See the documentation for more information:
 
-        https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
+        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
 
     Args:
         latest_metrics: Recently trained model metrics results.

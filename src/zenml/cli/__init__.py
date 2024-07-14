@@ -80,7 +80,7 @@ You can also pass in a directory path manually using the
 zenml init --path /path/to/dir
 ```
 
-If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/user-guide/starter-guide/using-project-templates#list-of-zenml-project-templates)
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/how-to/setting-up-a-project-repository/using-project-templates#list-of-zenml-project-templates)
 to generate a ready-to-use project scaffold in your repository, you can do so by
 passing the ``--template`` option:
 
@@ -232,7 +232,7 @@ and `and` keywords.
 Artifact Stores
 ---------------
 
-In ZenML, [the artifact store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores)
+In ZenML, [the artifact store](https://docs.zenml.io/stack-components/artifact-stores)
 is where all the inputs and outputs of your pipeline steps are stored. By
 default, ZenML initializes your repository with an artifact store with
 everything kept on your local machine. You can get a better understanding
@@ -327,7 +327,7 @@ zenml artifact-store --help
 Orchestrators
 -------------
 
-An [orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators)
+An [orchestrator](https://docs.zenml.io/stack-components/orchestrators)
 is a special kind of backend that manages the running of each step of the
 pipeline. Orchestrators administer the actual pipeline runs. By default,
 ZenML initializes your repository with an orchestrator that runs everything
@@ -423,7 +423,7 @@ zenml orchestrators --help
 Container Registries
 --------------------
 
-[The container registry](https://docs.zenml.io/stacks-and-components/component-guide/container-registries)
+[The container registry](https://docs.zenml.io/stack-components/container-registries)
 is where all the images that are used by a container-based orchestrator are
 stored. To get a better understanding regarding container registries, use
 the command:
@@ -518,7 +518,7 @@ zenml container-registry --help
 Data Validators
 ---------------
 
-In ZenML, [data validators](https://docs.zenml.io/stacks-and-components/component-guide/data-validators)
+In ZenML, [data validators](https://docs.zenml.io/stack-components/data-validators)
 help you profile and validate your data.
 
 By default, a default ZenML local stack will not register a data validator. If
@@ -605,7 +605,7 @@ zenml data-validator --help
 Experiment Trackers
 -------------------
 
-[Experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers)
+[Experiment trackers](https://docs.zenml.io/stack-components/experiment-trackers)
  let you track your ML experiments by logging the parameters
 and allow you to compare between different runs. To get a better
 understanding regarding experiment trackers, use the command:
@@ -701,7 +701,7 @@ zenml experiment-tracker --help
 Model Deployers
 ---------------
 
-[Model deployers](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers)
+[Model deployers](https://docs.zenml.io/stack-components/model-deployers)
 are stack components responsible for online model serving. They are responsible
 for deploying models to a remote server. Model deployers also act as a registry
 for models that are served with ZenML. To get a better understanding regarding
@@ -838,7 +838,7 @@ zenml model-deployer --help
 Step Operators
 --------------
 
-[Step operators](https://docs.zenml.io/stacks-and-components/component-guide/step-operators)
+[Step operators](https://docs.zenml.io/stack-components/step-operators)
 allow you to run individual steps in a custom environment different from the
 default one used by your active orchestrator. One example use-case is to run a
 training step of your pipeline in an environment with GPUs available. To get
@@ -933,7 +933,7 @@ zenml step-operator --help
 Alerters
 --------
 
-In ZenML, [alerters](https://docs.zenml.io/stacks-and-components/component-guide/alerters)
+In ZenML, [alerters](https://docs.zenml.io/stack-components/alerters)
 allow you to send alerts from within your pipeline.
 
 By default, a default ZenML local stack will not register an alerter. If
@@ -1018,7 +1018,7 @@ zenml alerter --help
 Feature Stores
 --------------
 
-[Feature stores](https://docs.zenml.io/stacks-and-components/component-guide/feature-stores)
+[Feature stores](https://docs.zenml.io/stack-components/feature-stores)
 allow data teams to serve data via an offline store and an online low-latency
 store where data is kept in sync between the two. To get a better understanding
 regarding feature stores, use the command:
@@ -1115,7 +1115,7 @@ zenml feature-store --help
 Annotators
 ----------
 
-[Annotators](https://docs.zenml.io/stacks-and-components/component-guide/annotators)
+[Annotators](https://docs.zenml.io/stack-components/annotators)
 enable the use of data annotation as part of your ZenML stack and pipelines.
 
 By default, a default ZenML local stack will not register an annotator. If
@@ -1207,7 +1207,7 @@ zenml annotator --help
 Image Builders
 --------------
 
-In ZenML, [image builders](https://docs.zenml.io/stacks-and-components/component-guide/image-builders)
+In ZenML, [image builders](https://docs.zenml.io/stack-components/image-builders)
 allow you to build container images such
 that your machine-learning pipelines and steps can be executed in remote
 environments.
@@ -1296,7 +1296,7 @@ zenml image-builder --help
 Model Registries
 ----------------
 
-[Model registries](https://docs.zenml.io/stacks-and-components/component-guide/model-registries)
+[Model registries](https://docs.zenml.io/stack-components/model-registries)
 are centralized repositories that facilitate the collaboration and management
 of machine learning models. To get a better understanding regarding model
 registries as a concept, use the command:
@@ -1410,6 +1410,34 @@ zenml stack register STACK_NAME \
 
 Each corresponding argument should be the name, id or even the first few letters
  of the id that uniquely identify the artifact store or orchestrator.
+
+To create a new stack using the new service connector with a set of minimal components, 
+use the following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -p CLOUD_PROVIDER
+```
+
+To create a new stack using the existing service connector with a set of minimal components, 
+use the following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -sc SERVICE_CONNECTOR_NAME
+```
+
+To create a new stack using the existing service connector with existing components (
+important, that the components are already registered in the service connector), use the 
+following command:
+
+```bash
+zenml stack register STACK_NAME \
+       -sc SERVICE_CONNECTOR_NAME \
+       -a ARTIFACT_STORE_NAME \
+       -o ORCHESTRATOR_NAME \
+       ...
+```
 
 If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
@@ -1672,8 +1700,14 @@ occasionally want to delete a pipeline, which you can do via:
 zenml pipeline delete <PIPELINE_NAME>
 ```
 
-This will delete the pipeline and change all corresponding pipeline runs to
-become unlisted (not linked to any pipeline).
+This will delete the latest pipeline version and change all corresponding
+pipeline runs to become unlisted (not linked to any pipeline).
+
+If you want to delete all versions of a pipeline, you can do so as follows:
+
+```bash
+zenml pipeline delete <PIPELINE_NAME> --all-versions
+```
 
 To list all pipeline runs that you have executed, use:
 
@@ -1739,6 +1773,12 @@ pipeline runs, use:
 ```bash
 zenml artifact prune
 ```
+
+You might find that some artifacts throw errors when you try to prune them,
+likely because they were stored locally and no longer exist. If you wish to
+continue pruning and to ignore these errors, please add the `--ignore-errors`
+flag. Warning messages will still be output to the terminal during this
+process.
 
 Each pipeline run that requires Docker images also stores a build which
 contains the image names used for this run. To list all builds, use:
@@ -1828,7 +1868,7 @@ Connecting to a ZenML Server
 ----------------------------
 
 The ZenML client can be [configured to connect to a remote database or ZenML
-server](https://docs.zenml.io/user-guide/advanced-guide/configuring-zenml/connecting-to-zenml)
+server](https://docs.zenml.io/how-to/connecting-to-zenml)
 with the `zenml connect` command. If no arguments are supplied, ZenML
 will attempt to connect to the last ZenML server deployed from the local host
 using the 'zenml deploy' command:
@@ -1980,7 +2020,7 @@ Secrets management
 ------------------
 
 ZenML offers a way to [securely store secrets associated with your other
-stack components and infrastructure](https://docs.zenml.io/user-guide/advanced-guide/secret-management).
+stack components and infrastructure](https://docs.zenml.io/getting-started/deploying-zenml/manage-the-deployed-services/secret-management).
 A ZenML Secret is a collection or grouping of key-value pairs stored by the
 ZenML secrets store. ZenML Secrets are identified by a unique name which
 allows you to fetch or reference them in your pipelines and stacks.
@@ -2076,7 +2116,7 @@ challenge in configuring uninterrupted, secure access to infrastructure
 resources. In ZenML, Service Connectors streamline this process by abstracting
 away the complexity of authentication and help you connect your stack to your
 resources. You can find the full docs on the ZenML service connectors
-[here](https://docs.zenml.io/stacks-and-components/auth-management).
+[here](https://docs.zenml.io/how-to/auth-management).
 
 The ZenML CLI features a variety of commands to help you manage your service
 connectors. First of all, to explore all the types of service connectors
@@ -2106,7 +2146,7 @@ zenml service-connector register SERVICE_CONNECTOR_NAME \
 ```
 
 For more details on how to create a service connector, please refer to our
-[docs](https://docs.zenml.io/stacks-and-components/auth-management).
+[docs](https://docs.zenml.io/how-to/auth-management).
 
 To check if your service connector is registered properly, you can `verify` it.
 By doing this, you can both check if it is configured correctly and also, you
@@ -2338,7 +2378,7 @@ zenml code-repository delete <REPOSITORY_NAME_OR_ID>
 Building an image without Runs
 ------------------------------
 
-To [build Docker images for your pipeline](https://docs.zenml.io/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline)
+To [build Docker images for your pipeline](https://docs.zenml.io/how-to/customize-docker-builds)
 without actually running the pipeline, use:
 
 ```bash
@@ -2385,7 +2425,7 @@ Tagging your resources with ZenML
 ---------------------------------
 
 When you are using ZenML, you can [use tags to organize and categorize your
-assets](https://docs.zenml.io/user-guide/advanced-guide/data-management/tagging).
+assets](https://docs.zenml.io/how-to/handle-data-artifacts/tagging).
 This way, you can streamline your workflows and enhance the discoverability of
 your resources more easily.
 
@@ -2487,7 +2527,7 @@ zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core b
 ```
 
 For full documentation on this functionality, please refer to [the dedicated
-documentation on stack component deploy](https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-component).
+documentation on stack component deploy](https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-component).
 
 Interacting with the ZenML Hub
 ------------------------------

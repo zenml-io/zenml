@@ -32,17 +32,17 @@ logger = get_logger(__name__)
 
 
 def is_cloud_server(server_info: ServerModel) -> bool:
-    """Checks whether the server info refers to a ZenML Cloud server.
+    """Checks whether the server info refers to a ZenML Pro server.
 
     Args:
         server_info: Info of the server.
 
     Returns:
-        Whether the server info refers to a ZenML Cloud server.
+        Whether the server info refers to a ZenML Pro server.
     """
     return (
         "organization_id" in server_info.metadata
-        and "cloud.zenml.io" in server_info.server_url
+        and "cloud.zenml.io" in server_info.dashboard_url
     )
 
 

@@ -48,7 +48,6 @@ from tests.unit.pipelines.test_build_utils import (
 )
 from zenml.artifacts.utils import (
     _load_artifact_store,
-    _load_file_from_artifact_store,
 )
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -79,7 +78,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     StackExistsError,
 )
-from zenml.logging.step_logging import prepare_logs_uri
+from zenml.logging.step_logging import fetch_logs, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
@@ -189,7 +188,7 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         assert entity.metadata is not None
 
     # Test filtering by name if applicable
-    if "name" in created_entity.__fields__:
+    if "name" in created_entity.model_fields:
         entities_list = crud_test_config.list_method(
             crud_test_config.filter_model(name=created_entity.name)
         )
@@ -221,7 +220,10 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         # Ids should remain the same
         assert updated_entity.id == created_entity.id
         # Something in the Model should have changed
-        assert updated_entity.json() != created_entity.json()
+        assert (
+            updated_entity.model_dump_json()
+            != created_entity.model_dump_json()
+        )
 
         # Test that the update method returns a hydrated model, if applicable
         if hasattr(updated_entity, "metadata"):
@@ -503,7 +505,7 @@ class TestAdminUser:
                 response_body = zen_store.put(
                     f"{USERS}/{str(test_user2.id)}{DEACTIVATE}",
                 )
-                deactivated_user = UserResponse.parse_obj(response_body)
+                deactivated_user = UserResponse.model_validate(response_body)
                 assert deactivated_user.name == test_user2.name
 
     def test_delete_users(self):
@@ -990,7 +992,7 @@ def test_create_user_no_password():
                 is_admin=user.is_admin,
             ),
         )
-        activated_user = UserResponse.parse_obj(response_body)
+        activated_user = UserResponse.model_validate(response_body)
         assert activated_user.active
         assert activated_user.name == user.name
         assert activated_user.id == user.id
@@ -1019,7 +1021,7 @@ def test_reactivate_user():
         response_body = store.put(
             f"{USERS}/{str(user.id)}{DEACTIVATE}",
         )
-        deactivated_user = UserResponse.parse_obj(response_body)
+        deactivated_user = UserResponse.model_validate(response_body)
         assert not deactivated_user.active
         assert deactivated_user.activation_token is not None
 
@@ -1051,7 +1053,7 @@ def test_reactivate_user():
                 is_admin=user.is_admin,
             ),
         )
-        activated_user = UserResponse.parse_obj(response_body)
+        activated_user = UserResponse.model_validate(response_body)
         assert activated_user.active
         assert activated_user.name == user.name
         assert activated_user.id == user.id
@@ -3067,14 +3069,11 @@ def test_logs_are_recorded_properly(clean_client):
         steps = run_context.steps
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
-        artifact_store = _load_artifact_store(
-            step1_logs.artifact_store_id, store
+        step1_logs_content = fetch_logs(
+            store, step1_logs.artifact_store_id, step1_logs.uri
         )
-        step1_logs_content = _load_file_from_artifact_store(
-            step1_logs.uri, artifact_store=artifact_store, mode="r"
-        )
-        step2_logs_content = _load_file_from_artifact_store(
-            step2_logs.uri, artifact_store=artifact_store, mode="r"
+        step2_logs_content = fetch_logs(
+            store, step1_logs.artifact_store_id, step2_logs.uri
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
@@ -3117,14 +3116,10 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
         )
 
         with pytest.raises(DoesNotExistException):
-            _load_file_from_artifact_store(
-                logs_uri_1, artifact_store=artifact_store, mode="r"
-            )
+            fetch_logs(store, artifact_store_id, logs_uri_1)
 
         with pytest.raises(DoesNotExistException):
-            _load_file_from_artifact_store(
-                logs_uri_2, artifact_store=artifact_store, mode="r"
-            )
+            fetch_logs(store, artifact_store_id, logs_uri_2)
 
 
 # .--------------------.

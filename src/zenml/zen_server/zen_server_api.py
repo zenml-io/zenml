@@ -11,13 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Zen Server API."""
+"""Zen Server API.
+
+To run this file locally, execute:
+
+    ```
+    uvicorn zenml.zen_server.zen_server_api:app --reload
+    ```
+"""
 
 import os
 from asyncio.log import logger
 from genericpath import isfile
 from typing import Any, List
 
+from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
@@ -32,6 +40,7 @@ from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
+    actions_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
@@ -54,6 +63,7 @@ from zenml.zen_server.routers import (
     service_connectors_endpoints,
     service_endpoints,
     stack_components_endpoints,
+    stack_deployment_endpoints,
     stacks_endpoints,
     steps_endpoints,
     tags_endpoints,
@@ -183,6 +193,10 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
 @app.on_event("startup")
 def initialize() -> None:
     """Initialize the ZenML server."""
+    # Set the maximum number of worker threads
+    to_thread.current_default_thread_limiter().total_tokens = (
+        server_config().thread_pool_size
+    )
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
@@ -218,7 +232,7 @@ else:
 # Basic Health Endpoint
 @app.head(HEALTH, include_in_schema=False)
 @app.get(HEALTH)
-def health() -> str:
+async def health() -> str:
     """Get health status of the server.
 
     Returns:
@@ -231,7 +245,7 @@ templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
 
 
 @app.get("/", include_in_schema=False)
-def dashboard(request: Request) -> Any:
+async def dashboard(request: Request) -> Any:
     """Dashboard endpoint.
 
     Args:
@@ -250,9 +264,7 @@ def dashboard(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-# to run this file locally, execute:
-# uvicorn zenml.zen_server.zen_server_api:app --reload
-
+app.include_router(actions_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
@@ -279,6 +291,7 @@ app.include_router(service_accounts_endpoints.router)
 app.include_router(service_connectors_endpoints.router)
 app.include_router(service_connectors_endpoints.types_router)
 app.include_router(service_endpoints.router)
+app.include_router(stack_deployment_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
@@ -325,7 +338,7 @@ root_static_files = get_root_static_files()
 @app.get(
     API + "/{invalid_api_path:path}", status_code=404, include_in_schema=False
 )
-def invalid_api(invalid_api_path: str) -> None:
+async def invalid_api(invalid_api_path: str) -> None:
     """Invalid API endpoint.
 
     All API endpoints that are not defined in the API routers will be
@@ -342,7 +355,7 @@ def invalid_api(invalid_api_path: str) -> None:
 
 
 @app.get("/{file_path:path}", include_in_schema=False)
-def catch_all(request: Request, file_path: str) -> Any:
+async def catch_all(request: Request, file_path: str) -> Any:
     """Dashboard endpoint.
 
     Args:

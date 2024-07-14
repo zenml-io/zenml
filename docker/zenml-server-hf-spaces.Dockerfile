@@ -11,7 +11,8 @@ ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 # localstorage in a SQLite database. If you would like to make your storage
 # persistent, use the appropriate environment variables below to configure the
 # image to use a MySQL-compatible database service that is reachable from the
-# container. See https://docs.zenml.io/getting-started/deploying-zenml/zenml-self-hosted/deploy-with-docker
+# container. See
+# https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-docker
 # for more information on how to configure these environment variables.
 
 # You can also configure the secrets store to use for your ZenML server. Be 

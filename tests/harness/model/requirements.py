@@ -17,12 +17,11 @@ import logging
 import platform
 import shutil
 from enum import Enum
-from functools import partial
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from uuid import UUID
 
 import pkg_resources
-from pydantic import Extra, Field
+from pydantic import ConfigDict, Field
 
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.secret import BaseTestSecretConfigModel
@@ -47,11 +46,7 @@ class OSType(str, Enum):
 class StackRequirementConfiguration(BaseTestSecretConfigModel):
     """ZenML stack component configuration attributes."""
 
-    class Config:
-        """Pydantic configuration class."""
-
-        validate_assignment = True
-        extra = Extra.allow
+    model_config = ConfigDict(validate_assignment=True, extra="allow")
 
 
 class StackRequirement(BaseTestConfigModel):
@@ -98,12 +93,10 @@ class StackRequirement(BaseTestConfigModel):
             The stack component or None if no component was found.
         """
         components = depaginate(
-            partial(
-                client.list_stack_components,
-                name=self.name or None,
-                type=self.type,
-                flavor=self.flavor,
-            )
+            client.list_stack_components,
+            name=self.name or None,
+            type=self.type,
+            flavor=self.flavor,
         )
 
         mandatory_components: List[UUID] = []
@@ -120,7 +113,7 @@ class StackRequirement(BaseTestConfigModel):
 
         def filter_components(component: "ComponentResponse") -> bool:
             if self.configuration:
-                for key, value in self.configuration.dict().items():
+                for key, value in self.configuration.model_dump().items():
                     if component.configuration.get(key) != value:
                         logging.debug(
                             f"{component.type.value} '{component.name}' does "
@@ -267,7 +260,7 @@ class StackRequirement(BaseTestConfigModel):
             name=self.name or f"pytest-{random_str(6).lower()}",
             flavor=self.flavor,
             component_type=self.type,
-            configuration=self.configuration.dict()
+            configuration=self.configuration.model_dump()
             if self.configuration
             else {},
         )

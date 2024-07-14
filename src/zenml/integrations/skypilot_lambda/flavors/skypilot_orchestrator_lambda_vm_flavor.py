@@ -40,7 +40,7 @@ class SkypilotLambdaOrchestratorSettings(SkypilotBaseOrchestratorSettings):
 
     _UNSUPPORTED_FEATURES = {
         "use_spot": "Spot instances not supported for Lambda orchestrator.",
-        "spot_recovery": "Spot recovery not supported for Lambda orchestrator.",
+        "job_recovery": "Job recovery not supported for Lambda orchestrator.",
         "image_id": "Custom image IDs not supported for Lambda orchestrator.",
         # Add other unsupported features as needed
     }
@@ -60,12 +60,12 @@ class SkypilotLambdaOrchestratorSettings(SkypilotBaseOrchestratorSettings):
         super().__setattr__(name, value)
 
 
-class SkypilotLambdaOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class SkypilotLambdaOrchestratorConfig(
     SkypilotBaseOrchestratorConfig, SkypilotLambdaOrchestratorSettings
 ):
     """Skypilot orchestrator config."""
 
-    api_key: Optional[str] = SecretField()
+    api_key: Optional[str] = SecretField(default=None)
 
 
 class SkypilotLambdaOrchestratorFlavor(BaseOrchestratorFlavor):

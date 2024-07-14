@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Set
 from uuid import UUID
 
 from sqlmodel import Field, SQLModel
@@ -56,13 +56,32 @@ class ServerSettingsSchema(SQLModel, table=True):
         Returns:
             The updated `ServerSettingsSchema`.
         """
-        for field, value in settings_update.dict(exclude_unset=True).items():
-            if field == "onboarding_state":
-                if value is not None:
-                    self.onboarding_state = json.dumps(value)
-            elif hasattr(self, field):
+        for field, value in settings_update.model_dump(
+            exclude_unset=True
+        ).items():
+            if hasattr(self, field):
                 setattr(self, field, value)
 
+        self.updated = datetime.utcnow()
+
+        return self
+
+    def update_onboarding_state(
+        self, completed_steps: Set[str]
+    ) -> "ServerSettingsSchema":
+        """Update the onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+
+        Returns:
+            The updated schema.
+        """
+        old_state = set(
+            json.loads(self.onboarding_state) if self.onboarding_state else []
+        )
+        new_state = old_state.union(completed_steps)
+        self.onboarding_state = json.dumps(list(new_state))
         self.updated = datetime.utcnow()
 
         return self
@@ -79,7 +98,6 @@ class ServerSettingsSchema(SQLModel, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
-
 
         Returns:
             The created `SettingsResponse`.
@@ -99,11 +117,7 @@ class ServerSettingsSchema(SQLModel, table=True):
         resources = None
 
         if include_metadata:
-            metadata = ServerSettingsResponseMetadata(
-                onboarding_state=json.loads(self.onboarding_state)
-                if self.onboarding_state
-                else {},
-            )
+            metadata = ServerSettingsResponseMetadata()
 
         if include_resources:
             resources = ServerSettingsResponseResources()

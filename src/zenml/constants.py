@@ -69,6 +69,30 @@ def handle_json_env_var(
         return default
 
 
+def is_true_string_value(value: Any) -> bool:
+    """Checks if the given value is a string representation of 'True'.
+
+    Args:
+        value: the value to check.
+
+    Returns:
+        Whether the input value represents a string version of 'True'.
+    """
+    return value in ["1", "y", "yes", "True", "true"]
+
+
+def is_false_string_value(value: Any) -> bool:
+    """Checks if the given value is a string representation of 'False'.
+
+    Args:
+        value: the value to check.
+
+    Returns:
+        Whether the input value represents a string version of 'False'.
+    """
+    return value in ["0", "n", "no", "False", "false"]
+
+
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
 
@@ -80,9 +104,9 @@ def handle_bool_env_var(var: str, default: bool = False) -> bool:
         The converted value.
     """
     value = os.getenv(var)
-    if value in ["1", "y", "yes", "True", "true"]:
+    if is_true_string_value(value):
         return True
-    elif value in ["0", "n", "no", "False", "false"]:
+    elif is_false_string_value(value):
         return False
     return default
 
@@ -230,6 +254,7 @@ STEP_SOURCE_PARAMETER_NAME = "step_source"
 
 # Server settings
 DEFAULT_ZENML_SERVER_NAME = "default"
+DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE = 40
 DEFAULT_ZENML_JWT_TOKEN_LEEWAY = 10
 DEFAULT_ZENML_JWT_TOKEN_ALGORITHM = "HS256"
 DEFAULT_ZENML_AUTH_SCHEME = AuthScheme.OAUTH2_PASSWORD_BEARER
@@ -238,6 +263,7 @@ DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS = 3
 DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING = 5  # seconds
 DEFAULT_HTTP_TIMEOUT = 30
+SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT = 120  # seconds
 ZENML_API_KEY_PREFIX = "ZENKEY_"
 DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE = 5
@@ -301,7 +327,7 @@ REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline", "pipeline_run"]
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
-ACTIONS = "/action-flavors"
+ACTIONS = "/actions"
 API = "/api"
 API_KEYS = "/api_keys"
 API_KEY_ROTATE = "/rotate"
@@ -312,6 +338,7 @@ ARTIFACT_VISUALIZATIONS = "/artifact_visualizations"
 CODE_REFERENCES = "/code_references"
 CODE_REPOSITORIES = "/code_repositories"
 COMPONENT_TYPES = "/component-types"
+CONFIG = "/config"
 CURRENT_USER = "/current-user"
 DEACTIVATE = "/deactivate"
 DEVICES = "/devices"
@@ -321,6 +348,7 @@ EMAIL_ANALYTICS = "/email-opt-in"
 EVENT_FLAVORS = "/event-flavors"
 EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
+FULL_STACK = "/full-stack"
 GET_OR_CREATE = "/get-or-create"
 GRAPH = "/graph"
 HEALTH = "/health"
@@ -347,13 +375,14 @@ SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
-SERVICE_CONNECTOR_RESOURCES = "/resources"
 MODELS = "/models"
 MODEL_VERSIONS = "/model_versions"
 MODEL_VERSION_ARTIFACTS = "/model_version_artifacts"
 MODEL_VERSION_PIPELINE_RUNS = "/model_version_pipeline_runs"
 SERVICES = "/services"
 SERVICE_CONNECTORS = "/service_connectors"
+STACK = "/stack"
+STACK_DEPLOYMENT = "/stack-deployment"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STATISTICS = "/statistics"
@@ -363,7 +392,9 @@ STEPS = "/steps"
 TAGS = "/tags"
 TRIGGERS = "/triggers"
 TRIGGER_EXECUTIONS = "/trigger_executions"
+ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
+URL = "/url"
 VERSION_1 = "/v1"
 VISUALIZE = "/visualize"
 WEBHOOKS = "/webhooks"
@@ -433,6 +464,7 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "step_operator",
 ]
 
+
 # Parameters for internal ZenML Models
 TEXT_FIELD_MAX_LENGTH = 65535
 STR_FIELD_MAX_LENGTH = 255
@@ -455,3 +487,6 @@ FINISHED_ONBOARDING_SURVEY_KEY = "awareness_channels"
 
 # Name validation
 BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
+
+
+STACK_DEPLOYMENT_API_TOKEN_EXPIRATION = 60 * 6  # 6 hours

@@ -53,6 +53,11 @@ jobs:
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.9'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mysql
   sqlite-db-migration-testing:
@@ -85,6 +90,11 @@ jobs:
         uses: actions/setup-python@v4.8.0
         with:
           python-version: '3.9'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mariadb
   publish-python-package:
@@ -121,6 +131,11 @@ jobs:
       - name: Sleep for 4 minutes
         run: sleep 240
         shell: bash
+  publish-stack-templates:
+    if: github.repository == 'zenml-io/zenml'
+    needs: publish-python-package
+    uses: ./.github/workflows/publish_stack_templates.yml
+    secrets: inherit
   # create a tag on the ZenML cloud plugins repo
   create_tag_on_cloud_plugins_repo:
     runs-on: ubuntu-latest

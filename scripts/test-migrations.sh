@@ -23,7 +23,7 @@ else
 fi
 
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.2" "0.56.3" "0.56.4" "0.57.0" "0.57.1" "0.58.0")
+VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3" "0.55.4" "0.55.5" "0.56.2" "0.56.3" "0.56.4" "0.57.0" "0.57.1" "0.58.0" "0.58.1" "0.58.2" "0.60.0" "0.61.0")
 
 # Function to compare semantic versions
 function version_compare() {
@@ -208,10 +208,13 @@ function test_upgrade_to_version() {
 
     if [ "$VERSION" == "current" ]; then
         uv pip install -e ".[templates,server]"
+    elif [ "$(version_compare "$VERSION" "0.58.2")" == ">" ]; then
+        # For releases  >= 0.60.0 we don't want to have those old requirements pinned
+        uv pip install -e ".[templates,server]"
     else
         uv pip install "zenml[templates,server]==$VERSION"
         # handles unpinned sqlmodel dependency in older versions
-        uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0"
+        uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0" "numpy<2.0.0" "tenacity!=8.4.0"
     fi
 
     # Get the major and minor version of Python

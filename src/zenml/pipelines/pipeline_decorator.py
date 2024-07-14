@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Legacy ZenML pipeline decorator definition."""
 
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -46,8 +45,8 @@ from zenml.pipelines.base_pipeline import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.types import HookSpecification
 
-    HookSpecification = Union[str, FunctionType]
 
 logger = get_logger(__name__)
 

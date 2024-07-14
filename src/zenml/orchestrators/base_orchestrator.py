@@ -16,13 +16,14 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
@@ -34,27 +35,29 @@ logger = get_logger(__name__)
 class BaseOrchestratorConfig(StackComponentConfig):
     """Base orchestrator config."""
 
-    @root_validator(pre=True)
-    def _deprecations(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _deprecations(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate and/or remove deprecated fields.
 
         Args:
-            values: The values to validate.
+            data: The values to validate.
 
         Returns:
             The validated values.
         """
-        if "custom_docker_base_image_name" in values:
-            image_name = values.pop("custom_docker_base_image_name", None)
+        if "custom_docker_base_image_name" in data:
+            image_name = data.pop("custom_docker_base_image_name", None)
             if image_name:
                 logger.warning(
                     "The 'custom_docker_base_image_name' field has been "
                     "deprecated. To use a custom base container image with your "
                     "orchestrators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/user-guide/advanced-guide/environment-management/containerize-your-pipeline)."
+                    "pipeline (see https://docs.zenml.io/how-to/customize-docker-builds)."
                 )
 
-        return values
+        return data
 
     @property
     def is_synchronous(self) -> bool:

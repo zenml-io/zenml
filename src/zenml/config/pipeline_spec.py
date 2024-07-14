@@ -16,11 +16,10 @@
 import json
 from typing import Any, Dict, List, Optional
 
-from pydantic.json import pydantic_encoder
-
 from zenml.config.source import Source
 from zenml.config.step_configurations import StepSpec
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.utils.json_utils import pydantic_encoder
 
 
 class PipelineSpec(StrictBaseModel):
@@ -61,13 +60,13 @@ class PipelineSpec(StrictBaseModel):
         """
         from packaging import version
 
-        dict_ = self.dict()
+        dict_ = self.model_dump()
 
         if self.source:
             dict_["source"] = self.source.import_path
 
         for step_dict in dict_["steps"]:
-            step_dict["source"] = Source.parse_obj(
+            step_dict["source"] = Source.model_validate(
                 step_dict["source"]
             ).import_path
 

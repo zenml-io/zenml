@@ -4,7 +4,7 @@ description: Level up your skills in a production setting.
 
 # 🐔 Production guide
 
-The ZenML production guide builds upon the [Starter guide](../starter-guide/) and is the next step in the MLOps Engineer journey with ZenML. If you're an ML practitioner hoping to implement a proof of concept within your workplace to showcase the importance of MLOps, this is the place for you.
+The ZenML production guide builds upon the [Starter guide](../starter-guide/README.md) and is the next step in the MLOps Engineer journey with ZenML. If you're an ML practitioner hoping to implement a proof of concept within your workplace to showcase the importance of MLOps, this is the place for you.
 
 <figure><img src="../../.gitbook/assets/stack_showcase.png" alt=""><figcaption><p>ZenML simplifies development of MLOps pipelines that can span multiple production stacks.</p></figcaption></figure>
 
@@ -14,6 +14,7 @@ This guide will focus on shifting gears from running pipelines _locally_ on your
 * [Understanding stacks](understand-stacks.md)
 * [Connecting remote storage](remote-storage.md)
 * [Orchestrating on the cloud](cloud-orchestration.md)
+* [Easy stack registration](easy-stack-registration.md)
 * [Configuring the pipeline to scale compute](configure-pipeline.md)
 * [Configure a code repository](connect-code-repository.md)
 

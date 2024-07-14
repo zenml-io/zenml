@@ -25,11 +25,11 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import LogicalOperators, StackComponentType
-from zenml.models.v2.base.internal import server_owned_request_model
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -38,11 +38,10 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.update import update_model
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
     from sqlmodel import SQLModel
 
     from zenml.models.v2.core.service_connector import (
@@ -103,7 +102,8 @@ class ComponentRequest(ComponentBase, WorkspaceScopedRequest):
         title="The service connector linked to this stack component.",
     )
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def name_cant_be_a_secret_reference(cls, name: str) -> str:
         """Validator to ensure that the given name is not a secret reference.
 
@@ -124,22 +124,63 @@ class ComponentRequest(ComponentBase, WorkspaceScopedRequest):
         return name
 
 
-@server_owned_request_model
 class InternalComponentRequest(ComponentRequest):
     """Internal component request model."""
 
-    pass
+    user: Optional[UUID] = Field(  # type: ignore[assignment]
+        title="The id of the user that created this resource.",
+        default=None,
+    )
 
 
 # ------------------ Update Model ------------------
 
 
-@update_model
-class ComponentUpdate(ComponentRequest):
+class ComponentUpdate(BaseUpdate):
     """Update model for stack components."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+
+    name: Optional[str] = Field(
+        title="The name of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    type: Optional[StackComponentType] = Field(
+        title="The type of the stack component.",
+        default=None,
+    )
+    flavor: Optional[str] = Field(
+        title="The flavor of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    configuration: Optional[Dict[str, Any]] = Field(
+        title="The stack component configuration.",
+        default=None,
+    )
+    connector_resource_id: Optional[str] = Field(
+        description="The ID of a specific resource instance to "
+        "gain access to through the connector",
+        default=None,
+    )
+    labels: Optional[Dict[str, Any]] = Field(
+        title="The stack component labels.",
+        default=None,
+    )
+    component_spec_path: Optional[str] = Field(
+        title="The path to the component spec used for mlstacks deployments.",
+        default=None,
+    )
+    connector: Optional[UUID] = Field(
+        title="The service connector linked to this stack component.",
+        default=None,
+    )
 
 
 # ------------------ Response Model ------------------
+
+
 class ComponentResponseBody(WorkspaceScopedResponseBody):
     """Response body for components."""
 
@@ -196,6 +237,24 @@ class ComponentResponse(
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the component labels to analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+
+        if self.labels is not None:
+            metadata.update(
+                {
+                    label[6:]: value
+                    for label, value in self.labels.items()
+                    if label.startswith("zenml:")
+                }
+            )
+        return metadata
 
     def get_hydrated_version(self) -> "ComponentResponse":
         """Get the hydrated version of this component.
@@ -311,16 +370,24 @@ class ComponentFilter(WorkspaceScopedFilter):
         description="Type of the stack component",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the stack component"
+        default=None,
+        description="Workspace of the stack component",
+        union_mode="left_to_right",
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the stack component"
+        default=None,
+        description="User of the stack component",
+        union_mode="left_to_right",
     )
     connector_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Connector linked to the stack component"
+        default=None,
+        description="Connector linked to the stack component",
+        union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Stack of the stack component"
+        default=None,
+        description="Stack of the stack component",
+        union_mode="left_to_right",
     )
 
     def set_scope_type(self, component_type: str) -> None:
@@ -333,7 +400,7 @@ class ComponentFilter(WorkspaceScopedFilter):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+    ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
         Stack components can be scoped by type to narrow the search.
@@ -344,7 +411,7 @@ class ComponentFilter(WorkspaceScopedFilter):
         Returns:
             The filter expression for the query.
         """
-        from sqlalchemy import and_, or_
+        from sqlmodel import and_, or_
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
@@ -361,7 +428,7 @@ class ComponentFilter(WorkspaceScopedFilter):
                 or_ if self.logical_operator == LogicalOperators.OR else and_
             )
 
-            stack_filter = and_(  # type: ignore[type-var]
+            stack_filter = and_(
                 StackCompositionSchema.stack_id == self.stack_id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,
             )

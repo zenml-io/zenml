@@ -23,7 +23,6 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -40,7 +39,7 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.core.user import UserResponse
     from zenml.models.v2.core.workspace import WorkspaceResponse
@@ -99,7 +98,7 @@ class UserScopedResponseBody(BaseDatedResponseBody):
     """Base user-owned body."""
 
     user: Optional["UserResponse"] = Field(
-        title="The user who created this resource."
+        title="The user who created this resource.", default=None
     )
 
 
@@ -332,9 +331,7 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
 
         return query
 
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
         """Get custom tag filters.
 
         Returns:
@@ -344,6 +341,6 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
 
         custom_filters = super().get_custom_filters()
         if self.tag:
-            custom_filters.append(col(TagSchema.name) == self.tag)  # type: ignore[arg-type]
+            custom_filters.append(col(TagSchema.name) == self.tag)
 
         return custom_filters

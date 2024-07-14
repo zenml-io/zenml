@@ -17,7 +17,8 @@ import os
 import time
 from contextlib import nullcontext
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from functools import partial
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -247,10 +248,28 @@ class StepLauncher:
                     while retries < max_retries:
                         last_retry = retries == max_retries - 1
                         try:
+                            # here pass a forced save_to_file callable to be
+                            # used as a dump function to use before starting
+                            # the external jobs in step operators
+                            if isinstance(
+                                logs_context,
+                                step_logging.StepLogsStorageContext,
+                            ):
+                                force_write_logs = partial(
+                                    logs_context.storage.save_to_file,
+                                    force=True,
+                                )
+                            else:
+
+                                def _bypass() -> None:
+                                    return None
+
+                                force_write_logs = _bypass
                             self._run_step(
                                 pipeline_run=pipeline_run,
                                 step_run=step_run_response,
                                 last_retry=last_retry,
+                                force_write_logs=force_write_logs,
                             )
                             logger.info(
                                 f"Step `{self._step_name}` completed successfully."
@@ -272,6 +291,7 @@ class StepLauncher:
                                 logger.error(
                                     f"Failed to run step `{self._step_name}` after {max_retries} retries. Exiting."
                                 )
+                                logger.exception(e)
                                 publish_utils.publish_failed_step_run(
                                     step_run_response.id
                                 )
@@ -324,9 +344,11 @@ class StepLauncher:
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             deployment=self._deployment.id,
-            pipeline=self._deployment.pipeline.id
-            if self._deployment.pipeline
-            else None,
+            pipeline=(
+                self._deployment.pipeline.id
+                if self._deployment.pipeline
+                else None
+            ),
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
             start_time=datetime.utcnow(),
@@ -415,6 +437,7 @@ class StepLauncher:
         self,
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,
+        force_write_logs: Callable[..., Any],
         last_retry: bool = True,
     ) -> None:
         """Runs the current step.
@@ -422,6 +445,7 @@ class StepLauncher:
         Args:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
+            force_write_logs: The context for the step logs.
             last_retry: Whether this is the last retry of the step.
         """
         # Prepare step run information.
@@ -432,6 +456,7 @@ class StepLauncher:
             pipeline_step_name=self._step_name,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
+            force_write_logs=force_write_logs,
         )
 
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
