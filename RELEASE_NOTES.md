@@ -3,6 +3,8 @@
 
 Building on top of the last release, this release adds a new and easy way to deploy a GCP ZenML stack from the dashboard and the CLI. Give it a try by going to the `Stacks` section in the dashboard or running the `zenml stack deploy` command! For more information on this new feature, please do check out [the video and blog](https://www.zenml.io/blog/easy-mlops-pipelines) from our previous release.
 
+We also [updated our Hugging Face integration](https://github.com/zenml-io/zenml/pull/2851) to support the automatic display of an embedded `datasets` preview pane in the ZenML Dashboard whenever you return a `Dataset` from a step. This was recently released by the Hugging Face datasets team and it allows you to easily visualize and inspect your data from the comfort of the dashboard.
+
 ## What's Changed
 
 * Fix release action docker limit by @schustmi in https://github.com/zenml-io/zenml/pull/2837
