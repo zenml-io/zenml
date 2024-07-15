@@ -374,6 +374,14 @@ max-complexity = 18
 # Use Google-style docstrings.
 convention = "google"
 
+[tool.pydoclint]
+style = 'google'
+arg-type-hints-in-docstring = false
+check-return-types = false
+check-arg-order = false
+allow-init-docstring = true
+check-class-attributes = false
+
 [tool.mypy]
 
 plugins = ["pydantic.mypy"]
