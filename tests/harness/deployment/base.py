@@ -253,15 +253,6 @@ class BaseTestDeployment(ABC):
         """
         return self.get_root_path() / self.config.name
 
-    def get_home_path(self) -> Path:
-        """Returns the temp path used for the deployment.
-
-        Returns:
-            The runtime path for the deployment.
-        """
-        # Return a `zenml-test` folder in the home directory
-        return Path.home() / DEFAULT_DEPLOYMENT_ROOT_DIR / self.config.name
-
     def global_config_path(self) -> Path:
         """Returns the global config path used for the deployment.
 

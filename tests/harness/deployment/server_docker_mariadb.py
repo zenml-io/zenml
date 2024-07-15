@@ -102,7 +102,7 @@ services:
         Returns:
             The name of the ZenML container.
         """
-        return f"{self.config.name}-zenml-1"
+        return f"{self.config.name}_zenml_1"
 
     @property
     def mariadb_container_name(self) -> str:
@@ -111,7 +111,7 @@ services:
         Returns:
             The name of the MariaDB container.
         """
-        return f"{self.config.name}-mariadb-1"
+        return f"{self.config.name}_mariadb_1"
 
     @property
     def zenml_container(self) -> Optional[Container]:
@@ -162,8 +162,9 @@ services:
         Raises:
             RuntimeError: If the deployment could not be started.
         """
-        from docker_composer_v2 import (  # type: ignore[attr-defined]
-            DockerCompose,
+        from compose.cli.main import (  # type: ignore[import-not-found]
+            TopLevelCommand,
+            project_from_options,
         )
 
         if self.is_running:
@@ -174,7 +175,7 @@ services:
             return
 
         manifest = self._generate_docker_compose_manifest()
-        path = self.get_home_path()
+        path = self.get_runtime_path()
         path.mkdir(parents=True, exist_ok=True)
         manifest_path = path / "docker-compose.yml"
         # write manifest to a file in the deployment root path
@@ -183,25 +184,28 @@ services:
 
         self.build_server_image()
 
-        DockerCompose(
-            file=str(manifest_path), project_name=self.config.name
-        ).up(
-            wait=True,
-            pull="missing",
-            no_deps=False,
-            abort_on_container_exit=False,
-            # "SERVICE": "",
-            remove_orphans=False,
-            no_recreate=False,
-            force_recreate=True,
-            always_recreate_deps=True,
-            build=False,
-            no_build=False,
-            no_color=False,
-            detach=True,
-            # scale="",
-            no_log_prefix=False,
-        ).call(capture_output=True, check=True)
+        options = {
+            "--project-name": self.config.name,
+            "--wait": True,
+            "--pull": "never",
+            "--no-deps": False,
+            "--abort-on-container-exit": False,
+            "SERVICE": "",
+            "--remove-orphans": False,
+            "--no-recreate": False,
+            "--force-recreate": True,
+            "--always-recreate-deps": True,
+            "--build": False,
+            "--no-build": False,
+            "--no-color": False,
+            "--detach": True,
+            "--scale": "",
+            "--no-log-prefix": False,
+        }
+
+        project = project_from_options(str(path), options)
+        cmd = TopLevelCommand(project)
+        cmd.up(options)
 
         timeout = DEPLOYMENT_START_TIMEOUT
         while True:
@@ -228,9 +232,7 @@ services:
 
     def down(self) -> None:
         """Stops the deployment."""
-        from docker_composer_v2 import (  # type: ignore[attr-defined]
-            DockerCompose,
-        )
+        from compose.cli.main import TopLevelCommand, project_from_options
 
         zenml_container = self.zenml_container
         mariadb_container = self.mariadb_container
@@ -240,15 +242,17 @@ services:
             )
             return
 
-        path = self.get_home_path()
-        manifest_path = path / "docker-compose.yml"
+        options = {
+            "--project-name": self.config.name,
+            "--remove-orphans": False,
+            "--rmi": "none",
+            "--volumes": "",
+        }
 
-        DockerCompose(
-            file=str(manifest_path), project_name=self.config.name
-        ).down(
-            remove_orphans=False,
-            volumes="",
-        ).call(capture_output=True, check=True)
+        path = self.get_runtime_path()
+        project = project_from_options(str(path), options)
+        cmd = TopLevelCommand(project)
+        cmd.down(options)
 
         logging.info(
             f"Removed docker-compose project '{self.config.name}' "
