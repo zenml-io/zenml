@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,12 +16,21 @@
 import os
 from collections import defaultdict
 from tempfile import TemporaryDirectory, mkdtemp
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 from datasets import Dataset, load_from_disk
 from datasets.dataset_dict import DatasetDict
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
@@ -33,13 +42,34 @@ if TYPE_CHECKING:
 DEFAULT_DATASET_DIR = "hf_datasets"
 
 
+def extract_dataset_name(input_string) -> Optional[str]:
+    """Extracts the dataset name from the input string.
+
+    Args:
+        input_string: The input string to extract the dataset name from.
+
+    Returns:
+        Optional[str]: The extracted dataset name.
+    """
+    dataset = None
+    try:
+        parts = input_string.split("/")
+        if len(parts) >= 4:
+            # Case: nyu-mll/glue
+            dataset = f"{parts[3]}/{parts[4].split('@')[0]}"
+    except Exception: # pylint: disable=broad-except
+        pass
+        
+    return dataset
+
+
 class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset, DatasetDict)
-    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = (
-        ArtifactType.DATA_ANALYSIS
-    )
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(
         self, data_type: Union[Type[Dataset], Type[DatasetDict]]
@@ -103,3 +133,50 @@ class HFDatasetMaterializer(BaseMaterializer):
                     metadata[key][dataset_name] = value
             return dict(metadata)
         raise ValueError(f"Unsupported type {type(ds)}")
+
+    def save_visualizations(
+        self, ds: Union[Dataset, DatasetDict]
+    ) -> Dict[str, VisualizationType]:
+        """Save visualizations for the dataset.
+
+        Args:
+            ds: The Dataset or DatasetDict to visualize.
+
+        Returns:
+            A dictionary mapping visualization paths to their types.
+        """
+        visualizations = {}
+
+        if isinstance(ds, Dataset):
+            datasets = {"default": ds}
+        elif isinstance(ds, DatasetDict):
+            datasets = ds
+        else:
+            raise ValueError(f"Unsupported type {type(ds)}")
+
+        for name, dataset in datasets.items():
+            # Generate a unique identifier for the dataset
+            dataset_id = extract_dataset_name(
+                [x for x in dataset.info.download_checksums.keys()][0]
+            )
+            if dataset_id:
+                # Create the iframe HTML
+                html = f"""
+                <iframe
+                src="https://huggingface.co/datasets/{dataset_id}/embed/viewer"
+                frameborder="0"
+                width="100%"
+                height="560px"
+                ></iframe>
+                """
+
+                # Save the HTML to a file
+                visualization_path = os.path.join(
+                    self.uri, f"{name}_viewer.html"
+                )
+                with fileio.open(visualization_path, "w") as f:
+                    f.write(html)
+
+                visualizations[visualization_path] = VisualizationType.HTML
+
+        return visualizations
