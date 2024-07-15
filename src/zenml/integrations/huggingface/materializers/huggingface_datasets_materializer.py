@@ -42,24 +42,28 @@ if TYPE_CHECKING:
 DEFAULT_DATASET_DIR = "hf_datasets"
 
 
-def extract_dataset_name(input_string) -> Optional[str]:
-    """Extracts the dataset name from the input string.
+def extract_repo_url(checksum_str: str) -> Optional[str]:
+    """Extracts the repo url from the checksum URL.
+
+    An example of a checksum_str is:
+    "hf://datasets/nyu-mll/glue@bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c/mrpc/train-00000-of-00001.parquet"
+    and the expected output is "nyu-mll/glue".
 
     Args:
-        input_string: The input string to extract the dataset name from.
+        checksum_str: The checksum_str to extract the dataset name from.
 
     Returns:
         Optional[str]: The extracted dataset name.
     """
     dataset = None
     try:
-        parts = input_string.split("/")
+        parts = checksum_str.split("/")
         if len(parts) >= 4:
             # Case: nyu-mll/glue
             dataset = f"{parts[3]}/{parts[4].split('@')[0]}"
-    except Exception: # pylint: disable=broad-except
+    except Exception:  # pylint: disable=broad-except
         pass
-        
+
     return dataset
 
 
@@ -144,6 +148,9 @@ class HFDatasetMaterializer(BaseMaterializer):
 
         Returns:
             A dictionary mapping visualization paths to their types.
+            
+        Raises:
+            ValueError: If the given object is not a `Dataset` or `DatasetDict`.
         """
         visualizations = {}
 
@@ -156,7 +163,7 @@ class HFDatasetMaterializer(BaseMaterializer):
 
         for name, dataset in datasets.items():
             # Generate a unique identifier for the dataset
-            dataset_id = extract_dataset_name(
+            dataset_id = extract_repo_url(
                 [x for x in dataset.info.download_checksums.keys()][0]
             )
             if dataset_id:
