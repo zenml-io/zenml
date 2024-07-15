@@ -83,9 +83,10 @@ from zenml.models.v2.misc.full_stack import (
     ComponentInfo,
     FullStackRequest,
     ServiceConnectorInfo,
+    ServiceConnectorResourcesInfo,
 )
-from zenml.models.v2.misc.service_connector_type import (
-    ServiceConnectorTypedResourcesModel,
+from zenml.service_connectors.service_connector_utils import (
+    get_resources_options_from_resource_model_for_full_stack,
 )
 from zenml.utils.dashboard_utils import get_component_url, get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
@@ -397,8 +398,21 @@ def register_stack(
         labels["zenml:wizard"] = "true"
         if provider:
             labels["zenml:provider"] = provider
-        service_connector_resource_model = None
-        can_generate_long_tokens = False
+        resources_info = None
+        # explore the service connector
+        with console.status(
+            "Exploring resources available to the service connector...\n"
+        ):
+            resources_info = (
+                get_resources_options_from_resource_model_for_full_stack(
+                    connector_details=service_connector
+                )
+            )
+        if resources_info is None:
+            cli_utils.error(
+                f"Failed to fetch service connector resources information for {service_connector}..."
+            )
+
         # create components
         needed_components = (
             (StackComponentType.ARTIFACT_STORE, artifact_store),
@@ -415,21 +429,38 @@ def register_stack(
             else:
                 if isinstance(service_connector, UUID):
                     # find existing components under same connector
-                    existing_components = client.list_stack_components(
-                        type=component_type.value,
-                        connector_id=service_connector,
-                        size=100,
-                    )
+                    existing_components = []
+                    if component_type == StackComponentType.ARTIFACT_STORE:
+                        existing_components = [
+                            ex
+                            for a_s in resources_info.artifact_stores
+                            for ex in a_s.connected_through_service_connector
+                        ]
+                    elif component_type == StackComponentType.ORCHESTRATOR:
+                        existing_components = [
+                            ex
+                            for o_s in resources_info.orchestrators
+                            for ex in o_s.connected_through_service_connector
+                        ]
+                    elif (
+                        component_type == StackComponentType.CONTAINER_REGISTRY
+                    ):
+                        existing_components = [
+                            ex
+                            for c_r in resources_info.container_registries
+                            for ex in c_r.connected_through_service_connector
+                        ]
+
                     # if some existing components are found - prompt user what to do
                     component_selected: Optional[int] = None
-                    if existing_components.total > 0:
+                    if len(existing_components) > 0:
                         component_selected = cli_utils.multi_choice_prompt(
                             object_type=component_type.value.replace("_", " "),
                             choices=[
-                                [component.name]
-                                for component in existing_components.items
+                                [component.name, component.configuration]
+                                for component in existing_components
                             ],
-                            headers=["Name"],
+                            headers=["Name", "Configuration"],
                             prompt_text=f"We found these {component_type.value.replace('_', ' ')} "
                             "connected using the current service connector. Do you "
                             "want to create a new one or use existing one?",
@@ -440,61 +471,17 @@ def register_stack(
                     component_selected = None
 
                 if component_selected is None:
-                    if service_connector_resource_model is None:
-                        with console.status(
-                            "Exploring resources available to the service connector...\n"
-                        ):
-                            if isinstance(service_connector, UUID):
-                                service_connector_resource_model = (
-                                    client.verify_service_connector(
-                                        service_connector
-                                    )
-                                )
-                                existing_service_connector_info = (
-                                    client.get_service_connector(
-                                        service_connector
-                                    )
-                                )
-                                can_generate_long_tokens = not existing_service_connector_info.configuration.get(
-                                    "generate_temporary_tokens", True
-                                )
-                            else:
-                                _, service_connector_resource_model = (
-                                    client.create_service_connector(
-                                        name=stack_name,
-                                        connector_type=service_connector.type,
-                                        auth_method=service_connector.auth_method,
-                                        configuration=service_connector.configuration,
-                                        register=False,
-                                    )
-                                )
-                                can_generate_long_tokens = True
-                        if service_connector_resource_model is None:
-                            cli_utils.error(
-                                f"Failed to validate service connector {service_connector}..."
-                            )
-                    if provider is None:
-                        if isinstance(
-                            service_connector_resource_model.connector_type,
-                            str,
-                        ):
-                            provider = (
-                                service_connector_resource_model.connector_type
-                            )
-                        else:
-                            provider = service_connector_resource_model.connector_type.connector_type
-
                     component_info = _get_stack_component_info(
                         component_type=component_type.value,
-                        cloud_provider=provider,
-                        service_connector_resource_models=service_connector_resource_model.resources,
+                        cloud_provider=provider
+                        or resources_info.connector_type,
+                        resources_info=resources_info,
                         service_connector_index=0,
-                        can_generate_long_tokens=can_generate_long_tokens,
                     )
                     component_name = stack_name
                     created_objects.add(component_type.value)
                 else:
-                    selected_component = existing_components.items[
+                    selected_component = existing_components[
                         component_selected
                     ]
                     component_info = selected_component.id
@@ -2400,10 +2387,7 @@ def _get_service_connector_info(
 def _get_stack_component_info(
     component_type: str,
     cloud_provider: str,
-    service_connector_resource_models: List[
-        ServiceConnectorTypedResourcesModel
-    ],
-    can_generate_long_tokens: bool,
+    resources_info: ServiceConnectorResourcesInfo,
     service_connector_index: Optional[int] = None,
 ) -> ComponentInfo:
     """Get a stack component info with given type and service connector.
@@ -2411,8 +2395,7 @@ def _get_stack_component_info(
     Args:
         component_type: The type of component to create.
         cloud_provider: The cloud provider to use.
-        service_connector_resource_models: The list of the available service connector resource models.
-        can_generate_long_tokens: Whether connector can generate long-living tokens.
+        resources_info: The resources info of the service connector.
         service_connector_index: The index of the service connector to use.
 
     Returns:
@@ -2427,62 +2410,28 @@ def _get_stack_component_info(
     if cloud_provider not in {"aws", "azure", "gcp"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
-    AWS_DOCS = (
-        "https://docs.zenml.io/how-to/auth-management/aws-service-connector"
-    )
-    GCP_DOCS = (
-        "https://docs.zenml.io/how-to/auth-management/gcp-service-connector"
-    )
-
     flavor = "undefined"
     service_connector_resource_id = None
     config = {}
     if component_type == "artifact_store":
-        available_storages: List[str] = []
-        if cloud_provider == "aws":
-            for each in service_connector_resource_models:
-                if each.resource_type == "s3-bucket":
-                    available_storages = each.resource_ids or []
-            flavor = "s3"
-            if not available_storages:
-                cli_utils.error(
-                    "We were unable to find any S3 buckets available "
-                    "to configured service connector. Please, verify "
-                    "that needed permission are granted for the "
-                    "service connector.\nDocumentation for the S3 "
-                    "Buckets configuration can be found at "
-                    f"{AWS_DOCS}#s3-bucket"
-                )
-        elif cloud_provider == "azure":
-            flavor = "azure"
-        elif cloud_provider == "gcp":
-            flavor = "gcp"
-            for each in service_connector_resource_models:
-                if each.resource_type == "gcs-bucket":
-                    available_storages = each.resource_ids or []
-            if not available_storages:
-                cli_utils.error(
-                    "We were unable to find any GCS buckets available "
-                    "to configured service connector. Please, verify "
-                    "that needed permission are granted for the "
-                    "service connector.\nDocumentation for the GCS "
-                    "Buckets configuration can be found at "
-                    f"{GCP_DOCS}#gcs-bucket"
-                )
-
+        choices = [
+            [a_s.flavor, accessible]
+            for a_s in resources_info.artifact_stores
+            for accessible in a_s.accessible_by_service_connector
+        ]
         selected_storage_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} storages",
-            choices=[[st] for st in available_storages],
-            headers=["Storage"],
+            choices=choices,
+            headers=["Artifact Store Type", "Storage"],
             prompt_text="Please choose one of the storages for the new artifact store:",
         )
         if selected_storage_idx is None:
             cli_utils.error("No storage selected.")
 
-        selected_storage = available_storages[selected_storage_idx]
+        selected_storage = choices[selected_storage_idx]
 
-        config = {"path": selected_storage}
-        service_connector_resource_id = selected_storage
+        config = {"path": selected_storage[1]}
+        service_connector_resource_id = selected_storage[1]
     elif component_type == "orchestrator":
 
         def query_gcp_region(compute_type: str) -> str:
@@ -2499,139 +2448,57 @@ def _get_stack_component_info(
             )
             return region
 
-        if cloud_provider == "aws":
-            available_orchestrators = []
-            for each in service_connector_resource_models:
-                types = []
-                if each.resource_type == "aws-generic":
-                    types = ["Sagemaker"]
-                    if can_generate_long_tokens:
-                        types.append("Skypilot (EC2)")
-                if each.resource_type == "kubernetes-cluster":
-                    types = ["Kubernetes"]
-
-                if each.resource_ids:
-                    for orchestrator in each.resource_ids:
-                        for t in types:
-                            available_orchestrators.append([t, orchestrator])
-            if not available_orchestrators:
-                cli_utils.error(
-                    "We were unable to find any orchestrator engines "
-                    "available to the service connector. Please, verify "
-                    "that needed permission are granted for the "
-                    "service connector.\nDocumentation for the Generic "
-                    "AWS resource configuration can be found at "
-                    f"{AWS_DOCS}#generic-aws-resource\n"
-                    "Documentation for the Kubernetes resource "
-                    "configuration can be found at "
-                    f"{AWS_DOCS}#eks-kubernetes-cluster"
-                )
-        elif cloud_provider == "gcp":
-            available_orchestrators = []
-            for each in service_connector_resource_models:
-                types = []
-                if each.resource_type == "gcp-generic":
-                    types = ["Vertex AI"]
-                    if can_generate_long_tokens:
-                        types.append("Skypilot (Compute)")
-                if each.resource_type == "kubernetes-cluster":
-                    types = ["Kubernetes"]
-
-                if each.resource_ids:
-                    for orchestrator in each.resource_ids:
-                        for t in types:
-                            available_orchestrators.append([t, orchestrator])
-            if not available_orchestrators:
-                cli_utils.error(
-                    "We were unable to find any orchestrator engines "
-                    "available to the service connector. Please, verify "
-                    "that needed permission are granted for the "
-                    "service connector.\nDocumentation for the Generic "
-                    "GCP resource configuration can be found at "
-                    f"{GCP_DOCS}#generic-gcp-resource\n"
-                    "Documentation for the GKE Kubernetes resource "
-                    "configuration can be found at "
-                    f"{GCP_DOCS}#gke-kubernetes-cluster"
-                )
-        elif cloud_provider == "azure":
-            pass
+        choices = [
+            [orchestrator.flavor, accessible]
+            for orchestrator in resources_info.orchestrators
+            for accessible in orchestrator.accessible_by_service_connector
+        ]
 
         selected_orchestrator_idx = cli_utils.multi_choice_prompt(
             object_type=f"orchestrators on {cloud_provider.upper()}",
-            choices=available_orchestrators,
-            headers=["Orchestrator Type", "Orchestrator details"],
+            choices=choices,
+            headers=["Orchestrator Type", "Details"],
             prompt_text="Please choose one of the orchestrators for the new orchestrator:",
         )
         if selected_orchestrator_idx is None:
             cli_utils.error("No orchestrator selected.")
 
-        selected_orchestrator = available_orchestrators[
-            selected_orchestrator_idx
-        ]
+        selected_orchestrator = choices[selected_orchestrator_idx]
 
         config = {}
-        if selected_orchestrator[0] == "Sagemaker":
-            flavor = "sagemaker"
+        flavor = selected_orchestrator[0]
+        if flavor == "sagemaker":
             execution_role = Prompt.ask("Enter an execution role ARN:")
             config["execution_role"] = execution_role
-        elif selected_orchestrator[0] == "Skypilot (EC2)":
-            flavor = "vm_aws"
+        elif flavor == "vm_aws":
             config["region"] = selected_orchestrator[1]
-        elif selected_orchestrator[0] == "Skypilot (Compute)":
-            flavor = "vm_gcp"
+        elif flavor == "vm_azure":
             config["region"] = query_gcp_region("Skypilot cluster")
-        elif selected_orchestrator[0] == "Vertex AI":
-            flavor = "vertex"
+        elif flavor == "vertex":
             config["location"] = query_gcp_region("Vertex AI job")
-        elif selected_orchestrator[0] == "Kubernetes":
-            flavor = "kubernetes"
         else:
             raise ValueError(
                 f"Unknown orchestrator type {selected_orchestrator[0]}"
             )
         service_connector_resource_id = selected_orchestrator[1]
     elif component_type == "container_registry":
-
-        def _get_registries(registry_name: str, docs_link: str) -> List[str]:
-            available_registries: List[str] = []
-            for each in service_connector_resource_models:
-                if each.resource_type == "docker-registry":
-                    available_registries = each.resource_ids or []
-            if not available_registries:
-                cli_utils.error(
-                    "We were unable to find any container registries "
-                    "available to the service connector. Please, verify "
-                    "that needed permission are granted for the "
-                    f"service connector.\nDocumentation for the {registry_name} "
-                    "container registry resource configuration can "
-                    f"be found at {docs_link}"
-                )
-            return available_registries
-
-        if cloud_provider == "aws":
-            flavor = "aws"
-            available_registries = _get_registries(
-                "ECR", f"{AWS_DOCS}#ecr-container-registry"
-            )
-        if cloud_provider == "gcp":
-            flavor = "gcp"
-            available_registries = _get_registries(
-                "GCR", f"{GCP_DOCS}#gcr-container-registry"
-            )
-        if cloud_provider == "azure":
-            flavor = "azure"
+        choices = [
+            [cr.flavor, accessible]
+            for cr in resources_info.container_registries
+            for accessible in cr.accessible_by_service_connector
+        ]
 
         selected_registry_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} registries",
-            choices=[[st] for st in available_registries],
-            headers=["Container Registry"],
+            choices=choices,
+            headers=["Container Registry Type", "Container Registry"],
             prompt_text="Please choose one of the registries for the new container registry:",
         )
         if selected_registry_idx is None:
             cli_utils.error("No container registry selected.")
-        selected_registry = available_registries[selected_registry_idx]
-        config = {"uri": selected_registry}
-        service_connector_resource_id = selected_registry
+        selected_registry = choices[selected_registry_idx]
+        config = {"uri": selected_registry[1]}
+        service_connector_resource_id = selected_registry[1]
     else:
         raise ValueError(f"Unknown component type {component_type}")
 

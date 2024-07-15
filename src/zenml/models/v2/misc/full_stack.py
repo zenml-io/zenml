@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field, model_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseRequest
+from zenml.models.v2.core.component import ComponentResponse
 
 
 class ServiceConnectorInfo(BaseModel):
@@ -95,3 +96,36 @@ class FullStackRequest(BaseRequest):
                             "the position in the list of service connectors."
                         )
         return self
+
+
+class ResourcesInfo(BaseModel):
+    """Information about the resources needed for CLI and UI."""
+
+    flavor: str
+    flavor_display_name: str
+    required_configuration: Dict[str, str] = {}
+    use_resource_value_as_fixed_config: bool = False
+
+    accessible_by_service_connector: List[str]
+    connected_through_service_connector: List[ComponentResponse]
+
+    @model_validator(mode="after")
+    def _validate_resource_info(self) -> "ResourcesInfo":
+        if (
+            self.use_resource_value_as_fixed_config
+            and len(self.required_configuration) > 1
+        ):
+            raise ValueError(
+                "Cannot use resource value as fixed config if more than one required configuration key is provided."
+            )
+        return self
+
+
+class ServiceConnectorResourcesInfo(BaseModel):
+    """Information about the service connector resources needed for CLI and UI."""
+
+    connector_type: str
+
+    artifact_stores: List[ResourcesInfo]
+    orchestrators: List[ResourcesInfo]
+    container_registries: List[ResourcesInfo]
