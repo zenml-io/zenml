@@ -129,8 +129,8 @@ class RunTemplateResponseMetadata(WorkspaceScopedResponseMetadata):
     pipeline_spec: Optional[PipelineSpec] = Field(
         default=None, title="The pipeline spec of the template."
     )
-    config_template: Dict[str, Any] = Field(
-        default={}, title="Configuration template for the run."
+    config_template: Optional[Dict[str, Any]] = Field(
+        default=None, title="Run configuration template."
     )
 
 
@@ -236,7 +236,7 @@ class RunTemplateResponse(
         return self.get_metadata().pipeline_spec
 
     @property
-    def config_template(self) -> Dict[str, Any]:
+    def config_template(self) -> Optional[Dict[str, Any]]:
         """The `config_template` property.
 
         Returns:
