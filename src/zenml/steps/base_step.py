@@ -479,7 +479,7 @@ class BaseStep(metaclass=BaseStepMeta):
             bound_args = signature.bind_partial(*args, **kwargs)
         except TypeError as e:
             raise StepInterfaceError(
-                f"Wrong arguments when calling step `{self.name}`: {e}"
+                f"Wrong arguments when calling step '{self.name}': {e}"
             ) from e
 
         artifacts = {}
@@ -980,7 +980,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
         if conflicting_parameters:
             is_plural = "s" if len(conflicting_parameters) > 1 else ""
-            msg = f"Configured parameter{is_plural} for the step `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
+            msg = f"Configured parameter{is_plural} for the step '{self.name}' conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
             for key, values in conflicting_parameters.items():
                 msg += (
                     f"`{key}`: config=`{values[0]}` | runtime=`{values[1]}`\n"
@@ -1023,7 +1023,7 @@ To avoid this consider setting step parameters only in one place (config or code
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
                     f"Got unexpected materializers for non-existent "
-                    f"output '{output_name}' in step `{self.name}`. "
+                    f"output '{output_name}' in step '{self.name}'. "
                     f"Only materializers for the outputs "
                     f"{allowed_output_names} of this step can"
                     f" be registered."
@@ -1036,7 +1036,7 @@ To avoid this consider setting step parameters only in one place (config or code
                     ):
                         raise StepInterfaceError(
                             f"Materializer source `{source}` "
-                            f"for output '{output_name}' of step `{self.name}` "
+                            f"for output '{output_name}' of step '{self.name}' "
                             "does not resolve to a `BaseMaterializer` subclass."
                         )
 
