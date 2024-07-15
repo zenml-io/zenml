@@ -24,7 +24,9 @@ from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
     VertexModelDeployerConfig,
     VertexModelDeployerFlavor,
 )
-from zenml.integrations.gcp.google_credentials_mixin import GoogleCredentialsMixin
+from zenml.integrations.gcp.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
 from zenml.integrations.gcp.services.vertex_deployment import (
     VertexDeploymentService,
     VertexServiceConfig,

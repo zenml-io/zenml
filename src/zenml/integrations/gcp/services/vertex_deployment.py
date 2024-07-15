@@ -170,7 +170,7 @@ class VertexDeploymentService(BaseDeploymentService):
             )
 
         # Check if the endpoint URL is available after provisioning
-        if hf_endpoint.url:
+        if vertex_endpoint.
             logger.info(
                 f"Vertex AI inference endpoint successfully deployed and available. Endpoint URL: {hf_endpoint.url}"
             )
