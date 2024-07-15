@@ -160,7 +160,9 @@ services:
         Raises:
             RuntimeError: If the deployment could not be started.
         """
-        from docker_composer_v2 import DockerCompose
+        from docker_composer_v2 import (  # type: ignore[attr-defined]
+            DockerCompose,
+        )
 
         if self.is_running:
             logging.info(
@@ -224,7 +226,9 @@ services:
 
     def down(self) -> None:
         """Stops the deployment."""
-        from docker_composer_v2 import DockerCompose
+        from docker_composer_v2 import (  # type: ignore[attr-defined]
+            DockerCompose,
+        )
 
         zenml_container = self.zenml_container
         mysql_container = self.mysql_container
