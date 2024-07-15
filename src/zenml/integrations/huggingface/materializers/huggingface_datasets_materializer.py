@@ -71,9 +71,9 @@ class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset, DatasetDict)
-    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
-        ArtifactType
-    ] = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = (
+        ArtifactType.DATA_ANALYSIS
+    )
 
     def load(
         self, data_type: Union[Type[Dataset], Type[DatasetDict]]
@@ -148,7 +148,7 @@ class HFDatasetMaterializer(BaseMaterializer):
 
         Returns:
             A dictionary mapping visualization paths to their types.
-            
+
         Raises:
             ValueError: If the given object is not a `Dataset` or `DatasetDict`.
         """
