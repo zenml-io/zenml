@@ -10,6 +10,15 @@ Leveraging ZenML, you can create and manage robust, scalable machine learning (M
 
 <figure><img src="../../.gitbook/assets/pipeline_showcase.png" alt=""><figcaption><p>ZenML pipelines are simple Python code</p></figcaption></figure>
 
+{% hint style="info" %}
+Before starting this guide, make sure you have [installed ZenML](../../getting-started/installation.md):
+
+```shell
+pip install "zenml[server]"
+zenml up  # Will launch the dashboard locally
+```
+{% endhint %}
+
 ## Start with a simple ML pipeline
 
 Let's jump into an example that demonstrates how a simple pipeline can be set up in ZenML, featuring actual ML components to give you a better sense of its application.

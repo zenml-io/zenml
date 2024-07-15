@@ -291,6 +291,7 @@ class StepLauncher:
                                 logger.error(
                                     f"Failed to run step `{self._step_name}` after {max_retries} retries. Exiting."
                                 )
+                                logger.exception(e)
                                 publish_utils.publish_failed_step_run(
                                     step_run_response.id
                                 )

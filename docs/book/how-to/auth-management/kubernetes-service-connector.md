@@ -15,8 +15,10 @@ The Kubernetes Service Connector is part of the Kubernetes ZenML integration. Yo
 
 A local Kubernetes CLI (i.e. `kubectl` ) and setting up local `kubectl` configuration contexts is not required to access Kubernetes clusters in your Stack Components through the Kubernetes Service Connector.
 
-```
+```shell
 $ zenml service-connector list-types --type kubernetes
+```
+```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃             NAME             │ TYPE          │ RESOURCE TYPES        │ AUTH METHODS │ LOCAL │ REMOTE ┃
 ┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────┼───────┼────────┨
