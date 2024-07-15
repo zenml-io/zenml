@@ -71,9 +71,9 @@ class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset, DatasetDict)
-    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = (
-        ArtifactType.DATA_ANALYSIS
-    )
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(
         self, data_type: Union[Type[Dataset], Type[DatasetDict]]
@@ -163,27 +163,28 @@ class HFDatasetMaterializer(BaseMaterializer):
 
         for name, dataset in datasets.items():
             # Generate a unique identifier for the dataset
-            dataset_id = extract_repo_name(
-                [x for x in dataset.info.download_checksums.keys()][0]
-            )
-            if dataset_id:
-                # Create the iframe HTML
-                html = f"""
-                <iframe
-                src="https://huggingface.co/datasets/{dataset_id}/embed/viewer"
-                frameborder="0"
-                width="100%"
-                height="560px"
-                ></iframe>
-                """
-
-                # Save the HTML to a file
-                visualization_path = os.path.join(
-                    self.uri, f"{name}_viewer.html"
+            if dataset.info.download_checksums:
+                dataset_id = extract_repo_name(
+                    [x for x in dataset.info.download_checksums.keys()][0]
                 )
-                with fileio.open(visualization_path, "w") as f:
-                    f.write(html)
+                if dataset_id:
+                    # Create the iframe HTML
+                    html = f"""
+                    <iframe
+                    src="https://huggingface.co/datasets/{dataset_id}/embed/viewer"
+                    frameborder="0"
+                    width="100%"
+                    height="560px"
+                    ></iframe>
+                    """
 
-                visualizations[visualization_path] = VisualizationType.HTML
+                    # Save the HTML to a file
+                    visualization_path = os.path.join(
+                        self.uri, f"{name}_viewer.html"
+                    )
+                    with fileio.open(visualization_path, "w") as f:
+                        f.write(html)
+
+                    visualizations[visualization_path] = VisualizationType.HTML
 
         return visualizations
