@@ -260,7 +260,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             )
 
         if self.endpoint.prediction_url is not None:
-            if type(request) == pd.DataFrame:
+            if type(request) is pd.DataFrame:
                 response = requests.post(  # nosec
                     self.endpoint.prediction_url,
                     json={"instances": request.to_dict("records")},
