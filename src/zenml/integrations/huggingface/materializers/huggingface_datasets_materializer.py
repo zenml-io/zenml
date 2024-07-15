@@ -42,18 +42,18 @@ if TYPE_CHECKING:
 DEFAULT_DATASET_DIR = "hf_datasets"
 
 
-def extract_repo_url(checksum_str: str) -> Optional[str]:
-    """Extracts the repo url from the checksum URL.
+def extract_repo_name(checksum_str: str) -> Optional[str]:
+    """Extracts the repo name from the checksum string.
 
     An example of a checksum_str is:
     "hf://datasets/nyu-mll/glue@bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c/mrpc/train-00000-of-00001.parquet"
     and the expected output is "nyu-mll/glue".
 
     Args:
-        checksum_str: The checksum_str to extract the dataset name from.
+        checksum_str: The checksum_str to extract the repo name from.
 
     Returns:
-        Optional[str]: The extracted dataset name.
+        str: The extracted repo name.
     """
     dataset = None
     try:
@@ -163,7 +163,7 @@ class HFDatasetMaterializer(BaseMaterializer):
 
         for name, dataset in datasets.items():
             # Generate a unique identifier for the dataset
-            dataset_id = extract_repo_url(
+            dataset_id = extract_repo_name(
                 [x for x in dataset.info.download_checksums.keys()][0]
             )
             if dataset_id:
