@@ -83,7 +83,7 @@ with the test framework CLI, e.g.:
 2. Provision the test environment. This will configure and start a local ZenML
 deployment and will register and provision the stack components that are
 configured for the environment. (Note that some environments require the 
-`docker-compose` pip package to be installed, so make sure to do that.
+`docker-composer-v2` pip package to be installed, so make sure to do that.
 
 The test framework will also take care of
 rebuilding the ZenML container images that are required for the server to run
