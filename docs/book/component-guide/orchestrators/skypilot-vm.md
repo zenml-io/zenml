@@ -86,8 +86,10 @@ To provision VMs on AWS, your VM Orchestrator stack component needs to be config
 
 First, check that the AWS service connector type is available using the following command:
 
-```
+```shell
 zenml service-connector list-types --type aws
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
 ┠───────────────────────┼────────┼───────────────────────┼──────────────────┼───────┼────────┨
@@ -131,8 +133,10 @@ To provision VMs on GCP, your VM Orchestrator stack component needs to be config
 
 To configure the GCP Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
-```
+```shell
 zenml service-connector list-types --type gcp
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
 ┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
@@ -184,8 +188,10 @@ To provision VMs on Azure, your VM Orchestrator stack component needs to be conf
 
 To configure the Azure Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
-```
+```shell
 zenml service-connector list-types --type azure
+```
+```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃          NAME           │ TYPE      │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
 ┠─────────────────────────┼───────────┼───────────────────────┼───────────────────┼───────┼────────┨

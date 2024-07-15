@@ -14,13 +14,25 @@
 """Endpoint definitions for stack deployments."""
 
 import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
 from fastapi import APIRouter, Request, Security
 
-from zenml.constants import API, INFO, STACK, STACK_DEPLOYMENT, URL, VERSION_1
+from zenml.constants import (
+    API,
+    CONFIG,
+    INFO,
+    STACK,
+    STACK_DEPLOYMENT,
+    STACK_DEPLOYMENT_API_TOKEN_EXPIRATION,
+    VERSION_1,
+)
 from zenml.enums import StackDeploymentProvider
-from zenml.models import DeployedStack, StackDeploymentInfo
+from zenml.models import (
+    DeployedStack,
+    StackDeploymentConfig,
+    StackDeploymentInfo,
+)
 from zenml.stack_deployments.utils import get_stack_deployment_class
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -54,27 +66,20 @@ def get_stack_deployment_info(
         Information about the stack deployment provider.
     """
     stack_deployment_class = get_stack_deployment_class(provider)
-    return StackDeploymentInfo(
-        provider=provider,
-        description=stack_deployment_class.description(),
-        instructions=stack_deployment_class.instructions(),
-        post_deploy_instructions=stack_deployment_class.post_deploy_instructions(),
-        permissions=stack_deployment_class.permissions(),
-        locations=stack_deployment_class.locations(),
-    )
+    return stack_deployment_class.get_deployment_info()
 
 
 @router.get(
-    URL,
+    CONFIG,
 )
 @handle_exceptions
-def get_stack_deployment_url(
+def get_stack_deployment_config(
     request: Request,
     provider: StackDeploymentProvider,
     stack_name: str,
     location: Optional[str] = None,
     auth_context: AuthContext = Security(authorize),
-) -> Tuple[str, str]:
+) -> StackDeploymentConfig:
     """Return the URL to deploy the ZenML stack to the specified cloud provider.
 
     Args:
@@ -85,8 +90,8 @@ def get_stack_deployment_url(
         auth_context: The authentication context.
 
     Returns:
-        The URL to deploy the ZenML stack to the specified cloud provider
-        and a text description of the URL.
+        The cloud provider console URL where the stack will be deployed and
+        the configuration for the stack deployment.
     """
     verify_permission(
         resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
@@ -107,12 +112,17 @@ def get_stack_deployment_url(
     assert token is not None
 
     # A new API token is generated for the stack deployment
-    expires = datetime.datetime.utcnow() + datetime.timedelta(minutes=60)
+    expires = datetime.datetime.utcnow() + datetime.timedelta(
+        minutes=STACK_DEPLOYMENT_API_TOKEN_EXPIRATION
+    )
     api_token = token.encode(expires=expires)
 
     return stack_deployment_class(
-        stack_name=stack_name, location=location
-    ).deploy_url(zenml_server_url=str(url), zenml_server_api_token=api_token)
+        stack_name=stack_name,
+        location=location,
+        zenml_server_url=str(url),
+        zenml_server_api_token=api_token,
+    ).get_deployment_config()
 
 
 @router.get(
@@ -140,5 +150,9 @@ def get_deployed_stack(
     """
     stack_deployment_class = get_stack_deployment_class(provider)
     return stack_deployment_class(
-        stack_name=stack_name, location=location
+        stack_name=stack_name,
+        location=location,
+        # These fields are not needed for this operation
+        zenml_server_url="",
+        zenml_server_api_token="",
     ).get_stack(date_start=date_start)
