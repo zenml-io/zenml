@@ -15,7 +15,6 @@
 
 import argparse
 import logging
-import os
 import sys
 
 from zenml import constants
@@ -45,12 +44,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}", required=True)
     args, remaining_args = parser.parse_known_args()
-    if isinstance(
-        args.entrypoint_config_source, str
-    ) and args.entrypoint_config_source.endswith(
-        "DatabricksEntrypointConfiguration"
-    ):
-        source_utils.set_custom_source_root(source_root=os.getcwd())
+
     entrypoint_config_class = source_utils.load_and_validate_class(
         args.entrypoint_config_source,
         expected_class=BaseEntrypointConfiguration,

@@ -22,6 +22,7 @@ import pkg_resources
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
+from zenml.utils import source_utils
 
 WHEEL_PACKAGE_OPTION = "wheel_package"
 DATABRICKS_JOB_ID_OPTION = "databricks_job_id"
@@ -37,6 +38,15 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
     environment variables that exceed the maximum length of 256 characters
     allowed for Databricks Processor steps from their individual components.
     """
+
+    def __init__(self, arguments: List[str]):
+        """Initializes the entrypoint configuration.
+
+        Args:
+            arguments: Command line arguments to configure this object.
+        """
+        source_utils.set_custom_source_root(source_root=os.getcwd())
+        super().__init__(arguments)
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:

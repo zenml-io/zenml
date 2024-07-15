@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run on Databricks.
 
 # Databricks Orchestrator
 
-[Databricks](https://www.databricks.com/) is a unified data analytics platform that combines the best of data warehouses and data lakes to offer an integrated solution for big data processing and machine learning. It provides a collaborative environment for data scientists, data engineers, and business analysts to work together on data projects. Databricks is built on top of Apache Spark, offering optimized performance and scalability for big data workloads.
+[Databricks](https://www.databricks.com/) is a unified data analytics platform that combines the best of data warehouses and data lakes to offer an integrated solution for big data processing and machine learning. It provides a collaborative environment for data scientists, data engineers, and business analysts to work together on data projects. Databricks offers optimized performance and scalability for big data workloads.
 
 The Databricks orchestrator is an orchestrator flavor provided by the ZenML databricks integration that allows you to run your pipelines on Databricks. This integration enables you to leverage Databricks' powerful distributed computing capabilities and optimized environment for your ML pipelines within the ZenML framework.
 
@@ -46,7 +46,13 @@ Once the job is completed, ZenML retrieves the logs and status of the job and up
 
 ### How to use it
 
-To use the Databricks orchestrator, you first need to register it and add it to your stack, we must configure the host and a client_id and client_secret as authentication methods. Before registering the orchestrator, you need to install the Databricks integration by running:
+To use the Databricks orchestrator, you first need to register it and add it to your stack. Before registering the orchestrator, you need to install the Databricks integration by running the following command:
+
+```shell
+zenml integration install databricks
+```
+
+This command will install the necessary dependencies, including the `databricks-sdk` package, which is required for authentication with Databricks. Once the integration is installed, you can proceed with registering the orchestrator and configuring the necessary authentication details.
 
 ```shell
 zenml integration install databricks
@@ -60,6 +66,8 @@ zenml orchestrator register databricks_orchestrator --flavor=databricks --host="
 
 {% hint style="info" %}
 We recommend creating a Databricks service account with the necessary permissions to create and run jobs. You can find more information on how to create a service account [here](https://docs.databricks.com/dev-tools/api/latest/authentication.html). You can generate a client_id and client_secret for the service account and use them to authenticate with Databricks.
+
+![Databricks Service Account Permession](../../.gitbook/assets/DatabricksPermessions.png)
 {% endhint %}
 
 ```shell
@@ -124,7 +132,7 @@ In order to cancel a scheduled Databricks pipeline, you need to manually delete 
 
 ### Additional configuration
 
-For additional configuration of the Databricks orchestrator, you can pass `DatabricksOrchestratorSettings` which allows you to configure node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+For additional configuration of the Databricks orchestrator, you can pass `DatabricksOrchestratorSettings` which allows you to change the Spark version, number of workers, node type, autoscale settings, Spark configuration, Spark environment variables, and schedule timezone.
 
 ```python
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import DatabricksOrchestratorSettings
@@ -153,6 +161,21 @@ These settings can then be specified on either pipeline-level or step-level:
 def my_pipeline():
     ...
 ```
+
+We can also enable GPU support for the Databricks orchestrator changing the `spark_version` and `node_type_id` to a GPU-enabled version and node type:
+
+```python
+from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import DatabricksOrchestratorSettings
+
+databricks_settings = DatabricksOrchestratorSettings(
+    spark_version="15.3.x-gpu-ml-scala2.12",
+    node_type_id="Standard_NC24ads_A100_v4",
+    policy_id=POLICY_ID,
+    autoscale=(1, 2),
+)
+```
+
+With these settings, the orchestrator will use a GPU-enabled Spark version and a GPU-enabled node type to run the pipeline on Databricks, next section will show how to enable CUDA for the GPU to give its full acceleration for your pipeline.
 
 #### Enabling CUDA for GPU-backed hardware
 
