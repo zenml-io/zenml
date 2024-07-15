@@ -236,8 +236,6 @@ GCP project and to clean up the resources created by the stack by using
             cloudshell_open_in_editor="gcp-gar-gcs-vertex.jinja,gcp-gar-gcs-vertex-deploy.sh",
             cloudshell_tutorial="gcp-gar-gcs-vertex.md",
             ephemeral="true",
-            # TODO: remove this before the branch is merged
-            cloudshell_git_branch="feature/prd-482-gcp-stack-deployment",
         )
         # Encode the parameters as URL query parameters
         query_params = "&".join([f"{k}={v}" for k, v in params.items()])
@@ -251,8 +249,8 @@ ZENML_STACK_NAME={self.stack_name}
 ZENML_STACK_REGION={self.location or "europe-west3"}
 ZENML_SERVER_URL={self.zenml_server_url}
 ZENML_SERVER_API_TOKEN={self.zenml_server_api_token}
-### END CONFIGURATION ###
-"""
+### END CONFIGURATION ###"""
+
         return StackDeploymentConfig(
             deployment_url=url,
             deployment_url_text="GCP Cloud Shell Console",

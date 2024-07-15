@@ -22,7 +22,7 @@ Click **Start** to begin.
 
 `Note:` In order to be able to install the ZenML stack successfully, you need to have billing enabled for your project.
 
-Then run the following command to configure the selected project in your Cloud Shell terminal:
+Then run the following command to authorize and configure the selected project in your Cloud Shell terminal:
 
 ```sh
 gcloud config set project <walkthrough-project-name/>

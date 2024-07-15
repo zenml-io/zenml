@@ -139,35 +139,6 @@ resources:
       repositoryId: zenml-{{ resourceNameSuffix }}
       format: DOCKER
 
-{% if properties['zenmlServerURL'] and properties['zenmlServerAPIToken'] %} 
-
-  - name: zenml-cloud-function
-    type: gcp-types/cloudfunctions-v1:projects.locations.functions
-    properties:
-      parent: projects/{{ project }}/locations/{{ region }}
-      function: zenml-invoke-api-{{ resourceNameSuffix }}
-      entryPoint: run_script
-      runtime: python39
-      sourceArchiveUrl: gs://zenml-public-bucket/zenml-gcp-dm-templates/gcp-dm-stack-register.zip
-      httpsTrigger: {}
-      environmentVariables:
-        ZENML_SERVER_URL: {{ zenmlServerURL }}
-        ZENML_SERVER_API_TOKEN: {{ zenmlServerAPIToken }}
-        ZENML_STACK_SECRET_SERVICE_ACCOUNT_JSON: "$(ref.zenml-service-account-key.privateKeyData)"
-
-  - name: zenml-cloud-function-call
-    type: gcp-types/cloudfunctions-v1:cloudfunctions.projects.locations.functions.call
-    metadata:
-      dependsOn:
-        - zenml-cloud-function
-        - zenml-service-account-key
-    properties:
-      name: projects/{{ project }}/locations/{{ region }}/functions/zenml-invoke-api-{{ resourceNameSuffix }}
-      data: |
-        {{ zenml_stack_json("$SERVICE_ACCOUNT_JSON") | indent(8) }}
-
-{% endif %}
-
 outputs:
 - name: GCSBucket
   value: zenml-{{ resourceNameSuffix }}
@@ -181,8 +152,6 @@ outputs:
 - name: ArtifactRegistry
   value: $(ref.zenml-artifact-registry.name)
 
-{% if not properties['zenmlServerURL'] or not properties['zenmlServerAPIToken'] %} 
 - name: ZenMLStack
   value: |
     {{ zenml_stack_json("$(ref.zenml-service-account-key.privateKeyData)") | indent(4) }}
-{% endif %}
