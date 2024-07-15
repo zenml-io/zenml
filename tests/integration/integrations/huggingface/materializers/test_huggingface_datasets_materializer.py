@@ -18,7 +18,7 @@ from datasets import Dataset
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
     HFDatasetMaterializer,
-    extract_repo_url,
+    extract_repo_name,
 )
 
 
@@ -38,61 +38,61 @@ def test_huggingface_datasets_materializer(clean_client):
     assert [1, 2, 3] in data.values()
 
 
-def test_extract_repo_url():
-    """Tests whether the extract_repo_url function works correctly."""
+def test_extract_repo_name():
+    """Tests whether the extract_repo_name function works correctly."""
     # Test valid URL
     url = "hf://datasets/nyu-mll/glue@bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c/mrpc/train-00000-of-00001.parquet"
-    assert extract_repo_url(url) == "nyu-mll/glue"
+    assert extract_repo_name(url) == "nyu-mll/glue"
 
     # Test valid URL with different dataset
     url = "hf://datasets/huggingface/dataset-name@123456/subset/file.parquet"
-    assert extract_repo_url(url) == "huggingface/dataset-name"
+    assert extract_repo_name(url) == "huggingface/dataset-name"
 
     # Test URL without file
     url = "hf://datasets/org/repo@commit"
-    assert extract_repo_url(url) == "org/repo"
+    assert extract_repo_name(url) == "org/repo"
 
     # Test URL with extra parts
     url = "hf://datasets/org/repo/extra/parts@commit/file.parquet"
-    assert extract_repo_url(url) == "org/repo"
+    assert extract_repo_name(url) == "org/repo"
 
     # Test invalid URL (too short)
     url = "hf://datasets/org"
-    assert extract_repo_url(url) is None
+    assert extract_repo_name(url) is None
 
     # Test invalid URL format
     url = "https://huggingface.co/datasets/org/repo"
-    assert extract_repo_url(url) is None
+    assert extract_repo_name(url) is None
 
     # Test empty string
-    assert extract_repo_url("") is None
+    assert extract_repo_name("") is None
 
     # Test None input
-    assert extract_repo_url(None) is None
+    assert extract_repo_name(None) is None
 
 
-def test_extract_repo_url_edge_cases():
-    """Tests edge cases for the extract_repo_url function."""
+def test_extract_repo_name_edge_cases():
+    """Tests edge cases for the extract_repo_name function."""
     # Test URL with no '@' symbol
     url = "hf://datasets/org/repo/file.parquet"
-    assert extract_repo_url(url) == "org/repo"
+    assert extract_repo_name(url) == "org/repo"
 
     # Test URL with multiple '@' symbols
     url = "hf://datasets/org/repo@commit@extra/file.parquet"
-    assert extract_repo_url(url) == "org/repo"
+    assert extract_repo_name(url) == "org/repo"
 
     # Test URL with special characters in repo name
     url = "hf://datasets/org-name/repo_name-123@commit/file.parquet"
-    assert extract_repo_url(url) == "org-name/repo_name-123"
+    assert extract_repo_name(url) == "org-name/repo_name-123"
 
 
-def test_extract_repo_url_exceptions():
-    """Tests exception handling in the extract_repo_url function."""
+def test_extract_repo_name_exceptions():
+    """Tests exception handling in the extract_repo_name function."""
     # Test with non-string input
-    assert extract_repo_url(123) is None
+    assert extract_repo_name(123) is None
 
     # Test with list input
-    assert extract_repo_url(["not", "a", "string"]) is None
+    assert extract_repo_name(["not", "a", "string"]) is None
 
     # Test with dict input
-    assert extract_repo_url({"not": "a string"}) is None
+    assert extract_repo_name({"not": "a string"}) is None
