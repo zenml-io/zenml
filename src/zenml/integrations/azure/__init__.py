@@ -43,7 +43,7 @@ class AzureIntegration(Integration):
         "azure-keyvault-keys",
         "azure-keyvault-secrets",
         "azure-identity",
-        "azureml-core==1.54.0.post1",
+        "azureml-core==1.56.0",
         "azure-mgmt-containerservice>=20.0.0",
         "azure-storage-blob==12.17.0",  # temporary fix for https://github.com/Azure/azure-sdk-for-python/issues/32056
         "kubernetes",
