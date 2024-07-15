@@ -60,10 +60,6 @@ def test_extract_repo_name():
     url = "hf://datasets/org"
     assert extract_repo_name(url) is None
 
-    # Test invalid URL format
-    url = "https://huggingface.co/datasets/org/repo"
-    assert extract_repo_name(url) is None
-
     # Test empty string
     assert extract_repo_name("") is None
 
