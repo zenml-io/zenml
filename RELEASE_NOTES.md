@@ -22,7 +22,7 @@ We also [updated our Hugging Face integration](https://github.com/zenml-io/zenml
 * Update stack deployment docs and other small fixes by @stefannica in https://github.com/zenml-io/zenml/pull/2846
 * Improved the `StepInterfaceError` message for missing inputs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2849
 * add image pull secrets to k8s pod settings by @wjayesh in https://github.com/zenml-io/zenml/pull/2847
-* Include apt installation of libgomp1 for docker iamges with lightgbm by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2813
+* Include apt installation of libgomp1 for docker images with lightgbm by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2813
 * Patch filter mflow by stage by @whoknowsB in https://github.com/zenml-io/zenml/pull/2798
 * Bump mlflow to version 2.14.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2825
 * Fix Accelerate string arguments passing by @avishniakov in https://github.com/zenml-io/zenml/pull/2845
