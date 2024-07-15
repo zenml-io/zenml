@@ -141,7 +141,7 @@ def build_pod_manifest(
     )
     image_pull_secrets = [
         k8s_client.V1LocalObjectReference(name=name)
-        for name in pod_settings.image_pull_secrets
+        for name in pod_settings.image_pull_secrets or []
     ]
 
     pod_spec = k8s_client.V1PodSpec(
