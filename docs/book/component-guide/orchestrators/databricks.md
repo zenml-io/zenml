@@ -33,6 +33,9 @@ You will need to do the following to start using the Databricks orchestrator:
 
 ## How it works
 
+
+![Databricks How It works Diagram](../../.gitbook/assets/Databricks_How_It_works.png)
+
 The Databricks orchestrator in ZenML leverages the concept of Wheel Packages. When you run a pipeline with the Databricks orchestrator, ZenML creates a Python wheel package from your project. This wheel package contains all the necessary code and dependencies for your pipeline.
 
 Once the wheel package is created, ZenML uploads it to Databricks. ZenML leverage Databricks SDK to create a job definition, This job definition includes information about the pipeline steps and ensures that each step is executed only after its upstream steps have successfully completed.
