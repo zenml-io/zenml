@@ -139,10 +139,12 @@ def build_pod_manifest(
         ],
         security_context=security_context,
     )
-    image_pull_secrets = [
-        k8s_client.V1LocalObjectReference(name=name)
-        for name in pod_settings.image_pull_secrets or []
-    ]
+    image_pull_secrets = []
+    if pod_settings:
+        image_pull_secrets = [
+            k8s_client.V1LocalObjectReference(name=name)
+            for name in pod_settings.image_pull_secrets
+        ]
 
     pod_spec = k8s_client.V1PodSpec(
         containers=[container_spec],
