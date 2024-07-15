@@ -45,6 +45,9 @@ class BaseSchema(SQLModel):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
+        Returns:
+            The corresponding model instance.
+
         Raises:
             NotImplementedError: When the base class fails to implement this.
         """

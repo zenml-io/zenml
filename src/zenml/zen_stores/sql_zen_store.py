@@ -2672,10 +2672,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created artifact version.
-
-        Raises:
-            EntityExistsError: if an artifact with the same name and version
-                already exists.
         """
         with Session(self.engine) as session:
             # Check if an artifact with the given name and version exists
@@ -5276,6 +5272,9 @@ class SqlZenStore(BaseZenStore):
             backup: Whether to back up the values in the backup secrets store,
                 if configured.
 
+        Raises:
+            Exception: If the values could not be set in the secrets store.
+
         # noqa: DAR401
         """
 
@@ -5354,6 +5353,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The values of the secret.
+
+        Raises:
+            Exception: If the values could not be retrieved from the secrets
+                store.
 
         # noqa: DAR401
         """
@@ -5440,6 +5443,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated values.
+
+        Raises:
+            Exception: If the values could not be updated in the secrets store.
 
         # noqa: DAR401
         """
@@ -5529,6 +5535,10 @@ class SqlZenStore(BaseZenStore):
             secret_id: The ID of the secret for which to delete the values.
             delete_backup: Whether to delete the backup values of the secret
                 from the backup secrets store, if configured.
+
+        Raises:
+            Exception: If the values could not be deleted from the
+                secrets store.
 
         # noqa: DAR401
         """
@@ -7505,6 +7515,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             provider: The stack deployment provider.
 
+        Returns:
+            Information about the stack deployment provider.
+
         Raises:
             NotImplementedError: Stack deployments are not supported by the
                 local ZenML deployment.
@@ -7525,6 +7538,9 @@ class SqlZenStore(BaseZenStore):
             provider: The stack deployment provider.
             stack_name: The name of the stack.
             location: The location where the stack should be deployed.
+
+        Returns:
+            The stack deployment configuration.
 
         Raises:
             NotImplementedError: Stack deployments are not supported by the
@@ -7548,6 +7564,9 @@ class SqlZenStore(BaseZenStore):
             stack_name: The name of the stack.
             location: The location where the stack should be deployed.
             date_start: The date when the deployment started.
+
+        Returns:
+            The deployed stack if found, otherwise None.
 
         Raises:
             NotImplementedError: Stack deployments are not supported by the
@@ -8611,9 +8630,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
-
-        Raises:
-            KeyError: If the user does not exist.
         """
         with Session(self.engine) as session:
             if user_name_or_id is None:

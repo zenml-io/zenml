@@ -322,6 +322,9 @@ class PigeonAnnotator(BaseAnnotator):
         Args:
             **kwargs: keyword arguments.
 
+        Returns:
+            The unlabeled examples from the dataset.
+
         Raises:
             NotImplementedError: Pigeon annotator does not support retrieving unlabeled data.
         """
