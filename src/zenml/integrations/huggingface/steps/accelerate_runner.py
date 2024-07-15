@@ -113,7 +113,7 @@ def run_with_accelerate(
                             commands.append(f"--{k}")
                     elif type(v) in (list, tuple, set):
                         for each in v:
-                            commands+=[f"--{k}",f"{each}"]
+                            commands += [f"--{k}", f"{each}"]
                     else:
                         commands += [f"--{k}", f"{v}"]
 
