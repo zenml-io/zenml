@@ -300,8 +300,8 @@ class PipelineDockerImageBuilder:
             # include apt packages from all required integrations
             for integration in docker_settings.required_integrations:
                 # get the integration
-                integration = integration_registry.integrations[integration]
-                apt_packages += integration.APT_PACKAGES
+                integration_cls = integration_registry.integrations[integration]
+                apt_packages += integration_cls.APT_PACKAGES
 
             if apt_packages:
                 logger.info(
