@@ -325,7 +325,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
                 "Authorization": f"Bearer {databricks_token.secret_values['token']}",
                 "Content-Type": "application/json",
             }
-            if type(request) == pd.DataFrame:
+            if isinstance(request, pd.DataFrame):
                 response = requests.post(  # nosec
                     self.prediction_url,
                     json={"instances": request.to_dict("records")},
