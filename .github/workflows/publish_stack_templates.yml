@@ -23,4 +23,3 @@ jobs:
       - name: Push CloudFormation template to S3
         run: |-
           aws s3 cp infra/aws/aws-ecr-s3-sagemaker.yaml s3://zenml-cf-templates/aws-ecr-s3-sagemaker.yaml
-
