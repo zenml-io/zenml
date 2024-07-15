@@ -107,7 +107,7 @@ This is as easy as adding the following section to your local `training_rf.yaml`
 settings:    
   ...
 
-  # Adapt this to vm_azure or vm_gcp accordingly
+  # Adapt this to vm_gcp accordingly
   orchestrator.vm_aws:
     memory: 32 # in GB
         
@@ -119,10 +119,36 @@ steps:
         cpus: 8
 ```
 
-Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_config.SkypilotBaseOrchestratorSettings) class in the Python SDK. You can adapt it to `vm_gcp` or `vm_azure` depending on which flavor of skypilot you have configured.
+Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_config.SkypilotBaseOrchestratorSettings) class in the Python SDK. You can adapt it to `vm_gcp` if you are using the GCP variant of skypilot.
+
+<details>
+
+<summary>Instructions for Microsoft Azure Users</summary>
+
+As discussed [before](cloud-orchestration.md), we are using the [Kubernetes orchestrator](../../component-guide/orchestrators/kubernetes.md) for Azure users. In order to scale compute for the Kubernetes orchestrator, the
+YAML file needs to look like this:
+
+```yaml
+# These are the resources for the entire pipeline, i.e., each step
+settings:    
+  ...
+
+  resources:
+    memory: "32GB"
+        
+...    
+steps:
+  model_trainer:
+    settings:
+      resources:
+        memory: "8GB"
+```
+
+</details>
 
 {% hint style="info" %}
-Read more about settings in ZenML [here](../../how-to/use-configuration-files/runtime-configuration.md).
+Read more about settings in ZenML [here](../../how-to/use-configuration-files/runtime-configuration.md) and
+[here](../../how-to/training-with-gpus/training-with-gpus.md)
 {% endhint %}
 
 Now let's run the pipeline again:

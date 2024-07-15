@@ -389,6 +389,7 @@ from zenml.models.v2.core.server_settings import (
 )
 from zenml.models.v2.misc.stack_deployment import (
     DeployedStack,
+    StackDeploymentConfig,
     StackDeploymentInfo,
 )
 
@@ -726,6 +727,7 @@ __all__ = [
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
+    "StackDeploymentConfig",
     "StackDeploymentInfo",
     "OAuthDeviceAuthorizationRequest",
     "OAuthDeviceAuthorizationResponse",

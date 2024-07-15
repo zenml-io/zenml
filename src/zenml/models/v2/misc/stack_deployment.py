@@ -40,6 +40,11 @@ class StackDeploymentInfo(BaseModel):
         title="The instructions for post-deployment.",
         description="The instructions for post-deployment.",
     )
+    integrations: List[str] = Field(
+        title="ZenML integrations required for the stack.",
+        description="The list of ZenML integrations that need to be installed "
+        "for the stack to be usable.",
+    )
     permissions: Dict[str, List[str]] = Field(
         title="The permissions granted to ZenML to access the cloud resources.",
         description="The permissions granted to ZenML to access the cloud "
@@ -49,6 +54,21 @@ class StackDeploymentInfo(BaseModel):
         title="The locations where the stack can be deployed.",
         description="The locations where the stack can be deployed, as a "
         "dictionary mapping location names to descriptions.",
+    )
+
+
+class StackDeploymentConfig(BaseModel):
+    """Configuration about a stack deployment."""
+
+    deployment_url: str = Field(
+        title="The cloud provider console URL where the stack will be deployed.",
+    )
+    deployment_url_text: str = Field(
+        title="A textual description for the cloud provider console URL.",
+    )
+    configuration: Optional[str] = Field(
+        title="Configuration for the stack deployment that the user must "
+        "manually configure into the cloud provider console.",
     )
 
 
