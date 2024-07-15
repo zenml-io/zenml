@@ -1,4 +1,37 @@
 <!-- markdown-link-check-disable -->
+# 0.62.0
+
+Building on top of the last release, this release adds a new and easy way to deploy a GCP ZenML stack from the dashboard and the CLI. Give it a try by going to the `Stacks` section in the dashboard or running the `zenml stack deploy` command!
+
+## What's Changed
+
+* Fix release action docker limit by @schustmi in https://github.com/zenml-io/zenml/pull/2837
+* Upgrade ruff and yamlfix to latest versions before running formatting by @christianversloot in https://github.com/zenml-io/zenml/pull/2577
+* Fixed edge-case where step run is stored incompletely by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2827
+* Docs for stack registration + deployment wizards by @htahir1 in https://github.com/zenml-io/zenml/pull/2814
+* Make upgrade checks in formatting script optional by @avishniakov in https://github.com/zenml-io/zenml/pull/2839
+* Enable migration testing for version 0.61.0 by @schustmi in https://github.com/zenml-io/zenml/pull/2836
+* One-click GCP stack deployments by @stefannica in https://github.com/zenml-io/zenml/pull/2833
+* Only login to docker for PRs with secret access by @schustmi in https://github.com/zenml-io/zenml/pull/2842
+* Add GCP Stack creation Wizard (CLI) by @avishniakov in https://github.com/zenml-io/zenml/pull/2826
+* Update onboarding by @schustmi in https://github.com/zenml-io/zenml/pull/2794
+* Merged log files in Step Ops steps might be not available on main process, due to merge in the step op by @avishniakov in https://github.com/zenml-io/zenml/pull/2795
+* Fix some broken links, copy paste commands, and made secrets more visible  by @htahir1 in https://github.com/zenml-io/zenml/pull/2848
+* Update stack deployment docs and other small fixes by @stefannica in https://github.com/zenml-io/zenml/pull/2846
+* Improved the `StepInterfaceError` message for missing inputs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2849
+* add image pull secrets to k8s pod settings by @wjayesh in https://github.com/zenml-io/zenml/pull/2847
+* Include apt installation of libgomp1 for docker iamges with lightgbm by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2813
+* Patch filter mflow by stage by @whoknowsB in https://github.com/zenml-io/zenml/pull/2798
+* Bump mlflow to version 2.14.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2825
+* Fix Accelerate string arguments passing by @avishniakov in https://github.com/zenml-io/zenml/pull/2845
+* Fix CI by @schustmi in https://github.com/zenml-io/zenml/pull/2850
+* Added some visualizations for the HF dataset by @htahir1 in https://github.com/zenml-io/zenml/pull/2851
+
+## New Contributors
+* @whoknowsB made their first contribution in https://github.com/zenml-io/zenml/pull/2798
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.61.0...0.62.0
+
 # 0.61.0
 
 This release comes with a new and easy way to deploy an AWS ZenML stack from the dashboard and the CLI. Give it a try by going to the `Stacks` section in the dashboard or running the `zenml stack deploy` command!
