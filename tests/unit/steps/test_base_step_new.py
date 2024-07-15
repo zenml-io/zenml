@@ -123,7 +123,7 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
     )
     with pytest.raises(
         RuntimeError,
-        match="Configured parameter for the step `step_with_int_input` conflict with parameter passed in runtime",
+        match="Configured parameter for the step 'step_with_int_input' conflict with parameter passed in runtime",
     ):
         deployment, _ = Compiler().compile(
             pipeline=test_pipeline,
