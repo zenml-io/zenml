@@ -1070,7 +1070,9 @@ To avoid this consider setting step parameters only in one place (config or code
                 or key in client_lazy_loaders
             ):
                 continue
-            raise StepInterfaceError(f"Missing entrypoint input '{key}' in step '{self.name}'.")
+            raise StepInterfaceError(
+                f"Missing entrypoint input '{key}' in step '{self.name}'."
+            )
 
     def _finalize_configuration(
         self,
