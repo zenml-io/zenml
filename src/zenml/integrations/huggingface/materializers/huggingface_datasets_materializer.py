@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,12 +16,21 @@
 import os
 from collections import defaultdict
 from tempfile import TemporaryDirectory, mkdtemp
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 from datasets import Dataset, load_from_disk
 from datasets.dataset_dict import DatasetDict
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
@@ -31,6 +40,31 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_DATASET_DIR = "hf_datasets"
+
+
+def extract_repo_name(checksum_str: str) -> Optional[str]:
+    """Extracts the repo name from the checksum string.
+
+    An example of a checksum_str is:
+    "hf://datasets/nyu-mll/glue@bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c/mrpc/train-00000-of-00001.parquet"
+    and the expected output is "nyu-mll/glue".
+
+    Args:
+        checksum_str: The checksum_str to extract the repo name from.
+
+    Returns:
+        str: The extracted repo name.
+    """
+    dataset = None
+    try:
+        parts = checksum_str.split("/")
+        if len(parts) >= 4:
+            # Case: nyu-mll/glue
+            dataset = f"{parts[3]}/{parts[4].split('@')[0]}"
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+    return dataset
 
 
 class HFDatasetMaterializer(BaseMaterializer):
@@ -103,3 +137,54 @@ class HFDatasetMaterializer(BaseMaterializer):
                     metadata[key][dataset_name] = value
             return dict(metadata)
         raise ValueError(f"Unsupported type {type(ds)}")
+
+    def save_visualizations(
+        self, ds: Union[Dataset, DatasetDict]
+    ) -> Dict[str, VisualizationType]:
+        """Save visualizations for the dataset.
+
+        Args:
+            ds: The Dataset or DatasetDict to visualize.
+
+        Returns:
+            A dictionary mapping visualization paths to their types.
+
+        Raises:
+            ValueError: If the given object is not a `Dataset` or `DatasetDict`.
+        """
+        visualizations = {}
+
+        if isinstance(ds, Dataset):
+            datasets = {"default": ds}
+        elif isinstance(ds, DatasetDict):
+            datasets = ds
+        else:
+            raise ValueError(f"Unsupported type {type(ds)}")
+
+        for name, dataset in datasets.items():
+            # Generate a unique identifier for the dataset
+            if dataset.info.download_checksums:
+                dataset_id = extract_repo_name(
+                    [x for x in dataset.info.download_checksums.keys()][0]
+                )
+                if dataset_id:
+                    # Create the iframe HTML
+                    html = f"""
+                    <iframe
+                    src="https://huggingface.co/datasets/{dataset_id}/embed/viewer"
+                    frameborder="0"
+                    width="100%"
+                    height="560px"
+                    ></iframe>
+                    """
+
+                    # Save the HTML to a file
+                    visualization_path = os.path.join(
+                        self.uri, f"{name}_viewer.html"
+                    )
+                    with fileio.open(visualization_path, "w") as f:
+                        f.write(html)
+
+                    visualizations[visualization_path] = VisualizationType.HTML
+
+        return visualizations
