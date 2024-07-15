@@ -12,7 +12,7 @@ This service provides dedicated and autoscaling infrastructure managed by Databr
 
 
 {% hint style="info" %}
-Databricks Model deployer can be considered as a managed service for deploying models MLflow way, This means you can switch between MLflow and Databricks Model Deployer without changing your pipeline code even for custom complex models.
+Databricks Model deployer can be considered as a managed service for deploying models using MLflow, This means you can switch between MLflow and Databricks Model Deployers without changing your pipeline code even for custom complex models.
 {% endhint %}
 
 ## When to use it?
