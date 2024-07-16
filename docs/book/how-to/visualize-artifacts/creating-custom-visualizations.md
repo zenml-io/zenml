@@ -9,7 +9,7 @@ the visualization is one of the supported visualization types.
 Currently, the following visualization types are supported:
 
 * **HTML:** Embedded HTML visualizations such as data validation reports,
-* **Image:** Visualizations of image data such as Pillow images or certain numeric numpy arrays,
+* **Image:** Visualizations of image data such as Pillow images (e.g. `PIL.Image`) or certain numeric numpy arrays,
 * **CSV:** Tables, such as the pandas DataFrame `.describe()` output,
 * **Markdown:** Markdown strings or pages.
 
@@ -46,7 +46,7 @@ This would create the following visualization in the dashboard:
 
 If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding materializer. See the [materializer docs page](../handle-data-artifacts/handle-custom-data-types.md#optional-how-to-visualize-the-artifact) for more information on how to create custom materializers that do this.
 
-Or, see a code example on [GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/materializers/huggingface_datasets_materializer.py).
+Or, see a code example on [GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/materializers/huggingface_datasets_materializer.py) where we visualize Hugging Face datasets by embedding their preview viewer.
 
 ## How to think about creating a custom visualization
 
