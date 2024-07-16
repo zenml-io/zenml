@@ -28,6 +28,11 @@ We also [updated our Hugging Face integration](https://github.com/zenml-io/zenml
 * Fix Accelerate string arguments passing by @avishniakov in https://github.com/zenml-io/zenml/pull/2845
 * Fix CI by @schustmi in https://github.com/zenml-io/zenml/pull/2850
 * Added some visualizations for the HF dataset by @htahir1 in https://github.com/zenml-io/zenml/pull/2851
+* Fix skypilot versioning for the lambda integration by @wjayesh in https://github.com/zenml-io/zenml/pull/2853
+* Improve custom visualization docs by @htahir1 in https://github.com/zenml-io/zenml/pull/2855
+* Fix list typo by @htahir1 in https://github.com/zenml-io/zenml/pull/2856
+* Endpoint to get existing and prospective resources for service connector by @avishniakov in https://github.com/zenml-io/zenml/pull/2854
+* Databricks integrations by @safoinme in https://github.com/zenml-io/zenml/pull/2823
 
 ## New Contributors
 * @whoknowsB made their first contribution in https://github.com/zenml-io/zenml/pull/2798
