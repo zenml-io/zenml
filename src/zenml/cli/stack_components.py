@@ -142,11 +142,16 @@ def generate_stack_component_describe_command(
                     name=component_.flavor, component_type=component_type
                 )
 
-            cli_utils.print_stack_component_configuration(
-                component=component_,
-                active_status=component_.id == active_component_id,
-                connector_requirements=flavor.connector_requirements,
-            )
+                cli_utils.print_stack_component_configuration(
+                    component=component_,
+                    active_status=component_.id == active_component_id,
+                    connector_requirements=flavor.connector_requirements,
+                )
+            else:
+                cli_utils.print_stack_component_configuration(
+                    component=component_,
+                    active_status=component_.id == active_component_id
+                )
 
             print_model_url(get_component_url(component_))
 
