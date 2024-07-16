@@ -184,7 +184,6 @@ def get_resources_options_from_resource_model_for_full_stack(
             list_resources=True,
         )
         can_generate_long_tokens = True
-        connector_type = resource_model.connector_type
 
     resources = resource_model.resources
 
