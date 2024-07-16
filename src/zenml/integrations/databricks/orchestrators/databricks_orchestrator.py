@@ -29,7 +29,10 @@ from databricks.sdk.service.jobs import CronSchedule, JobCluster
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml.client import Client
-from zenml.constants import METADATA_ORCHESTRATOR_URL
+from zenml.constants import (
+    ENV_ZENML_CUSTOM_SOURCE_ROOT,
+    METADATA_ORCHESTRATOR_URL,
+)
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
     DatabricksOrchestratorConfig,
     DatabricksOrchestratorSettings,
@@ -66,6 +69,7 @@ DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
 DATABRICKS_CLUSTER_DEFAULT_NAME = "zenml-databricks-cluster"
 DATABRICKS_SPARK_DEFAULT_VERSION = "15.3.x-scala2.12"
 DATABRICKS_JOB_ID_PARAMETER_REFERENCE = "{{job.id}}"
+DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 
 
 class DatabricksOrchestrator(WheeledOrchestrator):
@@ -367,6 +371,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         if spark_env_vars:
             for key, value in spark_env_vars.items():
                 env_vars[key] = value
+        env_vars[ENV_ZENML_CUSTOM_SOURCE_ROOT] = (
+            DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
+        )
 
         fileio.rmtree(repository_temp_dir)
 

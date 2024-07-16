@@ -236,5 +236,10 @@
     "azure.core.exceptions",
     "azure.mgmt",
     "azure.mgmt.resource",
-    "kfp.client"
+    "kfp.client",
+    "databricks",
+    "databricks.sdk",
+    "databricks.sdk.service.compute",
+    "databricks.sdk.service.jobs",
+    "databricks.sdk.service.serving"
 ]

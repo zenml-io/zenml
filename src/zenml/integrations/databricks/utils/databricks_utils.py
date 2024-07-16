@@ -20,6 +20,8 @@ from databricks.sdk.service.compute import Library, PythonPyPiLibrary
 from databricks.sdk.service.jobs import PythonWheelTask, TaskDependency
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
+from zenml import __version__
+
 
 def convert_step_to_task(
     task_name: str,
@@ -49,13 +51,8 @@ def convert_step_to_task(
         for library in libraries:
             db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
     db_libraries.append(Library(whl=zenml_project_wheel))
-    # TODO: Remove this hardcoding
     db_libraries.append(
-        Library(
-            pypi=PythonPyPiLibrary(
-                "git+https://github.com/zenml-io/zenml.git@feature/databricks-integrations"
-            )
-        )
+        Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
     )
     return DatabricksTask(
         task_key=task_name,

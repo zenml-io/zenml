@@ -204,6 +204,11 @@ class DatabricksDeploymentService(BaseDeploymentService):
 
     def provision(self) -> None:
         """Provision or update remote Databricks deployment instance."""
+        from databricks.sdk.service.serving import (
+            ServedModelInputWorkloadSize,
+            ServedModelInputWorkloadType,
+        )
+
         tags = []
         for key, value in self._get_databricks_deployment_labels().items():
             tags.append(EndpointTag(key=key, value=value))
@@ -212,8 +217,12 @@ class DatabricksDeploymentService(BaseDeploymentService):
             model_name=self.config.model_name,
             model_version=self.config.model_version,
             scale_to_zero_enabled=self.config.scale_to_zero_enabled,
-            workload_type=self.config.workload_type,
-            workload_size=self.config.workload_size,
+            workload_type=ServedModelInputWorkloadType(
+                self.config.workload_type
+            ),
+            workload_size=ServedModelInputWorkloadSize(
+                self.config.workload_size
+            ),
         )
 
         databricks_endpoint = (
