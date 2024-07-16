@@ -429,20 +429,15 @@ def register_stack(
             else:
                 if isinstance(service_connector, UUID):
                     # find existing components under same connector
-                    if component_type == StackComponentType.ARTIFACT_STORE:
-                        collection = resources_info.artifact_stores
-                    elif component_type == StackComponentType.ORCHESTRATOR:
-                        collection = resources_info.orchestrators
-                    elif (
-                        component_type == StackComponentType.CONTAINER_REGISTRY
+                    if (
+                        component_type
+                        in resources_info.components_resources_info
                     ):
-                        collection = resources_info.container_registries
-                    else:
-                        collection = []
-                    if collection:
                         existing_components = [
                             existing_response
-                            for res_info in collection
+                            for res_info in resources_info.components_resources_info[
+                                component_type
+                            ]
                             for existing_response in res_info.connected_through_service_connector
                         ]
 
@@ -2417,12 +2412,14 @@ def _get_stack_component_info(
     flavor = "undefined"
     service_connector_resource_id = None
     config = {}
-    if component_type == "artifact_store":
-        choices = [
-            [a_s.flavor, accessible]
-            for a_s in resources_info.artifact_stores
-            for accessible in a_s.accessible_by_service_connector
+    choices = [
+        [cri.flavor, resource_id]
+        for cri in resources_info.components_resources_info[
+            StackComponentType(component_type)
         ]
+        for resource_id in cri.accessible_by_service_connector
+    ]
+    if component_type == "artifact_store":
         selected_storage_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} storages",
             choices=choices,
@@ -2452,12 +2449,6 @@ def _get_stack_component_info(
             )
             return region
 
-        choices = [
-            [orchestrator.flavor, accessible]
-            for orchestrator in resources_info.orchestrators
-            for accessible in orchestrator.accessible_by_service_connector
-        ]
-
         selected_orchestrator_idx = cli_utils.multi_choice_prompt(
             object_type=f"orchestrators on {cloud_provider.upper()}",
             choices=choices,
@@ -2480,18 +2471,8 @@ def _get_stack_component_info(
             config["region"] = query_gcp_region("Skypilot cluster")
         elif flavor == "vertex":
             config["location"] = query_gcp_region("Vertex AI job")
-        else:
-            raise ValueError(
-                f"Unknown orchestrator type {selected_orchestrator[0]}"
-            )
         service_connector_resource_id = selected_orchestrator[1]
     elif component_type == "container_registry":
-        choices = [
-            [cr.flavor, accessible]
-            for cr in resources_info.container_registries
-            for accessible in cr.accessible_by_service_connector
-        ]
-
         selected_registry_idx = cli_utils.multi_choice_prompt(
             object_type=f"{cloud_provider.upper()} registries",
             choices=choices,

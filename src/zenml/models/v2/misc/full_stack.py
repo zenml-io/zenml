@@ -126,6 +126,4 @@ class ServiceConnectorResourcesInfo(BaseModel):
 
     connector_type: str
 
-    artifact_stores: List[ResourcesInfo]
-    orchestrators: List[ResourcesInfo]
-    container_registries: List[ResourcesInfo]
+    components_resources_info: Dict[StackComponentType, List[ResourcesInfo]]

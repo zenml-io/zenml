@@ -341,7 +341,9 @@ def get_resources_options_from_resource_model_for_full_stack(
 
     return ServiceConnectorResourcesInfo(
         connector_type=connector_type,
-        artifact_stores=artifact_stores,
-        orchestrators=orchestrators,
-        container_registries=container_registries,
+        components_resources_info={
+            StackComponentType.ARTIFACT_STORE: artifact_stores,
+            StackComponentType.ORCHESTRATOR: orchestrators,
+            StackComponentType.CONTAINER_REGISTRY: container_registries,
+        },
     )
