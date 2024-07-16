@@ -184,6 +184,10 @@ We need first to install the SkyPilot integration for Azure and the Azure extra 
   zenml integration install azure skypilot_azure 
 ```
 
+{% hint style="warning" %}
+Currently, the Skypilot Azure integration only supports `skypilot[azure]>0.6.0`.
+{% endhint %}
+
 To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](../../how-to/auth-management/azure-service-connector.md)
 
 To configure the Azure Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
