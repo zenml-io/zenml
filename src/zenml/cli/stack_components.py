@@ -136,22 +136,18 @@ def generate_stack_component_describe_command(
             if active_components:
                 active_component_id = active_components[0].id
 
+            connector_requirements = None
             if component_.connector:
                 # We also need the flavor to get the connector requirements
-                flavor = client.get_flavor_by_name_and_type(
+                connector_requirements = client.get_flavor_by_name_and_type(
                     name=component_.flavor, component_type=component_type
                 )
 
-                cli_utils.print_stack_component_configuration(
-                    component=component_,
-                    active_status=component_.id == active_component_id,
-                    connector_requirements=flavor.connector_requirements,
-                )
-            else:
-                cli_utils.print_stack_component_configuration(
-                    component=component_,
-                    active_status=component_.id == active_component_id
-                )
+            cli_utils.print_stack_component_configuration(
+                component=component_,
+                active_status=component_.id == active_component_id,
+                connector_requirements=connector_requirements
+            )
 
             print_model_url(get_component_url(component_))
 
