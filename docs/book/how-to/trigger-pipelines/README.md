@@ -4,6 +4,11 @@ description: >-
   calling the runner script.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🚨 Trigger a pipeline
 
 A pipeline can be run via Python like this:
