@@ -2,6 +2,11 @@
 description: Configuring a pipeline at runtime.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Runtime configuration of a pipeline run
 
 It is often the case that there is a need to run a pipeline with a different configuration.
