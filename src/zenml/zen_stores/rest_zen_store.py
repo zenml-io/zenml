@@ -2691,6 +2691,10 @@ class RestZenStore(BaseZenStore):
         response_body = self.get(
             f"{WORKSPACES}/{workspace_name_or_id}{SERVICE_CONNECTORS}{SERVICE_CONNECTOR_RESOURCES}",
             params=params,
+            timeout=max(
+                self.config.http_timeout,
+                SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT,
+            ),
         )
 
         assert isinstance(response_body, list)

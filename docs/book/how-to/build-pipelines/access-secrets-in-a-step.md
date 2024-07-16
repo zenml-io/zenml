@@ -5,7 +5,7 @@
 ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a
 secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks. In order to learn
 more about how to configure and create secrets, please refer to
-the [platform guide on secrets](../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md).
+the [platform guide on secrets](../../getting-started/deploying-zenml/secret-management.md).
 
 You can access secrets directly from within your steps through the ZenML `Client` API. This allows you to use your
 secrets for querying APIs from within your step without hard-coding your access keys:
@@ -58,7 +58,7 @@ def secret_loader() -> None:
         <td>Find out more about the secrets backend in ZenML</td>
         <td></td>
         <td></td>
-        <td><a href="../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md">secret-management.md</a></td>
+        <td><a href="../../getting-started/deploying-zenml/secret-management.md">secret-management.md</a></td>
     </tr>
     </tbody>
 </table>
