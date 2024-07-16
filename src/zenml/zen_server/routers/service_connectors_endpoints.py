@@ -405,7 +405,6 @@ def get_service_connector_type(
 
 @router.post(
     SERVICE_CONNECTOR_FULL_STACK,
-    response_model=ServiceConnectorResourcesInfo,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
