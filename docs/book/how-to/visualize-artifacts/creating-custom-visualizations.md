@@ -4,6 +4,15 @@ description: Creating your own visualizations.
 
 # Creating Custom Visualizations
 
+It is simple to associate a custom visualization with an artifact in ZenML, if
+the visualization is one of the supported visualization types.
+Currently, the following visualization types are supported:
+
+* **HTML:** Embedded HTML visualizations such as data validation reports,
+* **Image:** Visualizations of image data such as Pillow images (e.g. `PIL.Image`) or certain numeric numpy arrays,
+* **CSV:** Tables, such as the pandas DataFrame `.describe()` output,
+* **Markdown:** Markdown strings or pages.
+
 There are two ways how you can add custom visualizations to the dashboard:
 
 * If you are already handling HTML, Markdown, or CSV data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](#visualization-via-special-return-types) inside your step.
@@ -31,13 +40,15 @@ def my_step() -> CSVString:
 
 This would create the following visualization in the dashboard:
 
-![CSV Visualization Example](../../.gitbook/assets/artifact\_visualization\_csv.png)
+![CSV Visualization Example](../../.gitbook/assets/artifact_visualization_csv.png)
 
 ## Visualization via Materializers
 
 If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding materializer. See the [materializer docs page](../handle-data-artifacts/handle-custom-data-types.md#optional-how-to-visualize-the-artifact) for more information on how to create custom materializers that do this.
 
-## Visualization via Custom Return Type and Materializer
+Or, see a code example on [GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/materializers/huggingface_datasets_materializer.py) where we visualize Hugging Face datasets by embedding their preview viewer.
+
+## How to think about creating a custom visualization
 
 By combining the ideas behind the above two visualization approaches, you can visualize virtually anything you want inside your ZenML dashboard in three simple steps:
 
