@@ -66,6 +66,7 @@ DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
 DATABRICKS_CLUSTER_DEFAULT_NAME = "zenml-databricks-cluster"
 DATABRICKS_SPARK_DEFAULT_VERSION = "15.3.x-scala2.12"
 DATABRICKS_JOB_ID_PARAMETER_REFERENCE = "{{job.id}}"
+DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 
 
 class DatabricksOrchestrator(WheeledOrchestrator):
@@ -367,6 +368,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         if spark_env_vars:
             for key, value in spark_env_vars.items():
                 env_vars[key] = value
+        env_vars["ZENML_REPOSITORY_PATH"] = (
+            DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
+        )
 
         fileio.rmtree(repository_temp_dir)
 
