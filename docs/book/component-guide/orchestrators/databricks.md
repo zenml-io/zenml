@@ -9,7 +9,7 @@ description: Orchestrating your pipelines to run on Databricks.
 The Databricks orchestrator is an orchestrator flavor provided by the ZenML databricks integration that allows you to run your pipelines on Databricks. This integration enables you to leverage Databricks' powerful distributed computing capabilities and optimized environment for your ML pipelines within the ZenML framework.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+The following features are currently in Alpha and may be subject to change. We recommend using them in a controlled environment and providing feedback to the ZenML team.
 {% endhint %}
 
 ### When to use it
