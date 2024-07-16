@@ -51,7 +51,6 @@ def convert_step_to_task(
         for library in libraries:
             db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
     db_libraries.append(Library(whl=zenml_project_wheel))
-    # TODO: Remove this hardcoding
     db_libraries.append(
         Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
     )
