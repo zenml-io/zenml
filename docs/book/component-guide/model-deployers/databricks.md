@@ -61,10 +61,10 @@ Within the `DatabricksServiceConfig` you can configure:
 
 * `model_name`: The name of the model that will be served, this will be used to identify the model in the Databricks Model Registry.
 * `model_version`: The version of the model that will be served, this will be used to identify the model in the Databricks Model Registry.
-* `workload_size`: The size of the workload that the model will be serving. This can be `ServedModelInputWorkloadSize.SMALL`, `ServedModelInputWorkloadSize.MEDIUM`, or `ServedModelInputWorkloadSize.LARGE`, you can import this enum from `from databricks.sdk.service.serving import ServedModelInputWorkloadSize`.
+* `workload_size`: The size of the workload that the model will be serving. This can be `Small`, `Medium`, or `Large`.
 * `scale_to_zero_enabled`: A boolean flag to enable or disable the scale to zero feature.
 * `env_vars`: A dictionary of environment variables to be passed to the model serving container.
-* `workload_type`: The type of workload that the model will be serving. This can be `ServedModelInputWorkloadType.CPU`, `ServedModelInputWorkloadType.GPU_LARGE`, `ServedModelInputWorkloadType.GPU_MEDIUM`, `ServedModelInputWorkloadType.GPU_SMALL`, or `ServedModelInputWorkloadType.MULTIGPU_MEDIUM`, you can import this enum from `from databricks.sdk.service.serving import ServedModelInputWorkloadType`.
+* `workload_type`: The type of workload that the model will be serving. This can be `CPU`, `GPU_LARGE`, `GPU_MEDIUM`, `GPU_SMALL`, or `MULTIGPU_MEDIUM`.
 * `endpoint_secret_name`: The name of the secret that will be used to secure the endpoint and authenticate requests.
 
 For more information and a full list of configurable attributes of the Databricks Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-databricks/#zenml.integrations.databricks.model\_deployers) and Databricks endpoint [code](https://github.com/databricks/databricks\_hub/blob/5e3b603ccc7cd6523d998e75f82848215abf9415/src/databricks\_hub/hf\_api.py#L6957).

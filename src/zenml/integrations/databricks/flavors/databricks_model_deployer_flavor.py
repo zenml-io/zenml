@@ -15,10 +15,6 @@
 
 from typing import TYPE_CHECKING, Dict, Optional, Type
 
-from databricks.sdk.service.serving import (
-    ServedModelInputWorkloadSize,
-    ServedModelInputWorkloadType,
-)
 from pydantic import BaseModel
 
 from zenml.integrations.databricks import DATABRICKS_MODEL_DEPLOYER_FLAVOR
@@ -37,10 +33,10 @@ if TYPE_CHECKING:
 class DatabricksBaseConfig(BaseModel):
     """Databricks Inference Endpoint configuration."""
 
-    workload_size: ServedModelInputWorkloadSize
+    workload_size: str
     scale_to_zero_enabled: bool = False
     env_vars: Optional[Dict[str, str]] = None
-    workload_type: Optional[ServedModelInputWorkloadType] = None
+    workload_type: Optional[str] = None
     endpoint_secret_name: Optional[str] = None
 
 
