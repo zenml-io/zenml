@@ -38,6 +38,7 @@ from zenml.config.source import (
     Source,
     SourceType,
 )
+from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.environment import Environment
 from zenml.logger import get_logger
 
@@ -57,7 +58,9 @@ BuiltinFunctionTypeSource = Source(
     type=SourceType.BUILTIN,
 )
 
-_CUSTOM_SOURCE_ROOT: Optional[str] = None
+_CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
+    ENV_ZENML_CUSTOM_SOURCE_ROOT, None
+)
 
 
 def load(source: Union[Source, str]) -> Any:
