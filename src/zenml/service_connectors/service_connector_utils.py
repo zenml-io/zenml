@@ -42,11 +42,13 @@ def _prepare_resource_info(
             Client().list_stack_components,
             type=stack_component_type.value,
             connector_id=connector_details,
+            flavor=flavor,
         )
     return ResourcesInfo(
         flavor=flavor,
         required_configuration=required_configuration,
         flavor_display_name=flavor_display_name,
+        use_resource_value_as_fixed_config=use_resource_value_as_fixed_config,
         accessible_by_service_connector=resource_ids,
         connected_through_service_connector=existing_components,
     )

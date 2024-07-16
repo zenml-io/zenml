@@ -451,10 +451,20 @@ def register_stack(
                         component_selected = cli_utils.multi_choice_prompt(
                             object_type=component_type.value.replace("_", " "),
                             choices=[
-                                [component.name, component.configuration]
+                                [
+                                    component.flavor,
+                                    component.name,
+                                    component.configuration or "",
+                                    component.connector_resource_id,
+                                ]
                                 for component in existing_components
                             ],
-                            headers=["Name", "Configuration"],
+                            headers=[
+                                "Type",
+                                "Name",
+                                "Configuration",
+                                "Connected as",
+                            ],
                             prompt_text=f"We found these {component_type.value.replace('_', ' ')} "
                             "connected using the current service connector. Do you "
                             "want to create a new one or use existing one?",
