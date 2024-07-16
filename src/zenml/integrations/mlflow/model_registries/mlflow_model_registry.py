@@ -371,7 +371,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             self.get_model(name=name)
         except KeyError:
             logger.info(
-                f"No registered model with name {name} found. Creating a new"
+                f"No registered model with name {name} found. Creating a new "
                 "registered model."
             )
             self.register_model(
