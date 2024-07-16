@@ -429,31 +429,25 @@ def register_stack(
             else:
                 if isinstance(service_connector, UUID):
                     # find existing components under same connector
-                    existing_components = []
                     if component_type == StackComponentType.ARTIFACT_STORE:
-                        existing_components = [
-                            ex
-                            for a_s in resources_info.artifact_stores
-                            for ex in a_s.connected_through_service_connector
-                        ]
+                        collection = resources_info.artifact_stores
                     elif component_type == StackComponentType.ORCHESTRATOR:
-                        existing_components = [
-                            ex
-                            for o_s in resources_info.orchestrators
-                            for ex in o_s.connected_through_service_connector
-                        ]
+                        collection = resources_info.orchestrators
                     elif (
                         component_type == StackComponentType.CONTAINER_REGISTRY
                     ):
+                        collection = resources_info.container_registries
+                    else:
+                        collection = []
+                    if collection:
                         existing_components = [
-                            ex
-                            for c_r in resources_info.container_registries
-                            for ex in c_r.connected_through_service_connector
+                            existing_response
+                            for res_info in collection
+                            for existing_response in res_info.connected_through_service_connector
                         ]
 
-                    # if some existing components are found - prompt user what to do
-                    component_selected: Optional[int] = None
-                    if len(existing_components) > 0:
+                        # if some existing components are found - prompt user what to do
+                        component_selected: Optional[int] = None
                         component_selected = cli_utils.multi_choice_prompt(
                             object_type=component_type.value.replace("_", " "),
                             choices=[
