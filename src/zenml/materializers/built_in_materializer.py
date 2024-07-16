@@ -80,7 +80,7 @@ class BuiltInMaterializer(BaseMaterializer):
             The data read.
         """
         contents = yaml_utils.read_json(self.data_path)
-        if type(contents) != data_type:
+        if type(contents) is not data_type:
             # TODO [ENG-142]: Raise error or try to coerce
             logger.debug(
                 f"Contents {contents} was type {type(contents)} but expected "

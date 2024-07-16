@@ -33,7 +33,7 @@ class MlflowIntegration(Integration):
     NAME = MLFLOW
 
     REQUIREMENTS = [
-        "mlflow>=2.1.1,<=2.14.1",
+        "mlflow>=2.1.1,<=2.14.2",
         "mlserver>=1.3.3",
         "mlserver-mlflow>=1.3.3",
         # TODO: remove this requirement once rapidjson is fixed

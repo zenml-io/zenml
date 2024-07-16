@@ -23,6 +23,7 @@ from zenml.integrations.aws import AWSIntegration  # noqa
 from zenml.integrations.azure import AzureIntegration  # noqa
 from zenml.integrations.bentoml import BentoMLIntegration  # noqa
 from zenml.integrations.bitbucket import BitbucketIntegration  # noqa
+from zenml.integrations.databricks import DatabricksIntegration  # noqa
 from zenml.integrations.comet import CometIntegration  # noqa
 from zenml.integrations.deepchecks import DeepchecksIntegration  # noqa
 from zenml.integrations.discord import DiscordIntegration  # noqa
