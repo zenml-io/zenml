@@ -185,7 +185,7 @@ We need first to install the SkyPilot integration for Azure and the Azure extra 
 ```
 
 {% hint style="warning" %}
-Currently, the Skypilot Azure integration only supports `skypilot[azure]>0.6.0`.
+Currently, the Skypilot Azure integration only supports `skypilot-nightly[azure]==1.0.0.dev20240716`
 {% endhint %}
 
 To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](../../how-to/auth-management/azure-service-connector.md)
