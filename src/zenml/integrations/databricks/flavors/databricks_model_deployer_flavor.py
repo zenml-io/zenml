@@ -58,6 +58,7 @@ class DatabricksModelDeployerConfig(BaseModelDeployerConfig):
     secret_name: Optional[str] = None
     client_id: Optional[str] = SecretField(default=None)
     client_secret: Optional[str] = SecretField(default=None)
+    scale_to_zero_enabled: Optional[bool] = None
 
 
 class DatabricksModelDeployerFlavor(BaseModelDeployerFlavor):

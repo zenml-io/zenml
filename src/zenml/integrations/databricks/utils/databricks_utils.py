@@ -53,7 +53,7 @@ def convert_step_to_task(
     db_libraries.append(
         Library(
             pypi=PythonPyPiLibrary(
-                "git+https://github.com/zenml-io/zenml.git@feature/databricks-integrations"
+                "git+https://github.com/zenml-io/zenml.git@develop"
             )
         )
     )
