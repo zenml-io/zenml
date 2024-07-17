@@ -107,7 +107,7 @@ def _is_valid_optional_arg(arg_type: Any) -> bool:
             if (
                 args[0] not in _ALLOWED_TYPES
                 and not _is_valid_collection_arg(args[0])
-            ) or args[1] != type(None):
+            ) or args[1] is not type(None):
                 return False
         return True
     return False

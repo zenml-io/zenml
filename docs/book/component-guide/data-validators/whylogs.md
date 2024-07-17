@@ -38,7 +38,7 @@ zenml data-validator register whylogs_data_validator --flavor=whylogs
 zenml stack register custom_stack -dv whylogs_data_validator ... --set
 ```
 
-Adding WhyLabs logging capabilities to your whylogs Data Validator is just slightly more complicated, as you also need to create a [ZenML Secret](../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md) to store the sensitive WhyLabs authentication information in a secure location and then reference the secret in the Data Validator configuration. To generate a WhyLabs access token, you can follow [the official WhyLabs instructions documented here](https://docs.whylabs.ai/docs/whylabs-api/#creating-an-api-token) .
+Adding WhyLabs logging capabilities to your whylogs Data Validator is just slightly more complicated, as you also need to create a [ZenML Secret](../../getting-started/deploying-zenml/secret-management.md) to store the sensitive WhyLabs authentication information in a secure location and then reference the secret in the Data Validator configuration. To generate a WhyLabs access token, you can follow [the official WhyLabs instructions documented here](https://docs.whylabs.ai/docs/whylabs-api/#creating-an-api-token) .
 
 Then, you can register the whylogs Data Validator with WhyLabs logging capabilities as follows:
 

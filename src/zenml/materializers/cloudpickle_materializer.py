@@ -94,7 +94,7 @@ class CloudpickleMaterializer(BaseMaterializer):
         """
         # Log a warning if this materializer was not explicitly specified for
         # the given data type.
-        if type(self) == CloudpickleMaterializer:
+        if type(self) is CloudpickleMaterializer:
             logger.warning(
                 f"No materializer is registered for type `{type(data)}`, so "
                 "the default Pickle materializer was used. Pickle is not "

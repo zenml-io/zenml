@@ -56,6 +56,7 @@ from zenml.new.pipelines.pipeline_decorator import pipeline
 from zenml.new.steps.step_decorator import step
 from zenml.new.steps.step_context import get_step_context
 from zenml.steps.utils import log_step_metadata
+from zenml.entrypoints import entrypoint
 
 __all__ = [
     "ArtifactConfig",
@@ -74,4 +75,5 @@ __all__ = [
     "save_artifact",
     "show",
     "step",
+    "entrypoint",
 ]

@@ -173,6 +173,7 @@ ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES = (
     "ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES"
 )
 ENV_ZENML_IGNORE_FAILURE_HOOK = "ZENML_IGNORE_FAILURE_HOOK"
+ENV_ZENML_CUSTOM_SOURCE_ROOT = "ZENML_CUSTOM_SOURCE_ROOT"
 
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
@@ -375,6 +376,7 @@ SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
+SERVICE_CONNECTOR_FULL_STACK = "/full_stack_resources"
 MODELS = "/models"
 MODEL_VERSIONS = "/model_versions"
 MODEL_VERSION_ARTIFACTS = "/model_version_artifacts"
@@ -392,6 +394,7 @@ STEPS = "/steps"
 TAGS = "/tags"
 TRIGGERS = "/triggers"
 TRIGGER_EXECUTIONS = "/trigger_executions"
+ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
 URL = "/url"
 VERSION_1 = "/v1"
