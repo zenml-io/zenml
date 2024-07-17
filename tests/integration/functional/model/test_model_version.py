@@ -520,10 +520,6 @@ class TestModel:
                     else:
                         assert client.get_artifact_version(id_).id == id_
 
-            client.prune_artifacts(
-                only_versions=False, delete_from_artifact_store=False
-            )
-
     def test_that_artifacts_are_not_linked_to_models_outside_of_the_context(
         self,
     ):
