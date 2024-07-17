@@ -106,6 +106,15 @@ class ZenMLCloudStackDeployment(BaseModel):
         """
 
     @classmethod
+    def skypilot_default_regions(cls) -> Dict[str, str]:
+        """Returns the regions supported by default for the Skypilot.
+
+        Returns:
+            The regions supported by default for the Skypilot.
+        """
+        return cls.locations()
+
+    @classmethod
     def get_deployment_info(cls) -> StackDeploymentInfo:
         """Return information about the ZenML Cloud Stack Deployment.
 
@@ -120,6 +129,7 @@ class ZenMLCloudStackDeployment(BaseModel):
             integrations=cls.integrations(),
             permissions=cls.permissions(),
             locations=cls.locations(),
+            skypilot_default_regions=cls.skypilot_default_regions(),
         )
 
     @abstractmethod

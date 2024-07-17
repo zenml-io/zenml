@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to Azure."""
 
-from typing import ClassVar, Dict
+import re
+from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
@@ -27,6 +28,67 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.AZURE
 
     @classmethod
+    def description(cls) -> str:
+        """Return a description of the ZenML Cloud Stack Deployment.
+
+        This will be displayed when the user is prompted to deploy
+        the ZenML stack.
+
+        Returns:
+            A MarkDown description of the ZenML Cloud Stack Deployment.
+        """
+        # TODO: Implement this
+        return ""
+
+    @classmethod
+    def instructions(cls) -> str:
+        """Return instructions on how to deploy the ZenML stack to the specified cloud provider.
+
+        This will be displayed before the user is prompted to deploy the ZenML
+        stack.
+
+        Returns:
+            MarkDown instructions on how to deploy the ZenML stack to the
+            specified cloud provider.
+        """
+        # TODO: Implement this
+        return ""
+
+    @classmethod
+    def post_deploy_instructions(cls) -> str:
+        """Return instructions on what to do after the deployment is complete.
+
+        This will be displayed after the deployment is complete.
+
+        Returns:
+            MarkDown instructions on what to do after the deployment is
+            complete.
+        """
+        # TODO: Implement this
+        return ""
+
+    @classmethod
+    def integrations(cls) -> List[str]:
+        """Return the ZenML integrations required for the stack.
+
+        Returns:
+            The list of ZenML integrations that need to be installed for the
+            stack to be usable.
+        """
+        return ["azure"]
+
+    @classmethod
+    def permissions(cls) -> Dict[str, List[str]]:
+        """Return the permissions granted to ZenML to access the cloud resources.
+
+        Returns:
+            The permissions granted to ZenML to access the cloud resources, as
+            a dictionary grouping permissions by resource.
+        """
+        # TODO: Implement this
+        return {}
+
+    @classmethod
     def locations(cls) -> Dict[str, str]:
         """Return the locations where the ZenML stack can be deployed.
 
@@ -34,8 +96,6 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
             The regions where the ZenML stack can be deployed as a map of region
             names to region descriptions.
         """
-        # Return a list of all possible Azure regions
-
         # Based on `az account list-locations -o table` on 16.07.2024
         return {
             "(US) East US": "eastus",
@@ -102,4 +162,18 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
             "(Europe) UK West": "ukwest",
             "(Middle East) UAE Central": "uaecentral",
             "(South America) Brazil Southeast": "brazilsoutheast",
+        }
+
+    @classmethod
+    def skypilot_default_regions(cls) -> Dict[str, str]:
+        """Returns the regions supported by default for the Skypilot.
+
+        Returns:
+            The regions supported by default for the Skypilot.
+        """
+        matcher = re.compile(r".*us\d*( |$)")
+        return {
+            k: v
+            for k, v in cls.locations().items()
+            if "(US)" in k and matcher.match(v)
         }

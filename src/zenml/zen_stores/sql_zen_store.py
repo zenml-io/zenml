@@ -7032,9 +7032,44 @@ class SqlZenStore(BaseZenStore):
             # Service Connectors
             service_connectors: List[ServiceConnectorResponse] = []
 
+            need_to_generate_permanent_tokens = False
+            orchestrator_component = full_stack.components[
+                StackComponentType.ORCHESTRATOR
+            ]
+            if isinstance(orchestrator_component, UUID):
+                orchestrator = self.get_stack_component(
+                    orchestrator_component,
+                    hydrate=False,
+                )
+                need_to_generate_permanent_tokens = (
+                    orchestrator.flavor.startswith("vm_")
+                )
+            else:
+                need_to_generate_permanent_tokens = (
+                    orchestrator_component.flavor.startswith("vm_")
+                )
+
             for connector_id_or_info in full_stack.service_connectors:
                 # Fetch an existing service connector
                 if isinstance(connector_id_or_info, UUID):
+                    existing_service_connector = self.get_service_connector(
+                        connector_id_or_info
+                    )
+                    if need_to_generate_permanent_tokens:
+                        if (
+                            existing_service_connector.configuration.get(
+                                "generate_temporary_tokens", None
+                            )
+                            is not False
+                        ):
+                            self.update_service_connector(
+                                existing_service_connector.id,
+                                ServiceConnectorUpdate(
+                                    configuration=existing_service_connector.configuration.update(
+                                        {"generate_temporary_tokens": False}
+                                    )
+                                ),
+                            )
                     service_connectors.append(
                         self.get_service_connector(connector_id_or_info)
                     )
@@ -7047,7 +7082,11 @@ class SqlZenStore(BaseZenStore):
                                 name=connector_name,
                                 connector_type=connector_id_or_info.type,
                                 auth_method=connector_id_or_info.auth_method,
-                                configuration=connector_id_or_info.configuration,
+                                configuration=connector_id_or_info.configuration.update(
+                                    {
+                                        "generate_temporary_tokens": not need_to_generate_permanent_tokens
+                                    }
+                                ),
                                 user=full_stack.user,
                                 workspace=full_stack.workspace,
                                 labels={

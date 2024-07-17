@@ -182,15 +182,11 @@ def get_resources_options_from_resource_model_for_full_stack(
     client = Client()
     zen_store = client.zen_store
 
-    can_generate_long_tokens = False
     if isinstance(connector_details, UUID):
         resource_model = zen_store.verify_service_connector(
             connector_details,
             list_resources=True,
         )
-        can_generate_long_tokens = not zen_store.get_service_connector(
-            connector_details
-        ).configuration.get("generate_temporary_tokens", True)
     else:
         resource_model = zen_store.verify_service_connector_config(
             service_connector=ServiceConnectorRequest(
@@ -205,7 +201,6 @@ def get_resources_options_from_resource_model_for_full_stack(
             ),
             list_resources=True,
         )
-        can_generate_long_tokens = True
 
     resources = resource_model.resources
 
@@ -249,18 +244,17 @@ def get_resources_options_from_resource_model_for_full_stack(
                             flavor_display_name="AWS Sagemaker",
                         )
                     )
-                    if can_generate_long_tokens:
-                        orchestrators.append(
-                            _prepare_resource_info(
-                                connector_details=connector_details,
-                                resource_ids=each.resource_ids,
-                                stack_component_type=StackComponentType.ORCHESTRATOR,
-                                flavor="vm_aws",
-                                required_configuration={"region": "region"},
-                                use_resource_value_as_fixed_config=True,
-                                flavor_display_name="Skypilot (EC2)",
-                            )
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="vm_aws",
+                            required_configuration={"region": "region"},
+                            use_resource_value_as_fixed_config=True,
+                            flavor_display_name="Skypilot (EC2)",
                         )
+                    )
 
                 if each.resource_type == "kubernetes-cluster":
                     orchestrators.append(
@@ -311,19 +305,16 @@ def get_resources_options_from_resource_model_for_full_stack(
                             flavor_display_name="Vertex AI",
                         )
                     )
-                    if can_generate_long_tokens:
-                        orchestrators.append(
-                            _prepare_resource_info(
-                                connector_details=connector_details,
-                                resource_ids=each.resource_ids,
-                                stack_component_type=StackComponentType.ORCHESTRATOR,
-                                flavor="vm_gcp",
-                                required_configuration={
-                                    "region": "region name"
-                                },
-                                flavor_display_name="Skypilot (Compute)",
-                            )
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="vm_gcp",
+                            required_configuration={"region": "region name"},
+                            flavor_display_name="Skypilot (Compute)",
                         )
+                    )
 
                 if each.resource_type == "kubernetes-cluster":
                     orchestrators.append(
@@ -365,19 +356,16 @@ def get_resources_options_from_resource_model_for_full_stack(
                     )
                 if each.resource_type == "azure-generic":
                     # No native orchestrator ATM
-                    if can_generate_long_tokens:
-                        orchestrators.append(
-                            _prepare_resource_info(
-                                connector_details=connector_details,
-                                resource_ids=each.resource_ids,
-                                stack_component_type=StackComponentType.ORCHESTRATOR,
-                                flavor="vm_azure",
-                                required_configuration={
-                                    "region": "region name"
-                                },
-                                flavor_display_name="Skypilot (VM)",
-                            )
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="vm_azure",
+                            required_configuration={"region": "region name"},
+                            flavor_display_name="Skypilot (VM)",
                         )
+                    )
 
                 if each.resource_type == "kubernetes-cluster":
                     orchestrators.append(
