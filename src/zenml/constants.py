@@ -321,7 +321,7 @@ DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
 REPORTABLE_RESOURCES: List[str] = handle_json_env_var(
     ENV_ZENML_SERVER_REPORTABLE_RESOURCES,
     expected_type=list,
-    default=["pipeline", "pipeline_run", "model"],
+    default=["pipeline", "pipeline_run", "model", "stack"],
 )
 REQUIRES_CUSTOM_RESOURCE_REPORTING = ["pipeline", "pipeline_run"]
 

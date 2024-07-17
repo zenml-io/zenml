@@ -344,11 +344,24 @@ def create_stack(
 
         batch_verify_permissions_for_models(components, action=Action.READ)
 
-    return verify_permissions_and_create_entity(
+    needs_usage_increment = ResourceType.STACK in REPORTABLE_RESOURCES
+
+    if needs_usage_increment:
+        check_entitlement(ResourceType.STACK)
+
+    stack_response = verify_permissions_and_create_entity(
         request_model=stack,
         resource_type=ResourceType.STACK,
         create_method=zen_store().create_stack,
     )
+
+    if needs_usage_increment:
+        report_usage(
+            resource_type=ResourceType.STACK,
+            resource_id=stack_response.id,
+        )
+
+    return stack_response
 
 
 @router.post(
@@ -410,7 +423,20 @@ def create_full_stack(
     full_stack.user = auth_context.user.id
     full_stack.workspace = workspace.id
 
-    return zen_store().create_full_stack(full_stack)
+    needs_usage_increment = ResourceType.STACK in REPORTABLE_RESOURCES
+
+    if needs_usage_increment:
+        check_entitlement(ResourceType.STACK)
+
+    stack_response = zen_store().create_full_stack(full_stack)
+
+    if needs_usage_increment:
+        report_usage(
+            resource_type=ResourceType.STACK,
+            resource_id=stack_response.id,
+        )
+
+    return stack_response
 
 
 @router.get(

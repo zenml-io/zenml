@@ -17,10 +17,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, STACKS, VERSION_1
+from zenml.constants import API, STACKS, VERSION_1, REPORTABLE_RESOURCES
 from zenml.models import Page, StackFilter, StackResponse, StackUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import report_decrement
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -156,3 +157,9 @@ def delete_stack(
         get_method=zen_store().get_stack,
         delete_method=zen_store().delete_stack,
     )
+
+    should_decrement = (
+        ResourceType.STACK in REPORTABLE_RESOURCES
+    )
+    if should_decrement:
+        report_decrement(ResourceType.STACK, resource_id=stack_id)
