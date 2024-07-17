@@ -191,6 +191,17 @@ class ComponentResponseBody(WorkspaceScopedResponseBody):
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    integration: Optional[str] = Field(
+        default=None,
+        title="The name of the integration that the component's flavor "
+        "belongs to.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    logo_url: Optional[str] = Field(
+        default=None,
+        title="Optionally, a url pointing to a png,"
+        "svg or jpg can be attached.",
+    )
 
 
 class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -284,6 +295,24 @@ class ComponentResponse(
             the value of the property.
         """
         return self.get_body().flavor
+
+    @property
+    def integration(self) -> Optional[str]:
+        """The `integration` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().integration
+
+    @property
+    def logo_url(self) -> str:
+        """The `logo_url` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().logo_url
 
     @property
     def configuration(self) -> Dict[str, Any]:
