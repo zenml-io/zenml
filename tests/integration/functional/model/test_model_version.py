@@ -466,11 +466,11 @@ class TestModel:
                 ),
                 enable_cache=False,
             )
-            def _inner_pipeline():
+            def _inner_pipeline_test_deletion_of_links():
                 simple_producer()
                 simple_producer(id="other_named_producer")
 
-            _inner_pipeline()
+            _inner_pipeline_test_deletion_of_links()
 
             client = Client()
             mv = Model(name=mdl_name, version="latest")
@@ -479,17 +479,18 @@ class TestModel:
 
             # delete run to enable artifacts deletion
             run = client.list_pipeline_runs(
-                pipeline_name="_inner_pipeline", sort_by="desc:start_time"
+                pipeline_name="_inner_pipeline_test_deletion_of_links",
+                sort_by="desc:start_time",
             ).items[0]
             client.delete_pipeline_run(run.id)
 
             mv.delete_artifact(
                 only_link=not delete_artifacts,
-                name="_inner_pipeline::other_named_producer::output",
+                name="_inner_pipeline_test_deletion_of_links::other_named_producer::output",
             )
             assert len(mv._get_model_version().data_artifact_ids) == 1
             versions_ = artifact_ids[
-                "_inner_pipeline::other_named_producer::output"
+                "_inner_pipeline_test_deletion_of_links::other_named_producer::output"
             ]["1"]
             if delete_artifacts:
                 with pytest.raises(KeyError):
@@ -497,14 +498,15 @@ class TestModel:
             else:
                 assert client.get_artifact_version(versions_).id == versions_
 
-            _inner_pipeline()
+            _inner_pipeline_test_deletion_of_links()
             mv = Model(name=mdl_name, version="latest")
             artifact_ids = mv._get_model_version().data_artifact_ids
             assert len(artifact_ids) == 2
 
             # delete run to enable artifacts deletion
             run = client.list_pipeline_runs(
-                pipeline_name="_inner_pipeline", sort_by="desc:start_time"
+                pipeline_name="_inner_pipeline_test_deletion_of_links",
+                sort_by="desc:start_time",
             ).items[0]
             client.delete_pipeline_run(run.id)
 
@@ -519,7 +521,7 @@ class TestModel:
                         assert client.get_artifact_version(id_).id == id_
 
             client.prune_artifacts(
-                only_versions=False, delete_from_artifact_store=True
+                only_versions=False, delete_from_artifact_store=False
             )
 
     def test_that_artifacts_are_not_linked_to_models_outside_of_the_context(
