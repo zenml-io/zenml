@@ -42,6 +42,7 @@ from zenml.integrations.databricks.orchestrators.databricks_orchestrator_entrypo
     DatabricksEntrypointConfiguration,
 )
 from zenml.integrations.databricks.utils.databricks_utils import (
+    clean_requirements,
     convert_step_to_task,
 )
 from zenml.io import fileio
@@ -325,7 +326,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     f"{deployment_id}_{step_name}",
                     ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND,
                     arguments,
-                    requirements,
+                    clean_requirements(requirements),
                     depends_on=upstream_steps,
                     zenml_project_wheel=zenml_project_wheel,
                     job_cluster_key=job_cluster_key,

@@ -85,3 +85,26 @@ def sanitize_labels(labels: Dict[str, str]) -> None:
         labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)[:63].strip(
             "-_."
         )
+
+
+def clean_requirements(requirements: List[str]) -> List[str]:
+    """Clean requirements list.
+
+    Args:
+        requirements: List of requirements.
+
+    Returns:
+        Cleaned list of requirements
+    """
+    cleaned = {}
+    for req in requirements:
+        package = (
+            req.split(">=")[0]
+            .split("==")[0]
+            .split("<")[0]
+            .split("[")[0]
+            .strip()
+        )
+        if package not in cleaned or ("=" in req or ">" in req or "<" in req):
+            cleaned[package] = req
+    return sorted(cleaned.values())
