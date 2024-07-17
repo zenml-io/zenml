@@ -306,7 +306,7 @@ class ComponentResponse(
         return self.get_body().integration
 
     @property
-    def logo_url(self) -> str:
+    def logo_url(self) -> Optional[str]:
         """The `logo_url` property.
 
         Returns:
