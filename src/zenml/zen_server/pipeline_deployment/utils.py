@@ -33,6 +33,7 @@ from zenml.models import (
 )
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
+    get_default_run_name,
     validate_run_config_is_runnable_from_server,
     validate_stack_is_runnable_from_server,
 )
@@ -163,7 +164,7 @@ def run_template(
 
             workload_manager().log(
                 workload_id=new_deployment.id,
-                message="Starting pipeline deployment.",
+                message="Starting pipeline run.",
             )
             workload_manager().run(
                 workload_id=new_deployment.id,
@@ -176,7 +177,7 @@ def run_template(
             )
             workload_manager().log(
                 workload_id=new_deployment.id,
-                message="Pipeline deployed successfully.",
+                message="Pipeline run started successfully.",
             )
         except Exception:
             zen_store().update_run(
@@ -441,15 +442,3 @@ def deployment_request_from_template(
     )
 
     return deployment_request
-
-
-def get_default_run_name(pipeline_name: str) -> str:
-    """Gets the default name for a pipeline run.
-
-    Args:
-        pipeline_name: Name of the pipeline which will be run.
-
-    Returns:
-        Run name.
-    """
-    return f"{pipeline_name}-{{date}}-{{time}}"

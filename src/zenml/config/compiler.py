@@ -39,6 +39,7 @@ from zenml.config.step_configurations import (
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineDeploymentBase
+from zenml.new.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -127,7 +128,7 @@ class Compiler:
 
         self._ensure_required_stack_components_exist(stack=stack, steps=steps)
 
-        run_name = run_configuration.run_name or self._get_default_run_name(
+        run_name = run_configuration.run_name or get_default_run_name(
             pipeline_name=pipeline.name
         )
 
@@ -476,18 +477,6 @@ class Compiler:
             parameters_to_ignore=parameters_to_ignore
         )
         return Step(spec=step_spec, config=complete_step_configuration)
-
-    @staticmethod
-    def _get_default_run_name(pipeline_name: str) -> str:
-        """Gets the default name for a pipeline run.
-
-        Args:
-            pipeline_name: Name of the pipeline which will be run.
-
-        Returns:
-            Run name.
-        """
-        return f"{pipeline_name}-{{date}}-{{time}}"
 
     def _get_sorted_invocations(
         self,

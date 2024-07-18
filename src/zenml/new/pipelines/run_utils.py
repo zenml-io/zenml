@@ -36,6 +36,18 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+def get_default_run_name(pipeline_name: str) -> str:
+    """Gets the default name for a pipeline run.
+
+    Args:
+        pipeline_name: Name of the pipeline which will be run.
+
+    Returns:
+        Run name.
+    """
+    return f"{pipeline_name}-{{date}}-{{time}}"
+
+
 def create_placeholder_run(
     deployment: "PipelineDeploymentResponse",
 ) -> Optional["PipelineRunResponse"]:
