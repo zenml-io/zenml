@@ -70,7 +70,6 @@ Copy this code into a new file and name it `run.py`. Then run it with your comma
 $ python run.py
 
 Initiating a new run for the pipeline: simple_ml_pipeline.
-Registered new version: (version 2).
 Executing a new run.
 Using user: hamza@zenml.io
 Using stack: default

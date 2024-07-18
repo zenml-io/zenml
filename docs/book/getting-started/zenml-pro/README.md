@@ -22,6 +22,13 @@ more functionality such as
 the [Model Control Plane](../../user-guide/starter-guide/track-ml-models.md)
 and [Artifact Control Plane](../../user-guide/starter-guide/manage-artifacts.md).
 
+### Pipeline run drafts with easier configuration and faster iteration
+
+ZenML Pro enables you to [create drafts out of past pipeline runs](../../how-to/build-pipelines/create-drafts-out-of-pipeline-runs.md). 
+This way, you can use the dashboard to make quick adjustments to your pipeline 
+configuration and iterate on your workflows using the same remote stack with 
+minimal friction. 
+
 ### Triggers, CI/CD, Reports and more
 
 Additionally, ZenML Pro users get exclusive access to an array of
@@ -30,6 +37,7 @@ dashboard, integrating with your code repository CI/CD system, generating usage
 reports and more.
 
 Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/cloud).
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
