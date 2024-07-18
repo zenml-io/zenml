@@ -75,11 +75,10 @@ def run_template(
             "stack or build have been deleted."
         )
 
-    build = template.build
-    stack = build.stack
-
     # Guaranteed by the `runnable` check above
+    build = template.build
     assert build
+    stack = build.stack
     assert stack
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
@@ -540,7 +539,7 @@ def deployment_from_template(
             # Get rid of deprecated name to prevent overriding the step name
             # with `None`.
             update_dict.pop("name", None)
-            configured_parameters = set(update.get("parameters"), {})
+            configured_parameters = set(update.parameters)
             step_config_dict = dict_utils.recursive_update(
                 step_config_dict, update=update_dict
             )
