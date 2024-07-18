@@ -99,6 +99,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
     zenml_version: Optional[str]
     python_version: Optional[str]
     checksum: Optional[str]
+    stack_checksum: Optional[str]
 
     @classmethod
     def from_request(
@@ -123,6 +124,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             zenml_version=request.zenml_version,
             python_version=request.python_version,
             checksum=request.checksum,
+            stack_checksum=request.stack_checksum,
         )
 
     def to_model(
@@ -157,6 +159,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
                 zenml_version=self.zenml_version,
                 python_version=self.python_version,
                 checksum=self.checksum,
+                stack_checksum=self.stack_checksum,
                 is_local=self.is_local,
                 contains_code=self.contains_code,
             )

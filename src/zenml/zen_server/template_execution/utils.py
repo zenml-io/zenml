@@ -32,6 +32,7 @@ from zenml.models import (
     RunTemplateResponse,
     StackResponse,
 )
+from zenml.new.pipelines.build_utils import compute_stack_checksum
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
     get_default_run_name,
@@ -83,6 +84,17 @@ def run_template(
     assert build
     stack = build.stack
     assert stack
+
+    if build.stack_checksum and build.stack_checksum != compute_stack_checksum(
+        stack=stack
+    ):
+        raise ValueError(
+            f"The stack {stack.name} has been updated since it was used for "
+            "the run that is the base for this template. This means the Docker "
+            "images associated with this template most likely do not contain "
+            "the necessary requirements. Please create a new template from a "
+            "recent run on this stack."
+        )
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
     if run_config:
