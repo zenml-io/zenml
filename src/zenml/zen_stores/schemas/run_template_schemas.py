@@ -21,7 +21,6 @@ from sqlalchemy import Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import TaggableResourceTypes
 from zenml.models import (
@@ -193,16 +192,6 @@ class RunTemplateSchema(BaseSchema, table=True):
         metadata = None
         if include_metadata:
             if self.source_deployment:
-                pipeline_version_hash = (
-                    self.source_deployment.pipeline_version_hash
-                )
-                pipeline_spec = (
-                    PipelineSpec.model_validate_json(
-                        self.source_deployment.pipeline_spec
-                    )
-                    if self.source_deployment.pipeline_spec
-                    else None
-                )
                 from zenml.config.pipeline_run_configuration import (
                     PipelineRunConfiguration,
                 )
@@ -227,15 +216,11 @@ class RunTemplateSchema(BaseSchema, table=True):
                     ),
                 }
             else:
-                pipeline_version_hash = None
-                pipeline_spec = None
                 config_template = None
 
             metadata = RunTemplateResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
-                pipeline_version_hash=pipeline_version_hash,
-                pipeline_spec=pipeline_spec,
                 config_template=config_template,
             )
 
