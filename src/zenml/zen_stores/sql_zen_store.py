@@ -1034,7 +1034,7 @@ class SqlZenStore(BaseZenStore):
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
                 items.append(
-                    to_model(include_metadata=hydrate, include_resource=True)
+                    to_model(include_metadata=hydrate, include_resources=True)
                 )
                 continue
             # If neither of the above work, raise an error.

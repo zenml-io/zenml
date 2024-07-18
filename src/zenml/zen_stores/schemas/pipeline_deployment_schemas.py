@@ -195,6 +195,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             build_id=request.build,
             user_id=request.user,
             schedule_id=request.schedule,
+            template_id=request.template,
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),

@@ -505,7 +505,10 @@ def deployment_request_from_template(
     deployment = template.source_deployment
     assert deployment
     pipeline_configuration = PipelineConfiguration(
-        **config.model_dump(include=set(PipelineConfiguration.model_fields)),
+        **config.model_dump(
+            include=set(PipelineConfiguration.model_fields),
+            exclude={"name", "parameters"},
+        ),
         name=deployment.pipeline_configuration.name,
         parameters=deployment.pipeline_configuration.parameters,
     )
@@ -580,7 +583,7 @@ def deployment_request_from_template(
         build=deployment.build.id,
         schedule=None,
         code_reference=code_reference_request,
-        template_id=template.id,
+        template=template.id,
         pipeline_version_hash=deployment.pipeline_version_hash,
         pipeline_spec=deployment.pipeline_spec,
     )

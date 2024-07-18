@@ -199,21 +199,32 @@ class RunTemplateSchema(BaseSchema, table=True):
                     StepConfigurationUpdate,
                 )
 
+                source_deployment = self.source_deployment.to_model()
+
                 steps_configs = {
                     name: step.config.model_dump(
                         include=set(StepConfigurationUpdate.model_fields),
                         exclude={"name", "outputs"},
                     )
-                    for name, step in self.source_deployment.to_model().step_configurations.items()
+                    for name, step in source_deployment.step_configurations.items()
                 }
 
-                config_template = {
-                    "run_name": self.source_deployment.run_name_template,
-                    "steps": steps_configs,
-                    **self.source_deployment.to_model().pipeline_configuration.model_dump(
+                for config in steps_configs.values():
+                    config["settings"].pop("docker", None)
+
+                pipeline_config = (
+                    source_deployment.pipeline_configuration.model_dump(
                         include=set(PipelineRunConfiguration.model_fields),
                         exclude={"schedule", "build", "parameters"},
-                    ),
+                    )
+                )
+
+                pipeline_config["settings"].pop("docker", None)
+
+                config_template = {
+                    "run_name": source_deployment.run_name_template,
+                    "steps": steps_configs,
+                    **pipeline_config,
                 }
             else:
                 config_template = None

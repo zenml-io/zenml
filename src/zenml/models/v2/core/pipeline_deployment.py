@@ -125,7 +125,7 @@ class PipelineDeploymentRequest(
         default=None,
         title="The code reference associated with the deployment.",
     )
-    template_id: Optional[UUID] = Field(
+    template: Optional[UUID] = Field(
         default=None,
         description="Template used for the deployment.",
     )
