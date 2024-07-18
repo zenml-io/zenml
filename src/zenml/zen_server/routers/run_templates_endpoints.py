@@ -168,7 +168,7 @@ if server_config().workload_manager_enabled:
         },
     )
     @handle_exceptions
-    def create_deployment_run(
+    def create_template_run(
         template_id: UUID,
         background_tasks: BackgroundTasks,
         config: Optional[PipelineRunConfiguration] = None,
@@ -187,6 +187,8 @@ if server_config().workload_manager_enabled:
         """
         from zenml.zen_server.pipeline_deployment.utils import run_template
 
+        # TODO: Do additional RBAC checks that the deployment/build can be
+        # read
         template = verify_permissions_and_get_entity(
             id=template_id,
             get_method=zen_store().get_run_template,
