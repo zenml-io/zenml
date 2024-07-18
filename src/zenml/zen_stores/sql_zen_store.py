@@ -4271,24 +4271,6 @@ class SqlZenStore(BaseZenStore):
             session.delete(build)
             session.commit()
 
-    def run_build(
-        self,
-        build_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> NoReturn:
-        """Run a pipeline from a build.
-
-        Args:
-            build_id: The ID of the build to run.
-            run_configuration: Configuration for the run.
-
-        Raises:
-            NotImplementedError: Always.
-        """
-        raise NotImplementedError(
-            "Running a build is not possible with a local store."
-        )
-
     # -------------------------- Pipeline Deployments --------------------------
 
     def create_deployment(
@@ -4413,24 +4395,6 @@ class SqlZenStore(BaseZenStore):
                 session.add(pipeline_build)
 
             session.commit()
-
-    def run_deployment(
-        self,
-        deployment_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> NoReturn:
-        """Run a pipeline from a deployment.
-
-        Args:
-            deployment_id: The ID of the deployment to run.
-            run_configuration: Configuration for the run.
-
-        Raises:
-            NotImplementedError: Always.
-        """
-        raise NotImplementedError(
-            "Running a deployment is not possible with a local store."
-        )
 
     # -------------------- Run templates --------------------
 
@@ -4634,6 +4598,24 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(template)
             session.commit()
+
+    def run_template(
+        self,
+        template_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> NoReturn:
+        """Run a template.
+
+        Args:
+            template_id: The ID of the template to run.
+            run_configuration: Configuration for the run.
+
+        Raises:
+            NotImplementedError: Always.
+        """
+        raise NotImplementedError(
+            "Running a template is not possible with a local store."
+        )
 
     # -------------------- Event Sources  --------------------
 

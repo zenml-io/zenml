@@ -2438,60 +2438,46 @@ class Client(metaclass=ClientMetaClass):
         pipeline_name_or_id: Union[str, UUID, None] = None,
         run_configuration: Optional[PipelineRunConfiguration] = None,
         config_path: Optional[str] = None,
-        deployment_id: Optional[UUID] = None,
-        build_id: Optional[UUID] = None,
+        template_id: Optional[UUID] = None,
         stack_name_or_id: Union[str, UUID, None] = None,
         synchronous: bool = False,
     ) -> PipelineRunResponse:
         """Trigger a pipeline from the server.
 
         Usage examples:
-        * Run the latest runnable build for the latest version of a pipeline:
+        * Run the latest runnable template for a pipeline:
         ```python
         Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
         ```
-        * Run the latest runnable build for a specific version of a pipeline:
+        * Run the latest runnable template for a pipeline on a specific stack:
         ```python
         Client().trigger_pipeline(
             pipeline_name_or_id=<NAME>,
-            pipeline_version=<VERSION>
+            stack_name_or_id=<STACK_NAME_OR_ID>
         )
         ```
-        * Run a specific pipeline version on a specific stack:
+        * Run a specific template:
         ```python
-        Client().trigger_pipeline(
-            pipeline_name_or_id=<ID>,
-            stack_name_or_id=<ID>
-        )
-        ```
-        * Run a specific deployment:
-        ```python
-        Client().trigger_pipeline(deployment_id=<ID>)
-        ```
-        * Run a specific build:
-        ```python
-        Client().trigger_pipeline(build_id=<ID>)
+        Client().trigger_pipeline(template_id=<ID>)
         ```
 
         Args:
             pipeline_name_or_id: Name or ID of the pipeline. If this is
-                specified, the latest runnable build for this pipeline will be
-                used for the run (Runnable here means that the build is for
-                a remote stack without any custom flavor stack components). If
-                not given, either the build or deployment that should be run
-                needs to be specified.
+                specified, the latest runnable template for this pipeline will
+                be used for the run (Runnable here means that the build
+                associated with the template is for a remote stack without any
+                custom flavor stack components). If not given, a template ID
+                that should be run needs to be specified.
             run_configuration: Configuration for the run. Either this or a
                 path to a config file can be specified.
             config_path: Path to a YAML configuration file. This file will be
                 parsed as a `PipelineRunConfiguration` object. Either this or
                 the configuration in code can be specified.
-            deployment_id: ID of the deployment to run. Either this or a build
-                to run can be specified.
-            build_id: ID of the build to run. Either this or a deployment to
-                run can be specified.
+            template_id: ID of the template to run. Either this or a pipeline
+                can be specified.
             stack_name_or_id: Name or ID of the stack on which to run the
                 pipeline. If not specified, this method will try to find a
-                runnable build on any stack.
+                runnable template on any stack.
             synchronous: If `True`, this method will wait until the triggered
                 run is finished.
 
@@ -2507,10 +2493,10 @@ class Client(metaclass=ClientMetaClass):
             wait_for_pipeline_run_to_finish,
         )
 
-        if Counter([build_id, deployment_id, pipeline_name_or_id])[None] != 2:
+        if Counter([template_id, pipeline_name_or_id])[None] != 1:
             raise RuntimeError(
-                "You need to specify exactly one of pipeline, build or "
-                "deployment to trigger."
+                "You need to specify exactly one of pipeline or template "
+                "to trigger."
             )
 
         if run_configuration and config_path:
@@ -2524,26 +2510,16 @@ class Client(metaclass=ClientMetaClass):
         if run_configuration:
             validate_run_config_is_runnable_from_server(run_configuration)
 
-        if deployment_id:
+        if template_id:
             if stack_name_or_id:
                 logger.warning(
-                    "Deployment ID and stack specified, ignoring the stack and "
-                    "using stack from deployment instead."
+                    "Template ID and stack specified, ignoring the stack and "
+                    "using stack associated with the template instead."
                 )
 
-            run = self.zen_store.run_deployment(
-                deployment_id=deployment_id,
+            run = self.zen_store.run_template(
+                template_id=template_id,
                 run_configuration=run_configuration,
-            )
-        elif build_id:
-            if stack_name_or_id:
-                logger.warning(
-                    "Build ID and stack specified, ignoring the stack and "
-                    "using stack from build instead."
-                )
-
-            run = self.zen_store.run_build(
-                build_id=build_id, run_configuration=run_configuration
             )
         else:
             assert pipeline_name_or_id
@@ -2558,34 +2534,36 @@ class Client(metaclass=ClientMetaClass):
                     zen_store=self.zen_store, stack=stack
                 )
 
-            builds = depaginate(
-                self.list_builds,
+            templates = depaginate(
+                self.list_run_templates,
                 pipeline_id=pipeline.id,
                 stack_id=stack.id if stack else None,
             )
 
-            for build in builds:
-                if not build.template_deployment_id:
+            for template in templates:
+                if not template.build:
                     continue
 
-                if not build.stack:
+                stack = template.build.stack
+                if not stack:
                     continue
 
                 try:
                     validate_stack_is_runnable_from_server(
-                        zen_store=self.zen_store, stack=build.stack
+                        zen_store=self.zen_store, stack=stack
                     )
                 except ValueError:
                     continue
 
-                run = self.zen_store.run_build(
-                    build_id=build.id, run_configuration=run_configuration
+                run = self.zen_store.run_template(
+                    template_id=template.id,
+                    run_configuration=run_configuration,
                 )
                 break
             else:
                 raise RuntimeError(
-                    "Unable to find a runnable build for the given stack and "
-                    "pipeline."
+                    "Unable to find a runnable template for the given stack "
+                    "and pipeline."
                 )
 
         if synchronous:
