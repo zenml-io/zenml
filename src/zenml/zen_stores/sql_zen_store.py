@@ -4381,19 +4381,6 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(deployment)
-
-            # Look for all pipeline builds that reference this deployment
-            # and remove the reference
-            pipeline_builds = session.exec(
-                select(PipelineBuildSchema).where(
-                    PipelineBuildSchema.template_deployment_id == deployment_id
-                )
-            ).all()
-
-            for pipeline_build in pipeline_builds:
-                pipeline_build.template_deployment_id = None
-                session.add(pipeline_build)
-
             session.commit()
 
     # -------------------- Run templates --------------------

@@ -84,7 +84,6 @@ class PipelineBuildSchema(BaseSchema, table=True):
         back_populates="builds"
     )
 
-    template_deployment_id: Optional[UUID] = None
     images: str = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -124,7 +123,6 @@ class PipelineBuildSchema(BaseSchema, table=True):
             zenml_version=request.zenml_version,
             python_version=request.python_version,
             checksum=request.checksum,
-            template_deployment_id=request.template_deployment_id,
         )
 
     def to_model(
@@ -161,7 +159,6 @@ class PipelineBuildSchema(BaseSchema, table=True):
                 checksum=self.checksum,
                 is_local=self.is_local,
                 contains_code=self.contains_code,
-                template_deployment_id=self.template_deployment_id,
             )
         return PipelineBuildResponse(
             id=self.id,

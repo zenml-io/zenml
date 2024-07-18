@@ -362,11 +362,6 @@ def create_pipeline_build(
     build_checksum = compute_build_checksum(
         required_builds, stack=stack, code_repository=code_repository
     )
-    template_deployment_id = _create_deployment(
-        deployment=deployment,
-        pipeline_id=pipeline_id,
-        code_repository=code_repository,
-    )
 
     build_request = PipelineBuildRequest(
         user=client.active_user.id,
@@ -379,7 +374,6 @@ def create_pipeline_build(
         zenml_version=zenml.__version__,
         python_version=platform.python_version(),
         checksum=build_checksum,
-        template_deployment_id=template_deployment_id,
     )
     return client.zen_store.create_build(build_request)
 
