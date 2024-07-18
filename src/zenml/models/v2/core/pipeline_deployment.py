@@ -286,7 +286,7 @@ class PipelineDeploymentResponse(
 
     @property
     def pipeline_spec(self) -> Optional[PipelineSpec]:
-        """The `server_version` property.
+        """The `pipeline_spec` property.
 
         Returns:
             the value of the property.
