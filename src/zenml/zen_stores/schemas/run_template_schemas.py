@@ -106,6 +106,7 @@ class RunTemplateSchema(BaseSchema, table=True):
             "secondary": "pipeline_deployment",
             "cascade": "delete",
             "viewonly": True,
+            "order_by": "PipelineRunSchema.created",
         }
     )
 

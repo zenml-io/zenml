@@ -79,7 +79,10 @@ class PipelineSchema(NamedSchema, table=True):
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
     )
-    runs: List["PipelineRunSchema"] = Relationship(back_populates="pipeline")
+    runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="pipeline",
+        sa_relationship_kwargs={"order_by": "PipelineRunSchema.created"},
+    )
     builds: List["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
     )
@@ -118,7 +121,6 @@ class PipelineSchema(NamedSchema, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
-        last_x_runs: int = 3,
         **kwargs: Any,
     ) -> "PipelineResponse":
         """Convert a `PipelineSchema` to a `PipelineResponse`.
@@ -127,7 +129,6 @@ class PipelineSchema(NamedSchema, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
-            last_x_runs: How many runs to use for the execution status
 
         Returns:
             The created PipelineResponse.
