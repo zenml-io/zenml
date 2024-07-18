@@ -4036,6 +4036,9 @@ class SqlZenStore(BaseZenStore):
         if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
             with Session(self.engine) as session:
                 max_date_subquery = (
+                    # If no run exists for the pipeline yet, we use the pipeline
+                    # creation date as a fallback, otherwise newly created
+                    # pipeline would always be at the top/bottom
                     select(
                         PipelineSchema.id,
                         case(
