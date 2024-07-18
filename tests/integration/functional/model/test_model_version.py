@@ -491,12 +491,16 @@ class TestModel:
             assert len(mv._get_model_version().data_artifact_ids) == 1
             versions_ = artifact_ids[
                 "_inner_pipeline_test_deletion_of_links::other_named_producer::output"
-            ]["1"]
+            ]
+            first_version_ = versions_[min(versions_.keys())]
             if delete_artifacts:
                 with pytest.raises(KeyError):
-                    client.get_artifact_version(versions_)
+                    client.get_artifact_version(first_version_)
             else:
-                assert client.get_artifact_version(versions_).id == versions_
+                assert (
+                    client.get_artifact_version(first_version_).id
+                    == first_version_
+                )
 
             _inner_pipeline_test_deletion_of_links()
             mv = Model(name=mdl_name, version="latest")
