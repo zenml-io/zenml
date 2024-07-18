@@ -63,27 +63,29 @@ def run_template(
         run_config: The run configuration.
 
     Raises:
-        ValueError: If the deployment does not have an associated stack or
-            build.
+        ValueError: If the template can not be run.
         RuntimeError: If the server URL is not set in the server configuration.
 
     Returns:
         ID of the new pipeline run.
     """
+    if not template.runnable:
+        raise ValueError(
+            "This template can not be run because its associated deployment, "
+            "stack or build have been deleted."
+        )
+
+    # Guaranteed by the `runnable` check above
     build = template.build
+    assert build
     stack = build.stack
-
-    if not build:
-        raise ValueError("Unable to run template without associated build.")
-
-    if not stack:
-        raise ValueError("Unable to run template without associated stack.")
+    assert stack
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
     if run_config:
         validate_run_config_is_runnable_from_server(run_config)
 
-    deployment_request = deployment_from_template(
+    deployment_request = deployment_request_from_template(
         template=template,
         config=run_config or PipelineRunConfiguration(),
         user_id=auth_context.user.id,
@@ -107,7 +109,7 @@ def run_template(
     server_url = server_config().server_url
     if not server_url:
         raise RuntimeError(
-            "The server URL is not set in the server configuration"
+            "The server URL is not set in the server configuration."
         )
     assert build.zenml_version
     zenml_version = build.zenml_version
@@ -482,34 +484,74 @@ def generate_dockerfile(
     return "\n".join(lines)
 
 
-def deployment_from_template(
+def deployment_request_from_template(
     template: RunTemplateResponse,
     config: PipelineRunConfiguration,
     user_id: UUID,
 ) -> "PipelineDeploymentRequest":
+    """Generate a deployment request from a template.
+
+    Args:
+        template: The template from which to create the deployment request.
+        config: The run configuration.
+        user_id: ID of the user that is trying to run the template.
+
+    Raises:
+        ValueError: If the run configuration is missing step parameters.
+
+    Returns:
+        The generated deployment request.
+    """
     deployment = template.source_deployment
     assert deployment
     pipeline_configuration = PipelineConfiguration(
-        name=deployment.pipeline_configuration.name,
         **config.model_dump(include=set(PipelineConfiguration.model_fields)),
+        name=deployment.pipeline_configuration.name,
+        parameters=deployment.pipeline_configuration.parameters,
     )
 
-    pipeline_configuration_dict = pipeline_configuration.model_dump(
-        exclude_none=True
+    step_config_dict_base = pipeline_configuration.model_dump(
+        exclude={"name", "parameters"}
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():
-        step_config_dict = copy.deepcopy(pipeline_configuration_dict)
-        step_config = StepConfiguration.model_validate(step_config_dict)
+        step_config_dict = {
+            **copy.deepcopy(step_config_dict_base),
+            **step.config.model_dump(
+                # TODO: Maybe we need to make some of these configurable via
+                # yaml as well, e.g. the lazy loaders?
+                include={
+                    "name",
+                    "caching_parameters",
+                    "external_input_artifacts",
+                    "model_artifacts_or_metadata",
+                    "client_lazy_loaders",
+                    "outputs",
+                }
+            ),
+        }
+
+        required_parameters = set(step.config.parameters)
+        configured_parameters = set()
 
         if update := config.steps.get(invocation_id):
             update_dict = update.model_dump()
             # Get rid of deprecated name to prevent overriding the step name
             # with `None`.
             update_dict.pop("name", None)
-            step_config = pydantic_utils.update_model(
-                step_config, update=update_dict
+            configured_parameters = set(update.parameters)
+            step_config_dict = dict_utils.recursive_update(
+                step_config_dict, update=update_dict
             )
+
+        if configured_parameters != required_parameters:
+            missing_parameters = required_parameters - configured_parameters
+            raise ValueError(
+                "Run configuration is missing missing the following required "
+                f"parameters for step {step.config.name}: {missing_parameters}."
+            )
+
+        step_config = StepConfiguration.model_validate(step_config_dict)
         steps[invocation_id] = Step(spec=step.spec, config=step_config)
 
     code_reference_request = None
@@ -526,7 +568,8 @@ def deployment_from_template(
     deployment_request = PipelineDeploymentRequest(
         user=user_id,
         workspace=deployment.workspace.id,
-        run_name_template=config.run_name or deployment.run_name_template,
+        run_name_template=config.run_name
+        or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
         client_environment={},
@@ -537,11 +580,24 @@ def deployment_from_template(
         build=deployment.build.id,
         schedule=None,
         code_reference=code_reference_request,
+        template_id=template.id,
         pipeline_version_hash=deployment.pipeline_version_hash,
         pipeline_spec=deployment.pipeline_spec,
     )
 
     return deployment_request
+
+
+def get_default_run_name(pipeline_name: str) -> str:
+    """Gets the default name for a pipeline run.
+
+    Args:
+        pipeline_name: Name of the pipeline which will be run.
+
+    Returns:
+        Run name.
+    """
+    return f"{pipeline_name}-{{date}}-{{time}}"
 
 
 def apply_run_config(

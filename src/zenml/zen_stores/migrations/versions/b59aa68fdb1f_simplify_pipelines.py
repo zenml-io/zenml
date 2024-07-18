@@ -6,7 +6,7 @@ Create Date: 2024-07-04 14:00:32.830722
 
 """
 
-from typing import Optional
+from typing import Dict, Optional
 
 import sqlalchemy as sa
 import sqlmodel
@@ -36,7 +36,7 @@ def upgrade() -> None:
             sa.Column(
                 "pipeline_spec",
                 sa.String(length=16777215).with_variant(
-                    mysql.MEDIUMTEXT(), "mysql"
+                    mysql.MEDIUMTEXT, "mysql"
                 ),
                 nullable=True,
             )
@@ -87,7 +87,7 @@ def upgrade() -> None:
             )
 
     all_pipelines = connection.execute(sa.select(pipeline_table)).fetchall()
-    replacement_mapping = {}
+    replacement_mapping: Dict[str, str] = {}
 
     for pipeline in all_pipelines:
         _migrate_pipeline_columns(
