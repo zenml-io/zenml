@@ -61,7 +61,7 @@ class RunTemplateRequest(WorkspaceScopedRequest):
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
-    deployment_id: UUID = Field(
+    source_deployment_id: UUID = Field(
         title="The deployment that should be the base of the created template."
     )
     tags: Optional[List[str]] = Field(

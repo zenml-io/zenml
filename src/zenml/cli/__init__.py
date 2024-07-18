@@ -1693,14 +1693,13 @@ To list all registered pipelines, use:
 zenml pipeline list
 ```
 
-Since every pipeline run creates a new pipeline by default, you might
-occasionally want to delete a pipeline, which you can do via:
+To delete a pipeline, run:
 
 ```bash
 zenml pipeline delete <PIPELINE_NAME>
 ```
 
-This will delete pipeline version and change all corresponding
+This will delete the pipeline and change all corresponding
 pipeline runs to become unlisted (not linked to any pipeline).
 
 

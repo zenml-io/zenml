@@ -137,7 +137,7 @@ class RunTemplateSchema(BaseSchema, table=True):
             workspace_id=request.workspace,
             name=request.name,
             description=request.description,
-            source_deployment_id=request.deployment_id,
+            source_deployment_id=request.source_deployment_id,
         )
 
     def update(self, update: RunTemplateUpdate) -> "RunTemplateSchema":
