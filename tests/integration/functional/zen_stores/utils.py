@@ -73,6 +73,9 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineUpdate,
     ResourceTypeModel,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateUpdate,
     SecretFilter,
     SecretRequest,
     ServiceAccountFilter,
@@ -1267,6 +1270,40 @@ trigger_crud_test_config = CrudTestConfig(
         "event_source_id": deepcopy(event_source_crud_test_config),
     },
 )
+remote_deployment_crud_test_config = CrudTestConfig(
+    create_model=PipelineDeploymentRequest(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        stack=uuid.uuid4(),
+        build=uuid.uuid4(),  # will be overridden in create()
+        run_name_template="template",
+        pipeline_configuration={"name": "pipeline_name"},
+        client_version="0.12.3",
+        server_version="0.12.3",
+        pipeline_version_hash="random_hash",
+        pipeline_spec=PipelineSpec(steps=[]),
+    ),
+    filter_model=PipelineDeploymentFilter,
+    entity_name="deployment",
+    conditional_entities={
+        "build": deepcopy(build_crud_test_config),
+    },
+)
+run_template_test_config = CrudTestConfig(
+    create_model=RunTemplateRequest(
+        name=sample_name("run_template"),
+        description="Test run template.",
+        source_deployment_id=uuid.uuid4(),  # will be overridden in create()
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    update_model=RunTemplateUpdate(name=sample_name("updated_run_template")),
+    filter_model=RunTemplateFilter,
+    entity_name="run_template",
+    conditional_entities={
+        "source_deployment_id": deepcopy(remote_deployment_crud_test_config),
+    },
+)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -1305,4 +1342,5 @@ list_of_entities = [
     event_source_crud_test_config,
     action_crud_test_config,
     trigger_crud_test_config,
+    run_template_test_config,
 ]

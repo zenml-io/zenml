@@ -4448,6 +4448,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a template with the same name already exists.
+            ValueError: If the source deployment does not exist or does not
+                have an associated build.
         """
         with Session(self.engine) as session:
             existing_template = session.exec(
@@ -4460,6 +4462,24 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to create run template in workspace "
                     f"'{existing_template.workspace.name}': A run template "
                     "with this name already exists."
+                )
+
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id
+                    == template.source_deployment_id
+                )
+            ).first()
+            if not deployment:
+                raise ValueError(
+                    f"Source deployment {template.source_deployment_id} not "
+                    "found."
+                )
+
+            if not deployment.build:
+                raise ValueError(
+                    "Cannot create template from deployment without associated "
+                    "build."
                 )
 
             template_schema = RunTemplateSchema.from_request(request=template)

@@ -85,7 +85,7 @@ def run_template(
     if run_config:
         validate_run_config_is_runnable_from_server(run_config)
 
-    deployment_request = deployment_from_template(
+    deployment_request = deployment_request_from_template(
         template=template,
         config=run_config or PipelineRunConfiguration(),
         user_id=auth_context.user.id,
@@ -484,7 +484,7 @@ def generate_dockerfile(
     return "\n".join(lines)
 
 
-def deployment_from_template(
+def deployment_request_from_template(
     template: RunTemplateResponse,
     config: PipelineRunConfiguration,
     user_id: UUID,
@@ -580,6 +580,7 @@ def deployment_from_template(
         build=deployment.build.id,
         schedule=None,
         code_reference=code_reference_request,
+        template_id=template.id,
         pipeline_version_hash=deployment.pipeline_version_hash,
         pipeline_spec=deployment.pipeline_spec,
     )
