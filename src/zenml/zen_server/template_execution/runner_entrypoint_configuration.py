@@ -17,13 +17,10 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.logger import get_logger
 from zenml.new.pipelines.run_utils import (
     deploy_pipeline,
     prepare_model_versions,
 )
-
-logger = get_logger(__name__)
 
 
 class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):

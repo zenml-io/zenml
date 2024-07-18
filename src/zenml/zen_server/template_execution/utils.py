@@ -21,6 +21,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.integrations.utils import get_integration_for_module
+from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
     ComponentResponse,
@@ -44,6 +45,8 @@ from zenml.zen_server.template_execution.runner_entrypoint_configuration import 
     RunnerEntrypointConfiguration,
 )
 from zenml.zen_server.utils import server_config, workload_manager, zen_store
+
+logger = get_logger(__name__)
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
@@ -180,6 +183,11 @@ def run_template(
                 message="Pipeline run started successfully.",
             )
         except Exception:
+            logger.exception(
+                "Failed to run template %s, run ID: %s",
+                str(template.id),
+                str(placeholder_run.id),
+            )
             zen_store().update_run(
                 run_id=placeholder_run.id,
                 run_update=PipelineRunUpdate(status=ExecutionStatus.FAILED),
