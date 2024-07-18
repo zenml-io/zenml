@@ -40,7 +40,7 @@ from zenml.new.pipelines.run_utils import (
 from zenml.stack.flavor import Flavor
 from zenml.utils import dict_utils, settings_utils
 from zenml.zen_server.auth import AuthContext
-from zenml.zen_server.pipeline_deployment.runner_entrypoint_configuration import (
+from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
 from zenml.zen_server.utils import server_config, workload_manager, zen_store

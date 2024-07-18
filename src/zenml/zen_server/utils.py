@@ -47,7 +47,7 @@ from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
-from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
+from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface

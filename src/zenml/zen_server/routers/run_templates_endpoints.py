@@ -185,7 +185,7 @@ if server_config().workload_manager_enabled:
         Returns:
             The created pipeline run.
         """
-        from zenml.zen_server.pipeline_deployment.utils import run_template
+        from zenml.zen_server.template_execution.utils import run_template
 
         # TODO: Do additional RBAC checks that the deployment/build can be
         # read
