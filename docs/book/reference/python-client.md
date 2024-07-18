@@ -36,7 +36,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 
 #### Pipelines, Runs, Artifacts
 
-* **Pipelines**: The pipeline (versions) that were implicitly tracked when running ZenML pipelines.
+* **Pipelines**: The pipelines that were implicitly tracked when running ZenML pipelines.
 * **Pipeline Runs**: Information about all pipeline runs that were executed on your ZenML instance.
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.

@@ -80,7 +80,6 @@
   * [Name your pipeline runs](how-to/build-pipelines/name-your-pipeline-and-runs.md)
   * [Use failure/success hooks](how-to/build-pipelines/use-failure-success-hooks.md)
   * [Hyperparameter tuning](how-to/build-pipelines/hyper-parameter-tuning.md)
-  * [Version pipelines](how-to/build-pipelines/version-pipelines.md)
   * [Access secrets in a step](how-to/build-pipelines/access-secrets-in-a-step.md)
   * [Fetching pipelines](how-to/build-pipelines/fetching-pipelines.md)
   * [Get past pipeline/step runs](how-to/build-pipelines/get-past-pipeline-step-runs.md)
