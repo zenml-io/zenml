@@ -545,9 +545,18 @@ def compute_stack_checksum(stack: StackResponse) -> str:
     """
     hash_ = hashlib.md5()  # nosec
 
-    for type_, components in stack.components.items():
-        hash_.update(str(type_).encode())
-        for component in components:
-            hash_.update(component.flavor.encode())
+    # This checksum is used to see if the stack has been updated since a build
+    # was created for it. We create this checksum not with specific requirements
+    # as these might change with new ZenML releases, but they don't actually
+    # invalidate those Docker images.
+    required_integrations = sorted(
+        {
+            component.flavor
+            for components in stack.components.values()
+            for component in components
+        }
+    )
+    for integration in required_integrations:
+        hash_.update(integration.encode())
 
     return hash_.hexdigest()
