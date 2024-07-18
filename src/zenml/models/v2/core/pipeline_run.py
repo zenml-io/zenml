@@ -164,9 +164,6 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     trigger_execution: Optional["TriggerExecutionResponse"] = Field(
         default=None, title="The trigger execution that triggered this run."
     )
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the pipeline run.",
-    )
 
 
 class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -219,6 +216,9 @@ class PipelineRunResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the pipeline run.",
+    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -450,7 +450,7 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
 
 # ------------------ Filter Model ------------------

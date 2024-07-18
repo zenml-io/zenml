@@ -188,7 +188,6 @@ class RunTemplateSchema(BaseSchema, table=True):
             runnable=runnable,
             latest_run_id=self.runs[-1].id if self.runs else None,
             latest_run_status=self.runs[-1].status if self.runs else None,
-            tags=[t.tag.to_model() for t in self.tags],
         )
 
         metadata = None
@@ -270,6 +269,7 @@ class RunTemplateSchema(BaseSchema, table=True):
                 pipeline=pipeline,
                 build=build,
                 code_reference=code_reference,
+                tags=[t.tag.to_model() for t in self.tags],
             )
 
         return RunTemplateResponse(

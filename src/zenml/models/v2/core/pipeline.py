@@ -97,9 +97,6 @@ class PipelineResponseBody(WorkspaceScopedResponseBody):
         default=None,
         title="The status of the latest run of the pipeline.",
     )
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the pipeline.",
-    )
 
 
 class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -108,6 +105,10 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class PipelineResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline entity."""
+
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the pipeline.",
+    )
 
 
 class PipelineResponse(
@@ -232,7 +233,7 @@ class PipelineResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
 
 # ------------------ Filter Model ------------------

@@ -199,6 +199,7 @@ from zenml.models.v2.core.pipeline import (
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
+    PipelineResponseResources
 )
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
@@ -224,6 +225,7 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
+    PipelineRunResponseResources
 )
 from zenml.models.v2.core.run_template import (
     RunTemplateRequest,
@@ -427,6 +429,7 @@ ModelVersionPipelineRunResponseBody.model_rebuild()
 OAuthDeviceResponseBody.model_rebuild()
 PipelineResponseBody.model_rebuild()
 PipelineResponseMetadata.model_rebuild()
+PipelineResponseResources.model_rebuild()
 PipelineBuildBase.model_rebuild()
 PipelineBuildResponseBody.model_rebuild()
 PipelineBuildResponseMetadata.model_rebuild()
@@ -436,6 +439,7 @@ PipelineDeploymentResponseMetadata.model_rebuild()
 PipelineDeploymentResponseResources.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
+PipelineRunResponseResources.model_rebuild()
 RunTemplateResponseBody.model_rebuild()
 RunTemplateResponseMetadata.model_rebuild()
 RunTemplateResponseResources.model_rebuild()
@@ -597,6 +601,7 @@ __all__ = [
     "PipelineResponse",
     "PipelineResponseBody",
     "PipelineResponseMetadata",
+    "PipelineResponseResources",
     "PipelineBuildBase",
     "PipelineBuildRequest",
     "PipelineBuildFilter",
@@ -615,6 +620,7 @@ __all__ = [
     "PipelineRunResponse",
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
+    "PipelineRunResponseResources",
     "RunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",

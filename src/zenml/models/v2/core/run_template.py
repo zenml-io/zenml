@@ -60,7 +60,6 @@ class RunTemplateRequest(WorkspaceScopedRequest):
         title="The description of the run template.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-
     source_deployment_id: UUID = Field(
         title="The deployment that should be the base of the created template."
     )
@@ -111,9 +110,6 @@ class RunTemplateResponseBody(WorkspaceScopedResponseBody):
         default=None,
         title="The status of the latest run of the run template.",
     )
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the run template.",
-    )
 
 
 class RunTemplateResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -152,6 +148,9 @@ class RunTemplateResponseResources(WorkspaceScopedResponseResources):
         default=None,
         title="The code reference associated with the template.",
     )
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the run template.",
+    )
 
 
 class RunTemplateResponse(
@@ -182,6 +181,15 @@ class RunTemplateResponse(
 
     # Body and metadata properties
     @property
+    def runnable(self) -> bool:
+        """The `runnable` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().runnable
+
+    @property
     def latest_run_id(self) -> Optional[UUID]:
         """The `latest_run_id` property.
 
@@ -198,15 +206,6 @@ class RunTemplateResponse(
             the value of the property.
         """
         return self.get_body().latest_run_status
-
-    @property
-    def tags(self) -> List[TagResponse]:
-        """The `tags` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().tags
 
     @property
     def description(self) -> Optional[str]:
@@ -279,6 +278,15 @@ class RunTemplateResponse(
             the value of the property.
         """
         return self.get_resources().code_reference
+
+    @property
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().tags
 
 
 # ------------------ Filter Model ------------------

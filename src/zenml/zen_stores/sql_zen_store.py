@@ -1033,7 +1033,9 @@ class SqlZenStore(BaseZenStore):
             # Otherwise, try to use the `to_model` method of the schema.
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                items.append(to_model(include_metadata=hydrate))
+                items.append(
+                    to_model(include_metadata=hydrate, include_resource=True)
+                )
                 continue
             # If neither of the above work, raise an error.
             raise RuntimeError(
@@ -1909,7 +1911,7 @@ class SqlZenStore(BaseZenStore):
             action = self._get_action(action_id=action_id, session=session)
 
             return action.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_actions(
@@ -2420,7 +2422,7 @@ class SqlZenStore(BaseZenStore):
                     "service with this ID found."
                 )
             return service.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_services(
@@ -2759,7 +2761,7 @@ class SqlZenStore(BaseZenStore):
                     f"found."
                 )
             return artifact_version.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_artifact_versions(
@@ -3977,7 +3979,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_pipeline)
 
-            return new_pipeline.to_model(include_metadata=True)
+            return new_pipeline.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_pipeline(
         self, pipeline_id: UUID, hydrate: bool = True
@@ -4006,7 +4010,9 @@ class SqlZenStore(BaseZenStore):
                     "No pipeline with this ID found."
                 )
 
-            return pipeline.to_model(include_metadata=hydrate)
+            return pipeline.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_pipelines(
         self,
@@ -4133,7 +4139,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_pipeline)
             session.commit()
 
-            return existing_pipeline.to_model(include_metadata=True)
+            return existing_pipeline.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
@@ -4500,7 +4508,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             return template.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_run_templates(
@@ -4701,7 +4709,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_event_source(
                 event_source_id=event_source_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=True)
 
     def list_event_sources(
         self,
@@ -4830,7 +4838,9 @@ class SqlZenStore(BaseZenStore):
             session.add(new_run)
             session.commit()
 
-            return new_run.to_model(include_metadata=True)
+            return new_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_run(
         self, run_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -4848,7 +4858,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_run_schema(
                 run_name_or_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=True)
 
     def _replace_placeholder_run(
         self,
@@ -4908,7 +4918,9 @@ class SqlZenStore(BaseZenStore):
             session.add(run_schema)
             session.commit()
 
-            return run_schema.to_model(include_metadata=True)
+            return run_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def _get_run_by_orchestrator_run_id(
         self, orchestrator_run_id: str, deployment_id: UUID
@@ -4942,7 +4954,9 @@ class SqlZenStore(BaseZenStore):
                     f"{orchestrator_run_id} and deployment ID {deployment_id}."
                 )
 
-            return run_schema.to_model(include_metadata=True)
+            return run_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_or_create_run(
         self,
@@ -5125,7 +5139,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             session.refresh(existing_run)
-            return existing_run.to_model(include_metadata=True)
+            return existing_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -7870,7 +7886,7 @@ class SqlZenStore(BaseZenStore):
                     "run with this ID found."
                 )
             return step_run.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_run_steps(
@@ -8314,7 +8330,7 @@ class SqlZenStore(BaseZenStore):
             if trigger is None:
                 raise KeyError(f"Trigger with ID {trigger_id} not found.")
             return trigger.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_triggers(
@@ -9903,7 +9919,7 @@ class SqlZenStore(BaseZenStore):
                     f"ID found."
                 )
             return model_version.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_model_versions(

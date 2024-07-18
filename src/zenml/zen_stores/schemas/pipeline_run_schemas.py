@@ -304,7 +304,6 @@ class PipelineRunSchema(NamedSchema, table=True):
             trigger_execution=self.trigger_execution.to_model()
             if self.trigger_execution
             else None,
-            tags=[t.tag.to_model() for t in self.tags],
             created=self.created,
             updated=self.updated,
             deployment_id=self.deployment_id,
@@ -334,7 +333,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             if config.model and config.model.model_version_id:
                 model_version = config.model._get_model_version(hydrate=False)
             resources = PipelineRunResponseResources(
-                model_version=model_version
+                model_version=model_version,
+                tags=[t.tag.to_model() for t in self.tags],
             )
 
         return PipelineRunResponse(

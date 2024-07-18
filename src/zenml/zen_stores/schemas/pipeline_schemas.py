@@ -26,6 +26,7 @@ from zenml.models import (
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
+    PipelineResponseResources,
     PipelineUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -135,7 +136,6 @@ class PipelineSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             latest_run_id=self.runs[-1].id if self.runs else None,
             latest_run_status=self.runs[-1].status if self.runs else None,
-            tags=[t.tag.to_model() for t in self.tags],
             created=self.created,
             updated=self.updated,
         )
@@ -145,11 +145,18 @@ class PipelineSchema(NamedSchema, table=True):
                 workspace=self.workspace.to_model(),
             )
 
+        resources = None
+        if include_resources:
+            resources = PipelineResponseResources(
+                tags=[t.tag.to_model() for t in self.tags],
+            )
+
         return PipelineResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, pipeline_update: "PipelineUpdate") -> "PipelineSchema":
