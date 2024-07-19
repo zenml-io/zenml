@@ -249,7 +249,7 @@ def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_wi
 
     with pytest.raises(
         RuntimeError,
-        match="Configured parameter for the step `assert_input_params` "
+        match="Configured parameter for the step 'assert_input_params' "
         "conflict with parameter passed in runtime",
     ):
         p()

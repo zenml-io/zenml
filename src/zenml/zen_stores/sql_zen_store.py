@@ -33,6 +33,7 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -107,6 +108,7 @@ from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
     ModelStages,
+    OnboardingStep,
     SecretScope,
     SecretsStoreType,
     SorterOps,
@@ -245,6 +247,7 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
+    StackDeploymentConfig,
     StackDeploymentInfo,
     StackFilter,
     StackRequest,
@@ -283,6 +286,7 @@ from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.stack.flavor_registry import FlavorRegistry
+from zenml.stack_deployments.utils import get_stack_deployment_class
 from zenml.utils import uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -796,6 +800,7 @@ class SqlZenStore(BaseZenStore):
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
     _should_send_user_enriched_events: bool = False
+    _cached_onboarding_state: Optional[Set[str]] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1552,12 +1557,18 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if current_revisions != revisions_afterwards:
-            if current_revisions and version.parse(
-                current_revisions[0]
-            ) < version.parse("0.57.1"):
-                # We want to send the missing user enriched events for users
-                # which were created pre 0.57.1 and only on one upgrade
-                self._should_send_user_enriched_events = True
+            try:
+                if current_revisions and version.parse(
+                    current_revisions[0]
+                ) < version.parse("0.57.1"):
+                    # We want to send the missing user enriched events for users
+                    # which were created pre 0.57.1 and only on one upgrade
+                    self._should_send_user_enriched_events = True
+            except version.InvalidVersion:
+                # This can happen if the database is not currently
+                # stamped with an official ZenML version (e.g. in
+                # development environments).
+                pass
 
             self._sync_flavors()
 
@@ -1680,6 +1691,60 @@ class SqlZenStore(BaseZenStore):
             session.refresh(settings)
 
             return settings.to_model(include_metadata=True)
+
+    def get_onboarding_state(self) -> List[str]:
+        """Get the server onboarding state.
+
+        Returns:
+            The server onboarding state.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+            if settings.onboarding_state:
+                self._cached_onboarding_state = set(
+                    json.loads(settings.onboarding_state)
+                )
+                return list(self._cached_onboarding_state)
+            else:
+                return []
+
+    def _update_onboarding_state(
+        self, completed_steps: Set[str], session: Session
+    ) -> None:
+        """Update the server onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+            session: DB session.
+        """
+        if self._cached_onboarding_state and completed_steps.issubset(
+            self._cached_onboarding_state
+        ):
+            # All the onboarding steps are already completed, no need to query
+            # the DB
+            return
+
+        settings = self._get_server_settings(session=session)
+        settings.update_onboarding_state(completed_steps=completed_steps)
+        session.add(settings)
+        session.commit()
+        session.refresh(settings)
+
+        assert settings.onboarding_state
+        self._cached_onboarding_state = set(
+            json.loads(settings.onboarding_state)
+        )
+
+    def update_onboarding_state(self, completed_steps: Set[str]) -> None:
+        """Update the server onboarding state.
+
+        Args:
+            completed_steps: Newly completed onboarding steps.
+        """
+        with Session(self.engine) as session:
+            self._update_onboarding_state(
+                completed_steps=completed_steps, session=session
+            )
 
     def activate_server(
         self, request: ServerActivationRequest
@@ -3119,6 +3184,29 @@ class SqlZenStore(BaseZenStore):
                     raise KeyError(
                         f"Service connector with ID {component.connector} not "
                         "found."
+                    )
+
+            # warn about skypilot regions, if needed
+            if component.flavor in {"vm_gcp", "vm_azure"}:
+                stack_deployment_class = get_stack_deployment_class(
+                    StackDeploymentProvider.GCP
+                    if component.flavor == "vm_gcp"
+                    else StackDeploymentProvider.AZURE
+                )
+                skypilot_regions = (
+                    stack_deployment_class.skypilot_default_regions().values()
+                )
+                if (
+                    component.configuration.get("region", None)
+                    and component.configuration["region"]
+                    not in skypilot_regions
+                ):
+                    logger.warning(
+                        f"Region `{component.configuration['region']}` is not enabled in Skypilot "
+                        f"by default. Supported regions by default are: {skypilot_regions}. "
+                        "Check the Skypilot documentation to learn how to enable regions rather "
+                        "than default ones. (If you have already extended your configuration - "
+                        "simply ignore this warning)"
                     )
 
             # Create the component
@@ -6149,6 +6237,7 @@ class SqlZenStore(BaseZenStore):
 
             connector = new_service_connector.to_model(include_metadata=True)
             self._populate_connector_type(connector)
+
             return connector
 
     def get_service_connector(
@@ -6924,6 +7013,16 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_stack_schema)
 
+            for component in defined_components:
+                if component.type == StackComponentType.ORCHESTRATOR:
+                    if component.flavor not in {"local", "local_docker"}:
+                        self._update_onboarding_state(
+                            completed_steps={
+                                OnboardingStep.STACK_WITH_REMOTE_ORCHESTRATOR_CREATED
+                            },
+                            session=session,
+                        )
+
             return new_stack_schema.to_model(include_metadata=True)
 
     def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
@@ -6957,9 +7056,44 @@ class SqlZenStore(BaseZenStore):
             # Service Connectors
             service_connectors: List[ServiceConnectorResponse] = []
 
+            need_to_generate_permanent_tokens = False
+            orchestrator_component = full_stack.components[
+                StackComponentType.ORCHESTRATOR
+            ]
+            if isinstance(orchestrator_component, UUID):
+                orchestrator = self.get_stack_component(
+                    orchestrator_component,
+                    hydrate=False,
+                )
+                need_to_generate_permanent_tokens = (
+                    orchestrator.flavor.startswith("vm_")
+                )
+            else:
+                need_to_generate_permanent_tokens = (
+                    orchestrator_component.flavor.startswith("vm_")
+                )
+
             for connector_id_or_info in full_stack.service_connectors:
                 # Fetch an existing service connector
                 if isinstance(connector_id_or_info, UUID):
+                    existing_service_connector = self.get_service_connector(
+                        connector_id_or_info
+                    )
+                    if need_to_generate_permanent_tokens:
+                        if (
+                            existing_service_connector.configuration.get(
+                                "generate_temporary_tokens", None
+                            )
+                            is not False
+                        ):
+                            self.update_service_connector(
+                                existing_service_connector.id,
+                                ServiceConnectorUpdate(
+                                    configuration=existing_service_connector.configuration.update(
+                                        {"generate_temporary_tokens": False}
+                                    )
+                                ),
+                            )
                     service_connectors.append(
                         self.get_service_connector(connector_id_or_info)
                     )
@@ -6972,7 +7106,11 @@ class SqlZenStore(BaseZenStore):
                                 name=connector_name,
                                 connector_type=connector_id_or_info.type,
                                 auth_method=connector_id_or_info.auth_method,
-                                configuration=connector_id_or_info.configuration,
+                                configuration=connector_id_or_info.configuration.update(
+                                    {
+                                        "generate_temporary_tokens": not need_to_generate_permanent_tokens
+                                    }
+                                ),
                                 user=full_stack.user,
                                 workspace=full_stack.workspace,
                                 labels={
@@ -7000,7 +7138,6 @@ class SqlZenStore(BaseZenStore):
 
             # Stack Components
             components_mapping: Dict[StackComponentType, List[UUID]] = {}
-
             for (
                 component_type,
                 component_info,
@@ -7012,6 +7149,20 @@ class SqlZenStore(BaseZenStore):
                     )
                 # Create a new component
                 else:
+                    flavor_list = self.list_flavors(
+                        flavor_filter_model=FlavorFilter(
+                            name=component_info.flavor,
+                            type=component_type,
+                        )
+                    )
+                    if not len(flavor_list):
+                        raise ValueError(
+                            f"Flavor '{component_info.flavor}' not found "
+                            f"for component type '{component_type}'."
+                        )
+
+                    flavor_model = flavor_list[0]
+
                     component_name = full_stack.name
                     while True:
                         try:
@@ -7039,15 +7190,6 @@ class SqlZenStore(BaseZenStore):
                         service_connector = service_connectors[
                             component_info.service_connector_index
                         ]
-                        flavor_list = self.list_flavors(
-                            flavor_filter_model=FlavorFilter(
-                                name=component_info.flavor,
-                                type=component_type,
-                            )
-                        )
-                        assert len(flavor_list) == 1
-
-                        flavor_model = flavor_list[0]
 
                         requirements = flavor_model.connector_requirements
 
@@ -7434,13 +7576,13 @@ class SqlZenStore(BaseZenStore):
             "Stack deployments are not supported by local ZenML deployments."
         )
 
-    def get_stack_deployment_url(
+    def get_stack_deployment_config(
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
         location: Optional[str] = None,
-    ) -> Tuple[str, str]:
-        """Return the URL to deploy the ZenML stack to the specified cloud provider.
+    ) -> StackDeploymentConfig:
+        """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
 
         Args:
             provider: The stack deployment provider.
@@ -7954,6 +8096,25 @@ class SqlZenStore(BaseZenStore):
                         "duration_seconds": duration_seconds,
                         **stack_metadata,
                     }
+
+                completed_onboarding_steps: Set[str] = {
+                    OnboardingStep.PIPELINE_RUN,
+                    OnboardingStep.STARTER_SETUP_COMPLETED,
+                }
+                if stack_metadata["orchestrator"] not in {
+                    "local",
+                    "local_docker",
+                }:
+                    completed_onboarding_steps.update(
+                        {
+                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
+                            OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                        }
+                    )
+
+                self._update_onboarding_state(
+                    completed_steps=completed_onboarding_steps, session=session
+                )
             pipeline_run.update(run_update)
             session.add(pipeline_run)
 

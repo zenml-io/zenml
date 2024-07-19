@@ -274,7 +274,7 @@ To create visualizations, you need to:
 
 As an example, check out the implementation of the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) that use matplotlib to automatically save or plot certain arrays.
 
-Read more about visualizations [here](visualize-artifacts.md).
+Read more about visualizations [here](../visualize-artifacts/creating-custom-visualizations.md).
 
 #### (Optional) Which Metadata to Extract for the Artifact
 

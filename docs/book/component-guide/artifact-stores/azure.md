@@ -162,7 +162,7 @@ zenml stack register <STACK_NAME> -a <AZURE_STORE_NAME> ... --set
 {% endtab %}
 
 {% tab title="ZenML Secret" %}
-When you register the Azure Artifact Store, you can create a [ZenML Secret](../../getting-started/deploying-zenml/manage-the-deployed-services/secret-management.md) to store a variety of Azure credentials and then reference it in the Artifact Store configuration:
+When you register the Azure Artifact Store, you can create a [ZenML Secret](../../getting-started/deploying-zenml/secret-management.md) to store a variety of Azure credentials and then reference it in the Artifact Store configuration:
 
 * to use [an Azure storage account key](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage) , set `account_name` to your account name and one of `account_key` or `sas_token` to the Azure key or SAS token value as attributes in the ZenML secret
 * to use [an Azure storage account key connection string](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage) , configure the `connection_string` attribute in the ZenML secret to your Azure Storage Key connection string

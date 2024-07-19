@@ -45,8 +45,8 @@ next page:
 ![Options for registering a stack](../../.gitbook/assets/register_stack_page.png)
 
 {% hint style="warning" %}
-Currently, the 1-click deployment only works on AWS. We are working on 
-bringing support to GCP and Azure as well. Stay in touch for further updates.
+Currently, the 1-click deployment only works on AWS and GCP. We are working on 
+bringing support to Azure as well. Stay in touch for further updates.
 {% endhint %}
 
 ![Choosing a cloud provider](../../.gitbook/assets/deploy_stack_selection.png)
@@ -62,8 +62,7 @@ Once the configuration is finished, you will see a deployment page:
 
 ![Deploying the new stack](../../.gitbook/assets/deploy_stack_aws_2.png)
 
-During this process, you  will be redirected you to a Cloud Formation page 
-on AWS. 
+Clicking on the "Deploy in AWS" button will redirect you to a Cloud Formation page on AWS Console. 
 
 ![Cloudformation page](../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png)
 
@@ -72,38 +71,187 @@ pre-filled configuration and create the stack.
 
 ![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
 
+### GCP
+
+If you choose `gcp` as your provider, you will see a page where you will have 
+to select a region and a name for your new stack:
+
+![Deploy GCP Stack - Step 1](../../.gitbook/assets/deploy_stack_gcp.png)
+![Deploy GCP Stack - Step 1 Continued](../../.gitbook/assets/deploy_stack_gcp_2.png)
+
+Once the configuration is finished, you will see a deployment page:
+
+![Deploy GCP Stack - Step 2](../../.gitbook/assets/deploy_stack_gcp_3.png)
+
+Make note of the configuration values provided to you in the ZenML dashboard. You will need these in the next step.
+
+Clicking on the "Deploy in GCP" button will redirect you to a Cloud Shell session on GCP.
+
+![GCP Cloud Shell start page](../../.gitbook/assets/deploy_stack_gcp_cloudshell_start.png)
+
+{% hint style="warning" %}
+The Cloud Shell session will warn you that the ZenML GitHub repository is
+untrusted. We recommend that you review
+[the contents of the repository](https://github.com/zenml-io/zenml/tree/main/infra/gcp)
+and then check the `Trust repo` checkbox to proceed with the deployment,
+otherwise the Cloud Shell session will not be authenticated to access your
+GCP projects. You will also get a chance to review the scripts that will be
+executed in the Cloud Shell session before proceeding.
+{% endhint %}
+
+![GCP Cloud Shell intro](../../.gitbook/assets/deploy_stack_gcp_cloudshell_intro.png)
+
+After the Cloud Shell session starts, you will be guided through the process of
+authenticating with GCP, configuring your deployment, and finally provisioning
+the resources for your new GCP stack using Deployment Manager.
+
+First, you will be asked to create or choose an existing GCP project with billing
+enabled and to configure your terminal with the selected project:
+
+![GCP Cloud Shell tutorial step 1](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_1.png)
+
+Next, you will be asked to configure your deployment by pasting the configuration
+values that were provided to you earlier in the ZenML dashboard. You may need to switch back to the ZenML dashboard to copy these values if you did not do so earlier:
+
+![GCP Cloud Shell tutorial step 2](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_2.png)
+
+![Deploy GCP Stack pending](../../.gitbook/assets/deploy_stack_pending.png)
+
+You can take this opportunity to review the script that will be executed at the
+next step. You will notice that this script starts by enabling some necessary
+GCP service APIs and configuring some basic permissions for the service accounts
+involved in the stack deployment, and then deploys the stack using a GCP
+Deployment Manager template. You can proceed with the deployment by running the
+script in your terminal:
+
+![GCP Cloud Shell tutorial step 3](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_3.png)
+
+The script will deploy a GCP Deployment Manager template that provisions the
+necessary resources for your new GCP stack and automatically registers the stack
+with your ZenML server. You can monitor the progress of the deployment in your
+GCP console:
+
+![GCP Deployment Manager progress](../../.gitbook/assets/deploy_stack_gcp_dm_progress.png)
+
+Once the deployment is complete, you may close the Cloud Shell session and return
+to the ZenML dashboard to view the newly created stack:
+
+![GCP Cloud Shell tutorial step 4](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_4.png)
+
+![GCP Stack dashboard output](../../.gitbook/assets/deploy_stack_gcp_dashboard_output.png)
+
 {% endtab %}
 {% tab title="CLI" %}
 
-In order to create a remote stack over the CLI you can use the following 
+In order to create a remote stack over the CLI, you can use the following 
 command:
 
 ```shell
-zenml stack deploy -p aws
+zenml stack deploy -p {aws|gcp}
 ```
 
 {% hint style="warning" %}
-Currently, the 1-click deployment only works on AWS. We are working on 
-bringing support to GCP and Azure as well. 
+Currently, the 1-click deployment only works on AWS and GCP. We are working on 
+bringing support to Azure as well. 
 
-In the meanwhile, you can still deploy a GCP or Azure stack manually, meaning
+In the meanwhile, you can still deploy an Azure stack manually, meaning
 you can deploy the infrastructure yourself and create the necessary ZenML 
 components yourself using the corresponding integrations. Check [our component 
 guide](../../component-guide/component-guide.md) for further details.
 {% endhint %}
 
-### AWS 
+### AWS
 
-If you choose `aws` as your provider, this command will redirect you to a 
-Cloud Formation page on AWS: 
+If you choose `aws` as your provider, the command will walk you through
+deploying a Cloud Formation stack on AWS. It will start by showing some
+information about the stack that will be created:
+
+![CLI AWS stack deploy](../../.gitbook/assets/deploy_stack_aws_cli.png)
+
+Upon confirmation, the command will redirect you to a Cloud Formation page on
+AWS Console where you will have to deploy the stack:
 
 ![Cloudformation page](../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png)
 
 You will have to log in to your AWS account, have permission to deploy an AWS 
-CloudFormation script, review and confirm the pre-filled configuration and 
+Cloud Formation stack, review and confirm the pre-filled configuration and 
 create the stack.
 
 ![Finalizing the new stack](../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
+
+The Cloud Formation stack will provision the necessary resources for your new
+AWS stack and automatically register the stack with your ZenML server. You can
+monitor the progress of the stack in your AWS console:
+
+![AWS Cloud Formation progress](../../.gitbook/assets/deploy_stack_aws_cf_progress.png)
+
+Once the provisioning is complete, you may close the AWS Cloud Formation page
+and return to the ZenML CLI to view the newly created stack:
+
+![AWS Stack CLI output](../../.gitbook/assets/deploy_stack_aws_cli_output.png)
+
+
+### GCP
+
+If you choose `gcp` as your provider, the command will walk you through
+deploying a Deployment Manager template on GCP. It will start by showing some
+information about the stack that will be created:
+
+![CLI GCP stack deploy](../../.gitbook/assets/deploy_stack_gcp_cli.png)
+
+Upon confirmation, the command will redirect you to a Cloud Shell session on GCP.
+
+![GCP Cloud Shell start page](../../.gitbook/assets/deploy_stack_gcp_cloudshell_start.png)
+
+{% hint style="warning" %}
+The Cloud Shell session will warn you that the ZenML GitHub repository is
+untrusted. We recommend that you review
+[the contents of the repository](https://github.com/zenml-io/zenml/tree/main/infra/gcp)
+and then check the `Trust repo` checkbox to proceed with the deployment,
+otherwise the Cloud Shell session will not be authenticated to access your
+GCP projects. You will also get a chance to review the scripts that will be
+executed in the Cloud Shell session before proceeding.
+{% endhint %}
+
+![GCP Cloud Shell intro](../../.gitbook/assets/deploy_stack_gcp_cloudshell_intro.png)
+
+After the Cloud Shell session starts, you will be guided through the process of
+authenticating with GCP, configuring your deployment, and finally provisioning
+the resources for your new GCP stack using Deployment Manager.
+
+First, you will be asked to create or choose an existing GCP project with billing
+enabled and to configure your terminal with the selected project:
+
+![GCP Cloud Shell tutorial step 1](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_1.png)
+
+Next, you will be asked to configure your deployment by pasting the configuration
+values that were provided to you in the ZenML CLI. You may need to switch back
+to the ZenML CLI to copy these values if you did not do so earlier:
+
+![GCP Cloud Shell tutorial step 2](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_2.png)
+
+You can take this opportunity to review the script that will be executed at the
+next step. You will notice that this script starts by enabling some necessary
+GCP service APIs and configuring some basic permissions for the service accounts
+involved in the stack deployment and then deploys the stack using a GCP
+Deployment Manager template. You can proceed with the deployment by running the
+script in your terminal:
+
+![GCP Cloud Shell tutorial step 3](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_3.png)
+
+The script will deploy a GCP Deployment Manager template that provisions the
+necessary resources for your new GCP stack and automatically registers the stack
+with your ZenML server. You can monitor the progress of the deployment in your
+GCP console:
+
+![GCP Deployment Manager progress](../../.gitbook/assets/deploy_stack_gcp_dm_progress.png)
+
+Once the deployment is complete, you may close the Cloud Shell session and return
+to the ZenML CLI to view the newly created stack:
+
+![GCP Cloud Shell tutorial step 4](../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_4.png)
+
+![GCP Stack CLI output](../../.gitbook/assets/deploy_stack_gcp_cli_output.png)
 
 {% endtab %}
 {% endtabs %}
@@ -159,8 +307,34 @@ following AWS permissions in your AWS account:
 
 {% endtab %}
 {% tab title="GCP" %}
-We are working on bringing the support for the 1-click deployment feature 
-to GCP! Stay in touch for further updates.
+
+### Resources
+
+- A GCS bucket that will be used as a ZenML Artifact Store.
+- A GCP Artifact Registry that will be used as a ZenML Container Registry.
+- Permissions to use Vertex AI as a ZenML Orchestrator.
+- Permissions to use GCP Cloud Builder as a ZenML Image Builder.
+- A GCP Service Account with the minimum necessary permissions to access 
+the resources listed above.
+- An GCP Service Account access key used to give access to ZenML to connect to
+the above  resources through a ZenML service connector.
+
+### Permissions
+
+The configured GCP service account and its access key will grant ZenML the
+following GCP permissions in your GCP project:
+
+* GCS Bucket:
+  * roles/storage.objectUser
+* GCP Artifact Registry:
+  * roles/artifactregistry.createOnPushWriter
+* Vertex AI (Client):
+  * roles/aiplatform.user
+* Vertex AI (Jobs):
+  * roles/aiplatform.serviceAgent
+* Cloud Build (Client):
+  * roles/cloudbuild.builds.editor
+
 {% endtab %}
 {% tab title="Azure" %}
 We are working on bringing the support for the 1-click deployment feature 

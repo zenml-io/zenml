@@ -19,10 +19,18 @@ from zenml.enums import StackDeploymentProvider
 from zenml.stack_deployments.aws_stack_deployment import (
     AWSZenMLCloudStackDeployment,
 )
+from zenml.stack_deployments.azure_stack_deployment import (
+    AZUREZenMLCloudStackDeployment,
+)
+from zenml.stack_deployments.gcp_stack_deployment import (
+    GCPZenMLCloudStackDeployment,
+)
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 
 STACK_DEPLOYMENT_PROVIDERS = {
     StackDeploymentProvider.AWS: AWSZenMLCloudStackDeployment,
+    StackDeploymentProvider.GCP: GCPZenMLCloudStackDeployment,
+    StackDeploymentProvider.AZURE: AZUREZenMLCloudStackDeployment,
 }
 
 

@@ -38,6 +38,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
@@ -84,6 +85,13 @@ class StackComponentSchema(NamedSchema, table=True):
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="stack_component",
+    )
+    flavor_schema: Optional["FlavorSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(foreign(StackComponentSchema.flavor) == FlavorSchema.name, foreign(StackComponentSchema.type) == FlavorSchema.type)",
+            "lazy": "joined",
+            "uselist": False,
+        },
     )
 
     run_or_step_logs: List["LogsSchema"] = Relationship(
@@ -161,6 +169,12 @@ class StackComponentSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
+            logo_url=self.flavor_schema.logo_url
+            if self.flavor_schema
+            else None,
+            integration=self.flavor_schema.integration
+            if self.flavor_schema
+            else None,
         )
         metadata = None
         if include_metadata:
