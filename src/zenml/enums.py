@@ -409,3 +409,4 @@ class StackDeploymentProvider(StrEnum):
 
     AWS = "aws"
     GCP = "gcp"
+    AZURE = "azure"
