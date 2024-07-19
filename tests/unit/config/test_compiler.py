@@ -138,14 +138,6 @@ def test_compiling_pipeline_with_extra_step_config_does_not_fail(
         )
 
 
-def test_default_run_name():
-    """Tests the default run name value."""
-    assert (
-        Compiler()._get_default_run_name(pipeline_name="my_pipeline")
-        == "my_pipeline-{date}-{time}"
-    )
-
-
 def test_step_sorting(empty_step, local_stack):
     """Tests that the steps in the compiled deployment are sorted correctly."""
 

@@ -575,3 +575,11 @@ def test_finding_existing_build(mocker, sample_deployment_response_model):
     )
 
     assert not build
+
+
+def test_default_run_name():
+    """Tests the default run name value."""
+    assert (
+        build_utils.get_default_run_name(pipeline_name="my_pipeline")
+        == "my_pipeline-{date}-{time}"
+    )
