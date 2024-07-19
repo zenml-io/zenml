@@ -551,9 +551,10 @@ def compute_stack_checksum(stack: StackResponse) -> str:
     # invalidate those Docker images.
     required_integrations = sorted(
         {
-            component.flavor
+            component.integration
             for components in stack.components.values()
             for component in components
+            if component.integration and component.integration != "built-in"
         }
     )
     for integration in required_integrations:
