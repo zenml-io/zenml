@@ -4383,6 +4383,17 @@ class SqlZenStore(BaseZenStore):
                     f"No deployment with this ID found."
                 )
 
+            # We set the reference of all templates to this deployment to null
+            # manually as we can't have a foreign key there to avoid a cycle
+            templates = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.source_deployment_id == deployment_id
+                )
+            ).all()
+            for template in templates:
+                template.source_deployment_id = None
+                session.add(template)
+
             session.delete(deployment)
             session.commit()
 

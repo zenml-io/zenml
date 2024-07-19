@@ -82,20 +82,15 @@ class RunTemplateSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    source_deployment_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="pipeline_deployment",
-        source_column="source_deployment_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
+    # This is not a foreign key to remove a cycle which messes with our DB
+    # backup process
+    source_deployment_id: Optional[UUID] = None
 
     user: Optional["UserSchema"] = Relationship()
     workspace: "WorkspaceSchema" = Relationship()
     source_deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         sa_relationship_kwargs={
-            "foreign_keys": "[RunTemplateSchema.source_deployment_id]"
+            "primaryjoin": "RunTemplateSchema.source_deployment_id==foreign(PipelineDeploymentSchema.id)",
         }
     )
 
