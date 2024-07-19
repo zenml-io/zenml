@@ -66,6 +66,9 @@ def _raise_specific_cloud_exception_if_needed(
     GCP_DOCS = (
         "https://docs.zenml.io/how-to/auth-management/gcp-service-connector"
     )
+    AZURE_DOCS = (
+        "https://docs.zenml.io/how-to/auth-management/azure-service-connector"
+    )
 
     if not artifact_stores:
         error_msg = (
@@ -89,7 +92,12 @@ def _raise_specific_cloud_exception_if_needed(
                 )
             )
         elif cloud_provider == "azure":
-            pass
+            raise ValueError(
+                error_msg.format(
+                    obj_name="Blob Container",
+                    docs=f"{AZURE_DOCS}#azure-blob-storage-container",
+                )
+            )
     if not orchestrators:
         error_msg = (
             "We were unable to find any orchestrator engines "
@@ -105,7 +113,7 @@ def _raise_specific_cloud_exception_if_needed(
                 error_msg.format(
                     cloud_name="AWS",
                     gen_docs=f"{AWS_DOCS}#generic-aws-resource",
-                    k8s_name="Kubernetes",
+                    k8s_name="EKS",
                     k8s_docs=f"{AWS_DOCS}#eks-kubernetes-cluster",
                 )
             )
@@ -115,12 +123,19 @@ def _raise_specific_cloud_exception_if_needed(
                 error_msg.format(
                     cloud_name="GCP",
                     gen_docs=f"{GCP_DOCS}#generic-gcp-resource",
-                    k8s_name="GKE Kubernetes",
+                    k8s_name="GKE",
                     k8s_docs=f"{GCP_DOCS}#gke-kubernetes-cluster",
                 )
             )
         elif cloud_provider == "azure":
-            pass
+            raise ValueError(
+                error_msg.format(
+                    cloud_name="Azure",
+                    gen_docs=f"{AZURE_DOCS}#generic-azure-resource",
+                    k8s_name="AKS",
+                    k8s_docs=f"{AZURE_DOCS}#aks-kubernetes-cluster",
+                )
+            )
     if not container_registries:
         error_msg = (
             "We were unable to find any container registries "
@@ -145,7 +160,12 @@ def _raise_specific_cloud_exception_if_needed(
                 )
             )
         elif cloud_provider == "azure":
-            pass
+            raise ValueError(
+                error_msg.format(
+                    registry_name="ACR",
+                    docs_link=f"{AZURE_DOCS}#acr-container-registry",
+                )
+            )
 
 
 def get_resources_options_from_resource_model_for_full_stack(
@@ -162,15 +182,11 @@ def get_resources_options_from_resource_model_for_full_stack(
     client = Client()
     zen_store = client.zen_store
 
-    can_generate_long_tokens = False
     if isinstance(connector_details, UUID):
         resource_model = zen_store.verify_service_connector(
             connector_details,
             list_resources=True,
         )
-        can_generate_long_tokens = not zen_store.get_service_connector(
-            connector_details
-        ).configuration.get("generate_temporary_tokens", True)
     else:
         resource_model = zen_store.verify_service_connector_config(
             service_connector=ServiceConnectorRequest(
@@ -185,7 +201,6 @@ def get_resources_options_from_resource_model_for_full_stack(
             ),
             list_resources=True,
         )
-        can_generate_long_tokens = True
 
     resources = resource_model.resources
 
@@ -229,18 +244,17 @@ def get_resources_options_from_resource_model_for_full_stack(
                             flavor_display_name="AWS Sagemaker",
                         )
                     )
-                    if can_generate_long_tokens:
-                        orchestrators.append(
-                            _prepare_resource_info(
-                                connector_details=connector_details,
-                                resource_ids=each.resource_ids,
-                                stack_component_type=StackComponentType.ORCHESTRATOR,
-                                flavor="vm_aws",
-                                required_configuration={"region": "region"},
-                                use_resource_value_as_fixed_config=True,
-                                flavor_display_name="Skypilot (EC2)",
-                            )
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="vm_aws",
+                            required_configuration={"region": "region"},
+                            use_resource_value_as_fixed_config=True,
+                            flavor_display_name="Skypilot (EC2)",
                         )
+                    )
 
                 if each.resource_type == "kubernetes-cluster":
                     orchestrators.append(
@@ -291,19 +305,16 @@ def get_resources_options_from_resource_model_for_full_stack(
                             flavor_display_name="Vertex AI",
                         )
                     )
-                    if can_generate_long_tokens:
-                        orchestrators.append(
-                            _prepare_resource_info(
-                                connector_details=connector_details,
-                                resource_ids=each.resource_ids,
-                                stack_component_type=StackComponentType.ORCHESTRATOR,
-                                flavor="vm_gcp",
-                                required_configuration={
-                                    "region": "region name"
-                                },
-                                flavor_display_name="Skypilot (Compute)",
-                            )
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="vm_gcp",
+                            required_configuration={"region": "region name"},
+                            flavor_display_name="Skypilot (Compute)",
                         )
+                    )
 
                 if each.resource_type == "kubernetes-cluster":
                     orchestrators.append(
@@ -330,7 +341,55 @@ def get_resources_options_from_resource_model_for_full_stack(
                     )
 
     elif connector_type == "azure":
-        pass
+        for each in resources:
+            if each.resource_ids:
+                if each.resource_type == "blob-container":
+                    artifact_stores.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ARTIFACT_STORE,
+                            flavor="azure",
+                            required_configuration={},
+                            flavor_display_name="Blob container",
+                        )
+                    )
+                if each.resource_type == "azure-generic":
+                    # No native orchestrator ATM
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="vm_azure",
+                            required_configuration={"region": "region name"},
+                            flavor_display_name="Skypilot (VM)",
+                        )
+                    )
+
+                if each.resource_type == "kubernetes-cluster":
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="kubernetes",
+                            required_configuration={},
+                            flavor_display_name="Kubernetes",
+                        )
+                    )
+                if each.resource_type == "docker-registry":
+                    container_registries.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.CONTAINER_REGISTRY,
+                            flavor="azure",
+                            required_configuration={"uri": "URI"},
+                            use_resource_value_as_fixed_config=True,
+                            flavor_display_name="ACR",
+                        )
+                    )
 
     _raise_specific_cloud_exception_if_needed(
         cloud_provider=connector_type,

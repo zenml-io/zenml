@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to GCP."""
 
+import re
 from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
@@ -207,6 +208,16 @@ GCP project and to clean up the resources created by the stack by using
             "US West (Salt Lake City)": "us-west3",
             "US West (Las Vegas)": "us-west4",
         }
+
+    @classmethod
+    def skypilot_default_regions(cls) -> Dict[str, str]:
+        """Returns the regions supported by default for the Skypilot.
+
+        Returns:
+            The regions supported by default for the Skypilot.
+        """
+        matcher = re.compile(r"us-.*")
+        return {k: v for k, v in cls.locations().items() if matcher.match(v)}
 
     def get_deployment_config(
         self,

@@ -55,6 +55,11 @@ class StackDeploymentInfo(BaseModel):
         description="The locations where the stack can be deployed, as a "
         "dictionary mapping location names to descriptions.",
     )
+    skypilot_default_regions: Dict[str, str] = Field(
+        title="The locations where the Skypilot clusters can be deployed by default.",
+        description="The locations where the Skypilot clusters can be deployed by default, as a "
+        "dictionary mapping location names to descriptions.",
+    )
 
 
 class StackDeploymentConfig(BaseModel):
