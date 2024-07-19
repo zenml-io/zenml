@@ -337,6 +337,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If trying to run from a Jupyter notebook.
         """
+        # TODO: consider making this a warning instead
         # First check whether the code is running in a notebook.
         # if Environment.in_notebook():
         #     raise RuntimeError(
