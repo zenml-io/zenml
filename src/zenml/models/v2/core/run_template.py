@@ -121,6 +121,9 @@ class RunTemplateResponseMetadata(WorkspaceScopedResponseMetadata):
     config_template: Optional[Dict[str, Any]] = Field(
         default=None, title="Run configuration template."
     )
+    config_schema: Optional[Dict[str, Any]] = Field(
+        default=None, title="Run configuration schema."
+    )
 
 
 class RunTemplateResponseResources(WorkspaceScopedResponseResources):
@@ -217,6 +220,15 @@ class RunTemplateResponse(
             the value of the property.
         """
         return self.get_metadata().config_template
+
+    @property
+    def config_schema(self) -> Optional[Dict[str, Any]]:
+        """The `config_schema` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().config_schema
 
     @property
     def source_deployment(self) -> Optional[PipelineDeploymentResponse]:

@@ -177,7 +177,7 @@ class RunTemplateSchema(BaseSchema, table=True):
         if (
             self.source_deployment
             and self.source_deployment.build
-            and self.source_deployment.stack
+            and self.source_deployment.build.stack
         ):
             runnable = True
 
@@ -192,48 +192,36 @@ class RunTemplateSchema(BaseSchema, table=True):
 
         metadata = None
         if include_metadata:
+            config_template = None
+            config_schema = None
+
             if self.source_deployment:
-                from zenml.config.pipeline_run_configuration import (
-                    PipelineRunConfiguration,
-                )
-                from zenml.config.step_configurations import (
-                    StepConfigurationUpdate,
+                from zenml.utils import template_utils
+
+                deployment_model = self.source_deployment.to_model(
+                    include_metadata=True, include_resources=True
                 )
 
-                source_deployment = self.source_deployment.to_model()
+                config_template = template_utils.generate_config_template(
+                    deployment=deployment_model
+                )
 
-                steps_configs = {
-                    name: step.config.model_dump(
-                        include=set(StepConfigurationUpdate.model_fields),
-                        exclude={"name", "outputs"},
+                if (
+                    self.source_deployment.build
+                    and self.source_deployment.build.stack
+                ):
+                    stack_model = self.source_deployment.build.stack.to_model(
+                        include_metadata=True
                     )
-                    for name, step in source_deployment.step_configurations.items()
-                }
-
-                for config in steps_configs.values():
-                    config["settings"].pop("docker", None)
-
-                pipeline_config = (
-                    source_deployment.pipeline_configuration.model_dump(
-                        include=set(PipelineRunConfiguration.model_fields),
-                        exclude={"schedule", "build", "parameters"},
+                    config_schema = template_utils.generate_config_schema(
+                        deployment=deployment_model, stack=stack_model
                     )
-                )
-
-                pipeline_config["settings"].pop("docker", None)
-
-                config_template = {
-                    "run_name": source_deployment.run_name_template,
-                    "steps": steps_configs,
-                    **pipeline_config,
-                }
-            else:
-                config_template = None
 
             metadata = RunTemplateResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
                 config_template=config_template,
+                config_schema=config_schema,
             )
 
         resources = None
