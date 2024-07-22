@@ -14,14 +14,16 @@
 """Utilities for run templates."""
 
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from pydantic import create_model
+from pydantic.fields import FieldInfo
 
 from zenml.client import Client
 from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.source import SourceWithValidator
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -107,7 +109,7 @@ def generate_config_schema(
                 if len(class_.model_fields) > 0:
                     settings_key = f"{component.type}.{component.flavor}"
                     settings_fields[settings_key] = (
-                        class_,
+                        Optional[class_],
                         None,
                     )
 
@@ -132,38 +134,57 @@ def generate_config_schema(
         ]:
             continue
 
-        generic_step_fields[key] = (field_info.annotation, field_info)
+        if field_info.annotation == Optional[SourceWithValidator]:
+            generic_step_fields[key] = (Optional[str], None)
+        else:
+            generic_step_fields[key] = (field_info.annotation, field_info)
 
     if experiment_trackers:
         experiment_tracker_enum = Enum(  # type: ignore[misc]
             "ExperimentTrackers", {e: e for e in experiment_trackers}
         )
         generic_step_fields["experiment_tracker"] = (
-            experiment_tracker_enum,
+            Optional[experiment_tracker_enum],
             None,
         )
     if step_operators:
         step_operator_enum = Enum(  # type: ignore[misc]
             "StepOperators", {s: s for s in step_operators}
         )
-        generic_step_fields["step_operator"] = (step_operator_enum, None)
+        generic_step_fields["step_operator"] = (
+            Optional[step_operator_enum],
+            None,
+        )
 
-    generic_step_fields["settings"] = (settings_model, None)
+    generic_step_fields["settings"] = (Optional[settings_model], None)
 
     all_steps: Dict[str, Any] = {}
+    all_steps_required = False
     for name, step in deployment.step_configurations.items():
         step_fields = generic_step_fields.copy()
         if step.config.parameters:
             parameter_fields: Dict[str, Any] = {
-                name: (Any, None) for name in step.config.parameters
+                name: (Any, FieldInfo(default=...))
+                for name in step.config.parameters
             }
             parameters_class = create_model(
                 f"{name}_parameters", **parameter_fields
             )
-            step_fields["parameters"] = (parameters_class, None)
+            step_fields["parameters"] = (
+                parameters_class,
+                FieldInfo(default=...),
+            )
 
         step_model = create_model(name, **step_fields)
-        all_steps[name] = (step_model, None)
+
+        if step.config.parameters:
+            # This step has required parameters -> we make this attribute
+            # required and also the parent attribute so these parameters must
+            # always be included
+            all_steps_required = True
+            all_steps[name] = (step_model, FieldInfo(default=...))
+        else:
+            all_steps[name] = (Optional[step_model], FieldInfo(default=None))
 
     all_steps_model = create_model("Steps", **all_steps)
 
@@ -173,9 +194,19 @@ def generate_config_schema(
         if key in ["schedule", "build", "steps", "settings", "parameters"]:
             continue
 
-        top_level_fields[key] = (field_info.annotation, field_info)
+        if field_info.annotation == Optional[SourceWithValidator]:
+            top_level_fields[key] = (Optional[str], None)
+        else:
+            top_level_fields[key] = (field_info.annotation, field_info)
 
-    top_level_fields["settings"] = (settings_model, None)
-    top_level_fields["steps"] = (all_steps_model, None)
+    top_level_fields["settings"] = (Optional[settings_model], None)
+
+    if all_steps_required:
+        top_level_fields["steps"] = (all_steps_model, FieldInfo(default=...))
+    else:
+        top_level_fields["steps"] = (
+            Optional[all_steps_model],
+            FieldInfo(default=None),
+        )
 
     return create_model("Result", **top_level_fields).model_json_schema()  # type: ignore[no-any-return]

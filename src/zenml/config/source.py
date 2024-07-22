@@ -22,7 +22,6 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     SerializeAsAny,
-    WithJsonSchema,
     field_validator,
 )
 from typing_extensions import Annotated
@@ -248,5 +247,4 @@ def convert_source(source: Any) -> Any:
 SourceWithValidator = Annotated[
     SerializeAsAny[Source],
     BeforeValidator(convert_source),
-    WithJsonSchema({"type": "string"}),
 ]
