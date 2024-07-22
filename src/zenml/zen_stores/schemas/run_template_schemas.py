@@ -197,25 +197,21 @@ class RunTemplateSchema(BaseSchema, table=True):
             config_schema = None
 
             if self.source_deployment:
-                from zenml.utils import template_utils
+                from zenml.zen_stores import template_utils
 
-                deployment_model = self.source_deployment.to_model(
+                pipeline_spec = self.source_deployment.to_model(
                     include_metadata=True, include_resources=True
-                )
-                pipeline_spec = deployment_model.pipeline_spec
-                config_template = template_utils.generate_config_template(
-                    deployment=deployment_model
-                )
+                ).pipeline_spec
 
                 if (
                     self.source_deployment.build
                     and self.source_deployment.build.stack
                 ):
-                    stack_model = self.source_deployment.build.stack.to_model(
-                        include_metadata=True
+                    config_template = template_utils.generate_config_template(
+                        deployment=self.source_deployment
                     )
                     config_schema = template_utils.generate_config_schema(
-                        deployment=deployment_model, stack=stack_model
+                        deployment=self.source_deployment
                     )
 
             metadata = RunTemplateResponseMetadata(

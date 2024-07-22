@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ from typing import Any, Dict, Optional
 from pydantic import create_model
 from pydantic.fields import FieldInfo
 
-from zenml.client import Client
 from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -27,18 +26,14 @@ from zenml.config.source import SourceWithValidator
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.models import (
-    FlavorFilter,
-    PipelineDeploymentResponse,
-    StackResponse,
-)
 from zenml.stack import Flavor
+from zenml.zen_stores.schemas import PipelineDeploymentSchema
 
 logger = get_logger(__name__)
 
 
 def generate_config_template(
-    deployment: PipelineDeploymentResponse,
+    deployment: PipelineDeploymentSchema,
 ) -> Dict[str, Any]:
     """Generate a run configuration template for a deployment.
 
@@ -48,18 +43,20 @@ def generate_config_template(
     Returns:
         The run configuration template.
     """
+    deployment_model = deployment.to_model(include_metadata=True)
+
     steps_configs = {
         name: step.config.model_dump(
             include=set(StepConfigurationUpdate.model_fields),
             exclude={"name", "outputs"},
         )
-        for name, step in deployment.step_configurations.items()
+        for name, step in deployment_model.step_configurations.items()
     }
 
     for config in steps_configs.values():
         config["settings"].pop("docker", None)
 
-    pipeline_config = deployment.pipeline_configuration.model_dump(
+    pipeline_config = deployment_model.pipeline_configuration.model_dump(
         include=set(PipelineRunConfiguration.model_fields),
         exclude={"schedule", "build", "parameters"},
     )
@@ -67,7 +64,7 @@ def generate_config_template(
     pipeline_config["settings"].pop("docker", None)
 
     config_template = {
-        "run_name": deployment.run_name_template,
+        "run_name": deployment_model.run_name_template,
         "steps": steps_configs,
         **pipeline_config,
     }
@@ -75,29 +72,31 @@ def generate_config_template(
 
 
 def generate_config_schema(
-    deployment: PipelineDeploymentResponse, stack: StackResponse
+    deployment: PipelineDeploymentSchema,
 ) -> Dict[str, Any]:
     """Generate a run configuration schema for the deployment and stack.
 
     Args:
-        deployment: The deployment.
-        stack: The stack.
+        deployment: The deployment schema.
 
     Returns:
         The generated schema dictionary.
     """
+    # Config schema can only be generated for a runnable template, so this is
+    # guaranteed by checks in the run template schema
+    assert deployment.build
+    assert deployment.build.stack
+
+    stack = deployment.build.stack
     experiment_trackers = []
     step_operators = []
 
     settings_fields: Dict[str, Any] = {"resources": (ResourceSettings, None)}
-    for component_list in stack.components.values():
-        assert len(component_list) == 1
-        component = component_list[0]
-        flavors = Client().zen_store.list_flavors(
-            FlavorFilter(name=component.flavor, type=component.type)
-        )
-        assert len(flavors) == 1
-        flavor_model = flavors[0]
+    for component in stack.components:
+        if not component.flavor_schema:
+            continue
+
+        flavor_model = component.flavor_schema.to_model()
         flavor = Flavor.from_model(flavor_model)
 
         for class_ in flavor.config_class.__mro__[1:]:
@@ -160,7 +159,9 @@ def generate_config_schema(
 
     all_steps: Dict[str, Any] = {}
     all_steps_required = False
-    for name, step in deployment.step_configurations.items():
+    for name, step in deployment.to_model(
+        include_metadata=True
+    ).step_configurations.items():
         step_fields = generic_step_fields.copy()
         if step.config.parameters:
             parameter_fields: Dict[str, Any] = {
