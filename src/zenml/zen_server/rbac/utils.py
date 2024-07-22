@@ -103,7 +103,9 @@ def dehydrate_response_model(
         )
 
     dehydrated_values = {}
-    for key, value in dict(model).items():
+    # See `get_subresources_for_model(...)` for a detailed explanation why we
+    # need to use `model.__iter__()` here
+    for key, value in model.__iter__():
         dehydrated_values[key] = _dehydrate_value(
             value, permissions=permissions
         )
@@ -486,7 +488,13 @@ def get_subresources_for_model(
     """
     resources = set()
 
-    for value in dict(model).values():
+    # We don't want to use `model.model_dump()` here as that recursively
+    # converts models to dicts, but we want to preserve those classes for
+    # the recursive `_get_subresources_for_value` calls.
+    # We previously used `dict(model)` here, but that lead to issues with
+    # models overwriting `__getattr__`, this `model.__iter__()` has the same
+    # results though.
+    for _, value in model.__iter__():
         resources.update(_get_subresources_for_value(value))
 
     return resources

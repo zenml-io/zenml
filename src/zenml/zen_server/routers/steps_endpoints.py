@@ -117,7 +117,8 @@ def create_run_step(
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.UPDATE)
 
-    return zen_store().create_run_step(step_run=step)
+    step = zen_store().create_run_step(step_run=step)
+    return dehydrate_response_model(step)
 
 
 @router.get(
