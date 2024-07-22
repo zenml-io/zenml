@@ -96,7 +96,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             stack: "Stack",
         ) -> Tuple[bool, str]:
             for component in stack.components.values():
-                continue  # TODO: Remove this line
                 if not component.config.is_local:
                     continue
 
