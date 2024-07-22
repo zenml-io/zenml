@@ -178,4 +178,4 @@ def generate_config_schema(
     top_level_fields["settings"] = (settings_model, None)
     top_level_fields["steps"] = (all_steps_model, None)
 
-    return create_model("Result", **top_level_fields).model_dump_json()  # type: ignore[no-any-return]
+    return create_model("Result", **top_level_fields).model_json_schema()  # type: ignore[no-any-return]
