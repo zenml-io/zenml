@@ -192,6 +192,7 @@ class RunTemplateSchema(BaseSchema, table=True):
 
         metadata = None
         if include_metadata:
+            pipeline_spec = None
             config_template = None
             config_schema = None
 
@@ -201,7 +202,7 @@ class RunTemplateSchema(BaseSchema, table=True):
                 deployment_model = self.source_deployment.to_model(
                     include_metadata=True, include_resources=True
                 )
-
+                pipeline_spec = deployment_model.pipeline_spec
                 config_template = template_utils.generate_config_template(
                     deployment=deployment_model
                 )
@@ -220,6 +221,7 @@ class RunTemplateSchema(BaseSchema, table=True):
             metadata = RunTemplateResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
+                pipeline_spec=pipeline_spec,
                 config_template=config_template,
                 config_schema=config_schema,
             )

@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
@@ -118,6 +119,9 @@ class RunTemplateResponseMetadata(WorkspaceScopedResponseMetadata):
         default=None,
         title="The description of the run template.",
     )
+    pipeline_spec: Optional[PipelineSpec] = Field(
+        default=None, title="The spec of the pipeline."
+    )
     config_template: Optional[Dict[str, Any]] = Field(
         default=None, title="Run configuration template."
     )
@@ -211,6 +215,15 @@ class RunTemplateResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def pipeline_spec(self) -> Optional[PipelineSpec]:
+        """The `pipeline_spec` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().pipeline_spec
 
     @property
     def config_template(self) -> Optional[Dict[str, Any]]:
