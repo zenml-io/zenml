@@ -49,6 +49,10 @@ jobs:
           python-version: '3.9'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
+      - name: Setup tmate session after tests
+        if: failure()
+        uses: mxschmitt/action-tmate@v3.17
+        timeout-minutes: 30
   spellcheck:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
