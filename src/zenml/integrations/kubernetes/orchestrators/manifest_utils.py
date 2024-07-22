@@ -160,7 +160,7 @@ def build_pod_manifest(
     if pod_settings:
         add_pod_settings(pod_spec, pod_settings)
 
-        # Add podsettings labels to the labels
+        # Add pod_settings.labels to the labels
         if pod_settings.labels:
             labels.update(pod_settings.labels)
 
