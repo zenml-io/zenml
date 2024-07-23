@@ -4145,9 +4145,6 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline with this ID found."
                 )
 
-            # Update the pipeline
-            existing_pipeline.update(pipeline_update)
-
             if pipeline_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=pipeline_update.add_tags,
@@ -4163,6 +4160,7 @@ class SqlZenStore(BaseZenStore):
                 )
             pipeline_update.remove_tags = None
 
+            existing_pipeline.update(pipeline_update)
             session.add(existing_pipeline)
             session.commit()
             session.refresh(existing_pipeline)
@@ -4565,8 +4563,6 @@ class SqlZenStore(BaseZenStore):
                     f"No run template with this ID found."
                 )
 
-            template = template.update(template_update)
-
             if template_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=template_update.add_tags,
@@ -4583,8 +4579,10 @@ class SqlZenStore(BaseZenStore):
                 )
             template_update.remove_tags = None
 
+            template.update(template_update)
             session.add(template)
             session.commit()
+            session.refresh(template)
 
             return template.to_model(
                 include_metadata=True, include_resources=True
@@ -5145,9 +5143,6 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline run with this ID found."
                 )
 
-            # Update the pipeline run
-            existing_run.update(run_update=run_update)
-
             if run_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=run_update.add_tags,
@@ -5163,6 +5158,7 @@ class SqlZenStore(BaseZenStore):
                 )
             run_update.remove_tags = None
 
+            existing_run.update(run_update=run_update)
             session.add(existing_run)
             session.commit()
 
