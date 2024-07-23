@@ -21,10 +21,16 @@ from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
     AzureMLStepOperatorFlavor,
 )
+from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
+    AzureMLOrchestratorConfig,
+    AzureMLOrchestratorFlavor,
+)
 
 __all__ = [
     "AzureArtifactStoreFlavor",
     "AzureArtifactStoreConfig",
     "AzureMLStepOperatorFlavor",
     "AzureMLStepOperatorConfig",
+    "AzureMLOrchestratorFlavor",
+    "AzureMLOrchestratorConfig",
 ]
