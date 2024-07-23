@@ -167,8 +167,8 @@ def build_pod_manifest(
     # Add run_name and pipeline_name to the labels
     labels.update(
         {
-            "run_name": run_name,
-            "pipeline_name": pipeline_name,
+            "run": run_name,
+            "pipeline": pipeline_name,
         }
     )
 
