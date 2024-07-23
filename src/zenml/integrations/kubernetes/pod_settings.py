@@ -34,6 +34,7 @@ class KubernetesPodSettings(BaseSettings):
         volume_mounts: Volume mounts to apply to the pod containers.
         host_ipc: Whether to enable host IPC for the pod.
         image_pull_secrets: Image pull secrets to use for the pod.
+        labels: Labels to apply to the pod.
     """
 
     node_selectors: Dict[str, str] = {}
@@ -45,6 +46,7 @@ class KubernetesPodSettings(BaseSettings):
     volume_mounts: List[Dict[str, Any]] = []
     host_ipc: bool = False
     image_pull_secrets: List[str] = []
+    labels: Dict[str, str] = {}
 
     @field_validator("volumes", mode="before")
     @classmethod
