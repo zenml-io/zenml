@@ -153,13 +153,12 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
 from kubernetes.client.models import V1Toleration
 
 kubernetes_settings = KubernetesOrchestratorSettings(
-    # Settings to be applied to the step pods
-    pod_settings = {
-        node_selectors={
+    pod_settings={
+        "node_selectors": {
             "cloud.google.com/gke-nodepool": "ml-pool",
             "kubernetes.io/arch": "amd64"
         },
-        affinity={
+        "affinity": {
             "nodeAffinity": {
                 "requiredDuringSchedulingIgnoredDuringExecution": {
                     "nodeSelectorTerms": [
@@ -176,7 +175,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                 }
             }
         },
-        tolerations=[
+        "tolerations": [
             V1Toleration(
                 key="gpu",
                 operator="Equal",
@@ -189,7 +188,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                 effect="PreferNoSchedule"
             )
         ],
-        resources={
+        "resources": {
             "requests": {
                 "cpu": "2",
                 "memory": "4Gi",
@@ -201,11 +200,11 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                 "nvidia.com/gpu": "1"
             }
         },
-        annotations={
+        "annotations": {
             "prometheus.io/scrape": "true",
             "prometheus.io/port": "8080"
         },
-        volumes=[
+        "volumes": [
             {
                 "name": "data-volume",
                 "persistentVolumeClaim": {
@@ -219,7 +218,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                 }
             }
         ],
-        volume_mounts=[
+        "volume_mounts": [
             {
                 "name": "data-volume",
                 "mountPath": "/mnt/data"
@@ -230,20 +229,19 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                 "readOnly": True
             }
         ],
-        host_ipc=True,
-        image_pull_secrets=["regcred", "gcr-secret"],
-        labels={
+        "host_ipc": True,
+        "image_pull_secrets": ["regcred", "gcr-secret"],
+        "labels": {
             "app": "ml-pipeline",
             "environment": "production",
             "team": "data-science"
         }
     },
-    # Settings to apply to the orchestrator pod
-    orchestrator_pod_settings = {
-        node_selectors={
+    orchestrator_pod_settings={
+        "node_selectors": {
             "cloud.google.com/gke-nodepool": "orchestrator-pool"
         },
-        resources={
+        "resources": {
             "requests": {
                 "cpu": "1",
                 "memory": "2Gi"
@@ -253,7 +251,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                 "memory": "4Gi"
             }
         },
-        labels={
+        "labels": {
             "app": "zenml-orchestrator",
             "component": "pipeline-runner"
         }
@@ -261,7 +259,6 @@ kubernetes_settings = KubernetesOrchestratorSettings(
     kubernetes_namespace="ml-pipelines",
     service_account_name="zenml-pipeline-runner"
 )
-
 
 @pipeline(
     settings={
