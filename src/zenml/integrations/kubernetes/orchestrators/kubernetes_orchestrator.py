@@ -332,7 +332,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
-                
+
         Raises:
             RuntimeError: If the Kubernetes orchestrator is not configured.
         """
