@@ -332,6 +332,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+
+        Raises:
+            RuntimeError: If the Kubernetes orchestrator is not configured.
         """
         for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
