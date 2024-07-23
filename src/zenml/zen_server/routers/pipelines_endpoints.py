@@ -57,7 +57,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -89,7 +88,6 @@ def list_pipelines(
 
 @router.get(
     "/{pipeline_id}",
-    response_model=PipelineResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -115,7 +113,6 @@ def get_pipeline(
 
 @router.put(
     "/{pipeline_id}",
-    response_model=PipelineResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -172,7 +169,6 @@ def delete_pipeline(
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

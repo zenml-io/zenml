@@ -102,6 +102,11 @@ class PipelineResponseBody(WorkspaceScopedResponseBody):
 class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for pipelines."""
 
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the pipeline.",
+    )
+
 
 class PipelineResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline entity."""

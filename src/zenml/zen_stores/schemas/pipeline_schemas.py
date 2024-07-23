@@ -140,10 +140,12 @@ class PipelineSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
         )
+
         metadata = None
         if include_metadata:
             metadata = PipelineResponseMetadata(
                 workspace=self.workspace.to_model(),
+                description=self.description,
             )
 
         resources = None
