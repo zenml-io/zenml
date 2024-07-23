@@ -4165,6 +4165,7 @@ class SqlZenStore(BaseZenStore):
 
             session.add(existing_pipeline)
             session.commit()
+            session.refresh(existing_pipeline)
 
             return existing_pipeline.to_model(
                 include_metadata=True, include_resources=True
