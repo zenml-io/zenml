@@ -331,7 +331,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         if include_resources:
             model_version = None
             if config.model and config.model.model_version_id:
-                model_version = config.model._get_model_version(hydrate=False)
+                try:
+                    model_version = config.model._get_model_version(
+                        hydrate=False
+                    )
+                except KeyError:
+                    # Unable to find the model version, it was probably deleted
+                    pass
+
             resources = PipelineRunResponseResources(
                 model_version=model_version,
                 tags=[t.tag.to_model() for t in self.tags],
