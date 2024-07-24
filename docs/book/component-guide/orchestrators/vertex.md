@@ -259,6 +259,7 @@ vertex_settings = VertexOrchestratorSettings(
 )
 resource_settings = ResourceSettings(gpu_count=1)
 ```
+You can find available accelerator types [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus).
 
 These settings can then be specified on either pipeline-level or step-level:
 
