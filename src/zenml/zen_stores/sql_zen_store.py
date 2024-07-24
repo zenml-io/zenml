@@ -296,6 +296,7 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.string_utils import random_str, validate_name
+from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
@@ -4454,11 +4455,7 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
 
-            if not deployment.build:
-                raise ValueError(
-                    "Cannot create template from deployment without associated "
-                    "build."
-                )
+            template_utils.validate_deployment_is_templatable(deployment)
 
             template_schema = RunTemplateSchema.from_request(request=template)
 

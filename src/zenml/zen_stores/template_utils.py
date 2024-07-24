@@ -32,6 +32,54 @@ from zenml.zen_stores.schemas import PipelineDeploymentSchema
 logger = get_logger(__name__)
 
 
+def validate_deployment_is_templatable(
+    deployment: PipelineDeploymentSchema,
+) -> None:
+    """Validate that a deployment is templatable.
+
+    Args:
+        deployment: The deployment to validate.
+
+    Raises:
+        ValueError: If the deployment is not templatable.
+    """
+    if not deployment.build:
+        raise ValueError(
+            "Unable to create run template as there is no associated build."
+        )
+
+    if not deployment.build.stack:
+        raise ValueError(
+            "Unable to create run template as the associated build has no "
+            "stack reference."
+        )
+
+    for component in deployment.build.stack.components:
+        if not component.flavor_schema:
+            raise ValueError(
+                "Unable to create run template as a component of the "
+                "associated stack has no flavor."
+            )
+
+        if component.flavor_schema.workspace_id:
+            raise ValueError(
+                "Unable to create run template as a component of the "
+                "associated stack has a custom flavor."
+            )
+
+        flavor_model = component.flavor_schema.to_model()
+        flavor = Flavor.from_model(flavor_model)
+        component_config = flavor.config_class(
+            **component.to_model(include_metadata=True).configuration
+        )
+
+        if component_config.is_local:
+            raise ValueError(
+                "Unable to create run template as the stack of the associated "
+                "build contains local components."
+            )
+
+
 def generate_config_template(
     deployment: PipelineDeploymentSchema,
 ) -> Dict[str, Any]:
