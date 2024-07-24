@@ -746,20 +746,20 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         )
 
         if node_selector_constraint:
-            (constraint_label, value) = node_selector_constraint
+            _, value = node_selector_constraint
             if gpu_limit is not None and gpu_limit > 0:
                 dynamic_component = (
                     dynamic_component.set_accelerator_type(value)
                     .set_accelerator_limit(gpu_limit)
                     .set_gpu_limit(gpu_limit)
                 )
-            elif (
-                constraint_label
-                == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                and gpu_limit == 0
-            ):
+            else:
                 logger.warning(
-                    "GPU limit is set to 0 but a GPU type is specified. Ignoring GPU settings."
+                    "Accelerator type %s specified, but the GPU limit is not "
+                    "set or set to 0. The accelerator type will be ignored. "
+                    "To fix this warning, either remove the specified "
+                    "accelerator type or set the `gpu_count` using the "
+                    "ResourceSettings (https://docs.zenml.io/how-to/use-configuration-files/what-can-be-configured#resource-settings)."
                 )
 
         return dynamic_component
