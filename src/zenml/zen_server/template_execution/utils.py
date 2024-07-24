@@ -3,12 +3,14 @@
 import copy
 import hashlib
 import sys
-from typing import List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import UUID
 
 from fastapi import BackgroundTasks
 from packaging import version
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
@@ -27,6 +29,7 @@ from zenml.models import (
     ComponentResponse,
     FlavorFilter,
     PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
     PipelineRunResponse,
     PipelineRunUpdate,
     RunTemplateResponse,
@@ -148,71 +151,86 @@ def run_template(
     assert placeholder_run
 
     def _task() -> None:
-        try:
-            pypi_requirements, apt_packages = get_requirements_for_stack(
-                stack=stack
+        pypi_requirements, apt_packages = get_requirements_for_stack(
+            stack=stack
+        )
+
+        if build.python_version:
+            version_info = version.parse(build.python_version)
+            python_version = f"{version_info.major}.{version_info.minor}"
+        else:
+            python_version = (
+                f"{sys.version_info.major}.{sys.version_info.minor}"
             )
 
-            if build.python_version:
-                version_info = version.parse(build.python_version)
-                python_version = f"{version_info.major}.{version_info.minor}"
-            else:
-                python_version = (
-                    f"{sys.version_info.major}.{sys.version_info.minor}"
-                )
+        dockerfile = generate_dockerfile(
+            pypi_requirements=pypi_requirements,
+            apt_packages=apt_packages,
+            zenml_version=zenml_version,
+            python_version=python_version,
+        )
 
-            dockerfile = generate_dockerfile(
-                pypi_requirements=pypi_requirements,
-                apt_packages=apt_packages,
-                zenml_version=zenml_version,
-                python_version=python_version,
-            )
+        image_hash = generate_image_hash(dockerfile=dockerfile)
 
-            image_hash = generate_image_hash(dockerfile=dockerfile)
+        runner_image = workload_manager().build_and_push_image(
+            workload_id=new_deployment.id,
+            dockerfile=dockerfile,
+            image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
+            sync=True,
+        )
 
-            runner_image = workload_manager().build_and_push_image(
-                workload_id=new_deployment.id,
-                dockerfile=dockerfile,
-                image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
-                sync=True,
-            )
+        workload_manager().log(
+            workload_id=new_deployment.id,
+            message="Starting pipeline run.",
+        )
+        workload_manager().run(
+            workload_id=new_deployment.id,
+            image=runner_image,
+            command=command,
+            arguments=args,
+            environment=environment,
+            timeout_in_seconds=30,
+            sync=True,
+        )
+        workload_manager().log(
+            workload_id=new_deployment.id,
+            message="Pipeline run started successfully.",
+        )
 
-            workload_manager().log(
-                workload_id=new_deployment.id,
-                message="Starting pipeline run.",
-            )
-            workload_manager().run(
-                workload_id=new_deployment.id,
-                image=runner_image,
-                command=command,
-                arguments=args,
-                environment=environment,
-                timeout_in_seconds=30,
-                sync=True,
-            )
-            workload_manager().log(
-                workload_id=new_deployment.id,
-                message="Pipeline run started successfully.",
-            )
-        except Exception:
-            logger.exception(
-                "Failed to run template %s, run ID: %s",
-                str(template.id),
-                str(placeholder_run.id),
-            )
-            zen_store().update_run(
+    def _task_with_analytics_and_error_handling() -> None:
+        with track_handler(
+            event=AnalyticsEvent.RUN_PIPELINE
+        ) as analytics_handler:
+            analytics_handler.metadata = get_pipeline_run_analytics_metadata(
+                deployment=new_deployment,
+                stack=stack,
+                template_id=template.id,
                 run_id=placeholder_run.id,
-                run_update=PipelineRunUpdate(status=ExecutionStatus.FAILED),
             )
-            raise
+
+            try:
+                _task()
+            except Exception:
+                logger.exception(
+                    "Failed to run template %s, run ID: %s",
+                    str(template.id),
+                    str(placeholder_run.id),
+                )
+                zen_store().update_run(
+                    run_id=placeholder_run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.FAILED
+                    ),
+                )
+                raise
 
     if background_tasks:
-        background_tasks.add_task(_task)
+        background_tasks.add_task(_task_with_analytics_and_error_handling)
     else:
         # Run synchronously if no background tasks were passed. This is probably
         # when coming from a trigger which itself is already running in the
         # background
-        _task()
+        _task_with_analytics_and_error_handling()
 
     return placeholder_run
 
@@ -462,3 +480,48 @@ def deployment_request_from_template(
     )
 
     return deployment_request
+
+
+def get_pipeline_run_analytics_metadata(
+    deployment: "PipelineDeploymentResponse",
+    stack: StackResponse,
+    template_id: UUID,
+    run_id: UUID,
+) -> Dict[str, Any]:
+    """Get metadata for the pipeline run analytics event.
+
+    Args:
+        deployment: The deployment of the run.
+        stack: The stack on which the run will happen.
+        template_id: ID of the template from which the run was started.
+        run_id: ID of the run.
+
+    Returns:
+        The analytics metadata.
+    """
+    custom_materializer = False
+    for step in deployment.step_configurations.values():
+        for output in step.config.outputs.values():
+            for source in output.materializer_source:
+                if not source.is_internal:
+                    custom_materializer = True
+
+    assert deployment.user
+    stack_creator = stack.user
+    own_stack = stack_creator and stack_creator.id == deployment.user.id
+
+    stack_metadata = {
+        component_type.value: component_list[0].flavor
+        for component_type, component_list in stack.components.items()
+    }
+
+    return {
+        "store_type": "rest",  # This method is called from within a REST endpoint
+        **stack_metadata,
+        "total_steps": len(deployment.step_configurations),
+        "schedule": deployment.schedule is not None,
+        "custom_materializer": custom_materializer,
+        "own_stack": own_stack,
+        "pipeline_run_id": str(run_id),
+        "template_id": str(template_id),
+    }

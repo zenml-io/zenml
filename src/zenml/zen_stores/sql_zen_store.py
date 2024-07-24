@@ -4411,6 +4411,7 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Run templates --------------------
 
+    @track_decorator(AnalyticsEvent.CREATED_RUN_TEMPLATE)
     def create_run_template(
         self,
         template: RunTemplateRequest,
@@ -8297,6 +8298,7 @@ class SqlZenStore(BaseZenStore):
                 ) as analytics_handler:
                     analytics_handler.metadata = {
                         "pipeline_run_id": pipeline_run_id,
+                        "template_id": pipeline_run.deployment.template_id,
                         "status": new_status,
                         "num_steps": num_steps,
                         "start_time": start_time_str,

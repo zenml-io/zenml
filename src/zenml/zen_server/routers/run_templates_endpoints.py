@@ -18,6 +18,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Security
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.constants import API, RUN_TEMPLATES, VERSION_1
 from zenml.models import (
@@ -187,25 +189,24 @@ if server_config().workload_manager_enabled:
         """
         from zenml.zen_server.template_execution.utils import run_template
 
-        # TODO: Do additional RBAC checks that the deployment/build can be
-        # read
-        template = verify_permissions_and_get_entity(
-            id=template_id,
-            get_method=zen_store().get_run_template,
-            hydrate=True,
-        )
+        with track_handler(event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE):
+            template = verify_permissions_and_get_entity(
+                id=template_id,
+                get_method=zen_store().get_run_template,
+                hydrate=True,
+            )
 
-        verify_permission(
-            resource_type=ResourceType.PIPELINE_DEPLOYMENT,
-            action=Action.CREATE,
-        )
-        verify_permission(
-            resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
-        )
+            verify_permission(
+                resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+                action=Action.CREATE,
+            )
+            verify_permission(
+                resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+            )
 
-        return run_template(
-            template=template,
-            auth_context=auth_context,
-            background_tasks=background_tasks,
-            run_config=config,
-        )
+            return run_template(
+                template=template,
+                auth_context=auth_context,
+                background_tasks=background_tasks,
+                run_config=config,
+            )
