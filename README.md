@@ -318,7 +318,7 @@ the Apache License Version 2.0.
     ·
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
     ·
-    <a href="https://zenml.io/cloud">Sign up for ZenML Pro</a>
+    <a href="https://zenml.io/pro">Sign up for ZenML Pro</a>
     ·
     <a href="https://www.zenml.io/blog">Read Blog</a>
     ·
