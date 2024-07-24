@@ -363,7 +363,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 pipeline_func
             """
             step_name_to_dynamic_component: Dict[str, Any] = {}
-            node_selector_constraint: Optional[Tuple[str, str]] = None
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
@@ -410,23 +409,17 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                             "Volume mounts are set but not supported in "
                             "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
                         )
-
-                    # apply pod settings
-                    if (
-                        GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                        in pod_settings.node_selectors.keys()
-                    ):
-                        node_selector_constraint = (
-                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
-                            pod_settings.node_selectors[
-                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                            ],
-                        )
-                    elif step_settings.node_selector_constraint:
-                        node_selector_constraint = (
-                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
-                            step_settings.node_selector_constraint[1],
-                        )
+                    for key in pod_settings.node_selectors:
+                        if (
+                            key
+                            != GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                        ):
+                            logger.warning(
+                                "Vertex only allows the %s node selector, "
+                                "ignoring the node selector %s.",
+                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                                key,
+                            )
 
                 step_name_to_dynamic_component[step_name] = dynamic_component
 
@@ -460,10 +453,32 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         )
                         .after(*upstream_step_components)
                     )
+
+                    step_settings = cast(
+                        VertexOrchestratorSettings, self.get_settings(step)
+                    )
+
+                    node_selector_constraint: Optional[Tuple[str, str]] = None
+                    if step_settings.pod_settings and (
+                        GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                        in pod_settings.node_selectors.keys()
+                    ):
+                        node_selector_constraint = (
+                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            pod_settings.node_selectors[
+                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                            ],
+                        )
+                    elif step_settings.node_selector_constraint:
+                        node_selector_constraint = (
+                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                            step_settings.node_selector_constraint[1],
+                        )
+
                     self._configure_container_resources(
-                        task,
-                        step.config.resource_settings,
-                        node_selector_constraint,
+                        dynamic_component=task,
+                        resource_settings=step.config.resource_settings,
+                        node_selector_constraint=node_selector_constraint,
                     )
 
             return dynamic_pipeline
