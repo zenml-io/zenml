@@ -75,8 +75,8 @@ def validate_deployment_is_templatable(
 
         if component_config.is_local:
             raise ValueError(
-                "Unable to create run template as the stack of the associated "
-                "build contains local components."
+                "Unable to create run template as the associated stack "
+                "contains local components."
             )
 
 

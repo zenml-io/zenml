@@ -12,9 +12,11 @@
 #  permissions and limitations under the License.
 import logging
 import uuid
+from contextlib import nullcontext
 from copy import deepcopy
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
+from unittest.mock import patch
 
 from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import Annotated
@@ -888,6 +890,7 @@ class CrudTestConfig:
         update_model: Optional["BaseModel"] = None,
         supported_zen_stores: Tuple[Type["BaseZenStore"]] = None,
         conditional_entities: Optional[Dict[str, "CrudTestConfig"]] = None,
+        create_patch: Optional[Any] = None,
     ):
         """Initializes a CrudTestConfig.
 
@@ -900,6 +903,8 @@ class CrudTestConfig:
             conditional_entities: Other entities that need to exist before the
                 entity under test can be created. Expected to be a mapping from
                 field in the `create_model` to corresponding `CrudTestConfig`.
+            create_patch: unittest.mock.patch to apply during the creation
+                process of the model.
         """
         self.create_model = create_model
         self.update_model = update_model
@@ -911,6 +916,8 @@ class CrudTestConfig:
             self.supported_zen_stores = (RestZenStore, SqlZenStore)
         else:
             self.supported_zen_stores = supported_zen_stores
+
+        self._create_patch = create_patch or nullcontext()
 
     @property
     def list_method(
@@ -947,43 +954,46 @@ class CrudTestConfig:
 
     def create(self) -> AnyResponse:
         """Creates the entity."""
-        create_model = self.create_model
+        with self._create_patch:
+            create_model = self.create_model
 
-        # Set active user, workspace, and stack if applicable
-        client = Client()
-        if hasattr(create_model, "user"):
-            create_model.user = client.active_user.id
-        if hasattr(create_model, "workspace"):
-            create_model.workspace = client.active_workspace.id
-        if hasattr(create_model, "stack"):
-            create_model.stack = client.active_stack_model.id
+            # Set active user, workspace, and stack if applicable
+            client = Client()
+            if hasattr(create_model, "user"):
+                create_model.user = client.active_user.id
+            if hasattr(create_model, "workspace"):
+                create_model.workspace = client.active_workspace.id
+            if hasattr(create_model, "stack"):
+                create_model.stack = client.active_stack_model.id
 
-        # create other required entities if applicable
-        for (
-            field_name,
-            conditional_entity,
-        ) in self.conditional_entities.items():
-            # Split the field name by '.' to handle nested fields
-            field_names = field_name.split(".")
-            parent_model = create_model
-            # Set the field name of the create_model
-            for name in field_names[:-1]:
+            # create other required entities if applicable
+            for (
+                field_name,
+                conditional_entity,
+            ) in self.conditional_entities.items():
+                # Split the field name by '.' to handle nested fields
+                field_names = field_name.split(".")
+                parent_model = create_model
+                # Set the field name of the create_model
+                for name in field_names[:-1]:
+                    if isinstance(parent_model, dict):
+                        parent_model = parent_model[name]
+                    else:
+                        parent_model = getattr(parent_model, name)
                 if isinstance(parent_model, dict):
-                    parent_model = parent_model[name]
+                    parent_model[field_names[-1]] = (
+                        conditional_entity.create().id
+                    )
                 else:
-                    parent_model = getattr(parent_model, name)
-            if isinstance(parent_model, dict):
-                parent_model[field_names[-1]] = conditional_entity.create().id
-            else:
-                setattr(
-                    parent_model,
-                    field_names[-1],
-                    conditional_entity.create().id,
-                )
-        # Create the entity itself
-        response = self.create_method(create_model)
-        self.id = response.id
-        return response
+                    setattr(
+                        parent_model,
+                        field_names[-1],
+                        conditional_entity.create().id,
+                    )
+            # Create the entity itself
+            response = self.create_method(create_model)
+            self.id = response.id
+            return response
 
     def list(self) -> Page[AnyResponse]:
         """Lists all entities."""
@@ -1245,6 +1255,9 @@ run_template_test_config = CrudTestConfig(
     conditional_entities={
         "source_deployment_id": deepcopy(remote_deployment_crud_test_config),
     },
+    create_patch=patch(
+        "zenml.zen_stores.template_utils.validate_deployment_is_templatable",
+    ),
 )
 event_source_crud_test_config = CrudTestConfig(
     create_model=EventSourceRequest(
