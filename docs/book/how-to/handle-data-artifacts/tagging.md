@@ -52,7 +52,7 @@ Note that [ZenML Pro](https://zenml.io/pro) users can tag artifacts directly in 
 
 ## Assigning tags to models
 
-Just like artifacts, you can also tag your models to organize them semantically. Here's how to use tags with models in the ZenML Python SDK and CLI (or in the [ZenML Pro Dashboard directly](https://zenml.io/cloud)).
+Just like artifacts, you can also tag your models to organize them semantically. Here's how to use tags with models in the ZenML Python SDK and CLI (or in the [ZenML Pro Dashboard directly](https://zenml.io/pro)).
 
 When creating a model using the `Model` object, you can specify tags as key-value pairs that will be attached to the model upon creation:
 
