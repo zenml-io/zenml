@@ -68,7 +68,7 @@ class AzureMLOrchestratorConfig(
 
     @property
     def is_synchronous(self) -> bool:
-        return True
+        return False
 
 
 class AzureMLOrchestratorFlavor(BaseOrchestratorFlavor):

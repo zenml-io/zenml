@@ -1,3 +1,5 @@
+import json
+import os
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
 
 from azure.ai.ml import Input, MLClient, Output
@@ -6,21 +8,23 @@ from azure.ai.ml.entities import (
     CommandComponent,
     Environment,
 )
-
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
 
+# from azure.ai.ml.entities import ComputeInstance
 from zenml.config.base_settings import BaseSettings
-from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
     AzureMLOrchestratorConfig,
     AzureMLOrchestratorSettings,
 )
-import os
+from zenml.integrations.azure.orchestrators.azureml_orchestrator_entrypoint_config import (
+    AzureMLEntrypointConfiguration,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
+from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -28,16 +32,10 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-ENV_ZENML_AZUREML_RUN_ID = "ZENML_AZUREML_RUN_ID"
+ENV_ZENML_AZUREML_RUN_ID = "AZUREML_ROOT_RUN_ID"
 
 # TODO:
-#   - Add the environmental variables
-#   - Make sure that the image building is working correctly
-#   - Make sure that the command is setup up properly
 #   - Check whether the compute target exist if not create one
-#   - Update the requirements of the integration
-#   - Include settings at the pipeline execution
-#   - Resource configuration like cpu gpus
 #   - Compute configuration as well
 
 
@@ -113,12 +111,12 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         outputs = {}
         if step.config.outputs:
-            outputs = {"output": Output(type="boolean")}
+            outputs = {"completed": Output(type="uri_file")}
 
         inputs = {}
         if step.spec.upstream_steps:
             inputs = {
-                f"input_{upstream_step}": Input(type="boolean")
+                f"{upstream_step}": Input(type="uri_file")
                 for upstream_step in step.spec.upstream_steps
             }
 
@@ -181,15 +179,16 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         for step_name, step in deployment.step_configurations.items():
             image = self.get_image(deployment=deployment, step_name=step_name)
 
-            command = StepEntrypointConfiguration.get_entrypoint_command()
+            command = AzureMLEntrypointConfiguration.get_entrypoint_command()
 
-            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name,
-                deployment_id=deployment.id,
-            )
-
-            step_settings = cast(
-                AzureMLOrchestratorSettings, self.get_settings(step)
+            arguments = (
+                AzureMLEntrypointConfiguration.get_entrypoint_arguments(
+                    step_name=step_name,
+                    deployment_id=deployment.id,
+                    environmental_variables=b64_encode(
+                        json.dumps(environment)
+                    ),
+                )
             )
 
             components[step_name] = self._create_command_component(
@@ -200,23 +199,25 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 arguments=arguments,
             )
 
-        @pipeline(name=run_name, compute=self.config.compute_target_base)
+        settings = cast(
+            AzureMLOrchestratorSettings, self.get_settings(deployment)
+        )
+
+        @pipeline(name=run_name, compute=settings.compute_target)
         def my_azureml_pipeline():
             component_outputs = {}
             for component_name, component in components.items():
                 component_inputs = {}
                 if component.inputs:
-                    for i, _ in component.inputs.items():
-                        input_from_component = i[6:]
-                        component_inputs.update(
-                            {i: component_outputs[input_from_component]}
-                        )
+                    component_inputs.update(
+                        {i: component_outputs[i] for i in component.inputs}
+                    )
 
                 component_job = component(**component_inputs)
 
                 if component_job.outputs:
                     component_outputs[component_name] = (
-                        component_job.outputs.output
+                        component_job.outputs.completed
                     )
 
         pipeline_job = my_azureml_pipeline()
