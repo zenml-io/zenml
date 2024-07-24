@@ -12,11 +12,19 @@
 #  permissions and limitations under the License.
 import logging
 import uuid
-from contextlib import nullcontext
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
-from unittest.mock import patch
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import Annotated
@@ -87,6 +95,7 @@ from zenml.models import (
     ServiceConnectorRequest,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    StackFilter,
     StackRequest,
     StepRunFilter,
     TriggerFilter,
@@ -889,8 +898,9 @@ class CrudTestConfig:
         entity_name: str,
         update_model: Optional["BaseModel"] = None,
         supported_zen_stores: Tuple[Type["BaseZenStore"]] = None,
-        conditional_entities: Optional[Dict[str, "CrudTestConfig"]] = None,
-        create_patch: Optional[Any] = None,
+        conditional_entities: Optional[
+            Dict[str, Union["CrudTestConfig", List["CrudTestConfig"]]]
+        ] = None,
     ):
         """Initializes a CrudTestConfig.
 
@@ -902,9 +912,8 @@ class CrudTestConfig:
             supported_zen_stores: Set of supported Zen Stores. Defaults to all.
             conditional_entities: Other entities that need to exist before the
                 entity under test can be created. Expected to be a mapping from
-                field in the `create_model` to corresponding `CrudTestConfig`.
-            create_patch: unittest.mock.patch to apply during the creation
-                process of the model.
+                field in the `create_model` to corresponding `CrudTestConfig` 
+                (or list of them if target value is a list of ids).
         """
         self.create_model = create_model
         self.update_model = update_model
@@ -916,8 +925,6 @@ class CrudTestConfig:
             self.supported_zen_stores = (RestZenStore, SqlZenStore)
         else:
             self.supported_zen_stores = supported_zen_stores
-
-        self._create_patch = create_patch or nullcontext()
 
     @property
     def list_method(
@@ -954,46 +961,49 @@ class CrudTestConfig:
 
     def create(self) -> AnyResponse:
         """Creates the entity."""
-        with self._create_patch:
-            create_model = self.create_model
+        create_model = self.create_model
 
-            # Set active user, workspace, and stack if applicable
-            client = Client()
-            if hasattr(create_model, "user"):
-                create_model.user = client.active_user.id
-            if hasattr(create_model, "workspace"):
-                create_model.workspace = client.active_workspace.id
-            if hasattr(create_model, "stack"):
-                create_model.stack = client.active_stack_model.id
+        # Set active user, workspace, and stack if applicable
+        client = Client()
+        if hasattr(create_model, "user"):
+            create_model.user = client.active_user.id
+        if hasattr(create_model, "workspace"):
+            create_model.workspace = client.active_workspace.id
+        if hasattr(create_model, "stack"):
+            create_model.stack = client.active_stack_model.id
 
-            # create other required entities if applicable
-            for (
-                field_name,
-                conditional_entity,
-            ) in self.conditional_entities.items():
-                # Split the field name by '.' to handle nested fields
-                field_names = field_name.split(".")
-                parent_model = create_model
-                # Set the field name of the create_model
-                for name in field_names[:-1]:
-                    if isinstance(parent_model, dict):
-                        parent_model = parent_model[name]
-                    else:
-                        parent_model = getattr(parent_model, name)
+        # create other required entities if applicable
+        for (
+            field_name,
+            conditional_entity,
+        ) in self.conditional_entities.items():
+            # Split the field name by '.' to handle nested fields
+            field_names = field_name.split(".")
+            parent_model = create_model
+            # Set the field name of the create_model
+            for name in field_names[:-1]:
                 if isinstance(parent_model, dict):
-                    parent_model[field_names[-1]] = (
-                        conditional_entity.create().id
-                    )
+                    parent_model = parent_model[name]
                 else:
-                    setattr(
-                        parent_model,
-                        field_names[-1],
-                        conditional_entity.create().id,
-                    )
-            # Create the entity itself
-            response = self.create_method(create_model)
-            self.id = response.id
-            return response
+                    parent_model = getattr(parent_model, name)
+
+            value = (
+                conditional_entity.create().id
+                if isinstance(conditional_entity, CrudTestConfig)
+                else [c.create().id for c in conditional_entity]
+            )
+            if isinstance(parent_model, dict):
+                parent_model[field_names[-1]] = value
+            else:
+                setattr(
+                    parent_model,
+                    field_names[-1],
+                    value,
+                )
+        # Create the entity itself
+        response = self.create_method(create_model)
+        self.id = response.id
+        return response
 
     def list(self) -> Page[AnyResponse]:
         """Lists all entities."""
@@ -1025,7 +1035,11 @@ class CrudTestConfig:
         if self.id:
             self.delete()
         for conditional_entity in self.conditional_entities.values():
-            conditional_entity.cleanup()
+            if isinstance(conditional_entity, CrudTestConfig):
+                conditional_entity.cleanup()
+            else:
+                for c in conditional_entity:
+                    c.cleanup()
 
 
 workspace_crud_test_config = CrudTestConfig(
@@ -1130,6 +1144,44 @@ secret_crud_test_config = CrudTestConfig(
     filter_model=SecretFilter,
     entity_name="secret",
 )
+remote_orchestrator_crud_test_config = CrudTestConfig(
+    create_model=ComponentRequest(
+        name=sample_name("remote_orchestrator"),
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="kubernetes",
+        configuration={},
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    filter_model=ComponentFilter,
+    entity_name="stack_component",
+)
+remote_artifact_store_crud_test_config = CrudTestConfig(
+    create_model=ComponentRequest(
+        name=sample_name("remote_artifact_store"),
+        type=StackComponentType.ARTIFACT_STORE,
+        flavor="s3",
+        configuration={"path": "s3://bucket"},
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    filter_model=ComponentFilter,
+    entity_name="stack_component",
+)
+remote_stack_crud_test_config = CrudTestConfig(
+    create_model=StackRequest(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        name=sample_name("remote_stack"),
+        components={},
+    ),
+    filter_model=StackFilter,
+    entity_name="stack",
+    conditional_entities={
+        "components.orchestrator": [remote_orchestrator_crud_test_config],
+        "components.artifact_store": [remote_artifact_store_crud_test_config],
+    },
+)
 build_crud_test_config = CrudTestConfig(
     create_model=PipelineBuildRequest(
         user=uuid.uuid4(),
@@ -1140,6 +1192,7 @@ build_crud_test_config = CrudTestConfig(
     ),
     filter_model=PipelineBuildFilter,
     entity_name="build",
+    conditional_entities={"stack": remote_stack_crud_test_config},
 )
 deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
@@ -1255,9 +1308,6 @@ run_template_test_config = CrudTestConfig(
     conditional_entities={
         "source_deployment_id": deepcopy(remote_deployment_crud_test_config),
     },
-    create_patch=patch(
-        "zenml.zen_stores.template_utils.validate_deployment_is_templatable",
-    ),
 )
 event_source_crud_test_config = CrudTestConfig(
     create_model=EventSourceRequest(
