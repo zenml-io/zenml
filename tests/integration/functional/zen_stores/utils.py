@@ -912,7 +912,7 @@ class CrudTestConfig:
             supported_zen_stores: Set of supported Zen Stores. Defaults to all.
             conditional_entities: Other entities that need to exist before the
                 entity under test can be created. Expected to be a mapping from
-                field in the `create_model` to corresponding `CrudTestConfig` 
+                field in the `create_model` to corresponding `CrudTestConfig`
                 (or list of them if target value is a list of ids).
         """
         self.create_model = create_model
