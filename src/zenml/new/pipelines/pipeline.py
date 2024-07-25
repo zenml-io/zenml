@@ -711,7 +711,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if code_repository is None and build_id:
                 file_refs = build_utils.upload_code_repository()
                 if file_refs:
-                    deployment.pipeline_configuration.extra["file_refs"] = (
+                    deployment.pipeline_configuration.extra["file_ref"] = (
                         file_refs
                     )
 
