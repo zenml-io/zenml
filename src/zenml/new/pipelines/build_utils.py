@@ -144,6 +144,7 @@ def reuse_or_create_pipeline_build(
     if not build:
         if (
             allow_build_reuse
+            and code_repository
             and not deployment.requires_included_files
             and build_required(deployment=deployment)
         ):
