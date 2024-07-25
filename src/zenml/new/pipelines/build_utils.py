@@ -14,7 +14,10 @@
 """Pipeline build utilities."""
 
 import hashlib
+import os
 import platform
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -23,11 +26,12 @@ from typing import (
     Optional,
     Union,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     BuildItem,
@@ -420,6 +424,50 @@ def compute_build_checksum(
     return hash_.hexdigest()
 
 
+def upload_code_repository() -> Optional[str]:
+    """Downloads all files from the git repo, zips them, and uploads to the artifact store.
+
+    Returns:
+        A path to a zipfile with all the code repo.
+    """
+    artifact_store = Client().active_stack.artifact_store
+    if artifact_store.config.is_local:
+        return None
+
+    source_root = source_utils.get_source_root()
+
+    try:
+        # Create a temporary directory to store the dirty files
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a zip file
+            zip_filename = f"dirty_files_{uuid4()}.zip"
+            zip_path = os.path.join(temp_dir, zip_filename)
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(source_root):
+                    dirs[:] = [d for d in dirs if not d.startswith(".")]
+                    for file in files:
+                        if file.endswith(".py"):
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, source_root)
+                            zipf.write(file_path, arcname)
+
+            # shutil.make_archive(zip_path, "zip", source_root)
+
+            # Upload the zip file to the artifact store
+            artifact_uri = f"{artifact_store.path}/{zip_filename}"
+
+            # Copy to artifact store
+            logger.info(
+                f"Found a git diff. Uploading dirty files to {artifact_uri}..."
+            )
+            fileio.copy(f"{zip_path}", artifact_uri)
+
+            return artifact_uri
+
+    except Exception as e:
+        raise RuntimeError(f"Error while processing dirty files: {str(e)}")
+
+
 def verify_local_repository_context(
     deployment: "PipelineDeploymentBase",
     local_repo_context: Optional["LocalRepositoryContext"],
@@ -433,10 +481,6 @@ def verify_local_repository_context(
         deployment: The pipeline deployment.
         local_repo_context: The local repository active at the source root.
 
-    Raises:
-        RuntimeError: If the deployment requires code download but code download
-            is not possible.
-
     Returns:
         The code repository from which to download files for the runs of the
         deployment, or None if code download is not possible.
@@ -444,7 +488,7 @@ def verify_local_repository_context(
     if build_required(deployment=deployment):
         if deployment.requires_code_download:
             if not local_repo_context:
-                raise RuntimeError(
+                logger.warning(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
                     "Docker image (`source_files='download'`), but there is no "
@@ -452,7 +496,7 @@ def verify_local_repository_context(
                     f"`{source_utils.get_source_root()}`."
                 )
             elif local_repo_context.is_dirty:
-                raise RuntimeError(
+                logger.warning(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
                     "Docker image (`source_files='download'`), but the code "
@@ -461,7 +505,7 @@ def verify_local_repository_context(
                     "changes."
                 )
             elif local_repo_context.has_local_changes:
-                raise RuntimeError(
+                logger.warning(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
                     "Docker image (`source_files='download'`), but the code "

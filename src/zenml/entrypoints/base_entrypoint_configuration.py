@@ -15,6 +15,7 @@
 
 import argparse
 import os
+import shutil
 import sys
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Set
@@ -26,6 +27,7 @@ from zenml.constants import (
     ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
     handle_bool_env_var,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import code_repository_utils, source_utils, uuid_utils
 
@@ -203,6 +205,12 @@ class BaseEntrypointConfiguration(ABC):
         requires_code_download = handle_bool_env_var(
             ENV_ZENML_REQUIRES_CODE_DOWNLOAD
         )
+
+        if file_ref := deployment.pipeline_configuration.extra.get("file_ref"):
+            logger.info(f"Downloading code from file reference: {file_ref}")
+            fileio.copy(file_ref, "downloaded_code.zip")
+            shutil.unpack_archive("downloaded_code.zip", ".", "zip")
+            return
 
         if not requires_code_download:
             return

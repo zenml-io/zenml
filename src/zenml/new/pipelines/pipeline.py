@@ -43,6 +43,7 @@ from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.client import Client
+from zenml.code_repositories import BaseCodeRepository
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
@@ -698,15 +699,28 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             code_repository = build_utils.verify_local_repository_context(
                 deployment=deployment, local_repo_context=local_repo_context
             )
+            model = Client().get_code_repository(
+                local_repo_context.code_repository_id
+            )
+            code_repository_for_dirty_repo = BaseCodeRepository.from_model(
+                model
+            )
 
             build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
                 pipeline_id=pipeline_id,
                 allow_build_reuse=not prevent_build_reuse,
                 build=build,
-                code_repository=code_repository,
+                code_repository=code_repository_for_dirty_repo,
             )
             build_id = build_model.id if build_model else None
+
+            if code_repository is None and build_id:
+                file_refs = build_utils.upload_code_repository()
+                if file_refs:
+                    deployment.pipeline_configuration.extra["file_ref"] = (
+                        file_refs
+                    )
 
             code_reference = None
             if local_repo_context and not local_repo_context.is_dirty:
