@@ -18,7 +18,7 @@ def extract_cell_code(cell_id: str, output_path: str) -> None:
 
     for cell in nb["cells"]:
         if cell["id"] == cell_id:
-            with open(output_path, "w") as output_file:
+            with open(output_path, "w+") as output_file:
                 output_file.writelines(cell["source"])
 
             break

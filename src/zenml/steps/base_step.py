@@ -61,7 +61,6 @@ from zenml.utils import (
     settings_utils,
     source_code_utils,
     source_utils,
-    string_utils,
     typing_utils,
 )
 
@@ -257,17 +256,16 @@ class BaseStep(metaclass=BaseStepMeta):
             self._notebook_cell_id = notebook_utils.get_current_cell_id()
 
     def extract_notebook_code(
-        self, module_name_prefix: str
+        self, module_name_suffix: str
     ) -> Optional[Source]:
         if not self._notebook_cell_id:
             return None
 
-        module_name = (
-            f"{module_name_prefix}_{string_utils.random_str(8).lower()}"
-        )
+        module_name = f"__{module_name_suffix}"
         output_path = os.path.join(
             source_utils.get_source_root(), f"{module_name}.py"
         )
+
         logger.info(
             "Extracting step code from nodebook cell into file %s.",
             output_path,

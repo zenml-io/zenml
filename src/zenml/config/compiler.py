@@ -413,7 +413,7 @@ class Compiler:
 
         if will_run_remotely and step_source.type == SourceType.NOTEBOOK:
             step_source = invocation.step.extract_notebook_code(
-                module_name_prefix=invocation.id
+                module_name_suffix=invocation.id
             )
             assert step_source
 

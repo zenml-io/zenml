@@ -760,6 +760,17 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             deploy_pipeline(
                 deployment=deployment_model, stack=stack, placeholder_run=run
             )
+
+            for inv in self.invocations.values():
+                import os
+
+                module_name = f"__{inv.id}"
+                output_path = os.path.join(
+                    source_utils.get_source_root(), f"{module_name}.py"
+                )
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+
             if run:
                 return Client().get_pipeline_run(run.id)
             return None
