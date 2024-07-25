@@ -256,11 +256,15 @@ class BaseStep(metaclass=BaseStepMeta):
         if Environment.in_notebook():
             self._notebook_cell_id = notebook_utils.get_current_cell_id()
 
-    def extract_notebook_code(self) -> Optional[Source]:
+    def extract_notebook_code(
+        self, module_name_prefix: str
+    ) -> Optional[Source]:
         if not self._notebook_cell_id:
             return None
 
-        module_name = string_utils.random_str(32)
+        module_name = (
+            f"{module_name_prefix}_{string_utils.random_str(8).lower()}"
+        )
         output_path = os.path.join(
             source_utils.get_source_root(), f"{module_name}.py"
         )
