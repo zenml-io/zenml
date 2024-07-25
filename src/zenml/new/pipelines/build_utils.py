@@ -18,6 +18,7 @@ import os
 import platform
 import shutil
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -442,13 +443,22 @@ def upload_code_repository() -> Optional[str]:
             # Create a zip file
             zip_filename = f"dirty_files_{uuid4()}.zip"
             zip_path = os.path.join(temp_dir, zip_filename)
-            shutil.make_archive(zip_path, "zip", source_root)
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(source_root):
+                    dirs[:] = [d for d in dirs if not d.startswith('.')]
+                    for file in files:
+                        if file.endswith(".py"):
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, source_root)
+                            zipf.write(file_path, arcname)
+
+            # shutil.make_archive(zip_path, "zip", source_root)
 
             # Upload the zip file to the artifact store
             artifact_uri = f"{artifact_store.path}/{zip_filename}"
 
             # Copy to artifact store
-            fileio.copy(zip_path, artifact_uri)
+            fileio.copy(f"{zip_path}", artifact_uri)
 
             logger.info(f"Uploaded dirty files to {artifact_uri}")
             return artifact_uri

@@ -151,6 +151,8 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
+        Client().active_stack.artifact_store
+
         self.download_code_if_necessary(deployment=deployment)
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
