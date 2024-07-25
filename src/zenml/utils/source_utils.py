@@ -109,6 +109,11 @@ def load(source: Union[Source, str]) -> Any:
         # Unknown source might also refer to a user file, include source
         # root in python path just to be sure
         import_root = get_source_root()
+    elif source.type == SourceType.NOTEBOOK:
+        if not Environment.in_notebook():
+            raise RuntimeError(
+                "Can't load notebook source outside of notebook"
+            )
 
     module = _load_module(module_name=source.module, import_root=import_root)
 
@@ -362,7 +367,7 @@ def get_source_type(module: ModuleType) -> SourceType:
         file_path = inspect.getfile(module)
     except (TypeError, OSError):
         if module.__name__ == "__main__" and Environment.in_notebook():
-            return SourceType.USER
+            return SourceType.NOTEBOOK
 
         return SourceType.BUILTIN
 

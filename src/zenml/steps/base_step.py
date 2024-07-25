@@ -16,6 +16,7 @@
 import copy
 import hashlib
 import inspect
+import os
 from abc import abstractmethod
 from collections import defaultdict
 from typing import (
@@ -39,6 +40,7 @@ from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
+from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -54,10 +56,12 @@ from zenml.steps.utils import (
 )
 from zenml.utils import (
     dict_utils,
+    notebook_utils,
     pydantic_utils,
     settings_utils,
     source_code_utils,
     source_utils,
+    string_utils,
     typing_utils,
 )
 
@@ -248,6 +252,26 @@ class BaseStep(metaclass=BaseStepMeta):
             retry=retry,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
+        self._notebook_cell_id = None
+        if Environment.in_notebook():
+            self._notebook_cell_id = notebook_utils.get_current_cell_id()
+
+    def extract_notebook_code(self) -> Optional[Source]:
+        if not self._notebook_cell_id:
+            return None
+
+        module_name = string_utils.random_str(32)
+        output_path = os.path.join(
+            source_utils.get_source_root(), f"{module_name}.py"
+        )
+        notebook_utils.extract_cell_code(
+            cell_id=self._notebook_cell_id, output_path=output_path
+        )
+
+        original_source = self.resolve()
+        original_source.module = module_name
+
+        return original_source
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:

@@ -30,6 +30,7 @@ from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
+from zenml.config.source import SourceType
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
@@ -42,7 +43,7 @@ from zenml.models import PipelineDeploymentBase
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
-    from zenml.config.source import Source
+    from zenml.config.source import Source, SourceType
     from zenml.new.pipelines.pipeline import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps.step_invocation import StepInvocation
@@ -399,8 +400,23 @@ class Compiler:
             )
             for key, artifact in invocation.input_artifacts.items()
         }
+        step_source = invocation.step.resolve()
+
+        if invocation.step.configuration.step_operator:
+            will_run_remotely = True
+        else:
+            from zenml.client import Client
+
+            will_run_remotely = (
+                Client().active_stack.orchestrator.config.is_remote
+            )
+
+        if will_run_remotely and step_source.type == SourceType.NOTEBOOK:
+            step_source = invocation.step.extract_notebook_code()
+            assert step_source
+
         return StepSpec(
-            source=invocation.step.resolve(),
+            source=step_source,
             upstream_steps=sorted(invocation.upstream_steps),
             inputs=inputs,
             pipeline_parameter_name=invocation.id,
@@ -441,7 +457,6 @@ class Compiler:
                 step_config, runtime_parameters=invocation.parameters
             )
 
-        step_spec = self._get_step_spec(invocation=invocation)
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
@@ -472,6 +487,7 @@ class Compiler:
         complete_step_configuration = invocation.finalize(
             parameters_to_ignore=parameters_to_ignore
         )
+        step_spec = self._get_step_spec(invocation=invocation)
         return Step(spec=step_spec, config=complete_step_configuration)
 
     @staticmethod

@@ -42,6 +42,7 @@ class SourceType(Enum):
     INTERNAL = "internal"
     DISTRIBUTION_PACKAGE = "distribution_package"
     CODE_REPOSITORY = "code_repository"
+    NOTEBOOK = "notebook"
     UNKNOWN = "unknown"
 
 
