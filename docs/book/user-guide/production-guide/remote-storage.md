@@ -207,7 +207,7 @@ You can list your artifact versions as follows:
 {% tab title="CLI" %}
 ```shell
 # This will give you the artifacts from the last 15 minutes
-zenml artifact version list --created="gte:$(date -d '15 minutes ago' '+%Y-%m-%d %H:%M:%S')"
+zenml artifact version list --created="gte:$(date -v-15M '+%Y-%m-%d %H:%M:%S')"
 ```
 {% endtab %}
 
