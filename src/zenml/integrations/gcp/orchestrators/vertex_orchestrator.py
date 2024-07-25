@@ -457,9 +457,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     step_settings = cast(
                         VertexOrchestratorSettings, self.get_settings(step)
                     )
+                    pod_settings = step_settings.pod_settings
 
                     node_selector_constraint: Optional[Tuple[str, str]] = None
-                    if step_settings.pod_settings and (
+                    if pod_settings and (
                         GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
                         in pod_settings.node_selectors.keys()
                     ):
