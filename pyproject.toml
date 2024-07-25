@@ -68,6 +68,7 @@ sqlalchemy = "^2.0.0"
 sqlalchemy_utils = "*"
 sqlmodel = "0.0.18"
 importlib_metadata = { version = "<=7.0.0", python = "<3.10" }
+ipynbname = "2024.1.0.0"
 
 # Optional dependencies for the ZenServer
 fastapi = { version = ">=0.100, <=0.110", optional = true }
