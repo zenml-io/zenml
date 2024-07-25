@@ -16,7 +16,6 @@
 import hashlib
 import os
 import platform
-import shutil
 import tempfile
 import zipfile
 from pathlib import Path
@@ -443,9 +442,9 @@ def upload_code_repository() -> Optional[str]:
             # Create a zip file
             zip_filename = f"dirty_files_{uuid4()}.zip"
             zip_path = os.path.join(temp_dir, zip_filename)
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for root, dirs, files in os.walk(source_root):
-                    dirs[:] = [d for d in dirs if not d.startswith('.')]
+                    dirs[:] = [d for d in dirs if not d.startswith(".")]
                     for file in files:
                         if file.endswith(".py"):
                             file_path = os.path.join(root, file)
@@ -458,9 +457,11 @@ def upload_code_repository() -> Optional[str]:
             artifact_uri = f"{artifact_store.path}/{zip_filename}"
 
             # Copy to artifact store
+            logger.info(
+                f"Found a git diff. Uploading dirty files to {artifact_uri}..."
+            )
             fileio.copy(f"{zip_path}", artifact_uri)
 
-            logger.info(f"Uploaded dirty files to {artifact_uri}")
             return artifact_uri
 
     except Exception as e:

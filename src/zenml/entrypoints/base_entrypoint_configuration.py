@@ -206,9 +206,8 @@ class BaseEntrypointConfiguration(ABC):
             ENV_ZENML_REQUIRES_CODE_DOWNLOAD
         )
 
-        if file_ref := deployment.pipeline_configuration.extra.get(
-            "file_ref"
-        ):
+        if file_ref := deployment.pipeline_configuration.extra.get("file_ref"):
+            logger.info(f"Downloading code from file reference: {file_ref}")
             fileio.copy(file_ref, "downloaded_code.zip")
             shutil.unpack_archive("downloaded_code.zip", ".", "zip")
             return

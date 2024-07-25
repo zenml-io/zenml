@@ -702,8 +702,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             model = Client().get_code_repository(
                 local_repo_context.code_repository_id
             )
-            code_repository_for_dirty_repo = BaseCodeRepository.from_model(model)
-            
+            code_repository_for_dirty_repo = BaseCodeRepository.from_model(
+                model
+            )
+
             build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
                 pipeline_id=pipeline_id,
