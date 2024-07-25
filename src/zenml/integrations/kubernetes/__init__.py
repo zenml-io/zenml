@@ -24,6 +24,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
+KUBERNETES_STEP_OPERATOR_FLAVOR = "kubernetes"
 
 
 class KubernetesIntegration(Integration):
