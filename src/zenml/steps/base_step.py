@@ -38,7 +38,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
-from zenml.config.source import Source
+from zenml.config.source import Source, SourceType
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
@@ -264,14 +264,21 @@ class BaseStep(metaclass=BaseStepMeta):
         output_path = os.path.join(
             source_utils.get_source_root(), f"{module_name}.py"
         )
+        logger.info(
+            "Extracting step code from nodebook cell into file %s.",
+            output_path,
+        )
+
         notebook_utils.extract_cell_code(
             cell_id=self._notebook_cell_id, output_path=output_path
         )
 
         original_source = self.resolve()
-        original_source.module = module_name
-
-        return original_source
+        return Source(
+            module=module_name,
+            attribute=original_source.attribute,
+            type=SourceType.USER,
+        )
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:

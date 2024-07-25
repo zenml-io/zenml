@@ -1,6 +1,5 @@
 import json
 
-import ipynbname
 from IPython import get_ipython
 
 
@@ -10,6 +9,8 @@ def get_current_cell_id() -> str:
 
 
 def extract_cell_code(cell_id: str, output_path: str) -> None:
+    import ipynbname
+
     notebook_path = ipynbname.path()
 
     with open(notebook_path) as f:
