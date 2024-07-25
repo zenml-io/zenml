@@ -52,6 +52,7 @@ class VisualizationType(StrEnum):
     HTML = "html"
     IMAGE = "image"
     MARKDOWN = "markdown"
+    JSON = "json"
 
 
 class ZenMLServiceType(StrEnum):
