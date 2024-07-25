@@ -253,7 +253,10 @@ class BaseStep(metaclass=BaseStepMeta):
         self._verify_and_apply_init_params(*args, **kwargs)
         self._notebook_cell_id = None
         if Environment.in_notebook():
-            self._notebook_cell_id = notebook_utils.get_current_cell_id()
+            try:
+                self._notebook_cell_id = notebook_utils.get_current_cell_id()
+            except Exception:
+                pass
 
     def extract_notebook_code(
         self, module_name_suffix: str
