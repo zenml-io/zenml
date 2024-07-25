@@ -17,6 +17,8 @@
 
 settings:
   docker:
+    python_package_installer: uv
+    install_stack_requirements: False
     required_integrations:
       - aws
       - skypilot_aws

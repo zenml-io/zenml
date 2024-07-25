@@ -426,13 +426,13 @@ Note the following:
 To start the containers, run the following command from the directory where the `docker-compose.yml` file is located:
 
 ```shell
-docker-compose -p zenml up  -d
+docker compose -p zenml up  -d
 ```
 
 or, if you need to use a different filename or path:
 
 ```shell
-docker-compose -f /path/to/docker-compose.yml -p zenml up -d
+docker compose -f /path/to/docker-compose.yml -p zenml up -d
 ```
 
 You need to visit the ZenML dashboard at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
@@ -444,7 +444,7 @@ zenml connect --url http://localhost:8080
 Tearing down the installation is as simple as running:
 
 ```shell
-docker-compose -p zenml down
+docker compose -p zenml down
 ```
 
 ## Database backup and recovery

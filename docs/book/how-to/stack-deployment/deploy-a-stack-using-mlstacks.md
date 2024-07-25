@@ -21,7 +21,7 @@ Check out [the full documentation for the mlstacks package](https://mlstacks.zen
 ## When should I deploy something using mlstacks?
 
 {% hint style="info" %}
-**MLStacks deploys resources using a Kubernetes cluster, which may be expensive and not for ever y user. In order to use stacks which are more basic and cheaper on the cloud, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
+**MLStacks deploys resources using a Kubernetes cluster, which may be expensive and not for every user. In order to use stacks which are more basic and cheaper on the cloud, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
 if you have existing infrastructure, or read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md).**
 
 Or simply try running one of:

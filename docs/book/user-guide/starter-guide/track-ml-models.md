@@ -16,7 +16,7 @@ Before diving in, let's take some time to build an understanding of what we mean
 Please note that one of the most common artifacts that is associated with a Model in ZenML is the so-called technical model, which is the actually model file/files that holds the weight and parameters of a machine learning training result. However, this is not the only artifact that is relevant; artifacts such as the training data and the predictions this model produces in production are also linked inside a ZenML Model.
 {% endhint %}
 
-Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, the ZenML client as well as on the [ZenML Pro](https://zenml.io/cloud) dashboard.
+Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, the ZenML client as well as on the [ZenML Pro](https://zenml.io/pro) dashboard.
 
 These models can be viewed within ZenML:
 
@@ -26,7 +26,7 @@ These models can be viewed within ZenML:
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing these models in the dashboard.
+The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include visualizing these models in the dashboard.
 
 <figure><img src="../../.gitbook/assets/mcp_model_list.png" alt=""><figcaption><p>ZenML Model Control Plane.</p></figcaption></figure>
 {% endtab %}
@@ -101,7 +101,7 @@ The following commands can be used to list the various artifacts associated with
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
+The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
 
 <figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model versions List.</p></figcaption></figure>
 {% endtab %}
@@ -189,7 +189,7 @@ model_version.run_metadata["accuracy"].value
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
+The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
 
 <figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 {% endtab %}
@@ -257,7 +257,7 @@ zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/cloud) dashboard has additional capabilities, that include easily changing the stage:
+The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include easily changing the stage:
 
 ![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp\_transition\_stage.gif)
 {% endtab %}
