@@ -49,10 +49,6 @@ logger = get_logger(__name__)
 
 ENV_ZENML_AZUREML_RUN_ID = "AZUREML_ROOT_RUN_ID"
 
-# TODO:
-#   - Check whether the compute target exist if not create one
-#   - Compute configuration as well
-
 
 class AzureMLOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines on AzureML."""
