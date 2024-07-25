@@ -708,6 +708,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
             build_id = build_model.id if build_model else None
 
+            if code_repository is None and build_id:
+                file_refs = build_utils.upload_code_repository()
+                if file_refs:
+                    deployment.pipeline_configuration.extra["file_refs"] = (
+                        file_refs
+                    )
+
             code_reference = None
             if local_repo_context and not local_repo_context.is_dirty:
                 source_root = source_utils.get_source_root()
