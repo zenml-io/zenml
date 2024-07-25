@@ -341,7 +341,6 @@ exclude = [
 # Disable autofix for unused imports (`F401`).
 unfixable = ["F401"]
 per-file-ignores = {}
-ignore-init-module-imports = true
 ignore = [
     "E501",
     "F401",
