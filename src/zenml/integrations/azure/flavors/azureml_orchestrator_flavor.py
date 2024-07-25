@@ -37,7 +37,7 @@ class AzureMLOrchestratorSettings(BaseSettings):
     """Settings for the AzureML orchestrator."""
 
     compute_target: str = Field(
-        description="The name of the compute target to either use or create."
+        description="The name of the compute target to either use."
     )
 
 
@@ -64,10 +64,24 @@ class AzureMLOrchestratorConfig(
 
     @property
     def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
         return True
 
     @property
     def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
         return False
 
 

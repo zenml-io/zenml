@@ -40,10 +40,7 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
         return super().get_entrypoint_options() | {ENVIRONMENTAL_VARIABLES}
 
     @classmethod
-    def get_entrypoint_arguments(
-        cls,
-        **kwargs: Any,
-    ) -> List[str]:
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
@@ -58,25 +55,34 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
             kwargs[ENVIRONMENTAL_VARIABLES],
         ]
 
-    def _set_env_variables(self):
+    def _set_env_variables(self) -> None:
+        """Sets the environmental variables before executing the step."""
         env_variables = json.loads(
             b64_decode(self.entrypoint_args[ENVIRONMENTAL_VARIABLES])
         )
-
         os.environ.update(env_variables)
 
     def run(self) -> None:
         """Runs the step."""
+        # Set the environmental variables first
         self._set_env_variables()
 
+        # Azure automatically changes the working directory, we have to set it
+        # back to /app before running the step.
         import os
 
         os.chdir("/app")
 
+        # Run the step
+        super().run()
+
+        # Unfortunately, in AzureML's Python SDK v2, there is no native way
+        # to execute steps/components in a specific sequence. In order to
+        # establish the correct order, we are using dummy inputs and
+        # outputs. However, these steps only execute if the inputs and outputs
+        # actually exist. This is why we create a dummy file and write to it and
+        # use it as the output of the steps.
         if completed := os.environ.get(AZURE_ML_OUTPUT_COMPLETED):
             os.makedirs(os.path.dirname(completed), exist_ok=True)
             with open(completed, "w") as f:
-                f.write(f"Component completed!")
-
-        # Run the step
-        super().run()
+                f.write("Component completed!")
