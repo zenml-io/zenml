@@ -18,7 +18,7 @@ allowing you to focus primarily on your MLOps workflows.
 {% hint style="info" %}
 If you're interested in assessing ZenML Pro, you can simply create
 a [free account](https://cloud.zenml.io/?utm\_source=docs\&utm\_medium=referral\_link\&utm\_campaign=cloud\_promotion\&utm\_content=signup\_link).
-Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/cloud).
+Learn more about ZenML Pro on the [ZenML Website](https://zenml.io/pro).
 {% endhint %}
 
 ## Key features

@@ -262,7 +262,7 @@ def _validate_new_version_requests(
     if not is_cloud_model:
         logger.info(
             "Models can be viewed in the dashboard using ZenML Pro. Sign up "
-            "for a free trial at https://www.zenml.io/cloud/"
+            "for a free trial at https://www.zenml.io/pro/"
         )
 
 
