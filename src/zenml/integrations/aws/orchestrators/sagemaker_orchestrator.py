@@ -384,7 +384,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     "Timed out while waiting for pipeline execution to finish. For long-running "
                     "pipelines we recommend configuring your orchestrator for asynchronous execution. "
                     "The following command does this for you: \n"
-                    "`zenml orchestrator update <ORCHESTRATOR-NAME> --synchronous=False`"
+                    f"`zenml orchestrator update {self.name} --synchronous=False`"
                 )
 
     def _get_region_name(self) -> str:
