@@ -230,6 +230,7 @@
   * [Amazon SageMaker](component-guide/step-operators/sagemaker.md)
   * [Google Cloud VertexAI](component-guide/step-operators/vertex.md)
   * [AzureML](component-guide/step-operators/azureml.md)
+  * [Kubernetes](component-guide/step-operators/kubernetes.md)
   * [Spark](component-guide/step-operators/spark-kubernetes.md)
   * [Develop a Custom Step Operator](component-guide/step-operators/custom.md)
 * [❗ Alerters](component-guide/alerters/alerters.md)

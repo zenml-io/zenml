@@ -18,9 +18,17 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorFlavor,
     KubernetesOrchestratorSettings,
 )
+from zenml.integrations.kubernetes.flavors.kubernetes_step_operator_flavor import (
+    KubernetesStepOperatorConfig,
+    KubernetesStepOperatorFlavor,
+    KubernetesStepOperatorSettings,
+)
 
 __all__ = [
     "KubernetesOrchestratorFlavor",
     "KubernetesOrchestratorConfig",
     "KubernetesOrchestratorSettings",
+    "KubernetesStepOperatorConfig",
+    "KubernetesStepOperatorFlavor",
+    "KubernetesStepOperatorSettings",
 ]
