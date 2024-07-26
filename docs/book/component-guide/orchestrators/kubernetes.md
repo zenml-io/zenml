@@ -23,7 +23,6 @@ This component is only meant to be used within the context of a [remote ZenML de
 You should use the Kubernetes orchestrator if:
 
 * you're looking lightweight way of running your pipelines on Kubernetes.
-* you don't need a UI to list all your pipeline runs.
 * you're not willing to maintain [Kubeflow Pipelines](kubeflow.md) on your Kubernetes cluster.
 * you're not interested in paying for managed solutions like [Vertex](vertex.md).
 

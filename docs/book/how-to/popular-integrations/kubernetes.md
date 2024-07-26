@@ -6,6 +6,10 @@ description: Learn how to deploy ZenML pipelines on a Kubernetes cluster.
 
 The ZenML Kubernetes Orchestrator allows you to run your ML pipelines on a Kubernetes cluster without writing Kubernetes code. It's a lightweight alternative to more complex orchestrators like Airflow or Kubeflow.
 
+{% hint style="info" %}
+If you only want to run individual steps of your pipeline in Kubernetes, check out our [Kubernetes Step Operator](../../component-guide/step-operators/kubernetes.md).
+{% endhint %}
+
 ## Prerequisites
 
 To use the Kubernetes Orchestrator, you'll need:
