@@ -427,10 +427,10 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
-        # dict type objects are always saved as JSON files
-        # doesn't work for non-serializable dict types as they 
+        # dict/list type objects are always saved as JSON files
+        # doesn't work for non-serializable types as they 
         # are saved as list of lists in different files
-        if isinstance(data, dict) and _is_serializable(data):
+        if _is_serializable(data):
             return {self.data_path: VisualizationType.JSON}
         return {}
 
