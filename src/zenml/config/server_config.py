@@ -66,7 +66,7 @@ class ServerConfiguration(BaseModel):
     """ZenML Server configuration attributes.
 
     All these attributes can be set through the environment with the `ZENML_SERVER_`-Prefix.
-    The value of `$ZENML_SERVER_DEPLOYMENT_TYPE` will be extracted to deployment_type.
+    The value of the `ZENML_SERVER_DEPLOYMENT_TYPE` environment variable will be extracted to deployment_type.
 
     Attributes:
         deployment_type: The type of ZenML server deployment that is running.
