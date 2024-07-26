@@ -24,20 +24,20 @@ GCP_DEPLOYMENT_TYPE = "deployment-manager"
 
 
 class GCPZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
-    """GCP ZenML Cloud Stack Deployment."""
+    """GCP ZenML Pro Stack Deployment."""
 
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.GCP
     deployment: ClassVar[str] = GCP_DEPLOYMENT_TYPE
 
     @classmethod
     def description(cls) -> str:
-        """Return a description of the ZenML Cloud Stack Deployment.
+        """Return a description of the ZenML Pro Stack Deployment.
 
         This will be displayed when the user is prompted to deploy
         the ZenML stack.
 
         Returns:
-            A MarkDown description of the ZenML Cloud Stack Deployment.
+            A MarkDown description of the ZenML Pro Stack Deployment.
         """
         return """
 Provision and register a basic GCP ZenML stack authenticated and connected to

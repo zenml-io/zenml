@@ -23,19 +23,19 @@ from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 # TODO: this class just implements the regions list, and is not suitable for other
 # deployment tasks.
 class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
-    """Azure ZenML Cloud Stack Deployment."""
+    """Azure ZenML Pro Stack Deployment."""
 
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.AZURE
 
     @classmethod
     def description(cls) -> str:
-        """Return a description of the ZenML Cloud Stack Deployment.
+        """Return a description of the ZenML Pro Stack Deployment.
 
         This will be displayed when the user is prompted to deploy
         the ZenML stack.
 
         Returns:
-            A MarkDown description of the ZenML Cloud Stack Deployment.
+            A MarkDown description of the ZenML Pro Stack Deployment.
         """
         # TODO: Implement this
         return ""

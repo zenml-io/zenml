@@ -29,7 +29,7 @@ from zenml.models import (
 
 
 class ZenMLCloudStackDeployment(BaseModel):
-    """ZenML Cloud Stack CLI Deployment base class."""
+    """ZenML Pro Stack CLI Deployment base class."""
 
     provider: ClassVar[StackDeploymentProvider]
     deployment: ClassVar[str]
@@ -41,13 +41,13 @@ class ZenMLCloudStackDeployment(BaseModel):
     @classmethod
     @abstractmethod
     def description(cls) -> str:
-        """Return a description of the ZenML Cloud Stack Deployment.
+        """Return a description of the ZenML Pro Stack Deployment.
 
         This will be displayed when the user is prompted to deploy
         the ZenML stack.
 
         Returns:
-            A MarkDown description of the ZenML Cloud Stack Deployment.
+            A MarkDown description of the ZenML Pro Stack Deployment.
         """
 
     @classmethod
@@ -116,10 +116,10 @@ class ZenMLCloudStackDeployment(BaseModel):
 
     @classmethod
     def get_deployment_info(cls) -> StackDeploymentInfo:
-        """Return information about the ZenML Cloud Stack Deployment.
+        """Return information about the ZenML Pro Stack Deployment.
 
         Returns:
-            Information about the ZenML Cloud Stack Deployment.
+            Information about the ZenML Pro Stack Deployment.
         """
         return StackDeploymentInfo(
             provider=cls.provider,

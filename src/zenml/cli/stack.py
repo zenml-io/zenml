@@ -1716,7 +1716,7 @@ def deploy(
 
         console.print(
             Markdown(
-                f"# {provider.upper()} ZenML Cloud Stack Deployment\n"
+                f"# {provider.upper()} ZenML Pro Stack Deployment\n"
                 + deployment.description
             )
         )

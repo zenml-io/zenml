@@ -24,20 +24,20 @@ AWS_DEPLOYMENT_TYPE = "cloud-formation"
 
 
 class AWSZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
-    """AWS ZenML Cloud Stack Deployment."""
+    """AWS ZenML Pro Stack Deployment."""
 
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.AWS
     deployment: ClassVar[str] = AWS_DEPLOYMENT_TYPE
 
     @classmethod
     def description(cls) -> str:
-        """Return a description of the ZenML Cloud Stack Deployment.
+        """Return a description of the ZenML Pro Stack Deployment.
 
         This will be displayed when the user is prompted to deploy
         the ZenML stack.
 
         Returns:
-            A MarkDown description of the ZenML Cloud Stack Deployment.
+            A MarkDown description of the ZenML Pro Stack Deployment.
         """
         return """
 Provision and register a basic AWS ZenML stack authenticated and connected to

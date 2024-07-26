@@ -136,7 +136,7 @@ jobs:
     needs: publish-python-package
     uses: ./.github/workflows/publish_stack_templates.yml
     secrets: inherit
-  # create a tag on the ZenML cloud plugins repo
+  # create a tag on the ZenML Pro plugins repo
   create_tag_on_cloud_plugins_repo:
     runs-on: ubuntu-latest
     needs: wait-for-package-release-again
@@ -148,7 +148,7 @@ jobs:
       - name: Get the version from the github tag ref
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-      - name: Create a tag on ZenML Cloud plugins repo
+      - name: Create a tag on ZenML Pro plugins repo
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}

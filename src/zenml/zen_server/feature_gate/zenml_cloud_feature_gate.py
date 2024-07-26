@@ -60,7 +60,7 @@ class RawUsageEvent(BaseModel):
 
 
 class ZenMLCloudFeatureGateInterface(FeatureGateInterface):
-    """ZenML Cloud Feature Gate implementation."""
+    """ZenML Pro Feature Gate implementation."""
 
     def __init__(self) -> None:
         """Initialize the object."""
