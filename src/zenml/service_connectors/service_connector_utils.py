@@ -290,7 +290,8 @@ def get_resources_options_from_resource_model_for_full_stack(
                             resource_ids=each.resource_ids,
                             stack_component_type=StackComponentType.ARTIFACT_STORE,
                             flavor="gcp",
-                            required_configuration={},
+                            required_configuration={"path": "Path"},
+                            use_resource_value_as_fixed_config=True,
                             flavor_display_name="GCS Bucket",
                         )
                     )
@@ -350,7 +351,8 @@ def get_resources_options_from_resource_model_for_full_stack(
                             resource_ids=each.resource_ids,
                             stack_component_type=StackComponentType.ARTIFACT_STORE,
                             flavor="azure",
-                            required_configuration={},
+                            required_configuration={"path": "Path"},
+                            use_resource_value_as_fixed_config=True,
                             flavor_display_name="Blob container",
                         )
                     )
