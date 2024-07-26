@@ -19,7 +19,7 @@
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
 * [☁️ ZenML Pro](getting-started/zenml-pro/README.md)
   * [System Architectures](getting-started/zenml-pro/system-architectures.md)
-  * [ZenML SaaS](getting-started/zenml-pro/zenml-cloud.md)
+  * [ZenML SaaS](getting-started/zenml-pro/zenml-pro.md)
   * [User Management](getting-started/zenml-pro/user-management.md)
 
 ## User Guide
@@ -87,6 +87,9 @@
   * [Trigger a pipeline from Python Client](how-to/trigger-pipelines/trigger-a-pipeline-from-client.md)
   * [Trigger a pipeline from another pipeline](how-to/trigger-pipelines/trigger-a-pipeline-from-another.md)
   * [Trigger a pipeline from REST API](how-to/trigger-pipelines/trigger-a-pipeline-from-rest-api.md)
+* [🚨 Create and run templates](how-to/create-and-run-templates/README.md)
+  * [Create a run template](how-to/create-and-run-templates/create-a-run-template.md)
+  * [Run a template](how-to/create-and-run-templates/run-a-template.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
   * [How to configure a pipeline with a YAML](how-to/use-configuration-files/how-to-use-config.md)
   * [What can be configured](how-to/use-configuration-files/what-can-be-configured.md)
