@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Kubernetes step operator implementation."""
+
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
@@ -26,7 +28,6 @@ from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
-from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
@@ -35,12 +36,12 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import PipelineDeploymentBase
 
-logger = get_logger(__name__)
-
 KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY = "kubernetes_step_operator"
 
 
 class KubernetesStepOperator(BaseStepOperator):
+    """Step operator to run on Kubernetes."""
+
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
     @property
@@ -127,16 +128,17 @@ class KubernetesStepOperator(BaseStepOperator):
 
         return builds
 
-    def get_kube_client(
-        self, incluster: Optional[bool] = None
-    ) -> k8s_client.ApiClient:
-        if incluster is None:
-            incluster = self.config.incluster
+    def get_kube_client(self) -> k8s_client.ApiClient:
+        """Get the Kubernetes API client.
 
-        if incluster:
-            kube_utils.load_kube_config(
-                incluster=incluster,
-            )
+        Returns:
+            The Kubernetes API client.
+
+        Raises:
+            RuntimeError: If the service connector returns an unexpected client.
+        """
+        if self.config.incluster:
+            kube_utils.load_kube_config(incluster=True)
             self._k8s_client = k8s_client.ApiClient()
             return self._k8s_client
 
@@ -184,7 +186,6 @@ class KubernetesStepOperator(BaseStepOperator):
             environment: Environment variables to set in the step operator
                 environment.
         """
-
         settings = cast(
             KubernetesStepOperatorSettings, self.get_settings(info)
         )
@@ -206,7 +207,8 @@ class KubernetesStepOperator(BaseStepOperator):
             image_name=image_name,
             command=command,
             args=args,
-            privileged=False,
+            privileged=settings.privileged,
+            service_account_name=settings.service_account_name,
             pod_settings=settings.pod_settings,
             env=environment,
             mount_local_stores=False,
