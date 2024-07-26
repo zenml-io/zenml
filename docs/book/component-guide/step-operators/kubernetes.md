@@ -36,7 +36,7 @@ It is recommended that you set up [a Service Connector](../../how-to/auth-manage
 
 We can then register the step operator and use it in our stacks. This can be done in two ways:
 
-1.  If you have [a Service Connector](../../how-to/auth-management/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you can [connect the stack component to the Service Connector](../../how-to/auth-management/service-connectors-guide.md#connect-stack-components-to-resources):
+1.  Using a Service Connector configured to access the remote Kubernetes cluster. Depending on your cloud provider, this should be either an [AWS](../../how-to/auth-management/aws-service-connector.md), [Azure](../../how-to/auth-management/azure-service-connector.md) or [GCP](../../how-to/auth-management/gcp-service-connector.md) service connector. If you're using a Kubernetes cluster that is not provided by any of these, you can use the generic [Kubernetes](../../how-to/auth-management/kubernetes-service-connector.md) service connector. You can then [connect the stack component to the Service Connector](../../how-to/auth-management/service-connectors-guide.md#connect-stack-components-to-resources):
 
     ```
     $ zenml step-operator register <NAME> --flavor kubernetes
@@ -67,7 +67,7 @@ We can then register the step operator and use it in our stacks. This can be don
     ┃ ed528d5a-d6cb-4fc4-bc52-c3d2d01643e5 │ aws-iam-multi-us │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
     ```
-2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/auth-management/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` configuration attribute must also be configured with the value of that context:
+2.  Using the local Kubernetes `kubectl` client. This client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` configuration attribute must also be configured with the value of that context:
 
     ```shell
     zenml step-operator register <NAME> \
