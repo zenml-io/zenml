@@ -28,6 +28,7 @@ from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
+from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
@@ -35,6 +36,8 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import PipelineDeploymentBase
+
+logger = get_logger(__name__)
 
 KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY = "kubernetes_step_operator"
 
@@ -219,6 +222,9 @@ class KubernetesStepOperator(BaseStepOperator):
             body=pod_manifest,
         )
 
+        logger.info(
+            "Waiting for pod of step `%s` to start...", info.pipeline_step_name
+        )
         kube_utils.wait_pod(
             kube_client_fn=self.get_kube_client,
             pod_name=pod_name,
@@ -226,3 +232,4 @@ class KubernetesStepOperator(BaseStepOperator):
             exit_condition_lambda=kube_utils.pod_is_done,
             stream_logs=True,
         )
+        logger.info("Pod of step `%s` completed.", info.pipeline_step_name)
