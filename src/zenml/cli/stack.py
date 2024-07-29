@@ -1720,7 +1720,7 @@ def deploy(
                 + deployment.description
             )
         )
-        console.print(Markdown("## Instructions\n" + deployment.instructions))
+        console.print(Markdown("## Details\n" + deployment.instructions))
 
         deployment_config = client.zen_store.get_stack_deployment_config(
             provider=StackDeploymentProvider(provider),
@@ -1728,16 +1728,13 @@ def deploy(
             location=location,
         )
 
-        if deployment_config.configuration:
+        if deployment_config.instructions:
             console.print(
-                Markdown(
-                    "## Configuration\n"
-                    "You will be asked to provide the following configuration "
-                    "values during the deployment process:"
-                ),
+                Markdown("## Instructions\n" + deployment_config.instructions),
                 "\n",
             )
 
+        if deployment_config.configuration:
             console.print(
                 deployment_config.configuration,
                 no_wrap=True,
@@ -1748,7 +1745,8 @@ def deploy(
 
         if not cli_utils.confirmation(
             "\n\nProceed to continue with the deployment. You will be "
-            f"automatically redirected to {provider.upper()} in your browser.",
+            f"automatically redirected to "
+            f"{deployment_config.deployment_url_text} in your browser.",
         ):
             raise click.Abort()
 

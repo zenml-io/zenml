@@ -15,6 +15,13 @@ You should use the Azure container registry if:
 
 ### How to deploy it
 
+{% hint style="info" %}
+Don't want to deploy the artifact store manually? Check out the
+[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
+or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 Go [here](https://portal.azure.com/#create/Microsoft.ContainerRegistry) and choose a subscription, resource group, location, and registry name. Then click on `Review + Create` and to create your container registry.
 
 ### How to find the registry URI
