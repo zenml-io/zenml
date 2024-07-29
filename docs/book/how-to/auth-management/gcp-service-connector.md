@@ -1458,7 +1458,6 @@ Active global stack set to:'gcp-demo'
 ````
 ```text
 $ python run.py 
-Reusing registered pipeline simple_pipeline (version: 1).
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image europe-west1-docker.pkg.dev/zenml-core/test/zenml:simple_pipeline-orchestrator.
 - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, kubernetes==18.20.0, shapely<2.0
@@ -1873,7 +1872,6 @@ Active repository stack set to:'gcp-demo'
 ````
 ```text
 $ python run.py 
-Reusing registered pipeline simple_pipeline (version: 1).
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
 - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, shapely<2.0

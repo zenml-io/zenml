@@ -491,18 +491,6 @@ def register_stack(
                 artifact_store = component_name
             if component_type == StackComponentType.ORCHESTRATOR:
                 orchestrator = component_name
-                if not isinstance(
-                    component_info, UUID
-                ) and component_info.flavor.startswith("vm"):
-                    if isinstance(
-                        service_connector, ServiceConnectorInfo
-                    ) and service_connector.auth_method in {
-                        "service-account",
-                        "external-account",
-                    }:
-                        service_connector.configuration[
-                            "generate_temporary_tokens"
-                        ] = False
             if component_type == StackComponentType.CONTAINER_REGISTRY:
                 container_registry = component_name
 
@@ -1732,7 +1720,7 @@ def deploy(
                 + deployment.description
             )
         )
-        console.print(Markdown("## Instructions\n" + deployment.instructions))
+        console.print(Markdown("## Details\n" + deployment.instructions))
 
         deployment_config = client.zen_store.get_stack_deployment_config(
             provider=StackDeploymentProvider(provider),
@@ -1740,16 +1728,13 @@ def deploy(
             location=location,
         )
 
-        if deployment_config.configuration:
+        if deployment_config.instructions:
             console.print(
-                Markdown(
-                    "## Configuration\n"
-                    "You will be asked to provide the following configuration "
-                    "values during the deployment process:"
-                ),
+                Markdown("## Instructions\n" + deployment_config.instructions),
                 "\n",
             )
 
+        if deployment_config.configuration:
             console.print(
                 deployment_config.configuration,
                 no_wrap=True,
@@ -1760,7 +1745,8 @@ def deploy(
 
         if not cli_utils.confirmation(
             "\n\nProceed to continue with the deployment. You will be "
-            f"automatically redirected to {provider.upper()} in your browser.",
+            f"automatically redirected to "
+            f"{deployment_config.deployment_url_text} in your browser.",
         ):
             raise click.Abort()
 
@@ -2316,7 +2302,7 @@ def _get_service_connector_info(
     """
     from rich.prompt import Prompt
 
-    if cloud_provider not in {"aws", "gcp"}:
+    if cloud_provider not in {"aws", "gcp", "azure"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
     client = Client()
@@ -2431,19 +2417,25 @@ def _get_stack_component_info(
 
         selected_storage = choices[selected_storage_idx]
 
+        flavor = selected_storage[0]
         config = {"path": selected_storage[1]}
         service_connector_resource_id = selected_storage[1]
     elif component_type == "orchestrator":
 
-        def query_gcp_region(compute_type: str) -> str:
+        def query_region(
+            provider: StackDeploymentProvider,
+            compute_type: str,
+            is_skypilot: bool = False,
+        ) -> str:
+            deployment_info = Client().zen_store.get_stack_deployment_info(
+                provider
+            )
             region = Prompt.ask(
                 f"Select the location for your {compute_type}:",
                 choices=sorted(
-                    Client()
-                    .zen_store.get_stack_deployment_info(
-                        StackDeploymentProvider.GCP
-                    )
-                    .locations.values()
+                    deployment_info.skypilot_default_regions.values()
+                    if is_skypilot
+                    else deployment_info.locations.values()
                 ),
                 show_choices=True,
             )
@@ -2467,10 +2459,22 @@ def _get_stack_component_info(
             config["execution_role"] = execution_role
         elif flavor == "vm_aws":
             config["region"] = selected_orchestrator[1]
+        elif flavor == "vm_gcp":
+            config["region"] = query_region(
+                StackDeploymentProvider.GCP,
+                "Skypilot cluster",
+                is_skypilot=True,
+            )
         elif flavor == "vm_azure":
-            config["region"] = query_gcp_region("Skypilot cluster")
+            config["region"] = query_region(
+                StackDeploymentProvider.AZURE,
+                "Skypilot cluster",
+                is_skypilot=True,
+            )
         elif flavor == "vertex":
-            config["location"] = query_gcp_region("Vertex AI job")
+            config["location"] = query_region(
+                StackDeploymentProvider.GCP, "Vertex AI job"
+            )
         service_connector_resource_id = selected_orchestrator[1]
     elif component_type == "container_registry":
         selected_registry_idx = cli_utils.multi_choice_prompt(
@@ -2482,6 +2486,7 @@ def _get_stack_component_info(
         if selected_registry_idx is None:
             cli_utils.error("No container registry selected.")
         selected_registry = choices[selected_registry_idx]
+        flavor = selected_registry[0]
         config = {"uri": selected_registry[1]}
         service_connector_resource_id = selected_registry[1]
     else:

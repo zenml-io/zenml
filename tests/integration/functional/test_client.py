@@ -36,7 +36,6 @@ from zenml import (
     step,
 )
 from zenml.client import Client
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
 from zenml.constants import PAGE_SIZE_DEFAULT
 from zenml.enums import (
@@ -456,9 +455,6 @@ def test_getting_a_pipeline(clean_client: "Client"):
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         name="pipeline",
-        version="1",
-        version_hash="",
-        spec=PipelineSpec(steps=[]),
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
 
@@ -467,23 +463,6 @@ def test_getting_a_pipeline(clean_client: "Client"):
 
     pipeline = clean_client.get_pipeline(name_id_or_prefix="pipeline")
     assert pipeline == response_1
-
-    pipeline = clean_client.get_pipeline(
-        name_id_or_prefix="pipeline", version="1"
-    )
-    assert pipeline == response_1
-
-    # Non-existent version
-    with pytest.raises(KeyError):
-        clean_client.get_pipeline(name_id_or_prefix="pipeline", version="2")
-
-    request.version = "2"
-    request.version_hash = "foo"
-    response_2 = clean_client.zen_store.create_pipeline(request)
-
-    # Gets latest version
-    pipeline = clean_client.get_pipeline(name_id_or_prefix="pipeline")
-    assert pipeline == response_2
 
 
 def test_listing_pipelines(clean_client):
@@ -494,30 +473,17 @@ def test_listing_pipelines(clean_client):
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         name="pipeline",
-        version="1",
-        version_hash="",
-        spec=PipelineSpec(steps=[]),
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
     request.name = "other_pipeline"
-    request.version = "2"
-    response_2 = clean_client.zen_store.create_pipeline(request)
+    clean_client.zen_store.create_pipeline(request)
 
     assert clean_client.list_pipelines().total == 2
 
     assert clean_client.list_pipelines(name="pipeline").total == 1
     assert clean_client.list_pipelines(name="pipeline").items[0] == response_1
 
-    assert clean_client.list_pipelines(version="1").total == 1
-    assert clean_client.list_pipelines(version="1").items[0] == response_1
-
-    assert clean_client.list_pipelines(version="2").total == 1
-    assert clean_client.list_pipelines(version="2").items[0] == response_2
-
-    assert (
-        clean_client.list_pipelines(name="other_pipeline", version="3").total
-        == 0
-    )
+    assert clean_client.list_pipelines(name="yet_another_pipeline").total == 0
 
 
 def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):

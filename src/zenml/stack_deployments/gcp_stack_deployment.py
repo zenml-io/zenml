@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to GCP."""
 
+import re
 from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
@@ -208,6 +209,16 @@ GCP project and to clean up the resources created by the stack by using
             "US West (Las Vegas)": "us-west4",
         }
 
+    @classmethod
+    def skypilot_default_regions(cls) -> Dict[str, str]:
+        """Returns the regions supported by default for the Skypilot.
+
+        Returns:
+            The regions supported by default for the Skypilot.
+        """
+        matcher = re.compile(r"us-.*")
+        return {k: v for k, v in cls.locations().items() if matcher.match(v)}
+
     def get_deployment_config(
         self,
     ) -> StackDeploymentConfig:
@@ -220,15 +231,16 @@ GCP project and to clean up the resources created by the stack by using
         URL query parameters as possible.
         * a textual description of the URL
         * some deployment providers may require additional configuration
-        parameters to be passed to the cloud provider in addition to the
-        deployment URL query parameters. Where that is the case, this method
+        parameters or scripts to be passed to the cloud provider in addition to
+        the deployment URL query parameters. Where that is the case, this method
         should also return a string that the user can copy and paste into the
         cloud provider console to deploy the ZenML stack (e.g. a set of
-        environment variables, or YAML configuration snippet etc.).
+        environment variables, YAML configuration snippet, bash or Terraform
+        script etc.).
 
         Returns:
-            The configuration to deploy the ZenML stack to the specified cloud
-            provider.
+            The configuration or script to deploy the ZenML stack to the
+            specified cloud provider.
         """
         params = dict(
             cloudshell_git_repo="https://github.com/zenml-io/zenml",
@@ -251,8 +263,14 @@ ZENML_SERVER_URL={self.zenml_server_url}
 ZENML_SERVER_API_TOKEN={self.zenml_server_api_token}
 ### END CONFIGURATION ###"""
 
+        instructions = (
+            "You will be asked to provide the following configuration values "
+            "during the deployment process:"
+        )
+
         return StackDeploymentConfig(
             deployment_url=url,
             deployment_url_text="GCP Cloud Shell Console",
             configuration=config,
+            instructions=instructions,
         )

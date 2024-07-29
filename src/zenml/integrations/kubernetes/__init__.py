@@ -24,6 +24,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
+KUBERNETES_STEP_OPERATOR_FLAVOR = "kubernetes"
 
 
 class KubernetesIntegration(Integration):
@@ -42,10 +43,10 @@ class KubernetesIntegration(Integration):
             List of new stack component flavors.
         """
         from zenml.integrations.kubernetes.flavors import (
-            KubernetesOrchestratorFlavor,
+            KubernetesOrchestratorFlavor, KubernetesStepOperatorFlavor
         )
 
-        return [KubernetesOrchestratorFlavor]
+        return [KubernetesOrchestratorFlavor, KubernetesStepOperatorFlavor]
 
 
 KubernetesIntegration.check_installation()

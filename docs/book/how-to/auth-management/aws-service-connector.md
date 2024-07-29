@@ -1715,7 +1715,6 @@ Active repository stack set to:'aws-demo'
 ````
 ```text
 $ python run.py 
-Reusing registered pipeline simple_pipeline (version: 1).
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:simple_pipeline-orchestrator.
 - Including user-defined requirements: boto3==1.26.76

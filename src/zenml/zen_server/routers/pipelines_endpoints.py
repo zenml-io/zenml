@@ -17,10 +17,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import (
     API,
-    PIPELINE_SPEC,
     PIPELINES,
     REPORTABLE_RESOURCES,
     RUNS,
@@ -29,8 +27,6 @@ from zenml.constants import (
 from zenml.models import (
     Page,
     PipelineFilter,
-    PipelineNamespaceFilter,
-    PipelineNamespaceResponse,
     PipelineResponse,
     PipelineRunFilter,
     PipelineRunResponse,
@@ -46,9 +42,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.rbac.utils import (
-    get_allowed_resource_ids,
-)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -64,7 +57,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -96,7 +88,6 @@ def list_pipelines(
 
 @router.get(
     "/{pipeline_id}",
-    response_model=PipelineResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -122,7 +113,6 @@ def get_pipeline(
 
 @router.put(
     "/{pipeline_id}",
-    response_model=PipelineResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -179,7 +169,6 @@ def delete_pipeline(
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -201,66 +190,4 @@ def list_pipeline_runs(
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_runs(pipeline_run_filter_model)
-
-
-@router.get(
-    "/{pipeline_id}" + PIPELINE_SPEC,
-    response_model=PipelineSpec,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_pipeline_spec(
-    pipeline_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> PipelineSpec:
-    """Gets the spec of a specific pipeline using its unique id.
-
-    Args:
-        pipeline_id: ID of the pipeline to get.
-
-    Returns:
-        The spec of the pipeline.
-    """
-    pipeline = verify_permissions_and_get_entity(
-        id=pipeline_id, get_method=zen_store().get_pipeline
-    )
-    return pipeline.spec
-
-
-namespace_router = APIRouter(
-    prefix=API + VERSION_1 + "/pipeline_namespaces",
-    tags=["pipeline_namespaces"],
-    responses={401: error_response, 403: error_response},
-)
-
-
-@namespace_router.get(
-    "",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_pipeline_namespaces(
-    filter_model: PipelineNamespaceFilter = Depends(
-        make_dependable(PipelineNamespaceFilter)
-    ),
-    hydrate: bool = False,
-    auth_context: AuthContext = Security(authorize),
-) -> Page[PipelineNamespaceResponse]:
-    """Gets a list of pipeline namespaces.
-
-    Args:
-        filter_model: Filter model used for pagination, sorting,
-            filtering.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-        auth_context: Authentication context.
-
-    Returns:
-        List of pipeline namespace objects.
-    """
-    allowed_ids = get_allowed_resource_ids(resource_type=ResourceType.PIPELINE)
-    filter_model.configure_rbac(
-        authenticated_user_id=auth_context.user.id, id=allowed_ids
-    )
-    return zen_store().list_pipeline_namespaces(filter_model, hydrate=hydrate)
+    return zen_store().list_runs(pipeline_run_filter_model, hydrate=hydrate)

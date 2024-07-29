@@ -21,6 +21,7 @@ from pydantic import Field, SerializeAsAny
 from zenml.config.base_settings import BaseSettings
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
+from zenml.config.source import SourceWithValidator
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model import Model
@@ -48,3 +49,5 @@ class PipelineRunConfiguration(
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
+    failure_hook_source: Optional[SourceWithValidator] = None
+    success_hook_source: Optional[SourceWithValidator] = None
