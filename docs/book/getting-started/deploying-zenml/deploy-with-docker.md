@@ -253,7 +253,7 @@ The environment variables starting with _ZENML\_SERVER\_SECURE\_HEADERS\__\* can
 
 The following secure headers environment variables are supported:
 
-* _ZENML\_SERVER\_SECURE\_HEADERS\_SERVER_\*: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_SERVER**: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XXP**: The `X-XSS-Protection` HTTP header value. The default value is `0`. NOTE: this header is deprecated and should not be customized anymore. The `Content-Security-Policy` header should be used instead.
