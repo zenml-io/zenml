@@ -232,7 +232,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 AzureMLEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
                     deployment_id=deployment.id,
-                    environmental_variables=b64_encode(
+                    azure_ml_env_variables=b64_encode(
                         json.dumps(environment)
                     ),
                 )

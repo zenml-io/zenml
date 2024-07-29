@@ -22,7 +22,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 from zenml.utils.string_utils import b64_decode
 
-ENVIRONMENTAL_VARIABLES = "environmental_variables"
+AZURE_ML_ENV_VARIABLES = "azure_ml_env_variables"
 AZURE_ML_OUTPUT_COMPLETED = "AZURE_ML_OUTPUT_COMPLETED"
 
 
