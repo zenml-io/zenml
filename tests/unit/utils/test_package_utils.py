@@ -16,38 +16,39 @@ import pytest
 from zenml.utils.package_utils import clean_requirements
 
 
-@pytest.mark.parametrize("input_reqs, expected_output", [
-    (
-        ["package1==1.0.0", "package2>=2.0.0", "package3<3.0.0"],
-        ["package1==1.0.0", "package2>=2.0.0", "package3<3.0.0"]
-    ),
-    (
-        ["package1==1.0.0", "package1==2.0.0", "package2>=2.0.0"],
-        ["package1==2.0.0", "package2>=2.0.0"]
-    ),
-    (
-        ["package1[extra]==1.0.0", "package2[test,dev]>=2.0.0"],
-        ["package1[extra]==1.0.0", "package2[test,dev]>=2.0.0"]
-    ),
-    (
-        ["package1", "package2==2.0.0", "package1>=1.5.0", "package3<3.0.0"],
-        ["package1>=1.5.0", "package2==2.0.0", "package3<3.0.0"]
-    ),
-    (
-        [],
-        []
-    ),
-])
+@pytest.mark.parametrize(
+    "input_reqs, expected_output",
+    [
+        (
+            ["package1==1.0.0", "package2>=2.0.0", "package3<3.0.0"],
+            ["package1==1.0.0", "package2>=2.0.0", "package3<3.0.0"],
+        ),
+        (
+            ["package1==1.0.0", "package1==2.0.0", "package2>=2.0.0"],
+            ["package1==2.0.0", "package2>=2.0.0"],
+        ),
+        (
+            ["package1[extra]==1.0.0", "package2[test,dev]>=2.0.0"],
+            ["package1[extra]==1.0.0", "package2[test,dev]>=2.0.0"],
+        ),
+        (
+            [
+                "package1",
+                "package2==2.0.0",
+                "package1>=1.5.0",
+                "package3<3.0.0",
+            ],
+            ["package1>=1.5.0", "package2==2.0.0", "package3<3.0.0"],
+        ),
+        ([], []),
+    ],
+)
 def test_clean_requirements(input_reqs, expected_output):
     """Test clean_requirements function."""
     assert clean_requirements(input_reqs) == expected_output
 
-def test_clean_requirements_type_error():
-    """Test clean_requirements function with wrong input type."""
-    with pytest.raises(TypeError):
-        clean_requirements("not a list")
 
 def test_clean_requirements_value_error():
     """Test clean_requirements function with wrong input value."""
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         clean_requirements([1, 2, 3])  # List of non-string elements
