@@ -69,8 +69,6 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
 
         # Azure automatically changes the working directory, we have to set it
         # back to /app before running the step.
-        import os
-
         os.chdir("/app")
 
         # Run the step

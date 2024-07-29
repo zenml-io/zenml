@@ -16,14 +16,17 @@
 from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
     AzureArtifactStoreConfig,
     AzureArtifactStoreFlavor,
+
 )
 from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
     AzureMLStepOperatorFlavor,
+    AzureMLStepOperatorSettings,
 )
 from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
     AzureMLOrchestratorConfig,
     AzureMLOrchestratorFlavor,
+    AzureMLOrchestratorSettings,
 )
 
 __all__ = [
@@ -31,6 +34,8 @@ __all__ = [
     "AzureArtifactStoreConfig",
     "AzureMLStepOperatorFlavor",
     "AzureMLStepOperatorConfig",
+    "AzureMLStepOperatorSettings",
     "AzureMLOrchestratorFlavor",
     "AzureMLOrchestratorConfig",
+    "AzureMLOrchestratorSettings",
 ]

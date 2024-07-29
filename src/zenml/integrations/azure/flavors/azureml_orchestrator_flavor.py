@@ -37,7 +37,7 @@ class AzureMLOrchestratorSettings(BaseSettings):
     """Settings for the AzureML orchestrator."""
 
     compute_target: str = Field(
-        description="The name of the compute target to either use."
+        description="The name of the compute target to use."
     )
 
 
@@ -137,7 +137,7 @@ class AzureMLOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/azureml.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/azureml.png"
 
     @property
     def config_class(self) -> Type[AzureMLOrchestratorConfig]:
