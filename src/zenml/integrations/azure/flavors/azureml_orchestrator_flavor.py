@@ -36,10 +36,6 @@ if TYPE_CHECKING:
 class AzureMLOrchestratorSettings(BaseSettings):
     """Settings for the AzureML orchestrator."""
 
-    compute_target: str = Field(
-        description="The name of the compute target to use."
-    )
-
 
 class AzureMLOrchestratorConfig(
     BaseOrchestratorConfig, AzureMLOrchestratorSettings
@@ -54,6 +50,9 @@ class AzureMLOrchestratorConfig(
     )
     workspace: str = Field(
         description="Name of the workspace that AzureML is running on."
+    )
+    compute_target: str = Field(
+        description="The name of the compute target to use."
     )
 
     # Service principal authentication

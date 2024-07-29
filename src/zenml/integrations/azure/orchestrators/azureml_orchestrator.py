@@ -232,9 +232,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 AzureMLEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
                     deployment_id=deployment.id,
-                    azure_ml_env_variables=b64_encode(
-                        json.dumps(environment)
-                    ),
+                    azure_ml_env_variables=b64_encode(json.dumps(environment)),
                 )
             )
 
@@ -247,12 +245,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 arguments=arguments,
             )
 
-        # Get the pipeline settings
-        settings = cast(
-            AzureMLOrchestratorSettings, self.get_settings(deployment)
-        )
-
-        @pipeline(name=run_name, compute=settings.compute_target)  # type:ignore[call-overload, misc]
+        @pipeline(name=run_name, compute=self.config.compute_target)  # type:ignore[call-overload, misc]
         def azureml_pipeline() -> None:
             """Create an AzureML pipeline."""
             # Here we have to track the inputs and outputs so that we can bind
