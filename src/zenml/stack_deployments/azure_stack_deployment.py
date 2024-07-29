@@ -25,7 +25,7 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
     """Azure ZenML Cloud Stack Deployment."""
 
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.AZURE
-    deployment: ClassVar[str] = "terraform"
+    deployment: ClassVar[str] = "azure-cloud-shell"
 
     @classmethod
     def description(cls) -> str:
@@ -262,6 +262,7 @@ ZenML's access to your Azure subscription.
     zenml_api_key = ""
     zenml_api_token = "{self.zenml_server_api_token}"
     zenml_stack_name = "{self.stack_name}"
+    zenml_stack_deployment = "{self.deployment}"
 }}
 output "zenml_stack_id" {{
     value = module.zenml_stack_id
