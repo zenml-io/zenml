@@ -7086,12 +7086,16 @@ class SqlZenStore(BaseZenStore):
                             )
                             is not False
                         ):
+                            connector_config = (
+                                existing_service_connector.configuration
+                            )
+                            connector_config["generate_temporary_tokens"] = (
+                                False
+                            )
                             self.update_service_connector(
                                 existing_service_connector.id,
                                 ServiceConnectorUpdate(
-                                    configuration=existing_service_connector.configuration.update(
-                                        {"generate_temporary_tokens": False}
-                                    )
+                                    configuration=connector_config
                                 ),
                             )
                     service_connectors.append(
@@ -7100,17 +7104,18 @@ class SqlZenStore(BaseZenStore):
                 # Create a new service connector
                 else:
                     connector_name = full_stack.name
+                    connector_config = connector_id_or_info.configuration
+                    connector_config[
+                        "generate_temporary_tokens"
+                    ] = not need_to_generate_permanent_tokens
+
                     while True:
                         try:
                             service_connector_request = ServiceConnectorRequest(
                                 name=connector_name,
                                 connector_type=connector_id_or_info.type,
                                 auth_method=connector_id_or_info.auth_method,
-                                configuration=connector_id_or_info.configuration.update(
-                                    {
-                                        "generate_temporary_tokens": not need_to_generate_permanent_tokens
-                                    }
-                                ),
+                                configuration=connector_config,
                                 user=full_stack.user,
                                 workspace=full_stack.workspace,
                                 labels={
