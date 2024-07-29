@@ -157,6 +157,9 @@ class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
     """Request model for pipelines builds."""
 
     checksum: Optional[str] = Field(title="The build checksum.", default=None)
+    stack_checksum: Optional[str] = Field(
+        title="The stack checksum.", default=None
+    )
 
     stack: Optional[UUID] = Field(
         title="The stack that was used for this build.", default=None
@@ -164,7 +167,6 @@ class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
     pipeline: Optional[UUID] = Field(
         title="The pipeline that was used for this build.", default=None
     )
-    template_deployment_id: Optional[UUID] = None
 
 
 # ------------------ Update Model ------------------
@@ -196,6 +198,9 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
         default=None, title="The Python version used for this build."
     )
     checksum: Optional[str] = Field(default=None, title="The build checksum.")
+    stack_checksum: Optional[str] = Field(
+        default=None, title="The stack checksum."
+    )
     is_local: bool = Field(
         title="Whether the build images are stored in a container "
         "registry or locally.",
@@ -203,7 +208,6 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
     )
-    template_deployment_id: Optional[UUID] = None
 
 
 class PipelineBuildResponseResources(WorkspaceScopedResponseResources):
@@ -409,6 +413,15 @@ class PipelineBuildResponse(
         return self.get_metadata().checksum
 
     @property
+    def stack_checksum(self) -> Optional[str]:
+        """The `stack_checksum` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().stack_checksum
+
+    @property
     def is_local(self) -> bool:
         """The `is_local` property.
 
@@ -425,15 +438,6 @@ class PipelineBuildResponse(
             the value of the property.
         """
         return self.get_metadata().contains_code
-
-    @property
-    def template_deployment_id(self) -> Optional[UUID]:
-        """The `template_deployment_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().template_deployment_id
 
 
 # ------------------ Filter Model ------------------

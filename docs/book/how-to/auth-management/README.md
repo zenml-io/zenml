@@ -559,7 +559,6 @@ python run.py
 
 {% code title="Example Command Output" %}
 ```
-Registered pipeline simple_pipeline (version 1).
 Running pipeline simple_pipeline on stack s3-zenfiles (caching enabled)
 Step simple_step_one has started.
 Step simple_step_one has finished in 1.065s.

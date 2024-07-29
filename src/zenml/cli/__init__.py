@@ -1684,7 +1684,7 @@ def my_pipeline(...):
 
 You can register your pipeline like this:
 ```bash
-zenml pipeline register my_pipeline
+zenml pipeline register run.my_pipeline
 ```
 
 To list all registered pipelines, use:
@@ -1693,21 +1693,15 @@ To list all registered pipelines, use:
 zenml pipeline list
 ```
 
-Since every pipeline run creates a new pipeline by default, you might
-occasionally want to delete a pipeline, which you can do via:
+To delete a pipeline, run:
 
 ```bash
 zenml pipeline delete <PIPELINE_NAME>
 ```
 
-This will delete the latest pipeline version and change all corresponding
+This will delete the pipeline and change all corresponding
 pipeline runs to become unlisted (not linked to any pipeline).
 
-If you want to delete all versions of a pipeline, you can do so as follows:
-
-```bash
-zenml pipeline delete <PIPELINE_NAME> --all-versions
-```
 
 To list all pipeline runs that you have executed, use:
 
@@ -2378,11 +2372,30 @@ zenml code-repository delete <REPOSITORY_NAME_OR_ID>
 Building an image without Runs
 ------------------------------
 
+To build or run a pipeline from the CLI, you need to know the source path of
+your pipeline. Let's imagine you have defined your pipeline in a python file
+called `run.py` like this:
+
+```python
+from zenml import pipeline
+
+@pipeline
+def my_pipeline(...):
+   # Connect your pipeline steps here
+   pass
+```
+
+The source path of your pipeline will be `run.my_pipeline`. In a generalized
+way, this will be `<MODULE_PATH>.<PIPELINE_FUNCTION_NAME>`. If the python file
+defining the pipeline is not in your current directory, the module path consists
+of the full path to the file, separated by dots, e.g.
+`some_directory.some_file.my_pipeline`.
+
 To [build Docker images for your pipeline](https://docs.zenml.io/how-to/customize-docker-builds)
 without actually running the pipeline, use:
 
 ```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME>
+zenml pipeline build <PIPELINE_SOURCE_PATH>
 ```
 
 To specify settings for the Docker builds, use the `--config/-c` option of the
@@ -2390,20 +2403,20 @@ command. For more information about the structure of this configuration file,
 check out the `zenml.pipelines.base_pipeline.BasePipeline.build(...)` method.
 
 ```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+zenml pipeline build <PIPELINE_SOURCE_PATH> --config=<PATH_TO_CONFIG_YAML>
 ```
 
 If you want to build the pipeline for a stack other than your current active
 stack, use the `--stack` option.
 
 ```bash
-zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+zenml pipeline build <PIPELINE_SOURCE_PATH> --stack=<STACK_ID_OR_NAME>
 ```
 
 To run a pipeline that was previously registered, use:
 
 ```bash
-zenml pipeline run  <PIPELINE_ID_OR_NAME>
+zenml pipeline run <PIPELINE_SOURCE_PATH>
 ```
 
 To specify settings for the pipeline, use the `--config/-c` option of the
@@ -2411,14 +2424,14 @@ command. For more information about the structure of this configuration file,
 check out the `zenml.pipelines.base_pipeline.BasePipeline.run(...)` method.
 
 ```bash
-zenml pipeline run <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+zenml pipeline run <PIPELINE_SOURCE_PATH> --config=<PATH_TO_CONFIG_YAML>
 ```
 
 If you want to run the pipeline on a stack different than your current active
 stack, use the `--stack` option.
 
 ```bash
-zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+zenml pipeline run <PIPELINE_SOURCE_PATH> --stack=<STACK_ID_OR_NAME>
 ```
 
 Tagging your resources with ZenML

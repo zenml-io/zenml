@@ -121,15 +121,13 @@ def register_pipeline(
     pipeline_instance.register()
 
 
-@pipeline.command("build", help="Build Docker images for a pipeline.")
-@click.argument("pipeline_name_or_id")
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    required=False,
-    help="Optional version of the pipeline.",
+@pipeline.command(
+    "build",
+    help="Build Docker images for a pipeline. The SOURCE argument needs to be "
+    " an importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
 )
+@click.argument("source")
 @click.option(
     "--config",
     "-c",
@@ -155,8 +153,7 @@ def register_pipeline(
     help="Output path for the build information.",
 )
 def build_pipeline(
-    pipeline_name_or_id: str,
-    version: Optional[str] = None,
+    source: str,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
     output_path: Optional[str] = None,
@@ -164,8 +161,7 @@ def build_pipeline(
     """Build Docker images for a pipeline.
 
     Args:
-        pipeline_name_or_id: Name or ID of the pipeline.
-        version: Version of the pipeline.
+        source: Importable source resolving to a pipeline instance.
         config_path: Path to pipeline configuration file.
         stack_name_or_id: Name or ID of the stack for which the images should
             be built.
@@ -180,13 +176,28 @@ def build_pipeline(
             "your source code root."
         )
 
-    pipeline_model = Client().get_pipeline(
-        name_id_or_prefix=pipeline_name_or_id, version=version
-    )
+    try:
+        pipeline_instance = source_utils.load(source)
+    except ModuleNotFoundError as e:
+        source_root = source_utils.get_source_root()
+        cli_utils.error(
+            f"Unable to import module `{e.name}`. Make sure the source path is "
+            f"relative to your source root `{source_root}`."
+        )
+    except AttributeError as e:
+        cli_utils.error("Unable to load attribute from module: " + str(e))
+
+    if not isinstance(pipeline_instance, Pipeline):
+        cli_utils.error(
+            f"The given source path `{source}` does not resolve to a pipeline "
+            "object."
+        )
 
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
-        pipeline_instance = Pipeline.from_model(pipeline_model)
-        build = pipeline_instance.build(config_path=config_path)
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path
+        )
+        build = pipeline_instance.build()
 
     if build:
         cli_utils.declare(f"Created pipeline build `{build.id}`.")
@@ -200,15 +211,13 @@ def build_pipeline(
         cli_utils.declare("No docker builds required.")
 
 
-@pipeline.command("run", help="Run a pipeline.")
-@click.argument("pipeline_name_or_id")
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    required=False,
-    help="Optional version of the pipeline.",
+@pipeline.command(
+    "run",
+    help="Run a pipeline. The SOURCE argument needs to be an "
+    "importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
 )
+@click.argument("source")
 @click.option(
     "--config",
     "-c",
@@ -241,8 +250,7 @@ def build_pipeline(
     help="Prevent automatic build reusing.",
 )
 def run_pipeline(
-    pipeline_name_or_id: str,
-    version: Optional[str] = None,
+    source: str,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
     build_path_or_id: Optional[str] = None,
@@ -251,8 +259,7 @@ def run_pipeline(
     """Run a pipeline.
 
     Args:
-        pipeline_name_or_id: Name or ID of the pipeline.
-        version: Version of the pipeline.
+        source: Importable source resolving to a pipeline instance.
         config_path: Path to pipeline configuration file.
         stack_name_or_id: Name or ID of the stack on which the pipeline should
             run.
@@ -270,9 +277,22 @@ def run_pipeline(
             "your source code root."
         )
 
-    pipeline_model = Client().get_pipeline(
-        name_id_or_prefix=pipeline_name_or_id, version=version
-    )
+    try:
+        pipeline_instance = source_utils.load(source)
+    except ModuleNotFoundError as e:
+        source_root = source_utils.get_source_root()
+        cli_utils.error(
+            f"Unable to import module `{e.name}`. Make sure the source path is "
+            f"relative to your source root `{source_root}`."
+        )
+    except AttributeError as e:
+        cli_utils.error("Unable to load attribute from module: " + str(e))
+
+    if not isinstance(pipeline_instance, Pipeline):
+        cli_utils.error(
+            f"The given source path `{source}` does not resolve to a pipeline "
+            "object."
+        )
 
     build: Union[str, PipelineBuildBase, None] = None
     if build_path_or_id:
@@ -287,7 +307,6 @@ def run_pipeline(
             )
 
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
-        pipeline_instance = Pipeline.from_model(pipeline_model)
         pipeline_instance = pipeline_instance.with_options(
             config_path=config_path,
             build=build,
@@ -321,18 +340,6 @@ def list_pipelines(**kwargs: Any) -> None:
 @pipeline.command("delete")
 @click.argument("pipeline_name_or_id", type=str, required=True)
 @click.option(
-    "--version",
-    "-v",
-    help="Optional pipeline version.",
-    type=str,
-    required=False,
-)
-@click.option(
-    "--all-versions",
-    help="Delete all versions of the pipeline..",
-    is_flag=True,
-)
-@click.option(
     "--yes",
     "-y",
     is_flag=True,
@@ -340,28 +347,18 @@ def list_pipelines(**kwargs: Any) -> None:
 )
 def delete_pipeline(
     pipeline_name_or_id: str,
-    version: Optional[str] = None,
-    all_versions: bool = False,
     yes: bool = False,
 ) -> None:
     """Delete a pipeline.
 
     Args:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
-        version: The version of the pipeline to delete.
-        all_versions: If set, delete all versions of the pipeline.
         yes: If set, don't ask for confirmation.
     """
-    version_suffix = ""
-    if all_versions:
-        version_suffix = " (all versions)"
-    elif version:
-        version_suffix = f" (version {version})"
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline "
-            f"`{pipeline_name_or_id}{version_suffix}`? This will change all "
+            f"`{pipeline_name_or_id}`? This will change all "
             "existing runs of this pipeline to become unlisted."
         )
         if not confirmation:
@@ -371,15 +368,11 @@ def delete_pipeline(
     try:
         Client().delete_pipeline(
             name_id_or_prefix=pipeline_name_or_id,
-            version=version,
-            all_versions=all_versions,
         )
     except KeyError as e:
         cli_utils.error(str(e))
     else:
-        cli_utils.declare(
-            f"Deleted pipeline `{pipeline_name_or_id}{version_suffix}`."
-        )
+        cli_utils.declare(f"Deleted pipeline `{pipeline_name_or_id}`.")
 
 
 @pipeline.group()

@@ -274,11 +274,18 @@ class StepRunSchema(NamedSchema, table=True):
         if include_resources:
             model_version = None
             if full_step_config.config.model:
-                model_version = (
-                    full_step_config.config.model._get_model_version(
-                        hydrate=False
+                # TODO: Why is there no ID check similar to
+                # PipelineRunSchema.to_model()?
+                try:
+                    model_version = (
+                        full_step_config.config.model._get_model_version(
+                            hydrate=False
+                        )
                     )
-                )
+                except KeyError:
+                    # Unable to find the model version, it was probably deleted
+                    pass
+
             resources = StepRunResponseResources(model_version=model_version)
 
         return StepRunResponse(

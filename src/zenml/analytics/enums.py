@@ -48,6 +48,10 @@ class AnalyticsEvent(str, Enum):
     CREATED_TRIGGER = "Trigger created"
     UPDATED_TRIGGER = "Trigger updated"
 
+    # Templates
+    CREATED_RUN_TEMPLATE = "Run template created"
+    EXECUTED_RUN_TEMPLATE = "Run templated executed"
+
     # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
     CREATED_MODEL = "Model created"

@@ -22,6 +22,7 @@ from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
@@ -74,6 +75,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=True)
     server_version: str = Field(nullable=True)
+    pipeline_version_hash: Optional[str] = Field(nullable=True, default=None)
+    pipeline_spec: Optional[str] = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -132,12 +142,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    # This is not a foreign key to remove a cycle which messes with our DB
+    # backup process
+    template_id: Optional[UUID] = None
 
     # SQLModel Relationships
     user: Optional["UserSchema"] = Relationship()
     workspace: "WorkspaceSchema" = Relationship()
-    stack: "StackSchema" = Relationship()
-    pipeline: "PipelineSchema" = Relationship()
+    stack: Optional["StackSchema"] = Relationship()
+    pipeline: Optional["PipelineSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship(
         sa_relationship_kwargs={
@@ -176,6 +189,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             build_id=request.build,
             user_id=request.user,
             schedule_id=request.schedule,
+            template_id=request.template,
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
@@ -187,6 +201,12 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             client_environment=json.dumps(request.client_environment),
             client_version=request.client_version,
             server_version=request.server_version,
+            pipeline_version_hash=request.pipeline_version_hash,
+            pipeline_spec=json.dumps(
+                request.pipeline_spec.model_dump(mode="json"), sort_keys=True
+            )
+            if request.pipeline_spec
+            else None,
         )
 
     def to_model(
@@ -235,6 +255,13 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 code_reference=self.code_reference.to_model()
                 if self.code_reference
                 else None,
+                pipeline_version_hash=self.pipeline_version_hash,
+                pipeline_spec=PipelineSpec.model_validate_json(
+                    self.pipeline_spec
+                )
+                if self.pipeline_spec
+                else None,
+                template_id=self.template_id,
             )
         return PipelineDeploymentResponse(
             id=self.id,

@@ -83,7 +83,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.06.06",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2024.07.26",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
