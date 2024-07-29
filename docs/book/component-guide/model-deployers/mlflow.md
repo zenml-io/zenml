@@ -67,7 +67,10 @@ def deploy_model() -> Optional[MLFlowDeploymentService]:
         mlserver: bool = False
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
     )
-    service = model_deployer.deploy_model(config=mlflow_deployment_config, service_type=MLFlowDeploymentService.SERVICE_TYPE)
+    service = model_deployer.deploy_model(
+        config=mlflow_deployment_config, 
+        service_type=MLFlowDeploymentService.SERVICE_TYPE
+    )
     logger.info(f"The deployed service info: {model_deployer.get_model_server_info(service)}")
     return service
 ```
@@ -109,7 +112,10 @@ def deploy_model() -> Optional[MLFlowDeploymentService]:
         mlserver: bool = False,
         timeout: int = 300,
     )
-    service = model_deployer.deploy_model(config=mlflow_deployment_config, service_type=MLFlowDeploymentService.SERVICE_TYPE)
+    service = model_deployer.deploy_model(
+        config=mlflow_deployment_config, 
+        service_type=MLFlowDeploymentService.SERVICE_TYPE
+    )
     return service
 ```
 
