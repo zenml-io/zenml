@@ -150,9 +150,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         """
         env = Environment(image=image)
 
-        outputs = {}
-        if step.config.outputs:
-            outputs = {"completed": Output(type="uri_file")}
+        outputs = {"completed": Output(type="uri_file")}
 
         inputs = {}
         if step.spec.upstream_steps:
