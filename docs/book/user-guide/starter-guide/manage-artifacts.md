@@ -54,7 +54,7 @@ To list artifacts: `zenml artifact list`
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration.
+The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration.
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 
@@ -330,7 +330,7 @@ The information regarding the metadata of an artifact can be found within the DA
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
+The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
 
 <figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 {% endtab %}

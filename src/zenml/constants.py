@@ -364,6 +364,7 @@ PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
 PLUGIN_FLAVORS = "/plugin-flavors"
 RUNS = "/runs"
+RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
 SCHEDULES = "/schedules"
 SECRETS = "/secrets"
@@ -424,6 +425,7 @@ PAGE_SIZE_MAXIMUM: int = handle_int_env_var(
     ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=10000
 )
 FILTERING_DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+SORT_PIPELINES_BY_LATEST_RUN_KEY = "latest_run"
 
 # Metadata constants
 METADATA_ORCHESTRATOR_URL = "orchestrator_url"

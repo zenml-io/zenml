@@ -230,40 +230,14 @@ In order to cancel a scheduled Vertex pipeline, you need to manually delete the 
 
 ### Additional configuration
 
-For additional configuration of the Vertex orchestrator, you can pass `VertexOrchestratorSettings` which allows you to configure node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+For additional configuration of the Vertex orchestrator, you can pass `VertexOrchestratorSettings` which allows you to configure labels for your Vertex Pipeline jobs or specify which GPU to use.
 
 ```python
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
 from kubernetes.client.models import V1Toleration
 
 vertex_settings = VertexOrchestratorSettings(
-    pod_settings={
-        "affinity": {
-            "nodeAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": {
-                    "nodeSelectorTerms": [
-                        {
-                            "matchExpressions": [
-                                {
-                                    "key": "node.kubernetes.io/name",
-                                    "operator": "In",
-                                    "values": ["my_powerful_node_group"],
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        },
-        "tolerations": [
-            V1Toleration(
-                key="node.kubernetes.io/name",
-                operator="Equal",
-                value="",
-                effect="NoSchedule"
-            )
-        ]
-    }
+    labels={"key": "value"}
 )
 ```
 
@@ -272,6 +246,20 @@ If your pipelines steps have certain hardware requirements, you can specify them
 ```python
 resource_settings = ResourceSettings(cpu_count=8, memory="16GB")
 ```
+
+To run your pipeline (or some steps of it) on a GPU, you will need to set both a node selector
+and the gpu count as follows:
+```python
+vertex_settings = VertexOrchestratorSettings(
+    pod_settings={
+        "node_selectors": {
+            "cloud.google.com/gke-accelerator": "NVIDIA_TESLA_A100"
+        },
+    }
+)
+resource_settings = ResourceSettings(gpu_count=1)
+```
+You can find available accelerator types [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus).
 
 These settings can then be specified on either pipeline-level or step-level:
 

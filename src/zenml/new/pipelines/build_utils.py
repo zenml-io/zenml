@@ -15,7 +15,6 @@
 
 import hashlib
 import platform
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -31,12 +30,11 @@ from zenml.code_repositories import BaseCodeRepository
 from zenml.logger import get_logger
 from zenml.models import (
     BuildItem,
-    CodeReferenceRequest,
     PipelineBuildBase,
     PipelineBuildRequest,
     PipelineBuildResponse,
     PipelineDeploymentBase,
-    PipelineDeploymentRequest,
+    StackResponse,
 )
 from zenml.stack import Stack
 from zenml.utils import (
@@ -51,53 +49,6 @@ if TYPE_CHECKING:
     from zenml.config.build_configuration import BuildConfiguration
 
 logger = get_logger(__name__)
-
-
-def _create_deployment(
-    deployment: "PipelineDeploymentBase",
-    pipeline_id: Optional[UUID] = None,
-    code_repository: Optional["BaseCodeRepository"] = None,
-) -> UUID:
-    """Creates a deployment in the ZenStore.
-
-    Args:
-        deployment: Base of the deployment to create.
-        pipeline_id: Pipeline ID to use for the deployment.
-        code_repository: Code repository to use for the deployment.
-
-    Returns:
-        The ID of the deployment.
-    """
-    source_root = source_utils.get_source_root()
-
-    code_reference = None
-    local_repo_context = (
-        code_repository.get_local_context(source_root)
-        if code_repository
-        else None
-    )
-    if local_repo_context and not local_repo_context.is_dirty:
-        subdirectory = (
-            Path(source_root).resolve().relative_to(local_repo_context.root)
-        )
-
-        code_reference = CodeReferenceRequest(
-            commit=local_repo_context.current_commit,
-            subdirectory=subdirectory.as_posix(),
-            code_repository=local_repo_context.code_repository_id,
-        )
-
-    deployment_request = PipelineDeploymentRequest(
-        user=Client().active_user.id,
-        workspace=Client().active_workspace.id,
-        stack=Client().active_stack.id,
-        pipeline=pipeline_id,
-        code_reference=code_reference,
-        **deployment.model_dump(),
-    )
-    return (
-        Client().zen_store.create_deployment(deployment=deployment_request).id
-    )
 
 
 def build_required(deployment: "PipelineDeploymentBase") -> bool:
@@ -269,6 +220,7 @@ def create_pipeline_build(
             settings were specified.
     """
     client = Client()
+    stack_model = Client().active_stack_model
     stack = client.active_stack
     required_builds = stack.get_docker_builds(deployment=deployment)
 
@@ -362,16 +314,11 @@ def create_pipeline_build(
     build_checksum = compute_build_checksum(
         required_builds, stack=stack, code_repository=code_repository
     )
-    template_deployment_id = _create_deployment(
-        deployment=deployment,
-        pipeline_id=pipeline_id,
-        code_repository=code_repository,
-    )
-
+    stack_checksum = compute_stack_checksum(stack=stack_model)
     build_request = PipelineBuildRequest(
         user=client.active_user.id,
         workspace=client.active_workspace.id,
-        stack=client.active_stack_model.id,
+        stack=stack_model.id,
         pipeline=pipeline_id,
         is_local=is_local,
         contains_code=contains_code,
@@ -379,7 +326,7 @@ def create_pipeline_build(
         zenml_version=zenml.__version__,
         python_version=platform.python_version(),
         checksum=build_checksum,
-        template_deployment_id=template_deployment_id,
+        stack_checksum=stack_checksum,
     )
     return client.zen_store.create_build(build_request)
 
@@ -585,3 +532,32 @@ def verify_custom_build(
             "your local machine or the image tags have been "
             "overwritten since the original build happened."
         )
+
+
+def compute_stack_checksum(stack: StackResponse) -> str:
+    """Compute a stack checksum.
+
+    Args:
+        stack: The stack for which to compute the checksum.
+
+    Returns:
+        The checksum.
+    """
+    hash_ = hashlib.md5()  # nosec
+
+    # This checksum is used to see if the stack has been updated since a build
+    # was created for it. We create this checksum not with specific requirements
+    # as these might change with new ZenML releases, but they don't actually
+    # invalidate those Docker images.
+    required_integrations = sorted(
+        {
+            component.integration
+            for components in stack.components.values()
+            for component in components
+            if component.integration and component.integration != "built-in"
+        }
+    )
+    for integration in required_integrations:
+        hash_.update(integration.encode())
+
+    return hash_.hexdigest()

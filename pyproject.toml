@@ -47,10 +47,11 @@ click = "^8.0.1,<8.1.4"
 click-params = "^0.3.0"
 cloudpickle = ">=2.0.0,<3"
 distro = "^1.6.0"
-docker = "~6.1.0"
+docker = "~7.1.0"
 httplib2 = "<0.20,>=0.19.1"
 gitpython = "^3.1.18"
 numpy = "<2.0.0"
+packaging = ">=24.1"
 pandas = ">=1.1.5"
 passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
@@ -61,7 +62,6 @@ pyparsing = ">=2.4.0"
 python = ">=3.8,<3.12"
 python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
-requests = "<2.32.0" # TODO: remove after https://github.com/docker/docker-py/issues/3256
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
 secure = "~0.3.0"
 sqlalchemy = "^2.0.0"
@@ -341,7 +341,6 @@ exclude = [
 # Disable autofix for unused imports (`F401`).
 unfixable = ["F401"]
 per-file-ignores = {}
-ignore-init-module-imports = true
 ignore = [
     "E501",
     "F401",

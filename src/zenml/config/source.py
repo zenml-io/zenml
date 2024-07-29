@@ -245,5 +245,6 @@ def convert_source(source: Any) -> Any:
 
 
 SourceWithValidator = Annotated[
-    SerializeAsAny[Source], BeforeValidator(convert_source)
+    SerializeAsAny[Source],
+    BeforeValidator(convert_source),
 ]

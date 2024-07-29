@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.config.source import Source
+from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
@@ -71,7 +71,7 @@ class CodeRepositoryUpdate(BaseUpdate):
         description="Configuration for the code repository.",
         default=None,
     )
-    source: Optional[Source] = Field(
+    source: Optional[SourceWithValidator] = Field(
         description="The code repository source.", default=None
     )
     logo_url: Optional[str] = Field(
