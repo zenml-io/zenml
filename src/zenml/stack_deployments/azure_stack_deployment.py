@@ -265,16 +265,16 @@ ZenML's access to your Azure subscription.
     zenml_stack_deployment = "{self.deployment}"
 }}
 output "zenml_stack_id" {{
-    value = module.zenml_stack_id
+    value = module.zenml_stack.zenml_stack_id
 }}
 output "zenml_stack_name" {{
-    value = module.zenml_stack_name
+    value = module.zenml_stack.zenml_stack_name
 }}"""
         instructions = """
 1. The Azure Cloud Shell console will open in your browser.
 2. Create a file named `main.tf` in the Cloud Shell and copy and paste the
 Terraform configuration below into it.
-3. Run `terraform init` to initialize the Terraform configuration.
+3. Run `terraform init --upgrade` to initialize the Terraform configuration.
 4. Run `terraform apply` to deploy the ZenML stack to Azure.
 """
 
