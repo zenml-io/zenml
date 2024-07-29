@@ -42,7 +42,6 @@ from zenml.integrations.databricks.orchestrators.databricks_orchestrator_entrypo
     DatabricksEntrypointConfiguration,
 )
 from zenml.integrations.databricks.utils.databricks_utils import (
-    clean_requirements,
     convert_step_to_task,
 )
 from zenml.io import fileio
@@ -53,6 +52,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
+from zenml.utils.package_utils import clean_requirements
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )

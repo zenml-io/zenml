@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Utility functions for the package."""
 
+from typing import List
+
 import requests
 from packaging import version
 
@@ -48,3 +50,26 @@ def is_latest_zenml_version() -> bool:
         return False
     else:
         return True
+
+
+def clean_requirements(requirements: List[str]) -> List[str]:
+    """Clean requirements list from redundant requirements.
+
+    Args:
+        requirements: List of requirements.
+
+    Returns:
+        Cleaned list of requirements
+    """
+    cleaned = {}
+    for req in requirements:
+        package = (
+            req.split(">=")[0]
+            .split("==")[0]
+            .split("<")[0]
+            .split("[")[0]
+            .strip()
+        )
+        if package not in cleaned or ("=" in req or ">" in req or "<" in req):
+            cleaned[package] = req
+    return sorted(cleaned.values())
