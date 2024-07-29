@@ -22,7 +22,6 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.config.step_run_info import StepRunInfo
 from zenml.container_registries.base_container_registry import (
@@ -445,6 +444,7 @@ def sample_pipeline_run(
             updated=datetime.now(),
             user=sample_user_model,
             status=ExecutionStatus.COMPLETED,
+            tags=[],
         ),
         metadata=PipelineRunResponseMetadata(
             workspace=sample_workspace_model,
@@ -595,13 +595,10 @@ def create_pipeline_model(
     customizable PipelineResponseModel."""
 
     def f(
-        version: Optional[str] = None,
         **kwargs: Any,
     ) -> PipelineResponse:
         metadata_kwargs = dict(
-            version_hash="",
             workspace=sample_workspace_model,
-            spec=PipelineSpec(steps=[]),
         )
         metadata_kwargs.update(kwargs)
         return PipelineResponse(
@@ -611,7 +608,7 @@ def create_pipeline_model(
                 created=datetime.now(),
                 updated=datetime.now(),
                 user=sample_user_model,
-                version=version or "1",
+                tags=[],
             ),
             metadata=PipelineResponseMetadata(
                 **metadata_kwargs,

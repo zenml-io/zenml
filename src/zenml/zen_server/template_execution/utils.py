@@ -3,15 +3,19 @@
 import copy
 import hashlib
 import sys
-from typing import List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import UUID
 
 from fastapi import BackgroundTasks
 from packaging import version
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+)
 from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -19,6 +23,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.integrations.utils import get_integration_for_module
+from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
     ComponentResponse,
@@ -27,62 +32,80 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRunResponse,
     PipelineRunUpdate,
+    RunTemplateResponse,
     StackResponse,
 )
+from zenml.new.pipelines.build_utils import compute_stack_checksum
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
+    get_default_run_name,
     validate_run_config_is_runnable_from_server,
     validate_stack_is_runnable_from_server,
 )
 from zenml.stack.flavor import Flavor
-from zenml.utils import dict_utils, pydantic_utils, settings_utils
+from zenml.utils import dict_utils, settings_utils
 from zenml.zen_server.auth import AuthContext
-from zenml.zen_server.pipeline_deployment.runner_entrypoint_configuration import (
+from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
 from zenml.zen_server.utils import server_config, workload_manager, zen_store
 
+logger = get_logger(__name__)
+
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
-def run_pipeline(
-    deployment: PipelineDeploymentResponse,
+def run_template(
+    template: RunTemplateResponse,
     auth_context: AuthContext,
     background_tasks: Optional[BackgroundTasks] = None,
     run_config: Optional[PipelineRunConfiguration] = None,
 ) -> PipelineRunResponse:
-    """Run a pipeline from an existing deployment.
+    """Run a pipeline from a template.
 
     Args:
-        deployment: The pipeline deployment.
+        template: The template to run.
         auth_context: Authentication context.
         background_tasks: Background tasks.
         run_config: The run configuration.
 
     Raises:
-        ValueError: If the deployment does not have an associated stack or
-            build.
+        ValueError: If the template can not be run.
         RuntimeError: If the server URL is not set in the server configuration.
 
     Returns:
         ID of the new pipeline run.
     """
-    build = deployment.build
-    stack = deployment.stack
+    if not template.runnable:
+        raise ValueError(
+            "This template can not be run because its associated deployment, "
+            "stack or build have been deleted."
+        )
 
-    if not build:
-        raise ValueError("Unable to run deployment without associated build.")
+    # Guaranteed by the `runnable` check above
+    build = template.build
+    assert build
+    stack = build.stack
+    assert stack
 
-    if not stack:
-        raise ValueError("Unable to run deployment without associated stack.")
+    if build.stack_checksum and build.stack_checksum != compute_stack_checksum(
+        stack=stack
+    ):
+        raise ValueError(
+            f"The stack {stack.name} has been updated since it was used for "
+            "the run that is the base for this template. This means the Docker "
+            "images associated with this template most likely do not contain "
+            "the necessary requirements. Please create a new template from a "
+            "recent run on this stack."
+        )
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
     if run_config:
         validate_run_config_is_runnable_from_server(run_config)
 
-    deployment_request = apply_run_config(
-        deployment=deployment,
-        run_config=run_config or PipelineRunConfiguration(),
+    deployment_request = deployment_request_from_template(
+        template=template,
+        config=run_config or PipelineRunConfiguration(),
         user_id=auth_context.user.id,
     )
 
@@ -104,7 +127,7 @@ def run_pipeline(
     server_url = server_config().server_url
     if not server_url:
         raise RuntimeError(
-            "The server URL is not set in the server configuration"
+            "The server URL is not set in the server configuration."
         )
     assert build.zenml_version
     zenml_version = build.zenml_version
@@ -128,66 +151,86 @@ def run_pipeline(
     assert placeholder_run
 
     def _task() -> None:
-        try:
-            pypi_requirements, apt_packages = get_requirements_for_stack(
-                stack=stack
+        pypi_requirements, apt_packages = get_requirements_for_stack(
+            stack=stack
+        )
+
+        if build.python_version:
+            version_info = version.parse(build.python_version)
+            python_version = f"{version_info.major}.{version_info.minor}"
+        else:
+            python_version = (
+                f"{sys.version_info.major}.{sys.version_info.minor}"
             )
 
-            if build.python_version:
-                version_info = version.parse(build.python_version)
-                python_version = f"{version_info.major}.{version_info.minor}"
-            else:
-                python_version = (
-                    f"{sys.version_info.major}.{sys.version_info.minor}"
-                )
+        dockerfile = generate_dockerfile(
+            pypi_requirements=pypi_requirements,
+            apt_packages=apt_packages,
+            zenml_version=zenml_version,
+            python_version=python_version,
+        )
 
-            dockerfile = generate_dockerfile(
-                pypi_requirements=pypi_requirements,
-                apt_packages=apt_packages,
-                zenml_version=zenml_version,
-                python_version=python_version,
-            )
+        image_hash = generate_image_hash(dockerfile=dockerfile)
 
-            image_hash = generate_image_hash(dockerfile=dockerfile)
+        runner_image = workload_manager().build_and_push_image(
+            workload_id=new_deployment.id,
+            dockerfile=dockerfile,
+            image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
+            sync=True,
+        )
 
-            runner_image = workload_manager().build_and_push_image(
-                workload_id=new_deployment.id,
-                dockerfile=dockerfile,
-                image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
-                sync=True,
-            )
+        workload_manager().log(
+            workload_id=new_deployment.id,
+            message="Starting pipeline run.",
+        )
+        workload_manager().run(
+            workload_id=new_deployment.id,
+            image=runner_image,
+            command=command,
+            arguments=args,
+            environment=environment,
+            timeout_in_seconds=30,
+            sync=True,
+        )
+        workload_manager().log(
+            workload_id=new_deployment.id,
+            message="Pipeline run started successfully.",
+        )
 
-            workload_manager().log(
-                workload_id=new_deployment.id,
-                message="Starting pipeline deployment.",
-            )
-            workload_manager().run(
-                workload_id=new_deployment.id,
-                image=runner_image,
-                command=command,
-                arguments=args,
-                environment=environment,
-                timeout_in_seconds=30,
-                sync=True,
-            )
-            workload_manager().log(
-                workload_id=new_deployment.id,
-                message="Pipeline deployed successfully.",
-            )
-        except Exception:
-            zen_store().update_run(
+    def _task_with_analytics_and_error_handling() -> None:
+        with track_handler(
+            event=AnalyticsEvent.RUN_PIPELINE
+        ) as analytics_handler:
+            analytics_handler.metadata = get_pipeline_run_analytics_metadata(
+                deployment=new_deployment,
+                stack=stack,
+                template_id=template.id,
                 run_id=placeholder_run.id,
-                run_update=PipelineRunUpdate(status=ExecutionStatus.FAILED),
             )
-            raise
+
+            try:
+                _task()
+            except Exception:
+                logger.exception(
+                    "Failed to run template %s, run ID: %s",
+                    str(template.id),
+                    str(placeholder_run.id),
+                )
+                zen_store().update_run(
+                    run_id=placeholder_run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.FAILED
+                    ),
+                )
+                raise
 
     if background_tasks:
-        background_tasks.add_task(_task)
+        background_tasks.add_task(_task_with_analytics_and_error_handling)
     else:
         # Run synchronously if no background tasks were passed. This is probably
         # when coming from a trigger which itself is already running in the
         # background
-        _task()
+        _task_with_analytics_and_error_handling()
 
     return placeholder_run
 
@@ -332,47 +375,77 @@ def generate_dockerfile(
     return "\n".join(lines)
 
 
-def apply_run_config(
-    deployment: "PipelineDeploymentResponse",
-    run_config: "PipelineRunConfiguration",
+def deployment_request_from_template(
+    template: RunTemplateResponse,
+    config: PipelineRunConfiguration,
     user_id: UUID,
 ) -> "PipelineDeploymentRequest":
-    """Apply run configuration to a deployment.
+    """Generate a deployment request from a template.
 
     Args:
-        deployment: The deployment to which to apply the config.
-        run_config: The run configuration to apply.
-        user_id: The ID of the user that wants to run the deployment.
+        template: The template from which to create the deployment request.
+        config: The run configuration.
+        user_id: ID of the user that is trying to run the template.
+
+    Raises:
+        ValueError: If the run configuration is missing step parameters.
 
     Returns:
-        The updated deployment.
+        The generated deployment request.
     """
-    pipeline_updates = run_config.model_dump(
-        exclude_none=True, include=set(PipelineConfiguration.model_fields)
+    deployment = template.source_deployment
+    assert deployment
+    pipeline_configuration = PipelineConfiguration(
+        **config.model_dump(
+            include=set(PipelineConfiguration.model_fields),
+            exclude={"name", "parameters"},
+        ),
+        name=deployment.pipeline_configuration.name,
+        parameters=deployment.pipeline_configuration.parameters,
     )
 
-    pipeline_configuration = pydantic_utils.update_model(
-        deployment.pipeline_configuration, update=pipeline_updates
-    )
-    pipeline_configuration_dict = pipeline_configuration.model_dump(
-        exclude_none=True
+    step_config_dict_base = pipeline_configuration.model_dump(
+        exclude={"name", "parameters"}
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():
-        step_config_dict = dict_utils.recursive_update(
-            copy.deepcopy(pipeline_configuration_dict),
-            update=step.config.model_dump(exclude_none=True),
-        )
-        step_config = StepConfiguration.model_validate(step_config_dict)
+        step_config_dict = {
+            **copy.deepcopy(step_config_dict_base),
+            **step.config.model_dump(
+                # TODO: Maybe we need to make some of these configurable via
+                # yaml as well, e.g. the lazy loaders?
+                include={
+                    "name",
+                    "caching_parameters",
+                    "external_input_artifacts",
+                    "model_artifacts_or_metadata",
+                    "client_lazy_loaders",
+                    "outputs",
+                }
+            ),
+        }
 
-        if update := run_config.steps.get(invocation_id):
+        required_parameters = set(step.config.parameters)
+        configured_parameters = set()
+
+        if update := config.steps.get(invocation_id):
             update_dict = update.model_dump()
             # Get rid of deprecated name to prevent overriding the step name
             # with `None`.
             update_dict.pop("name", None)
-            step_config = pydantic_utils.update_model(
-                step_config, update=update_dict
+            configured_parameters = set(update.parameters)
+            step_config_dict = dict_utils.recursive_update(
+                step_config_dict, update=update_dict
             )
+
+        if configured_parameters != required_parameters:
+            missing_parameters = required_parameters - configured_parameters
+            raise ValueError(
+                "Run configuration is missing missing the following required "
+                f"parameters for step {step.config.name}: {missing_parameters}."
+            )
+
+        step_config = StepConfiguration.model_validate(step_config_dict)
         steps[invocation_id] = Step(spec=step.spec, config=step_config)
 
     code_reference_request = None
@@ -389,7 +462,8 @@ def apply_run_config(
     deployment_request = PipelineDeploymentRequest(
         user=user_id,
         workspace=deployment.workspace.id,
-        run_name_template=run_config.run_name or deployment.run_name_template,
+        run_name_template=config.run_name
+        or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
         client_environment={},
@@ -400,6 +474,54 @@ def apply_run_config(
         build=deployment.build.id,
         schedule=None,
         code_reference=code_reference_request,
+        template=template.id,
+        pipeline_version_hash=deployment.pipeline_version_hash,
+        pipeline_spec=deployment.pipeline_spec,
     )
 
     return deployment_request
+
+
+def get_pipeline_run_analytics_metadata(
+    deployment: "PipelineDeploymentResponse",
+    stack: StackResponse,
+    template_id: UUID,
+    run_id: UUID,
+) -> Dict[str, Any]:
+    """Get metadata for the pipeline run analytics event.
+
+    Args:
+        deployment: The deployment of the run.
+        stack: The stack on which the run will happen.
+        template_id: ID of the template from which the run was started.
+        run_id: ID of the run.
+
+    Returns:
+        The analytics metadata.
+    """
+    custom_materializer = False
+    for step in deployment.step_configurations.values():
+        for output in step.config.outputs.values():
+            for source in output.materializer_source:
+                if not source.is_internal:
+                    custom_materializer = True
+
+    assert deployment.user
+    stack_creator = stack.user
+    own_stack = stack_creator and stack_creator.id == deployment.user.id
+
+    stack_metadata = {
+        component_type.value: component_list[0].flavor
+        for component_type, component_list in stack.components.items()
+    }
+
+    return {
+        "store_type": "rest",  # This method is called from within a REST endpoint
+        **stack_metadata,
+        "total_steps": len(deployment.step_configurations),
+        "schedule": deployment.schedule is not None,
+        "custom_materializer": custom_materializer,
+        "own_stack": own_stack,
+        "pipeline_run_id": str(run_id),
+        "template_id": str(template_id),
+    }

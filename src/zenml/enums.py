@@ -338,6 +338,9 @@ class TaggableResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL = "model"
     MODEL_VERSION = "model_version"
+    PIPELINE = "pipeline"
+    PIPELINE_RUN = "pipeline_run"
+    RUN_TEMPLATE = "run_template"
 
 
 class ResponseUpdateStrategy(StrEnum):

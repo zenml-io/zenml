@@ -36,6 +36,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from sqlalchemy import asc, desc
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -267,6 +268,7 @@ class BaseFilter(BaseModel):
         "size",
         "logical_operator",
     ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = []
 
     # List of fields that are not even mentioned as options in the CLI.
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
@@ -351,6 +353,8 @@ class BaseFilter(BaseModel):
                 f"This resource can not be sorted by this field: '{value}'"
             )
         elif column in cls.model_fields:
+            return value
+        elif column in cls.CUSTOM_SORTING_OPTIONS:
             return value
         else:
             raise ValueError(
@@ -859,5 +863,33 @@ class BaseFilter(BaseModel):
 
         if filters is not None:
             query = query.where(filters)
+
+        return query
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        column, operand = self.sorting_params
+
+        if operand == SorterOps.DESCENDING:
+            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
+        else:
+            sort_clause = asc(getattr(table, column))
+
+        # We always add the `id` column as a tiebreaker to ensure a stable,
+        # repeatable order of items, otherwise subsequent pages might contain
+        # the same items.
+        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
 
         return query

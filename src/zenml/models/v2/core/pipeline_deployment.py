@@ -20,6 +20,7 @@ from pydantic import Field
 
 from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.page import Page
@@ -71,6 +72,14 @@ class PipelineDeploymentBase(BaseZenModel):
         default=None,
         title="The version of the ZenML installation on the server side.",
     )
+    pipeline_version_hash: Optional[str] = Field(
+        default=None,
+        title="The pipeline version hash of the deployment.",
+    )
+    pipeline_spec: Optional[PipelineSpec] = Field(
+        default=None,
+        title="The pipeline spec of the deployment.",
+    )
 
     @property
     def requires_included_files(self) -> bool:
@@ -116,6 +125,10 @@ class PipelineDeploymentRequest(
         default=None,
         title="The code reference associated with the deployment.",
     )
+    template: Optional[UUID] = Field(
+        default=None,
+        description="Template used for the deployment.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -150,6 +163,13 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     server_version: Optional[str] = Field(
         title="The version of the ZenML installation on the server side."
     )
+    pipeline_version_hash: Optional[str] = Field(
+        default=None, title="The pipeline version hash of the deployment."
+    )
+    pipeline_spec: Optional[PipelineSpec] = Field(
+        default=None, title="The pipeline spec of the deployment."
+    )
+
     pipeline: Optional[PipelineResponse] = Field(
         default=None, title="The pipeline associated with the deployment."
     )
@@ -166,6 +186,10 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     code_reference: Optional[CodeReferenceResponse] = Field(
         default=None,
         title="The code reference associated with the deployment.",
+    )
+    template_id: Optional[UUID] = Field(
+        default=None,
+        description="Template used for the pipeline run.",
     )
 
 
@@ -252,6 +276,24 @@ class PipelineDeploymentResponse(
         return self.get_metadata().server_version
 
     @property
+    def pipeline_version_hash(self) -> Optional[str]:
+        """The `pipeline_version_hash` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().pipeline_version_hash
+
+    @property
+    def pipeline_spec(self) -> Optional[PipelineSpec]:
+        """The `pipeline_spec` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().pipeline_spec
+
+    @property
     def pipeline(self) -> Optional[PipelineResponse]:
         """The `pipeline` property.
 
@@ -295,6 +337,15 @@ class PipelineDeploymentResponse(
             the value of the property.
         """
         return self.get_metadata().code_reference
+
+    @property
+    def template_id(self) -> Optional[UUID]:
+        """The `template_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().template_id
 
     @property
     def requires_code_download(self) -> bool:
@@ -343,5 +394,10 @@ class PipelineDeploymentFilter(WorkspaceScopedFilter):
     schedule_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Schedule associated with the deployment.",
+        union_mode="left_to_right",
+    )
+    template_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Template used as base for the deployment.",
         union_mode="left_to_right",
     )

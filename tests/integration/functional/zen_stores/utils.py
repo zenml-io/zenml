@@ -14,7 +14,17 @@ import logging
 import uuid
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import Annotated
@@ -71,7 +81,11 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunRequest,
+    PipelineUpdate,
     ResourceTypeModel,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateUpdate,
     SecretFilter,
     SecretRequest,
     ServiceAccountFilter,
@@ -81,6 +95,7 @@ from zenml.models import (
     ServiceConnectorRequest,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    StackFilter,
     StackRequest,
     StepRunFilter,
     TriggerFilter,
@@ -883,7 +898,9 @@ class CrudTestConfig:
         entity_name: str,
         update_model: Optional["BaseModel"] = None,
         supported_zen_stores: Tuple[Type["BaseZenStore"]] = None,
-        conditional_entities: Optional[Dict[str, "CrudTestConfig"]] = None,
+        conditional_entities: Optional[
+            Dict[str, Union["CrudTestConfig", List["CrudTestConfig"]]]
+        ] = None,
     ):
         """Initializes a CrudTestConfig.
 
@@ -895,7 +912,8 @@ class CrudTestConfig:
             supported_zen_stores: Set of supported Zen Stores. Defaults to all.
             conditional_entities: Other entities that need to exist before the
                 entity under test can be created. Expected to be a mapping from
-                field in the `create_model` to corresponding `CrudTestConfig`.
+                field in the `create_model` to corresponding `CrudTestConfig`
+                (or list of them if target value is a list of ids).
         """
         self.create_model = create_model
         self.update_model = update_model
@@ -968,13 +986,19 @@ class CrudTestConfig:
                     parent_model = parent_model[name]
                 else:
                     parent_model = getattr(parent_model, name)
+
+            value = (
+                conditional_entity.create().id
+                if isinstance(conditional_entity, CrudTestConfig)
+                else [c.create().id for c in conditional_entity]
+            )
             if isinstance(parent_model, dict):
-                parent_model[field_names[-1]] = conditional_entity.create().id
+                parent_model[field_names[-1]] = value
             else:
                 setattr(
                     parent_model,
                     field_names[-1],
-                    conditional_entity.create().id,
+                    value,
                 )
         # Create the entity itself
         response = self.create_method(create_model)
@@ -1011,7 +1035,11 @@ class CrudTestConfig:
         if self.id:
             self.delete()
         for conditional_entity in self.conditional_entities.values():
-            conditional_entity.cleanup()
+            if isinstance(conditional_entity, CrudTestConfig):
+                conditional_entity.cleanup()
+            else:
+                for c in conditional_entity:
+                    c.cleanup()
 
 
 workspace_crud_test_config = CrudTestConfig(
@@ -1055,14 +1083,11 @@ component_crud_test_config = CrudTestConfig(
 pipeline_crud_test_config = CrudTestConfig(
     create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
-        spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
-        version="1",
-        version_hash="abc123",
+        description="Pipeline description",
     ),
-    # Updating pipelines is not doing anything at the moment
-    # update_model=PipelineUpdate(name=sample_name("updated_sample_pipeline")),
+    update_model=PipelineUpdate(description="Updated pipeline description"),
     filter_model=PipelineFilter,
     entity_name="pipeline",
 )
@@ -1119,6 +1144,44 @@ secret_crud_test_config = CrudTestConfig(
     filter_model=SecretFilter,
     entity_name="secret",
 )
+remote_orchestrator_crud_test_config = CrudTestConfig(
+    create_model=ComponentRequest(
+        name=sample_name("remote_orchestrator"),
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="kubernetes",
+        configuration={},
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    filter_model=ComponentFilter,
+    entity_name="stack_component",
+)
+remote_artifact_store_crud_test_config = CrudTestConfig(
+    create_model=ComponentRequest(
+        name=sample_name("remote_artifact_store"),
+        type=StackComponentType.ARTIFACT_STORE,
+        flavor="s3",
+        configuration={"path": "s3://bucket"},
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    filter_model=ComponentFilter,
+    entity_name="stack_component",
+)
+remote_stack_crud_test_config = CrudTestConfig(
+    create_model=StackRequest(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        name=sample_name("remote_stack"),
+        components={},
+    ),
+    filter_model=StackFilter,
+    entity_name="stack",
+    conditional_entities={
+        "components.orchestrator": [remote_orchestrator_crud_test_config],
+        "components.artifact_store": [remote_artifact_store_crud_test_config],
+    },
+)
 build_crud_test_config = CrudTestConfig(
     create_model=PipelineBuildRequest(
         user=uuid.uuid4(),
@@ -1129,6 +1192,7 @@ build_crud_test_config = CrudTestConfig(
     ),
     filter_model=PipelineBuildFilter,
     entity_name="build",
+    conditional_entities={"stack": remote_stack_crud_test_config},
 )
 deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
@@ -1139,6 +1203,8 @@ deployment_crud_test_config = CrudTestConfig(
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline_version_hash="random_hash",
+        pipeline_spec=PipelineSpec(steps=[]),
     ),
     filter_model=PipelineDeploymentFilter,
     entity_name="deployment",
@@ -1209,6 +1275,40 @@ model_crud_test_config = CrudTestConfig(
     filter_model=ModelFilter,
     entity_name="model",
 )
+remote_deployment_crud_test_config = CrudTestConfig(
+    create_model=PipelineDeploymentRequest(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        stack=uuid.uuid4(),
+        build=uuid.uuid4(),  # will be overridden in create()
+        run_name_template="template",
+        pipeline_configuration={"name": "pipeline_name"},
+        client_version="0.12.3",
+        server_version="0.12.3",
+        pipeline_version_hash="random_hash",
+        pipeline_spec=PipelineSpec(steps=[]),
+    ),
+    filter_model=PipelineDeploymentFilter,
+    entity_name="deployment",
+    conditional_entities={
+        "build": deepcopy(build_crud_test_config),
+    },
+)
+run_template_test_config = CrudTestConfig(
+    create_model=RunTemplateRequest(
+        name=sample_name("run_template"),
+        description="Test run template.",
+        source_deployment_id=uuid.uuid4(),  # will be overridden in create()
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    update_model=RunTemplateUpdate(name=sample_name("updated_run_template")),
+    filter_model=RunTemplateFilter,
+    entity_name="run_template",
+    conditional_entities={
+        "source_deployment_id": deepcopy(remote_deployment_crud_test_config),
+    },
+)
 event_source_crud_test_config = CrudTestConfig(
     create_model=EventSourceRequest(
         name=sample_name("blupus_cat_cam"),
@@ -1231,7 +1331,7 @@ action_crud_test_config = CrudTestConfig(
         name=sample_name("blupus_feeder"),
         description="Feeds blupus when he meows.",
         service_account_id=uuid.uuid4(),  # will be overridden in create()
-        configuration={"pipeline_deployment_id": uuid.uuid4()},
+        configuration={"template_id": uuid.uuid4()},
         plugin_subtype=PluginSubType.PIPELINE_RUN,
         flavor="builtin",
         user=uuid.uuid4(),
@@ -1243,9 +1343,7 @@ action_crud_test_config = CrudTestConfig(
     supported_zen_stores=(RestZenStore,),
     conditional_entities={
         "service_account_id": deepcopy(service_account_crud_test_config),
-        "configuration.pipeline_deployment_id": deepcopy(
-            deployment_crud_test_config
-        ),
+        "configuration.template_id": deepcopy(run_template_test_config),
     },
 )
 trigger_crud_test_config = CrudTestConfig(
@@ -1302,6 +1400,7 @@ list_of_entities = [
     code_repository_crud_test_config,
     service_connector_crud_test_config,
     model_crud_test_config,
+    run_template_test_config,
     event_source_crud_test_config,
     action_crud_test_config,
     trigger_crud_test_config,
