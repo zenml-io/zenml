@@ -145,15 +145,16 @@ class ZenMLCloudStackDeployment(BaseModel):
         URL query parameters as possible.
         * a textual description of the URL
         * some deployment providers may require additional configuration
-        parameters to be passed to the cloud provider in addition to the
-        deployment URL query parameters. Where that is the case, this method
+        parameters or scripts to be passed to the cloud provider in addition to
+        the deployment URL query parameters. Where that is the case, this method
         should also return a string that the user can copy and paste into the
         cloud provider console to deploy the ZenML stack (e.g. a set of
-        environment variables, or YAML configuration snippet etc.).
+        environment variables, YAML configuration snippet, bash or Terraform
+        script etc.).
 
         Returns:
-            The configuration to deploy the ZenML stack to the specified cloud
-            provider.
+            The configuration or script to deploy the ZenML stack to the
+            specified cloud provider.
         """
 
     def get_stack(

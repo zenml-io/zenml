@@ -7102,15 +7102,16 @@ class SqlZenStore(BaseZenStore):
                     connector_name = full_stack.name
                     while True:
                         try:
+                            connector_id_or_info.configuration.update(
+                                {
+                                    "generate_temporary_tokens": not need_to_generate_permanent_tokens
+                                }
+                            )
                             service_connector_request = ServiceConnectorRequest(
                                 name=connector_name,
                                 connector_type=connector_id_or_info.type,
                                 auth_method=connector_id_or_info.auth_method,
-                                configuration=connector_id_or_info.configuration.update(
-                                    {
-                                        "generate_temporary_tokens": not need_to_generate_permanent_tokens
-                                    }
-                                ),
+                                configuration=connector_id_or_info.configuration,
                                 user=full_stack.user,
                                 workspace=full_stack.workspace,
                                 labels={
