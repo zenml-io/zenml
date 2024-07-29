@@ -277,9 +277,7 @@ class PipelineDockerImageBuilder:
             requirements_files = self.gather_requirements_files(
                 docker_settings=docker_settings,
                 stack=stack,
-                # Only pass code repo to include its dependencies if we actually
-                # need to download code
-                code_repository=code_repository if download_files else None,
+                code_repository=code_repository,
             )
 
             self._add_requirements_files(

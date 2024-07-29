@@ -13,9 +13,12 @@
 #  permissions and limitations under the License.
 """Model definition for pipeline build item."""
 
-from typing import Optional
+import itertools
+from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from zenml.enums import RequirementType
 
 
 class BuildItem(BaseModel):
@@ -38,6 +41,9 @@ class BuildItem(BaseModel):
     requirements: Optional[str] = Field(
         default=None, title="The pip requirements installed in the image."
     )
+    pypi_requirements: Dict[RequirementType, List[str]] = {}
+    apt_requirements: Dict[RequirementType, List[str]] = {}
+
     settings_checksum: Optional[str] = Field(
         default=None, title="The checksum of the build settings."
     )
@@ -47,3 +53,17 @@ class BuildItem(BaseModel):
     requires_code_download: bool = Field(
         default=False, title="Whether the image needs to download files."
     )
+
+    @model_validator(mode="after")
+    def _build_item_validator(self) -> "BuildItem":
+        if not self.pypi_requirements:
+            if self.requirements:
+                self.pypi_requirements = {
+                    RequirementType.UNKNOWN: self.requirements.splitlines()
+                }
+        elif not self.requirements:
+            self.requirements = "\n".join(
+                itertools.chain.from_iterable(self.pypi_requirements.values())
+            )
+
+        return self

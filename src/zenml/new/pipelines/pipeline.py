@@ -579,7 +579,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
-            prevent_build_reuse: Whether to prevent the reuse of a build.
+            prevent_build_reuse: DEPRECATED: Use
+                `DockerSettings.prevent_build_reuse` instead.
 
         Returns:
             Model of the pipeline run if running without a schedule, `None` if
@@ -677,6 +678,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 deployment=deployment, local_repo_context=local_repo_context
             )
 
+            if prevent_build_reuse:
+                logger.warning(
+                    "Passing `prevent_build_reuse=True` to "
+                    "`pipeline.with_opitions(...)` is deprecated. Use "
+                    "`DockerSettings.prevent_build_reuse` instead."
+                )
+
+            prevent_build_reuse = (
+                prevent_build_reuse or deployment.should_prevent_build_reuse
+            )
             build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
                 pipeline_id=pipeline_id,
@@ -701,6 +712,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     code_repository=local_repo_context.code_repository_id,
                 )
 
+            code_path = None
+            if build_utils.should_upload_code(
+                deployment=deployment,
+                build=build_model,
+                code_reference=code_reference,
+            ):
+                code_path = build_utils.upload_code_if_necessary()
+
             deployment_request = PipelineDeploymentRequest(
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,
@@ -709,6 +728,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 build=build_id,
                 schedule=schedule_id,
                 code_reference=code_reference,
+                code_path=code_path,
                 **deployment.model_dump(),
             )
             deployment_model = Client().zen_store.create_deployment(
@@ -1271,7 +1291,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
-            prevent_build_reuse: Whether to prevent the reuse of a build.
+            prevent_build_reuse: DEPRECATED: Use
+                `DockerSettings.prevent_build_reuse` instead.
             **kwargs: Pipeline configuration options. These will be passed
                 to the `pipeline.configure(...)` method.
 

@@ -14,7 +14,7 @@
 """Docker settings."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import SettingsConfigDict
@@ -53,9 +53,15 @@ class SourceFileMode(Enum):
     """Different methods to handle source files in Docker images."""
 
     INCLUDE = "include"
-    DOWNLOAD_OR_INCLUDE = "download_or_include"
-    DOWNLOAD = "download"
-    IGNORE = "ignore"
+    DOWNLOAD_FROM_CODE_REPOSITORY = "download_from_code_repository"
+    DOWNLOAD_FROM_ARTIFACT_STORE = "download_from_artifact_store"
+
+
+DEFAULT_SOURCE_FILE_MODE = {
+    SourceFileMode.INCLUDE,
+    SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
+    SourceFileMode.DOWNLOAD_FROM_ARTIFACT_STORE,
+}
 
 
 class PythonPackageInstaller(Enum):
@@ -139,6 +145,7 @@ class DockerSettings(BaseSettings):
             instead.
         skip_build: If set to `True`, the parent image will be used directly to
             run the steps of your pipeline.
+        prevent_build_reuse: Prevent the reuse of an existing build.
         target_repository: Name of the Docker repository to which the
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
@@ -177,7 +184,7 @@ class DockerSettings(BaseSettings):
             Docker image.
         build_config: Configuration for the main image build.
         dockerignore: DEPRECATED, use build_config.dockerignore instead.
-        copy_files: DEPRECATED, use the `source_files` attribute instead.
+        copy_files: DEPRECATED/UNUSED.
         copy_global_config: DEPRECATED/UNUSED.
         user: If not `None`, will set the user, make it owner of the `/app`
             directory which contains all the user code and run the container
@@ -203,6 +210,7 @@ class DockerSettings(BaseSettings):
     build_options: Dict[str, Any] = {}
     parent_image_build_config: Optional[DockerBuildConfig] = None
     skip_build: bool = False
+    prevent_build_reuse: bool = False
     target_repository: Optional[str] = None
     python_package_installer: PythonPackageInstaller = (
         PythonPackageInstaller.PIP
@@ -225,7 +233,7 @@ class DockerSettings(BaseSettings):
     user: Optional[str] = None
     build_config: Optional[DockerBuildConfig] = None
 
-    source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
+    source_files: Set[SourceFileMode] = DEFAULT_SOURCE_FILE_MODE
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "copy_files", "copy_global_config"
@@ -234,30 +242,38 @@ class DockerSettings(BaseSettings):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _migrate_copy_files(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Migrates the value from the old copy_files attribute.
+    def _migrate_source_files(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Migrates the value from the old source_files attributes.
 
         Args:
             data: The settings values.
 
+        Raises:
+            ValueError: If an invalid source file mode is specified.
+
         Returns:
             The migrated settings values.
         """
-        copy_files = data.get("copy_files", None)
+        source_files = data.get("source_files", None)
 
-        if copy_files is None:
-            return data
+        if isinstance(source_files, str):
+            if source_files == "download":
+                new_source_files = {
+                    SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY
+                }
+            elif source_files == "download_or_include":
+                new_source_files = {
+                    SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
+                    SourceFileMode.INCLUDE,
+                }
+            elif source_files == "ignore":
+                new_source_files = set()
+            elif source_files == "include":
+                new_source_files = {SourceFileMode.INCLUDE}
+            else:
+                raise ValueError(f"Invalid source file mode `{source_files}`.")
 
-        if data.get("source_files", None):
-            # Ignore the copy files value in favor of the new source files
-            logger.warning(
-                "Both `copy_files` and `source_files` specified for the "
-                "DockerSettings, ignoring the `copy_files` value."
-            )
-        elif copy_files is True:
-            data["source_files"] = SourceFileMode.INCLUDE
-        elif copy_files is False:
-            data["source_files"] = SourceFileMode.IGNORE
+            data["source_files"] = new_source_files
 
         return data
 

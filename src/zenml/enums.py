@@ -410,3 +410,12 @@ class StackDeploymentProvider(StrEnum):
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
+
+
+class RequirementType(StrEnum):
+    UNKNOWN = "unknown"
+    STACK = "stack"
+    USER = "user"  # maybe pipeline?
+    INTEGRATION = "integration"
+    LOCAL_ENVIRONMENT = "local_environment"
+    CODE_REPOSITORY = "code_repository"

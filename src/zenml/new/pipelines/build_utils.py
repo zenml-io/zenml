@@ -14,22 +14,32 @@
 """Pipeline build utilities."""
 
 import hashlib
+import os
 import platform
+import tempfile
+from pathlib import Path
 from typing import (
+    IO,
     TYPE_CHECKING,
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 from uuid import UUID
 
+from git.repo.base import Repo
+
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
+from zenml.config.docker_settings import SourceFileMode
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     BuildItem,
+    CodeReferenceRequest,
     PipelineBuildBase,
     PipelineBuildRequest,
     PipelineBuildResponse,
@@ -39,6 +49,7 @@ from zenml.models import (
 from zenml.stack import Stack
 from zenml.utils import (
     source_utils,
+    string_utils,
 )
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -64,6 +75,59 @@ def build_required(deployment: "PipelineDeploymentBase") -> bool:
     return bool(stack.get_docker_builds(deployment=deployment))
 
 
+def requires_included_code(
+    deployment: "PipelineDeploymentBase",
+    code_repository: Optional["BaseCodeRepository"] = None,
+) -> bool:
+    """Checks whether the deployment requires included code.
+
+    Args:
+        deployment: The deployment.
+        code_repository: If provided, this code repository can be used to
+            download the code inside the container images.
+
+    Returns:
+        If the deployment requires code included in the container images.
+    """
+    for step in deployment.step_configurations.values():
+        if step.config.docker_settings.source_files == {
+            SourceFileMode.INCLUDE
+        }:
+            return True
+
+        if (
+            step.config.docker_settings.source_files
+            == {
+                SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
+                SourceFileMode.INCLUDE,
+            }
+            and not code_repository
+        ):
+            return True
+
+    return False
+
+
+def requires_download_from_code_repository(
+    deployment: "PipelineDeploymentBase",
+) -> bool:
+    """Checks whether the deployment needs to download code from a repository.
+
+    Args:
+        deployment: The deployment.
+
+    Returns:
+        If the deployment needs to download code from a code repository.
+    """
+    return any(
+        step.config.docker_settings.source_files
+        == {
+            SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
+        }
+        for step in deployment.step_configurations.values()
+    )
+
+
 def reuse_or_create_pipeline_build(
     deployment: "PipelineDeploymentBase",
     allow_build_reuse: bool,
@@ -82,8 +146,8 @@ def reuse_or_create_pipeline_build(
         build: Optional existing build. If given, the build will be fetched
             (or registered) in the database. If not given, a new build will
             be created.
-        code_repository: If provided, this code repository will be used to
-            download inside the build images.
+        code_repository: If provided, this code repository can be used to
+            download code inside the container images.
 
     Returns:
         The build response.
@@ -91,8 +155,9 @@ def reuse_or_create_pipeline_build(
     if not build:
         if (
             allow_build_reuse
-            and code_repository
-            and not deployment.requires_included_files
+            and not requires_included_code(
+                deployment=deployment, code_repository=code_repository
+            )
             and build_required(deployment=deployment)
         ):
             existing_build = find_existing_build(
@@ -108,17 +173,13 @@ def reuse_or_create_pipeline_build(
                 return existing_build
             else:
                 logger.info(
-                    "Unable to find a build to reuse. When using a code "
-                    "repository, a previous build can be reused when the "
-                    "following conditions are met:\n"
+                    "Unable to find a build to reuse. A previous build can be "
+                    "reused when the following conditions are met:\n"
                     "  * The existing build was created for the same stack, "
                     "ZenML version and Python version\n"
                     "  * The stack contains a container registry\n"
                     "  * The Docker settings of the pipeline and all its steps "
-                    "are the same as for the existing build\n"
-                    "  * The build does not include code. This will only be "
-                    "the case if the existing build was created with a clean "
-                    "code repository."
+                    "are the same as for the existing build."
                 )
 
         return create_pipeline_build(
@@ -150,7 +211,7 @@ def reuse_or_create_pipeline_build(
 
 def find_existing_build(
     deployment: "PipelineDeploymentBase",
-    code_repository: "BaseCodeRepository",
+    code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Find an existing build for a deployment.
 
@@ -280,6 +341,11 @@ def create_pipeline_build(
             download_files = build_config.should_download_files(
                 code_repository=code_repository,
             )
+            pass_code_repo = (
+                build_config.should_download_files_from_code_repository(
+                    code_repository=code_repository
+                )
+            )
 
             (
                 image_name_or_digest,
@@ -293,7 +359,7 @@ def create_pipeline_build(
                 download_files=download_files,
                 entrypoint=build_config.entrypoint,
                 extra_files=build_config.extra_files,
-                code_repository=code_repository,
+                code_repository=code_repository if pass_code_repo else None,
             )
             contains_code = include_files
 
@@ -389,7 +455,7 @@ def verify_local_repository_context(
         deployment, or None if code download is not possible.
     """
     if build_required(deployment=deployment):
-        if deployment.requires_code_download:
+        if requires_download_from_code_repository(deployment=deployment):
             if not local_repo_context:
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
@@ -561,3 +627,330 @@ def compute_stack_checksum(stack: StackResponse) -> str:
         hash_.update(integration.encode())
 
     return hash_.hexdigest()
+
+
+def should_upload_code(
+    deployment: PipelineDeploymentBase,
+    build: Optional[PipelineBuildResponse],
+    code_reference: Optional[CodeReferenceRequest],
+) -> bool:
+    """Checks whether the current code should be uploaded for the deployment.
+
+    Args:
+        deployment: The deployment.
+        build: The build for the deployment.
+        code_reference: The code reference for the deployment.
+
+    Returns:
+        Whether the current code should be uploaded for the deployment.
+    """
+    if not build:
+        # No build means all the code is getting executed locally, which means
+        # we don't need to download any code
+        # TODO: This does not apply to e.g. Databricks, figure out a solution
+        # here
+        return False
+
+    for step in deployment.step_configurations.values():
+        source_files = step.config.docker_settings.source_files
+
+        if (
+            code_reference
+            and SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY in source_files
+        ):
+            # No upload needed for this step
+            continue
+
+        if SourceFileMode.DOWNLOAD_FROM_ARTIFACT_STORE in source_files:
+            break
+    else:
+        # Downloading code in the Docker images is prevented by Docker settings
+        return False
+
+    return True
+
+
+class UploadContext:
+    def __init__(
+        self,
+        root: str,
+    ) -> None:
+        """Initializes a build context.
+
+        Args:
+            root: Optional root directory for the build context.
+            dockerignore_file: Optional path to a dockerignore file. If not
+                given, a file called `.dockerignore` in the build context root
+                directory will be used instead if it exists.
+        """
+        self._root = root
+        self._extra_files: Dict[str, str] = {}
+
+    def add_file(self, source: str, destination: str) -> None:
+        """Adds a file to the build context.
+
+        Args:
+            source: The source of the file to add. This can either be a path
+                or the file content.
+            destination: The path inside the build context where the file
+                should be added.
+        """
+        if fileio.exists(source):
+            with fileio.open(source) as f:
+                self._extra_files[destination] = f.read()
+        else:
+            self._extra_files[destination] = source
+
+    def add_directory(self, source: str, destination: str) -> None:
+        """Adds a directory to the build context.
+
+        Args:
+            source: Path to the directory.
+            destination: The path inside the build context where the directory
+                should be added.
+
+        Raises:
+            ValueError: If `source` does not point to a directory.
+        """
+        if not fileio.isdir(source):
+            raise ValueError(
+                f"Can't add directory {source} to the build context as it "
+                "does not exist or is not a directory."
+            )
+
+        for dir, _, files in fileio.walk(source):
+            dir_path = Path(fileio.convert_to_str(dir))
+            for file_name in files:
+                file_name = fileio.convert_to_str(file_name)
+                file_source = dir_path / file_name
+                file_destination = (
+                    Path(destination)
+                    / dir_path.relative_to(source)
+                    / file_name
+                )
+
+                with file_source.open("r") as f:
+                    self._extra_files[file_destination.as_posix()] = f.read()
+
+    def write_archive(self, output_file: IO[bytes], gzip: bool = True) -> None:
+        """Writes an archive of the build context to the given file.
+
+        Args:
+            output_file: The file to write the archive to.
+            gzip: Whether to use `gzip` to compress the file.
+        """
+        from docker.utils import build as docker_build_utils
+
+        files = self._get_files()
+        extra_files = self._get_extra_files()
+
+        context_archive = docker_build_utils.create_archive(
+            fileobj=output_file,
+            root=self._root,
+            files=files,
+            gzip=gzip,
+            extra_files=extra_files,
+        )
+
+        build_context_size = os.path.getsize(context_archive.name)
+        if build_context_size > 50 * 1024 * 1024:
+            logger.warning(
+                "Code upload size: `%s`. If you believe this is "
+                "unreasonably large, make sure to include unnecessary files in "
+                "a `.gitignore` file.",
+                string_utils.get_human_readable_filesize(build_context_size),
+            )
+
+    @property
+    def git_repo(self) -> Optional[Repo]:
+        try:
+            # These imports fail when git is not installed on the machine
+            from git.exc import InvalidGitRepositoryError
+            from git.repo.base import Repo
+        except ImportError:
+            return None
+
+        try:
+            git_repo = Repo(path=self._root, search_parent_directories=True)
+        except InvalidGitRepositoryError:
+            return None
+
+        return git_repo
+
+    def _get_files(self) -> Optional[List[str]]:
+        if repo := self.git_repo:
+            try:
+                result = repo.git.ls_files(
+                    "--cached",
+                    "--others",
+                    "--modified",
+                    "--exclude-standard",
+                    self._root,
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to get non-ignored files from git: %s", str(e)
+                )
+            else:
+                files = set()
+                for file in result.split():
+                    relative_path = os.path.relpath(
+                        os.path.join(repo.working_dir, file), self._root
+                    )
+                    if os.path.exists(relative_path):
+                        files.add(relative_path)
+
+                return sorted(files)
+
+        return None
+
+    def _get_extra_files(self) -> List[Tuple[str, str]]:
+        """Gets all extra files of the build context.
+
+        Returns:
+            A tuple (path, file_content) for all extra files in the build
+            context.
+        """
+        return list(self._extra_files.items())
+
+
+# TODO: which files to include? gitignore, dockerignore, zenignore?
+def upload_code_if_necessary() -> str:
+    """Upload code to the artifact store if necessary.
+
+    This function computes a hash of the code to be uploaded, and if an archive
+    with the same hash already exists it will not re-upload but instead return
+    the path to the existing archive.
+
+    Returns:
+        The path where to archived code is uploaded.
+    """
+    upload_context = UploadContext(root=source_utils.get_source_root())
+    artifact_store = Client().active_stack.artifact_store
+
+    with tempfile.NamedTemporaryFile(mode="w+b", delete=True) as f:
+        # Don't use gzip as that includes the creation timestamp of the
+        # compressed tar file, which means the hash changes each time. This
+        # means currently the archive is not compressed, which should be
+        # changed.
+        upload_context.write_archive(f, gzip=False)
+
+        hash_ = hashlib.sha1()  # nosec
+
+        while True:
+            data = f.read(64 * 1024)
+            if not data:
+                break
+            hash_.update(data)
+
+        filename = f"{hash_.hexdigest()}.tar"
+        upload_dir = os.path.join(artifact_store.path, "code_uploads")
+        fileio.makedirs(upload_dir)
+        upload_path = os.path.join(upload_dir, filename)
+
+        if not fileio.exists(upload_path):
+            logger.info("Uploading code to `%s`.", upload_path)
+            fileio.copy(f.name, upload_path)
+            logger.info("Code upload finished.")
+        else:
+            logger.debug(
+                "Code already exists in artifact store, not uploading."
+            )
+
+    return upload_path
+
+
+# import os
+# import subprocess
+# from typing import Tuple
+
+# from zenml.code_repositories import BaseCodeRepository
+# from zenml.config.docker_settings import (
+#     DockerSettings,
+#     PythonEnvironmentExportMethod,
+# )
+# from zenml.enums import OperatingSystemType, RequirementType
+# from zenml.integrations.registry import integration_registry
+# from zenml.stack import Stack
+# from zenml.utils import io_utils
+
+
+# def extract_requirements(
+#     docker_settings: DockerSettings,
+#     stack: "Stack",
+#     code_repository: Optional["BaseCodeRepository"] = None,
+# ) -> Tuple[Dict[RequirementType, List[str]], Dict[RequirementType, List[str]]]:
+#     pypi_requirements = {}
+#     apt_requirements = {}
+
+#     if docker_settings.install_stack_requirements:
+#         if stack_pypi_requirements := stack.requirements():
+#             pypi_requirements[RequirementType.STACK] = sorted(
+#                 stack_pypi_requirements
+#             )
+
+#         if stack_apt_requirements := stack.apt_packages:
+#             apt_requirements[RequirementType.STACK] = stack_apt_requirements
+
+#         if code_repository:
+#             pypi_requirements[RequirementType.CODE_REPOSITORY] = sorted(
+#                 code_repository.requirements
+#             )
+
+#     if docker_settings.replicate_local_python_environment:
+#         if isinstance(
+#             docker_settings.replicate_local_python_environment,
+#             PythonEnvironmentExportMethod,
+#         ):
+#             command = (
+#                 docker_settings.replicate_local_python_environment.command
+#             )
+#         else:
+#             command = " ".join(
+#                 docker_settings.replicate_local_python_environment
+#             )
+
+#         try:
+#             local_requirements = subprocess.check_output(
+#                 command,
+#                 shell=True,  # nosec
+#             ).decode()
+#         except subprocess.CalledProcessError as e:
+#             raise RuntimeError(
+#                 "Unable to export local python packages."
+#             ) from e
+
+#         pypi_requirements[RequirementType.LOCAL_ENVIRONMENT] = (
+#             local_requirements.splitlines()
+#         )
+
+#     if docker_settings.required_integrations:
+#         for integration_name in docker_settings.required_integrations:
+#             integration = integration_registry.integrations[integration_name]
+#             pypi_requirements[RequirementType.INTEGRATION] = (
+#                 integration.get_requirements(
+#                     target_os=OperatingSystemType.LINUX
+#                 )
+#             )
+#             apt_requirements[RequirementType.INTEGRATION] = (
+#                 integration.APT_PACKAGES
+#             )
+
+#     if isinstance(docker_settings.requirements, str):
+#         path = os.path.abspath(docker_settings.requirements)
+#         try:
+#             user_requirements = io_utils.read_file_contents_as_string(path)
+#         except FileNotFoundError as e:
+#             raise FileNotFoundError(
+#                 f"Requirements file {path} does not exist."
+#             ) from e
+
+#         pypi_requirements[RequirementType.USER] = (
+#             user_requirements.splitlines()
+#         )
+#     elif isinstance(docker_settings.requirements, List):
+#         pypi_requirements[RequirementType.USER] = docker_settings.requirements
+
+#     apt_requirements[RequirementType.USER] = docker_settings.apt_packages
+
+#     return pypi_requirements, apt_requirements

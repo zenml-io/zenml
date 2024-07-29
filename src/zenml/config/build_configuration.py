@@ -60,7 +60,11 @@ class BuildConfiguration(BaseModel):
             The checksum.
         """
         hash_ = hashlib.md5()  # nosec
-        hash_.update(self.settings.model_dump_json().encode())
+        hash_.update(
+            self.settings.model_dump_json(
+                exclude={"prevent_build_reuse"}
+            ).encode()
+        )
         if self.entrypoint:
             hash_.update(self.entrypoint.encode())
 
@@ -72,7 +76,7 @@ class BuildConfiguration(BaseModel):
             PipelineDockerImageBuilder,
         )
 
-        pass_code_repo = self.should_download_files(
+        pass_code_repo = self.should_download_files_from_code_repository(
             code_repository=code_repository
         )
         requirements_files = (
@@ -101,13 +105,10 @@ class BuildConfiguration(BaseModel):
         Returns:
             Whether files should be included in the image.
         """
-        if self.settings.source_files == SourceFileMode.INCLUDE:
-            return True
+        if self.should_download_files(code_repository=code_repository):
+            return False
 
-        if (
-            self.settings.source_files == SourceFileMode.DOWNLOAD_OR_INCLUDE
-            and not code_repository
-        ):
+        if SourceFileMode.INCLUDE in self.settings.source_files:
             return True
 
         return False
@@ -125,10 +126,37 @@ class BuildConfiguration(BaseModel):
         Returns:
             Whether files should be downloaded in the image.
         """
-        if not code_repository:
-            return False
+        if self.should_download_files_from_code_repository(
+            code_repository=code_repository
+        ):
+            return True
 
-        return self.settings.source_files in {
-            SourceFileMode.DOWNLOAD,
-            SourceFileMode.DOWNLOAD_OR_INCLUDE,
-        }
+        if (
+            SourceFileMode.DOWNLOAD_FROM_ARTIFACT_STORE
+            in self.settings.source_files
+        ):
+            return True
+
+        return False
+
+    def should_download_files_from_code_repository(
+        self,
+        code_repository: Optional["BaseCodeRepository"],
+    ) -> bool:
+        """Whether files should be downloaded from the code repository.
+
+        Args:
+            code_repository: Code repository that can be used to download files
+                inside the image.
+
+        Returns:
+            Whether files should be downloaded from the code repository.
+        """
+        if (
+            code_repository
+            and SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY
+            in self.settings.source_files
+        ):
+            return True
+
+        return False
