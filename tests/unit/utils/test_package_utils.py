@@ -41,6 +41,15 @@ from zenml.utils.package_utils import clean_requirements
             ["package1>=1.5.0", "package2==2.0.0", "package3<3.0.0"],
         ),
         ([], []),
+        (
+            ["package1~=1.0.0", "package2^=2.0.0", "package3==3.0.0"],
+            ["package1~=1.0.0", "package2^=2.0.0", "package3==3.0.0"],
+        ),
+        (
+            ["package1~=1.0.0", "package1^=1.1.0", "package1==1.2.0"],
+            ["package1==1.2.0"],
+        ),
+        (["package1", "package1~=1.0.0"], ["package1~=1.0.0"]),
     ],
 )
 def test_clean_requirements(input_reqs, expected_output):
@@ -48,7 +57,19 @@ def test_clean_requirements(input_reqs, expected_output):
     assert clean_requirements(input_reqs) == expected_output
 
 
+def test_clean_requirements_type_error():
+    """Test clean_requirements function with wrong input type."""
+    with pytest.raises(TypeError):
+        clean_requirements("not a list")
+
+
 def test_clean_requirements_value_error():
     """Test clean_requirements function with wrong input value."""
-    with pytest.raises(AttributeError):
+    with pytest.raises(ValueError):
         clean_requirements([1, 2, 3])  # List of non-string elements
+
+
+def test_clean_requirements_mixed_types():
+    """Test clean_requirements function with mixed types in list."""
+    with pytest.raises(ValueError):
+        clean_requirements(["package1==1.0.0", 2, "package3<3.0.0"])

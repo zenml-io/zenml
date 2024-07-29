@@ -60,16 +60,30 @@ def clean_requirements(requirements: List[str]) -> List[str]:
 
     Returns:
         Cleaned list of requirements
+
+    Raises:
+        TypeError: If input is not a list
+        ValueError: If any element in the list is not a string
     """
+    if not isinstance(requirements, list):
+        raise TypeError("Input must be a list")
+
+    if not all(isinstance(req, str) for req in requirements):
+        raise ValueError("All elements in the list must be strings")
+
     cleaned = {}
     for req in requirements:
         package = (
             req.split(">=")[0]
             .split("==")[0]
             .split("<")[0]
+            .split("~=")[0]
+            .split("^=")[0]
             .split("[")[0]
             .strip()
         )
-        if package not in cleaned or ("=" in req or ">" in req or "<" in req):
+        if package not in cleaned or any(
+            op in req for op in ["=", ">", "<", "~", "^"]
+        ):
             cleaned[package] = req
     return sorted(cleaned.values())
