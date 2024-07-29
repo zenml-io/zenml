@@ -44,7 +44,6 @@ The following environment variables can be passed to the container:
 * **ZENML\_SERVER\_RATE\_LIMIT\_ENABLED**: This variable controls the rate limiting for ZenML API (currently only for the `LOGIN` endpoint). It is disabled by default, so set it to `1` only if you need to enable rate limiting. To determine unique users a `X_FORWARDED_FOR` header or `request.client.host` is used, so before enabling this make sure that your network configuration is associating proper information with your clients in order to avoid disruptions for legitimate requests.
 * **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_MINUTE**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in a one minute interval. Set it to a desired integer value; defaults to `5`.
 * **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_DAY**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in an interval of day interval. Set it to a desired integer value; defaults to `1000`.
-* **ZENML\_SERVER\_JWT\_SECRET\_KEY**: If you want to make sure your session tokens remain valid when spinning servers down and up again, a constant JWT secret key should be set. Feel free to choose a random string. Change this value to invalidate all existing issued sessions.
 * 
 If none of the `ZENML_STORE_*` variables are set, the container will default to creating and using an SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db` inside the container. The `/zenml/.zenconfig/local_stores` base path where the default SQLite database is located can optionally be overridden by setting the `ZENML_LOCAL_STORES_PATH` environment variable to point to a different path (e.g. a persistent volume or directory that is mounted from the host).
 
@@ -254,7 +253,7 @@ The environment variables starting with _ZENML\_SERVER\_SECURE\_HEADERS\__\* can
 
 The following secure headers environment variables are supported:
 
-* _ZENML\_SERVER\_SECURE\_HEADERS\_SERVER_\*: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_SERVER**: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XXP**: The `X-XSS-Protection` HTTP header value. The default value is `0`. NOTE: this header is deprecated and should not be customized anymore. The `Content-Security-Policy` header should be used instead.
