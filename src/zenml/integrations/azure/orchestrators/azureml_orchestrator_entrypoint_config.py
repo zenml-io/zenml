@@ -37,7 +37,7 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
             The superclass options as well as an option for the
             environmental variables.
         """
-        return super().get_entrypoint_options() | {ENVIRONMENTAL_VARIABLES}
+        return super().get_entrypoint_options() | {AZURE_ML_ENV_VARIABLES}
 
     @classmethod
     def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
@@ -51,14 +51,14 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
             variables.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
-            f"--{ENVIRONMENTAL_VARIABLES}",
-            kwargs[ENVIRONMENTAL_VARIABLES],
+            f"--{AZURE_ML_ENV_VARIABLES}",
+            kwargs[AZURE_ML_ENV_VARIABLES],
         ]
 
     def _set_env_variables(self) -> None:
         """Sets the environmental variables before executing the step."""
         env_variables = json.loads(
-            b64_decode(self.entrypoint_args[ENVIRONMENTAL_VARIABLES])
+            b64_decode(self.entrypoint_args[AZURE_ML_ENV_VARIABLES])
         )
         os.environ.update(env_variables)
 
