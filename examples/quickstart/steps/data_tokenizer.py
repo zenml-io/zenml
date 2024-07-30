@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import torch
 from datasets import Dataset
 from transformers import (
     T5Tokenizer,
@@ -30,24 +29,18 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 @step
-def evaluate_model(model_path: str, tokenized_dataset: Dataset) -> None:
-    """Evaluate the model on the training dataset."""
-    model = T5ForConditionalGeneration.from_pretrained(model_path)
-    model.eval()
-    total_loss = 0
-    num_batches = 0
+def tokenize_data(dataset: Dataset) -> Dataset:
+    """Tokenize the dataset."""
+    tokenizer = T5Tokenizer.from_pretrained("t5-small")
 
-    for i in range(0, len(tokenized_dataset), 8):  # batch size of 8
-        batch = tokenized_dataset[i : i + 8]
-        inputs = {
-            "input_ids": torch.tensor(batch["input_ids"]),
-            "attention_mask": torch.tensor(batch["attention_mask"]),
-            "labels": torch.tensor(batch["labels"]),
-        }
-        with torch.no_grad():
-            outputs = model(**inputs)
-        total_loss += outputs.loss.item()
-        num_batches += 1
+    def tokenize_function(examples):
+        model_inputs = tokenizer(
+            examples["input"], max_length=128, truncation=True, padding="max_length"
+        )
+        labels = tokenizer(
+            examples["target"], max_length=128, truncation=True, padding="max_length"
+        )
+        model_inputs["labels"] = labels["input_ids"]
+        return model_inputs
 
-    avg_loss = total_loss / num_batches
-    print(f"Average loss on the dataset: {avg_loss}")
+    return dataset.map(tokenize_function, batched=True)

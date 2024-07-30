@@ -8,8 +8,12 @@ settings:
 
 # configuration of the Model Control Plane
 model:
-  name: "breast_cancer_classifier"
-  version: "production"
+  name: old_english_translator
+  version: distilbert
   license: Apache 2.0
   description: A breast cancer classifier
-  tags: ["breast_cancer", "classifier"]
+  tags: ["quickstart", "llm"]
+
+# Configure the pipeline
+parameters:
+  model_type: "t5-small"  # Choose between t5-small and ...

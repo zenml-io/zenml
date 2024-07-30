@@ -14,60 +14,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-from typing import Optional
-
-import pandas as pd
-from sklearn.base import ClassifierMixin
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import SGDClassifier
+import torch
+from datasets import Dataset
+from transformers import (
+    T5Tokenizer,
+    T5ForConditionalGeneration,
+    Trainer,
+    TrainingArguments,
+)
 from typing_extensions import Annotated
 
-from zenml import ArtifactConfig, step
+from zenml import step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-
 @step
-def model_trainer(
-    dataset_trn: pd.DataFrame,
-    model_type: str = "sgd",
-    target: Optional[str] = "target",
-) -> Annotated[
-    ClassifierMixin,
-    ArtifactConfig(name="sklearn_classifier", is_model_artifact=True),
-]:
-    """Configure and train a model on the training dataset.
+def train_model(tokenized_dataset: Dataset) -> Annotated[str, "model_path"]:
+    """Train the model and return the path to the saved model."""
+    # Check if CUDA is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    This is an example of a model training step that takes in a dataset artifact
-    previously loaded and pre-processed by other steps in your pipeline, then
-    configures and trains a model on it. The model is then returned as a step
-    output artifact.
+    model = T5ForConditionalGeneration.from_pretrained("t5-small").to(device)
+    tokenizer = T5Tokenizer.from_pretrained("t5-small")
 
-    Args:
-        dataset_trn: The preprocessed train dataset.
-        model_type: The type of model to train.
-        target: The name of the target column in the dataset.
-
-    Returns:
-        The trained model artifact.
-
-    Raises:
-        ValueError: If the model type is not supported.
-    """
-    # Initialize the model with the hyperparameters indicated in the step
-    # parameters and train it on the training set.
-    if model_type == "sgd":
-        model = SGDClassifier()
-    elif model_type == "rf":
-        model = RandomForestClassifier()
-    else:
-        raise ValueError(f"Unknown model type {model_type}")
-    logger.info(f"Training model {model}...")
-
-    model.fit(
-        dataset_trn.drop(columns=[target]),
-        dataset_trn[target],
+    training_args = TrainingArguments(
+        output_dir="./results",
+        num_train_epochs=3,
+        per_device_train_batch_size=8,
+        logging_dir="./logs",
+        logging_steps=10,
+        save_steps=50,
     )
-    return model
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_dataset,
+    )
+
+    trainer.train()
+
+    # Save the model
+    model_path = "./final_model"
+    trainer.save_model(model_path)
+
+    # Basic check
+    test_input = tokenizer(
+        "translate Old English to Modern English: Hark, what light through yonder window breaks?",
+        return_tensors="pt",
+    ).to(device)
+    with torch.no_grad():
+        test_output = model.generate(**test_input)
+    print(
+        "Test translation:", tokenizer.decode(test_output[0], skip_special_tokens=True)
+    )
+
+    print("Model training completed and saved.")
+    return model_path

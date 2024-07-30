@@ -15,8 +15,7 @@
 # limitations under the License.
 #
 
-import pandas as pd
-from sklearn.datasets import load_breast_cancer
+from datasets import Dataset
 from typing_extensions import Annotated
 
 from zenml import step
@@ -24,42 +23,22 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-
 @step
-def data_loader(
-    random_state: int, is_inference: bool = False, target: str = "target"
-) -> Annotated[pd.DataFrame, "dataset"]:
-    """Dataset reader step.
+def load_data() -> Dataset:
+    """Load and prepare the dataset."""
 
-    This is an example of a dataset reader step that load Breast Cancer dataset.
+    def read_data(file_path):
+        inputs = []
+        targets = []
 
-    This step is parameterized, which allows you to configure the step
-    independently of the step code, before running it in a pipeline.
-    In this example, the step can be configured with number of rows and logic
-    to drop target column or not. See the documentation for more information:
+        with open(file_path, "r", encoding="utf-8") as file:
+            for line in file:
+                old, modern = line.strip().split("|")
+                inputs.append(f"translate Old English to Modern English: {old}")
+                targets.append(modern)
 
-        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
+        return {"input": inputs, "target": targets}
 
-    Args:
-        random_state: Random state for sampling
-        is_inference: If `True` subset will be returned and target column
-            will be removed from dataset.
-        target: Name of target columns in dataset.
-
-    Returns:
-        The dataset artifact as Pandas DataFrame and name of target column.
-    """
-    dataset = load_breast_cancer(as_frame=True)
-    inference_size = int(len(dataset.target) * 0.05)
-    dataset: pd.DataFrame = dataset.frame
-    inference_subset = dataset.sample(
-        inference_size, random_state=random_state
-    )
-    if is_inference:
-        dataset = inference_subset
-        dataset.drop(columns=target, inplace=True)
-    else:
-        dataset.drop(inference_subset.index, inplace=True)
-    dataset.reset_index(drop=True, inplace=True)
-    logger.info(f"Dataset with {len(dataset)} records loaded!")
-    return dataset
+    # Assuming your file is named 'translations.txt'
+    data = read_data("translations.txt")
+    return Dataset.from_dict(data)

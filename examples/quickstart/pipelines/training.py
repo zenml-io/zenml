@@ -18,64 +18,18 @@
 from typing import Optional
 from uuid import UUID
 
-from steps import model_evaluator, model_promoter, model_trainer
+from steps import load_data, tokenize_data, train_model, evaluate_model, test_random_sentences
 
-from pipelines import (
-    feature_engineering,
-)
 from zenml import pipeline
-from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-
 @pipeline
-def training(
-    train_dataset_id: Optional[UUID] = None,
-    test_dataset_id: Optional[UUID] = None,
-    target: Optional[str] = "target",
-    model_type: Optional[str] = "sgd",
-):
-    """
-    Model training pipeline.
-
-    This is a pipeline that loads the data from a preprocessing pipeline,
-    trains a model on it and evaluates the model. If it is the first model
-    to be trained, it will be promoted to production. If not, it will be
-    promoted only if it has a higher accuracy than the current production
-    model version.
-
-    Args:
-        train_dataset_id: ID of the train dataset produced by feature engineering.
-        test_dataset_id: ID of the test dataset produced by feature engineering.
-        target: Name of target column in dataset.
-        model_type: The type of model to train.
-    """
-    # Link all the steps together by calling them and passing the output
-    # of one step as the input of the next step.
-
-    # Execute Feature Engineering Pipeline
-    if train_dataset_id is None or test_dataset_id is None:
-        dataset_trn, dataset_tst = feature_engineering()
-    else:
-        client = Client()
-        dataset_trn = client.get_artifact_version(
-            name_id_or_prefix=train_dataset_id
-        )
-        dataset_tst = client.get_artifact_version(
-            name_id_or_prefix=test_dataset_id
-        )
-
-    model = model_trainer(
-        dataset_trn=dataset_trn, target=target, model_type=model_type
-    )
-
-    acc = model_evaluator(
-        model=model,
-        dataset_trn=dataset_trn,
-        dataset_tst=dataset_tst,
-        target=target,
-    )
-
-    model_promoter(accuracy=acc)
+def english_translation_pipeline(model_type: str):
+    """Define a pipeline that connects the steps."""
+    dataset = load_data()
+    tokenized_dataset = tokenize_data(dataset)
+    model_path = train_model(tokenized_dataset)
+    evaluate_model(model_path, tokenized_dataset)
+    test_random_sentences(model_path)
