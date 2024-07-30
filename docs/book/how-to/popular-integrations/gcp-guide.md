@@ -2,6 +2,11 @@
 description: A simple guide to quickly set up a minimal stack on GCP.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Set up a minimal GCP stack
 
 This page aims to quickly set up a minimal production stack on GCP. With just a few simple steps you will set up a service account with specifically-scoped permissions that ZenML can use to authenticate with the relevant GCP resources.
