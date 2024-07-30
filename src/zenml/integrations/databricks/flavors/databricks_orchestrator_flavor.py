@@ -20,6 +20,7 @@ from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
@@ -27,8 +28,15 @@ if TYPE_CHECKING:
         DatabricksOrchestrator,
     )
 
-
 logger = get_logger(__name__)
+
+
+class DatabricksAvailabilityType(StrEnum):
+    """Databricks availability type."""
+
+    ON_DEMAND = "ON_DEMAND"
+    SPOT = "SPOT"
+    SPOT_WITH_FALLBACK = "SPOT_WITH_FALLBACK"
 
 
 class DatabricksOrchestratorSettings(BaseSettings):
@@ -53,11 +61,12 @@ class DatabricksOrchestratorSettings(BaseSettings):
     node_type_id: Optional[str] = None
     policy_id: Optional[str] = None
     autotermination_minutes: Optional[int] = None
-    autoscale: Tuple[int, int] = (2, 3)
+    autoscale: Tuple[int, int] = (0, 1)
     single_user_name: Optional[str] = None
     spark_conf: Optional[Dict[str, str]] = None
     spark_env_vars: Optional[Dict[str, str]] = None
     schedule_timezone: Optional[str] = None
+    availability_type: Optional[DatabricksAvailabilityType] = None
 
 
 class DatabricksOrchestratorConfig(

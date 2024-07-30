@@ -65,6 +65,9 @@ def generate_jwt_secret_key() -> str:
 class ServerConfiguration(BaseModel):
     """ZenML Server configuration attributes.
 
+    All these attributes can be set through the environment with the `ZENML_SERVER_`-Prefix.
+    The value of the `ZENML_SERVER_DEPLOYMENT_TYPE` environment variable will be extracted to deployment_type.
+
     Attributes:
         deployment_type: The type of ZenML server deployment that is running.
         server_url: The URL where the ZenML server API is reachable. Must be
