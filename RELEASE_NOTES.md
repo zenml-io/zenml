@@ -1,4 +1,45 @@
 <!-- markdown-link-check-disable -->
+
+# 0.63.0
+
+Moving forward from the last two releases, we have further improved the 
+1-click deployment tool and the stack wizard by adding support for Azure.
+
+Moreover, we implemented a new step operator that allows you to run individual 
+steps of your pipeline in Kubernetes pods.
+
+Lastly, we have simplified our pipeline models by removing their versions.
+
+## What's Changed
+* Enable cloud build service in GCP stack deployment by @stefannica in https://github.com/zenml-io/zenml/pull/2864
+* Adding a `logo_url` and the of the `integration` to component responses by @bcdurak in https://github.com/zenml-io/zenml/pull/2866
+* Use REST in Model tests by @avishniakov in https://github.com/zenml-io/zenml/pull/2834
+* Add Azure stack wizard by @avishniakov in https://github.com/zenml-io/zenml/pull/2841
+* Migration testing for 0.62.0 by @schustmi in https://github.com/zenml-io/zenml/pull/2860
+* Fix RBAC in combination with lazy loaders by @schustmi in https://github.com/zenml-io/zenml/pull/2869
+* Misc cleanup after release by @schustmi in https://github.com/zenml-io/zenml/pull/2861
+* Disable notebook error for Kubernetes orchestrator by @strickvl in https://github.com/zenml-io/zenml/pull/2870
+* Added ability to add labels to k8s pod by @htahir1 in https://github.com/zenml-io/zenml/pull/2872
+* Fix zenml pro links by @schustmi in https://github.com/zenml-io/zenml/pull/2875
+* Fix mlstacks docs typo by @begoechavarren in https://github.com/zenml-io/zenml/pull/2878
+* Fix requests vulnerability by @stefannica in https://github.com/zenml-io/zenml/pull/2843
+* Fixed some minor docs things i noticed by @htahir1 in https://github.com/zenml-io/zenml/pull/2881
+* Serialize source as Any to keep subclass attributes by @schustmi in https://github.com/zenml-io/zenml/pull/2880
+* Fix node selectors for Vertex orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/2876
+* Kubernetes step operator by @schustmi in https://github.com/zenml-io/zenml/pull/2883
+* Automatically populate GCP/azure path when using wizard from the frontend by @schustmi in https://github.com/zenml-io/zenml/pull/2886
+* Remove pipeline versioning and add run templates by @schustmi in https://github.com/zenml-io/zenml/pull/2830
+* Implement the Azure 1-click stack deployment by @stefannica in https://github.com/zenml-io/zenml/pull/2887
+* Better error message sagemaker, better documentation server env vars by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2885
+* Azure Stack Wizard docs by @bcdurak in https://github.com/zenml-io/zenml/pull/2890
+* Docs update mlflow deploy function call by @safoinme in https://github.com/zenml-io/zenml/pull/2863
+* Fix databricks resource setting by @safoinme in https://github.com/zenml-io/zenml/pull/2889
+
+## New Contributors
+* @begoechavarren made their first contribution in https://github.com/zenml-io/zenml/pull/2878
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.62.0...0.63.0
+
 # 0.62.0
 
 Building on top of the last release, this release adds a new and easy way to deploy a GCP ZenML stack from the dashboard and the CLI. Give it a try by going to the `Stacks` section in the dashboard or running the `zenml stack deploy` command! For more information on this new feature, please do check out [the video and blog](https://www.zenml.io/blog/easy-mlops-pipelines) from our previous release.
