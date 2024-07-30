@@ -671,6 +671,8 @@ def should_upload_code(
 
 
 class UploadContext:
+    """Upload context."""
+
     def __init__(
         self,
         root: str,
@@ -763,6 +765,11 @@ class UploadContext:
 
     @property
     def git_repo(self) -> Optional[Repo]:
+        """Git repository active at the upload context root.
+
+        Returns:
+            The optional git repository active at the upload context root.
+        """
         try:
             # These imports fail when git is not installed on the machine
             from git.exc import InvalidGitRepositoryError
@@ -814,7 +821,6 @@ class UploadContext:
         return list(self._extra_files.items())
 
 
-# TODO: which files to include? gitignore, dockerignore, zenignore?
 def upload_code_if_necessary() -> str:
     """Upload code to the artifact store if necessary.
 

@@ -413,9 +413,11 @@ class StackDeploymentProvider(StrEnum):
 
 
 class RequirementType(StrEnum):
+    """All requirement types."""
+
     UNKNOWN = "unknown"
     STACK = "stack"
-    USER = "user"  # maybe pipeline?
+    USER = "user"
     INTEGRATION = "integration"
     LOCAL_ENVIRONMENT = "local_environment"
     CODE_REPOSITORY = "code_repository"

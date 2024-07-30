@@ -200,7 +200,7 @@ class BaseEntrypointConfiguration(ABC):
 
         Raises:
             RuntimeError: If the current environment requires code download
-                but the deployment does not have an associated code reference.
+                but the deployment does not have a reference to any code.
         """
         requires_code_download = handle_bool_env_var(
             ENV_ZENML_REQUIRES_CODE_DOWNLOAD
@@ -225,6 +225,11 @@ class BaseEntrypointConfiguration(ABC):
     def download_code_from_code_repository(
         self, code_reference: "CodeReferenceResponse"
     ) -> None:
+        """Download code from a code repository.
+
+        Args:
+            code_reference: The reference to the code.
+        """
         logger.info(
             "Downloading code from code repository `%s` (commit `%s`).",
             code_reference.code_repository.name,
@@ -251,6 +256,15 @@ class BaseEntrypointConfiguration(ABC):
         sys.path.insert(0, download_dir)
 
     def download_code_from_artifact_store(self, code_path: str) -> None:
+        """Download code from the artifact store.
+
+        Args:
+            code_path: Path where the code is stored.
+
+        Raises:
+            RuntimeError: If the code is stored in an artifact store which is
+                not active.
+        """
         logger.info(
             "Downloading code from artifact store path `%s`.", code_path
         )
