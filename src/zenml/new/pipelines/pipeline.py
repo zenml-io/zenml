@@ -685,9 +685,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     "`DockerSettings.prevent_build_reuse` instead."
                 )
 
-            prevent_build_reuse = (
-                prevent_build_reuse or deployment.should_prevent_build_reuse
-            )
             build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
                 pipeline_id=pipeline_id,

@@ -17,19 +17,14 @@ import hashlib
 import os
 import platform
 import tempfile
-from pathlib import Path
 from typing import (
-    IO,
     TYPE_CHECKING,
     Dict,
     List,
     Optional,
-    Tuple,
     Union,
 )
 from uuid import UUID
-
-from git.repo.base import Repo
 
 import zenml
 from zenml.client import Client
@@ -46,10 +41,10 @@ from zenml.models import (
     PipelineDeploymentBase,
     StackResponse,
 )
+from zenml.new.pipelines.code_archive import CodeArchive
 from zenml.stack import Stack
 from zenml.utils import (
     source_utils,
-    string_utils,
 )
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -155,6 +150,7 @@ def reuse_or_create_pipeline_build(
     if not build:
         if (
             allow_build_reuse
+            and not deployment.should_prevent_build_reuse
             and not requires_included_code(
                 deployment=deployment, code_repository=code_repository
             )
@@ -670,157 +666,6 @@ def should_upload_code(
     return True
 
 
-class UploadContext:
-    """Upload context."""
-
-    def __init__(
-        self,
-        root: str,
-    ) -> None:
-        """Initializes a build context.
-
-        Args:
-            root: Optional root directory for the build context.
-            dockerignore_file: Optional path to a dockerignore file. If not
-                given, a file called `.dockerignore` in the build context root
-                directory will be used instead if it exists.
-        """
-        self._root = root
-        self._extra_files: Dict[str, str] = {}
-
-    def add_file(self, source: str, destination: str) -> None:
-        """Adds a file to the build context.
-
-        Args:
-            source: The source of the file to add. This can either be a path
-                or the file content.
-            destination: The path inside the build context where the file
-                should be added.
-        """
-        if fileio.exists(source):
-            with fileio.open(source) as f:
-                self._extra_files[destination] = f.read()
-        else:
-            self._extra_files[destination] = source
-
-    def add_directory(self, source: str, destination: str) -> None:
-        """Adds a directory to the build context.
-
-        Args:
-            source: Path to the directory.
-            destination: The path inside the build context where the directory
-                should be added.
-
-        Raises:
-            ValueError: If `source` does not point to a directory.
-        """
-        if not fileio.isdir(source):
-            raise ValueError(
-                f"Can't add directory {source} to the build context as it "
-                "does not exist or is not a directory."
-            )
-
-        for dir, _, files in fileio.walk(source):
-            dir_path = Path(fileio.convert_to_str(dir))
-            for file_name in files:
-                file_name = fileio.convert_to_str(file_name)
-                file_source = dir_path / file_name
-                file_destination = (
-                    Path(destination)
-                    / dir_path.relative_to(source)
-                    / file_name
-                )
-
-                with file_source.open("r") as f:
-                    self._extra_files[file_destination.as_posix()] = f.read()
-
-    def write_archive(self, output_file: IO[bytes], gzip: bool = True) -> None:
-        """Writes an archive of the build context to the given file.
-
-        Args:
-            output_file: The file to write the archive to.
-            gzip: Whether to use `gzip` to compress the file.
-        """
-        from docker.utils import build as docker_build_utils
-
-        files = self._get_files()
-        extra_files = self._get_extra_files()
-
-        context_archive = docker_build_utils.create_archive(
-            fileobj=output_file,
-            root=self._root,
-            files=files,
-            gzip=gzip,
-            extra_files=extra_files,
-        )
-
-        build_context_size = os.path.getsize(context_archive.name)
-        if build_context_size > 50 * 1024 * 1024:
-            logger.warning(
-                "Code upload size: `%s`. If you believe this is "
-                "unreasonably large, make sure to include unnecessary files in "
-                "a `.gitignore` file.",
-                string_utils.get_human_readable_filesize(build_context_size),
-            )
-
-    @property
-    def git_repo(self) -> Optional[Repo]:
-        """Git repository active at the upload context root.
-
-        Returns:
-            The optional git repository active at the upload context root.
-        """
-        try:
-            # These imports fail when git is not installed on the machine
-            from git.exc import InvalidGitRepositoryError
-            from git.repo.base import Repo
-        except ImportError:
-            return None
-
-        try:
-            git_repo = Repo(path=self._root, search_parent_directories=True)
-        except InvalidGitRepositoryError:
-            return None
-
-        return git_repo
-
-    def _get_files(self) -> Optional[List[str]]:
-        if repo := self.git_repo:
-            try:
-                result = repo.git.ls_files(
-                    "--cached",
-                    "--others",
-                    "--modified",
-                    "--exclude-standard",
-                    self._root,
-                )
-            except Exception as e:
-                logger.warning(
-                    "Failed to get non-ignored files from git: %s", str(e)
-                )
-            else:
-                files = set()
-                for file in result.split():
-                    relative_path = os.path.relpath(
-                        os.path.join(repo.working_dir, file), self._root
-                    )
-                    if os.path.exists(relative_path):
-                        files.add(relative_path)
-
-                return sorted(files)
-
-        return None
-
-    def _get_extra_files(self) -> List[Tuple[str, str]]:
-        """Gets all extra files of the build context.
-
-        Returns:
-            A tuple (path, file_content) for all extra files in the build
-            context.
-        """
-        return list(self._extra_files.items())
-
-
 def upload_code_if_necessary() -> str:
     """Upload code to the artifact store if necessary.
 
@@ -831,15 +676,11 @@ def upload_code_if_necessary() -> str:
     Returns:
         The path where to archived code is uploaded.
     """
-    upload_context = UploadContext(root=source_utils.get_source_root())
+    code_archive = CodeArchive(root=source_utils.get_source_root())
     artifact_store = Client().active_stack.artifact_store
 
     with tempfile.NamedTemporaryFile(mode="w+b", delete=True) as f:
-        # Don't use gzip as that includes the creation timestamp of the
-        # compressed tar file, which means the hash changes each time. This
-        # means currently the archive is not compressed, which should be
-        # changed.
-        upload_context.write_archive(f, gzip=False)
+        code_archive.write_archive(f)
 
         hash_ = hashlib.sha1()  # nosec
 
@@ -849,7 +690,7 @@ def upload_code_if_necessary() -> str:
                 break
             hash_.update(data)
 
-        filename = f"{hash_.hexdigest()}.tar"
+        filename = f"{hash_.hexdigest()}.tar.gz"
         upload_dir = os.path.join(artifact_store.path, "code_uploads")
         fileio.makedirs(upload_dir)
         upload_path = os.path.join(upload_dir, filename)

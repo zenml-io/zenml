@@ -279,7 +279,7 @@ class BaseEntrypointConfiguration(ABC):
         extract_dir = os.path.abspath("code")
         os.makedirs(extract_dir)
 
-        download_path = "code.tar"
+        download_path = os.path.basename(code_path)
         fileio.copy(code_path, download_path)
 
         shutil.unpack_archive(filename=download_path, extract_dir=extract_dir)
