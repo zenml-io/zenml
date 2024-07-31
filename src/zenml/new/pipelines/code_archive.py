@@ -113,7 +113,7 @@ class CodeArchive(Archivable):
         archive_size = os.path.getsize(output_file.name)
         if archive_size > 20 * 1024 * 1024:
             logger.warning(
-                "Code upload size: `%s`. If you believe this is "
+                "Code archive size: `%s`. If you believe this is "
                 "unreasonably large, make sure to version your code in git and "
                 "ignore unnecessary files using a `.gitignore` file.",
                 string_utils.get_human_readable_filesize(archive_size),

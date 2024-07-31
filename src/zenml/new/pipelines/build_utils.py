@@ -43,9 +43,7 @@ from zenml.models import (
 )
 from zenml.new.pipelines.code_archive import CodeArchive
 from zenml.stack import Stack
-from zenml.utils import (
-    source_utils,
-)
+from zenml.utils import source_utils, string_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -744,6 +742,8 @@ def upload_code_if_necessary() -> str:
     code_archive = CodeArchive(root=source_utils.get_source_root())
     artifact_store = Client().active_stack.artifact_store
 
+    logger.info("Archiving code...")
+
     with tempfile.NamedTemporaryFile(
         mode="w+b", delete=True, suffix=".tar.gz"
     ) as f:
@@ -763,12 +763,17 @@ def upload_code_if_necessary() -> str:
         upload_path = os.path.join(upload_dir, filename)
 
         if not fileio.exists(upload_path):
-            logger.info("Uploading code to `%s`.", upload_path)
+            archive_size = string_utils.get_human_readable_filesize(
+                os.path.getsize(f.name)
+            )
+            logger.info(
+                "Uploading code to `%s` (Size: %s).", upload_path, archive_size
+            )
             fileio.copy(f.name, upload_path)
             logger.info("Code upload finished.")
         else:
-            logger.debug(
-                "Code already exists in artifact store, not uploading."
+            logger.info(
+                "Code already exists in artifact store, skipping upload."
             )
 
     return upload_path

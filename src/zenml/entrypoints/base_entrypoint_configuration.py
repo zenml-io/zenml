@@ -252,8 +252,9 @@ class BaseEntrypointConfiguration(ABC):
         code_repository_utils.set_custom_local_repository(
             root=code_repo_root, commit=code_reference.commit, repo=repo
         )
-        # Add downloaded file directory to python path
+
         sys.path.insert(0, download_dir)
+        os.chdir(download_dir)
 
     def download_code_from_artifact_store(self, code_path: str) -> None:
         """Download code from the artifact store.
@@ -287,6 +288,7 @@ class BaseEntrypointConfiguration(ABC):
 
         source_utils.set_custom_source_root(extract_dir)
         sys.path.insert(0, extract_dir)
+        os.chdir(extract_dir)
 
     @abstractmethod
     def run(self) -> None:
