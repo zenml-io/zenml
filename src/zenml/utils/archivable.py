@@ -101,7 +101,7 @@ class Archivable(ABC):
             # file to be different each time. We use this hash to avoid
             # duplicate uploads, which is why we pass emtpy values for filename
             # and mtime here.
-            fileobj = GzipFile(
+            fileobj: Any = GzipFile(
                 filename="", mode="wb", fileobj=output_file, mtime=0.0
             )
         else:
@@ -119,7 +119,7 @@ class Archivable(ABC):
                     else:
                         tf.addfile(info, None)
 
-            for archive_path, contents in extra_files:
+            for archive_path, contents in extra_files.items():
                 info = tarfile.TarInfo(archive_path)
                 contents_encoded = contents.encode("utf-8")
                 info.size = len(contents_encoded)

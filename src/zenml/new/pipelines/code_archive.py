@@ -34,8 +34,7 @@ class CodeArchive(Archivable):
         """Initialize the object.
 
         Args:
-            *args: Unused args for subclasses.
-            **kwargs: Unused keyword args for subclasses.
+            root: Root directory of the archive.
         """
         super().__init__()
         self._root = root
