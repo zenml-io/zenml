@@ -48,7 +48,14 @@ Examples:
     default=False,
     help="Disable caching for the pipeline run.",
 )
+@click.option(
+    "--model_type",
+    type=click.Choice(['t5-small', 't5-large'], case_sensitive=False),
+    default='t5-small',
+    help="Choose the model size: t5-small or t5-large.",
+)
 def main(
+    model_type: str,
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
@@ -61,15 +68,7 @@ def main(
       * launching the pipeline
 
     Args:
-        train_dataset_name: The name of the train dataset produced by feature engineering.
-        train_dataset_version_name: Version of the train dataset produced by feature engineering.
-            If not specified, a new version will be created.
-        test_dataset_name: The name of the test dataset produced by feature engineering.
-        test_dataset_version_name: Version of the test dataset produced by feature engineering.
-            If not specified, a new version will be created.
-        feature_pipeline: Whether to run the pipeline that creates the dataset.
-        training_pipeline: Whether to run the pipeline that trains the model.
-        inference_pipeline: Whether to run the pipeline that performs inference.
+        model_type: Type of model to use
         no_cache: If `True` cache will be disabled.
     """
     client = Client()

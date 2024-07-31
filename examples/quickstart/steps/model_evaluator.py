@@ -30,9 +30,8 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 @step
-def evaluate_model(model_path: str, tokenized_dataset: Dataset) -> None:
+def evaluate_model(model: T5ForConditionalGeneration, tokenized_dataset: Dataset) -> None:
     """Evaluate the model on the training dataset."""
-    model = T5ForConditionalGeneration.from_pretrained(model_path)
     model.eval()
     total_loss = 0
     num_batches = 0

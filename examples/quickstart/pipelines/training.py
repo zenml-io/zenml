@@ -20,16 +20,17 @@ from uuid import UUID
 
 from steps import load_data, tokenize_data, train_model, evaluate_model, test_random_sentences
 
+from steps.model_trainer import T5_Model
 from zenml import pipeline
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 @pipeline
-def english_translation_pipeline(model_type: str):
+def english_translation_pipeline(model_type: T5_Model):
     """Define a pipeline that connects the steps."""
     dataset = load_data()
     tokenized_dataset = tokenize_data(dataset)
-    model_path = train_model(tokenized_dataset)
-    evaluate_model(model_path, tokenized_dataset)
-    test_random_sentences(model_path)
+    model, tokenizer = train_model(tokenized_dataset, model_type)
+    evaluate_model(model, tokenized_dataset)
+    test_random_sentences(model, tokenizer)

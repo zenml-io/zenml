@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Tuple
+
 import torch
 from datasets import Dataset
 from transformers import (
@@ -24,27 +26,47 @@ from transformers import (
 )
 from typing_extensions import Annotated
 
+from materializers import T5Materializer
 from zenml import step
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-@step
-def train_model(tokenized_dataset: Dataset) -> Annotated[str, "model_path"]:
+
+class T5_Model(StrEnum):
+    """All possible types a `StackComponent` can have."""
+
+    SMALL = "t5-small"
+    LARGE = "t5-large"
+
+@step(output_materializers=T5Materializer)
+def train_model(
+    tokenized_dataset: Dataset,
+    model_type: T5_Model
+) -> Tuple[Annotated[T5ForConditionalGeneration, "model"], Annotated[T5Tokenizer, "tokenizer"]]:
     """Train the model and return the path to the saved model."""
-    # Check if CUDA is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = T5ForConditionalGeneration.from_pretrained("t5-small").to(device)
-    tokenizer = T5Tokenizer.from_pretrained("t5-small")
+    model = T5ForConditionalGeneration.from_pretrained(model_type)
+    model.gradient_checkpointing_enable()  # Enable gradient checkpointing
+    model = model.to(device)
+
+    tokenizer = T5Tokenizer.from_pretrained(model_type)
 
     training_args = TrainingArguments(
         output_dir="./results",
         num_train_epochs=3,
-        per_device_train_batch_size=8,
+        per_device_train_batch_size=1,  # Reduced batch size for larger model
+        gradient_accumulation_steps=16,  # Increased gradient accumulation
         logging_dir="./logs",
         logging_steps=10,
         save_steps=50,
+        fp16=True,  # Mixed precision training
+        warmup_steps=500,
+        learning_rate=3e-5,
+        max_grad_norm=0.5,  # Gradient clipping
+        dataloader_num_workers=4,  # Adjust based on your system
     )
 
     trainer = Trainer(
@@ -55,13 +77,9 @@ def train_model(tokenized_dataset: Dataset) -> Annotated[str, "model_path"]:
 
     trainer.train()
 
-    # Save the model
-    model_path = "./final_model"
-    trainer.save_model(model_path)
-
     # Basic check
     test_input = tokenizer(
-        "translate Old English to Modern English: Hark, what light through yonder window breaks?",
+        "Translate Old English to Modern English: Hark, what light through yonder window breaks?",
         return_tensors="pt",
     ).to(device)
     with torch.no_grad():
@@ -71,4 +89,4 @@ def train_model(tokenized_dataset: Dataset) -> Annotated[str, "model_path"]:
     )
 
     print("Model training completed and saved.")
-    return model_path
+    return trainer.model, tokenizer

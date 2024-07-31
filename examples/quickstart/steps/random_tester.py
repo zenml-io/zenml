@@ -122,10 +122,8 @@ old_english_words = [
 ]
 
 @step
-def test_random_sentences(model_path: str) -> None:
+def test_random_sentences(model: T5ForConditionalGeneration, tokenizer: T5Tokenizer) -> None:
     """Test the model on some generated Old English-style sentences."""
-    model = T5ForConditionalGeneration.from_pretrained(model_path)
-    tokenizer = T5Tokenizer.from_pretrained("t5-small")
 
     model.eval()  # Set the model to evaluation mode
 
