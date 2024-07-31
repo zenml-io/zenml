@@ -99,7 +99,7 @@ class Archivable(ABC):
             # library as that one includes the tar filename and creation
             # timestamp in the archive which causes the hash of the resulting
             # file to be different each time. We use this hash to avoid
-            # duplicate uploads, which is why we pass emtpy values for filename
+            # duplicate uploads, which is why we pass empty values for filename
             # and mtime here.
             fileobj: Any = GzipFile(
                 filename="", mode="wb", fileobj=output_file, mtime=0.0

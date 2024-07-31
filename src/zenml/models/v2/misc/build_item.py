@@ -26,8 +26,6 @@ class BuildItem(BaseModel):
         dockerfile: The contents of the Dockerfile used to build the image.
         requirements: The pip requirements installed in the image. This is a
             string consisting of multiple concatenated requirements.txt files.
-        pypi_requirements: PyPI requirements included in the image.
-        apt_requirements: Apt requirements included in the image.
         settings_checksum: Checksum of the settings used for the build.
         contains_code: Whether the image contains user files.
         requires_code_download: Whether the image needs to download files.
