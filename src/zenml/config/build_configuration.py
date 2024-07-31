@@ -14,11 +14,13 @@
 """Build configuration class."""
 
 import hashlib
+import json
 from typing import TYPE_CHECKING, Dict, Optional
 
 from pydantic import BaseModel
 
 from zenml.config.docker_settings import DockerSettings, SourceFileMode
+from zenml.utils import json_utils
 
 if TYPE_CHECKING:
     from zenml.code_repositories import BaseCodeRepository
@@ -60,11 +62,14 @@ class BuildConfiguration(BaseModel):
             The checksum.
         """
         hash_ = hashlib.md5()  # nosec
-        hash_.update(
-            self.settings.model_dump_json(
-                exclude={"prevent_build_reuse"}
-            ).encode()
+        settings_json = json.dumps(
+            self.settings.model_dump(
+                mode="json", exclude={"prevent_build_reuse"}
+            ),
+            sort_keys=True,
+            default=json_utils.pydantic_encoder,
         )
+        hash_.update(settings_json.encode())
         if self.entrypoint:
             hash_.update(self.entrypoint.encode())
 

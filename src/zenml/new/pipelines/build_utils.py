@@ -85,17 +85,17 @@ def requires_included_code(
         If the deployment requires code included in the container images.
     """
     for step in deployment.step_configurations.values():
-        if step.config.docker_settings.source_files == {
+        if step.config.docker_settings.source_files == [
             SourceFileMode.INCLUDE
-        }:
+        ]:
             return True
 
         if (
             step.config.docker_settings.source_files
-            == {
+            == [
                 SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
                 SourceFileMode.INCLUDE,
-            }
+            ]
             and not code_repository
         ):
             return True
@@ -116,9 +116,9 @@ def requires_download_from_code_repository(
     """
     return any(
         step.config.docker_settings.source_files
-        == {
+        == [
             SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
-        }
+        ]
         for step in deployment.step_configurations.values()
     )
 

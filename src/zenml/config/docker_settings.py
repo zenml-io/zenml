@@ -14,7 +14,7 @@
 """Docker settings."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import SettingsConfigDict
@@ -57,11 +57,11 @@ class SourceFileMode(Enum):
     DOWNLOAD_FROM_ARTIFACT_STORE = "download_from_artifact_store"
 
 
-DEFAULT_SOURCE_FILE_MODE = {
+DEFAULT_SOURCE_FILE_MODE = [
     SourceFileMode.INCLUDE,
     SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
     SourceFileMode.DOWNLOAD_FROM_ARTIFACT_STORE,
-}
+]
 
 
 class PythonPackageInstaller(Enum):
@@ -233,7 +233,7 @@ class DockerSettings(BaseSettings):
     user: Optional[str] = None
     build_config: Optional[DockerBuildConfig] = None
 
-    source_files: Set[SourceFileMode] = DEFAULT_SOURCE_FILE_MODE
+    source_files: List[SourceFileMode] = DEFAULT_SOURCE_FILE_MODE
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "copy_files", "copy_global_config"
