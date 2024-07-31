@@ -586,13 +586,22 @@ def verify_custom_build(
                 "again."
             )
 
+        if (
+            requires_download_from_code_repository(deployment=deployment)
+            and not code_repository
+        ):
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code should be downloaded from a "
+                "code repository "
+                "(`source_files=['download_from_code_repository']`), but "
+                "there is no code repository active at your current source "
+                f"root `{source_utils.get_source_root()}`."
+            )
+
         if not code_download_possible(
             deployment=deployment, code_repository=code_repository
         ):
-            # The case that download from a code repo is required but not
-            # possible is already handled in `verify_local_repository_context`.
-            # This means that some step does not allow code download from the
-            # artifact store.
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
                 "steps specify that code can not be downloaded from the "

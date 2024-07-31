@@ -158,7 +158,9 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
     """Tests that the build settings and pipeline ID get correctly forwarded."""
     build_config = BuildConfiguration(
         key="key",
-        settings=DockerSettings(),
+        settings=DockerSettings(
+            source_files=["include", "download_from_code_repository"]
+        ),
         step_name="step_name",
         entrypoint="entrypoint",
         extra_files={"key": "value"},
@@ -366,11 +368,8 @@ def test_custom_build_verification(
             }
         )
     )
-
-    mocker.patch.object(
-        PipelineDeploymentBase,
-        "requires_code_download",
-        new_callable=mocker.PropertyMock,
+    mocker.patch(
+        "zenml.new.pipelines.build_utils.requires_download_from_code_repository",
         return_value=True,
     )
 
@@ -436,10 +435,8 @@ def test_local_repo_verification(
         client_version=sample_deployment_response_model.client_version,
         server_version=sample_deployment_response_model.server_version,
     )
-    mocker.patch.object(
-        PipelineDeploymentBase,
-        "requires_code_download",
-        new_callable=mocker.PropertyMock,
+    mocker.patch(
+        "zenml.new.pipelines.build_utils.requires_download_from_code_repository",
         return_value=False,
     )
 
@@ -456,10 +453,8 @@ def test_local_repo_verification(
         local_repo_context=context_with_local_changes,
     )
 
-    mocker.patch.object(
-        PipelineDeploymentBase,
-        "requires_code_download",
-        new_callable=mocker.PropertyMock,
+    mocker.patch(
+        "zenml.new.pipelines.build_utils.requires_download_from_code_repository",
         return_value=True,
     )
     mocker.patch.object(Stack, "get_docker_builds", return_value=[])
