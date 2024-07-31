@@ -410,14 +410,3 @@ class StackDeploymentProvider(StrEnum):
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
-
-
-class RequirementType(StrEnum):
-    """All requirement types."""
-
-    UNKNOWN = "unknown"
-    STACK = "stack"
-    USER = "user"
-    INTEGRATION = "integration"
-    LOCAL_ENVIRONMENT = "local_environment"
-    CODE_REPOSITORY = "code_repository"
