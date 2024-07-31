@@ -125,6 +125,9 @@ class Archivable(ABC):
                 info.size = len(contents_encoded)
                 tf.addfile(info, io.BytesIO(contents_encoded))
 
+        if use_gzip:
+            fileobj.close()
+
         output_file.seek(0)
 
     @abstractmethod

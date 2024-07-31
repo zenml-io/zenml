@@ -679,7 +679,9 @@ def upload_code_if_necessary() -> str:
     code_archive = CodeArchive(root=source_utils.get_source_root())
     artifact_store = Client().active_stack.artifact_store
 
-    with tempfile.NamedTemporaryFile(mode="w+b", delete=True) as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w+b", delete=True, suffix=".tar.gz"
+    ) as f:
         code_archive.write_archive(f)
 
         hash_ = hashlib.sha1()  # nosec
