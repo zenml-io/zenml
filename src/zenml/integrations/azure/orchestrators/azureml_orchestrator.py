@@ -300,7 +300,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 AzureMLEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
                     deployment_id=deployment.id,
-                    azure_ml_env_variables=b64_encode(json.dumps(environment)),
+                    zenml_env_variables=b64_encode(json.dumps(environment)),
                 )
             )
 
