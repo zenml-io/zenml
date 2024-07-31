@@ -12,7 +12,7 @@ authorize ZenML to utilize them for running pipelines and other AI/ML operations
 
 By leveraging these Terraform modules, users can ensure a more efficient and
 scalable deployment of their machine learning infrastructure, ultimately
-enhancing their development and operational workflows. The modules
+enhancing their development and operational workflows. The modules'
 implementation can also be used as a reference for creating custom Terraform
 configurations tailored to specific cloud environments and requirements.
 
