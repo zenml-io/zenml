@@ -1,19 +1,9 @@
-# environment configuration
-settings:
-  docker:
-    required_integrations:
-      - sklearn
-    requirements:
-      - pyarrow
-
 # configuration of the Model Control Plane
 model:
-  name: old_english_translator
-  version: distilbert
-  license: Apache 2.0
-  description: A breast cancer classifier
+  name: YeOldeEnglishTranslator
+  description: Model to translate from old to modern english
   tags: ["quickstart", "llm"]
 
 # Configure the pipeline
-parameters:
-  model_type: "t5-small"  # Choose between t5-small and ...
+# parameters:
+#  model_type: "t5-small"  # Choose between t5-small and ...

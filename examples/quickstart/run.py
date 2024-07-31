@@ -85,9 +85,9 @@ def main(
     if no_cache:
         pipeline_args["enable_cache"] = False
     pipeline_args["config_path"] = os.path.join(
-        config_folder, "training_local.yaml"
+        config_folder, "training_remote.yaml"
     )
-    english_translation_pipeline.with_options(**pipeline_args)(**run_args_train)
+    english_translation_pipeline.with_options(**pipeline_args)(model_type, **run_args_train)
     logger.info("Training pipeline with SGD finished successfully!\n\n")
 
 
