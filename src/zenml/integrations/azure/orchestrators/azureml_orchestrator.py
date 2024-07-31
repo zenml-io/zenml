@@ -27,6 +27,7 @@ from azure.ai.ml.entities import (
     RecurrenceTrigger,
 )
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.step_configurations import Step
