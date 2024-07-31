@@ -123,6 +123,39 @@ def requires_download_from_code_repository(
     )
 
 
+def code_download_possible(
+    deployment: "PipelineDeploymentBase",
+    code_repository: Optional["BaseCodeRepository"] = None,
+) -> bool:
+    """Checks whether code download is possible for the deployment.
+
+    Args:
+        deployment: The deployment.
+        code_repository: If provided, this code repository can be used to
+            download the code inside the container images.
+
+    Returns:
+        Whether code download is possible for the deployment.
+    """
+    for step in deployment.step_configurations.values():
+        if (
+            SourceFileMode.DOWNLOAD_FROM_ARTIFACT_STORE
+            in step.config.docker_settings.source_files
+        ):
+            continue
+
+        if (
+            SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY
+            in step.config.docker_settings.source_files
+            and code_repository
+        ):
+            continue
+
+        return False
+
+    return True
+
+
 def reuse_or_create_pipeline_build(
     deployment: "PipelineDeploymentBase",
     allow_build_reuse: bool,
@@ -455,26 +488,29 @@ def verify_local_repository_context(
             if not local_repo_context:
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but there is no "
-                    "code repository active at your current source root "
-                    f"`{source_utils.get_source_root()}`."
+                    "steps specify that code should be downloaded from a "
+                    "code repository "
+                    "(`source_files=['download_from_code_repository']`), but "
+                    "there is no code repository active at your current source "
+                    f"root `{source_utils.get_source_root()}`."
                 )
             elif local_repo_context.is_dirty:
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but the code "
-                    "repository active at your current source root "
+                    "steps specify that code should be downloaded from a "
+                    "code repository "
+                    "(`source_files=['download_from_code_repository']`), but "
+                    "the code repository active at your current source root "
                     f"`{source_utils.get_source_root()}` has uncommitted "
                     "changes."
                 )
             elif local_repo_context.has_local_changes:
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but the code "
-                    "repository active at your current source root "
+                    "steps specify that code should be downloaded from a "
+                    "code repository "
+                    "(`source_files=['download_from_code_repository']`), but "
+                    "the code repository active at your current source root "
                     f"`{source_utils.get_source_root()}` has unpushed "
                     "changes."
                 )
@@ -482,13 +518,13 @@ def verify_local_repository_context(
         if local_repo_context:
             if local_repo_context.is_dirty:
                 logger.warning(
-                    "Unable to use code repository to download code for this run "
-                    "as there are uncommitted changes."
+                    "Unable to use code repository to download code for this "
+                    "run as there are uncommitted changes."
                 )
             elif local_repo_context.has_local_changes:
                 logger.warning(
-                    "Unable to use code repository to download code for this run "
-                    "as there are unpushed changes."
+                    "Unable to use code repository to download code for this "
+                    "run as there are unpushed changes."
                 )
 
     code_repository = None
@@ -537,13 +573,33 @@ def verify_custom_build(
             "might differ from the local code in your client environment."
         )
 
-    if build.requires_code_download and not code_repository:
-        raise RuntimeError(
-            "The build you specified does not include code but code download "
-            "not possible. This might be because you don't have a code "
-            "repository registered or the code repository contains local "
-            "changes."
-        )
+    if build.requires_code_download:
+        if requires_included_code(
+            deployment=deployment, code_repository=code_repository
+        ):
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code should be included in the Docker "
+                "image (`source_files=['include']`), but the build you "
+                "specified requires code download. Either update your "
+                "`DockerSettings` or specify a different build and try "
+                "again."
+            )
+
+        if not code_download_possible(
+            deployment=deployment, code_repository=code_repository
+        ):
+            # The case that download from a code repo is required but not
+            # possible is already handled in `verify_local_repository_context`.
+            # This means that some step does not allow code download from the
+            # artifact store.
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code can not be downloaded from the "
+                "artifact store, but the build you specified requires code "
+                "download. Either update your `DockerSettings` or specify a "
+                "different build and try again."
+            )
 
     if build.checksum:
         build_checksum = compute_build_checksum(
