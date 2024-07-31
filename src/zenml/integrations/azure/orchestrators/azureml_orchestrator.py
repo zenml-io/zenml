@@ -195,6 +195,10 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         try:
             client.compute.get(compute_name)
             logger.info(f"Using existing compute target: '{compute_name}'.")
+
+            # TODO: We need to start the compute again if it is stopped.
+            # TODO: We need to check whether extra parameters are set and
+            #   throw a warning.
             return compute_name
 
         # If the compute target does not exist create it
@@ -317,9 +321,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         pipeline_args["name"] = run_name
 
         if compute_target := self._create_or_get_compute(ml_client, settings):
-            pipeline_args["compute_target"] = compute_target
+            pipeline_args["compute"] = compute_target
 
-        @pipeline(**pipeline_args)  # type:ignore[call-overload, misc]
+        @pipeline(**pipeline_args)
         def azureml_pipeline() -> None:
             """Create an AzureML pipeline."""
             # Here we have to track the inputs and outputs so that we can bind
