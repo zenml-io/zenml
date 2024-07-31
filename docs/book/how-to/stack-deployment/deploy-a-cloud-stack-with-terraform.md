@@ -26,7 +26,7 @@ to deploy a cloud stack with ZenML with minimal knowledge of Terraform or cloud
 infrastructure for that matter.
 
 If you have the required infrastructure pieces already deployed on your cloud, 
-you can also use [the stack wizard to seamlessly register your stack](register-a-cloud-stack.md).
+you can also use [the stack wizard to seamlessly register your stack](../../how-to/stack-deployment/register-a-cloud-stack.md).
 {% endhint %}
 
 ## Pre-requisites
