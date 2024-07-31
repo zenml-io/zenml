@@ -13,20 +13,26 @@ When using a stack with remote storage, nothing changes except the fact that the
 <figure><img src="../../.gitbook/assets/local_run_with_remote_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
 
 {% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? 
-Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-and learn how to use:**
+Would you like to skip ahead and deploy a full ZenML cloud stack already?
+
+Registering a remote stack is one of the first steps towards taking your ZenML
+project to production and it can get complicated. ZenML supports you in this
+process by providing a few different shortcuts to help you deploy your first
+stack based on real cloud infrastructure with minimal effort:
+
+* you can let ZenML at the wheel and use [the automated 1-click stack deployment flow](../../how-to/stack-deployment/deploy-a-cloud-stack.md) to build your ZenML cloud stack from scratch. This is the easiest way to get started with cloud ZenML stacks, in the dashboard or with the CLI:
 
 ```shell
-zenml stack deploy --provider aws
+zenml stack deploy --provider aws|gcp|azure
 ```
-
-**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-and learn how to use:**
+* if you already have some infrastructure pieces provisioned in your cloud and you prefer to have more control over the stack configuration, 
+you can also use [the stack wizard](register-a-cloud-stack.md) to seamlessly register your ZenML cloud stack in the dashboard or with the CLI:
 
 ```shell
-zenml stack register <STACK_NAME> --provider aws
+zenml stack register <STACK_NAME> --provider aws|gcp|azure
 ```
+
+* if you are a hardened infrastructure professional who prefers a more hands-on approach that gives you more control over the infrastructure that is provisioned, you can use [one of our Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md) to deploy a ZenML cloud stack with Terraform. 
 {% endhint %}
 
 ## Provisioning and registering a remote artifact store

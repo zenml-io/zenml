@@ -17,10 +17,26 @@ You should use the Google Cloud image builder if:
 ### How to deploy it
 
 {% hint style="info" %}
-Don't want to deploy the image builder manually? Check out the
-[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-or the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md)
-for a shortcut on how to deploy & register this stack component.
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including the Google Cloud image builder?
+
+You can use one of several different shortcuts that ZenML provides you to help
+you deploy your first stack based on real cloud infrastructure with minimal
+effort:
+
+* you can let ZenML at the wheel and use [the automated 1-click stack deployment flow](../../how-to/stack-deployment/deploy-a-cloud-stack.md) to build your ZenML cloud stack from scratch. This is the easiest way to get started with cloud ZenML stacks, in the dashboard or with the CLI:
+
+```shell
+zenml stack deploy --provider gcp
+```
+* if you already have some infrastructure pieces provisioned in your cloud and you prefer to have more control over the stack configuration, 
+you can also use [the stack wizard](register-a-cloud-stack.md) to seamlessly register your ZenML cloud stack in the dashboard or with the CLI:
+
+```shell
+zenml stack register <STACK_NAME> --provider gcp
+```
+
+* if you are a hardened infrastructure professional who prefers a more hands-on approach that gives you more control over the infrastructure that is provisioned, you can use [our GCP Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md) to deploy a ZenML cloud stack with Terraform. 
 {% endhint %}
 
 In order to use the ZenML Google Cloud image builder you need to enable Google Cloud Build relevant APIs on the Google Cloud project.

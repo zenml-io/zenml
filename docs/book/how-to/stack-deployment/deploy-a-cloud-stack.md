@@ -17,6 +17,10 @@ infrastructure on your selected cloud provider and get you started on remote
 stack with a single click**.
 
 {% hint style="info" %}
+If you prefer to have more control over where and how resources are provisioned
+in your cloud, you can [use one of our Terraform modules](deploy-a-cloud-stack-with-terraform.md)
+to manage your infrastructure as code yourself.
+
 If you have the required infrastructure pieces already deployed on your cloud, 
 you can also use [the stack wizard to seamlessly register your stack](register-a-cloud-stack.md).
 {% endhint %}

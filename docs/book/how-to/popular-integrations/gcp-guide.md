@@ -7,21 +7,27 @@ description: A simple guide to quickly set up a minimal stack on GCP.
 This page aims to quickly set up a minimal production stack on GCP. With just a few simple steps you will set up a service account with specifically-scoped permissions that ZenML can use to authenticate with the relevant GCP resources.
 
 {% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? 
-Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-and learn how to use:**
+Would you like to skip ahead and deploy a full GCP ZenML cloud stack already?
+
+You can use one of several different shortcuts that ZenML provides you to help
+you deploy your first stack based on real cloud infrastructure with minimal
+effort:
+
+* you can let ZenML at the wheel and use [the automated 1-click stack deployment flow](../../how-to/stack-deployment/deploy-a-cloud-stack.md) to build your ZenML cloud stack from scratch. This is the easiest way to get started with cloud ZenML stacks, in the dashboard or with the CLI:
 
 ```shell
 zenml stack deploy --provider gcp
 ```
-
-**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-and learn how to use:**
+* if you already have some infrastructure pieces provisioned in your cloud and you prefer to have more control over the stack configuration, 
+you can also use [the stack wizard](register-a-cloud-stack.md) to seamlessly register your ZenML cloud stack in the dashboard or with the CLI:
 
 ```shell
 zenml stack register <STACK_NAME> --provider gcp
 ```
+
+* if you are a hardened infrastructure professional who prefers a more hands-on approach that gives you more control over the infrastructure that is provisioned, you can use [our GCP Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md) to deploy a ZenML cloud stack with Terraform. 
 {% endhint %}
+
 
 {% hint style="warning" %}
 While this guide focuses on Google Cloud, we are seeking contributors to create a similar guide for other cloud providers. If you are interested, please create a [pull request over on GitHub](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md).
