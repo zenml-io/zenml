@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run on AzureML.
 
 🚧 This guide is a work in progress. Please check back soon for updates.
 
-# AzuML Orchestrator
+# AzureML Orchestrator
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
