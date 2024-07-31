@@ -14,6 +14,7 @@
 """Code archive."""
 
 import os
+from pathlib import Path
 from typing import IO, TYPE_CHECKING, Dict, Optional
 
 from zenml.logger import get_logger
@@ -60,13 +61,33 @@ class CodeArchive(Archivable):
 
         return git_repo
 
+    def _get_all_files(self) -> Dict[str, str]:
+        """Get all files inside the archive root.
+
+        Returns:
+            All files inside the archive root.
+        """
+        all_files = {}
+        for root, _, files in os.walk(self._root):
+            for file in files:
+                file_path = os.path.join(root, file)
+                path_in_archive = os.path.relpath(file_path, self._root)
+                all_files[path_in_archive] = file_path
+
+        return all_files
+
     def get_files(self) -> Dict[str, str]:
         """Gets all regular files that should be included in the archive.
+
+        Raises:
+            RuntimeError: If the code archive would not include any files.
 
         Returns:
             A dict {path_in_archive: path_on_filesystem} for all regular files
             in the archive.
         """
+        all_files = {}
+
         if repo := self.git_repo:
             try:
                 result = repo.git.ls_files(
@@ -80,23 +101,34 @@ class CodeArchive(Archivable):
                 logger.warning(
                     "Failed to get non-ignored files from git: %s", str(e)
                 )
+                all_files = self._get_all_files()
             else:
-                all_files = {}
                 for file in result.split():
                     file_path = os.path.join(repo.working_dir, file)
                     path_in_archive = os.path.relpath(file_path, self._root)
+
                     if os.path.exists(file_path):
                         all_files[path_in_archive] = file_path
+        else:
+            all_files = self._get_all_files()
 
-                return all_files
+        if not all_files:
+            raise RuntimeError(
+                "The code archive to be uploaded does not contain any files. "
+                "This is probably because all files in your source root "
+                f"`{self._root}` are ignored by a .gitignore file."
+            )
 
-        all_files = {}
-        for root, _, files in os.walk(self._root):
-            relative_root = os.path.relpath(root, self._root)
-            for file in files:
-                file_path = os.path.join(root, file)
-                path_in_archive = os.path.join(relative_root, file)
-                all_files[path_in_archive] = file_path
+        # Explicitly remove .zen directories as we write an updated version
+        # to disk everytime ZenML is called. This updates the mtime of the
+        # file, which invalidates the code upload caching. The values in
+        # the .zen directory are not needed anyway as we set them as
+        # environment variables.
+        all_files = {
+            path_in_archive: file_path
+            for path_in_archive, file_path in sorted(all_files.items())
+            if ".zen" not in Path(path_in_archive).parts[:-1]
+        }
 
         return all_files
 
