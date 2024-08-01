@@ -29,14 +29,19 @@ This docs section consists of information that makes it easier to provision, con
   </thead>
   <tbody>
     <tr>
-      <td><mark style="color:purple;"><strong>Deploy a cloud stack</strong></mark></td>
-      <td>Description of deploying a cloud stack.</td>
+      <td><mark style="color:purple;"><strong>Deploy a cloud stack with ZenML</strong></mark></td>
+      <td>Description of deploying a cloud stack with ZenML.</td>
       <td><a href="./deploy-a-cloud-stack.md">./deploy-a-cloud-stack.md</a></td>
     </tr>
     <tr>
       <td><mark style="color:purple;"><strong>Register a cloud stack</strong></mark></td>
       <td>Description of registering a cloud stack.</td>
       <td><a href="./register-a-cloud-stack.md">./register-a-cloud-stack.md</a></td>
+    </tr>
+    <tr>
+      <td><mark style="color:purple;"><strong>Deploy a cloud stack with Terraform</strong></mark></td>
+      <td>Description of deploying a cloud stack with Terraform.</td>
+      <td><a href="./deploy-a-cloud-stack-with-terraform.md">./deploy-a-cloud-stack-with-terraform.md</a></td>
     </tr>
     <tr>
       <td><mark style="color:purple;"><strong>Deploy stack/components using mlstacks</strong></mark></td>
