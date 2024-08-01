@@ -221,7 +221,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             # TODO: We need to start the compute again if it is stopped.
             # TODO: We need to check whether extra parameters are set and
             #   throw a warning.
-            # TODO: Remove the compute target
             return compute_name
 
         # If the compute target does not exist create it

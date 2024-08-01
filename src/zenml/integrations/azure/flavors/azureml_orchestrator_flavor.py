@@ -47,17 +47,32 @@ class AzureMLOrchestratorSettings(BaseSettings):
     These settings adjust the compute resources that will be used by the
     pipeline execution.
 
-    There are four different possibilities:
+    There are three possible use cases for this implementation:
+
         1. Serverless compute (default behaviour):
-            - The `serverless` boolean needs to be set to True.
+            - The `mode` is set to `serverless` (default behaviour).
+            - All the other parameters become irrelevant and will throw a
+              warning if set.
 
-        2. Compute instance
-            -
+        2. Compute instance:
+            - The `mode` is set to `compute-instance`.
+            - In this case, users have to provide a `compute-name`.
+                - If a compute instance exists with this name, this instance
+                will be used and all the other parameters become irrelevant
+                and will throw a warning if set.
+                - If a compute instance does not already exist, ZenML will
+                create it. You can use the parameters `compute_size` and
+                `idle_type_before_shutdown_minutes` for this operation.
 
-        3. Compute cluster
-
-        4. Kubernetes cluster
-            Not supported yet!
+        3. Compute cluster:
+            - The `mode` is set to `compute-cluster`.
+            - In this case, users have to provide a `compute-name`.
+                - If a compute cluster exists with this name, this instance
+                will be used and all the other parameters become irrelevant
+                and will throw a warning if set.
+                - If a compute cluster does not already exist, ZenML will
+                create it. You can all the additional parameters for this
+                operation.
     """
 
     # Mode for compute
@@ -88,9 +103,6 @@ class AzureMLOrchestratorConfig(
     )
     workspace: str = Field(
         description="Name of the workspace that AzureML is running on."
-    )
-    compute_target: str = Field(
-        description="The name of the compute target to use."
     )
 
     @property
