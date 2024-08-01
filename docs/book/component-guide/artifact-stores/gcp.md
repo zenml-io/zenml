@@ -24,8 +24,8 @@ You should use the GCS Artifact Store when you decide to keep your ZenML artifac
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already,
 including a GCS Artifact Store? Check out the
-[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
-the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
 or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}

@@ -16,8 +16,8 @@ When using a stack with remote storage, nothing changes except the fact that the
 Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
 Check out the
-[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
-the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
 or [the ZenML Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
