@@ -1,6 +1,6 @@
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">Create an internal MLOps platform for your entire machine learning team.
+  <h1 align="center">The bridge between ML and Ops.
 </h1>
 </div>
 
