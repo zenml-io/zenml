@@ -54,6 +54,7 @@ from zenml.steps.utils import (
 )
 from zenml.utils import (
     dict_utils,
+    notebook_utils,
     pydantic_utils,
     settings_utils,
     source_code_utils,
@@ -248,6 +249,8 @@ class BaseStep(metaclass=BaseStepMeta):
             retry=retry,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
+
+        notebook_utils.store_cell_id(self.source_object)
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:

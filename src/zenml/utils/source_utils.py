@@ -35,6 +35,7 @@ from typing import (
 from zenml.config.source import (
     CodeRepositorySource,
     DistributionPackageSource,
+    NotebookSource,
     Source,
     SourceType,
 )
@@ -57,6 +58,8 @@ BuiltinFunctionTypeSource = Source(
     attribute=BuiltinFunctionType.__name__,
     type=SourceType.BUILTIN,
 )
+ZENML_SOURCE_ATTRIBUTE_NAME = "__zenml_source__"
+ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME = "__zenml_notebook_cell_id__"
 
 _CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
     ENV_ZENML_CUSTOM_SOURCE_ROOT, None
@@ -105,6 +108,10 @@ def load(source: Union[Source, str]) -> Any:
                     source.version,
                     source.import_path,
                 )
+    elif source.type == SourceType.NOTEBOOK:
+        if not Environment.in_notebook():
+            notebook_source = NotebookSource.model_validate(dict(source))
+            return _load_notebook_source(notebook_source)
     elif source.type in {SourceType.USER, SourceType.UNKNOWN}:
         # Unknown source might also refer to a user file, include source
         # root in python path just to be sure
@@ -116,6 +123,29 @@ def load(source: Union[Source, str]) -> Any:
         obj = getattr(module, source.attribute)
     else:
         obj = module
+
+    return obj
+
+
+def _load_notebook_source(source: NotebookSource) -> Any:
+    if not source.replacement_module:
+        raise RuntimeError("Can't load notebook source outside of notebook.")
+
+    import_root = get_source_root()
+    try:
+        module = _load_module(
+            module_name=source.replacement_module, import_root=import_root
+        )
+    except Exception:
+        # TODO: write a good error message here that explains the issue
+        ...
+
+    if source.attribute:
+        obj = getattr(module, source.attribute)
+    else:
+        obj = module
+
+    setattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME, source)
 
     return obj
 
@@ -152,6 +182,8 @@ def resolve(
         return FunctionTypeSource
     elif obj is BuiltinFunctionType:
         return BuiltinFunctionTypeSource
+    elif hasattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME):
+        return getattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME)
     elif isinstance(obj, ModuleType):
         module = obj
         attribute_name = None
@@ -216,6 +248,16 @@ def resolve(
         else:
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
+    elif source_type == SourceType.NOTEBOOK:
+        cell_id: Optional[str] = getattr(
+            obj, ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME, None
+        )
+        return NotebookSource(
+            module=module_name,
+            attribute=attribute_name,
+            cell_id=cell_id,
+            type=source_type,
+        )
 
     return Source(
         module=module_name, attribute=attribute_name, type=source_type
@@ -362,7 +404,7 @@ def get_source_type(module: ModuleType) -> SourceType:
         file_path = inspect.getfile(module)
     except (TypeError, OSError):
         if module.__name__ == "__main__" and Environment.in_notebook():
-            return SourceType.USER
+            return SourceType.NOTEBOOK
 
         return SourceType.BUILTIN
 
