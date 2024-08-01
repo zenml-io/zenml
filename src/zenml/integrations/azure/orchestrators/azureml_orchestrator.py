@@ -21,14 +21,18 @@ from azure.ai.ml import Input, MLClient, Output
 from azure.ai.ml.constants import TimeZone
 from azure.ai.ml.dsl import pipeline
 from azure.ai.ml.entities import (
+    CommandComponent,
     CronTrigger,
+    Environment,
     JobSchedule,
     RecurrencePattern,
     RecurrenceTrigger,
 )
-from azure.core.exceptions import HttpResponseError, ResourceExistsError
-from azure.identity import ClientSecretCredential, DefaultAzureCredential
-from azure.core.exceptions import ResourceNotFoundError
+from azure.core.exceptions import (
+    HttpResponseError,
+    ResourceExistsError,
+    ResourceNotFoundError,
+)
 from azure.identity import DefaultAzureCredential
 
 from zenml.config.base_settings import BaseSettings
@@ -204,6 +208,8 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             # TODO: We need to start the compute again if it is stopped.
             # TODO: We need to check whether extra parameters are set and
             #   throw a warning.
+            # TODO: Add the experiment name
+            # TODO: Remove the compute target
             return compute_name
 
         # If the compute target does not exist create it
@@ -349,23 +355,24 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         if settings.mode == AzureMLComputeTypes.SERVERLESS:
             pipeline_job.settings.default_compute = "serverless"
 
-        if deployment.schedule:
+        # Scheduling
+        if schedule := deployment.schedule:
             try:
                 schedule_trigger = None
 
-                # Determine the type of schedule trigger (recurrence or cron)
-                if deployment.schedule.cron_expression:
+                if schedule.cron_expression:
+                    # If we are working with a cron expression
                     schedule_trigger = CronTrigger(
-                        expression=deployment.schedule.cron_expression,
-                        start_time=deployment.schedule.start_time,
-                        end_time=deployment.schedule.end_time,
-                        time_zone="UTC",  # Adjust timezone if necessary
+                        expression=schedule.cron_expression,
+                        start_time=schedule.start_time.isoformat(),
+                        end_time=schedule.end_time.isoformat(),
+                        time_zone=TimeZone.UTC,
                     )
-                elif deployment.schedule.interval_second:
-                    # Calculate the exact recurrence interval and frequency for RecurrenceTrigger
-                    interval = (
-                        deployment.schedule.interval_second.total_seconds()
-                    )
+
+                elif schedule.interval_second:
+                    # If we are working with intervals
+                    interval = schedule.interval_second.total_seconds()
+
                     if interval < 3600:
                         frequency = "minute"
                         interval = int(interval // 60)
@@ -376,36 +383,35 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                         frequency = "day"
                         interval = int(interval // 86400)
 
-                    # Include RecurrencePattern if needed
                     recurrence_pattern = None
                     if frequency == "day":
                         recurrence_pattern = RecurrencePattern(
-                            hours=[deployment.schedule.start_time.hour],
-                            minutes=[deployment.schedule.start_time.minute],
+                            hours=schedule.start_time.hour,
+                            minutes=schedule.start_time.minute,
                         )
 
                     schedule_trigger = RecurrenceTrigger(
                         frequency=frequency,
                         interval=interval,
                         schedule=recurrence_pattern,
-                        start_time=deployment.schedule.start_time,
-                        end_time=deployment.schedule.end_time,
-                        time_zone=TimeZone.UTC,  # Adjust timezone if necessary
+                        start_time=schedule.start_time.isoformat(),
+                        end_time=schedule.end_time.isoformat(),
+                        time_zone=TimeZone.UTC,
                     )
 
                 if schedule_trigger:
-                    # Schedule object creation
+                    # Create and execute the job schedule
                     job_schedule = JobSchedule(
                         name=run_name,
                         trigger=schedule_trigger,
                         create_job=pipeline_job,
                     )
-
                     ml_client.schedules.begin_create_or_update(
                         job_schedule
                     ).result()
                     logger.info(
-                        f"Scheduled pipeline '{run_name}' with recurrence or cron expression."
+                        f"Scheduled pipeline '{run_name}' with recurrence "
+                        f"or cron expression."
                     )
                 else:
                     logger.warning(
@@ -418,5 +424,5 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 )
 
         else:
+            logger.info(f"Pipeline {run_name} has been executed.")
             ml_client.jobs.create_or_update(pipeline_job)
-            logger.info(f"Pipeline '{run_name}' run immediately.")
