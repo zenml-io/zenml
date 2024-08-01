@@ -18,11 +18,16 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from azure.ai.ml import Input, MLClient, Output
+from azure.ai.ml.constants import TimeZone
 from azure.ai.ml.dsl import pipeline
 from azure.ai.ml.entities import (
-    CommandComponent,
-    Environment,
+    CronTrigger,
+    JobSchedule,
+    RecurrencePattern,
+    RecurrenceTrigger,
 )
+from azure.core.exceptions import HttpResponseError, ResourceExistsError
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 
@@ -266,14 +271,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         else:
             credentials = DefaultAzureCredential()
 
-        # Schedule warning
-        if deployment.schedule:
-            logger.warning(
-                "The AzureML Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
-
         # Settings
         settings = cast(
             AzureMLOrchestratorSettings,
@@ -352,4 +349,74 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         if settings.mode == AzureMLComputeTypes.SERVERLESS:
             pipeline_job.settings.default_compute = "serverless"
 
-        ml_client.create_or_update(pipeline_job)
+        if deployment.schedule:
+            try:
+                schedule_trigger = None
+
+                # Determine the type of schedule trigger (recurrence or cron)
+                if deployment.schedule.cron_expression:
+                    schedule_trigger = CronTrigger(
+                        expression=deployment.schedule.cron_expression,
+                        start_time=deployment.schedule.start_time,
+                        end_time=deployment.schedule.end_time,
+                        time_zone="UTC",  # Adjust timezone if necessary
+                    )
+                elif deployment.schedule.interval_second:
+                    # Calculate the exact recurrence interval and frequency for RecurrenceTrigger
+                    interval = (
+                        deployment.schedule.interval_second.total_seconds()
+                    )
+                    if interval < 3600:
+                        frequency = "minute"
+                        interval = int(interval // 60)
+                    elif interval < 86400:
+                        frequency = "hour"
+                        interval = int(interval // 3600)
+                    else:
+                        frequency = "day"
+                        interval = int(interval // 86400)
+
+                    # Include RecurrencePattern if needed
+                    recurrence_pattern = None
+                    if frequency == "day":
+                        recurrence_pattern = RecurrencePattern(
+                            hours=[deployment.schedule.start_time.hour],
+                            minutes=[deployment.schedule.start_time.minute],
+                        )
+
+                    schedule_trigger = RecurrenceTrigger(
+                        frequency=frequency,
+                        interval=interval,
+                        schedule=recurrence_pattern,
+                        start_time=deployment.schedule.start_time,
+                        end_time=deployment.schedule.end_time,
+                        time_zone=TimeZone.UTC,  # Adjust timezone if necessary
+                    )
+
+                if schedule_trigger:
+                    # Schedule object creation
+                    job_schedule = JobSchedule(
+                        name=run_name,
+                        trigger=schedule_trigger,
+                        create_job=pipeline_job,
+                    )
+
+                    ml_client.schedules.begin_create_or_update(
+                        job_schedule
+                    ).result()
+                    logger.info(
+                        f"Scheduled pipeline '{run_name}' with recurrence or cron expression."
+                    )
+                else:
+                    logger.warning(
+                        f"No valid scheduling configuration found for pipeline '{run_name}'."
+                    )
+
+            except (HttpResponseError, ResourceExistsError) as e:
+                logger.error(
+                    f"Failed to create schedule for the pipeline '{run_name}': {str(e)}"
+                )
+
+        else:
+            ml_client.jobs.create_or_update(pipeline_job)
+            logger.info(f"Pipeline '{run_name}' run immediately.")
