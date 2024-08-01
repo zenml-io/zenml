@@ -27,14 +27,52 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
-from zenml.utils.secret_utils import SecretField
+from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
     from zenml.integrations.azure.orchestrators import AzureMLOrchestrator
 
 
+class AzureMLComputeTypes(StrEnum):
+    """Enum for different types of compute on AzureML."""
+
+    SERVERLESS = "serverless"
+    COMPUTE_INSTANCE = "compute-instance"
+    COMPUTE_CLUSTER = "compute-cluster"
+
+
 class AzureMLOrchestratorSettings(BaseSettings):
-    """Settings for the AzureML orchestrator."""
+    """Settings for the AzureML orchestrator.
+
+    These settings adjust the compute resources that will be used by the
+    pipeline execution.
+
+    There are four different possibilities:
+        1. Serverless compute (default behaviour):
+            - The `serverless` boolean needs to be set to True.
+
+        2. Compute instance
+            -
+
+        3. Compute cluster
+
+        4. Kubernetes cluster
+            Not supported yet!
+    """
+
+    # Mode for compute
+    mode: AzureMLComputeTypes = AzureMLComputeTypes.SERVERLESS
+
+    # Common Configuration for Compute Instances and Clusters
+    compute_name: Optional[str] = None
+    compute_size: Optional[str] = None
+    idle_type_before_shutdown_minutes: Optional[int] = None
+
+    # Additional configuration for a Compute Cluster
+    location: Optional[str] = None
+    min_instances: Optional[int] = None
+    max_instances: Optional[int] = None
+    tier: Optional[str] = None
 
 
 class AzureMLOrchestratorConfig(
@@ -54,12 +92,6 @@ class AzureMLOrchestratorConfig(
     compute_target: str = Field(
         description="The name of the compute target to use."
     )
-
-    # Service principal authentication
-    # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = SecretField(default=None)
-    service_principal_id: Optional[str] = SecretField(default=None)
-    service_principal_password: Optional[str] = SecretField(default=None)
 
     @property
     def is_remote(self) -> bool:

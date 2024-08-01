@@ -375,7 +375,7 @@ following GCP permissions in your GCP project:
 - An Azure Resource Group to contain all the resources required for the ZenML stack
 - An Azure Storage Account and Blob Storage Container that will be used as a ZenML Artifact Store.
 - An Azure Container Registry that will be used as a ZenML Container Registry.
-- Permissions to use SkyPilot as a ZenML Orchestrator in the Azure subscription and region.
+- An AzureML Workspace that will be used to run pipelines. A Key Vault and Application Insights instance will also be created in the same Resource Group and used to construct the AzureML Workspace.
 - An Azure Service Principal with the minimum necessary permissions to access
 the above resources.
 - An Azure Service Principal client secret used to give access to ZenML to
@@ -392,8 +392,9 @@ the following permissions in your Azure subscription:
   * AcrPull
   * AcrPush
   * Contributor
-* subscription level permissions:
-  * Owner (only required by SkyPilot, not directly by ZenML)
+* permissions granted for the created AzureML Workspace:
+  * AzureML Compute Operator
+  * AzureML Data Scientist
 
 {% endtab %}
 {% endtabs %}

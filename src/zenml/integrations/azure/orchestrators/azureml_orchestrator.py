@@ -28,11 +28,14 @@ from azure.ai.ml.entities import (
 )
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
+from azure.core.exceptions import ResourceNotFoundError
+from azure.identity import DefaultAzureCredential
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.step_configurations import Step
 from zenml.enums import StackComponentType
 from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
+    AzureMLComputeTypes,
     AzureMLOrchestratorConfig,
     AzureMLOrchestratorSettings,
 )
@@ -173,6 +176,81 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             command=" ".join(command + arguments),
         )
 
+    def _create_or_get_compute(
+        self, client: MLClient, settings: AzureMLOrchestratorSettings
+    ) -> Optional[str]:
+        """Creates or fetches the compute target if defined in the settings.
+
+        Args:
+            client: the AzureML client.
+            settings: the settings for the orchestrator.
+
+        Returns:
+            None, if the orchestrator is using serverless compute or
+            str, the name of the compute target (instance or cluster).
+        """
+        # If the mode is serverless, we can not fetch anything anyhow
+        if settings.mode == AzureMLComputeTypes.SERVERLESS:
+            return None
+
+        # If a name is not provided, generate one based on the orchestrator id
+        compute_name = settings.compute_name or f"compute_{self.id}"
+
+        # Try to fetch the compute target
+        try:
+            client.compute.get(compute_name)
+            logger.info(f"Using existing compute target: '{compute_name}'.")
+
+            # TODO: We need to start the compute again if it is stopped.
+            # TODO: We need to check whether extra parameters are set and
+            #   throw a warning.
+            return compute_name
+
+        # If the compute target does not exist create it
+        except ResourceNotFoundError:
+            logger.info(
+                "Can not find the compute target with name: "
+                f"'{compute_name}':"
+            )
+
+            if settings.mode == AzureMLComputeTypes.COMPUTE_INSTANCE:
+                logger.info(
+                    "Creating a new compute instance. This might take a "
+                    "few minutes."
+                )
+
+                from azure.ai.ml.entities import ComputeInstance
+
+                compute_instance = ComputeInstance(
+                    name=compute_name,
+                    size=settings.compute_size,
+                    idle_time_before_shutdown_minutes=settings.idle_type_before_shutdown_minutes,
+                )
+                client.begin_create_or_update(compute_instance).result()
+                return compute_name
+
+            elif settings.mode == AzureMLComputeTypes.COMPUTE_CLUSTER:
+                logger.info(
+                    "Creating a new compute cluster. This might take a "
+                    "few minutes."
+                )
+
+                from azure.ai.ml.entities import AmlCompute
+
+                compute_cluster = AmlCompute(
+                    name=compute_name,
+                    size=settings.compute_size,
+                    location=settings.location,
+                    min_instances=settings.min_instances,
+                    max_instances=settings.max_instances,
+                    idle_time_before_scale_down=settings.idle_type_before_shutdown_minutes,
+                    tier=settings.tier,
+                )
+                client.begin_create_or_update(compute_cluster).result()
+                return compute_name
+
+        return None
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -190,18 +268,14 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # Authentication
         if connector := self.get_connector():
             credentials = connector.connect()
-        elif (
-            self.config.tenant_id is not None
-            and self.config.service_principal_id is not None
-            and self.config.service_principal_password is not None
-        ):
-            credentials = ClientSecretCredential(
-                tenant_id=self.config.tenant_id,
-                client_id=self.config.service_principal_id,
-                client_secret=self.config.service_principal_password,
-            )
         else:
             credentials = DefaultAzureCredential()
+
+        # Settings
+        settings = cast(
+            AzureMLOrchestratorSettings,
+            self.get_settings(deployment),
+        )
 
         # Client creation
         ml_client = MLClient(
@@ -209,11 +283,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             subscription_id=self.config.subscription_id,
             resource_group_name=self.config.resource_group,
             workspace_name=self.config.workspace,
-        )
-
-        # Run name
-        run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
         )
 
         # Create components
@@ -228,7 +297,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 AzureMLEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
                     deployment_id=deployment.id,
-                    azure_ml_env_variables=b64_encode(json.dumps(environment)),
+                    zenml_env_variables=b64_encode(json.dumps(environment)),
                 )
             )
 
@@ -241,7 +310,17 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 arguments=arguments,
             )
 
-        @pipeline(name=run_name, compute=self.config.compute_target)  # type:ignore[call-overload, misc]
+        # Pipeline definition
+        pipeline_args = dict()
+        run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline_configuration.name
+        )
+        pipeline_args["name"] = run_name
+
+        if compute_target := self._create_or_get_compute(ml_client, settings):
+            pipeline_args["compute"] = compute_target
+
+        @pipeline(**pipeline_args)
         def azureml_pipeline() -> None:
             """Create an AzureML pipeline."""
             # Here we have to track the inputs and outputs so that we can bind
@@ -266,6 +345,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         # Create and execute the pipeline job
         pipeline_job = azureml_pipeline()
+
+        if settings.mode == AzureMLComputeTypes.SERVERLESS:
+            pipeline_job.settings.default_compute = "serverless"
 
         if deployment.schedule:
             try:

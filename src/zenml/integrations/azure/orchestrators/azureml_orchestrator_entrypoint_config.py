@@ -22,7 +22,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 from zenml.utils.string_utils import b64_decode
 
-AZURE_ML_ENV_VARIABLES = "azure_ml_env_variables"
+ZENML_ENV_VARIABLES = "zenml_env_variables"
 AZURE_ML_OUTPUT_COMPLETED = "AZURE_ML_OUTPUT_COMPLETED"
 
 
@@ -37,7 +37,7 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
             The superclass options as well as an option for the
             environmental variables.
         """
-        return super().get_entrypoint_options() | {AZURE_ML_ENV_VARIABLES}
+        return super().get_entrypoint_options() | {ZENML_ENV_VARIABLES}
 
     @classmethod
     def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
@@ -51,14 +51,14 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
             variables.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
-            f"--{AZURE_ML_ENV_VARIABLES}",
-            kwargs[AZURE_ML_ENV_VARIABLES],
+            f"--{ZENML_ENV_VARIABLES}",
+            kwargs[ZENML_ENV_VARIABLES],
         ]
 
     def _set_env_variables(self) -> None:
         """Sets the environmental variables before executing the step."""
         env_variables = json.loads(
-            b64_decode(self.entrypoint_args[AZURE_ML_ENV_VARIABLES])
+            b64_decode(self.entrypoint_args[ZENML_ENV_VARIABLES])
         )
         os.environ.update(env_variables)
 
