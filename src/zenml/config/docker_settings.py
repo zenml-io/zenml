@@ -16,13 +16,13 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import SettingsConfigDict
 
 from zenml.config.base_settings import BaseSettings
+from zenml.enums import StrEnum
 from zenml.logger import get_logger
 from zenml.utils import deprecation_utils
-from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
 
@@ -49,7 +49,7 @@ class PythonEnvironmentExportMethod(Enum):
         }[self]
 
 
-class SourceFileMode(Enum):
+class SourceFileMode(StrEnum):
     """Different methods to handle source files in Docker images."""
 
     INCLUDE = "include"
@@ -239,43 +239,53 @@ class DockerSettings(BaseSettings):
         "copy_files", "copy_global_config"
     )
 
-    @model_validator(mode="before")
+    @field_validator("source_files", mode="before")
     @classmethod
-    @before_validator_handler
-    def _migrate_source_files(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Migrates the value from the old source_files attributes.
+    def _migrate_source_files(cls, value: Any) -> Any:
+        """Migrate old source_files values.
 
         Args:
-            data: The settings values.
+            value: The attribute value.
 
         Raises:
             ValueError: If an invalid source file mode is specified.
 
         Returns:
-            The migrated settings values.
+            The migrated value.
         """
-        source_files = data.get("source_files", None)
-
-        if isinstance(source_files, str):
-            if source_files == "download":
-                new_source_files = {
+        if isinstance(value, str):
+            if value == "download":
+                new_source_files = [
                     SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY
-                }
-            elif source_files == "download_or_include":
-                new_source_files = {
+                ]
+            elif value == "download_or_include":
+                new_source_files = [
                     SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
                     SourceFileMode.INCLUDE,
-                }
-            elif source_files == "ignore":
-                new_source_files = set()
-            elif source_files == "include":
-                new_source_files = {SourceFileMode.INCLUDE}
+                ]
+            elif value == "ignore":
+                new_source_files = []
+            elif value == "include":
+                new_source_files = [SourceFileMode.INCLUDE]
             else:
-                raise ValueError(f"Invalid source file mode `{source_files}`.")
+                raise ValueError(f"Invalid source file mode `{value}`.")
 
-            data["source_files"] = new_source_files
+            return new_source_files
 
-        return data
+        return value
+
+    @field_validator("source_files", mode="after")
+    @classmethod
+    def _sort_source_files(cls, value: List[str]) -> List[str]:
+        """Sort the source files list.
+
+        Args:
+            value: The attribute value.
+
+        Returns:
+            The sorted value with duplicates removed.
+        """
+        return sorted(set(value))
 
     @model_validator(mode="after")
     def _validate_skip_build(self) -> "DockerSettings":
