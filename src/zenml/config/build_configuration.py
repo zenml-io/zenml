@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 from pydantic import BaseModel
 
-from zenml.config.docker_settings import DockerSettings, SourceFileMode
+from zenml.config.docker_settings import DockerSettings
 from zenml.utils import json_utils
 
 if TYPE_CHECKING:
@@ -113,10 +113,7 @@ class BuildConfiguration(BaseModel):
         if self.should_download_files(code_repository=code_repository):
             return False
 
-        if SourceFileMode.INCLUDE in self.settings.source_files:
-            return True
-
-        return False
+        return self.settings.allow_including_files_in_images
 
     def should_download_files(
         self,
@@ -136,10 +133,7 @@ class BuildConfiguration(BaseModel):
         ):
             return True
 
-        if (
-            SourceFileMode.DOWNLOAD_FROM_ARTIFACT_STORE
-            in self.settings.source_files
-        ):
+        if self.settings.allow_download_from_artifact_store:
             return True
 
         return False
@@ -159,8 +153,7 @@ class BuildConfiguration(BaseModel):
         """
         if (
             code_repository
-            and SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY
-            in self.settings.source_files
+            and self.settings.allow_download_from_code_repository
         ):
             return True
 

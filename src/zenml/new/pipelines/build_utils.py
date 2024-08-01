@@ -29,7 +29,6 @@ from uuid import UUID
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
-from zenml.config.docker_settings import SourceFileMode
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
@@ -83,19 +82,16 @@ def requires_included_code(
         If the deployment requires code included in the container images.
     """
     for step in deployment.step_configurations.values():
-        if step.config.docker_settings.source_files == [
-            SourceFileMode.INCLUDE
-        ]:
-            return True
+        docker_settings = step.config.docker_settings
 
-        if (
-            step.config.docker_settings.source_files
-            == [
-                SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
-                SourceFileMode.INCLUDE,
-            ]
-            and not code_repository
-        ):
+        if docker_settings.allow_download_from_artifact_store:
+            return False
+
+        if docker_settings.allow_download_from_code_repository:
+            if code_repository:
+                continue
+
+        if docker_settings.allow_including_files_in_images:
             return True
 
     return False
@@ -112,13 +108,21 @@ def requires_download_from_code_repository(
     Returns:
         If the deployment needs to download code from a code repository.
     """
-    return any(
-        step.config.docker_settings.source_files
-        == [
-            SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY,
-        ]
-        for step in deployment.step_configurations.values()
-    )
+    for step in deployment.step_configurations.values():
+        docker_settings = step.config.docker_settings
+
+        if docker_settings.allow_download_from_artifact_store:
+            return False
+
+        if docker_settings.allow_including_files_in_images:
+            return False
+
+        if docker_settings.allow_download_from_code_repository:
+            # The other two options are false, which means download from a
+            # code repo is required.
+            return True
+
+    return False
 
 
 def code_download_possible(
@@ -136,15 +140,11 @@ def code_download_possible(
         Whether code download is possible for the deployment.
     """
     for step in deployment.step_configurations.values():
-        if (
-            SourceFileMode.DOWNLOAD_FROM_ARTIFACT_STORE
-            in step.config.docker_settings.source_files
-        ):
+        if step.config.docker_settings.allow_download_from_artifact_store:
             continue
 
         if (
-            SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY
-            in step.config.docker_settings.source_files
+            step.config.docker_settings.allow_download_from_code_repository
             and code_repository
         ):
             continue
@@ -711,22 +711,19 @@ def should_upload_code(
         return False
 
     for step in deployment.step_configurations.values():
-        source_files = step.config.docker_settings.source_files
+        docker_settings = step.config.docker_settings
 
         if (
             code_reference
-            and SourceFileMode.DOWNLOAD_FROM_CODE_REPOSITORY in source_files
+            and docker_settings.allow_download_from_code_repository
         ):
             # No upload needed for this step
             continue
 
-        if SourceFileMode.DOWNLOAD_FROM_ARTIFACT_STORE in source_files:
-            break
-    else:
-        # Downloading code in the Docker images is prevented by Docker settings
-        return False
+        if docker_settings.allow_download_from_artifact_store:
+            return True
 
-    return True
+    return False
 
 
 def upload_code_if_necessary() -> str:

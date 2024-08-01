@@ -158,9 +158,7 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
     """Tests that the build settings and pipeline ID get correctly forwarded."""
     build_config = BuildConfiguration(
         key="key",
-        settings=DockerSettings(
-            source_files=["include", "download_from_code_repository"]
-        ),
+        settings=DockerSettings(allow_download_from_artifact_store=False),
         step_name="step_name",
         entrypoint="entrypoint",
         extra_files={"key": "value"},
@@ -426,7 +424,6 @@ def test_local_repo_verification(
     mocker, sample_deployment_response_model: PipelineDeploymentResponse
 ):
     """Test the local repo verification."""
-
     deployment = PipelineDeploymentBase(
         run_name_template=sample_deployment_response_model.run_name_template,
         pipeline_configuration=sample_deployment_response_model.pipeline_configuration,
