@@ -16,24 +16,11 @@ These, along with [remote storage](remote-storage.md), complete a basic cloud st
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
-Registering a remote stack is one of the first steps towards taking your ZenML
-project to production and it can get complicated. ZenML supports you in this
-process by providing a few different shortcuts to help you deploy your first
-stack based on real cloud infrastructure with minimal effort:
-
-* you can let ZenML take the wheel and use [the automated 1-click stack deployment flow](../../how-to/stack-deployment/deploy-a-cloud-stack.md) to build your ZenML cloud stack from scratch. This is the easiest way to get started with cloud ZenML stacks, in the dashboard or with the CLI:
-
-```shell
-zenml stack deploy --provider aws|gcp|azure
-```
-* if you already have some infrastructure pieces provisioned in your cloud and you prefer to have more control over the stack configuration, 
-you can also use [the stack wizard](../../how-to/stack-deployment/register-a-cloud-stack.md) to seamlessly register your ZenML cloud stack in the dashboard or with the CLI:
-
-```shell
-zenml stack register <STACK_NAME> --provider aws|gcp|azure
-```
-
-* if you are a hardened infrastructure professional who prefers a more hands-on approach that gives you more control over the infrastructure that is provisioned, you can use [one of our Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md) to deploy a ZenML cloud stack with Terraform. 
+Check out the
+[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
 
 ## Starting with a basic cloud stack

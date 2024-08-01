@@ -17,25 +17,11 @@ You should use the Azure container registry if:
 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already,
-including an Azure container registry?
-
-You can use one of several different shortcuts that ZenML provides you to help
-you deploy your first stack based on real cloud infrastructure with minimal
-effort:
-
-* you can let ZenML take the wheel and use [the automated 1-click stack deployment flow](../../how-to/stack-deployment/deploy-a-cloud-stack.md) to build your ZenML cloud stack from scratch. This is the easiest way to get started with cloud ZenML stacks, in the dashboard or with the CLI:
-
-```shell
-zenml stack deploy --provider azure
-```
-* if you already have some infrastructure pieces provisioned in your cloud and you prefer to have more control over the stack configuration, 
-you can also use [the stack wizard](../../how-to/stack-deployment/register-a-cloud-stack.md) to seamlessly register your ZenML cloud stack in the dashboard or with the CLI:
-
-```shell
-zenml stack register <STACK_NAME> --provider azure
-```
-
-* if you are a hardened infrastructure professional who prefers a more hands-on approach that gives you more control over the infrastructure that is provisioned, you can use [our Azure Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md) to deploy a ZenML cloud stack with Terraform. 
+including an Azure container registry? Check out the
+[easy cloud deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [easy cloud registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Azure Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
 Go [here](https://portal.azure.com/#create/Microsoft.ContainerRegistry) and choose a subscription, resource group, location, and registry name. Then click on `Review + Create` and to create your container registry.
