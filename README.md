@@ -1,6 +1,6 @@
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">MLOps framework that is a bridge between data science and production infrastructure.
+  <h1 align="center">Connecting data science teams seamlessly to cloud infrastructure.
 </h1>
 </div>
 
