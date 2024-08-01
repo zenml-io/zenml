@@ -13,9 +13,20 @@
 #  permissions and limitations under the License.
 """Implementation of the AzureML Orchestrator."""
 
+import datetime
 import json
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 from azure.ai.ml import Input, MLClient, Output
 from azure.ai.ml.constants import TimeZone
@@ -143,6 +154,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
     def _create_command_component(
         step: Step,
         step_name: str,
+        env_name: str,
         image: str,
         command: List[str],
         arguments: List[str],
@@ -152,6 +164,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         Args:
             step: The step definition in ZenML.
             step_name: The name of the step.
+            env_name: The name of the environment.
             image: The image to use in the environment
             command: The command to execute the entrypoint with.
             arguments: The arguments to pass into the command.
@@ -159,7 +172,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         Returns:
             the generated AzureML CommandComponent.
         """
-        env = Environment(image=image)
+        env = Environment(name=env_name, image=image)
 
         outputs = {"completed": Output(type="uri_file")}
 
@@ -208,7 +221,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             # TODO: We need to start the compute again if it is stopped.
             # TODO: We need to check whether extra parameters are set and
             #   throw a warning.
-            # TODO: Add the experiment name
             # TODO: Remove the compute target
             return compute_name
 
@@ -311,6 +323,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             components[step_name] = self._create_command_component(
                 step=step,
                 step_name=step_name,
+                env_name=deployment.pipeline_configuration.name,
                 image=image,
                 command=command,
                 arguments=arguments,
@@ -326,7 +339,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         if compute_target := self._create_or_get_compute(ml_client, settings):
             pipeline_args["compute"] = compute_target
 
-        @pipeline(**pipeline_args)
+        @pipeline(force_rerun=True, **pipeline_args)  # type: ignore[call-overload, misc]
         def azureml_pipeline() -> None:
             """Create an AzureML pipeline."""
             # Here we have to track the inputs and outputs so that we can bind
@@ -358,14 +371,24 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # Scheduling
         if schedule := deployment.schedule:
             try:
-                schedule_trigger = None
+                schedule_trigger: Optional[
+                    Union[CronTrigger, RecurrenceTrigger]
+                ] = None
+
+                start_time = None
+                if schedule.start_time is not None:
+                    start_time = schedule.start_time.isoformat()
+
+                end_time = None
+                if schedule.end_time is not None:
+                    end_time = schedule.end_time.isoformat()
 
                 if schedule.cron_expression:
                     # If we are working with a cron expression
                     schedule_trigger = CronTrigger(
                         expression=schedule.cron_expression,
-                        start_time=schedule.start_time.isoformat(),
-                        end_time=schedule.end_time.isoformat(),
+                        start_time=start_time,
+                        end_time=end_time,
                         time_zone=TimeZone.UTC,
                     )
 
@@ -385,17 +408,23 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
                     recurrence_pattern = None
                     if frequency == "day":
-                        recurrence_pattern = RecurrencePattern(
-                            hours=schedule.start_time.hour,
-                            minutes=schedule.start_time.minute,
-                        )
+                        if schedule.start_time is not None:
+                            recurrence_pattern = RecurrencePattern(
+                                hours=schedule.start_time.hour,
+                                minutes=schedule.start_time.minute,
+                            )
+                        else:
+                            recurrence_pattern = RecurrencePattern(
+                                hours=datetime.datetime.now().hour,
+                                minutes=datetime.datetime.now().minute,
+                            )
 
                     schedule_trigger = RecurrenceTrigger(
                         frequency=frequency,
                         interval=interval,
                         schedule=recurrence_pattern,
-                        start_time=schedule.start_time.isoformat(),
-                        end_time=schedule.end_time.isoformat(),
+                        start_time=start_time,
+                        end_time=end_time,
                         time_zone=TimeZone.UTC,
                     )
 
@@ -411,18 +440,20 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                     ).result()
                     logger.info(
                         f"Scheduled pipeline '{run_name}' with recurrence "
-                        f"or cron expression."
+                        "or cron expression."
                     )
                 else:
                     logger.warning(
-                        f"No valid scheduling configuration found for pipeline '{run_name}'."
+                        "No valid scheduling configuration found for "
+                        f"pipeline '{run_name}'."
                     )
 
             except (HttpResponseError, ResourceExistsError) as e:
                 logger.error(
-                    f"Failed to create schedule for the pipeline '{run_name}': {str(e)}"
+                    "Failed to create schedule for the pipeline "
+                    f"'{run_name}': {str(e)}"
                 )
 
         else:
-            logger.info(f"Pipeline {run_name} has been executed.")
             ml_client.jobs.create_or_update(pipeline_job)
+            logger.info(f"Pipeline {run_name} has been executed.")
