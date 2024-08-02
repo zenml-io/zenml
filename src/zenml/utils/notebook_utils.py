@@ -55,7 +55,6 @@ def get_notebook_extra_files(
         return {}
 
     files = {}
-    notebook_path = get_notebook_path()
 
     for step in deployment.step_configurations.values():
         if step.spec.source.type == SourceType.NOTEBOOK:
@@ -75,9 +74,7 @@ def get_notebook_extra_files(
                 f"zenml_extracted_notebook_code_{cell_id.replace('-', '_')}"
             )
             filename = f"{module_name}.py"
-            file_content = extract_notebook_cell_code(
-                notebook_path=notebook_path, cell_id=cell_id
-            )
+            file_content = extract_notebook_cell_code(cell_id=cell_id)
 
             step.spec.source.replacement_module = module_name
             files[filename] = file_content
@@ -114,19 +111,40 @@ def get_active_notebook_cell_id() -> str:
     return cell_id
 
 
-def get_notebook_path() -> str:
-    """Get path to the active notebook.
+def load_active_notebook() -> Dict[str, Any]:
+    """Load the active notebook.
+
+    Raises:
+        RuntimeError: If the active notebook can't be loaded.
 
     Returns:
-        Path to the notebook.
+        Dictionary of the notebook.
     """
-    # import ipynbname
+    if not Environment.in_notebook():
+        raise RuntimeError(
+            "Can't load active notebook as you're currently not running in a "
+            "notebook."
+        )
+    notebook_path = os.path.join(source_utils.get_source_root(), "test.ipynb")
 
-    # notebook_path = ipynbname.path()
-    return os.path.join(source_utils.get_source_root(), "test.ipynb")
+    if not os.path.exists(notebook_path):
+        raise RuntimeError(f"Notebook at path {notebook_path} does not exist.")
+
+    with open(notebook_path) as f:
+        notebook_json = json.loads(f.read())
+
+    cell_id = get_active_notebook_cell_id()
+
+    for cell in notebook_json["cells"]:
+        if cell["id"] == cell_id:
+            return notebook_json
+
+    raise RuntimeError(
+        f"Notebook at path {notebook_path} is not the active notebook."
+    )
 
 
-def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
+def extract_notebook_cell_code(cell_id: str) -> str:
     """Extract code from a notebook cell.
 
     Args:
@@ -139,8 +157,7 @@ def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
     Returns:
         The cell content.
     """
-    with open(notebook_path) as f:
-        notebook_json = json.loads(f.read())
+    notebook_json = load_active_notebook()
 
     for cell in notebook_json["cells"]:
         if cell["id"] == cell_id:
@@ -153,9 +170,7 @@ def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
 
             return "\n".join(cell["source"])
 
-    raise RuntimeError(
-        f"Cell with ID {cell_id} not found in notebook {notebook_path}."
-    )
+    raise RuntimeError(f"Cell with ID {cell_id} not found in active notebook.")
 
 
 def is_defined_in_notebook_cell(obj: Any) -> bool:
