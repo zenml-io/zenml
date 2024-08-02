@@ -14,11 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import os
-import shutil
 import tempfile
-import zipfile
 from typing import Any, ClassVar, Type, Union
 
 from transformers import T5ForConditionalGeneration, T5Tokenizer
@@ -26,17 +23,19 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_FILENAME = "t5_model_dir.zip"
-
 
 class T5Materializer(BaseMaterializer):
     """Base class for ultralytics YOLO models."""
 
-    FILENAME: ClassVar[str] = DEFAULT_FILENAME
     SKIP_REGISTRATION: ClassVar[bool] = True
-    ASSOCIATED_TYPES = (T5ForConditionalGeneration,T5Tokenizer,)
+    ASSOCIATED_TYPES = (
+        T5ForConditionalGeneration,
+        T5Tokenizer,
+    )
 
-    def load(self, data_type: Type[Any]) -> Union[T5ForConditionalGeneration, T5Tokenizer]:
+    def load(
+        self, data_type: Type[Any]
+    ) -> Union[T5ForConditionalGeneration, T5Tokenizer]:
         """Reads a T5ForConditionalGeneration model or T5Tokenizer from a serialized zip file.
 
         Args:
@@ -45,20 +44,23 @@ class T5Materializer(BaseMaterializer):
         Returns:
             A T5ForConditionalGeneration or T5Tokenizer object.
         """
-        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
+        filepath = self.uri
 
-        # Create a temporary folder
         with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
-            temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+            # Copy files from artifact store to temporary directory
+            for file in fileio.listdir(filepath):
+                src = os.path.join(filepath, file)
+                dst = os.path.join(temp_dir, file)
+                if fileio.isdir(src):
+                    fileio.makedirs(dst)
+                    for subfile in fileio.listdir(src):
+                        subsrc = os.path.join(src, subfile)
+                        subdst = os.path.join(dst, subfile)
+                        fileio.copy(subsrc, subdst)
+                else:
+                    fileio.copy(src, dst)
 
-            # Copy from artifact store to temporary file
-            fileio.copy(filepath, temp_file)
-
-            # Extract the zip file
-            with zipfile.ZipFile(temp_file, 'r') as zip_ref:
-                zip_ref.extractall(temp_dir)
-
-            # Load the model or tokenizer from the extracted directory
+            # Load the model or tokenizer from the temporary directory
             if data_type == T5ForConditionalGeneration:
                 return T5ForConditionalGeneration.from_pretrained(temp_dir)
             elif data_type == T5Tokenizer:
@@ -66,7 +68,9 @@ class T5Materializer(BaseMaterializer):
             else:
                 raise ValueError(f"Unsupported data type: {data_type}")
 
-    def save(self, obj: Union[T5ForConditionalGeneration, T5Tokenizer]) -> None:
+    def save(
+        self, obj: Union[T5ForConditionalGeneration, T5Tokenizer]
+    ) -> None:
         """Creates a serialization for a T5ForConditionalGeneration model or T5Tokenizer.
 
         Args:
@@ -77,10 +81,17 @@ class T5Materializer(BaseMaterializer):
             # Save the model or tokenizer
             obj.save_pretrained(temp_dir)
 
-            # Compress the directory into a zip file
-            zip_path = os.path.join(temp_dir, "t5_object.zip")
-            shutil.make_archive(os.path.join(temp_dir, "t5_object"), 'zip', temp_dir)
-
-            # Copy the zip file to the artifact store
-            filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-            fileio.copy(zip_path, filepath)
+            # Copy the directory to the artifact store
+            filepath = self.uri
+            fileio.makedirs(filepath)
+            for file in os.listdir(temp_dir):
+                src = os.path.join(temp_dir, file)
+                dst = os.path.join(filepath, file)
+                if os.path.isdir(src):
+                    fileio.makedirs(dst)
+                    for subfile in os.listdir(src):
+                        subsrc = os.path.join(src, subfile)
+                        subdst = os.path.join(dst, subfile)
+                        fileio.copy(subsrc, subdst)
+                else:
+                    fileio.copy(src, dst)

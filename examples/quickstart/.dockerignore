@@ -1,3 +1,7 @@
 .venv*
 .requirements*
 .ipynb_checkpoints
+.assets
+.ipynb_checkpoints
+mlruns
+results

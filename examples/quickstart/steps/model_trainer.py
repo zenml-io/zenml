@@ -18,15 +18,15 @@ from typing import Tuple
 
 import torch
 from datasets import Dataset
+from materializers import T5Materializer
 from transformers import (
-    T5Tokenizer,
     T5ForConditionalGeneration,
+    T5Tokenizer,
     Trainer,
     TrainingArguments,
 )
 from typing_extensions import Annotated
 
-from materializers import T5Materializer
 from zenml import step
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
@@ -40,33 +40,41 @@ class T5_Model(StrEnum):
     SMALL = "t5-small"
     LARGE = "t5-large"
 
-@step(output_materializers=T5Materializer)
+
+@step(output_materializers=T5Materializer, enable_cache=False)
 def train_model(
     tokenized_dataset: Dataset,
-    model_type: T5_Model
-) -> Tuple[Annotated[T5ForConditionalGeneration, "model"], Annotated[T5Tokenizer, "tokenizer"]]:
+    model_type: T5_Model,
+    num_train_epochs: int,
+    per_device_train_batch_size: int,
+    gradient_accumulation_steps: int,
+    dataloader_num_workers: int,
+) -> Tuple[
+    Annotated[T5ForConditionalGeneration, "model"],
+    Annotated[T5Tokenizer, "tokenizer"],
+]:
     """Train the model and return the path to the saved model."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = T5ForConditionalGeneration.from_pretrained(model_type)
-    model.gradient_checkpointing_enable()  # Enable gradient checkpointing
     model = model.to(device)
 
     tokenizer = T5Tokenizer.from_pretrained(model_type)
 
     training_args = TrainingArguments(
         output_dir="./results",
-        num_train_epochs=3,
-        per_device_train_batch_size=1,  # Reduced batch size for larger model
-        gradient_accumulation_steps=16,  # Increased gradient accumulation
+        num_train_epochs=num_train_epochs,
+        per_device_train_batch_size=per_device_train_batch_size,  # Reduced batch size for larger model
+        gradient_accumulation_steps=gradient_accumulation_steps,  # Increased gradient accumulation
         logging_dir="./logs",
         logging_steps=10,
-        save_steps=50,
+        save_steps=500,
         fp16=True,  # Mixed precision training
-        warmup_steps=500,
+        # warmup_steps=500,
         learning_rate=3e-5,
         max_grad_norm=0.5,  # Gradient clipping
-        dataloader_num_workers=4,  # Adjust based on your system
+        dataloader_num_workers=dataloader_num_workers,  # Adjust based on your system
+        save_total_limit=2,  # Added
     )
 
     trainer = Trainer(
@@ -85,7 +93,8 @@ def train_model(
     with torch.no_grad():
         test_output = model.generate(**test_input)
     print(
-        "Test translation:", tokenizer.decode(test_output[0], skip_special_tokens=True)
+        "Test translation:",
+        tokenizer.decode(test_output[0], skip_special_tokens=True),
     )
 
     print("Model training completed and saved.")

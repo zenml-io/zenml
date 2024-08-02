@@ -14,16 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import torch
-from datasets import Dataset
-from transformers import (
-    T5Tokenizer,
-    T5ForConditionalGeneration,
-    Trainer,
-    TrainingArguments,
-)
 import random
-from typing_extensions import Annotated
+
+import torch
+from transformers import (
+    T5ForConditionalGeneration,
+    T5Tokenizer,
+)
 
 from zenml import step
 from zenml.logger import get_logger
@@ -121,8 +118,11 @@ old_english_words = [
     "bow",
 ]
 
+
 @step
-def test_random_sentences(model: T5ForConditionalGeneration, tokenizer: T5Tokenizer) -> None:
+def test_random_sentences(
+    model: T5ForConditionalGeneration, tokenizer: T5Tokenizer
+) -> None:
     """Test the model on some generated Old English-style sentences."""
 
     model.eval()  # Set the model to evaluation mode

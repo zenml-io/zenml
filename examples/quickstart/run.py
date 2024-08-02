@@ -16,14 +16,12 @@
 #
 
 import os
-from typing import Optional
 
 import click
 from pipelines import (
     english_translation_pipeline,
 )
 
-from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -50,12 +48,21 @@ Examples:
 )
 @click.option(
     "--model_type",
-    type=click.Choice(['t5-small', 't5-large'], case_sensitive=False),
-    default='t5-small',
+    type=click.Choice(["t5-small", "t5-large"], case_sensitive=False),
+    default="t5-small",
     help="Choose the model size: t5-small or t5-large.",
+)
+@click.option(
+    "--orchestration_environment",
+    type=click.Choice(
+        ["local", "custom", "aws", "gcp", "azure"], case_sensitive=False
+    ),
+    default="local",
+    help="Choose the orchestration environment.",
 )
 def main(
     model_type: str,
+    orchestration_environment: str,
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
@@ -69,10 +76,9 @@ def main(
 
     Args:
         model_type: Type of model to use
+        orchestration_environment: Environment where the pipeline will run
         no_cache: If `True` cache will be disabled.
     """
-    client = Client()
-
     config_folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         "configs",
@@ -80,15 +86,16 @@ def main(
 
     run_args_train = {}
 
-    # Run the SGD pipeline
     pipeline_args = {}
     if no_cache:
         pipeline_args["enable_cache"] = False
     pipeline_args["config_path"] = os.path.join(
-        config_folder, "training_remote.yaml"
+        config_folder, f"training_{orchestration_environment}.yaml"
     )
-    english_translation_pipeline.with_options(**pipeline_args)(model_type, **run_args_train)
-    logger.info("Training pipeline with SGD finished successfully!\n\n")
+    english_translation_pipeline.with_options(**pipeline_args)(
+        model_type, **run_args_train
+    )
+    logger.info("Training pipeline finished successfully!\n\n")
 
 
 if __name__ == "__main__":

@@ -17,16 +17,13 @@
 from datasets import Dataset
 from transformers import (
     T5Tokenizer,
-    T5ForConditionalGeneration,
-    Trainer,
-    TrainingArguments,
 )
-from typing_extensions import Annotated
 
 from zenml import step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
 
 @step
 def tokenize_data(dataset: Dataset) -> Dataset:
@@ -35,10 +32,16 @@ def tokenize_data(dataset: Dataset) -> Dataset:
 
     def tokenize_function(examples):
         model_inputs = tokenizer(
-            examples["input"], max_length=128, truncation=True, padding="max_length"
+            examples["input"],
+            max_length=128,
+            truncation=True,
+            padding="max_length",
         )
         labels = tokenizer(
-            examples["target"], max_length=128, truncation=True, padding="max_length"
+            examples["target"],
+            max_length=128,
+            truncation=True,
+            padding="max_length",
         )
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs

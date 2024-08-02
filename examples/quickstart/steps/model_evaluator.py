@@ -17,20 +17,19 @@
 import torch
 from datasets import Dataset
 from transformers import (
-    T5Tokenizer,
     T5ForConditionalGeneration,
-    Trainer,
-    TrainingArguments,
 )
-from typing_extensions import Annotated
 
 from zenml import step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+
 @step
-def evaluate_model(model: T5ForConditionalGeneration, tokenized_dataset: Dataset) -> None:
+def evaluate_model(
+    model: T5ForConditionalGeneration, tokenized_dataset: Dataset
+) -> None:
     """Evaluate the model on the training dataset."""
     model.eval()
     total_loss = 0

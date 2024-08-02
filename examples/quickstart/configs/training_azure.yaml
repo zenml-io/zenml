@@ -1,0 +1,30 @@
+# environment configuration
+settings:
+#  resources:
+#    memory: 32GB
+#    gpu_count: 1
+#    cpu_count: 8
+  docker:
+    parent_image: "pytorch/pytorch:2.4.0-cuda11.8-cudnn9-runtime"
+    requirements:
+      - zenml
+      - pyarrow
+      - datasets
+      - transformers[torch]
+      - sentencepiece
+  # orchestrator.skypilot:
+
+# configuration of the Model Control Plane
+model:
+  name: YeOldeEnglishTranslator
+  description: Model to translate from old to modern english
+  tags: ["quickstart", "llm", "t5"]
+
+# Configure the pipeline
+parameters:
+  # model_type: "t5-small"  # Choose between t5-small and t5-large
+  num_train_epochs: 3
+  per_device_train_batch_size: 16
+  gradient_accumulation_steps: 4
+  dataloader_num_workers: 4
+

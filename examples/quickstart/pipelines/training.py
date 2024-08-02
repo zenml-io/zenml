@@ -15,22 +15,40 @@
 # limitations under the License.
 #
 
-from typing import Optional
-from uuid import UUID
 
-from steps import load_data, tokenize_data, train_model, evaluate_model, test_random_sentences
-
+from steps import (
+    evaluate_model,
+    load_data,
+    test_random_sentences,
+    tokenize_data,
+    train_model,
+)
 from steps.model_trainer import T5_Model
+
 from zenml import pipeline
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-@pipeline
-def english_translation_pipeline(model_type: T5_Model):
+
+@pipeline()
+def english_translation_pipeline(
+    model_type: T5_Model,
+    num_train_epochs: int,
+    per_device_train_batch_size: int,
+    gradient_accumulation_steps: int,
+    dataloader_num_workers: int,
+):
     """Define a pipeline that connects the steps."""
     dataset = load_data()
     tokenized_dataset = tokenize_data(dataset)
-    model, tokenizer = train_model(tokenized_dataset, model_type)
+    model, tokenizer = train_model(
+        tokenized_dataset,
+        model_type,
+        num_train_epochs,
+        per_device_train_batch_size,
+        gradient_accumulation_steps,
+        dataloader_num_workers,
+    )
     evaluate_model(model, tokenized_dataset)
     test_random_sentences(model, tokenizer)

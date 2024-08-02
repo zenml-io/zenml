@@ -16,12 +16,12 @@
 #
 
 from datasets import Dataset
-from typing_extensions import Annotated
 
 from zenml import step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
 
 @step
 def load_data() -> Dataset:
@@ -34,7 +34,9 @@ def load_data() -> Dataset:
         with open(file_path, "r", encoding="utf-8") as file:
             for line in file:
                 old, modern = line.strip().split("|")
-                inputs.append(f"translate Old English to Modern English: {old}")
+                inputs.append(
+                    f"translate Old English to Modern English: {old}"
+                )
                 targets.append(modern)
 
         return {"input": inputs, "target": targets}
