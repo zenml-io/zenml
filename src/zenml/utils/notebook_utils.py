@@ -29,7 +29,7 @@ DEFAULT_NOTEBOOK_NAME = "test.ipynb"
 logger = get_logger(__name__)
 
 UNINITIALIZED = "uninitialized"
-_VERIFIED_NOTEBOOK_PATH: Optional[str] = UNINITIALIZED
+_ACTIVE_NOTEBOOK_PATH: Optional[str] = UNINITIALIZED
 
 
 def get_active_notebook_path() -> Optional[str]:
@@ -41,9 +41,9 @@ def get_active_notebook_path() -> Optional[str]:
     if not Environment.in_notebook():
         return None
 
-    global _VERIFIED_NOTEBOOK_PATH
+    global _ACTIVE_NOTEBOOK_PATH
 
-    if _VERIFIED_NOTEBOOK_PATH == UNINITIALIZED:
+    if _ACTIVE_NOTEBOOK_PATH == UNINITIALIZED:
         from zenml.utils import source_utils
 
         notebook_name = os.environ.get(
@@ -54,12 +54,12 @@ def get_active_notebook_path() -> Optional[str]:
             source_utils.get_source_root(), notebook_name
         )
         if is_running_in_notebook(notebook_path):
-            _VERIFIED_NOTEBOOK_PATH = notebook_path
+            _ACTIVE_NOTEBOOK_PATH = notebook_path
         else:
             logger.warning("Unable to detect active notebook.")
-            _VERIFIED_NOTEBOOK_PATH = None
+            _ACTIVE_NOTEBOOK_PATH = None
 
-    return _VERIFIED_NOTEBOOK_PATH
+    return _ACTIVE_NOTEBOOK_PATH
 
 
 def load_notebook(notebook_path: str) -> Dict[str, Any]:
