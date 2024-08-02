@@ -1,9 +1,5 @@
 # environment configuration
 settings:
-#  resources:
-#    memory: 32GB
-#    gpu_count: 1
-#    cpu_count: 8
   docker:
     parent_image: "pytorch/pytorch:2.4.0-cuda11.8-cudnn9-runtime"
     requirements:
@@ -12,7 +8,10 @@ settings:
       - datasets
       - transformers[torch]
       - sentencepiece
-  # orchestrator.skypilot:
+  orchestrator.skypilot:
+    accelerators: 'V100'
+    memory: 32+
+    cpus: 8+
 
 # configuration of the Model Control Plane
 model:

@@ -31,7 +31,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@pipeline()
+@pipeline
 def english_translation_pipeline(
     model_type: T5_Model,
     num_train_epochs: int,
