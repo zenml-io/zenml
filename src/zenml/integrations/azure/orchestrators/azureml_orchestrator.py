@@ -218,9 +218,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             client.compute.get(compute_name)
             logger.info(f"Using existing compute target: '{compute_name}'.")
 
-            # TODO: We need to start the compute again if it is stopped.
-            # TODO: We need to check whether extra parameters are set and
-            #   throw a warning.
             return compute_name
 
         # If the compute target does not exist create it
