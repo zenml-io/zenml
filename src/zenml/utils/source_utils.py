@@ -44,6 +44,9 @@ from zenml.environment import Environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+ZENML_SOURCE_ATTRIBUTE_NAME = "__zenml_source__"
+
 NoneType = type(None)
 NoneTypeSource = Source(
     module=NoneType.__module__, attribute="NoneType", type=SourceType.BUILTIN
@@ -58,8 +61,7 @@ BuiltinFunctionTypeSource = Source(
     attribute=BuiltinFunctionType.__name__,
     type=SourceType.BUILTIN,
 )
-ZENML_SOURCE_ATTRIBUTE_NAME = "__zenml_source__"
-ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME = "__zenml_notebook_cell_id__"
+
 
 _CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
     ENV_ZENML_CUSTOM_SOURCE_ROOT, None
@@ -109,9 +111,13 @@ def load(source: Union[Source, str]) -> Any:
                     source.import_path,
                 )
     elif source.type == SourceType.NOTEBOOK:
-        if not Environment.in_notebook():
+        if Environment.in_notebook():
+            # If we're in a notebook, we don't need to do anything as the
+            # loading from the __main__ module should work just fine.
+            pass
+        else:
             notebook_source = NotebookSource.model_validate(dict(source))
-            return _load_notebook_source(notebook_source)
+            return _try_to_load_notebook_replacement_source(notebook_source)
     elif source.type in {SourceType.USER, SourceType.UNKNOWN}:
         # Unknown source might also refer to a user file, include source
         # root in python path just to be sure
@@ -123,29 +129,6 @@ def load(source: Union[Source, str]) -> Any:
         obj = getattr(module, source.attribute)
     else:
         obj = module
-
-    return obj
-
-
-def _load_notebook_source(source: NotebookSource) -> Any:
-    if not source.replacement_module:
-        raise RuntimeError("Can't load notebook source outside of notebook.")
-
-    import_root = get_source_root()
-    try:
-        module = _load_module(
-            module_name=source.replacement_module, import_root=import_root
-        )
-    except Exception:
-        # TODO: write a good error message here that explains the issue
-        ...
-
-    if source.attribute:
-        obj = getattr(module, source.attribute)
-    else:
-        obj = module
-
-    setattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME, source)
 
     return obj
 
@@ -182,8 +165,9 @@ def resolve(
         return FunctionTypeSource
     elif obj is BuiltinFunctionType:
         return BuiltinFunctionTypeSource
-    elif hasattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME):
-        return getattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME)
+    elif source := getattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME, None):
+        assert isinstance(source, Source)
+        return source
     elif isinstance(obj, ModuleType):
         module = obj
         attribute_name = None
@@ -249,13 +233,12 @@ def resolve(
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
     elif source_type == SourceType.NOTEBOOK:
-        cell_id: Optional[str] = getattr(
-            obj, ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME, None
-        )
+        from zenml.utils import notebook_utils
+
         return NotebookSource(
             module=module_name,
             attribute=attribute_name,
-            cell_id=cell_id,
+            cell_id=notebook_utils.load_notebook_cell_id(obj),
             type=source_type,
         )
 
@@ -569,6 +552,54 @@ def _load_module(
             return importlib.import_module(module_name)
     else:
         return importlib.import_module(module_name)
+
+
+def _try_to_load_notebook_replacement_source(source: NotebookSource) -> Any:
+    """Helper function to load a notebook source from its replacement module.
+
+    Args:
+        source: The source to load.
+
+    Raises:
+        RuntimeError: If the source can't be loaded.
+
+    Returns:
+        The loaded object.
+    """
+    if not source.replacement_module:
+        raise RuntimeError(
+            f"Failed to load {source.import_path}. This object was defined in "
+            "a notebook and you're trying to load it outside of a notebook. "
+            "This is currently only supported for pipeline steps."
+        )
+
+    import_root = get_source_root()
+    try:
+        module = _load_module(
+            module_name=source.replacement_module, import_root=import_root
+        )
+    except ImportError:
+        raise RuntimeError(
+            f"Unable to load {source.import_path}. This object was defined in "
+            "a notebook and you're trying to load it outside of a notebook. "
+            "To enable this, ZenML extracts the code of your cell into a "
+            "python file. This means your cell code needs to be "
+            "self-contained:\n"
+            "  * All required imports must be done in this cell, even if the "
+            "same imports already happen in previous notebook cells.\n"
+            "  * The cell can't use any code defined in other notebook cells."
+        )
+
+    if source.attribute:
+        obj = getattr(module, source.attribute)
+    else:
+        obj = module
+
+    # Save the original notebook source so resolving this object works as
+    # expected
+    setattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME, source)
+
+    return obj
 
 
 def _get_package_for_module(module_name: str) -> Optional[str]:

@@ -15,67 +15,142 @@
 
 import json
 import os
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from IPython import get_ipython
 
 from zenml.config.source import NotebookSource, SourceType
 from zenml.environment import Environment
+from zenml.logger import get_logger
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from zenml.config.step_configurations import Step
     from zenml.models import PipelineDeploymentBase
+    from zenml.stack import Stack
+
+
+ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME = "__zenml_notebook_cell_id__"
+
+logger = get_logger(__name__)
 
 
 def get_notebook_extra_files(
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineDeploymentBase", stack: "Stack"
 ) -> Dict[str, str]:
+    """Get extra required files for running notebook code remotely.
+
+    Args:
+        deployment: The deployment for which to get the files.
+        stack: The stack on which the deployment will run.
+
+    Raises:
+        RuntimeError: If the cell ID for a remote step of the deployment is
+            not stored.
+
+    Returns:
+        A dict (filename, file_content) of the required extra files.
+    """
+    if not Environment.in_notebook():
+        return {}
+
     files = {}
     notebook_path = get_notebook_path()
 
-    for step in deployment.pipeline_spec.steps:
-        if step.source.type == SourceType.NOTEBOOK:
+    for step in deployment.step_configurations.values():
+        if step.spec.source.type == SourceType.NOTEBOOK:
             assert isinstance(step.source, NotebookSource)
+
+            if not step_will_run_remotely(step=step, stack=stack):
+                continue
 
             cell_id = step.source.cell_id
             if not cell_id:
                 raise RuntimeError(
-                    "Can't extract notebook code, missing cell ID."
+                    "Failed to extract notebook cell code because no cell ID"
+                    "was saved for this step."
                 )
 
             module_name = (
                 f"zenml_extracted_notebook_code_{cell_id.replace('-', '_')}"
             )
             filename = f"{module_name}.py"
-            file_content = extract_cell_code(
+            file_content = extract_notebook_cell_code(
                 notebook_path=notebook_path, cell_id=cell_id
             )
 
-            step.source.replacement_module = module_name
+            step.spec.source.replacement_module = module_name
             files[filename] = file_content
 
     return files
 
 
-def get_current_notebook_cell_id() -> str:
+def step_will_run_remotely(step: "Step", stack: "Stack") -> bool:
+    """Check whether a step will run remotely.
+
+    Args:
+        step: The step to check.
+        stack: The stack on which the step will run.
+
+    Returns:
+        Whether the step will run remotely.
+    """
+    if step.config.step_operator:
+        return True
+
+    if stack.orchestrator.config.is_remote:
+        return True
+
+    return False
+
+
+def get_active_notebook_cell_id() -> str:
+    """Get the ID of the currently active notebook cell.
+
+    Returns:
+        The ID of the currently active notebook cell.
+    """
     cell_id = get_ipython().get_parent()["metadata"]["cellId"]
     return cell_id
 
 
 def get_notebook_path() -> str:
-    return os.path.join(source_utils.get_source_root(), "test.ipynb")
+    """Get path to the active notebook.
 
-
-def extract_cell_code(notebook_path: str, cell_id: str) -> str:
+    Returns:
+        Path to the notebook.
+    """
     # import ipynbname
 
     # notebook_path = ipynbname.path()
+    return os.path.join(source_utils.get_source_root(), "test.ipynb")
 
+
+def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
+    """Extract code from a notebook cell.
+
+    Args:
+        notebook_path: Path to the notebook file.
+        cell_id: ID of the cell for which to extract the code.
+
+    Raises:
+        RuntimeError: If the notebook contains no cell with the given ID.
+
+    Returns:
+        The cell content.
+    """
     with open(notebook_path) as f:
         notebook_json = json.loads(f.read())
 
     for cell in notebook_json["cells"]:
         if cell["id"] == cell_id:
+            if cell["cell_type"] != "code":
+                logger.warning(
+                    "Trying to extract code from notebook cell, but the cell "
+                    "type is %s. Continuing anyway..",
+                    cell["cell_type"],
+                )
+
             return "\n".join(cell["source"])
 
     raise RuntimeError(
@@ -83,13 +158,45 @@ def extract_cell_code(notebook_path: str, cell_id: str) -> str:
     )
 
 
-def store_cell_id(obj: Any) -> None:
-    if Environment.in_notebook():
-        cell_id = get_current_notebook_cell_id()
+def is_defined_in_notebook_cell(obj: Any) -> bool:
+    """Check whether an object is defined in a notebook cell.
 
-        # TODO: check if object defined in cell
+    Args:
+        obj: The object to check.
+
+    Returns:
+        Whether the object is defined in a notebook cell.
+    """
+    if not Environment.in_notebook():
+        return False
+
+    module_name = getattr(obj, "__module__", None)
+    return module_name == "__main__"
+
+
+def save_notebook_cell_id(obj: Any) -> None:
+    """Save the notebook cell ID for an object.
+
+    Args:
+        obj: The object for which to save the notebook cell ID.
+    """
+    if is_defined_in_notebook_cell(obj):
+        cell_id = get_active_notebook_cell_id()
+
         setattr(
             obj,
-            source_utils.ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME,
+            ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME,
             cell_id,
         )
+
+
+def load_notebook_cell_id(obj: Any) -> Optional[str]:
+    """Load the notebook cell ID for an object.
+
+    Args:
+        obj: The object for which to load the cell ID.
+
+    Returns:
+        The notebook cell ID if it was saved.
+    """
+    return getattr(obj, ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME, None)
