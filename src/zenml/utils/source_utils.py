@@ -42,6 +42,7 @@ from zenml.config.source import (
 from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.environment import Environment
 from zenml.logger import get_logger
+from zenml.utils import notebook_utils
 
 logger = get_logger(__name__)
 
@@ -117,7 +118,7 @@ def load(source: Union[Source, str]) -> Any:
             pass
         else:
             notebook_source = NotebookSource.model_validate(dict(source))
-            return _try_to_load_notebook_replacement_source(notebook_source)
+            return _try_to_load_notebook_source(notebook_source)
     elif source.type in {SourceType.USER, SourceType.UNKNOWN}:
         # Unknown source might also refer to a user file, include source
         # root in python path just to be sure
@@ -233,12 +234,11 @@ def resolve(
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
     elif source_type == SourceType.NOTEBOOK:
-        from zenml.utils import notebook_utils
-
         return NotebookSource(
             module=module_name,
             attribute=attribute_name,
             cell_id=notebook_utils.load_notebook_cell_id(obj),
+            notebook_path=notebook_utils.get_active_notebook_path(),
             type=source_type,
         )
 
@@ -554,8 +554,8 @@ def _load_module(
         return importlib.import_module(module_name)
 
 
-def _try_to_load_notebook_replacement_source(source: NotebookSource) -> Any:
-    """Helper function to load a notebook source from its replacement module.
+def _try_to_load_notebook_source(source: NotebookSource) -> Any:
+    """Helper function to load a notebook source outside of a notebook.
 
     Args:
         source: The source to load.
@@ -566,18 +566,36 @@ def _try_to_load_notebook_replacement_source(source: NotebookSource) -> Any:
     Returns:
         The loaded object.
     """
-    if not source.replacement_module:
+    if not source.notebook_path or not source.cell_id:
         raise RuntimeError(
             f"Failed to load {source.import_path}. This object was defined in "
             "a notebook and you're trying to load it outside of a notebook. "
             "This is currently only supported for pipeline steps."
         )
 
+    module_name = (
+        f"zenml_extracted_notebook_code_{source.cell_id.replace('-', '_')}"
+    )
+    # TODO: this would probably be better if we do it in a temp dir to not
+    # write stuff to the user dir in case they run locally
+    filepath = os.path.join(get_source_root(), f"{module_name}.py")
+
+    if not os.path.exists(filepath):
+        logger.info(
+            "Extracting notebook cell content to load `%s`.",
+            source.import_path,
+        )
+        notebook_path = os.path.join(get_source_root(), source.notebook_path)
+        cell_content = notebook_utils.extract_notebook_cell_code(
+            notebook_path=notebook_path, cell_id=source.cell_id
+        )
+
+        with open(filepath, "w") as f:
+            f.write(cell_content)
+
     import_root = get_source_root()
     try:
-        module = _load_module(
-            module_name=source.replacement_module, import_root=import_root
-        )
+        module = _load_module(module_name=module_name, import_root=import_root)
     except ImportError:
         raise RuntimeError(
             f"Unable to load {source.import_path}. This object was defined in "

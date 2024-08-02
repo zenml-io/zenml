@@ -717,6 +717,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             ):
                 code_path = build_utils.upload_code_if_necessary()
 
+            # TODO: if we run remotely and there are steps defined in notebook
+            # cells, verify that we will be able to run inside the remote
+            # environments
+
             deployment_request = PipelineDeploymentRequest(
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,

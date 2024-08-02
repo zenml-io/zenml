@@ -15,136 +15,87 @@
 
 import json
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional
 
 from IPython import get_ipython
 
-from zenml.config.source import NotebookSource, SourceType
 from zenml.environment import Environment
 from zenml.logger import get_logger
-from zenml.utils import source_utils
-
-if TYPE_CHECKING:
-    from zenml.config.step_configurations import Step
-    from zenml.models import PipelineDeploymentBase
-    from zenml.stack import Stack
-
 
 ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME = "__zenml_notebook_cell_id__"
 
 logger = get_logger(__name__)
 
 
-def get_notebook_extra_files(
-    deployment: "PipelineDeploymentBase", stack: "Stack"
-) -> Dict[str, str]:
-    """Get extra required files for running notebook code remotely.
-
-    Args:
-        deployment: The deployment for which to get the files.
-        stack: The stack on which the deployment will run.
-
-    Raises:
-        RuntimeError: If the cell ID for a remote step of the deployment is
-            not stored.
+def get_active_notebook_path() -> Optional[str]:
+    """Get path of the active notebook.
 
     Returns:
-        A dict (file_path, file_content) of the required extra files.
+        Path of the active notebook.
     """
     if not Environment.in_notebook():
-        return {}
+        return None
 
-    files = {}
-
-    for step in deployment.step_configurations.values():
-        if step.spec.source.type == SourceType.NOTEBOOK:
-            assert isinstance(step.spec.source, NotebookSource)
-
-            if not step_will_run_remotely(step=step, stack=stack):
-                continue
-
-            cell_id = step.spec.source.cell_id
-            if not cell_id:
-                raise RuntimeError(
-                    "Failed to extract notebook cell code because no cell ID"
-                    "was saved for this step."
-                )
-
-            module_name = (
-                f"zenml_extracted_notebook_code_{cell_id.replace('-', '_')}"
-            )
-            filename = f"{module_name}.py"
-            file_content = extract_notebook_cell_code(cell_id=cell_id)
-
-            step.spec.source.replacement_module = module_name
-            files[filename] = file_content
-
-    return files
+    return "test.ipynb"
 
 
-def step_will_run_remotely(step: "Step", stack: "Stack") -> bool:
-    """Check whether a step will run remotely.
+def load_notebook(notebook_path: str) -> Dict[str, Any]:
+    """Load a notebook.
 
     Args:
-        step: The step to check.
-        stack: The stack on which the step will run.
-
-    Returns:
-        Whether the step will run remotely.
-    """
-    if step.config.step_operator:
-        return True
-
-    if stack.orchestrator.config.is_remote:
-        return True
-
-    return False
-
-
-def get_active_notebook_cell_id() -> str:
-    """Get the ID of the currently active notebook cell.
-
-    Returns:
-        The ID of the currently active notebook cell.
-    """
-    cell_id = get_ipython().get_parent()["metadata"]["cellId"]
-    return cell_id
-
-
-def load_active_notebook() -> Dict[str, Any]:
-    """Load the active notebook.
+        notebook_path: Path to the notebook.
 
     Raises:
-        RuntimeError: If the active notebook can't be loaded.
+        FileNotFoundError: If no notebook exist at the path.
 
     Returns:
         Dictionary of the notebook.
     """
-    if not Environment.in_notebook():
-        raise RuntimeError(
-            "Can't load active notebook as you're currently not running in a "
-            "notebook."
-        )
-    notebook_path = os.path.join(source_utils.get_source_root(), "test.ipynb")
-
     if not os.path.exists(notebook_path):
-        raise RuntimeError(f"Notebook at path {notebook_path} does not exist.")
+        raise FileNotFoundError(
+            f"Notebook at path {notebook_path} does not exist."
+        )
 
     with open(notebook_path) as f:
         notebook_json = json.loads(f.read())
 
-    cell_id = get_active_notebook_cell_id()
-
-    for cell in notebook_json["cells"]:
-        if cell["id"] == cell_id:
-            return notebook_json
-
-    raise RuntimeError(
-        f"Notebook at path {notebook_path} is not the active notebook."
-    )
+    return notebook_json
 
 
-def extract_notebook_cell_code(cell_id: str) -> str:
+# def load_active_notebook() -> Dict[str, Any]:
+#     """Load the active notebook.
+
+#     Raises:
+#         RuntimeError: If the active notebook can't be loaded.
+
+#     Returns:
+#         Dictionary of the notebook.
+#     """
+#     if not Environment.in_notebook():
+#         raise RuntimeError(
+#             "Can't load active notebook as you're currently not running in a "
+#             "notebook."
+#         )
+#     notebook_path = os.path.join(source_utils.get_source_root(), "test.ipynb")
+
+#     if not os.path.exists(notebook_path):
+#         raise RuntimeError(f"Notebook at path {notebook_path} does not exist.")
+
+#     with open(notebook_path) as f:
+#         notebook_json = json.loads(f.read())
+
+#     cell_id = get_active_notebook_cell_id()
+
+#     for cell in notebook_json["cells"]:
+#         if cell["id"] == cell_id:
+#             return notebook_json
+
+#     raise RuntimeError(
+#         f"Notebook at path {notebook_path} is not the active notebook."
+#     )
+
+
+def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
     """Extract code from a notebook cell.
 
     Args:
@@ -157,7 +108,7 @@ def extract_notebook_cell_code(cell_id: str) -> str:
     Returns:
         The cell content.
     """
-    notebook_json = load_active_notebook()
+    notebook_json = load_notebook(notebook_path)
 
     for cell in notebook_json["cells"]:
         if cell["id"] == cell_id:
@@ -187,6 +138,16 @@ def is_defined_in_notebook_cell(obj: Any) -> bool:
 
     module_name = getattr(obj, "__module__", None)
     return module_name == "__main__"
+
+
+def get_active_notebook_cell_id() -> str:
+    """Get the ID of the currently active notebook cell.
+
+    Returns:
+        The ID of the currently active notebook cell.
+    """
+    cell_id = get_ipython().get_parent()["metadata"]["cellId"]
+    return cell_id
 
 
 def save_notebook_cell_id(obj: Any) -> None:
