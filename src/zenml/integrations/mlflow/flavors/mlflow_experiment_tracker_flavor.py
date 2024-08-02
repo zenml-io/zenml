@@ -98,7 +98,7 @@ class MLFlowExperimentTrackerConfig(
         databricks_host: The host of the Databricks workspace with the MLflow
             managed server to connect to. This is only required if
             `tracking_uri` value is set to `"databricks"`.
-        enable_unity_catalog: If `True`, will enable the Unity Catalog for
+        enable_unity_catalog: If `True`, will enable the Databricks Unity Catalog for
             logging and registering models.
     """
 
