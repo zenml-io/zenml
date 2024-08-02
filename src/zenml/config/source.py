@@ -268,7 +268,7 @@ class NotebookSource(Source):
 
     @field_validator("module")
     @classmethod
-    def _validate_type(cls, value: str) -> str:
+    def _validate_module(cls, value: str) -> str:
         """Validate the module.
 
         Args:

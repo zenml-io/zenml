@@ -49,7 +49,7 @@ def get_notebook_extra_files(
             not stored.
 
     Returns:
-        A dict (filename, file_content) of the required extra files.
+        A dict (file_path, file_content) of the required extra files.
     """
     if not Environment.in_notebook():
         return {}
@@ -58,12 +58,12 @@ def get_notebook_extra_files(
 
     for step in deployment.step_configurations.values():
         if step.spec.source.type == SourceType.NOTEBOOK:
-            assert isinstance(step.source, NotebookSource)
+            assert isinstance(step.spec.source, NotebookSource)
 
             if not step_will_run_remotely(step=step, stack=stack):
                 continue
 
-            cell_id = step.source.cell_id
+            cell_id = step.spec.source.cell_id
             if not cell_id:
                 raise RuntimeError(
                     "Failed to extract notebook cell code because no cell ID"
