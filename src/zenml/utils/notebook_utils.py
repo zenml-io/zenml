@@ -29,6 +29,9 @@ DEFAULT_NOTEBOOK_NAME = "test.ipynb"
 logger = get_logger(__name__)
 
 
+_verified_notebook_path: Optional[str] = None
+
+
 def get_active_notebook_path() -> Optional[str]:
     """Get path of the active notebook.
 
@@ -38,12 +41,22 @@ def get_active_notebook_path() -> Optional[str]:
     if not Environment.in_notebook():
         return None
 
-    from zenml.utils import source_utils
+    global _verified_notebook_path
 
-    notebook_name = os.environ.get(
-        "ZENML_NOTEBOOK_NAME", DEFAULT_NOTEBOOK_NAME
-    )
-    return os.path.join(source_utils.get_source_root(), notebook_name)
+    if not _verified_notebook_path:
+        from zenml.utils import source_utils
+
+        notebook_name = os.environ.get(
+            "ZENML_NOTEBOOK_NAME", DEFAULT_NOTEBOOK_NAME
+        )
+
+        notebook_path = os.path.join(
+            source_utils.get_source_root(), notebook_name
+        )
+        if is_running_in_notebook(notebook_path):
+            _verified_notebook_path = notebook_path
+
+    return _verified_notebook_path
 
 
 def load_notebook(notebook_path: str) -> Dict[str, Any]:

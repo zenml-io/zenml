@@ -585,6 +585,7 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
         The loaded object.
     """
     if not source.notebook_path or not source.cell_id:
+        # TODO: Maybe tell them how to activate it for their custom objects
         raise RuntimeError(
             f"Failed to load {source.import_path}. This object was defined in "
             "a notebook and you're trying to load it outside of a notebook. "
