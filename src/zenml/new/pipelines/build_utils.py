@@ -736,10 +736,10 @@ def upload_code_if_necessary() -> str:
     Returns:
         The path where to archived code is uploaded.
     """
+    logger.info("Archiving code...")
+
     code_archive = CodeArchive(root=source_utils.get_source_root())
     artifact_store = Client().active_stack.artifact_store
-
-    logger.info("Archiving code...")
 
     with tempfile.NamedTemporaryFile(
         mode="w+b", delete=True, suffix=".tar.gz"
