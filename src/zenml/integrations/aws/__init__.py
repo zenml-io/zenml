@@ -33,6 +33,7 @@ AWS_SAGEMAKER_ORCHESTRATOR_FLAVOR = "sagemaker"
 AWS_CONNECTOR_TYPE = "aws"
 AWS_RESOURCE_TYPE = "aws-generic"
 S3_RESOURCE_TYPE = "s3-bucket"
+AWS_IMAGE_BUILDER_FLAVOR = "aws"
 
 class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
@@ -59,12 +60,14 @@ class AWSIntegration(Integration):
         """
         from zenml.integrations.aws.flavors import (
             AWSContainerRegistryFlavor,
+            AWSImageBuilderFlavor,
             SagemakerOrchestratorFlavor,
             SagemakerStepOperatorFlavor,
         )
 
         return [
             AWSContainerRegistryFlavor,
+            AWSImageBuilderFlavor,
             SagemakerStepOperatorFlavor,
             SagemakerOrchestratorFlavor,
         ]
