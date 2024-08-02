@@ -29,7 +29,7 @@ DEFAULT_NOTEBOOK_NAME = "test.ipynb"
 logger = get_logger(__name__)
 
 
-_verified_notebook_path: Optional[str] = None
+_VERIFIED_NOTEBOOK_PATH: Optional[str] = None
 
 
 def get_active_notebook_path() -> Optional[str]:
@@ -41,9 +41,9 @@ def get_active_notebook_path() -> Optional[str]:
     if not Environment.in_notebook():
         return None
 
-    global _verified_notebook_path
+    global _VERIFIED_NOTEBOOK_PATH
 
-    if not _verified_notebook_path:
+    if not _VERIFIED_NOTEBOOK_PATH:
         from zenml.utils import source_utils
 
         notebook_name = os.environ.get(
@@ -54,9 +54,9 @@ def get_active_notebook_path() -> Optional[str]:
             source_utils.get_source_root(), notebook_name
         )
         if is_running_in_notebook(notebook_path):
-            _verified_notebook_path = notebook_path
+            _VERIFIED_NOTEBOOK_PATH = notebook_path
 
-    return _verified_notebook_path
+    return _VERIFIED_NOTEBOOK_PATH
 
 
 def load_notebook(notebook_path: str) -> Dict[str, Any]:
