@@ -20,12 +20,14 @@ from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 
+AZURE_DEPLOYMENT_TYPE = "azure-cloud-shell"
+
 
 class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
     """Azure ZenML Cloud Stack Deployment."""
 
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.AZURE
-    deployment: ClassVar[str] = "azure-cloud-shell"
+    deployment: ClassVar[str] = AZURE_DEPLOYMENT_TYPE
 
     @classmethod
     def description(cls) -> str:

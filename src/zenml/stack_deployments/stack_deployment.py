@@ -27,12 +27,15 @@ from zenml.models import (
     StackDeploymentInfo,
 )
 
+STACK_DEPLOYMENT_TERRAFORM = "terraform"
+
 
 class ZenMLCloudStackDeployment(BaseModel):
     """ZenML Cloud Stack CLI Deployment base class."""
 
     provider: ClassVar[StackDeploymentProvider]
     deployment: ClassVar[str]
+    terraform: bool = False
     stack_name: str
     zenml_server_url: str
     zenml_server_api_token: str
@@ -105,6 +108,17 @@ class ZenMLCloudStackDeployment(BaseModel):
             names to region descriptions.
         """
 
+    @property
+    def deployment_type(self) -> str:
+        """Return the type of deployment.
+
+        Returns:
+            The type of deployment.
+        """
+        if self.terraform:
+            return STACK_DEPLOYMENT_TERRAFORM
+        return self.deployment
+
     @classmethod
     def skypilot_default_regions(cls) -> Dict[str, str]:
         """Returns the regions supported by default for the Skypilot.
@@ -158,7 +172,8 @@ class ZenMLCloudStackDeployment(BaseModel):
         """
 
     def get_stack(
-        self, date_start: Optional[datetime.datetime] = None
+        self,
+        date_start: Optional[datetime.datetime] = None,
     ) -> Optional[DeployedStack]:
         """Return the ZenML stack that was deployed and registered.
 
@@ -201,7 +216,7 @@ class ZenMLCloudStackDeployment(BaseModel):
             if stack.labels.get("zenml:provider") != self.provider.value:
                 continue
 
-            if stack.labels.get("zenml:deployment") != self.deployment:
+            if stack.labels.get("zenml:deployment") != self.deployment_type:
                 continue
 
             artifact_store = stack.components[
