@@ -24,6 +24,8 @@ from zenml.logger import get_logger
 
 ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME = "__zenml_notebook_cell_id__"
 
+DEFAULT_NOTEBOOK_NAME = "test.ipynb"
+
 logger = get_logger(__name__)
 
 
@@ -36,7 +38,12 @@ def get_active_notebook_path() -> Optional[str]:
     if not Environment.in_notebook():
         return None
 
-    return "test.ipynb"
+    from zenml.utils import source_utils
+
+    notebook_name = os.environ.get(
+        "ZENML_NOTEBOOK_NAME", DEFAULT_NOTEBOOK_NAME
+    )
+    return os.path.join(source_utils.get_source_root(), notebook_name)
 
 
 def load_notebook(notebook_path: str) -> Dict[str, Any]:
@@ -62,37 +69,32 @@ def load_notebook(notebook_path: str) -> Dict[str, Any]:
     return notebook_json
 
 
-# def load_active_notebook() -> Dict[str, Any]:
-#     """Load the active notebook.
+def is_running_in_notebook(notebook_path: str) -> None:
+    """Check if the current code is running in the given notebook.
 
-#     Raises:
-#         RuntimeError: If the active notebook can't be loaded.
+    Args:
+        notebook_path: Path of the notebook.
 
-#     Returns:
-#         Dictionary of the notebook.
-#     """
-#     if not Environment.in_notebook():
-#         raise RuntimeError(
-#             "Can't load active notebook as you're currently not running in a "
-#             "notebook."
-#         )
-#     notebook_path = os.path.join(source_utils.get_source_root(), "test.ipynb")
+    Returns:
+        If the current code is running in the given notebook.
+    """
+    if not Environment.in_notebook():
+        return False
 
-#     if not os.path.exists(notebook_path):
-#         raise RuntimeError(f"Notebook at path {notebook_path} does not exist.")
+    try:
+        notebook_json = load_notebook(notebook_path)
+    except FileNotFoundError:
+        return False
 
-#     with open(notebook_path) as f:
-#         notebook_json = json.loads(f.read())
+    active_cell_id = get_active_notebook_cell_id()
 
-#     cell_id = get_active_notebook_cell_id()
+    for cell in notebook_json["cells"]:
+        if cell["id"] == active_cell_id:
+            # This isn't a 100% guarantee if the notebook was copied but a good
+            # quick check
+            return True
 
-#     for cell in notebook_json["cells"]:
-#         if cell["id"] == cell_id:
-#             return notebook_json
-
-#     raise RuntimeError(
-#         f"Notebook at path {notebook_path} is not the active notebook."
-#     )
+    return False
 
 
 def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
