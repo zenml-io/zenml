@@ -57,6 +57,7 @@ DATABRICKS_HOST = "DATABRICKS_HOST"
 DATABRICKS_USERNAME = "DATABRICKS_USERNAME"
 DATABRICKS_PASSWORD = "DATABRICKS_PASSWORD"
 DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
+DATABRICKS_UNITY_CATALOG = "databricks-uc"
 
 
 class MLFlowExperimentTracker(BaseExperimentTracker):
@@ -285,7 +286,6 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """Configures the MLflow tracking URI and any additional credentials."""
         tracking_uri = self.get_tracking_uri()
         mlflow.set_tracking_uri(tracking_uri)
-        mlflow.set_registry_uri(tracking_uri)
 
         if is_databricks_tracking_uri(tracking_uri):
             if self.config.databricks_host:
@@ -296,6 +296,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 os.environ[DATABRICKS_PASSWORD] = self.config.tracking_password
             if self.config.tracking_token:
                 os.environ[DATABRICKS_TOKEN] = self.config.tracking_token
+            if self.config.enable_unity_catalog:
+                mlflow.set_registry_uri(DATABRICKS_UNITY_CATALOG)
         else:
             os.environ[MLFLOW_TRACKING_URI] = tracking_uri
             if self.config.tracking_username:
