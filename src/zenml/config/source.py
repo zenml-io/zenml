@@ -234,8 +234,13 @@ class NotebookSource(Source):
     """Source representing an object defined in a notebook.
 
     Attributes:
-        cell_id:
-        replacement_module:
+        cell_id: ID of the notebook cell in which the object is stored. This
+            will only be set for objects which explicitly store this by calling
+            `zenml.utils.notebook_utils.save_notebook_cell_id()`.
+        replacement_module: Replacement module from which to load the source
+            when not running in a notebook. This will only be set for special
+            object for which we extract the cell code in which they're defined
+            into python files before running pipeline remotely.
     """
 
     cell_id: Optional[str] = None

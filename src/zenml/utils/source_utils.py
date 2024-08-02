@@ -595,7 +595,7 @@ def _try_to_load_notebook_replacement_source(source: NotebookSource) -> Any:
     else:
         obj = module
 
-    # Save the original notebook source so resolving this object works as
+    # Store the original notebook source so resolving this object works as
     # expected
     setattr(obj, ZENML_SOURCE_ATTRIBUTE_NAME, source)
 
