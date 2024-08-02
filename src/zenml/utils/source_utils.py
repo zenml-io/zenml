@@ -236,11 +236,15 @@ def resolve(
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
     elif source_type == SourceType.NOTEBOOK:
+        # TODO: This doesn't work on windows
+        relative_notebook_path = os.path.relpath(
+            notebook_utils.get_active_notebook_path(), get_source_root()
+        )
         return NotebookSource(
             module=module_name,
             attribute=attribute_name,
             cell_id=notebook_utils.load_notebook_cell_id(obj),
-            notebook_path=notebook_utils.get_active_notebook_path(),
+            notebook_path=relative_notebook_path,
             type=source_type,
         )
 
