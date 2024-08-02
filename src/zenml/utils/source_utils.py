@@ -68,6 +68,8 @@ _CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
     ENV_ZENML_CUSTOM_SOURCE_ROOT, None
 )
 
+_SHARED_TEMPDIR: Optional[str] = None
+
 
 def load(source: Union[Source, str]) -> Any:
     """Load a source or import path.
@@ -554,6 +556,22 @@ def _load_module(
         return importlib.import_module(module_name)
 
 
+def _get_shared_temp_dir() -> str:
+    """Get path to a shared temporary directory.
+
+    Returns:
+        Path to a shared temporary directory.
+    """
+    global _SHARED_TEMPDIR
+
+    if not _SHARED_TEMPDIR:
+        import tempfile
+
+        _SHARED_TEMPDIR = tempfile.mkdtemp()
+
+    return _SHARED_TEMPDIR
+
+
 def _try_to_load_notebook_source(source: NotebookSource) -> Any:
     """Helper function to load a notebook source outside of a notebook.
 
@@ -576,36 +594,35 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
     module_name = (
         f"zenml_extracted_notebook_code_{source.cell_id.replace('-', '_')}"
     )
+    extract_dir = _get_shared_temp_dir()
+    filepath = os.path.join(extract_dir, f"{module_name}.py")
 
-    if module_name in sys.modules:
-        module = sys.modules[module_name]
-    else:
+    if not os.path.exists(filepath):
         logger.info(
             "Extracting notebook cell content to load `%s`.",
             source.import_path,
         )
-        try:
-            notebook_path = os.path.join(
-                get_source_root(), source.notebook_path
-            )
-            cell_content = notebook_utils.extract_notebook_cell_code(
-                notebook_path=notebook_path, cell_id=source.cell_id
-            )
-            module = ModuleType(module_name)
-            exec(cell_content, module.__dict__)
-        except Exception as e:
-            raise RuntimeError(
-                f"Unable to load {source.import_path}. This object was defined "
-                "in a notebook and you're trying to load it outside of a "
-                "notebook. To enable this, ZenML extracts the code of your "
-                "cell into a python file. This means your cell code needs to "
-                "be self-contained:\n"
-                "  * All required imports must be done in this cell, even if "
-                "the same imports already happen in previous notebook cells.\n"
-                "  * The cell can't use any code defined in other notebook "
-                "cells."
-            ) from e
-        sys.modules[module_name] = module_name
+        notebook_path = os.path.join(get_source_root(), source.notebook_path)
+        cell_content = notebook_utils.extract_notebook_cell_code(
+            notebook_path=notebook_path, cell_id=source.cell_id
+        )
+
+        with open(filepath, "w") as f:
+            f.write(cell_content)
+
+    try:
+        module = _load_module(module_name=module_name, import_root=extract_dir)
+    except ImportError:
+        raise RuntimeError(
+            f"Unable to load {source.import_path}. This object was defined in "
+            "a notebook and you're trying to load it outside of a notebook. "
+            "To enable this, ZenML extracts the code of your cell into a "
+            "python file. This means your cell code needs to be "
+            "self-contained:\n"
+            "  * All required imports must be done in this cell, even if the "
+            "same imports already happen in previous notebook cells.\n"
+            "  * The cell can't use any code defined in other notebook cells."
+        )
 
     if source.attribute:
         obj = getattr(module, source.attribute)
