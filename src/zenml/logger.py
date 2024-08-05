@@ -46,6 +46,7 @@ class CustomFormatter(logging.Formatter):
     cyan: str = "\x1b[1;36m"
     bold_red: str = "\x1b[31;1m"
     purple: str = "\x1b[1;35m"
+    blue: str = "\x1b[34m"
     reset: str = "\x1b[0m"
 
     format_template: str = (
@@ -92,6 +93,18 @@ class CustomFormatter(logging.Formatter):
                     self.reset
                     + self.cyan
                     + quoted
+                    + self.COLORS.get(LoggingLevels(record.levelno)),
+                )
+
+            # Format URLs
+            url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+            urls = re.findall(url_pattern, formatted_message)
+            for url in urls:
+                formatted_message = formatted_message.replace(
+                    url,
+                    self.reset
+                    + self.blue
+                    + url
                     + self.COLORS.get(LoggingLevels(record.levelno)),
                 )
             return formatted_message
