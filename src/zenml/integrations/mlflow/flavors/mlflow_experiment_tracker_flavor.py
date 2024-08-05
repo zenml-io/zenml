@@ -98,6 +98,8 @@ class MLFlowExperimentTrackerConfig(
         databricks_host: The host of the Databricks workspace with the MLflow
             managed server to connect to. This is only required if
             `tracking_uri` value is set to `"databricks"`.
+        enable_unity_catalog: If `True`, will enable the Databricks Unity Catalog for
+            logging and registering models.
     """
 
     tracking_uri: Optional[str] = None
@@ -106,6 +108,7 @@ class MLFlowExperimentTrackerConfig(
     tracking_token: Optional[str] = SecretField(default=None)
     tracking_insecure_tls: bool = False
     databricks_host: Optional[str] = None
+    enable_unity_catalog: bool = False
 
     @model_validator(mode="after")
     def _ensure_authentication_if_necessary(

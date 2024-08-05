@@ -13,8 +13,16 @@ my_pipeline = my_pipeline.with_options(build=<BUILD_ID>)
 or when running a pipeline from the CLI:
 
 ```shell
-zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
+zenml pipeline run <PIPELINE_SOURCE_PATH> --build=<BUILD_ID>
 ```
+
+{% hint style="info" %}
+The source path of your pipeline will be `run.my_pipeline`. In a generalized
+way, this will be `<MODULE_PATH>.<PIPELINE_FUNCTION_NAME>`. If the python file
+defining the pipeline is not in your current directory, the module path consists
+of the full path to the file, separated by dots, e.g.
+`some_directory.some_file.my_pipeline`.
+{% endhint %}
 
 Please note, that this means specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. As a consequence, even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code. Therefore, if you would like to reuse a Docker build AND make sure your local code changes are also downloaded into the image, you need to [connect a git repository](use-code-repositories-to-speed-up-docker-build-times.md).
 

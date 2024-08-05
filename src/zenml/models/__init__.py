@@ -199,12 +199,7 @@ from zenml.models.v2.core.pipeline import (
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
-)
-from zenml.models.v2.core.pipeline_namespace import (
-    PipelineNamespaceResponseBody,
-    PipelineNamespaceResponseMetadata,
-    PipelineNamespaceResponse,
-    PipelineNamespaceFilter,
+    PipelineResponseResources
 )
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
@@ -230,6 +225,16 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
+    PipelineRunResponseResources
+)
+from zenml.models.v2.core.run_template import (
+    RunTemplateRequest,
+    RunTemplateUpdate,
+    RunTemplateResponse,
+    RunTemplateResponseBody,
+    RunTemplateResponseMetadata,
+    RunTemplateResponseResources,
+    RunTemplateFilter,
 )
 from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
@@ -424,6 +429,7 @@ ModelVersionPipelineRunResponseBody.model_rebuild()
 OAuthDeviceResponseBody.model_rebuild()
 PipelineResponseBody.model_rebuild()
 PipelineResponseMetadata.model_rebuild()
+PipelineResponseResources.model_rebuild()
 PipelineBuildBase.model_rebuild()
 PipelineBuildResponseBody.model_rebuild()
 PipelineBuildResponseMetadata.model_rebuild()
@@ -433,6 +439,11 @@ PipelineDeploymentResponseMetadata.model_rebuild()
 PipelineDeploymentResponseResources.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
+PipelineRunResponseResources.model_rebuild()
+RunTemplateResponseBody.model_rebuild()
+RunTemplateResponseMetadata.model_rebuild()
+RunTemplateResponseResources.model_rebuild()
+RunTemplateResponseBody.model_rebuild()
 RunMetadataResponseBody.model_rebuild()
 RunMetadataResponseMetadata.model_rebuild()
 ScheduleResponseBody.model_rebuild()
@@ -590,10 +601,7 @@ __all__ = [
     "PipelineResponse",
     "PipelineResponseBody",
     "PipelineResponseMetadata",
-    "PipelineNamespaceFilter",
-    "PipelineNamespaceResponse",
-    "PipelineNamespaceResponseBody",
-    "PipelineNamespaceResponseMetadata",
+    "PipelineResponseResources",
     "PipelineBuildBase",
     "PipelineBuildRequest",
     "PipelineBuildFilter",
@@ -612,6 +620,14 @@ __all__ = [
     "PipelineRunResponse",
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
+    "PipelineRunResponseResources",
+    "RunTemplateRequest",
+    "RunTemplateUpdate",
+    "RunTemplateResponse",
+    "RunTemplateResponseBody",
+    "RunTemplateResponseMetadata",
+    "RunTemplateResponseResources",
+    "RunTemplateFilter",
     "RunMetadataRequest",
     "RunMetadataFilter",
     "RunMetadataResponse",

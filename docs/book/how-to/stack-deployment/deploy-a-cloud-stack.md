@@ -17,8 +17,12 @@ infrastructure on your selected cloud provider and get you started on remote
 stack with a single click**.
 
 {% hint style="info" %}
+If you prefer to have more control over where and how resources are provisioned
+in your cloud, you can [use one of our Terraform modules](deploy-a-cloud-stack-with-terraform.md)
+to manage your infrastructure as code yourself.
+
 If you have the required infrastructure pieces already deployed on your cloud, 
-you can also use [the stack wizard to seamlessly register your stack](register-a-cloud-stack.md).
+you can also use [the stack wizard to seamlessly register your stack](../../how-to/stack-deployment/register-a-cloud-stack.md).
 {% endhint %}
 
 ## How to use the 1-click deployment tool?
@@ -43,11 +47,6 @@ Since we will be deploying it from scratch, select "New Infrastructure" on the
 next page:
 
 ![Options for registering a stack](../../.gitbook/assets/register_stack_page.png)
-
-{% hint style="warning" %}
-Currently, the 1-click deployment only works on AWS and GCP. We are working on 
-bringing support to Azure as well. Stay in touch for further updates.
-{% endhint %}
 
 ![Choosing a cloud provider](../../.gitbook/assets/deploy_stack_selection.png)
 
@@ -140,6 +139,14 @@ to the ZenML dashboard to view the newly created stack:
 
 ![GCP Stack dashboard output](../../.gitbook/assets/deploy_stack_gcp_dashboard_output.png)
 
+### Azure
+
+{% hint style="warning" %}
+Currently, the 1-click deployment for Azure is only supported in the CLI. We are
+working on bringing support to the dashboard as well. Stay in touch for further
+updates.
+{% endhint %}
+
 {% endtab %}
 {% tab title="CLI" %}
 
@@ -147,18 +154,8 @@ In order to create a remote stack over the CLI, you can use the following
 command:
 
 ```shell
-zenml stack deploy -p {aws|gcp}
+zenml stack deploy -p {aws|gcp|azure}
 ```
-
-{% hint style="warning" %}
-Currently, the 1-click deployment only works on AWS and GCP. We are working on 
-bringing support to Azure as well. 
-
-In the meanwhile, you can still deploy an Azure stack manually, meaning
-you can deploy the infrastructure yourself and create the necessary ZenML 
-components yourself using the corresponding integrations. Check [our component 
-guide](../../component-guide/component-guide.md) for further details.
-{% endhint %}
 
 ### AWS
 
@@ -253,6 +250,45 @@ to the ZenML CLI to view the newly created stack:
 
 ![GCP Stack CLI output](../../.gitbook/assets/deploy_stack_gcp_cli_output.png)
 
+### Azure
+
+If you choose `azure` as your provider, the command will walk you through
+deploying [the ZenML Azure Stack Terraform module](https://registry.terraform.io/modules/zenml-io/zenml-stack/azure).
+It will start by showing some information about the stack that will be created:
+
+![CLI Azure stack deploy](../../.gitbook/assets/deploy_stack_azure_cli.png)
+
+Upon confirmation, the command will redirect you to a Cloud Shell session on Azure.
+
+![Azure Cloud Shell page](../../.gitbook/assets/deploy_stack_azure_cloudshell.png)
+
+After the Cloud Shell session starts, you will have to use Terraform to deploy
+the stack, as instructed by the CLI.
+
+First, you will have to open a file named `main.tf` in the Cloud Shell session
+using the editor of your choice (e.g. `vim`, `nano`) and paste in the Terraform
+configuration provided by the CLI. You may need to switch back to the ZenML CLI
+to copy these values if you did not do so earlier:
+
+![Azure Cloud Shell Terraform Configuration File](../../.gitbook/assets/deploy_stack_azure_cloudshell_create_file.png)
+
+The Terraform file is a simple configuration that uses [the ZenML Azure Stack Terraform module](https://registry.terraform.io/modules/zenml-io/zenml-stack/azure)
+to deploy the necessary resources for your Azure stack and then automatically
+register the stack with your ZenML server. You can read more about the module
+and its configuration options in the module's documentation.
+
+You can proceed with the deployment by running the `terraform init` and
+`terraform apply` Terraform commands in your terminal:
+
+![Azure Cloud Shell Terraform Init](../../.gitbook/assets/deploy_stack_azure_cloudshell_terraform_init.png)
+![Azure Cloud Shell Terraform Apply](../../.gitbook/assets/deploy_stack_azure_cloudshell_terraform_apply.png)
+
+Once the Terraform deployment is complete, you may close the Cloud Shell
+session and return to the ZenML CLI to view the newly created stack:
+
+![Azure Cloud Shell Terraform Outputs](../../.gitbook/assets/deploy_stack_azure_cloudshell_terraform_ouputs.png)
+![Azure Stack CLI output](../../.gitbook/assets/deploy_stack_azure_cli_output.png)
+
 {% endtab %}
 {% endtabs %}
 
@@ -337,8 +373,32 @@ following GCP permissions in your GCP project:
 
 {% endtab %}
 {% tab title="Azure" %}
-We are working on bringing the support for the 1-click deployment feature 
-to Azure! Stay in touch for further updates.
+
+### Resources
+
+- An Azure Resource Group to contain all the resources required for the ZenML stack
+- An Azure Storage Account and Blob Storage Container that will be used as a ZenML Artifact Store.
+- An Azure Container Registry that will be used as a ZenML Container Registry.
+- Permissions to use SkyPilot as a ZenML Orchestrator in the Azure subscription and region.
+- An Azure Service Principal with the minimum necessary permissions to access
+the above resources.
+- An Azure Service Principal client secret used to give access to ZenML to
+connect to the above resources through a ZenML service connector.
+
+### Permissions
+
+The configured Azure service principal and its client secret will grant ZenML
+the following permissions in your Azure subscription:
+
+* permissions granted for the created Storage Account:
+  * Storage Blob Data Contributor
+* permissions granted for the created Container Registry:
+  * AcrPull
+  * AcrPush
+  * Contributor
+* subscription level permissions:
+  * Owner (only required by SkyPilot, not directly by ZenML)
+
 {% endtab %}
 {% endtabs %}
 

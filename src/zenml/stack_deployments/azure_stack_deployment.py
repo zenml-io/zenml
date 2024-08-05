@@ -17,15 +17,15 @@ import re
 from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
+from zenml.models import StackDeploymentConfig
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 
 
-# TODO: this class just implements the regions list, and is not suitable for other
-# deployment tasks.
 class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
     """Azure ZenML Cloud Stack Deployment."""
 
     provider: ClassVar[StackDeploymentProvider] = StackDeploymentProvider.AZURE
+    deployment: ClassVar[str] = "azure-cloud-shell"
 
     @classmethod
     def description(cls) -> str:
@@ -37,8 +37,11 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
         Returns:
             A MarkDown description of the ZenML Cloud Stack Deployment.
         """
-        # TODO: Implement this
-        return ""
+        return """
+Provision and register a basic Azure ZenML stack authenticated and connected to
+all the necessary cloud infrastructure resources required to run pipelines in
+Azure.
+"""
 
     @classmethod
     def instructions(cls) -> str:
@@ -51,8 +54,44 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
             MarkDown instructions on how to deploy the ZenML stack to the
             specified cloud provider.
         """
-        # TODO: Implement this
-        return ""
+        return """
+You will be redirected to an Azure Cloud Shell console in your browser where
+you'll be asked to log into your Azure project and then use
+[the Azure ZenML Stack Terraform module](https://registry.terraform.io/modules/zenml-io/zenml-stack/azure)
+to provision the necessary cloud resources for ZenML.
+
+**NOTE**: The Azure ZenML Stack Terraform module will create the following new
+resources in your Azure subscription. Please ensure you have the necessary
+permissions and are aware of any potential costs:
+
+- An Azure Resource Group to contain all the resources required for the ZenML stack
+- An Azure Storage Account and Blob Storage Container registered as a [ZenML artifact store](https://docs.zenml.io/stack-components/artifact-stores/azure).
+- An Azure Container Registry registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/azure).
+- SkyPilot will be registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/skypilot-vm) and used to run pipelines in your Azure subscription.
+- An Azure Service Principal with the minimum necessary permissions to access
+the above resources.
+- An Azure Service Principal client secret used to give access to ZenML to
+connect to the above resources through a [ZenML service connector](https://docs.zenml.io/how-to/auth-management/azure-service-connector).
+
+The Azure ZenML Stack Terraform module will automatically create an Azure
+Service Principal client secret and will share it with ZenML to give it
+permission to access the resources created by the stack. You can revoke these
+permissions at any time by deleting the Service Principal in your Azure
+subscription.
+
+**Estimated costs**
+
+A small training job would cost around: $0.60
+
+These are rough estimates and actual costs may vary based on your usage and specific Azure pricing. 
+Some services may be eligible for the Azure Free Tier. Use [the Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator)
+for a detailed estimate based on your usage.
+
+
+💡 **After the Terraform deployment is complete, you can close the Cloud
+Shell session and return to the CLI to view details about the associated ZenML
+stack automatically registered with ZenML.**
+"""
 
     @classmethod
     def post_deploy_instructions(cls) -> str:
@@ -64,8 +103,11 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
             MarkDown instructions on what to do after the deployment is
             complete.
         """
-        # TODO: Implement this
-        return ""
+        return """
+The ZenML stack has been successfully deployed and registered. You can delete
+the provisioned Service Principal and Resource Group at any time to revoke
+ZenML's access to your Azure subscription.
+"""
 
     @classmethod
     def integrations(cls) -> List[str]:
@@ -75,7 +117,7 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
             The list of ZenML integrations that need to be installed for the
             stack to be usable.
         """
-        return ["azure"]
+        return ["azure", "skypilot_azure"]
 
     @classmethod
     def permissions(cls) -> Dict[str, List[str]]:
@@ -85,8 +127,19 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
             The permissions granted to ZenML to access the cloud resources, as
             a dictionary grouping permissions by resource.
         """
-        # TODO: Implement this
-        return {}
+        return {
+            "Storage Account": [
+                "Storage Blob Data Contributor",
+            ],
+            "Container Registry": [
+                "AcrPull",
+                "AcrPush",
+                "Contributor",
+            ],
+            "Subscription": [
+                "Owner (required by SkyPilot)",
+            ],
+        }
 
     @classmethod
     def locations(cls) -> Dict[str, str]:
@@ -177,3 +230,57 @@ class AZUREZenMLCloudStackDeployment(ZenMLCloudStackDeployment):
             for k, v in cls.locations().items()
             if "(US)" in k and matcher.match(v)
         }
+
+    def get_deployment_config(
+        self,
+    ) -> StackDeploymentConfig:
+        """Return the configuration to deploy the ZenML stack to the specified cloud provider.
+
+        The configuration should include:
+
+        * a cloud provider console URL where the user will be redirected to
+        deploy the ZenML stack. The URL should include as many pre-filled
+        URL query parameters as possible.
+        * a textual description of the URL
+        * some deployment providers may require additional configuration
+        parameters or scripts to be passed to the cloud provider in addition to
+        the deployment URL query parameters. Where that is the case, this method
+        should also return a string that the user can copy and paste into the
+        cloud provider console to deploy the ZenML stack (e.g. a set of
+        environment variables, YAML configuration snippet, bash or Terraform
+        script etc.).
+
+        Returns:
+            The configuration or script to deploy the ZenML stack to the
+            specified cloud provider.
+        """
+        config = f"""module "zenml_stack" {{
+    source  = "zenml-io/zenml-stack/azure"
+
+    location = "{self.location or "eastus"}"
+    zenml_server_url = "{self.zenml_server_url}"
+    zenml_api_key = ""
+    zenml_api_token = "{self.zenml_server_api_token}"
+    zenml_stack_name = "{self.stack_name}"
+    zenml_stack_deployment = "{self.deployment}"
+}}
+output "zenml_stack_id" {{
+    value = module.zenml_stack.zenml_stack_id
+}}
+output "zenml_stack_name" {{
+    value = module.zenml_stack.zenml_stack_name
+}}"""
+        instructions = """
+1. The Azure Cloud Shell console will open in your browser.
+2. Create a file named `main.tf` in the Cloud Shell and copy and paste the
+Terraform configuration below into it.
+3. Run `terraform init --upgrade` to initialize the Terraform configuration.
+4. Run `terraform apply` to deploy the ZenML stack to Azure.
+"""
+
+        return StackDeploymentConfig(
+            deployment_url="https://shell.azure.com",
+            deployment_url_text="Azure Cloud Shell Console",
+            configuration=config,
+            instructions=instructions,
+        )

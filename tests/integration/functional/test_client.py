@@ -36,7 +36,6 @@ from zenml import (
     step,
 )
 from zenml.client import Client
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
 from zenml.constants import PAGE_SIZE_DEFAULT
 from zenml.enums import (
@@ -441,9 +440,6 @@ def test_getting_a_pipeline():
         user=client.active_user.id,
         workspace=client.active_workspace.id,
         name="pipeline",
-        version="1",
-        version_hash="",
-        spec=PipelineSpec(steps=[]),
     )
     response_1 = client.zen_store.create_pipeline(request)
 
@@ -478,9 +474,6 @@ def test_listing_pipelines():
         user=client.active_user.id,
         workspace=client.active_workspace.id,
         name="pipeline",
-        version="1",
-        version_hash="",
-        spec=PipelineSpec(steps=[]),
     )
     response_1 = client.zen_store.create_pipeline(request)
     request.name = "other_pipeline"

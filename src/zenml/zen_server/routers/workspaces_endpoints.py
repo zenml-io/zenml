@@ -31,6 +31,7 @@ from zenml.constants import (
     PIPELINES,
     REPORTABLE_RESOURCES,
     RUN_METADATA,
+    RUN_TEMPLATES,
     RUNS,
     SCHEDULES,
     SECRETS,
@@ -76,6 +77,9 @@ from zenml.models import (
     PipelineRunResponse,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
     ScheduleRequest,
     ScheduleResponse,
     SecretRequest,
@@ -763,6 +767,81 @@ def create_deployment(
         request_model=deployment,
         resource_type=ResourceType.PIPELINE_DEPLOYMENT,
         create_method=zen_store().create_deployment,
+    )
+
+
+@router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + RUN_TEMPLATES,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_run_templates(
+    workspace_name_or_id: Union[str, UUID],
+    filter_model: RunTemplateFilter = Depends(
+        make_dependable(RunTemplateFilter)
+    ),
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Page[RunTemplateResponse]:
+    """Get a page of run templates.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        filter_model: Filter model used for pagination, sorting,
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+
+    Returns:
+        Page of run templates.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    filter_model.set_scope_workspace(workspace.id)
+
+    return verify_permissions_and_list_entities(
+        filter_model=filter_model,
+        resource_type=ResourceType.RUN_TEMPLATE,
+        list_method=zen_store().list_run_templates,
+        hydrate=hydrate,
+    )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + RUN_TEMPLATES,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_run_template(
+    workspace_name_or_id: Union[str, UUID],
+    run_template: RunTemplateRequest,
+    _: AuthContext = Security(authorize),
+) -> RunTemplateResponse:
+    """Create a run template.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        run_template: Run template to create.
+
+    Returns:
+        The created run template.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the
+            run template does not match the current workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if run_template.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating run templates outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+
+    return verify_permissions_and_create_entity(
+        request_model=run_template,
+        resource_type=ResourceType.RUN_TEMPLATE,
+        create_method=zen_store().create_run_template,
     )
 
 

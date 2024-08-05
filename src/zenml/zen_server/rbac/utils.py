@@ -103,7 +103,9 @@ def dehydrate_response_model(
         )
 
     dehydrated_values = {}
-    for key, value in dict(model).items():
+    # See `get_subresources_for_model(...)` for a detailed explanation why we
+    # need to use `model.__iter__()` here
+    for key, value in model.__iter__():
         dehydrated_values[key] = _dehydrate_value(
             value, permissions=permissions
         )
@@ -403,6 +405,7 @@ def get_resource_type_for_model(
         PipelineResponse,
         PipelineRunResponse,
         RunMetadataResponse,
+        RunTemplateResponse,
         SecretResponse,
         ServiceAccountResponse,
         ServiceConnectorResponse,
@@ -438,6 +441,7 @@ def get_resource_type_for_model(
         PipelineDeploymentResponse: ResourceType.PIPELINE_DEPLOYMENT,
         PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
+        RunTemplateResponse: ResourceType.RUN_TEMPLATE,
         TagResponse: ResourceType.TAG,
         TriggerResponse: ResourceType.TRIGGER,
         TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
@@ -484,7 +488,13 @@ def get_subresources_for_model(
     """
     resources = set()
 
-    for value in dict(model).values():
+    # We don't want to use `model.model_dump()` here as that recursively
+    # converts models to dicts, but we want to preserve those classes for
+    # the recursive `_get_subresources_for_value` calls.
+    # We previously used `dict(model)` here, but that lead to issues with
+    # models overwriting `__getattr__`, this `model.__iter__()` has the same
+    # results though.
+    for _, value in model.__iter__():
         resources.update(_get_subresources_for_value(value))
 
     return resources
@@ -548,6 +558,7 @@ def get_schema_for_resource_type(
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
+        RunTemplateSchema,
         SecretSchema,
         ServiceConnectorSchema,
         ServiceSchema,
@@ -579,6 +590,7 @@ def get_schema_for_resource_type(
         ResourceType.PIPELINE_RUN: PipelineRunSchema,
         ResourceType.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
         ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
+        ResourceType.RUN_TEMPLATE: RunTemplateSchema,
         ResourceType.RUN_METADATA: RunMetadataSchema,
         ResourceType.USER: UserSchema,
         ResourceType.ACTION: ActionSchema,

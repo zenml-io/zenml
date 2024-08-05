@@ -72,8 +72,13 @@ class StackDeploymentConfig(BaseModel):
         title="A textual description for the cloud provider console URL.",
     )
     configuration: Optional[str] = Field(
+        default=None,
         title="Configuration for the stack deployment that the user must "
         "manually configure into the cloud provider console.",
+    )
+    instructions: Optional[str] = Field(
+        default=None,
+        title="Instructions for deploying the stack.",
     )
 
 

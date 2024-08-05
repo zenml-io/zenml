@@ -21,6 +21,15 @@ You should use the Azure Artifact Store when you decide to keep your ZenML artif
 
 ### How do you deploy it?
 
+{% hint style="info" %}
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including an Azure Artifact Store? Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Azure Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack component.
+{% endhint %}
+
 The Azure Artifact Store flavor is provided by the Azure ZenML integration, you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
 
 ```shell

@@ -80,6 +80,7 @@ from zenml.constants import (
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
     RUN_METADATA,
+    RUN_TEMPLATES,
     RUNS,
     SCHEDULES,
     SECRETS,
@@ -192,6 +193,10 @@ from zenml.models import (
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -1524,35 +1529,6 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
         )
 
-    def run_build(
-        self,
-        build_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a build.
-
-        Args:
-            build_id: The ID of the build to run.
-            run_configuration: Configuration for the run.
-
-        Raises:
-            RuntimeError: If the server does not support running a build.
-
-        Returns:
-            Model of the pipeline run.
-        """
-        run_configuration = run_configuration or PipelineRunConfiguration()
-        try:
-            response_body = self.post(
-                f"{PIPELINE_BUILDS}/{build_id}/runs", body=run_configuration
-            )
-        except MethodNotAllowedError as e:
-            raise RuntimeError(
-                "Running a build is not supported for this server."
-            ) from e
-
-        return PipelineRunResponse.model_validate(response_body)
-
     # -------------------------- Pipeline Deployments --------------------------
 
     def create_deployment(
@@ -1627,19 +1603,114 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_DEPLOYMENTS,
         )
 
-    def run_deployment(
+    # -------------------- Run templates --------------------
+
+    def create_run_template(
         self,
-        deployment_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a deployment.
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
 
         Args:
-            deployment_id: The ID of the deployment to run.
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=template,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+        )
+
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+        """
+        return self._get_resource(
+            resource_id=template_id,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+            filter_model=template_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+        """
+        return self._update_resource(
+            resource_id=template_id,
+            resource_update=template_update,
+            route=RUN_TEMPLATES,
+            response_model=RunTemplateResponse,
+        )
+
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+        """
+        self._delete_resource(
+            resource_id=template_id,
+            route=RUN_TEMPLATES,
+        )
+
+    def run_template(
+        self,
+        template_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Run a template.
+
+        Args:
+            template_id: The ID of the template to run.
             run_configuration: Configuration for the run.
 
         Raises:
-            RuntimeError: If the server does not support running a deployment.
+            RuntimeError: If the server does not support running a template.
 
         Returns:
             Model of the pipeline run.
@@ -1648,12 +1719,12 @@ class RestZenStore(BaseZenStore):
 
         try:
             response_body = self.post(
-                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
+                f"{RUN_TEMPLATES}/{template_id}/runs",
                 body=run_configuration,
             )
         except MethodNotAllowedError as e:
             raise RuntimeError(
-                "Running a deployment is not supported for this server."
+                "Running a template is not supported for this server."
             ) from e
 
         return PipelineRunResponse.model_validate(response_body)

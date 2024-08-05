@@ -7,21 +7,15 @@ description: A simple guide to quickly set up a minimal stack on GCP.
 This page aims to quickly set up a minimal production stack on GCP. With just a few simple steps you will set up a service account with specifically-scoped permissions that ZenML can use to authenticate with the relevant GCP resources.
 
 {% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? 
-Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-and learn how to use:**
+Would you like to skip ahead and deploy a full GCP ZenML cloud stack already?
 
-```shell
-zenml stack deploy --provider gcp
-```
-
-**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-and learn how to use:**
-
-```shell
-zenml stack register <STACK_NAME> --provider gcp
-```
+Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML GCP Terraform module](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register this stack.
 {% endhint %}
+
 
 {% hint style="warning" %}
 While this guide focuses on Google Cloud, we are seeking contributors to create a similar guide for other cloud providers. If you are interested, please create a [pull request over on GitHub](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md).

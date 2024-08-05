@@ -56,7 +56,7 @@ This will return a response like this:
 
 ```shell
 curl -X 'GET' \
-  '<YOUR_ZENML_SERVER_URL>/api/v1/pipelines?hydrate=false&name=training&version=45' \
+  '<YOUR_ZENML_SERVER_URL>/api/v1/pipelines?hydrate=false&name=training' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer <ACCESS_TOKEN>'
 ```

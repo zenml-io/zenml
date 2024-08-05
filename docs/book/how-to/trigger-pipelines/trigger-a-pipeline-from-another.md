@@ -10,10 +10,7 @@ This is a [ZenML Pro](https://zenml.io/pro) only feature. Please [sign up here](
 OSS users can only trigger a pipeline by calling the pipeline function inside their runner script.
 {% endhint %}
 
-Triggering a pipeline from another **only** works with pipelines that are configured with a remote stack
-(i.e. at least a remote orchestrator, artifact store, and container registry). In order to trigger a pipeline
-from another, you can simply use the same syntax as you would if you wanted to trigger a pipeline from the
-[Client directly](trigger-a-pipeline-from-client.md).
+Triggering a pipeline from another **only** works if you've created at least one run template for that pipeline.
 
 ```python
 import pandas as pd
@@ -44,10 +41,6 @@ def loads_data_and_triggers_training():
     df = load_data()
     trigger_pipeline(df)  # Will trigger the other pipeline
 ```
-
-{% hint style="info" %}
-The pipeline that you're triggering (i.e. `training_pipeline` in the above example) has to have been run previously on a remote stack. In other words, the functionality to trigger a pipeline from another only works when a Docker image has previously been built for that pipeline. In most cases this will be because you ran the pipeline already, but in some cases you might have built the image separately.
-{% endhint %}
 
 Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) and [`trigger_pipeline`](https://sdkdocs.zenml.io/0.60.0/core_code_docs/core-client/#zenml.client.Client) function object in the [SDK Docs](https://sdkdocs.zenml.io/).
 

@@ -107,7 +107,7 @@ The run that you get back is the model stored in the ZenML database at the point
 ```python
 from zenml.client import Client
 
-Client().get_pipeline_run(run.id) to get a refreshed version
+Client().get_pipeline_run(run.id) # to get a refreshed version
 ```
 {% endhint %}
 

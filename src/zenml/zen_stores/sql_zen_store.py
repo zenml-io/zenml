@@ -52,7 +52,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, desc, func
+from sqlalchemy import asc, case, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -96,6 +96,7 @@ from zenml.constants import (
     ENV_ZENML_LOCAL_SERVER,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
+    SORT_PIPELINES_BY_LATEST_RUN_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -206,9 +207,6 @@ from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
     PipelineFilter,
-    PipelineNamespaceFilter,
-    PipelineNamespaceResponse,
-    PipelineNamespaceResponseBody,
     PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
@@ -219,6 +217,10 @@ from zenml.models import (
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateUpdate,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -294,6 +296,7 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.string_utils import random_str, validate_name
+from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
@@ -322,6 +325,7 @@ from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     PipelineSchema,
     RunMetadataSchema,
+    RunTemplateSchema,
     ScheduleSchema,
     SecretSchema,
     ServerSettingsSchema,
@@ -991,16 +995,7 @@ class SqlZenStore(BaseZenStore):
                 total = 0
 
         # Sorting
-        column, operand = filter_model.sorting_params
-        if operand == SorterOps.DESCENDING:
-            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
-        else:
-            sort_clause = asc(getattr(table, column))
-
-        # We always add the `id` column as a tiebreaker to ensure a stable,
-        # repeatable order of items, otherwise subsequent pages might contain
-        # the same items.
-        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
+        query = filter_model.apply_sorting(query=query, table=table)
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
@@ -1040,7 +1035,9 @@ class SqlZenStore(BaseZenStore):
             # Otherwise, try to use the `to_model` method of the schema.
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                items.append(to_model(include_metadata=hydrate))
+                items.append(
+                    to_model(include_metadata=hydrate, include_resources=True)
+                )
                 continue
             # If neither of the above work, raise an error.
             raise RuntimeError(
@@ -1916,7 +1913,7 @@ class SqlZenStore(BaseZenStore):
             action = self._get_action(action_id=action_id, session=session)
 
             return action.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_actions(
@@ -2427,7 +2424,7 @@ class SqlZenStore(BaseZenStore):
                     "service with this ID found."
                 )
             return service.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_services(
@@ -2766,7 +2763,7 @@ class SqlZenStore(BaseZenStore):
                     f"found."
                 )
             return artifact_version.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_artifact_versions(
@@ -3984,23 +3981,32 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.version_hash == pipeline.version_hash)
                 .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
                     f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name and "
-                    f"version already exists."
+                    f"'{pipeline.workspace}': A pipeline with this name "
+                    "already exists."
                 )
 
             # Create the pipeline
             new_pipeline = PipelineSchema.from_request(pipeline)
+
+            if pipeline.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline.tags,
+                    resource_id=new_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+
             session.add(new_pipeline)
             session.commit()
             session.refresh(new_pipeline)
 
-            return new_pipeline.to_model(include_metadata=True)
+            return new_pipeline.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_pipeline(
         self, pipeline_id: UUID, hydrate: bool = True
@@ -4029,80 +4035,8 @@ class SqlZenStore(BaseZenStore):
                     "No pipeline with this ID found."
                 )
 
-            return pipeline.to_model(include_metadata=hydrate)
-
-    def list_pipeline_namespaces(
-        self,
-        filter_model: PipelineNamespaceFilter,
-        hydrate: bool = False,
-    ) -> Page[PipelineNamespaceResponse]:
-        """List all pipeline namespaces matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all pipeline namespaces matching the filter criteria.
-        """
-
-        def _custom_conversion(
-            row: Tuple[str, UUID, str],
-        ) -> PipelineNamespaceResponse:
-            name, latest_run_id, latest_run_status = row
-
-            body = PipelineNamespaceResponseBody(
-                latest_run_id=latest_run_id,
-                latest_run_status=latest_run_status,
-            )
-
-            return PipelineNamespaceResponse(name=name, body=body)
-
-        def _custom_fetch(
-            session: Session,
-            query: Union[Select[Any], SelectOfScalar[Any]],
-            filter: BaseFilter,
-        ) -> Sequence[Any]:
-            return session.exec(query).all()
-
-        with Session(self.engine) as session:
-            max_date_subquery = (
-                select(
-                    PipelineSchema.name,
-                    func.max(PipelineRunSchema.created).label("max_created"),
-                )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
-                )
-                .group_by(PipelineSchema.name)
-                .subquery()
-            )
-
-            query = (
-                select(
-                    max_date_subquery.c.name,
-                    PipelineRunSchema.id,
-                    PipelineRunSchema.status,
-                )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineRunSchema.created  # type: ignore[arg-type]
-                    == max_date_subquery.c.max_created,
-                )
-                .order_by(desc(PipelineRunSchema.updated))  # type: ignore[arg-type]
-            )
-
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineSchema,
-                filter_model=filter_model,
-                hydrate=hydrate,
-                custom_fetch=_custom_fetch,
-                custom_schema_to_model_conversion=_custom_conversion,
+            return pipeline.to_model(
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_pipelines(
@@ -4121,8 +4055,48 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
+        query = select(PipelineSchema)
+
+        column, operand = pipeline_filter_model.sorting_params
+        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
+            with Session(self.engine) as session:
+                max_date_subquery = (
+                    # If no run exists for the pipeline yet, we use the pipeline
+                    # creation date as a fallback, otherwise newly created
+                    # pipeline would always be at the top/bottom
+                    select(
+                        PipelineSchema.id,
+                        case(
+                            (
+                                func.max(PipelineRunSchema.created).is_(None),
+                                PipelineSchema.created,
+                            ),
+                            else_=func.max(PipelineRunSchema.created),
+                        ).label("run_or_created"),
+                    )
+                    .outerjoin(
+                        PipelineRunSchema,
+                        PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
+                    )
+                    .group_by(col(PipelineSchema.id))
+                    .subquery()
+                )
+
+                if operand == SorterOps.DESCENDING:
+                    sort_clause = desc
+                else:
+                    sort_clause = asc
+
+                query = (
+                    query.where(PipelineSchema.id == max_date_subquery.c.id)
+                    .order_by(sort_clause(max_date_subquery.c.run_or_created))
+                    # We always add the `id` column as a tiebreaker to ensure a
+                    # stable, repeatable order of items, otherwise subsequent
+                    # pages might contain the same items.
+                    .order_by(col(PipelineSchema.id))
+                )
+
         with Session(self.engine) as session:
-            query = select(PipelineSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -4172,13 +4146,29 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline with this ID found."
                 )
 
-            # Update the pipeline
-            existing_pipeline.update(pipeline_update)
+            if pipeline_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_update.add_tags,
+                    resource_id=existing_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+            pipeline_update.add_tags = None
+            if pipeline_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=pipeline_update.remove_tags,
+                    resource_id=existing_pipeline.id,
+                    resource_type=TaggableResourceTypes.PIPELINE,
+                )
+            pipeline_update.remove_tags = None
 
+            existing_pipeline.update(pipeline_update)
             session.add(existing_pipeline)
             session.commit()
+            session.refresh(existing_pipeline)
 
-            return existing_pipeline.to_model(include_metadata=True)
+            return existing_pipeline.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
@@ -4308,24 +4298,6 @@ class SqlZenStore(BaseZenStore):
             session.delete(build)
             session.commit()
 
-    def run_build(
-        self,
-        build_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
-    ) -> NoReturn:
-        """Run a pipeline from a build.
-
-        Args:
-            build_id: The ID of the build to run.
-            run_configuration: Configuration for the run.
-
-        Raises:
-            NotImplementedError: Always.
-        """
-        raise NotImplementedError(
-            "Running a build is not possible with a local store."
-        )
-
     # -------------------------- Pipeline Deployments --------------------------
 
     def create_deployment(
@@ -4436,37 +4408,235 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(deployment)
+            session.commit()
 
-            # Look for all pipeline builds that reference this deployment
-            # and remove the reference
-            pipeline_builds = session.exec(
-                select(PipelineBuildSchema).where(
-                    PipelineBuildSchema.template_deployment_id == deployment_id
+    # -------------------- Run templates --------------------
+
+    @track_decorator(AnalyticsEvent.CREATED_RUN_TEMPLATE)
+    def create_run_template(
+        self,
+        template: RunTemplateRequest,
+    ) -> RunTemplateResponse:
+        """Create a new run template.
+
+        Args:
+            template: The template to create.
+
+        Returns:
+            The newly created template.
+
+        Raises:
+            EntityExistsError: If a template with the same name already exists.
+            ValueError: If the source deployment does not exist or does not
+                have an associated build.
+        """
+        with Session(self.engine) as session:
+            existing_template = session.exec(
+                select(RunTemplateSchema)
+                .where(RunTemplateSchema.name == template.name)
+                .where(RunTemplateSchema.workspace_id == template.workspace)
+            ).first()
+            if existing_template is not None:
+                raise EntityExistsError(
+                    f"Unable to create run template in workspace "
+                    f"'{existing_template.workspace.name}': A run template "
+                    "with this name already exists."
+                )
+
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id
+                    == template.source_deployment_id
+                )
+            ).first()
+            if not deployment:
+                raise ValueError(
+                    f"Source deployment {template.source_deployment_id} not "
+                    "found."
+                )
+
+            template_utils.validate_deployment_is_templatable(deployment)
+
+            template_schema = RunTemplateSchema.from_request(request=template)
+
+            if template.tags:
+                self._attach_tags_to_resource(
+                    tag_names=template.tags,
+                    resource_id=template_schema.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+
+            session.add(template_schema)
+            session.commit()
+            session.refresh(template_schema)
+
+            return template_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_run_template(
+        self, template_id: UUID, hydrate: bool = True
+    ) -> RunTemplateResponse:
+        """Get a run template with a given ID.
+
+        Args:
+            template_id: ID of the template.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to get run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            return template.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_run_templates(
+        self,
+        template_filter_model: RunTemplateFilter,
+        hydrate: bool = False,
+    ) -> Page[RunTemplateResponse]:
+        """List all run templates matching the given filter criteria.
+
+        Args:
+            template_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all templates matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(RunTemplateSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunTemplateSchema,
+                filter_model=template_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_run_template(
+        self,
+        template_id: UUID,
+        template_update: RunTemplateUpdate,
+    ) -> RunTemplateResponse:
+        """Updates a run template.
+
+        Args:
+            template_id: The ID of the template to update.
+            template_update: The update to apply.
+
+        Returns:
+            The updated template.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to update run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            if template_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=template_update.add_tags,
+                    resource_id=template.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+            template_update.add_tags = None
+
+            if template_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=template_update.remove_tags,
+                    resource_id=template.id,
+                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                )
+            template_update.remove_tags = None
+
+            template.update(template_update)
+            session.add(template)
+            session.commit()
+            session.refresh(template)
+
+            return template.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_run_template(self, template_id: UUID) -> None:
+        """Delete a run template.
+
+        Args:
+            template_id: The ID of the template to delete.
+
+        Raises:
+            KeyError: If the template does not exist.
+        """
+        with Session(self.engine) as session:
+            template = session.exec(
+                select(RunTemplateSchema).where(
+                    RunTemplateSchema.id == template_id
+                )
+            ).first()
+            if template is None:
+                raise KeyError(
+                    f"Unable to delete run template with ID {template_id}: "
+                    f"No run template with this ID found."
+                )
+
+            session.delete(template)
+            # We set the reference of all deployments to this template to null
+            # manually as we can't have a foreign key there to avoid a cycle
+            deployments = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.template_id == template_id
                 )
             ).all()
-
-            for pipeline_build in pipeline_builds:
-                pipeline_build.template_deployment_id = None
-                session.add(pipeline_build)
+            for deployment in deployments:
+                deployment.template_id = None
+                session.add(deployment)
 
             session.commit()
 
-    def run_deployment(
+    def run_template(
         self,
-        deployment_id: UUID,
+        template_id: UUID,
         run_configuration: Optional[PipelineRunConfiguration] = None,
     ) -> NoReturn:
-        """Run a pipeline from a deployment.
+        """Run a template.
 
         Args:
-            deployment_id: The ID of the deployment to run.
+            template_id: The ID of the template to run.
             run_configuration: Configuration for the run.
 
         Raises:
             NotImplementedError: Always.
         """
         raise NotImplementedError(
-            "Running a deployment is not possible with a local store."
+            "Running a template is not possible with a local store."
         )
 
     # -------------------- Event Sources  --------------------
@@ -4563,7 +4733,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_event_source(
                 event_source_id=event_source_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=True)
 
     def list_event_sources(
         self,
@@ -4681,10 +4851,20 @@ class SqlZenStore(BaseZenStore):
 
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
+
+            if pipeline_run.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_run.tags,
+                    resource_id=new_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+
             session.add(new_run)
             session.commit()
 
-            return new_run.to_model(include_metadata=True)
+            return new_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_run(
         self, run_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -4702,7 +4882,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_run_schema(
                 run_name_or_id, session=session
-            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=True)
 
     def _replace_placeholder_run(
         self,
@@ -4751,10 +4931,20 @@ class SqlZenStore(BaseZenStore):
             if pre_replacement_hook:
                 pre_replacement_hook()
             run_schema.update_placeholder(pipeline_run)
+
+            if pipeline_run.tags:
+                self._attach_tags_to_resource(
+                    tag_names=pipeline_run.tags,
+                    resource_id=run_schema.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+
             session.add(run_schema)
             session.commit()
 
-            return run_schema.to_model(include_metadata=True)
+            return run_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def _get_run_by_orchestrator_run_id(
         self, orchestrator_run_id: str, deployment_id: UUID
@@ -4788,7 +4978,9 @@ class SqlZenStore(BaseZenStore):
                     f"{orchestrator_run_id} and deployment ID {deployment_id}."
                 )
 
-            return run_schema.to_model(include_metadata=True)
+            return run_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_or_create_run(
         self,
@@ -4949,13 +5141,29 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline run with this ID found."
                 )
 
-            # Update the pipeline run
+            if run_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=run_update.add_tags,
+                    resource_id=existing_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+            run_update.add_tags = None
+            if run_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=run_update.remove_tags,
+                    resource_id=existing_run.id,
+                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                )
+            run_update.remove_tags = None
+
             existing_run.update(run_update=run_update)
             session.add(existing_run)
             session.commit()
 
             session.refresh(existing_run)
-            return existing_run.to_model(include_metadata=True)
+            return existing_run.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -7086,12 +7294,16 @@ class SqlZenStore(BaseZenStore):
                             )
                             is not False
                         ):
+                            connector_config = (
+                                existing_service_connector.configuration
+                            )
+                            connector_config["generate_temporary_tokens"] = (
+                                False
+                            )
                             self.update_service_connector(
                                 existing_service_connector.id,
                                 ServiceConnectorUpdate(
-                                    configuration=existing_service_connector.configuration.update(
-                                        {"generate_temporary_tokens": False}
-                                    )
+                                    configuration=connector_config
                                 ),
                             )
                     service_connectors.append(
@@ -7100,17 +7312,18 @@ class SqlZenStore(BaseZenStore):
                 # Create a new service connector
                 else:
                     connector_name = full_stack.name
+                    connector_config = connector_id_or_info.configuration
+                    connector_config[
+                        "generate_temporary_tokens"
+                    ] = not need_to_generate_permanent_tokens
+
                     while True:
                         try:
                             service_connector_request = ServiceConnectorRequest(
                                 name=connector_name,
                                 connector_type=connector_id_or_info.type,
                                 auth_method=connector_id_or_info.auth_method,
-                                configuration=connector_id_or_info.configuration.update(
-                                    {
-                                        "generate_temporary_tokens": not need_to_generate_permanent_tokens
-                                    }
-                                ),
+                                configuration=connector_config,
                                 user=full_stack.user,
                                 workspace=full_stack.workspace,
                                 labels={
@@ -7739,7 +7952,7 @@ class SqlZenStore(BaseZenStore):
                     "run with this ID found."
                 )
             return step_run.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_run_steps(
@@ -8087,6 +8300,7 @@ class SqlZenStore(BaseZenStore):
                 ) as analytics_handler:
                     analytics_handler.metadata = {
                         "pipeline_run_id": pipeline_run_id,
+                        "template_id": pipeline_run.deployment.template_id,
                         "status": new_status,
                         "num_steps": num_steps,
                         "start_time": start_time_str,
@@ -8183,7 +8397,7 @@ class SqlZenStore(BaseZenStore):
             if trigger is None:
                 raise KeyError(f"Trigger with ID {trigger_id} not found.")
             return trigger.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_triggers(
@@ -9772,7 +9986,7 @@ class SqlZenStore(BaseZenStore):
                     f"ID found."
                 )
             return model_version.to_model(
-                include_metadata=hydrate, include_resources=hydrate
+                include_metadata=hydrate, include_resources=True
             )
 
     def list_model_versions(
