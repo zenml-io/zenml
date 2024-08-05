@@ -25,7 +25,7 @@ You should use the AzureML orchestrator if:
 The ZenML AzureML orchestrator implementation uses [the Python SDK v2 of 
 AzureML](https://learn.microsoft.com/en-gb/python/api/overview/azure/ai-ml-readme?view=azure-python) 
 to allow our users to build their Machine Learning pipelines. For each ZenML step,
-it creates an AzureML `CommandComponent` and brings them together in a pipeline.
+it creates an AzureML `[CommandComponent](https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.commandcomponent?view=azure-python)` and brings them together in a pipeline.
 
 ## How to deploy it
 
