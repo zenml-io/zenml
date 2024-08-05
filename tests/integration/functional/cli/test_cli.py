@@ -49,6 +49,7 @@ def test_ZenMLCLI_formatter():
     assert isinstance(formatter, ZenFormatter)
 
 
+# clean_client is needed for test logic to work
 def test_cli_sets_custom_source_root_if_outside_of_repository(
     clean_client, mocker
 ):
