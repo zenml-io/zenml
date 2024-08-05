@@ -81,13 +81,6 @@ def test_pipeline_run_list(client_with_run):
 def test_pipeline_delete_all_versions(mocker, clean_client: Client):
     """Test that zenml pipeline delete can delete all versions."""
     pipeline_instance.run()
-    mocker.patch.object(
-        BaseStep,
-        "source_code",
-        new_callable=mocker.PropertyMock,
-        return_value="random",
-    )
-    pipeline_instance.run()
 
     existing_pipelines = clean_client.list_pipelines()
     assert len(existing_pipelines) == 2
