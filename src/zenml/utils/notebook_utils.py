@@ -25,14 +25,12 @@ from zenml.logger import get_logger
 
 ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME = "__zenml_notebook_cell_id__"
 
-DEFAULT_NOTEBOOK_NAME = "test.ipynb"
-
-logger = get_logger(__name__)
-
 _UNINITIALIZED = "uninitialized"
 _ACTIVE_NOTEBOOK_PATH: Optional[str] = _UNINITIALIZED
 
 O = TypeVar("O", bound=Any)
+
+logger = get_logger(__name__)
 
 
 def get_active_notebook_path() -> Optional[str]:
@@ -199,8 +197,8 @@ def get_active_notebook_cell_id() -> str:
     return cell_id
 
 
-def save_notebook_cell_id(obj: Any) -> None:
-    """Save the notebook cell ID for an object.
+def try_to_save_notebook_cell_id(obj: Any) -> None:
+    """Try to save the notebook cell ID for an object.
 
     Args:
         obj: The object for which to save the notebook cell ID.
@@ -240,7 +238,7 @@ def enable_notebook_code_extraction(
     """
 
     def inner_decorator(obj: "O") -> "O":
-        save_notebook_cell_id(obj)
+        try_to_save_notebook_cell_id(obj)
         return obj
 
     if _obj is None:
