@@ -656,9 +656,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     run.wait()
 
         except google_exceptions.ClientError as e:
-            logger.warning(
-                "Failed to create the Vertex AI Pipelines job: %s", e
-            )
+            logger.error("Failed to create the Vertex AI Pipelines job: %s", e)
         except RuntimeError as e:
             logger.error(
                 "The Vertex AI Pipelines job execution has failed: %s", e
