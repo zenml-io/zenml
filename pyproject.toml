@@ -79,7 +79,7 @@ Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
 
 # Optional dependencies for running remote pipelines from a notebook
-ipynbname = { version = ">= ipynbname-2024.1.0.0", optional = true }
+ipynbname = { version = ">=2024.1.0.0", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
