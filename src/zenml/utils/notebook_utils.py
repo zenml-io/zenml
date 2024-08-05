@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Optional, TypeVar, Union
 
 from IPython import get_ipython
 
@@ -32,13 +32,7 @@ logger = get_logger(__name__)
 _UNINITIALIZED = "uninitialized"
 _ACTIVE_NOTEBOOK_PATH: Optional[str] = _UNINITIALIZED
 
-O = TypeVar(
-    "O",
-    bound=Union[
-        Type[Any],
-        Callable[..., Any],
-    ],
-)
+O = TypeVar("O", bound=Any)
 
 
 def get_active_notebook_path() -> Optional[str]:
