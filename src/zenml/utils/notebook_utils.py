@@ -52,13 +52,12 @@ def get_active_notebook_path() -> Optional[str]:
 
             _ACTIVE_NOTEBOOK_PATH = path
         else:
-            from IPython import get_ipython
             import ipynbname
+
             from zenml.utils import source_utils
 
-            ip = get_ipython()
-            if "__vsc_ipynb_file__" in ip.user_ns:
-                _ACTIVE_NOTEBOOK_PATH = ip.user_ns["__vsc_ipynb_file__"]
+            if path := get_ipython().user_ns.get("__vsc_ipynb_file__", None):
+                _ACTIVE_NOTEBOOK_PATH = path
             else:
                 try:
                     _ACTIVE_NOTEBOOK_PATH = str(ipynbname.path())
@@ -162,7 +161,7 @@ def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
                 )
 
             # TODO: Should we exclude lines starting with special symbols here?
-            # Or whould that mess with some code?
+            # Or would that mess with some code?
 
             return "".join(cell["source"])
 
