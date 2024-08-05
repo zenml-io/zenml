@@ -41,7 +41,8 @@ In order to use an AzureML orchestrator, you need to first
 deploy [ZenML to the cloud](../../getting-started/deploying-zenml/README.md). 
 It would be recommended to deploy ZenML in the same region as you plan on 
 using for AzureML, but it is not necessary to do so. You must ensure that 
-you are connected to the remote ZenML server before using this stack component.
+you are [connected to the remote ZenML server](../../how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md)
+before using this stack component.
 
 ## How to use it
 
@@ -122,6 +123,28 @@ Currently, it supports three different modes of operation.
   - If a compute cluster with the same name doesn't exist, it creates a new 
   compute cluster. Additional parameters can be used for configuring this 
   process.
+
+Here is an example how you can use the `AzureMLOrchestratorSettings` to define 
+a compute instance:
+
+```python
+from zenml.integrations.azure.flavors import AzureMLOrchestratorSettings
+
+azureml_settings = AzureMLOrchestratorSettings(
+    mode="compute-instance",
+    compute_name="MyComputeInstance",
+)
+
+
+@pipeline(
+   settings={
+       "orchestrator.azureml": azureml_settings
+   }
+)
+def pipeline():
+    # YOUR PIPELINE CODE
+    ...
+```
 
 ### Run pipelines on a schedule
 
