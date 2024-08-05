@@ -77,7 +77,6 @@ class UserSchema(NamedSchema, table=True):
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
-    hub_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
     external_user_id: Optional[UUID] = Field(nullable=True)
     is_admin: bool = Field(default=False)
