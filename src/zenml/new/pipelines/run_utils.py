@@ -9,6 +9,7 @@ from uuid import UUID
 from zenml import constants
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.source import SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus, ModelStages
 from zenml.logger import get_logger
@@ -23,7 +24,7 @@ from zenml.models import (
 from zenml.new.pipelines.model_utils import NewModelRequest
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Flavor, Stack
-from zenml.utils import cloud_utils
+from zenml.utils import cloud_utils, notebook_utils
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
@@ -361,3 +362,44 @@ def validate_run_config_is_runnable_from_server(
             raise ValueError(
                 "Can't set DockerSettings when running pipeline via Rest API."
             )
+
+
+def fail_if_running_remotely_with_notebook_not_possible(
+    deployment: "PipelineDeploymentBase", stack: "Stack"
+) -> None:
+    """Fail if running the deployment on the stack is not possible.
+
+    This function checks if any of the steps of the pipeline that will be
+    executed in a different process are defined in a notebook. If that is the
+    case, it will raise an exception if the active notebook path can't be
+    determined.
+
+    Args:
+        deployment: The deployment.
+        stack: The stack on which the deployment will happen.
+
+    Raises:
+        RuntimeError: If the active notebook can't be determined and steps that
+            are defined in that notebook should be executed out of process.
+    """
+    for step in deployment.step_configurations.values():
+        if step.spec.source.type == SourceType.NOTEBOOK:
+            if (
+                stack.orchestrator.flavor != "local"
+                or step.config.step_operator
+            ):
+                # Code does not run in-process, which means we need to
+                # extract it from the notebook in the execution
+                # environment -> verify that we're able to detect the
+                # active notebook
+                if not notebook_utils.get_active_notebook_path():
+                    raise RuntimeError(
+                        f"Unable to run step {step.config.name}. This step is "
+                        "defined in a notebook and you're trying to run it "
+                        "in a remote environment, but ZenML was not able to "
+                        "detect the notebook that you're running in. To fix "
+                        "this error, set the "
+                        f"{constants.ENV_ZENML_NOTEBOOK_PATH} environment "
+                        "variable to the path of the active notebook or define "
+                        "your step in a python file instead of a notebook."
+                    )

@@ -72,6 +72,7 @@ from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
     deploy_pipeline,
+    fail_if_running_remotely_with_notebook_not_possible,
     prepare_model_versions,
 )
 from zenml.stack import Stack
@@ -668,6 +669,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             stack = Client().active_stack
             stack.validate()
+            fail_if_running_remotely_with_notebook_not_possible(
+                deployment=deployment, stack=stack
+            )
 
             prepare_model_versions(deployment)
 
@@ -716,10 +720,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 code_reference=code_reference,
             ):
                 code_path = build_utils.upload_code_if_necessary()
-
-            # TODO: if we run remotely and there are steps defined in notebook
-            # cells, verify that we will be able to run inside the remote
-            # environments
 
             deployment_request = PipelineDeploymentRequest(
                 user=Client().active_user.id,

@@ -236,7 +236,7 @@ def load_notebook_cell_id(obj: Any) -> Optional[str]:
 def enable_notebook_serialization(
     _obj: Optional["O"] = None,
 ) -> Union["O", Callable[["O"], "O"]]:
-    """Decorator to enable serialization from the notebook.
+    """Decorator to enable serialization from notebooks.
 
     Args:
         _obj: The class or function for which to enable serialization.
