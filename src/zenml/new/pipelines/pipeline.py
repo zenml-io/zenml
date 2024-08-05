@@ -17,7 +17,6 @@ import copy
 import hashlib
 import inspect
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -89,6 +88,7 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
@@ -636,10 +636,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 if schedule.name:
                     schedule_name = schedule.name
                 else:
-                    date = datetime.utcnow().strftime("%Y_%m_%d")
-                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
-                    schedule_name = deployment.run_name_template.format(
-                        date=date, time=time
+                    schedule_name = format_name_template(
+                        deployment.run_name_template
                     )
                 components = Client().active_stack_model.components
                 orchestrator = components[StackComponentType.ORCHESTRATOR][0]

@@ -14,6 +14,7 @@
 """Utils for strings."""
 
 import base64
+import datetime
 import random
 import string
 
@@ -138,3 +139,25 @@ def validate_name(model: BaseModel) -> None:
             f"The class `{cls_name}` has no attribute `name` "
             "or it is set to `None`. Cannot validate the name."
         )
+
+
+def format_name_template(
+    name_template: str,
+    **kwargs: str,
+):
+    """Formats a name template with the given arguments.
+
+    By default, ZenML support Date and Time placeholders.
+    E.g. `my_run_{date}_{time}` will be formatted as `my_run_1970_01_01_00_00_00_000000`.
+    Extra placeholders need to be explicitly passed in as kwargs.
+
+    Args:
+        name_template: The name template to format.
+        **kwargs: The arguments to replace in the template.
+
+    Returns:
+        The formatted name template.
+    """
+    date = datetime.datetime.now(datetime.UTC).strftime("%Y_%m_%d")
+    time = datetime.datetime.now(datetime.UTC).strftime("%H_%M_%S_%f")
+    return name_template.format(date=date, time=time, **kwargs)
