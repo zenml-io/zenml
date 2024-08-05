@@ -19,6 +19,7 @@ from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
 
 from IPython import get_ipython
 
+from zenml.constants import ENV_ZENML_NOTEBOOK_PATH
 from zenml.environment import Environment
 from zenml.logger import get_logger
 
@@ -52,20 +53,39 @@ def get_active_notebook_path() -> Optional[str]:
     global _ACTIVE_NOTEBOOK_PATH
 
     if _ACTIVE_NOTEBOOK_PATH == _UNINITIALIZED:
+        import ipynbname
+
         from zenml.utils import source_utils
 
-        notebook_name = os.environ.get(
-            "ZENML_NOTEBOOK_NAME", DEFAULT_NOTEBOOK_NAME
-        )
+        if path := os.environ.get(ENV_ZENML_NOTEBOOK_PATH, None):
+            logger.info(
+                "Using notebook path from environment variable: %s", path
+            )
 
-        notebook_path = os.path.join(
-            source_utils.get_source_root(), notebook_name
-        )
-        if is_running_in_notebook(notebook_path):
-            _ACTIVE_NOTEBOOK_PATH = notebook_path
+            _ACTIVE_NOTEBOOK_PATH = path
         else:
-            logger.warning("Unable to detect active notebook.")
-            _ACTIVE_NOTEBOOK_PATH = None
+            try:
+                _ACTIVE_NOTEBOOK_PATH = ipynbname.path()
+            except FileNotFoundError:
+                logger.warning(
+                    "Unable to detect active notebook. You can use the %s "
+                    "environment variable to manually specify a path to the "
+                    "notebook that you're currently using.",
+                    ENV_ZENML_NOTEBOOK_PATH,
+                )
+                _ACTIVE_NOTEBOOK_PATH = None
+
+        if _ACTIVE_NOTEBOOK_PATH:
+            relative_path = os.path.relpath(
+                _ACTIVE_NOTEBOOK_PATH, source_utils.get_source_root()
+            )
+            if relative_path.startswith(os.path.pardir):
+                logger.warning(
+                    "Notebook path %s is not in source root %s, ignoring it..",
+                    _ACTIVE_NOTEBOOK_PATH,
+                    source_utils.get_source_root(),
+                )
+                _ACTIVE_NOTEBOOK_PATH = None
 
     return _ACTIVE_NOTEBOOK_PATH
 
