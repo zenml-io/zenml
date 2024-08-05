@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
 
 from IPython import get_ipython
 
@@ -28,8 +28,16 @@ DEFAULT_NOTEBOOK_NAME = "test.ipynb"
 
 logger = get_logger(__name__)
 
-UNINITIALIZED = "uninitialized"
-_ACTIVE_NOTEBOOK_PATH: Optional[str] = UNINITIALIZED
+_UNINITIALIZED = "uninitialized"
+_ACTIVE_NOTEBOOK_PATH: Optional[str] = _UNINITIALIZED
+
+O = TypeVar(
+    "O",
+    bound=Union[
+        Type[Any],
+        Callable[..., Any],
+    ],
+)
 
 
 def get_active_notebook_path() -> Optional[str]:
@@ -43,7 +51,7 @@ def get_active_notebook_path() -> Optional[str]:
 
     global _ACTIVE_NOTEBOOK_PATH
 
-    if _ACTIVE_NOTEBOOK_PATH == UNINITIALIZED:
+    if _ACTIVE_NOTEBOOK_PATH == _UNINITIALIZED:
         from zenml.utils import source_utils
 
         notebook_name = os.environ.get(
@@ -137,7 +145,10 @@ def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
                     cell["cell_type"],
                 )
 
-            return "\n".join(cell["source"])
+            # TODO: Should we exclude lines starting with special symbols here?
+            # Or whould that mess with some code?
+
+            return "".join(cell["source"])
 
     raise RuntimeError(f"Cell with ID {cell_id} not found in active notebook.")
 
@@ -194,3 +205,25 @@ def load_notebook_cell_id(obj: Any) -> Optional[str]:
         The notebook cell ID if it was saved.
     """
     return getattr(obj, ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME, None)
+
+
+def enable_notebook_serialization(
+    _obj: Optional["O"] = None,
+) -> Union["O", Callable[["O"], "O"]]:
+    """Decorator to enable serialization from the notebook.
+
+    Args:
+        _obj: The class or function for which to enable serialization.
+
+    Returns:
+        The decorated class or function.
+    """
+
+    def inner_decorator(obj: "O") -> "O":
+        save_notebook_cell_id(obj)
+        return obj
+
+    if _obj is None:
+        return inner_decorator
+    else:
+        return inner_decorator(_obj)

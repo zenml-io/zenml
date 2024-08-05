@@ -98,6 +98,10 @@ class BaseMaterializerMeta(type):
                     associated_type, cls
                 )
 
+            from zenml.utils import notebook_utils
+
+            notebook_utils.save_notebook_cell_id(cls)
+
         return cls
 
 

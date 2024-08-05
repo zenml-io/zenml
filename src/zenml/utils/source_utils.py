@@ -236,10 +236,14 @@ def resolve(
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
     elif source_type == SourceType.NOTEBOOK:
-        # TODO: This doesn't work on windows
-        relative_notebook_path = os.path.relpath(
-            notebook_utils.get_active_notebook_path(), get_source_root()
-        )
+        relative_notebook_path = None
+        if notebook_path := notebook_utils.get_active_notebook_path():
+            relative_notebook_path = (
+                PurePath(notebook_path)
+                .relative_to(get_source_root())
+                .as_posix()
+            )
+
         return NotebookSource(
             module=module_name,
             attribute=attribute_name,
@@ -589,11 +593,13 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
         The loaded object.
     """
     if not source.notebook_path or not source.cell_id:
-        # TODO: Maybe tell them how to activate it for their custom objects
         raise RuntimeError(
             f"Failed to load {source.import_path}. This object was defined in "
             "a notebook and you're trying to load it outside of a notebook. "
-            "This is currently only supported for pipeline steps."
+            "This is currently only enabled for steps and materializers. If "
+            "you want to enable this behavior for a custom class/function, use "
+            "the `zenml.utils.notebook_utils.enable_notebook_serialization` "
+            "decorator."
         )
 
     module_name = (
