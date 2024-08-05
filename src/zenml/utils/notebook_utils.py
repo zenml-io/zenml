@@ -45,10 +45,6 @@ def get_active_notebook_path() -> Optional[str]:
     global _ACTIVE_NOTEBOOK_PATH
 
     if _ACTIVE_NOTEBOOK_PATH == _UNINITIALIZED:
-        import ipynbname
-
-        from zenml.utils import source_utils
-
         if path := os.environ.get(ENV_ZENML_NOTEBOOK_PATH, None):
             logger.info(
                 "Using notebook path from environment variable: %s", path
@@ -57,6 +53,8 @@ def get_active_notebook_path() -> Optional[str]:
             _ACTIVE_NOTEBOOK_PATH = path
         else:
             from IPython import get_ipython
+            import ipynbname
+            from zenml.utils import source_utils
 
             ip = get_ipython()
             if "__vsc_ipynb_file__" in ip.user_ns:
