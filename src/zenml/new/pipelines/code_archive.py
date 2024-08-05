@@ -29,7 +29,12 @@ logger = get_logger(__name__)
 
 
 class CodeArchive(Archivable):
-    """Code archive."""
+    """Code archive class.
+
+    This class is used to archive user code before uploading it to the artifact
+    store. If the user code is stored in a Git repository, only files not
+    excluded by gitignores will be included in the archive.
+    """
 
     def __init__(self, root: str) -> None:
         """Initialize the object.
