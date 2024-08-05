@@ -58,11 +58,13 @@ class StackRequest(BaseRequest):
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
     )
-    components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = Field(
-        title="The mapping for the components of the full stack registration.",
-        description="The mapping from component types to either UUIDs of "
-        "existing components or request information for brand new "
-        "components.",
+    components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = (
+        Field(
+            title="The mapping for the components of the full stack registration.",
+            description="The mapping from component types to either UUIDs of "
+            "existing components or request information for brand new "
+            "components.",
+        )
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -93,21 +95,22 @@ class StackRequest(BaseRequest):
 
     @model_validator(mode="after")
     def _validate_indexes_in_components(self) -> "StackRequest":
-        for component in self.components.values():
-            if isinstance(component, ComponentInfo):
-                if component.service_connector_index is not None:
-                    if (
-                        component.service_connector_index < 0
-                        or component.service_connector_index
-                        >= len(self.service_connectors)
-                    ):
-                        raise ValueError(
-                            f"Service connector index "
-                            f"{component.service_connector_index} "
-                            "is out of range. Please provide a valid index "
-                            "referring to the position in the list of service "
-                            "connectors."
-                        )
+        for components in self.components.values():
+            for component in components:
+                if isinstance(component, ComponentInfo):
+                    if component.service_connector_index is not None:
+                        if (
+                            component.service_connector_index < 0
+                            or component.service_connector_index
+                            >= len(self.service_connectors)
+                        ):
+                            raise ValueError(
+                                f"Service connector index "
+                                f"{component.service_connector_index} "
+                                "is out of range. Please provide a valid index "
+                                "referring to the position in the list of service "
+                                "connectors."
+                            )
         return self
 
 

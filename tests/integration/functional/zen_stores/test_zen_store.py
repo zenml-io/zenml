@@ -2495,7 +2495,7 @@ def test_count_stack_components():
     assert store.count_stack_components(filter_model) == count_before
 
     with ComponentContext(
-        StackComponentType.ARTIFACT_STORE, config={}, flavor="s3"
+        StackComponentType.ARTIFACT_STORE, config={}, flavor="local"
     ):
         assert store.count_stack_components(filter_model) == count_before + 1
 
