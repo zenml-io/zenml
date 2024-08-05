@@ -52,15 +52,31 @@ def get_active_notebook_path() -> Optional[str]:
 
             _ACTIVE_NOTEBOOK_PATH = path
         else:
-            import ipynbname
-
-            from zenml.utils import source_utils
-
             if path := get_ipython().user_ns.get("__vsc_ipynb_file__", None):
                 _ACTIVE_NOTEBOOK_PATH = path
+            elif Environment.in_google_colab():
+                logger.warning(
+                    "Unable to detect active notebook in Google Colab. You can "
+                    "use the %s environment variable to manually specify a "
+                    "path to the notebook that you're currently using.",
+                    ENV_ZENML_NOTEBOOK_PATH,
+                )
+                _ACTIVE_NOTEBOOK_PATH = None
             else:
                 try:
+                    import ipynbname
+
                     _ACTIVE_NOTEBOOK_PATH = str(ipynbname.path())
+                except ImportError:
+                    logger.warning(
+                        "Unable to detect active notebook. You can install "
+                        "ZenML with the `notebook` extra (e.g. `pip install "
+                        "'zenml[notebook]'`) or use the %s "
+                        "environment variable to manually specify a path to the "
+                        "notebook that you're currently using.",
+                        ENV_ZENML_NOTEBOOK_PATH,
+                    )
+                    _ACTIVE_NOTEBOOK_PATH = None
                 except FileNotFoundError:
                     logger.warning(
                         "Unable to detect active notebook. You can use the %s "
@@ -71,6 +87,8 @@ def get_active_notebook_path() -> Optional[str]:
                     _ACTIVE_NOTEBOOK_PATH = None
 
         if _ACTIVE_NOTEBOOK_PATH:
+            from zenml.utils import source_utils
+
             relative_path = os.path.relpath(
                 _ACTIVE_NOTEBOOK_PATH, source_utils.get_source_root()
             )
