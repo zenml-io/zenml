@@ -126,7 +126,7 @@ Currently, it supports three different modes of operation.
 ### Run pipelines on a schedule
 
 The AzureML orchestrator supports running pipelines on a schedule using 
-its `JobSchedules`. Both cron expression and intervals are supported.
+its `[JobSchedules](https://learn.microsoft.com/en-us/azure/templates/microsoft.automation/2023-11-01/automationaccounts/jobschedules?pivots=deployment-language-bicep)`. Both cron expression and intervals are supported.
 
 ```python
 from zenml.config.schedule import Schedule
