@@ -7500,8 +7500,8 @@ class SqlZenStore(BaseZenStore):
                         service_connector_id=service_connector_id
                     )
                 logger.error(
-                    f"Stack creation has failed. Cleaned up the entities "
-                    f"that are created in the process."
+                    "Stack creation has failed. Cleaned up the entities "
+                    "that are created in the process."
                 )
                 raise
 
