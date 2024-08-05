@@ -64,16 +64,22 @@ def get_active_notebook_path() -> Optional[str]:
 
             _ACTIVE_NOTEBOOK_PATH = path
         else:
-            try:
-                _ACTIVE_NOTEBOOK_PATH = ipynbname.path()
-            except FileNotFoundError:
-                logger.warning(
-                    "Unable to detect active notebook. You can use the %s "
-                    "environment variable to manually specify a path to the "
-                    "notebook that you're currently using.",
-                    ENV_ZENML_NOTEBOOK_PATH,
-                )
-                _ACTIVE_NOTEBOOK_PATH = None
+            from IPython import get_ipython
+
+            ip = get_ipython()
+            if "__vsc_ipynb_file__" in ip.user_ns:
+                _ACTIVE_NOTEBOOK_PATH = ip.user_ns["__vsc_ipynb_file__"]
+            else:
+                try:
+                    _ACTIVE_NOTEBOOK_PATH = str(ipynbname.path())
+                except FileNotFoundError:
+                    logger.warning(
+                        "Unable to detect active notebook. You can use the %s "
+                        "environment variable to manually specify a path to the "
+                        "notebook that you're currently using.",
+                        ENV_ZENML_NOTEBOOK_PATH,
+                    )
+                    _ACTIVE_NOTEBOOK_PATH = None
 
         if _ACTIVE_NOTEBOOK_PATH:
             relative_path = os.path.relpath(
