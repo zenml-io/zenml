@@ -598,7 +598,7 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
             "a notebook and you're trying to load it outside of a notebook. "
             "This is currently only enabled for steps and materializers. If "
             "you want to enable this behavior for a custom class/function, use "
-            "the `zenml.utils.notebook_utils.enable_notebook_serialization` "
+            "the `zenml.utils.notebook_utils.enable_notebook_code_extraction` "
             "decorator."
         )
 

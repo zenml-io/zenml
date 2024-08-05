@@ -227,13 +227,13 @@ def load_notebook_cell_id(obj: Any) -> Optional[str]:
     return getattr(obj, ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME, None)
 
 
-def enable_notebook_serialization(
+def enable_notebook_code_extraction(
     _obj: Optional["O"] = None,
 ) -> Union["O", Callable[["O"], "O"]]:
-    """Decorator to enable serialization from notebooks.
+    """Decorator to enable code extraction from notebooks.
 
     Args:
-        _obj: The class or function for which to enable serialization.
+        _obj: The class or function for which to enable code extraction.
 
     Returns:
         The decorated class or function.
