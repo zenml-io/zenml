@@ -17,21 +17,21 @@ import json
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from sqlmodel import and_
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.base import BaseRequest, BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.component import ComponentResponse
+from zenml.models.v2.misc.full_stack import ComponentInfo, ServiceConnectorInfo
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -40,8 +40,11 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class StackRequest(WorkspaceScopedRequest):
-    """Request model for stacks."""
+class StackRequest(BaseRequest):
+    """Request model for a stack."""
+
+    user: Optional[UUID] = None
+    workspace: Optional[UUID] = None
 
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
@@ -55,14 +58,23 @@ class StackRequest(WorkspaceScopedRequest):
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
     )
-    components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
-        default=None,
-        title="A mapping of stack component types to the actual"
-        "instances of components of this type.",
+    components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = Field(
+        title="The mapping for the components of the full stack registration.",
+        description="The mapping from component types to either UUIDs of "
+        "existing components or request information for brand new "
+        "components.",
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack labels.",
+    )
+    service_connectors: List[Union[UUID, ServiceConnectorInfo]] = Field(
+        default=[],
+        title="The service connectors dictionary for the full stack "
+        "registration.",
+        description="The UUID of an already existing service connector or "
+        "request information to create a service connector from "
+        "scratch.",
     )
 
     @property
@@ -79,14 +91,24 @@ class StackRequest(WorkspaceScopedRequest):
             and StackComponentType.ORCHESTRATOR in self.components
         )
 
-
-class InternalStackRequest(StackRequest):
-    """Internal stack request model."""
-
-    user: Optional[UUID] = Field(  # type: ignore[assignment]
-        title="The id of the user that created this resource.",
-        default=None,
-    )
+    @model_validator(mode="after")
+    def _validate_indexes_in_components(self) -> "StackRequest":
+        for component in self.components.values():
+            if isinstance(component, ComponentInfo):
+                if component.service_connector_index is not None:
+                    if (
+                        component.service_connector_index < 0
+                        or component.service_connector_index
+                        >= len(self.service_connectors)
+                    ):
+                        raise ValueError(
+                            f"Service connector index "
+                            f"{component.service_connector_index} "
+                            "is out of range. Please provide a valid index "
+                            "referring to the position in the list of service "
+                            "connectors."
+                        )
+        return self
 
 
 # ------------------ Update Model ------------------
