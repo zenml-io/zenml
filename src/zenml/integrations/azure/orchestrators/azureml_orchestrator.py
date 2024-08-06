@@ -452,4 +452,4 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         else:
             ml_client.jobs.create_or_update(pipeline_job)
-            logger.info(f"Pipeline {run_name} has been executed.")
+            logger.info(f"Pipeline {run_name} has been started.")
