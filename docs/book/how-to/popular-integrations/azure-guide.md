@@ -101,10 +101,9 @@ Once you create the container, you can go ahead, register your artifact
 store using its path and connect it to your service connector:
 
 ```bash 
-zenml artifact-store register azure_artifact_store -f azure  \
-  --path=<PATH_TO_YOUR_CONTAINER>
-  
-zenml artifact-store connect azure_artifact_store -c azure_connector
+zenml artifact-store register azure_artifact_store -f azure \
+  --path=<PATH_TO_YOUR_CONTAINER> \ 
+  --connector azure_connector
 ```
 
 For more information regarding Azure Blob Storage artifact stores, feel free to
@@ -113,15 +112,14 @@ For more information regarding Azure Blob Storage artifact stores, feel free to
 ### Orchestrator (AzureML)
 
 As for the orchestrator, no additional setup is needed. Simply use the following
-command to register it and connect it your service connector.
+command to register it and connect it your service connector:
 
 ```bash
 zenml orchestrator register azure_orchestrator -f azureml \
     --subscription_id=<YOUR_AZUREML_SUBSCRIPTION_ID> \
-    --resource_group=<NAME_OF_YOUR_RESOURCE_GROUP> \ 
-    --workspace=<NAME_OF_YOUR_AZUREML_WORKSPACE>
-    
-zenml orchestrator connect azure_orchestrator -c azure_connector
+    --resource_group=<NAME_OF_YOUR_RESOURCE_GROUP> \
+    --workspace=<NAME_OF_YOUR_AZUREML_WORKSPACE> \ 
+    --connector azure_connector
 ```
 
 For more information regarding AzureML orchestrator, feel free to
@@ -130,13 +128,12 @@ For more information regarding AzureML orchestrator, feel free to
 ### Container Registry (Azure Container Registry)
 
 Similar to the orchestrator, you can register and connect your container 
-registry using the following commands:
+registry using the following command:
 
 ```bash
 zenml container-registry register azure_container_registry -f azure \
-  --uri=<URI_TO_YOUR_AZURE_CONTAINER_REGISTRY>
-  
-zenml container-registry connect azure_container_registry -c azure_connector
+  --uri=<URI_TO_YOUR_AZURE_CONTAINER_REGISTRY> \ 
+  --connector azure_connector
 ```
 
 For more information regarding Azure container registries, feel free to

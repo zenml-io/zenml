@@ -54,7 +54,7 @@ In order to use the AzureML orchestrator, you need:
 zenml integration install azure
 ```
 
-* [Docker](https://www.docker.com) installed and running.
+* [Docker](https://www.docker.com) installed and running or a remote image builder in your stack.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * An [Azure resource group equipped with an AzureML workspace](https://learn.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources?view=azureml-api-2) to run your pipeline on.
