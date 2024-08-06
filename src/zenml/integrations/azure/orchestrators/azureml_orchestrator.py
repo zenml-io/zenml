@@ -392,33 +392,25 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                     # If we are working with intervals
                     interval = schedule.interval_second.total_seconds()
 
-                    if interval < 3600:
-                        frequency = "minute"
-                        interval = int(interval // 60)
-                    elif interval < 86400:
-                        frequency = "hour"
-                        interval = int(interval // 3600)
-                    else:
-                        frequency = "day"
-                        interval = int(interval // 86400)
+                    if interval % 60 != 0:
+                        logger.warning(
+                            "The ZenML AzureML orchestrator only works with "
+                            "time intervals defined over minutes. Will "
+                            f"use a schedule over {int(interval // 60)}."
+                        )
 
-                    recurrence_pattern = None
-                    if frequency == "day":
-                        if schedule.start_time is not None:
-                            recurrence_pattern = RecurrencePattern(
-                                hours=schedule.start_time.hour,
-                                minutes=schedule.start_time.minute,
-                            )
-                        else:
-                            recurrence_pattern = RecurrencePattern(
-                                hours=datetime.datetime.now().hour,
-                                minutes=datetime.datetime.now().minute,
-                            )
+                    if interval < 60:
+                        raise RuntimeError(
+                            "Can not create a schedule with an interval less "
+                            "than 60 secs."
+                        )
+
+                    frequency = "minute"
+                    interval = int(interval // 60)
 
                     schedule_trigger = RecurrenceTrigger(
                         frequency=frequency,
                         interval=interval,
-                        schedule=recurrence_pattern,
                         start_time=start_time,
                         end_time=end_time,
                         time_zone=TimeZone.UTC,
@@ -439,13 +431,13 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                         "or cron expression."
                     )
                 else:
-                    logger.warning(
+                    raise RuntimeError(
                         "No valid scheduling configuration found for "
                         f"pipeline '{run_name}'."
                     )
 
             except (HttpResponseError, ResourceExistsError) as e:
-                logger.error(
+                raise RuntimeError(
                     "Failed to create schedule for the pipeline "
                     f"'{run_name}': {str(e)}"
                 )
