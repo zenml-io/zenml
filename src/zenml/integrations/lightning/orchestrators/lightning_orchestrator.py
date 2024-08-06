@@ -320,6 +320,7 @@ class LightningOrchestrator(WheeledOrchestrator):
 
             requirements_to_string = " ".join(requirements)
             studio.run(f"pip install {requirements_to_string}")
+            studio.run("pip uninstall zenml && pip install git+https://github.com/zenml-io/zenml.git@lightening-studio-orchestrator")
 
             arguments_to_string = " ".join(arguments)
             run_command = f"python -m zenml.{ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND}.{arguments_to_string}"
