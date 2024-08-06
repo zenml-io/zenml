@@ -215,15 +215,18 @@ def is_defined_in_notebook_cell(obj: Any) -> bool:
     return module_name == "__main__"
 
 
-def get_active_notebook_cell_id() -> str:
+def get_active_notebook_cell_id() -> Optional[str]:
     """Get the ID of the currently active notebook cell.
 
     Returns:
         The ID of the currently active notebook cell.
     """
+    cell_id = None
     try:
         if Environment.in_google_colab():
-            cell_id = get_ipython().get_parent()["metadata"]["colab"]["cell_id"]
+            cell_id = get_ipython().get_parent()["metadata"]["colab"][
+                "cell_id"
+            ]
         else:
             cell_id = get_ipython().get_parent()["metadata"]["cellId"]
     except KeyError as e:
@@ -239,13 +242,12 @@ def try_to_save_notebook_cell_id(obj: Any) -> None:
         obj: The object for which to save the notebook cell ID.
     """
     if is_defined_in_notebook_cell(obj):
-        cell_id = get_active_notebook_cell_id()
-
-        setattr(
-            obj,
-            ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME,
-            cell_id,
-        )
+        if cell_id := get_active_notebook_cell_id():
+            setattr(
+                obj,
+                ZENML_NOTEBOOK_CELL_ID_ATTRIBUTE_NAME,
+                cell_id,
+            )
 
 
 def load_notebook_cell_id(obj: Any) -> Optional[str]:
