@@ -43,11 +43,12 @@ varying scenarios described below.
 ![Scenario 1: Full SaaS deployment](../../.gitbook/assets/cloud_architecture_scenario_1.png)
 
 
-In this scenario, all services are hosted on infrastructure hosted by the ZenML Team.
+In this scenario, all services are hosted on infrastructure hosted by the ZenML Team,
+except the MLOps stack components.
 Customer secrets and credentials required to access customer infrastructure are
 stored and managed by the ZenML Pro Control Plane.
 
-On our infrastructure for ZenML Pro SaaS only ML _metadata_ (e.g. pipeline and
+On the ZenML Pro infrastructure, only ML _metadata_ (e.g. pipeline and
 model tracking and versioning information) is stored. All the actual ML data
 artifacts (e.g. data produced or consumed by pipeline steps, logs and
 visualizations, models) are stored on the customer cloud. This can be set up
