@@ -11,20 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Databricks integration flavors."""
+"""Initialization of the Lightning ZenML orchestrator."""
 
-from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
-    DatabricksOrchestratorConfig,
-    DatabricksOrchestratorFlavor,
+from zenml.integrations.lightning.orchestrators.lightning_orchestrator import (  # noqa
+    LightningOrchestrator,
 )
-from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor import (
-    DatabricksModelDeployerConfig,
-    DatabricksModelDeployerFlavor,
+from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_config import (
+    LightningEntrypointConfiguration,
 )
 
-__all__ = [
-    "DatabricksOrchestratorFlavor",
-    "DatabricksOrchestratorConfig",
-    "DatabricksModelDeployerFlavor",
-    "DatabricksModelDeployerConfig",
-]
+__all__ = ["LightningOrchestrator", "LightningEntrypointConfiguration"]

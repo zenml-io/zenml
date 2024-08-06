@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Entrypoint configuration for ZenML Lightening pipeline steps."""
+"""Entrypoint configuration for ZenML Lightning pipeline steps."""
 
 import os
 import sys
@@ -24,17 +24,17 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 
 WHEEL_PACKAGE_OPTION = "wheel_package"
-ENV_ZENML_LIGHTENING_ORCHESTRATOR_RUN_ID = (
-    "ZENML_LIGHTENING_ORCHESTRATOR_RUN_ID"
+ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID = (
+    "ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID"
 )
 
 
-class LighteningEntrypointConfiguration(StepEntrypointConfiguration):
-    """Entrypoint configuration for ZenML Lightening pipeline steps.
+class LightningEntrypointConfiguration(StepEntrypointConfiguration):
+    """Entrypoint configuration for ZenML Lightning pipeline steps.
 
     The only purpose of this entrypoint configuration is to reconstruct the
     environment variables that exceed the maximum length of 256 characters
-    allowed for Lightening Processor steps from their individual components.
+    allowed for Lightning Processor steps from their individual components.
     """
 
     @classmethod
@@ -44,10 +44,7 @@ class LighteningEntrypointConfiguration(StepEntrypointConfiguration):
         Returns:
             The superclass options as well as an option for the wheel package.
         """
-        return (
-            super().get_entrypoint_options()
-            | {WHEEL_PACKAGE_OPTION}
-        )
+        return super().get_entrypoint_options() | {WHEEL_PACKAGE_OPTION}
 
     @classmethod
     def get_entrypoint_arguments(

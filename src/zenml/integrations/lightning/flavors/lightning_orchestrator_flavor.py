@@ -11,27 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Lightening orchestrator base config and settings."""
+"""Lightning orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
+from zenml.integrations.lightning import LIGHTNING_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
-from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.integrations.databricks.orchestrators import (
-        LighteningOrchestrator,
+    from zenml.integrations.lightning.orchestrators import (
+        LightningOrchestrator,
     )
 
 logger = get_logger(__name__)
 
-class LighteningOrchestratorSettings(BaseSettings):
-    """Lightening orchestrator base settings.
+
+class LightningOrchestratorSettings(BaseSettings):
+    """Lightning orchestrator base settings.
 
     Attributes:
         machine_type: Machine type.
@@ -40,10 +40,11 @@ class LighteningOrchestratorSettings(BaseSettings):
     # Resources
     machine_type: str
 
-class LighteningOrchestratorConfig(
-    BaseOrchestratorConfig, LighteningOrchestratorSettings
+
+class LightningOrchestratorConfig(
+    BaseOrchestratorConfig, LightningOrchestratorSettings
 ):
-    """Lightening orchestrator base config.
+    """Lightning orchestrator base config.
 
     Attributes:
         user_id: User id.
@@ -63,8 +64,8 @@ class LighteningOrchestratorConfig(
         return False
 
 
-class LighteningOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Lightening orchestrator flavor."""
+class LightningOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Lightning orchestrator flavor."""
 
     @property
     def name(self) -> str:
@@ -73,7 +74,7 @@ class LighteningOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The name of the flavor.
         """
-        return DATABRICKS_ORCHESTRATOR_FLAVOR
+        return LIGHTNING_ORCHESTRATOR_FLAVOR
 
     @property
     def docs_url(self) -> Optional[str]:
@@ -100,26 +101,26 @@ class LighteningOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/databricks.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/lightning.png"
 
     @property
-    def config_class(self) -> Type[LighteningOrchestratorConfig]:
+    def config_class(self) -> Type[LightningOrchestratorConfig]:
         """Returns `KubeflowOrchestratorConfig` config class.
 
         Returns:
                 The config class.
         """
-        return LighteningOrchestratorConfig
+        return LightningOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["LighteningOrchestrator"]:
+    def implementation_class(self) -> Type["LightningOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:
             The implementation class.
         """
-        from zenml.integrations.databricks.orchestrators import (
-            LighteningOrchestrator,
+        from zenml.integrations.lightning.orchestrators import (
+            LightningOrchestrator,
         )
 
-        return LighteningOrchestrator
+        return LightningOrchestrator

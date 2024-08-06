@@ -11,40 +11,40 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Lightening integration for ZenML."""
+"""Initialization of the Lightning integration for ZenML."""
 
 from typing import List, Type
 
 from zenml.integrations.constants import (
-    LIGHTENING,
+    LIGHTNING,
 )
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-LIGHTENING_ORCHESTRATOR_FLAVOR = "lightening"
+LIGHTNING_ORCHESTRATOR_FLAVOR = "lightning"
 
 
-class LighteningIntegration(Integration):
-    """Definition of Lightening Integration for ZenML."""
+class LightningIntegration(Integration):
+    """Definition of Lightning Integration for ZenML."""
 
-    NAME = LIGHTENING
+    NAME = LIGHTNING
     REQUIREMENTS = ["lightning-sdk"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Lightening integration.
+        """Declare the stack component flavors for the Lightning integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.lightening.flavors import (
-            LighteningOrchestratorFlavor,
-            LighteningModelDeployerFlavor,
+        from zenml.integrations.lightning.flavors import (
+            LightningOrchestratorFlavor,
+            LightningModelDeployerFlavor,
         )
 
         return [
-            LighteningOrchestratorFlavor,
-            LighteningModelDeployerFlavor,
+            LightningOrchestratorFlavor,
+            LightningModelDeployerFlavor,
         ]
 
-LighteningIntegration.check_installation()
+LightningIntegration.check_installation()
