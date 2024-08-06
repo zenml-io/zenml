@@ -3343,7 +3343,7 @@ class SqlZenStore(BaseZenStore):
                 validate_stack_component_config(
                     configuration_dict=component_update.configuration,
                     flavor_name=existing_component.flavor,
-                    component_type=existing_component.type,  # TODO fix
+                    component_type=StackComponentType(existing_component.type),
                     zen_store=self,
                     validate_custom_flavors=False,
                 )
