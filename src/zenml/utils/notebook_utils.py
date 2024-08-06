@@ -178,8 +178,14 @@ def extract_notebook_cell_code(notebook_path: str, cell_id: str) -> str:
                     cell["cell_type"],
                 )
 
-            # TODO: Should we exclude lines starting with special symbols here?
-            # Or would that mess with some code?
+            if any(line.startswith(("%", "!")) for line in cell["source"]):
+                logger.warning(
+                    "Some lines in your notebook cell start with a `!` or `%` "
+                    "character. Running a ZenML step remotely from a notebook "
+                    "only works if the cell only contains python code. If any "
+                    "of these lines contain Jupyter notebook magic commands, "
+                    "remove them and try again."
+                )
 
             return "".join(cell["source"])
 
