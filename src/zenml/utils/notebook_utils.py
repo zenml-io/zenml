@@ -221,7 +221,14 @@ def get_active_notebook_cell_id() -> str:
     Returns:
         The ID of the currently active notebook cell.
     """
-    cell_id = get_ipython().get_parent()["metadata"]["cellId"]
+    try:
+        if Environment.in_google_colab():
+            cell_id = get_ipython().get_parent()["metadata"]["colab"]["cell_id"]
+        else:
+            cell_id = get_ipython().get_parent()["metadata"]["cellId"]
+    except KeyError as e:
+        logger.warning("Unable to extract cell ID: %s.", str(e))
+
     return cell_id
 
 
