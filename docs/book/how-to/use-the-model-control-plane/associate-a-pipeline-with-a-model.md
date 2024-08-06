@@ -3,7 +3,7 @@
 The most common use-case for a Model is to associate it with a pipeline.
 
 <pre class="language-python"><code class="lang-python"><strong>from zenml import pipeline
-</strong>from zenml.model.model import Model
+</strong>from zenml import Model
 
 <strong>@pipeline(
 </strong><strong>    model=Model(
@@ -21,7 +21,7 @@ In case you want to attach the pipeline to an existing model version, specify th
 
 ```python
 from zenml import pipeline
-from zenml.model.model import Model
+from zenml import Model
 from zenml.enums import ModelStages
 
 @pipeline(
