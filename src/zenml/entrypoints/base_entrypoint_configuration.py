@@ -15,7 +15,6 @@
 
 import argparse
 import os
-import shutil
 import sys
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Set
@@ -27,9 +26,13 @@ from zenml.constants import (
     ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
     handle_bool_env_var,
 )
-from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import code_repository_utils, source_utils, uuid_utils
+from zenml.utils import (
+    code_repository_utils,
+    code_utils,
+    source_utils,
+    uuid_utils,
+)
 
 if TYPE_CHECKING:
     from zenml.models import CodeReferenceResponse, PipelineDeploymentResponse
@@ -272,19 +275,14 @@ class BaseEntrypointConfiguration(ABC):
 
         # Do not remove this line, we need to instantiate the artifact store to
         # register the filesystem needed for the file download
-        artifact_store = Client().active_stack.artifact_store
-
-        if not code_path.startswith(artifact_store.path):
-            raise RuntimeError("Code stored in different artifact store.")
+        _ = Client().active_stack.artifact_store
 
         extract_dir = os.path.abspath("code")
         os.makedirs(extract_dir)
 
-        download_path = os.path.basename(code_path)
-        fileio.copy(code_path, download_path)
-
-        shutil.unpack_archive(filename=download_path, extract_dir=extract_dir)
-        os.remove(download_path)
+        code_utils.download_and_extract_code(
+            code_path=code_path, extract_dir=extract_dir
+        )
 
         source_utils.set_custom_source_root(extract_dir)
         sys.path.insert(0, extract_dir)

@@ -234,16 +234,19 @@ class NotebookSource(Source):
     """Source representing an object defined in a notebook.
 
     Attributes:
-        notebook_path: Path of the notebook (relative to the source root) in
-            which the object is defined.
-        cell_id: ID of the notebook cell in which the object is defined. This
-            will only be set for objects which explicitly store this by calling
-            `zenml.utils.notebook_utils.save_notebook_cell_id()`.
+        code_path: Path where the notebook cell code for this source is
+            uploaded.
+        replacement_module: Name of the module from which this source should
+            be loaded in case the code is not running in a notebook.
     """
 
-    notebook_path: Optional[str] = None
-    cell_id: Optional[str] = None
+    code_path: Optional[str] = None
+    replacement_module: Optional[str] = None
     type: SourceType = SourceType.NOTEBOOK
+
+    # Private attribute that is used to store the code but should not be
+    # serialized
+    _cell_code: Optional[str] = None
 
     @field_validator("type")
     @classmethod

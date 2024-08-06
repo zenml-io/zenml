@@ -1,5 +1,6 @@
 """Utility functions for running pipelines."""
 
+import hashlib
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -24,7 +25,7 @@ from zenml.models import (
 from zenml.new.pipelines.model_utils import NewModelRequest
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Flavor, Stack
-from zenml.utils import cloud_utils, notebook_utils
+from zenml.utils import cloud_utils, code_utils, notebook_utils
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
@@ -364,42 +365,63 @@ def validate_run_config_is_runnable_from_server(
             )
 
 
-def fail_if_running_remotely_with_notebook_not_possible(
+def upload_notebook_cell_code_if_necessary(
     deployment: "PipelineDeploymentBase", stack: "Stack"
 ) -> None:
-    """Fail if running the deployment on the stack is not possible.
+    """Upload notebook cell code if necessary.
 
     This function checks if any of the steps of the pipeline that will be
     executed in a different process are defined in a notebook. If that is the
-    case, it will raise an exception if the active notebook path can't be
-    determined.
+    case, it will extract that notebook cell code into python files and upload
+    an archive of all the necessary files to the artifact store.
 
     Args:
         deployment: The deployment.
         stack: The stack on which the deployment will happen.
 
     Raises:
-        RuntimeError: If the active notebook can't be determined and steps that
-            are defined in that notebook should be executed out of process.
+        RuntimeError: If the code for one of the steps that will run out of
+            process cannot be extracted into a python file.
     """
+    code_archive = code_utils.CodeArchive(root=None)
+    should_upload = False
+    sources_that_require_upload = []
+
     for step in deployment.step_configurations.values():
         if step.spec.source.type == SourceType.NOTEBOOK:
             if (
                 stack.orchestrator.flavor != "local"
                 or step.config.step_operator
             ):
+                should_upload = True
+                cell_code = getattr(step.spec.source, "_cell_code", None)
+
                 # Code does not run in-process, which means we need to
-                # extract it from the notebook in the execution
-                # environment -> verify that we're able to detect the
-                # active notebook
-                if not notebook_utils.get_active_notebook_path():
+                # extract the step code into a python file
+                if not cell_code:
                     raise RuntimeError(
                         f"Unable to run step {step.config.name}. This step is "
                         "defined in a notebook and you're trying to run it "
                         "in a remote environment, but ZenML was not able to "
-                        "detect the notebook that you're running in. To fix "
-                        "this error, set the "
-                        f"{constants.ENV_ZENML_NOTEBOOK_PATH} environment "
-                        "variable to the path of the active notebook or define "
-                        "your step in a python file instead of a notebook."
+                        "detect the step code in the notebook. To fix "
+                        "this error, define your step in a python file instead "
+                        "of a notebook."
                     )
+
+                notebook_utils.warn_about_notebook_cell_magic_commands(
+                    cell_code=cell_code
+                )
+
+                code_hash = hashlib.sha1(cell_code.encode()).hexdigest()  # nosec
+                module_name = f"extracted_notebook_code_{code_hash}"
+                file_name = f"{module_name}.py"
+                code_archive.add_file(source=cell_code, destination=file_name)
+
+                setattr(step.spec.source, "replacement_module", module_name)
+                sources_that_require_upload.append(step.spec.source)
+
+    if should_upload:
+        logger.info("Archiving notebook code...")
+        code_path = code_utils.upload_code_if_necessary(code_archive)
+        for source in sources_that_require_upload:
+            setattr(source, "code_path", code_path)

@@ -11,12 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Code archive."""
+"""Code utilities."""
 
+import hashlib
 import os
+import shutil
+import tempfile
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Dict, Optional
 
+from zenml.client import Client
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import string_utils
 from zenml.utils.archivable import Archivable
@@ -36,7 +41,7 @@ class CodeArchive(Archivable):
     excluded by gitignores will be included in the archive.
     """
 
-    def __init__(self, root: str) -> None:
+    def __init__(self, root: Optional[str] = None) -> None:
         """Initialize the object.
 
         Args:
@@ -66,17 +71,20 @@ class CodeArchive(Archivable):
 
         return git_repo
 
-    def _get_all_files(self) -> Dict[str, str]:
+    def _get_all_files(self, archive_root: str) -> Dict[str, str]:
         """Get all files inside the archive root.
+
+        Args:
+            archive_root: The root directory from which to get all files.
 
         Returns:
             All files inside the archive root.
         """
         all_files = {}
-        for root, _, files in os.walk(self._root):
+        for root, _, files in os.walk(archive_root):
             for file in files:
                 file_path = os.path.join(root, file)
-                path_in_archive = os.path.relpath(file_path, self._root)
+                path_in_archive = os.path.relpath(file_path, archive_root)
                 all_files[path_in_archive] = file_path
 
         return all_files
@@ -91,6 +99,9 @@ class CodeArchive(Archivable):
             A dict {path_in_archive: path_on_filesystem} for all regular files
             in the archive.
         """
+        if not self._root:
+            return {}
+
         all_files = {}
 
         if repo := self.git_repo:
@@ -106,7 +117,7 @@ class CodeArchive(Archivable):
                 logger.warning(
                     "Failed to get non-ignored files from git: %s", str(e)
                 )
-                all_files = self._get_all_files()
+                all_files = self._get_all_files(archive_root=self._root)
             else:
                 for file in result.split():
                     file_path = os.path.join(repo.working_dir, file)
@@ -115,7 +126,7 @@ class CodeArchive(Archivable):
                     if os.path.exists(file_path):
                         all_files[path_in_archive] = file_path
         else:
-            all_files = self._get_all_files()
+            all_files = self._get_all_files(archive_root=self._root)
 
         if not all_files:
             raise RuntimeError(
@@ -155,3 +166,76 @@ class CodeArchive(Archivable):
                 "ignore unnecessary files using a `.gitignore` file.",
                 string_utils.get_human_readable_filesize(archive_size),
             )
+
+
+def upload_code_if_necessary(code_archive: CodeArchive) -> str:
+    """Upload code to the artifact store if necessary.
+
+    This function computes a hash of the code to be uploaded, and if an archive
+    with the same hash already exists it will not re-upload but instead return
+    the path to the existing archive.
+
+    Returns:
+        The path where to archived code is uploaded.
+    """
+    artifact_store = Client().active_stack.artifact_store
+
+    with tempfile.NamedTemporaryFile(
+        mode="w+b", delete=False, suffix=".tar.gz"
+    ) as f:
+        code_archive.write_archive(f)
+
+        hash_ = hashlib.sha1()  # nosec
+
+        while True:
+            data = f.read(64 * 1024)
+            if not data:
+                break
+            hash_.update(data)
+
+        filename = f"{hash_.hexdigest()}.tar.gz"
+        upload_dir = os.path.join(artifact_store.path, "code_uploads")
+        fileio.makedirs(upload_dir)
+        upload_path = os.path.join(upload_dir, filename)
+
+        if not fileio.exists(upload_path):
+            archive_size = string_utils.get_human_readable_filesize(
+                os.path.getsize(f.name)
+            )
+            logger.info(
+                "Uploading code to `%s` (Size: %s).", upload_path, archive_size
+            )
+            fileio.copy(f.name, upload_path)
+            logger.info("Code upload finished.")
+        else:
+            logger.info(
+                "Code already exists in artifact store, skipping upload."
+            )
+
+    if os.path.exists(f.name):
+        os.remove(f.name)
+
+    return upload_path
+
+
+def download_and_extract_code(code_path: str, extract_dir: str) -> None:
+    """Download and extract code.
+
+    Args:
+        code_path: Path where the code is uploaded.
+        extract_dir: Directory where to code should be extracted to.
+
+    Raises:
+        RuntimeError: If the code is stored in an artifact store which is
+            not active.
+    """
+    artifact_store = Client().active_stack.artifact_store
+
+    if not code_path.startswith(artifact_store.path):
+        raise RuntimeError("Code stored in different artifact store.")
+
+    download_path = os.path.basename(code_path)
+    fileio.copy(code_path, download_path)
+
+    shutil.unpack_archive(filename=download_path, extract_dir=extract_dir)
+    os.remove(download_path)

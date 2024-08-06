@@ -14,9 +14,7 @@
 """Pipeline build utilities."""
 
 import hashlib
-import os
 import platform
-import tempfile
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -29,7 +27,6 @@ from uuid import UUID
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     BuildItem,
@@ -40,9 +37,8 @@ from zenml.models import (
     PipelineDeploymentBase,
     StackResponse,
 )
-from zenml.new.pipelines.code_archive import CodeArchive
 from zenml.stack import Stack
-from zenml.utils import source_utils, string_utils
+from zenml.utils import source_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -724,56 +720,3 @@ def should_upload_code(
             return True
 
     return False
-
-
-def upload_code_if_necessary() -> str:
-    """Upload code to the artifact store if necessary.
-
-    This function computes a hash of the code to be uploaded, and if an archive
-    with the same hash already exists it will not re-upload but instead return
-    the path to the existing archive.
-
-    Returns:
-        The path where to archived code is uploaded.
-    """
-    logger.info("Archiving code...")
-
-    code_archive = CodeArchive(root=source_utils.get_source_root())
-    artifact_store = Client().active_stack.artifact_store
-
-    with tempfile.NamedTemporaryFile(
-        mode="w+b", delete=False, suffix=".tar.gz"
-    ) as f:
-        code_archive.write_archive(f)
-
-        hash_ = hashlib.sha1()  # nosec
-
-        while True:
-            data = f.read(64 * 1024)
-            if not data:
-                break
-            hash_.update(data)
-
-        filename = f"{hash_.hexdigest()}.tar.gz"
-        upload_dir = os.path.join(artifact_store.path, "code_uploads")
-        fileio.makedirs(upload_dir)
-        upload_path = os.path.join(upload_dir, filename)
-
-        if not fileio.exists(upload_path):
-            archive_size = string_utils.get_human_readable_filesize(
-                os.path.getsize(f.name)
-            )
-            logger.info(
-                "Uploading code to `%s` (Size: %s).", upload_path, archive_size
-            )
-            fileio.copy(f.name, upload_path)
-            logger.info("Code upload finished.")
-        else:
-            logger.info(
-                "Code already exists in artifact store, skipping upload."
-            )
-
-    if os.path.exists(f.name):
-        os.remove(f.name)
-
-    return upload_path

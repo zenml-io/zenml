@@ -236,20 +236,11 @@ def resolve(
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
     elif source_type == SourceType.NOTEBOOK:
-        relative_notebook_path = None
-        if notebook_path := notebook_utils.get_active_notebook_path():
-            relative_notebook_path = (
-                PurePath(notebook_path)
-                .relative_to(get_source_root())
-                .as_posix()
-            )
-
         return NotebookSource(
             module=module_name,
             attribute=attribute_name,
-            cell_id=notebook_utils.load_notebook_cell_id(obj),
-            notebook_path=relative_notebook_path,
             type=source_type,
+            _cell_code=notebook_utils.load_notebook_cell_code(obj),
         )
 
     return Source(
@@ -592,37 +583,32 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
     Returns:
         The loaded object.
     """
-    if not source.notebook_path or not source.cell_id:
+    if not source.code_path or not source.replacement_module:
         raise RuntimeError(
             f"Failed to load {source.import_path}. This object was defined in "
             "a notebook and you're trying to load it outside of a notebook. "
-            "This is currently only enabled for steps and materializers. If "
-            "you want to enable this behavior for a custom class/function, use "
-            "the `zenml.utils.notebook_utils.enable_notebook_code_extraction` "
-            "decorator."
+            "This is currently only enabled for ZenML steps."
         )
 
-    module_name = (
-        f"zenml_extracted_notebook_code_{source.cell_id.replace('-', '_')}"
-    )
     extract_dir = _get_shared_temp_dir()
-    filepath = os.path.join(extract_dir, f"{module_name}.py")
+    file_path = os.path.join(extract_dir, f"{source.replacement_module}.py")
 
-    if not os.path.exists(filepath):
+    if not os.path.exists(file_path):
+        from zenml.utils import code_utils
+
         logger.info(
-            "Extracting notebook cell content to load `%s`.",
+            "Downloading notebook cell content to load `%s`.",
             source.import_path,
         )
-        notebook_path = os.path.join(get_source_root(), source.notebook_path)
-        cell_content = notebook_utils.extract_notebook_cell_code(
-            notebook_path=notebook_path, cell_id=source.cell_id
+
+        code_utils.download_and_extract_code(
+            code_path=source.code_path, extract_dir=extract_dir
         )
 
-        with open(filepath, "w") as f:
-            f.write(cell_content)
-
     try:
-        module = _load_module(module_name=module_name, import_root=extract_dir)
+        module = _load_module(
+            module_name=source.replacement_module, import_root=extract_dir
+        )
     except ImportError:
         raise RuntimeError(
             f"Unable to load {source.import_path}. This object was defined in "

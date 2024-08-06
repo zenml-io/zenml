@@ -250,7 +250,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
         self._verify_and_apply_init_params(*args, **kwargs)
 
-        notebook_utils.try_to_save_notebook_cell_id(self.source_object)
+        notebook_utils.try_to_save_notebook_cell_code(self.source_object)
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
