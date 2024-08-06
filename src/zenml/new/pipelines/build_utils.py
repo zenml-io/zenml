@@ -742,7 +742,7 @@ def upload_code_if_necessary() -> str:
     artifact_store = Client().active_stack.artifact_store
 
     with tempfile.NamedTemporaryFile(
-        mode="w+b", delete=True, suffix=".tar.gz"
+        mode="w+b", delete=False, suffix=".tar.gz"
     ) as f:
         code_archive.write_archive(f)
 
@@ -772,5 +772,8 @@ def upload_code_if_necessary() -> str:
             logger.info(
                 "Code already exists in artifact store, skipping upload."
             )
+
+    if os.path.exists(f.name):
+        os.remove(f.name)
 
     return upload_path
