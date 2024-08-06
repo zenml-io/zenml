@@ -49,6 +49,13 @@ def get_active_notebook_path() -> Optional[str]:
             logger.info(
                 "Using notebook path from environment variable: %s", path
             )
+            if not is_running_in_notebook(path):
+                logger.warning(
+                    "You've used the `%s` environment variable to set a "
+                    "notebook path, but it does not seem to point to the "
+                    "currently running notebook. This might lead to issues "
+                    "when trying to run a remote pipeline from this notebook."
+                )
 
             _ACTIVE_NOTEBOOK_PATH = path
         else:

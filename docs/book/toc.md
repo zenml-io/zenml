@@ -177,6 +177,9 @@
 * [🔌 Connect to a server](how-to/connecting-to-zenml/README.md)
   * [Connect in with your User (interactive)](how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md)
   * [Connect with a Service Account](how-to/connecting-to-zenml/connect-with-a-service-account.md)
+* [📔 Run remote pipelines from notebooks](how-to/run-remote-pipelines-from-notebook/README.md)
+  * [Define steps in notebook cells](how-to/run-remote-pipelines-from-notebook/define-steps-in-notebook-cells.md)
+  * [Configure the notebook path](how-to/run-remote-pipelines-from-notebook/configure-the-notebook-path.md)
 * [🔐 Interact with secrets](how-to/interact-with-secrets.md)
 * [🐞 Debug and solve issues](how-to/debug-and-solve-issues.md)
 
