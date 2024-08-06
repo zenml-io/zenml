@@ -496,6 +496,108 @@ class GCPAuthenticationMethods(StrEnum):
     IMPERSONATION = "impersonation"
 
 
+try:
+    from google.auth.aws import _DefaultAwsSecurityCredentialsSupplier
+
+    class ZenMLAwsSecurityCredentialsSupplier(
+        _DefaultAwsSecurityCredentialsSupplier  # type: ignore[misc]
+    ):
+        """An improved version of the GCP external account credential supplier for AWS.
+
+        The original GCP external account credential supplier only provides
+        rudimentary support for extracting AWS credentials from environment
+        variables or the AWS metadata service. This version improves on that by
+        using the boto3 library itself (if available), which uses the entire range
+        of implicit authentication features packed into it.
+
+        Without this improvement, `sts.AssumeRoleWithWebIdentity` authentication is
+        not supported for EKS pods and the EC2 attached role credentials are
+        used instead (see: https://medium.com/@derek10cloud/gcp-workload-identity-federation-doesnt-yet-support-eks-irsa-in-aws-a3c71877671a).
+        """
+
+        def get_aws_security_credentials(
+            self, context: Any, request: Any
+        ) -> gcp_aws.AwsSecurityCredentials:
+            """Get the security credentials from the local environment.
+
+            This method is a copy of the original method from the
+            `google.auth.aws._DefaultAwsSecurityCredentialsSupplier` class. It has
+            been modified to use the boto3 library to extract the AWS credentials
+            from the local environment.
+
+            Args:
+                context: The context to use to get the security credentials.
+                request: The request to use to get the security credentials.
+
+            Returns:
+                The AWS temporary security credentials.
+            """
+            try:
+                import boto3
+
+                session = boto3.Session()
+                credentials = session.get_credentials()
+                if credentials is not None:
+                    creds = credentials.get_frozen_credentials()
+                    return gcp_aws.AwsSecurityCredentials(
+                        creds.access_key,
+                        creds.secret_key,
+                        creds.token,
+                    )
+            except Exception:
+                pass
+
+            logger.debug(
+                "Failed to extract AWS credentials from the local environment "
+                "using the boto3 library. Falling back to the original "
+                "implementation."
+            )
+
+            return super().get_aws_security_credentials(context, request)
+
+        def get_aws_region(self, context: Any, request: Any) -> str:
+            """Get the AWS region from the local environment.
+
+            This method is a copy of the original method from the
+            `google.auth.aws._DefaultAwsSecurityCredentialsSupplier` class. It has
+            been modified to use the boto3 library to extract the AWS
+            region from the local environment.
+
+            Args:
+                context: The context to use to get the security credentials.
+                request: The request to use to get the security credentials.
+
+            Returns:
+                The AWS region.
+            """
+            try:
+                import boto3
+
+                session = boto3.Session()
+                if session.region_name:
+                    return session.region_name  # type: ignore[no-any-return]
+            except Exception:
+                pass
+
+            logger.debug(
+                "Failed to extract AWS region from the local environment "
+                "using the boto3 library. Falling back to the original "
+                "implementation."
+            )
+
+            return super().get_aws_region(  # type: ignore[no-any-return]
+                context, request
+            )
+
+except ImportError:
+    # The `google.auth.aws._DefaultAwsSecurityCredentialsSupplier`
+    # class has been introduced in the `google-auth` library version 2.29.0.
+    # Before that, the AWS logic was part of the `google.auth.awsCredentials`
+    # class itself.
+    ZenMLAwsSecurityCredentialsSupplier = None  # type: ignore[assignment,misc]
+    pass
+
+
 class ZenMLGCPAWSExternalAccountCredentials(gcp_aws.Credentials):  # type: ignore[misc]
     """An improved version of the GCP external account credential for AWS.
 
@@ -508,6 +610,13 @@ class ZenMLGCPAWSExternalAccountCredentials(gcp_aws.Credentials):  # type: ignor
     Without this improvement, `sts.AssumeRoleWithWebIdentity` authentication is
     not supported for EKS pods and the EC2 attached role credentials are
     used instead (see: https://medium.com/@derek10cloud/gcp-workload-identity-federation-doesnt-yet-support-eks-irsa-in-aws-a3c71877671a).
+
+    IMPORTANT: subclassing this class only works with the `google-auth` library
+    version lower than 2.29.0. Starting from version 2.29.0, the AWS logic
+    has been moved to a separate `google.auth.aws._DefaultAwsSecurityCredentialsSupplier`
+    class that can be subclassed instead and supplied as the
+    `aws_security_credentials_supplier` parameter to the
+    `google.auth.aws.Credentials` class.
     """
 
     def _get_security_credentials(
@@ -540,11 +649,13 @@ class ZenMLGCPAWSExternalAccountCredentials(gcp_aws.Credentials):  # type: ignor
                     "security_token": creds.token,
                 }
         except Exception:
-            logger.debug(
-                "Failed to extract AWS credentials from the local environment "
-                "using the boto3 library. Falling back to the original "
-                "implementation."
-            )
+            pass
+
+        logger.debug(
+            "Failed to extract AWS credentials from the local environment "
+            "using the boto3 library. Falling back to the original "
+            "implementation."
+        )
 
         return super()._get_security_credentials(  # type: ignore[no-any-return]
             request, imdsv2_session_token
@@ -1126,6 +1237,12 @@ class GCPServiceConnector(ServiceConnector):
                     account_info.get("subject_token_type")
                     == _AWS_SUBJECT_TOKEN_TYPE
                 ):
+                    if ZenMLAwsSecurityCredentialsSupplier is not None:
+                        account_info["aws_security_credentials_supplier"] = (
+                            ZenMLAwsSecurityCredentialsSupplier(
+                                account_info.pop("credential_source"),
+                            )
+                        )
                     credentials = (
                         ZenMLGCPAWSExternalAccountCredentials.from_info(
                             account_info,
