@@ -15,13 +15,14 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.azure import (
     AZURE_RESOURCE_TYPE,
     AZUREML_ORCHESTRATOR_FLAVOR,
 )
+from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
@@ -31,6 +32,8 @@ from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
     from zenml.integrations.azure.orchestrators import AzureMLOrchestrator
+
+logger = get_logger(__name__)
 
 
 class AzureMLComputeTypes(StrEnum):
@@ -80,14 +83,56 @@ class AzureMLOrchestratorSettings(BaseSettings):
 
     # Common Configuration for Compute Instances and Clusters
     compute_name: Optional[str] = None
-    compute_size: Optional[str] = None
-    idle_type_before_shutdown_minutes: Optional[int] = None
+    size: Optional[str] = None
+
+    # Additional configuration for a Compute Instance
+    idle_time_before_shutdown_minutes: Optional[int] = None
 
     # Additional configuration for a Compute Cluster
+    idle_time_before_scaledown_down: Optional[int] = None
     location: Optional[str] = None
     min_instances: Optional[int] = None
     max_instances: Optional[int] = None
     tier: Optional[str] = None
+
+    @model_validator(mode="after")
+    def azureml_settings_validator(self) -> "AzureMLOrchestratorSettings":
+        """Checks whether the right configuration is set based on mode.
+
+        Returns:
+            the instance itself.
+        """
+        viable_configuration_fields = {
+            AzureMLComputeTypes.SERVERLESS: {"mode"},
+            AzureMLComputeTypes.COMPUTE_INSTANCE: {
+                "mode",
+                "compute_name",
+                "size",
+                "idle_time_before_shutdown_minutes",
+            },
+            AzureMLComputeTypes.COMPUTE_CLUSTER: {
+                "mode",
+                "compute_name",
+                "size",
+                "idle_time_before_scaledown_down",
+                "location",
+                "min_instances",
+                "max_instances",
+                "tier",
+            },
+        }
+        viable_fields = viable_configuration_fields[self.mode]
+
+        for field in self.model_fields_set:
+            if field not in viable_fields:
+                logger.warning(
+                    "In the AzureML Orchestrator Settings, the mode of "
+                    f"operation is set to {self.mode}. In this mode, you can "
+                    f"not configure the parameter '{field}'. This "
+                    "configuration will be ignored."
+                )
+
+        return self
 
 
 class AzureMLOrchestratorConfig(

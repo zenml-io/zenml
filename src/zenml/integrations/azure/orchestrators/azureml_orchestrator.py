@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the AzureML Orchestrator."""
 
-import datetime
 import json
 import os
 from typing import (
@@ -36,7 +35,6 @@ from azure.ai.ml.entities import (
     CronTrigger,
     Environment,
     JobSchedule,
-    RecurrencePattern,
     RecurrenceTrigger,
 )
 from azure.core.exceptions import (
@@ -64,6 +62,8 @@ from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
+    from azure.ai.ml.entities import AmlCompute, ComputeInstance
+
     from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
 
@@ -193,6 +193,30 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             command=" ".join(command + arguments),
         )
 
+    @staticmethod
+    def _check_settings_and_compute_configuration(
+        parameter: str,
+        settings: AzureMLOrchestratorSettings,
+        compute: Union[ComputeInstance, AmlCompute],
+    ) -> None:
+        """Utility function comparing a parameter between settings and compute.
+
+        Args:
+            parameter: the name of the parameter.
+            settings: The AzureML orchestrator settings.
+            compute: The compute instance or cluster from AzureML.
+        """
+        # Check the compute size
+        compute_value = getattr(compute, parameter)
+        settings_value = getattr(settings, parameter)
+
+        if settings_value is not None and settings_value != compute_value:
+            logger.warning(
+                f"The '{parameter}' defined in the settings '{settings_value}' "
+                "does not match the actual parameter of the instance: "
+                f"'{compute_value}'. Will ignore this setting for now."
+            )
+
     def _create_or_get_compute(
         self, client: MLClient, settings: AzureMLOrchestratorSettings
     ) -> Optional[str]:
@@ -205,6 +229,11 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         Returns:
             None, if the orchestrator is using serverless compute or
             str, the name of the compute target (instance or cluster).
+
+        Raises:
+            RunTimeError, if the fetched compute target is unsupported or the
+                mode defined in the setting does not match the type of the
+                compute target.
         """
         # If the mode is serverless, we can not fetch anything anyhow
         if settings.mode == AzureMLComputeTypes.SERVERLESS:
@@ -215,9 +244,75 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         # Try to fetch the compute target
         try:
-            client.compute.get(compute_name)
+            compute = client.compute.get(compute_name)
+
             logger.info(f"Using existing compute target: '{compute_name}'.")
 
+            # Check if compute size matches with the settings
+            self._check_settings_and_compute_configuration(
+                parameter="size", settings=settings, compute=compute
+            )
+
+            compute_type = compute.type
+
+            # Check the type and matches the settings
+            if compute_type == "computeinstance":  # Compute Instance
+                if settings.mode != AzureMLComputeTypes.COMPUTE_INSTANCE:
+                    raise RuntimeError(
+                        "The mode of operation for the compute target defined"
+                        f"in the settings '{settings.mode}' does not match "
+                        f"the type of the compute target: `{compute_name}` "
+                        "which is a 'compute-instance'. Please make sure that "
+                        "the settings are adjusted properly."
+                    )
+
+                if compute.state != "Running":
+                    raise RuntimeError(
+                        f"The compute instance `{compute_name}` is not in a "
+                        "running state at the moment. Please make sure that "
+                        "the compute target is running, before executing the "
+                        "pipeline."
+                    )
+
+                # Idle time before shutdown
+                self._check_settings_and_compute_configuration(
+                    parameter="idle_time_before_shutdown_minutes",
+                    settings=settings,
+                    compute=compute,
+                )
+
+            elif compute_type == "amIcompute":  # Compute Cluster
+                if settings.mode != AzureMLComputeTypes.COMPUTE_CLUSTER:
+                    raise RuntimeError(
+                        "The mode of operation for the compute target defined"
+                        f"in the settings '{settings.mode}' does not match "
+                        f"the type of the compute target: `{compute_name}` "
+                        "which is a 'compute-cluster'. Please make sure that "
+                        "the settings are adjusted properly."
+                    )
+
+                if compute.provisioning_state != "Succeeded":
+                    raise RuntimeError(
+                        f"The provisioning state '{compute.provisioning_state}'"
+                        f"of the compute cluster `{compute_name}` is not "
+                        "successful. Please make sure that the compute cluster "
+                        "is provisioned properly, before executing the "
+                        "pipeline."
+                    )
+
+                for parameter in [
+                    "idle_time_before_scale_down",
+                    "max_instances",
+                    "min_instances",
+                    "tier",
+                    "location",
+                ]:
+                    # Check all possible configurations
+                    self._check_settings_and_compute_configuration(
+                        parameter=parameter, settings=settings, compute=compute
+                    )
+            else:
+                raise RuntimeError(f"Unsupported compute type: {compute_type}")
             return compute_name
 
         # If the compute target does not exist create it
@@ -237,8 +332,8 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
                 compute_instance = ComputeInstance(
                     name=compute_name,
-                    size=settings.compute_size,
-                    idle_time_before_shutdown_minutes=settings.idle_type_before_shutdown_minutes,
+                    size=settings.size,
+                    idle_time_before_shutdown_minutes=settings.idle_time_before_shutdown_minutes,
                 )
                 client.begin_create_or_update(compute_instance).result()
                 return compute_name
@@ -253,11 +348,11 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
                 compute_cluster = AmlCompute(
                     name=compute_name,
-                    size=settings.compute_size,
+                    size=settings.size,
                     location=settings.location,
                     min_instances=settings.min_instances,
                     max_instances=settings.max_instances,
-                    idle_time_before_scale_down=settings.idle_type_before_shutdown_minutes,
+                    idle_time_before_scale_down=settings.idle_time_before_scaledown_down,
                     tier=settings.tier,
                 )
                 client.begin_create_or_update(compute_cluster).result()
