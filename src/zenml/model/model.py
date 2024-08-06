@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model user facing interface to pass into pipeline or step."""
 
+import datetime
 import time
 from typing import (
     TYPE_CHECKING,
@@ -31,6 +32,7 @@ from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -677,6 +679,10 @@ class Model(BaseModel):
 
         model = self._get_or_create_model()
 
+        # backup logic, if the Model class is used directly from the code
+        if isinstance(self.version, str):
+            self.version = format_name_template(self.version)
+
         zenml_client = Client()
         model_version_request = ModelVersionRequest(
             user=zenml_client.active_user.id,
@@ -819,3 +825,41 @@ class Model(BaseModel):
                 )
             )
         )
+
+    def _prepare_model_version_inside_run(
+        self, pipeline_run: "PipelineRunResponse", return_logs: bool
+    ) -> str:
+        """Prepares model version inside pipeline run.
+
+        Args:
+            pipeline_run: pipeline run
+            return_logs: whether to return logs or not
+
+        Returns:
+            Logs related to the Dashboard URL to show later.
+        """
+        if isinstance(self.version, str):
+            if pipeline_run.start_time:
+                start_time = pipeline_run.start_time
+            else:
+                start_time = datetime.datetime.now(datetime.UTC)
+            self.version = format_name_template(
+                self.version,
+                date=start_time.strftime("%Y_%m_%d"),
+                time=start_time.strftime("%H_%M_%S_%f"),
+            )
+        model_version_response = self._get_or_create_model_version()
+
+        if return_logs:
+            from zenml.utils.cloud_utils import try_get_model_version_url
+
+            if logs_to_show := try_get_model_version_url(
+                model_version_response
+            ):
+                return logs_to_show
+            else:
+                return (
+                    "Models can be viewed in the dashboard using ZenML Pro. Sign up "
+                    "for a free trial at https://www.zenml.io/pro/"
+                )
+        return ""

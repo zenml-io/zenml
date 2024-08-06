@@ -31,7 +31,17 @@
 """Kubernetes-native orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -68,6 +78,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
+    supports_scheduling: ClassVar[bool] = True
 
     def get_kube_client(
         self, incluster: Optional[bool] = None

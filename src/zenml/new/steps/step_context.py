@@ -188,7 +188,9 @@ class StepContext(metaclass=SingletonMetaClass):
             )
 
         # warm-up the model version
-        model._get_or_create_model_version()
+        model._prepare_model_version_inside_run(
+            pipeline_run=self.pipeline_run, return_logs=False
+        )
 
         return model
 

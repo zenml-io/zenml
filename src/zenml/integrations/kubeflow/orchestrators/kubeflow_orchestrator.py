@@ -32,7 +32,17 @@
 
 import os
 import types
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 import kfp
@@ -145,6 +155,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
+    supports_scheduling: ClassVar[bool] = True
 
     def _get_kfp_client(
         self,

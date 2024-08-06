@@ -210,8 +210,10 @@ class StepLauncher:
                     logs=logs_model,
                 )
                 try:
-                    execution_needed, step_run = self._prepare(
-                        step_run=step_run
+                    execution_needed, step_run, prep_logs_to_show = (
+                        self._prepare(
+                            step_run=step_run, pipeline_run=pipeline_run
+                        )
                     )
                 except:
                     logger.exception(
@@ -227,6 +229,7 @@ class StepLauncher:
 
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
+                    logger.info(prep_logs_to_show)
                     retries = 0
                     last_retry = True
                     max_retries = (
@@ -358,20 +361,29 @@ class StepLauncher:
     def _prepare(
         self,
         step_run: StepRunRequest,
-    ) -> Tuple[bool, StepRunRequest]:
+        pipeline_run: PipelineRunResponse,
+    ) -> Tuple[bool, StepRunRequest, str]:
         """Prepares running the step.
 
         Args:
             step_run: The step to run.
+            pipeline_run: The pipeline run that the step belongs to.
 
         Returns:
             Tuple that specifies whether the step needs to be executed as
-            well as the response model of the registered step run.
+            well as the response model of the registered step run and the
+            logging message.
         """
         model = (
             self._deployment.step_configurations[step_run.name].config.model
             or self._deployment.pipeline_configuration.model
         )
+        if model:
+            logs_to_show = model._prepare_model_version_inside_run(
+                pipeline_run=pipeline_run, return_logs=True
+            )
+        else:
+            logs_to_show = ""
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
             run_id=step_run.pipeline_run_id,
@@ -426,12 +438,12 @@ class StepLauncher:
                 if self._step.config.model:
                     orchestrator_utils._link_pipeline_run_to_model_from_context(
                         pipeline_run_id=step_run.pipeline_run_id,
-                        model=self._step.config.model,
+                        model=model,
                     )
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
-        return execution_needed, step_run
+        return execution_needed, step_run, logs_to_show
 
     def _run_step(
         self,

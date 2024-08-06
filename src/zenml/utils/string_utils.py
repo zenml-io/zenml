@@ -148,7 +148,7 @@ def format_name_template(
     """Formats a name template with the given arguments.
 
     By default, ZenML support Date and Time placeholders.
-    E.g. `my_run_{date}_{time}` will be formatted as `my_run_1970_01_01_00_00_00_000000`.
+    E.g. `my_run_{date}_{time}` will be formatted as `my_run_1970_01_01_00_00_00`.
     Extra placeholders need to be explicitly passed in as kwargs.
 
     Args:
@@ -158,6 +158,10 @@ def format_name_template(
     Returns:
         The formatted name template.
     """
-    date = datetime.datetime.now(datetime.UTC).strftime("%Y_%m_%d")
-    time = datetime.datetime.now(datetime.UTC).strftime("%H_%M_%S_%f")
-    return name_template.format(date=date, time=time, **kwargs)
+    kwargs["date"] = kwargs.get(
+        "date", datetime.datetime.now(datetime.UTC).strftime("%Y_%m_%d")
+    )
+    kwargs["time"] = kwargs.get(
+        "time", datetime.datetime.now(datetime.UTC).strftime("%H_%M_%S_%f")
+    )
+    return name_template.format(**kwargs)

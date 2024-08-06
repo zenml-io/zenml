@@ -32,7 +32,17 @@
 import os
 import re
 import types
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
@@ -98,6 +108,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     """Orchestrator responsible for running pipelines on Vertex AI."""
 
     _pipeline_root: str
+    supports_scheduling: ClassVar[bool] = True
 
     @property
     def config(self) -> VertexOrchestratorConfig:

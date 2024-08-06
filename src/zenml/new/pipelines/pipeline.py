@@ -71,7 +71,6 @@ from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
     deploy_pipeline,
-    prepare_model_versions,
 )
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -584,6 +583,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             Model of the pipeline run if running without a schedule, `None` if
             running with a schedule.
+
+        Raises:
+            ValueError: if the orchestrator doesn't support scheduling, but schedule was given
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -629,10 +631,21 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             else:
                 logger.debug(f"Pipeline {self.name} is unlisted.")
 
+            stack = Client().active_stack
+            stack.validate()
+
             # TODO: check whether orchestrator even support scheduling before
             #   registering the schedule
             schedule_id = None
             if schedule:
+                if not stack.orchestrator.supports_scheduling:
+                    raise ValueError(
+                        f"Stack {stack.name} does not support scheduling. "
+                        "Not all orchestrator types support scheduling, "
+                        "kindly consult with "
+                        "https://docs.zenml.io/how-to/build-pipelines/schedule-a-pipeline "
+                        "for details."
+                    )
                 if schedule.name:
                     schedule_name = schedule.name
                 else:
@@ -662,11 +675,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     f"Created schedule `{schedule_name}` for pipeline "
                     f"`{deployment.pipeline_configuration.name}`."
                 )
-
-            stack = Client().active_stack
-            stack.validate()
-
-            prepare_model_versions(deployment)
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()

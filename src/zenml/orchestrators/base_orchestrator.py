@@ -14,7 +14,7 @@
 """Base orchestrator class."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type, cast
 
 from pydantic import model_validator
 
@@ -88,6 +88,7 @@ class BaseOrchestrator(StackComponent, ABC):
     """
 
     _active_deployment: Optional["PipelineDeploymentResponse"] = None
+    supports_scheduling: ClassVar[bool] = False
 
     @property
     def config(self) -> BaseOrchestratorConfig:
