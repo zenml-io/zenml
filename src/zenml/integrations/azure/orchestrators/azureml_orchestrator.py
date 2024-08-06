@@ -231,7 +231,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             str, the name of the compute target (instance or cluster).
 
         Raises:
-            RunTimeError, if the fetched compute target is unsupported or the
+            RuntimeError: if the fetched compute target is unsupported or the
                 mode defined in the setting does not match the type of the
                 compute target.
         """
@@ -373,6 +373,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             stack: The stack to run on.
             environment: Environment variables to set in the orchestration
                 environment.
+
+        Raises:
+            RuntimeError: If the creation of the schedule fails.
         """
         # Authentication
         if connector := self.get_connector():
