@@ -18,7 +18,10 @@ from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
-from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
+from zenml.stack_deployments.stack_deployment import (
+    STACK_DEPLOYMENT_TERRAFORM,
+    ZenMLCloudStackDeployment,
+)
 
 GCP_DEPLOYMENT_TYPE = "deployment-manager"
 
@@ -255,7 +258,26 @@ GCP project and to clean up the resources created by the stack by using
             f"https://shell.cloud.google.com/cloudshell/editor?{query_params}"
         )
 
-        config = f"""
+        if self.deployment_type == STACK_DEPLOYMENT_TERRAFORM:
+            config = f"""module "zenml_stack" {{
+    source  = "zenml-io/zenml-stack/gcp"
+
+    project_id = "my-gcp-project"
+    region = "{self.location or "europe-west3"}"
+    zenml_server_url = "{self.zenml_server_url}"
+    zenml_api_key = ""
+    zenml_api_token = "{self.zenml_server_api_token}"
+    zenml_stack_name = "{self.stack_name}"
+    zenml_stack_deployment = "{self.deployment_type}"
+}}
+output "zenml_stack_id" {{
+    value = module.zenml_stack.zenml_stack_id
+}}
+output "zenml_stack_name" {{
+    value = module.zenml_stack.zenml_stack_name
+}}"""
+        else:
+            config = f"""
 ### BEGIN CONFIGURATION ###
 ZENML_STACK_NAME={self.stack_name}
 ZENML_STACK_REGION={self.location or "europe-west3"}
