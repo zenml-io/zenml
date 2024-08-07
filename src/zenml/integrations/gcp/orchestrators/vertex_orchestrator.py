@@ -574,6 +574,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             run_name: Orchestrator run name.
             settings: Pipeline level settings for this orchestrator.
             schedule: The schedule the pipeline will run on.
+
+        Raises:
+            RuntimeError: If the Vertex Orchestrator fails to provision or any other Runtime errors
         """
         # We have to replace the hyphens in the run name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
