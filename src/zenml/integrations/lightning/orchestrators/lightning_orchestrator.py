@@ -98,14 +98,15 @@ class LightningOrchestrator(WheeledOrchestrator):
         self,
     ) -> None:
         """Set up the Lightning client using environment variables."""
-        os.environ["LIGHTNING_USER_ID"] = self.config.user_id
-        os.environ["LIGHTNING_API_KEY"] = self.config.user_secret
-        if self.config.username:
-            os.environ["LIGHTNING_USERNAME"] = self.config.username
-        if self.config.teamspace:
-            os.environ["LIGHTNING_TEAMSPACE"] = self.config.teamspace
-        if self.config.organization:
-            os.environ["LIGHTNING_ORG"] = self.config.organization
+        settings = cast(LightningOrchestratorSettings, self.get_settings())
+        os.environ["LIGHTNING_USER_ID"] = settings.user_id
+        os.environ["LIGHTNING_API_KEY"] = settings.user_secret
+        if settings.username:
+            os.environ["LIGHTNING_USERNAME"] = settings.username
+        if settings.teamspace:
+            os.environ["LIGHTNING_TEAMSPACE"] = settings.teamspace
+        if settings.organization:
+            os.environ["LIGHTNING_ORG"] = settings.organization
 
     @property
     def config(self) -> LightningOrchestratorConfig:
