@@ -98,15 +98,14 @@ class LightningOrchestrator(WheeledOrchestrator):
         self,
     ) -> None:
         """Set up the Lightning client using environment variables."""
-        os.environ["LIGHTNING_USER_ID"] = (
-            "cd5ab9d7-4dcf-4bdb-97eb-d9bea882e72b"
-        )
-        os.environ["LIGHTNING_API_KEY"] = (
-            "7ad6b02d-2d19-4203-9994-da3992eeafd5"
-        )
-        # os.environ["LIGHTNING_ORG"] = "safoine-zenml"
-        os.environ["LIGHTNING_USERNAME"] = "safoineext"
-        os.environ["LIGHTNING_TEAMSPACE"] = "vision-model"
+        os.environ["LIGHTNING_USER_ID"] = self.config.user_id
+        os.environ["LIGHTNING_API_KEY"] = self.config.user_secret
+        if self.config.username:
+            os.environ["LIGHTNING_USERNAME"] = self.config.username
+        if self.config.teamspace:
+            os.environ["LIGHTNING_TEAMSPACE"] = self.config.teamspace
+        if self.config.organization:
+            os.environ["LIGHTNING_ORG"] = self.config.organization
 
     @property
     def config(self) -> LightningOrchestratorConfig:
@@ -227,10 +226,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                     "Property `cron_expression` must be set when passing "
                     "schedule to a Lightning orchestrator."
                 )
-            if (
-                deployment.schedule.cron_expression
-                and settings.schedule_timezone is None
-            ):
+            if deployment.schedule.cron_expression:
                 raise ValueError(
                     "Property `schedule_timezone` must be set when passing "
                     "`cron_expression` to a Lightning orchestrator."
@@ -275,7 +271,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                 )
             )
             entrypoint = command + arguments
-            entrypoint = " ".join(entrypoint)
+            entrypoint_string = " ".join(entrypoint)
 
             step_settings = cast(
                 LightningOrchestratorSettings, self.get_settings(step)
@@ -303,8 +299,10 @@ class LightningOrchestrator(WheeledOrchestrator):
             # Remove empty items and duplicates
             requirements = sorted(set(filter(None, requirements)))
 
-            requirements_to_string = " ".join(f'"{req}"' for req in requirements)
-            run_command = f"{export_command} && {entrypoint}"
+            requirements_to_string = " ".join(
+                f'"{req}"' for req in requirements
+            )
+            run_command = f"{export_command} && {entrypoint_string}"
             commands = [run_command]
             steps[step_name] = {
                 "commands": commands,
@@ -328,53 +326,83 @@ class LightningOrchestrator(WheeledOrchestrator):
         orchestrator_run_id: str,
         requirements: str,
         settings: LightningOrchestratorSettings,
-        steps_commands: Dict[str, Dict[str, str]],
+        steps_commands: Dict[str, Dict[str, Any]],
         wheel_path: str,
     ) -> None:
-        """Uploads and run the pipeline on the Lightning jobs.
+        """Upload and run the pipeline on Lightning Studio.
 
         Args:
             orchestrator_run_id: The id of the orchestrator run.
-            requirements: The requirements to install for the pipeline.
-            settings: The settings of the orchestrator.
+            requirements: The requirements to install.
+            settings: The settings to use.
             steps_commands: The commands to run for each step.
-            wheel_path: The path to the wheel file.
+            wheel_path: The path to the wheel package.
         """
+        logger.info("Setting up Lightning AI client")
         self._get_lightning_client()
+
         studio_name = sanitize_studio_name(
             f"zenml_{orchestrator_run_id}_pipeline"
         )
+        logger.info(f"Creating main studio: {studio_name}")
         studio = Studio(name=studio_name)
         studio.start(Machine(settings.machine_type))
+
+        logger.info(
+            "Uploading wheel package and installing dependencies on main studio"
+        )
         studio.upload_file(wheel_path)
-        breakpoint()
         studio.run(f"pip install {requirements}")
         studio.run(
             "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
         )
         studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+
         for step_name, details in steps_commands.items():
             if details["machine"]:
-                studio_name = sanitize_studio_name(
-                    f"zenml_{orchestrator_run_id}_{step_name}"
+                logger.info(f"Executing step: {step_name} in new studio")
+                self._run_step_in_new_studio(
+                    orchestrator_run_id, step_name, details, wheel_path
                 )
-                studio = Studio(name=studio_name)
-                studio.start(Machine(details["machine"]))
-                studio.upload_file(wheel_path)
-                studio.run(f"pip install {details['requirements']}")
-                studio.run(
-                    "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
-                )
-                studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
-                for command in details["commands"]:
-                    output = studio.run(command)
-                    logger.info(output)
-                studio.delete()
             else:
-                for command in details["commands"]:
-                    output = studio.run(command)
-                    logger.info(output)
+                logger.info(f"Executing step: {step_name} in main studio")
+                self._run_step_in_main_studio(studio, details)
+
+        logger.info("Deleting main studio")
         studio.delete()
+
+    def _run_step_in_new_studio(
+        self,
+        orchestrator_run_id: str,
+        step_name: str,
+        details: Dict[str, Any],
+        wheel_path: str,
+    ) -> None:
+        """Run a step in a new studio."""
+        studio_name = sanitize_studio_name(
+            f"zenml_{orchestrator_run_id}_{step_name}"
+        )
+        logger.info(f"Creating new studio for step {step_name}: {studio_name}")
+        studio = Studio(name=studio_name)
+        studio.start(Machine(details["machine"]))
+        studio.upload_file(wheel_path)
+        studio.run(f"pip install {details['requirements']}")
+        studio.run(
+            "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+        )
+        studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+        for command in details["commands"]:
+            output = studio.run(command)
+            logger.info(f"Step {step_name} output: {output}")
+        studio.delete()
+
+    def _run_step_in_main_studio(
+        self, studio: Studio, details: Dict[str, Any]
+    ) -> None:
+        """Run a step in the main studio."""
+        for command in details["commands"]:
+            output = studio.run(command)
+            logger.info(f"Step output: {output}")
 
 
 def sanitize_studio_name(studio_name: str) -> str:

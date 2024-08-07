@@ -39,12 +39,10 @@ class LightningIntegration(Integration):
         """
         from zenml.integrations.lightning.flavors import (
             LightningOrchestratorFlavor,
-            LightningModelDeployerFlavor,
         )
 
         return [
             LightningOrchestratorFlavor,
-            LightningModelDeployerFlavor,
         ]
 
 LightningIntegration.check_installation()

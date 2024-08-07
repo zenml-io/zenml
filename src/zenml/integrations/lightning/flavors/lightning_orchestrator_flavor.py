@@ -38,7 +38,7 @@ class LightningOrchestratorSettings(BaseSettings):
     """
 
     # Resources
-    machine_type: str
+    machine_type: Optional[str] = None
 
 
 class LightningOrchestratorConfig(
@@ -49,10 +49,15 @@ class LightningOrchestratorConfig(
     Attributes:
         user_id: User id.
         user_secret: User secret.
+        username: Username.
+        teamspace: Teamspace.
     """
 
     user_id: str = SecretField(default=None)
     user_secret: str = SecretField(default=None)
+    username: Optional[str] = None
+    teamspace: Optional[str] = None
+    organization: Optional[str] = None
 
     @property
     def is_local(self) -> bool:
