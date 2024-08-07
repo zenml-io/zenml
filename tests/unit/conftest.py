@@ -41,7 +41,6 @@ from zenml.models import (
     CodeRepositoryResponse,
     CodeRepositoryResponseBody,
     CodeRepositoryResponseMetadata,
-    HubPluginResponseModel,
     PipelineBuildResponse,
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
@@ -56,7 +55,6 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
-    PluginStatus,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
@@ -679,23 +677,6 @@ def sample_code_repo_response_model(
             workspace=sample_workspace_model,
             config={},
         ),
-    )
-
-
-@pytest.fixture
-def sample_hub_plugin_response_model() -> HubPluginResponseModel:
-    return HubPluginResponseModel(
-        id=uuid4(),
-        author="AlexejPenner",
-        name="alexejs_ploogin",
-        version="3.14",
-        repository_url="https://github.com/zenml-io/zenml",
-        index_url="https://test.pypi.org/simple/",
-        package_name="ploogin",
-        status=PluginStatus.AVAILABLE,
-        created=datetime.now(),
-        updated=datetime.now(),
-        requirements=["ploogin==0.0.1", "zenml>=0.1.0"],
     )
 
 
