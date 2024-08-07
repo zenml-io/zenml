@@ -95,8 +95,8 @@ class LightningOrchestrator(WheeledOrchestrator):
         )
 
     def _get_lightning_client(
-        deployment: "PipelineDeploymentResponse",
         self,
+        deployment: "PipelineDeploymentResponse",
     ) -> None:
         """Set up the Lightning client using environment variables."""
         settings = cast(
