@@ -483,8 +483,7 @@ def verify_local_repository_context(
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be downloaded from a "
-                    "code repository "
-                    "(`source_files=['download_from_code_repository']`), but "
+                    "code repository, but "
                     "there is no code repository active at your current source "
                     f"root `{source_utils.get_source_root()}`."
                 )
@@ -492,8 +491,7 @@ def verify_local_repository_context(
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be downloaded from a "
-                    "code repository "
-                    "(`source_files=['download_from_code_repository']`), but "
+                    "code repository, but "
                     "the code repository active at your current source root "
                     f"`{source_utils.get_source_root()}` has uncommitted "
                     "changes."
@@ -502,8 +500,7 @@ def verify_local_repository_context(
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be downloaded from a "
-                    "code repository "
-                    "(`source_files=['download_from_code_repository']`), but "
+                    "code repository, but "
                     "the code repository active at your current source root "
                     f"`{source_utils.get_source_root()}` has unpushed "
                     "changes."
@@ -574,7 +571,7 @@ def verify_custom_build(
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
                 "steps specify that code should be included in the Docker "
-                "image (`source_files=['include']`), but the build you "
+                "image, but the build you "
                 "specified requires code download. Either update your "
                 "`DockerSettings` or specify a different build and try "
                 "again."
@@ -587,8 +584,7 @@ def verify_custom_build(
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
                 "steps specify that code should be downloaded from a "
-                "code repository "
-                "(`source_files=['download_from_code_repository']`), but "
+                "code repository but "
                 "there is no code repository active at your current source "
                 f"root `{source_utils.get_source_root()}`."
             )

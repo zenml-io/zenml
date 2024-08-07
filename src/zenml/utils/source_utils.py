@@ -243,7 +243,7 @@ def resolve(
         )
         # Private attributes are ignored by pydantic if passed in the __init__
         # method, so we set this afterwards
-        source._cell_code=notebook_utils.load_notebook_cell_code(obj)
+        source._cell_code = notebook_utils.load_notebook_cell_code(obj)
         return source
 
     return Source(
