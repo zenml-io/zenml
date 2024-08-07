@@ -361,7 +361,8 @@ class LightningOrchestrator(WheeledOrchestrator):
             "Uploading wheel package and installing dependencies on main studio"
         )
         studio.upload_file(wheel_path)
-        studio.run(f"pip install {requirements}")
+        studio.run("pip install uv")
+        studio.run(f"uv pip install {requirements}")
         studio.run(
             "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
         )
@@ -395,7 +396,8 @@ class LightningOrchestrator(WheeledOrchestrator):
         studio = Studio(name=studio_name)
         studio.start(Machine(details["machine"]))
         studio.upload_file(wheel_path)
-        studio.run(f"pip install {details['requirements']}")
+        studio.run("pip install uv")
+        studio.run(f"uv pip install {details['requirements']}")
         studio.run(
             "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
         )
