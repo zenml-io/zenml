@@ -700,10 +700,10 @@ def should_upload_code(
         Whether the current code should be uploaded for the deployment.
     """
     if not build:
-        # No build means all the code is getting executed locally, which means
-        # we don't need to download any code
-        # TODO: This does not apply to e.g. Databricks, figure out a solution
-        # here
+        # No build means we don't need to download code into a Docker container
+        # for step execution. In other remote orchestrators that don't use
+        # Docker containers but instead use e.g. Wheels to run, the code should
+        # already be included.
         return False
 
     for step in deployment.step_configurations.values():
