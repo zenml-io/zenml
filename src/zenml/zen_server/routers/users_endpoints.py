@@ -286,7 +286,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # - active
         # - password
         # - email_opted_in + email
-        # - hub_token
         #
         safe_user_update = user_update.create_copy(
             exclude={
@@ -298,7 +297,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                 "old_password",
                 "email_opted_in",
                 "email",
-                "hub_token",
             },
         )
 
@@ -387,7 +385,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         if (
             user_update.email_opted_in is not None
             or user_update.email is not None
-            or user_update.hub_token is not None
         ):
             if user.id != auth_context.user.id:
                 raise IllegalOperationError(
@@ -399,8 +396,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             if safe_user_update.email_opted_in is not None:
                 safe_user_update.email_opted_in = user_update.email_opted_in
                 safe_user_update.email = user_update.email
-            if safe_user_update.hub_token is not None:
-                safe_user_update.hub_token = user_update.hub_token
 
         updated_user = zen_store().update_user(
             user_id=user.id,
@@ -444,7 +439,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # - is_admin
         # - active
         # - old_password
-        # - hub_token
         #
         safe_user_update = user_update.create_copy(
             exclude={
@@ -453,7 +447,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                 "is_admin",
                 "active",
                 "old_password",
-                "hub_token",
             },
         )
 
