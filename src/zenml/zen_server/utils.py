@@ -37,6 +37,7 @@ from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     API,
     ENV_ZENML_SERVER,
+    INFO,
     VERSION_1,
 )
 from zenml.enums import ServerProviderType
@@ -598,8 +599,15 @@ def is_user_request(request: Request) -> bool:
         "/openapi.json",
     ]
 
-    # Check if the path starts with the user endpoint prefix
-    user_prefix = f"{API}/{VERSION_1}"
+    user_prefix = f"{API}{VERSION_1}"
+    excluded_user_apis = [INFO]
+    # Check if this is not an excluded endpoint
+    if request.url.path in [
+        user_prefix + suffix for suffix in excluded_user_apis
+    ]:
+        return False
+
+    # Check if this is other user request
     if request.url.path.startswith(user_prefix):
         return True
 
