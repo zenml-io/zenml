@@ -346,7 +346,10 @@ class LightningOrchestrator(WheeledOrchestrator):
         )
         logger.info(f"Creating main studio: {studio_name}")
         studio = Studio(name=studio_name)
-        studio.start(Machine(settings.machine_type))
+        if settings.machine_type:
+            studio.start(Machine(settings.machine_type))
+        else:
+            studio.start()
 
         logger.info(
             "Uploading wheel package and installing dependencies on main studio"
