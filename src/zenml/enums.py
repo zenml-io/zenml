@@ -302,6 +302,7 @@ class EnvironmentType(StrEnum):
     NOTEBOOK = "notebook"
     PAPERSPACE = "paperspace"
     WSL = "wsl"
+    LIGHTNING_AI_STUDIO = "lightning_ai_studio"
 
 
 class ModelStages(StrEnum):
