@@ -78,6 +78,7 @@ def get_stack_deployment_config(
     provider: StackDeploymentProvider,
     stack_name: str,
     location: Optional[str] = None,
+    terraform: bool = False,
     auth_context: AuthContext = Security(authorize),
 ) -> StackDeploymentConfig:
     """Return the URL to deploy the ZenML stack to the specified cloud provider.
@@ -87,6 +88,7 @@ def get_stack_deployment_config(
         provider: The stack deployment provider.
         stack_name: The name of the stack.
         location: The location where the stack should be deployed.
+        terraform: Whether the stack should be deployed using Terraform.
         auth_context: The authentication context.
 
     Returns:
@@ -118,6 +120,7 @@ def get_stack_deployment_config(
     api_token = token.encode(expires=expires)
 
     return stack_deployment_class(
+        terraform=terraform,
         stack_name=stack_name,
         location=location,
         zenml_server_url=str(url),
@@ -134,6 +137,7 @@ def get_deployed_stack(
     stack_name: str,
     location: Optional[str] = None,
     date_start: Optional[datetime.datetime] = None,
+    terraform: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Optional[DeployedStack]:
     """Return a matching ZenML stack that was deployed and registered.
@@ -143,6 +147,7 @@ def get_deployed_stack(
         stack_name: The name of the stack.
         location: The location where the stack should be deployed.
         date_start: The date when the deployment started.
+        terraform: Whether the stack was deployed using Terraform.
 
     Returns:
         The ZenML stack that was deployed and registered or None if the stack
@@ -150,6 +155,7 @@ def get_deployed_stack(
     """
     stack_deployment_class = get_stack_deployment_class(provider)
     return stack_deployment_class(
+        terraform=terraform,
         stack_name=stack_name,
         location=location,
         # These fields are not needed for this operation

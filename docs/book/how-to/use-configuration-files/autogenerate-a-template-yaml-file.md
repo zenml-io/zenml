@@ -70,7 +70,6 @@ settings:
     python_package_installer: PythonPackageInstaller
     replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
      NoneType]
-    required_hub_plugins: List[str]
     required_integrations: List[str]
     requirements: Union[NoneType, str, List[str]]
     skip_build: bool
@@ -134,7 +133,6 @@ steps:
         python_package_installer: PythonPackageInstaller
         replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
          NoneType]
-        required_hub_plugins: List[str]
         required_integrations: List[str]
         requirements: Union[NoneType, str, List[str]]
         skip_build: bool
@@ -196,7 +194,6 @@ steps:
         python_package_installer: PythonPackageInstaller
         replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
          NoneType]
-        required_hub_plugins: List[str]
         required_integrations: List[str]
         requirements: Union[NoneType, str, List[str]]
         skip_build: bool

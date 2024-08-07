@@ -92,7 +92,6 @@ class DockerSettings(BaseSettings):
     Depending on the configuration of this object, requirements will be
     installed in the following order (each step optional):
     - The packages installed in your local python environment
-    - The packages specified via the `required_hub_plugins` attribute
     - The packages required by the stack unless this is disabled by setting
       `install_stack_requirements=False`.
     - The packages specified via the `required_integrations`
@@ -150,11 +149,7 @@ class DockerSettings(BaseSettings):
         required_integrations: List of ZenML integrations that should be
             installed. All requirements for the specified integrations will
             be installed inside the Docker image.
-        required_hub_plugins: List of ZenML Hub plugins to install.
-            Expected format: '(<author_username>/)<plugin_name>==<version>'.
-            If no version is specified, the latest version is taken. The
-            packages of required plugins and all their dependencies will be
-            installed inside the Docker image.
+        required_hub_plugins: DEPRECATED/UNUSED.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
             and install the corresponding requirements and apt packages.
@@ -203,7 +198,6 @@ class DockerSettings(BaseSettings):
         default=None, union_mode="left_to_right"
     )
     required_integrations: List[str] = []
-    required_hub_plugins: List[str] = []
     install_stack_requirements: bool = True
     apt_packages: List[str] = []
     environment: Dict[str, Any] = {}
@@ -220,9 +214,13 @@ class DockerSettings(BaseSettings):
     copy_files: bool = True
     copy_global_config: bool = True
     source_files: Optional[str] = None
+    required_hub_plugins: List[str] = []
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "copy_files", "copy_global_config", "source_files"
+        "copy_files",
+        "copy_global_config",
+        "source_files",
+        "required_hub_plugins",
     )
 
     @model_validator(mode="before")
