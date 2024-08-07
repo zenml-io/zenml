@@ -24,9 +24,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 
 WHEEL_PACKAGE_OPTION = "wheel_package"
-ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID = (
-    "ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID"
-)
+ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID = "ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID"
 
 
 class LightningEntrypointConfiguration(StepEntrypointConfiguration):

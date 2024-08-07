@@ -16,14 +16,13 @@
 import itertools
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
-from uuid import UUID
+from uuid import uuid4
 
-from lightning_sdk import Studio
+from lightning_sdk import Machine, Studio
 
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_CUSTOM_SOURCE_ROOT,
-    METADATA_ORCHESTRATOR_URL,
 )
 from zenml.integrations.lightning.flavors.lightning_orchestrator_flavor import (
     LightningOrchestratorConfig,
@@ -34,9 +33,6 @@ from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoin
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import MetadataType, Uri
-from zenml.models.v2.core.schedule import ScheduleResponse
-from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
@@ -50,10 +46,9 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
-ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID = (
-    "ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID"
-)
-ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
+ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID = "ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID"
+ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "zenml.entrypoints.entrypoint"
+LIGHTNING_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 
 
 class LightningOrchestrator(WheeledOrchestrator):
@@ -102,12 +97,15 @@ class LightningOrchestrator(WheeledOrchestrator):
         self,
     ) -> None:
         """Set up the Lightning client using environment variables."""
-        os.environ["LIGHTNING_USER_ID"] = "cd5ab9d7-4dcf-4bdb-97eb-d9bea882e72b"
-        os.environ["LIGHTNING_API_KEY"] = "7ad6b02d-2d19-4203-9994-da3992eeafd5"
-        #os.environ["LIGHTNING_ORG"] = "safoine-zenml"
+        os.environ["LIGHTNING_USER_ID"] = (
+            "cd5ab9d7-4dcf-4bdb-97eb-d9bea882e72b"
+        )
+        os.environ["LIGHTNING_API_KEY"] = (
+            "7ad6b02d-2d19-4203-9994-da3992eeafd5"
+        )
+        # os.environ["LIGHTNING_ORG"] = "safoine-zenml"
         os.environ["LIGHTNING_USERNAME"] = "safoineext"
         os.environ["LIGHTNING_TEAMSPACE"] = "zenml"
-        
 
     @property
     def config(self) -> LightningOrchestratorConfig:
@@ -242,11 +240,6 @@ class LightningOrchestrator(WheeledOrchestrator):
         # Get deployment id
         deployment_id = deployment.id
 
-        # Get the orchestrator run name
-        orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
-        )
-
         # Copy the repository to a temporary directory and add a setup.py file
         repository_temp_dir = (
             self.copy_repository_to_temp_dir_and_add_setup_py()
@@ -255,46 +248,35 @@ class LightningOrchestrator(WheeledOrchestrator):
         # Create a wheel for the package in the temporary directory
         wheel_path = self.create_wheel(temp_dir=repository_temp_dir)
 
-        # Create an empty folder in a volume.
-        deployment_name = (
-            deployment.pipeline.name if deployment.pipeline else "default"
-        )
-
         # Construct the env variables for the pipeline
         env_vars = environment.copy()
-        #env_vars[ENV_ZENML_CUSTOM_SOURCE_ROOT] = (
-        #    LIGHTNING_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
-        #)
-        env_file_content = "\n".join([f"{key}={value}" for key, value in env_vars.items()])
-        env_file_path = os.path.join(repository_temp_dir, "pipeline_env.env")
-        with open(env_file_path, "w") as env_file:
-            env_file.write(env_file_content)
-
-        
-        self._get_lightning_client()
-        studio = Studio(name="zenml_studio")
-        studio.start()
-        #env_vars_string = " ".join([f"export {key}={value}" for key, value in env_vars.items()])
-        #studio.run(env_vars_string)
-        wheel_path_remote = (
-            f"/teamspace/studios/this_studio/{wheel_path.rsplit('/', 1)[-1]}"
+        orchestrator_run_id = str(uuid4())
+        env_vars[ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
+        # Set up some variables for configuration
+        env_vars[ENV_ZENML_CUSTOM_SOURCE_ROOT] = (
+            LIGHTNING_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
         )
-        studio.upload_file(wheel_path)
-        
-        # Upload the env file to the studio
-        remote_env_file_path = f"/teamspace/studios/this_studio/pipeline_env.env"
-        studio.upload_file(env_file_path)
-        studio.run(f"source {remote_env_file_path}")
-        #fileio.rmtree(repository_temp_dir)
+
+        # Create a single export command with all environment variables
+        export_command = "export " + " ".join(
+            [f"{key}='{value}'" for key, value in env_vars.items()]
+        )
+        steps = {}
         for step_name, step in deployment.step_configurations.items():
             # The arguments are passed to configure the entrypoint of the
             # docker container when the step is called.
+            command = LightningEntrypointConfiguration.get_entrypoint_command()
             arguments = (
                 LightningEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
                     deployment_id=deployment_id,
                     wheel_package=self.package_name,
                 )
+            )
+            entrypoint = command + arguments
+
+            step_settings = cast(
+                LightningOrchestratorSettings, self.get_settings(step)
             )
 
             docker_settings = step.config.docker_settings
@@ -319,55 +301,44 @@ class LightningOrchestrator(WheeledOrchestrator):
             requirements = sorted(set(filter(None, requirements)))
 
             requirements_to_string = " ".join(requirements)
-            studio.run(f"pip install {requirements_to_string}")
-            studio.run("pip uninstall zenml && pip install git+https://github.com/zenml-io/zenml.git@lightening-studio-orchestrator")
-
             arguments_to_string = " ".join(arguments)
-            run_command = f"python -m zenml.{ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND}.{arguments_to_string}"
-            studio.run(run_command)
-    
-        studio.stop()
+            logger.info(arguments_to_string)
+            run_command = f"{export_command} && {entrypoint}"
+            commands = [
+                f"pip install {requirements_to_string}",
+                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator",
+                run_command,
+            ]
+            steps[step_name] = {
+                "commands": commands,
+                "machine": step_settings.machine_type,
+            }
+
+        self._upload_and_run_pipeline(
+            deployment.name, settings, steps, wheel_path
+        )
+        fileio.rmtree(repository_temp_dir)
 
     def _upload_and_run_pipeline(
         self,
         pipeline_name: str,
         settings: LightningOrchestratorSettings,
-        env_vars: Dict[str, str],
-        job_cluster_key: str,
-        schedule: Optional["ScheduleResponse"] = None,
+        steps_commands: Dict[str, Dict[str, str]],
+        wheel_path: str,
     ) -> None:
         """Uploads and run the pipeline on the Lightning jobs.
 
         Args:
             pipeline_name: The name of the pipeline.
-            tasks: The list of tasks to run.
-            env_vars: The environment variables.
-            job_cluster_key: The ID of the Lightning job cluster.
-            schedule: The schedule to run the pipeline
-            settings: The settings for the Lightning orchestrator.
-
-        Raises:
-            ValueError: If the `Job Compute` policy is not found.
-            ValueError: If the `schedule_timezone` is not set when passing
-
+            settings: The settings of the orchestrator.
+            steps_commands: The commands to run for each step.
+            wheel_path: The path to the wheel file.
         """
         self._get_lightning_client()
-        s = Studio()
-
-    def get_pipeline_run_metadata(
-        self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
-        """Get general component-specific metadata for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run.
-
-        Returns:
-            A dictionary of metadata.
-        """
-        run_url = (
-            f"{self.config.host}/jobs/" f"{self.get_orchestrator_run_id()}"
-        )
-        return {
-            METADATA_ORCHESTRATOR_URL: Uri(run_url),
-        }
+        for step_name, commands in steps_commands.items():
+            studio = Studio(name=f"{pipeline_name}_{step_name}")
+            studio.start(Machine(name=commands["machine"]))
+            studio.upload_file(wheel_path)
+            for command in commands["commands"]:
+                studio.run(command)
+            studio.stop()
