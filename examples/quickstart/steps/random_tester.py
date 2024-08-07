@@ -22,7 +22,7 @@ from transformers import (
     T5Tokenizer,
 )
 
-from zenml import step
+from zenml import step, log_model_metadata
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -135,8 +135,8 @@ def test_random_sentences(
 
     test_sentences = [generate_old_english_sentence() for _ in range(5)]
 
-    for sentence in test_sentences:
-        input_text = f"translate Old English to Modern English: {sentence}"
+    for index, sentence in enumerate(test_sentences):
+        input_text = f"Translate Old English to Modern English: {sentence}"
         input_ids = tokenizer(
             input_text,
             return_tensors="pt",
@@ -158,6 +158,11 @@ def test_random_sentences(
 
         decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        print(f"Generated Old English: {sentence}")
-        print(f"Model Translation: {decoded_output}")
-        print()
+        logger.info(f"Generated Old English: {sentence}")
+        logger.info(f"Model Translation: {decoded_output} \n")
+
+        log_model_metadata(
+            {f"Example Prompt {index}: ": input_text,
+             f"Example Response {index}: ": decoded_output},
+        )
+

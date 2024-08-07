@@ -27,7 +27,7 @@ from transformers import (
 )
 from typing_extensions import Annotated
 
-from zenml import step
+from zenml import step, ArtifactConfig, log_model_metadata
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
@@ -50,7 +50,7 @@ def train_model(
     gradient_accumulation_steps: int,
     dataloader_num_workers: int,
 ) -> Tuple[
-    Annotated[T5ForConditionalGeneration, "model"],
+    Annotated[T5ForConditionalGeneration, "model", ArtifactConfig(is_model_artifact=True)],
     Annotated[T5Tokenizer, "tokenizer"],
 ]:
     """Train the model and return the path to the saved model."""
@@ -85,17 +85,4 @@ def train_model(
 
     trainer.train()
 
-    # Basic check
-    test_input = tokenizer(
-        "Translate Old English to Modern English: Hark, what light through yonder window breaks?",
-        return_tensors="pt",
-    ).to(device)
-    with torch.no_grad():
-        test_output = model.generate(**test_input)
-    print(
-        "Test translation:",
-        tokenizer.decode(test_output[0], skip_special_tokens=True),
-    )
-
-    print("Model training completed and saved.")
     return trainer.model, tokenizer
