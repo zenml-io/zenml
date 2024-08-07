@@ -1,7 +1,7 @@
 """Add code path [026d4577b6a0].
 
 Revision ID: 026d4577b6a0
-Revises: 0.63.0
+Revises: 909550c7c4da
 Create Date: 2024-07-30 16:53:32.777594
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "026d4577b6a0"
-down_revision = "0.63.0"
+down_revision = "909550c7c4da"
 branch_labels = None
 depends_on = None
 
