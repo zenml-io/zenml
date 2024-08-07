@@ -15,6 +15,7 @@
 
 import itertools
 import os
+import re
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 from uuid import uuid4
 
@@ -105,7 +106,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         )
         # os.environ["LIGHTNING_ORG"] = "safoine-zenml"
         os.environ["LIGHTNING_USERNAME"] = "safoineext"
-        os.environ["LIGHTNING_TEAMSPACE"] = "zenml"
+        os.environ["LIGHTNING_TEAMSPACE"] = "vision-model"
 
     @property
     def config(self) -> LightningOrchestratorConfig:
@@ -274,6 +275,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                 )
             )
             entrypoint = command + arguments
+            entrypoint = " ".join(entrypoint)
 
             step_settings = cast(
                 LightningOrchestratorSettings, self.get_settings(step)
@@ -281,6 +283,7 @@ class LightningOrchestrator(WheeledOrchestrator):
 
             docker_settings = step.config.docker_settings
             docker_image_builder = PipelineDockerImageBuilder()
+
             # Gather the requirements files
             requirements_files = (
                 docker_image_builder.gather_requirements_files(
@@ -301,27 +304,29 @@ class LightningOrchestrator(WheeledOrchestrator):
             requirements = sorted(set(filter(None, requirements)))
 
             requirements_to_string = " ".join(requirements)
-            arguments_to_string = " ".join(arguments)
-            logger.info(arguments_to_string)
             run_command = f"{export_command} && {entrypoint}"
-            commands = [
-                f"pip install {requirements_to_string}",
-                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator",
-                run_command,
-            ]
+            commands = [run_command]
             steps[step_name] = {
                 "commands": commands,
-                "machine": step_settings.machine_type,
+                "requirements": requirements_to_string,
+                "machine": step_settings.machine_type
+                if step_settings != settings
+                else None,
             }
 
         self._upload_and_run_pipeline(
-            deployment.name, settings, steps, wheel_path
+            orchestrator_run_id,
+            requirements_to_string,
+            settings,
+            steps,
+            wheel_path,
         )
         fileio.rmtree(repository_temp_dir)
 
     def _upload_and_run_pipeline(
         self,
-        pipeline_name: str,
+        orchestrator_run_id: str,
+        requirements: str,
         settings: LightningOrchestratorSettings,
         steps_commands: Dict[str, Dict[str, str]],
         wheel_path: str,
@@ -329,16 +334,57 @@ class LightningOrchestrator(WheeledOrchestrator):
         """Uploads and run the pipeline on the Lightning jobs.
 
         Args:
-            pipeline_name: The name of the pipeline.
+            orchestrator_run_id: The id of the orchestrator run.
+            requirements: The requirements to install for the pipeline.
             settings: The settings of the orchestrator.
             steps_commands: The commands to run for each step.
             wheel_path: The path to the wheel file.
         """
         self._get_lightning_client()
-        for step_name, commands in steps_commands.items():
-            studio = Studio(name=f"{pipeline_name}_{step_name}")
-            studio.start(Machine(name=commands["machine"]))
-            studio.upload_file(wheel_path)
-            for command in commands["commands"]:
-                studio.run(command)
-            studio.stop()
+        studio_name = sanitize_studio_name(
+            f"zenml_{orchestrator_run_id}_pipeline"
+        )
+        studio = Studio(name=studio_name)
+        studio.start(Machine(settings.machine_type))
+        studio.upload_file(wheel_path)
+        studio.run(f"pip install {requirements}")
+        studio.run(
+            "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+        )
+        studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+        for step_name, details in steps_commands.items():
+            if details["machine"]:
+                studio_name = sanitize_studio_name(
+                    f"zenml_{orchestrator_run_id}_{step_name}"
+                )
+                studio = Studio(name=studio_name)
+                studio.start(Machine(details["machine"]))
+                studio.upload_file(wheel_path)
+                studio.run(f"pip install {details['requirements']}")
+                studio.run(
+                    "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+                )
+                studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+                for command in details["commands"]:
+                    output = studio.run(command)
+                    logger.info(output)
+                studio.delete()
+            else:
+                for command in details["commands"]:
+                    output = studio.run(command)
+                    logger.info(output)
+        studio.delete()
+
+
+def sanitize_studio_name(studio_name: str) -> str:
+    """Sanitize studio_names so they conform to Kubernetes studio naming convention.
+
+    Args:
+        studio_name: Arbitrary input studio_name.
+
+    Returns:
+        Sanitized pod name.
+    """
+    studio_name = re.sub(r"[^a-z0-9-]", "-", studio_name.lower())
+    studio_name = re.sub(r"^[-]+", "", studio_name)
+    return re.sub(r"[-]+", "-", studio_name)
