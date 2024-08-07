@@ -87,7 +87,7 @@
   * [Trigger a pipeline from Python Client](how-to/trigger-pipelines/trigger-a-pipeline-from-client.md)
   * [Trigger a pipeline from another pipeline](how-to/trigger-pipelines/trigger-a-pipeline-from-another.md)
   * [Trigger a pipeline from REST API](how-to/trigger-pipelines/trigger-a-pipeline-from-rest-api.md)
-* [🚨 Create and run templates](how-to/create-and-run-templates/README.md)
+* [▶️ Create and run templates](how-to/create-and-run-templates/README.md)
   * [Create a run template](how-to/create-and-run-templates/create-a-run-template.md)
   * [Run a template](how-to/create-and-run-templates/run-a-template.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
