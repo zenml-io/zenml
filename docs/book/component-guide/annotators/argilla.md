@@ -4,12 +4,11 @@ description: Annotating data using Argilla.
 
 # Argilla
 
-[Argilla](https://github.com/argilla-io/argilla) is an open-source data curation
-platform designed to enhance the development of both small and large language
-models (LLMs) and NLP tasks in general. It enables users to build robust
-language models through faster data curation using both human and machine
-feedback, providing support for each step in the MLOps cycle, from data labeling
-to model monitoring.
+[Argilla](https://github.com/argilla-io/argilla) is s a collaboration tool for AI 
+engineers and domain experts who need to build high-quality datasets for their projects.
+It enables users to build robust language models through faster data curation using both 
+human and machine feedback, providing support for each step in the MLOps cycle, from data
+labeling to model monitoring.
 
 ![Argilla Annotator](../../.gitbook/assets/argilla_annotator.png)
 
@@ -31,7 +30,7 @@ of Argilla as well as a deployed instance of Argilla. There is an easy way to
 deploy Argilla as a [Hugging Face
 Space](https://huggingface.co/docs/hub/spaces-sdks-docker-argilla), for
 instance, which is documented in the [Argilla
-documentation](https://docs.argilla.io/en/latest/getting_started/installation/deployments/huggingface-spaces.html).
+documentation](https://docs.argilla.io/latest/getting_started/quickstart/).
 
 ### How to deploy it?
 
@@ -59,16 +58,16 @@ zenml secret create argilla_secrets --api_key="<your_argilla_api_key>"
 Then register your annotator with ZenML:
 
 ```shell
-zenml annotator register argilla --flavor argilla --authentication_secret=argilla_secrets
+zenml annotator register argilla --flavor argilla --authentication_secret=argilla_secrets --port=6900
 ```
 
 When using a deployed instance of Argilla, the instance URL must be specified
 without any trailing `/` at the end. If you are using a Hugging Face Spaces
 instance and its visibility is set to private, you must also set the
-`extra_headers` parameter which would include a Hugging Face token. For example:
+`headers` parameter which would include a Hugging Face token. For example:
 
 ```shell
-zenml annotator register argilla --flavor argilla --authentication_secret=argilla_secrets --instance_url="https://[your-owner-name]-[your_space_name].hf.space" --extra_headers="{"Authorization": f"Bearer {<your_hugging_face_token>}"}"
+zenml annotator register argilla --flavor argilla --authentication_secret=argilla_secrets --instance_url="https://[your-owner-name]-[your_space_name].hf.space" --headers="{"Authorization": f"Bearer {<your_hugging_face_token>}"}"
 ```
 
 Finally, add all these components to a stack and set it as your active stack.
@@ -95,9 +94,8 @@ functionality via the ZenML SDK.
 
 You can access information about the datasets you're using with the `zenml
 annotator dataset list`. To work on annotation for a particular dataset, you can
-run `zenml annotator dataset annotate <dataset_name>`. What follows is an
-overview of some key components to the Argilla integration and how it can be
-used.
+run `zenml annotator dataset annotate <dataset_name>`. This will open the Argilla
+web interface for you to start annotating the dataset.
 
 #### Argilla Annotator Stack Component
 
