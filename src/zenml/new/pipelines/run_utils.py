@@ -388,7 +388,9 @@ def upload_notebook_cell_code_if_necessary(
     sources_that_require_upload = []
 
     for step in deployment.step_configurations.values():
-        if step.spec.source.type == SourceType.NOTEBOOK:
+        source = step.spec.source
+
+        if source.type == SourceType.NOTEBOOK:
             if (
                 stack.orchestrator.flavor != "local"
                 or step.config.step_operator
@@ -418,7 +420,7 @@ def upload_notebook_cell_code_if_necessary(
                 code_archive.add_file(source=cell_code, destination=file_name)
 
                 setattr(step.spec.source, "replacement_module", module_name)
-                sources_that_require_upload.append(step.spec.source)
+                sources_that_require_upload.append(source)
 
     if should_upload:
         logger.info("Archiving notebook code...")

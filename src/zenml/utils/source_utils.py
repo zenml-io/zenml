@@ -236,12 +236,15 @@ def resolve(
             # Fallback to an unknown source if we can't find the package
             source_type = SourceType.UNKNOWN
     elif source_type == SourceType.NOTEBOOK:
-        return NotebookSource(
+        source = NotebookSource(
             module=module_name,
             attribute=attribute_name,
             type=source_type,
-            _cell_code=notebook_utils.load_notebook_cell_code(obj),
         )
+        # Private attributes are ignored by pydantic if passed in the __init__
+        # method, so we set this afterwards
+        source._cell_code=notebook_utils.load_notebook_cell_code(obj)
+        return source
 
     return Source(
         module=module_name, attribute=attribute_name, type=source_type
@@ -597,7 +600,8 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
         from zenml.utils import code_utils
 
         logger.info(
-            "Downloading notebook cell content to load `%s`.",
+            "Downloading notebook cell content from `%s` to load `%s`.",
+            source.code_path,
             source.import_path,
         )
 
