@@ -55,10 +55,6 @@ class ServerSettingsUpdate(BaseZenModel):
         default=None,
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
-    last_user_activity: Optional[datetime] = Field(
-        default=None,
-        title="The timestamp when the last user activity was detected.",
-    )
 
 
 # ------------------ Response Model ------------------

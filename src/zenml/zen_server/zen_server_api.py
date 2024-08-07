@@ -203,11 +203,9 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
         ).total_seconds()
         > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
     ):
-        from zenml.models import ServerSettingsUpdate
-
         last_user_activity_reported = datetime.now(timezone.utc)
-        zen_store().update_server_settings(
-            ServerSettingsUpdate(last_user_activity=last_user_activity)
+        zen_store()._update_last_user_activity_timestamp(
+            last_user_activity=last_user_activity
         )
     return await call_next(request)
 

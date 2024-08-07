@@ -1682,21 +1682,35 @@ class SqlZenStore(BaseZenStore):
                 metadata=analytics_metadata,
             )
 
-            # do not update older activity times
-            if (
-                settings_update.last_user_activity
-                < settings.last_user_activity.replace(tzinfo=timezone.utc)
-            ):
-                settings_update.last_user_activity = None
-
-            # only hit DB on actual updates
-            if settings_update.model_dump(exclude_unset=True):
-                settings.update(settings_update)
-                session.add(settings)
-                session.commit()
-                session.refresh(settings)
+            settings.update(settings_update)
+            session.add(settings)
+            session.commit()
+            session.refresh(settings)
 
             return settings.to_model(include_metadata=True)
+
+    def _update_last_user_activity_timestamp(
+        self, last_user_activity: datetime
+    ):
+        """Update the last user activity timestamp.
+
+        Args:
+            last_user_activity: The timestamp of latest user activity
+                traced by server instance.
+        """
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session=session)
+
+            if last_user_activity < settings.last_user_activity.replace(
+                tzinfo=timezone.utc
+            ):
+                return
+
+            settings.last_user_activity = last_user_activity
+            # `updated` kept intentionally unchanged here
+            session.add(settings)
+            session.commit()
+            session.refresh(settings)
 
     def get_onboarding_state(self) -> List[str]:
         """Get the server onboarding state.
