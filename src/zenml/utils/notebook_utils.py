@@ -20,7 +20,7 @@ from zenml.logger import get_logger
 
 ZENML_NOTEBOOK_CELL_CODE_ATTRIBUTE_NAME = "__zenml_notebook_cell_code__"
 
-O = TypeVar("O", bound=Any)
+AnyObject = TypeVar("AnyObject", bound=Any)
 
 logger = get_logger(__name__)
 
@@ -42,8 +42,8 @@ def is_defined_in_notebook_cell(obj: Any) -> bool:
 
 
 def enable_notebook_code_extraction(
-    _obj: Optional["O"] = None,
-) -> Union["O", Callable[["O"], "O"]]:
+    _obj: Optional["AnyObject"] = None,
+) -> Union["AnyObject", Callable[["AnyObject"], "AnyObject"]]:
     """Decorator to enable code extraction from notebooks.
 
     Args:
@@ -53,7 +53,7 @@ def enable_notebook_code_extraction(
         The decorated class or function.
     """
 
-    def inner_decorator(obj: "O") -> "O":
+    def inner_decorator(obj: "AnyObject") -> "AnyObject":
         try_to_save_notebook_cell_code(obj)
         return obj
 
