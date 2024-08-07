@@ -97,7 +97,7 @@ class CustomFormatter(logging.Formatter):
                 )
 
             # Format URLs
-            url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+            url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
             urls = re.findall(url_pattern, formatted_message)
             for url in urls:
                 formatted_message = formatted_message.replace(
