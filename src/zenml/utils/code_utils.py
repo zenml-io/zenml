@@ -175,6 +175,9 @@ def upload_code_if_necessary(code_archive: CodeArchive) -> str:
     with the same hash already exists it will not re-upload but instead return
     the path to the existing archive.
 
+    Args:
+        code_archive: The code archive to upload.
+
     Returns:
         The path where to archived code is uploaded.
     """

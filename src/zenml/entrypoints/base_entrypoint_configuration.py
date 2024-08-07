@@ -264,10 +264,6 @@ class BaseEntrypointConfiguration(ABC):
 
         Args:
             code_path: Path where the code is stored.
-
-        Raises:
-            RuntimeError: If the code is stored in an artifact store which is
-                not active.
         """
         logger.info(
             "Downloading code from artifact store path `%s`.", code_path
