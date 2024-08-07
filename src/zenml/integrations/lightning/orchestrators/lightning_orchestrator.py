@@ -303,7 +303,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             # Remove empty items and duplicates
             requirements = sorted(set(filter(None, requirements)))
 
-            requirements_to_string = " ".join(requirements)
+            requirements_to_string = " ".join(f'"{req}"' for req in requirements)
             run_command = f"{export_command} && {entrypoint}"
             commands = [run_command]
             steps[step_name] = {
@@ -347,6 +347,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         studio = Studio(name=studio_name)
         studio.start(Machine(settings.machine_type))
         studio.upload_file(wheel_path)
+        breakpoint()
         studio.run(f"pip install {requirements}")
         studio.run(
             "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
