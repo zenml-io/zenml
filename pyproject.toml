@@ -62,7 +62,7 @@ pyparsing = ">=2.4.0"
 python = ">=3.8,<3.12"
 python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
-rich = { version = ">=12.0.0" }
+rich = { extras = ["jupyter"], version = ">=12.0.0" }
 secure = "~0.3.0"
 sqlalchemy = "^2.0.0"
 sqlalchemy_utils = "*"
@@ -77,9 +77,6 @@ pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
 orjson = { version = "~3.10.0", optional = true }
 Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
-
-# Optional dependencies for better notebook support
-ipywidgets = { version = ">=7.5.1,<9", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -190,7 +187,6 @@ server = [
     "Jinja2",
     "ipinfo",
 ]
-notebook = ["ipywidgets"]
 templates = ["copier", "jinja2-time", "ruff", "pyyaml-include"]
 terraform = ["python-terraform"]
 secrets-aws = ["boto3"]
