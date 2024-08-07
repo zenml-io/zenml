@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Image build context."""
 
+import zipfile
+from zenml.utils.enum_utils import StrEnum
 import os
 from pathlib import Path
 from typing import IO, Dict, List, Optional, Set, Tuple, cast
@@ -23,6 +25,14 @@ from zenml.logger import get_logger
 from zenml.utils import io_utils, string_utils
 
 logger = get_logger(__name__)
+
+
+class ArchiveType(StrEnum):
+    """Archive types supported by the ZenML build context."""
+
+    TAR = "tar"
+    TAR_GZ = "tar.gz"
+    ZIP = "zip"
 
 
 class BuildContext:
@@ -114,27 +124,80 @@ class BuildContext:
                 with file_source.open("r") as f:
                     self._extra_files[file_destination.as_posix()] = f.read()
 
-    def write_archive(self, output_file: IO[bytes], gzip: bool = True) -> None:
+    def create_archive(
+        self,
+        files: List[str],
+        fileobj: IO[bytes],
+        extra_files: List[Tuple[str, str]],
+        archive_type: ArchiveType,
+    ) -> None:
+        """Creates an archive of the build context.
+
+        Args:
+            files: The files to include in the archive.
+            fileobj: The file object to write the archive to.
+            extra_files: Extra files to include in the archive.
+            archive_type: The type of archive to create.
+        """
+        if archive_type in [ArchiveType.TAR, ArchiveType.TAR_GZ]:
+            from docker.utils import build as docker_build_utils
+
+            docker_build_utils.create_archive(
+                fileobj=fileobj,
+                root=self._root,
+                files=files,
+                gzip=archive_type == ArchiveType.TAR_GZ,
+                extra_files=extra_files,
+            )
+            return
+
+        z = zipfile.ZipFile(fileobj, "w", zipfile.ZIP_DEFLATED)
+        extra_names = {e[0] for e in extra_files}
+        if self._root:
+            for path in files:
+                if path in extra_names:
+                    continue
+                full_path = os.path.join(self._root, path)
+                if os.path.isfile(full_path):
+                    try:
+                        z.write(full_path, arcname=path)
+                    except OSError:
+                        raise OSError(
+                            f"Can not read file in context: {full_path}"
+                        )
+                else:
+                    # Add directories to the zip file
+                    z.write(full_path, arcname=path)
+
+        for name, contents in extra_files:
+            contents_encoded = contents.encode("utf-8")
+            z.writestr(name, contents_encoded)
+
+        z.close()
+        fileobj.seek(0)
+
+    def write_archive(
+        self,
+        output_file: IO[bytes],
+        archive_type: ArchiveType = ArchiveType.TAR_GZ,
+    ) -> None:
         """Writes an archive of the build context to the given file.
 
         Args:
             output_file: The file to write the archive to.
-            gzip: Whether to use `gzip` to compress the file.
+            archive_type: The type of archive to create.
         """
-        from docker.utils import build as docker_build_utils
-
         files = self._get_files()
         extra_files = self._get_extra_files()
 
-        context_archive = docker_build_utils.create_archive(
+        self.create_archive(
             fileobj=output_file,
-            root=self._root,
             files=sorted(files),
-            gzip=gzip,
             extra_files=extra_files,
+            archive_type=archive_type,
         )
 
-        build_context_size = os.path.getsize(context_archive.name)
+        build_context_size = os.path.getsize(output_file.name)
         if (
             self._root
             and build_context_size > 50 * 1024 * 1024

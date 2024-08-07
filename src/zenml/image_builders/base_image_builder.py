@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.image_builders.build_context import ArchiveType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent
@@ -100,6 +101,7 @@ class BaseImageBuilder(StackComponent, ABC):
     def _upload_build_context(
         build_context: "BuildContext",
         parent_path_directory_name: str,
+        archive_type: ArchiveType = ArchiveType.TAR_GZ,
     ) -> str:
         """Uploads a Docker image build context to a remote location.
 
@@ -109,6 +111,7 @@ class BaseImageBuilder(StackComponent, ABC):
                 the build context to. It will be appended to the artifact
                 store path to create the parent path where the build context
                 will be uploaded to.
+            archive_type: The type of archive to create.
 
         Returns:
             The path to the uploaded build context.
@@ -119,7 +122,7 @@ class BaseImageBuilder(StackComponent, ABC):
 
         hash_ = hashlib.sha1()  # nosec
         with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as f:
-            build_context.write_archive(f, gzip=True)
+            build_context.write_archive(f, archive_type)
 
             while True:
                 data = f.read(64 * 1024)
@@ -127,7 +130,7 @@ class BaseImageBuilder(StackComponent, ABC):
                     break
                 hash_.update(data)
 
-            filename = f"{hash_.hexdigest()}.tar.gz"
+            filename = f"{hash_.hexdigest()}.{archive_type.value}"
             filepath = f"{parent_path}/{filename}"
             if not fileio.exists(filepath):
                 logger.info("Uploading build context to `%s`.", filepath)

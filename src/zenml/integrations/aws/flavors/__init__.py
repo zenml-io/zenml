@@ -17,6 +17,10 @@ from zenml.integrations.aws.flavors.aws_container_registry_flavor import (
     AWSContainerRegistryConfig,
     AWSContainerRegistryFlavor,
 )
+from zenml.integrations.aws.flavors.aws_image_builder_flavor import (
+    AWSImageBuilderConfig,
+    AWSImageBuilderFlavor,
+)
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorFlavor,
@@ -29,6 +33,8 @@ from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
 __all__ = [
     "AWSContainerRegistryFlavor",
     "AWSContainerRegistryConfig",
+    "AWSImageBuilderConfig",
+    "AWSImageBuilderFlavor",
     "SagemakerStepOperatorFlavor",
     "SagemakerStepOperatorConfig",
     "SagemakerOrchestratorFlavor",
