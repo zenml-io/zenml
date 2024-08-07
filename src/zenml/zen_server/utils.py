@@ -600,7 +600,7 @@ def is_user_request(request: Request) -> bool:
     ]
 
     # Check if the path starts with the user endpoint prefix
-    user_prefix = f"{API}{VERSION_1}{ACTIONS}"
+    user_prefix = f"{API}/{VERSION_1}"
     if request.url.path.startswith(user_prefix):
         return True
 
