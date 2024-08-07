@@ -35,7 +35,6 @@ from pydantic import BaseModel, ValidationError
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
-    ACTIONS,
     API,
     ENV_ZENML_SERVER,
     VERSION_1,
