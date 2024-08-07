@@ -295,7 +295,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         logger.debug("Writing build context to process stdin.")
         assert process.stdin
         with process.stdin as _, tempfile.TemporaryFile(mode="w+b") as f:
-            build_context.write_archive(f, gzip=True)
+            build_context.write_archive(f, use_gzip=True)
             while True:
                 data = f.read(1024)
                 if not data:

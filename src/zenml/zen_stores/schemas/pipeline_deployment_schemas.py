@@ -84,6 +84,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
+    code_path: Optional[str] = Field(nullable=True)
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -207,6 +208,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             )
             if request.pipeline_spec
             else None,
+            code_path=request.code_path,
         )
 
     def to_model(
@@ -261,6 +263,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 )
                 if self.pipeline_spec
                 else None,
+                code_path=self.code_path,
                 template_id=self.template_id,
             )
         return PipelineDeploymentResponse(

@@ -26,13 +26,14 @@ Out of the box, ZenML comes with a `local` orchestrator already part of the defa
 Additional orchestrators are provided by integrations:
 
 | Orchestrator                                | Flavor         | Integration       | Notes                                                                   |
-|-------------------------------------------- |----------------|-----------------  |-------------------------------------------------------------------------|
+|---------------------------------------------|----------------|-------------------|-------------------------------------------------------------------------|
 | [LocalOrchestrator](local.md)               | `local`        | _built-in_        | Runs your pipelines locally.                                            |
 | [LocalDockerOrchestrator](local-docker.md)  | `local_docker` | _built-in_        | Runs your pipelines locally using Docker.                               |
 | [KubernetesOrchestrator](kubernetes.md)     | `kubernetes`   | `kubernetes`      | Runs your pipelines in Kubernetes clusters.                             |
 | [KubeflowOrchestrator](kubeflow.md)         | `kubeflow`     | `kubeflow`        | Runs your pipelines using Kubeflow.                                     |
 | [VertexOrchestrator](vertex.md)             | `vertex`       | `gcp`             | Runs your pipelines in Vertex AI.                                       |
 | [SagemakerOrchestrator](sagemaker.md)       | `sagemaker`    | `aws`             | Runs your pipelines in Sagemaker.                                       |
+| [AzureMLOrchestrator](azureml.md)           | `azureml`      | `azure`           | Runs your pipelines in AzureML.                                         |
 | [TektonOrchestrator](tekton.md)             | `tekton`       | `tekton`          | Runs your pipelines using Tekton.                                       |
 | [AirflowOrchestrator](airflow.md)           | `airflow`      | `airflow`         | Runs your pipelines using Airflow.                                      |
 | [SkypilotAWSOrchestrator](skypilot-vm.md)   | `vm_aws`       | `skypilot[aws]`   | Runs your pipelines in AWS VMs using SkyPilot                           |

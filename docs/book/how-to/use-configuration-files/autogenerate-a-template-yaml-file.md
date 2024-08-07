@@ -73,7 +73,10 @@ settings:
     required_integrations: List[str]
     requirements: Union[NoneType, str, List[str]]
     skip_build: bool
-    source_files: SourceFileMode
+    prevent_build_reuse: bool
+    allow_including_files_in_images: bool
+    allow_download_from_code_repository: bool
+    allow_download_from_artifact_store: bool
     target_repository: str
     user: Optional[str]
   resources:
@@ -133,7 +136,10 @@ steps:
         required_integrations: List[str]
         requirements: Union[NoneType, str, List[str]]
         skip_build: bool
-        source_files: SourceFileMode
+        prevent_build_reuse: bool
+        allow_including_files_in_images: bool
+        allow_download_from_code_repository: bool
+        allow_download_from_artifact_store: bool
         target_repository: str
         user: Optional[str]
       resources:
@@ -191,7 +197,10 @@ steps:
         required_integrations: List[str]
         requirements: Union[NoneType, str, List[str]]
         skip_build: bool
-        source_files: SourceFileMode
+        prevent_build_reuse: bool
+        allow_including_files_in_images: bool
+        allow_download_from_code_repository: bool
+        allow_download_from_artifact_store: bool
         target_repository: str
         user: Optional[str]
       resources:
