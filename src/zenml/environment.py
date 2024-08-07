@@ -69,6 +69,8 @@ def get_environment() -> str:
         return EnvironmentType.BITBUCKET_CI
     elif Environment.in_ci():
         return EnvironmentType.GENERIC_CI
+    elif Environment.in_lightning_ai_studio():
+        return EnvironmentType.LIGHTNING_AI_STUDIO
     elif Environment.in_docker():
         return EnvironmentType.DOCKER
     elif Environment.in_container():
@@ -339,6 +341,19 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current process is running in WSL, `False` otherwise.
         """
         return "microsoft-standard" in platform.uname().release
+
+    @staticmethod
+    def in_lightning_ai_studio() -> bool:
+        """If the current Python process is running in Lightning.ai studios.
+
+        Returns:
+            `True` if the current Python process is running in Lightning.ai studios,
+            `False` otherwise.
+        """
+        return (
+            "LIGHTNING_CLOUD_URL" in os.environ
+            and "LIGHTNING_CLOUDSPACE_HOST" in os.environ
+        )
 
     def register_component(
         self, component: "BaseEnvironmentComponent"

@@ -14,7 +14,9 @@
 """Pipeline build utilities."""
 
 import hashlib
+import os
 import platform
+import tempfile
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -27,6 +29,7 @@ from uuid import UUID
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     BuildItem,
@@ -37,6 +40,7 @@ from zenml.models import (
     PipelineDeploymentBase,
     StackResponse,
 )
+from zenml.new.pipelines.code_archive import CodeArchive
 from zenml.stack import Stack
 from zenml.utils import source_utils
 from zenml.utils.pipeline_docker_image_builder import (

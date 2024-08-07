@@ -15,6 +15,7 @@
 
 import argparse
 import os
+import shutil
 import sys
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Set
@@ -26,6 +27,7 @@ from zenml.constants import (
     ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
     handle_bool_env_var,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import (
     code_repository_utils,
