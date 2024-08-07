@@ -1,6 +1,5 @@
 zenml[server]>=0.63.0
 notebook
-scikit-learn
 pyarrow
 datasets
 transformers
