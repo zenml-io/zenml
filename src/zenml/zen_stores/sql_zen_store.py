@@ -20,7 +20,7 @@ import math
 import os
 import re
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -1685,7 +1685,7 @@ class SqlZenStore(BaseZenStore):
             # do not update older activity times
             if (
                 settings_update.last_user_activity
-                < settings.last_user_activity.replace(tzinfo=UTC)
+                < settings.last_user_activity.replace(tzinfo=timezone.utc)
             ):
                 settings_update.last_user_activity = None
 

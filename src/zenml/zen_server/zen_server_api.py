@@ -22,7 +22,7 @@ To run this file locally, execute:
 
 import os
 from asyncio.log import logger
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from genericpath import isfile
 from typing import Any, Dict, List
 
@@ -117,8 +117,8 @@ app = FastAPI(
 )
 
 # Initialize last_user_activity
-last_user_activity: datetime = datetime.now(UTC)
-last_user_activity_reported: datetime = datetime.now(UTC) + timedelta(
+last_user_activity: datetime = datetime.now(timezone.utc)
+last_user_activity_reported: datetime = datetime.now(timezone.utc) + timedelta(
     seconds=-DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
 )
 
@@ -192,18 +192,20 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
 
     try:
         if is_user_request(request):
-            last_user_activity = datetime.now(UTC)
+            last_user_activity = datetime.now(timezone.utc)
     except Exception as e:
         logger.debug(
             f"An unexpected error occurred while checking user activity: {e}"
         )
     if (
-        (datetime.now(UTC) - last_user_activity_reported).total_seconds()
+        (
+            datetime.now(timezone.utc) - last_user_activity_reported
+        ).total_seconds()
         > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
     ):
         from zenml.models import ServerSettingsUpdate
 
-        last_user_activity_reported = datetime.now(UTC)
+        last_user_activity_reported = datetime.now(timezone.utc)
         zen_store().update_server_settings(
             ServerSettingsUpdate(last_user_activity=last_user_activity)
         )

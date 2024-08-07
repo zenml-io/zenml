@@ -6,7 +6,7 @@ Create Date: 2024-08-07 14:49:07.623500
 
 """
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 import sqlmodel
@@ -36,7 +36,7 @@ def upgrade() -> None:
             SET last_user_activity = :last_user_activity
             """
         ),
-        params=(dict(last_user_activity=datetime.now(UTC))),
+        params=(dict(last_user_activity=datetime.now(timezone.utc))),
     )
 
     with op.batch_alter_table("server_settings", schema=None) as batch_op:
