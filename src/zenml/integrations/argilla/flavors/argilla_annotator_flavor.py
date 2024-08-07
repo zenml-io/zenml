@@ -43,17 +43,15 @@ class ArgillaAnnotatorSettings(BaseSettings):
     Attributes:
         instance_url: URL of the Argilla instance.
         api_key: The api_key for Argilla
-        workspace: The workspace to use for the annotation interface.
         port: The port to use for the annotation interface.
-        extra_headers: Extra headers to include in the request.
+        headers: Extra headers to include in the request.
         httpx_extra_kwargs: Extra kwargs to pass to the client.
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
     api_key: Optional[str] = SecretField(default=None)
-    workspace: Optional[str] = "admin"
-    port: Optional[int]
-    extra_headers: Optional[str] = None
+    port: Optional[int] = DEFAULT_LOCAL_ARGILLA_PORT
+    headers: Optional[str] = None
     httpx_extra_kwargs: Optional[str] = None
 
     @field_validator("instance_url")
