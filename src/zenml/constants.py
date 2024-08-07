@@ -493,3 +493,11 @@ BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
 
 
 STACK_DEPLOYMENT_API_TOKEN_EXPIRATION = 60 * 6  # 6 hours
+
+# ZenML Pro
+ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT = (
+    "\nHINT: Since you are trying to communicate with the ZenML Pro Tenant, "
+    "please make sure that your tenant is in RUNNING state on your "
+    "Organization page. If the tenant is PAUSED you can `Resume` it via UI "
+    "and try again."
+)
