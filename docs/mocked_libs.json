@@ -246,5 +246,10 @@
     "databricks.sdk",
     "databricks.sdk.service.compute",
     "databricks.sdk.service.jobs",
-    "databricks.sdk.service.serving"
+    "databricks.sdk.service.serving",
+    "IPython",
+    "IPython.core",
+    "IPython.core.display",
+    "IPython.core.display_functions",
+    "ipywidgets"
 ]

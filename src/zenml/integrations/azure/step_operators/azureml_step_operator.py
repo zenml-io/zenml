@@ -250,6 +250,9 @@ class AzureMLStepOperator(BaseStepOperator):
             "apt_packages",
             "user",
             "source_files",
+            "allow_including_files_in_images",
+            "allow_download_from_code_repository",
+            "allow_download_from_artifact_store",
         ]
         docker_settings = info.config.docker_settings
         ignored_docker_fields = docker_settings.model_fields_set.intersection(

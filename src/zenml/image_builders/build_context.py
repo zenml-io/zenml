@@ -45,9 +45,9 @@ class BuildContext(Archivable):
                 given, a file called `.dockerignore` in the build context root
                 directory will be used instead if it exists.
         """
+        super().__init__()
         self._root = root
         self._dockerignore_file = dockerignore_file
-        self._extra_files: Dict[str, str] = {}
 
     @property
     def dockerignore_file(self) -> Optional[str]:
