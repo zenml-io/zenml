@@ -353,7 +353,7 @@ class Environment(metaclass=SingletonMetaClass):
             "LIGHTNING_CLOUD_URL" in os.environ
             and "LIGHTNING_CLOUDSPACE_HOST" in os.environ
         )
-    
+
     def register_component(
         self, component: "BaseEnvironmentComponent"
     ) -> "BaseEnvironmentComponent":
