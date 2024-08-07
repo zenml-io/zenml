@@ -102,7 +102,6 @@ class DockerSettings(BaseSettings):
     Depending on the configuration of this object, requirements will be
     installed in the following order (each step optional):
     - The packages installed in your local python environment
-    - The packages specified via the `required_hub_plugins` attribute
     - The packages required by the stack unless this is disabled by setting
       `install_stack_requirements=False`.
     - The packages specified via the `required_integrations`
@@ -161,11 +160,7 @@ class DockerSettings(BaseSettings):
         required_integrations: List of ZenML integrations that should be
             installed. All requirements for the specified integrations will
             be installed inside the Docker image.
-        required_hub_plugins: List of ZenML Hub plugins to install.
-            Expected format: '(<author_username>/)<plugin_name>==<version>'.
-            If no version is specified, the latest version is taken. The
-            packages of required plugins and all their dependencies will be
-            installed inside the Docker image.
+        required_hub_plugins: DEPRECATED/UNUSED.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
             and install the corresponding requirements and apt packages.
@@ -228,7 +223,7 @@ class DockerSettings(BaseSettings):
     source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "copy_files", "copy_global_config"
+        "copy_files", "copy_global_config", "required_hub_plugins"
     )
 
     @model_validator(mode="before")

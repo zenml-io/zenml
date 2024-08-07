@@ -14,20 +14,13 @@ In order to do this, we need to get familiar with two more stack components:
 These, along with [remote storage](remote-storage.md), complete a basic cloud stack where our pipeline is entirely running on the cloud.
 
 {% hint style="info" %}
-**Don't want to learn how to deploy and register stack components manually? 
-Feel free to skip this chapter and read [how to deploy a cloud stack in one click](../../how-to/stack-deployment/deploy-a-cloud-stack.md)
-and learn how to use:**
+Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
-```shell
-zenml stack deploy --provider aws
-```
-
-**or if you have existing infrastructure, read [how to easily register a cloud stack](../../how-to/stack-deployment/register-a-cloud-stack.md)
-and learn how to use:**
-
-```shell
-zenml stack register <STACK_NAME> --provider aws
-```
+Check out the
+[in-browser stack deployment wizard](../../how-to/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../how-to/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML Terraform modules](../../how-to/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
 
 ## Starting with a basic cloud stack

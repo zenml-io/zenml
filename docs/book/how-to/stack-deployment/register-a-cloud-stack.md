@@ -18,6 +18,10 @@ stack**.
 If you do not have the required infrastructure pieces already deployed
 on your cloud, you can also use [the 1-click deployment tool to build your 
 cloud stack](deploy-a-cloud-stack.md).
+
+Alternatively, if you prefer to have more control over where and how resources
+are provisioned in your cloud, you can [use one of our Terraform modules](deploy-a-cloud-stack-with-terraform.md)
+to manage your infrastructure as code yourself.
 {% endhint %}
 
 # How to use the Stack Wizard?
