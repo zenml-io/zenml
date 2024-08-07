@@ -100,7 +100,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         """Set up the Lightning client using environment variables."""
         settings = cast(LightningOrchestratorSettings, self.get_settings())
         os.environ["LIGHTNING_USER_ID"] = settings.user_id
-        os.environ["LIGHTNING_API_KEY"] = settings.user_secret
+        os.environ["LIGHTNING_API_KEY"] = settings.api_key
         if settings.username:
             os.environ["LIGHTNING_USERNAME"] = settings.username
         if settings.teamspace:

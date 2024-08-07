@@ -36,7 +36,7 @@ class LightningOrchestratorSettings(BaseSettings):
     Attributes:
         machine_type: Machine type.
         user_id: User id.
-        user_secret: User secret.
+        api_key: api_key.
         username: Username.
         teamspace: Teamspace.
         organization: Organization.
@@ -45,7 +45,7 @@ class LightningOrchestratorSettings(BaseSettings):
     # Resources
     machine_type: Optional[str] = None
     user_id: str = SecretField(default=None)
-    user_secret: str = SecretField(default=None)
+    api_key: str = SecretField(default=None)
     username: Optional[str] = None
     teamspace: Optional[str] = None
     organization: Optional[str] = None
