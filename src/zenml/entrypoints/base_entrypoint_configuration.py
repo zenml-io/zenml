@@ -15,6 +15,7 @@
 
 import argparse
 import os
+import shutil
 import sys
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Set
@@ -26,11 +27,12 @@ from zenml.constants import (
     ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
     handle_bool_env_var,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import code_repository_utils, source_utils, uuid_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import CodeReferenceResponse, PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 DEFAULT_ENTRYPOINT_COMMAND = [
@@ -198,7 +200,7 @@ class BaseEntrypointConfiguration(ABC):
 
         Raises:
             RuntimeError: If the current environment requires code download
-                but the deployment does not have an associated code reference.
+                but the deployment does not have a reference to any code.
         """
         requires_code_download = handle_bool_env_var(
             ENV_ZENML_REQUIRES_CODE_DOWNLOAD
@@ -207,17 +209,33 @@ class BaseEntrypointConfiguration(ABC):
         if not requires_code_download:
             return
 
-        code_reference = deployment.code_reference
-        if not code_reference:
+        if code_reference := deployment.code_reference:
+            self.download_code_from_code_repository(
+                code_reference=code_reference
+            )
+        elif code_path := deployment.code_path:
+            self.download_code_from_artifact_store(code_path=code_path)
+        else:
             raise RuntimeError(
-                "Code download required but no code reference provided."
+                "Code download required but no code reference or path provided."
             )
 
+        logger.info("Code download finished.")
+
+    def download_code_from_code_repository(
+        self, code_reference: "CodeReferenceResponse"
+    ) -> None:
+        """Download code from a code repository.
+
+        Args:
+            code_reference: The reference to the code.
+        """
         logger.info(
             "Downloading code from code repository `%s` (commit `%s`).",
             code_reference.code_repository.name,
             code_reference.commit,
         )
+
         model = Client().get_code_repository(code_reference.code_repository.id)
         repo = BaseCodeRepository.from_model(model)
         code_repo_root = os.path.abspath("code")
@@ -234,10 +252,43 @@ class BaseEntrypointConfiguration(ABC):
         code_repository_utils.set_custom_local_repository(
             root=code_repo_root, commit=code_reference.commit, repo=repo
         )
-        # Add downloaded file directory to python path
-        sys.path.insert(0, download_dir)
 
-        logger.info("Code download finished.")
+        sys.path.insert(0, download_dir)
+        os.chdir(download_dir)
+
+    def download_code_from_artifact_store(self, code_path: str) -> None:
+        """Download code from the artifact store.
+
+        Args:
+            code_path: Path where the code is stored.
+
+        Raises:
+            RuntimeError: If the code is stored in an artifact store which is
+                not active.
+        """
+        logger.info(
+            "Downloading code from artifact store path `%s`.", code_path
+        )
+
+        # Do not remove this line, we need to instantiate the artifact store to
+        # register the filesystem needed for the file download
+        artifact_store = Client().active_stack.artifact_store
+
+        if not code_path.startswith(artifact_store.path):
+            raise RuntimeError("Code stored in different artifact store.")
+
+        extract_dir = os.path.abspath("code")
+        os.makedirs(extract_dir)
+
+        download_path = os.path.basename(code_path)
+        fileio.copy(code_path, download_path)
+
+        shutil.unpack_archive(filename=download_path, extract_dir=extract_dir)
+        os.remove(download_path)
+
+        source_utils.set_custom_source_root(extract_dir)
+        sys.path.insert(0, extract_dir)
+        os.chdir(extract_dir)
 
     @abstractmethod
     def run(self) -> None:
