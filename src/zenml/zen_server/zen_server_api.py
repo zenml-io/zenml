@@ -24,7 +24,7 @@ import os
 from asyncio.log import logger
 from datetime import datetime, timedelta, timezone
 from genericpath import isfile
-from typing import Any, Dict, List
+from typing import Any, List
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
@@ -314,20 +314,6 @@ async def dashboard(request: Request) -> Any:
     ):
         raise HTTPException(status_code=404)
     return templates.TemplateResponse("index.html", {"request": request})
-
-
-@app.get("/system/last-activity")
-async def get_last_activity() -> Dict[str, str]:
-    """Get the timestamp of the last user activity.
-
-    Returns:
-        A JSON with last user activity.
-    """
-    return {
-        "last_user_activity": zen_store()
-        .get_server_settings()
-        .last_user_activity.isoformat()
-    }
 
 
 app.include_router(actions_endpoints.router)

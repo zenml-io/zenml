@@ -1587,6 +1587,7 @@ class SqlZenStore(BaseZenStore):
         # the one fetched from the global configuration
         model.id = settings.server_id
         model.active = settings.active
+        model.last_user_activity = settings.last_user_activity
         if not handle_bool_env_var(ENV_ZENML_LOCAL_SERVER):
             model.analytics_enabled = settings.enable_analytics
         return model
