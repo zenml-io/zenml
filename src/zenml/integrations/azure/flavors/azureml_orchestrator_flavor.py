@@ -101,7 +101,13 @@ class AzureMLOrchestratorSettings(BaseSettings):
 
         Returns:
             the instance itself.
+
+        Raises:
+            AssertionError: if a name is not provided when working with
+                instances and clusters.
         """
+        excluded_fields = {"subscription_id", "resource_group", "workspace"}
+
         viable_configuration_fields = {
             AzureMLComputeTypes.SERVERLESS: {"mode"},
             AzureMLComputeTypes.COMPUTE_INSTANCE: {
@@ -124,13 +130,22 @@ class AzureMLOrchestratorSettings(BaseSettings):
         viable_fields = viable_configuration_fields[self.mode]
 
         for field in self.model_fields_set:
-            if field not in viable_fields:
+            if field not in viable_fields and field not in excluded_fields:
                 logger.warning(
                     "In the AzureML Orchestrator Settings, the mode of "
                     f"operation is set to {self.mode}. In this mode, you can "
                     f"not configure the parameter '{field}'. This "
                     "configuration will be ignored."
                 )
+
+        if (
+            self.mode == AzureMLComputeTypes.COMPUTE_INSTANCE
+            or self.mode == AzureMLComputeTypes.COMPUTE_CLUSTER
+        ):
+            assert self.compute_name is not None, (
+                "When you are working with compute instances and clusters, "
+                "please define a name for the compute target."
+            )
 
         return self
 

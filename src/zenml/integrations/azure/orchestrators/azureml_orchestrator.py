@@ -197,7 +197,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
     def _check_settings_and_compute_configuration(
         parameter: str,
         settings: AzureMLOrchestratorSettings,
-        compute: Union[ComputeInstance, AmlCompute],
+        compute: Union["ComputeInstance", "AmlCompute"],
     ) -> None:
         """Utility function comparing a parameter between settings and compute.
 
@@ -241,7 +241,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         # If a name is not provided, generate one based on the orchestrator id
         compute_name = settings.compute_name or f"compute_{self.id}"
-
         # Try to fetch the compute target
         try:
             compute = client.compute.get(compute_name)
