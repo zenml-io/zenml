@@ -22,7 +22,7 @@ To run this file locally, execute:
 
 import os
 from asyncio.log import logger
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from genericpath import isfile
 from typing import Any, Dict, List
 
@@ -37,7 +37,11 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.analytics import source_context
-from zenml.constants import API, HEALTH
+from zenml.constants import (
+    API,
+    DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS,
+    HEALTH,
+)
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
@@ -84,6 +88,7 @@ from zenml.zen_server.utils import (
     is_user_request,
     secure_headers,
     server_config,
+    zen_store,
 )
 
 if server_config().use_legacy_dashboard:
@@ -112,7 +117,10 @@ app = FastAPI(
 )
 
 # Initialize last_user_activity
-last_user_activity: datetime = datetime.now(timezone.utc)
+last_user_activity: datetime = datetime.now(UTC)
+last_user_activity_reported: datetime = datetime.now(UTC) + timedelta(
+    seconds=-DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
+)
 
 
 # Customize the default request validation handler that comes with FastAPI
@@ -180,15 +188,25 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
         The response to the request.
     """
     global last_user_activity
+    global last_user_activity_reported
 
     try:
         if is_user_request(request):
-            last_user_activity = datetime.now(timezone.utc)
+            last_user_activity = datetime.now(UTC)
     except Exception as e:
         logger.debug(
             f"An unexpected error occurred while checking user activity: {e}"
         )
+    if (
+        (datetime.now(UTC) - last_user_activity_reported).total_seconds()
+        > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
+    ):
+        from zenml.models import ServerSettingsUpdate
 
+        last_user_activity_reported = datetime.now(UTC)
+        zen_store().update_server_settings(
+            ServerSettingsUpdate(last_user_activity=last_user_activity)
+        )
     return await call_next(request)
 
 
@@ -300,8 +318,16 @@ async def dashboard(request: Request) -> Any:
 
 @app.get("/system/last-activity")
 async def get_last_activity() -> Dict[str, str]:
-    """Get the timestamp of the last user activity."""
-    return {"last_user_activity": last_user_activity.isoformat()}
+    """Get the timestamp of the last user activity.
+
+    Returns:
+        A JSON with last user activity.
+    """
+    return {
+        "last_user_activity": zen_store()
+        .get_server_settings()
+        .last_user_activity.isoformat()
+    }
 
 
 app.include_router(actions_endpoints.router)

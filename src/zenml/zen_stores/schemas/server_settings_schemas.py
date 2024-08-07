@@ -42,6 +42,7 @@ class ServerSettingsSchema(SQLModel, table=True):
     display_announcements: Optional[bool] = Field(nullable=True)
     display_updates: Optional[bool] = Field(nullable=True)
     onboarding_state: Optional[str] = Field(nullable=True)
+    last_user_activity: datetime = Field(default_factory=datetime.utcnow)
     updated: datetime = Field(default_factory=datetime.utcnow)
 
     def update(
@@ -111,6 +112,7 @@ class ServerSettingsSchema(SQLModel, table=True):
             display_updates=self.display_updates,
             active=self.active,
             updated=self.updated,
+            last_user_activity=self.last_user_activity,
         )
 
         metadata = None
