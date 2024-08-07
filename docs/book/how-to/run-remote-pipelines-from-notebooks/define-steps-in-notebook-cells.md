@@ -6,9 +6,5 @@ If you want to run ZenML steps defined in notebook cells remotely (either with a
 - The cell **must not** call code from other notebook cells. Functions or classes defined in python files are okay to use.
 - The cell **must not** rely on imports of previous cells. This means your cell must perform all the imports it needs itself, including ZenML imports like `from zenml import step`
 
-{% hint style="warning" %}
-Make sure to always save the notebook cells that define steps which will run remotely. ZenML is only able to pick up your step code that is already saved to disk.
-{% endhint %}
-
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
