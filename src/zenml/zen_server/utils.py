@@ -17,6 +17,7 @@ import inspect
 import os
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     List,
@@ -29,7 +30,6 @@ from typing import (
 from urllib.parse import urlparse
 
 import secure
-from fastapi import Request
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -57,6 +57,9 @@ from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+if TYPE_CHECKING:
+    from fastapi import Request
 
 logger = get_logger(__name__)
 
@@ -577,17 +580,17 @@ def verify_admin_status_if_no_rbac(
     return
 
 
-def is_user_request(request: Request) -> bool:
+def is_user_request(request: "Request") -> bool:
     """Determine if the incoming request is a user request.
 
     This function checks various aspects of the request to determine
     if it's a user-initiated request or a system request.
 
     Args:
-        request (Request): The incoming FastAPI request object.
+        request: The incoming FastAPI request object.
 
     Returns:
-        bool: True if it's a user request, False otherwise.
+        True if it's a user request, False otherwise.
     """
     # Define system paths that should be excluded
     system_paths: List[str] = [
