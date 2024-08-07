@@ -657,10 +657,12 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         except google_exceptions.ClientError as e:
             logger.error("Failed to create the Vertex AI Pipelines job: %s", e)
+            raise RuntimeError(f"Failed to create the Vertex AI Pipelines job: {e}")
         except RuntimeError as e:
             logger.error(
                 "The Vertex AI Pipelines job execution has failed: %s", e
             )
+            raise
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
