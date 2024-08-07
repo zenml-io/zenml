@@ -22,13 +22,14 @@ To run this file locally, execute:
 
 import os
 from asyncio.log import logger
+from datetime import datetime, timezone
 from genericpath import isfile
-from typing import Any, List
+from typing import Any, Callable, List
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
@@ -80,6 +81,7 @@ from zenml.zen_server.utils import (
     initialize_secure_headers,
     initialize_workload_manager,
     initialize_zen_store,
+    is_user_request,
     secure_headers,
     server_config,
 )
@@ -108,6 +110,9 @@ app = FastAPI(
     root_path=server_config().root_url_path,
     default_response_class=ORJSONResponse,
 )
+
+# Initialize last_user_activity
+last_user_activity: datetime = datetime.now(timezone.utc)
 
 
 # Customize the default request validation handler that comes with FastAPI
@@ -157,6 +162,36 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
     response = await call_next(request)
     secure_headers().framework.fastapi(response)
     return response
+
+
+@app.middleware("http")
+async def track_last_user_activity(
+    request: Request, call_next: Callable[[Request], Any]
+) -> Response:
+    """A middleware to track last user activity.
+
+    This middleware checks if the incoming request is a user request and
+    updates the last activity timestamp if it is.
+
+    Args:
+        request: The incoming request object.
+        call_next: A function that will receive the request as a parameter and
+            pass it to the corresponding path operation.
+
+    Returns:
+        The response to the request.
+    """
+    global last_user_activity
+
+    try:
+        if is_user_request(request):
+            last_user_activity = datetime.now(timezone.utc)
+    except Exception as e:
+        logger.debug(
+            f"An unexpected error occurred while checking user activity: {e}"
+        )
+
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -263,6 +298,12 @@ async def dashboard(request: Request) -> Any:
     ):
         raise HTTPException(status_code=404)
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/system/last-activity")
+async def get_last_activity() -> dict:
+    """Get the timestamp of the last user activity."""
+    return {"last_user_activity": last_user_activity.isoformat()}
 
 
 app.include_router(actions_endpoints.router)
