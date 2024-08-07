@@ -71,10 +71,9 @@ def get_active_notebook_cell_code() -> Optional[str]:
     """
     cell_code = None
     try:
-        from IPython import get_ipython
-
-        cell_code = get_ipython().get_parent()["content"]["code"]
-    except (ImportError, KeyError) as e:
+        ipython = get_ipython()  # type: ignore[name-defined]
+        cell_code = ipython.get_parent()["content"]["code"]
+    except (NameError, KeyError) as e:
         logger.warning("Unable to extract cell code: %s.", str(e))
 
     return cell_code

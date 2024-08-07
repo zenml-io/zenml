@@ -15,7 +15,6 @@
 
 import os
 import platform
-from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
@@ -257,15 +256,18 @@ class Environment(metaclass=SingletonMetaClass):
         if Environment.in_google_colab():
             return True
 
-        if find_spec("IPython") is not None:
-            from IPython import get_ipython
+        try:
+            get_ipython  # type: ignore[name-defined]
+        except NameError:
+            return False
 
-            if get_ipython().__class__.__name__ in [
-                "TerminalInteractiveShell",
-                "ZMQInteractiveShell",
-                "DatabricksShell",
-            ]:
-                return True
+        ipython = get_ipython()  # type: ignore[name-defined]
+        if ipython.__class__.__name__ in [
+            "TerminalInteractiveShell",
+            "ZMQInteractiveShell",
+            "DatabricksShell",
+        ]:
+            return True
         return False
 
     @staticmethod
