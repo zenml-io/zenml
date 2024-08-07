@@ -80,7 +80,6 @@ ipinfo = { version = ">=4.4.3", optional = true }
 
 # Optional dependencies for better notebook support
 ipywidgets = { version = ">=7.5.1,<9", optional = true }
-ipynbname = { version = ">=2024.1.0.0", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -191,7 +190,7 @@ server = [
     "Jinja2",
     "ipinfo",
 ]
-notebook = ["ipywidgets", "ipynbname"]
+notebook = ["ipywidgets"]
 templates = ["copier", "jinja2-time", "ruff", "pyyaml-include"]
 terraform = ["python-terraform"]
 secrets-aws = ["boto3"]
