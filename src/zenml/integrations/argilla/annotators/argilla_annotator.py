@@ -96,7 +96,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         if config.headers is not None:
             init_kwargs["headers"] = json.loads(config.headers)
         if config.httpx_extra_kwargs is not None:
-            init_kwargs["httpx_extra_kwargs"] = json.loads(config.httpx_extra_kwargs)
+            init_kwargs["httpx_extra_kwargs"] = json.loads(
+                config.httpx_extra_kwargs
+            )
 
         try:
             _ = rg.Argilla(**init_kwargs).me
@@ -117,7 +119,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         workspace = kwargs.get("workspace")
 
-        dataset_id = self.get_dataset(dataset_name=dataset_name, workspace=workspace).id
+        dataset_id = self.get_dataset(
+            dataset_name=dataset_name, workspace=workspace
+        ).id
         return f"{self.get_url()}/dataset/{dataset_id}/annotation-mode"
 
     def get_datasets(self, **kwargs) -> List[Any]:
@@ -157,7 +161,8 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             dataset_names = [dataset.name for dataset in self.get_datasets()]
         else:
             dataset_names = [
-                dataset.name for dataset in self.get_datasets(workspace=workspace)
+                dataset.name
+                for dataset in self.get_datasets(workspace=workspace)
             ]
 
         return dataset_names
@@ -176,15 +181,22 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             The list of records with the specified status.
         """
-        dataset = self.get_dataset(dataset_name=dataset_name, workspace=workspace)
+        dataset = self.get_dataset(
+            dataset_name=dataset_name, workspace=workspace
+        )
 
         query = rg.Query(filter=rg.Filter([("status", "==", status)]))
 
         return dataset.records(
-            query=query, with_suggestions=True, with_vectors=True, with_responses=True
+            query=query,
+            with_suggestions=True,
+            with_vectors=True,
+            with_responses=True,
         ).to_list()
 
-    def get_dataset_stats(self, dataset_name: str, **kwargs) -> Tuple[int, int]:
+    def get_dataset_stats(
+        self, dataset_name: str, **kwargs
+    ) -> Tuple[int, int]:
         """Gets the statistics of the given dataset.
 
         Args:
@@ -200,12 +212,16 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
 
         labeled_task_count = len(
             self._get_data_by_status(
-                dataset_name=dataset_name, status="completed", workspace=workspace
+                dataset_name=dataset_name,
+                status="completed",
+                workspace=workspace,
             )
         )
         unlabeled_task_count = len(
             self._get_data_by_status(
-                dataset_name=dataset_name, status="pending", workspace=workspace
+                dataset_name=dataset_name,
+                status="pending",
+                workspace=workspace,
             )
         )
 
@@ -258,7 +274,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             try:
                 workspace = workspace_to_create.create()
             except Exception as e:
-                raise RuntimeError("Failed to create the `argilla` workspace.") from e
+                raise RuntimeError(
+                    "Failed to create the `argilla` workspace."
+                ) from e
 
         try:
             dataset = rg.Dataset(
@@ -267,7 +285,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             logger.info(f"Creating the dataset '{dataset_name}' in Argilla...")
             dataset.create()
             logger.info(f"Dataset '{dataset_name}' successfully created.")
-            return self.get_dataset(dataset_name=dataset_name, workspace=workspace)
+            return self.get_dataset(
+                dataset_name=dataset_name, workspace=workspace
+            )
         except Exception as e:
             logger.error(
                 f"Failed to create dataset '{dataset_name}' in Argilla: {str(e)}"
@@ -294,17 +314,25 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             RuntimeError: If the records cannot be loaded to Argilla.
         """
-        dataset = self.get_dataset(dataset_name=dataset_name, workspace=workspace)
+        dataset = self.get_dataset(
+            dataset_name=dataset_name, workspace=workspace
+        )
 
         try:
-            logger.info(f"Loading the records to '{dataset_name}' in Argilla...")
+            logger.info(
+                f"Loading the records to '{dataset_name}' in Argilla..."
+            )
             dataset.records.log(records=records, mapping=mapping)
-            logger.info(f"Records loaded successfully to Argilla for '{dataset_name}'.")
+            logger.info(
+                f"Records loaded successfully to Argilla for '{dataset_name}'."
+            )
         except Exception as e:
             logger.error(
                 f"Failed to load the records to Argilla for '{dataset_name}': {str(e)}"
             )
-            raise RuntimeError(f"Failed to load the records to Argilla: {str(e)}") from e
+            raise RuntimeError(
+                f"Failed to load the records to Argilla: {str(e)}"
+            ) from e
 
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
@@ -358,11 +386,15 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             raise ValueError("`dataset_name` keyword argument is required.")
 
         try:
-            dataset = self.get_dataset(dataset_name=dataset_name, workspace=workspace)
+            dataset = self.get_dataset(
+                dataset_name=dataset_name, workspace=workspace
+            )
             dataset.delete()
             logger.info(f"Dataset '{dataset_name}' deleted successfully.")
         except ValueError:
-            logger.warning(f"Dataset '{dataset_name}' not found. Skipping deletion.")
+            logger.warning(
+                f"Dataset '{dataset_name}' not found. Skipping deletion."
+            )
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the dataset containing the labeled data.
