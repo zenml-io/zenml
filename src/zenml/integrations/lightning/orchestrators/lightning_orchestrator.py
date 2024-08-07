@@ -95,10 +95,13 @@ class LightningOrchestrator(WheeledOrchestrator):
         )
 
     def _get_lightning_client(
+        deployment: "PipelineDeploymentResponse",
         self,
     ) -> None:
         """Set up the Lightning client using environment variables."""
-        settings = cast(LightningOrchestratorSettings, self.get_settings())
+        settings = cast(
+            LightningOrchestratorSettings, self.get_settings(deployment)
+        )
         os.environ["LIGHTNING_USER_ID"] = settings.user_id
         os.environ["LIGHTNING_API_KEY"] = settings.api_key
         if settings.username:
@@ -314,6 +317,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             }
 
         self._upload_and_run_pipeline(
+            deployment,
             orchestrator_run_id,
             requirements_to_string,
             settings,
@@ -324,6 +328,7 @@ class LightningOrchestrator(WheeledOrchestrator):
 
     def _upload_and_run_pipeline(
         self,
+        deployment: "PipelineDeploymentResponse",
         orchestrator_run_id: str,
         requirements: str,
         settings: LightningOrchestratorSettings,
@@ -340,7 +345,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             wheel_path: The path to the wheel package.
         """
         logger.info("Setting up Lightning AI client")
-        self._get_lightning_client()
+        self._get_lightning_client(deployment)
 
         studio_name = sanitize_studio_name(
             f"zenml_{orchestrator_run_id}_pipeline"
