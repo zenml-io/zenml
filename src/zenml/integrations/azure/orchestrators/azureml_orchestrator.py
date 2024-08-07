@@ -283,7 +283,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             elif compute_type == "amIcompute":  # Compute Cluster
                 if settings.mode != AzureMLComputeTypes.COMPUTE_CLUSTER:
                     raise RuntimeError(
-                        "The mode of operation for the compute target defined"
+                        "The mode of operation for the compute target defined "
                         f"in the settings '{settings.mode}' does not match "
                         f"the type of the compute target: `{compute_name}` "
                         "which is a 'compute-cluster'. Please make sure that "
