@@ -24,12 +24,12 @@ import os
 from asyncio.log import logger
 from datetime import datetime, timezone
 from genericpath import isfile
-from typing import Any, Callable, List
+from typing import Any, Dict, List
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse, Response
+from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
@@ -165,9 +165,7 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
 
 
 @app.middleware("http")
-async def track_last_user_activity(
-    request: Request, call_next: Callable[[Request], Any]
-) -> Response:
+async def track_last_user_activity(request: Request, call_next: Any) -> Any:
     """A middleware to track last user activity.
 
     This middleware checks if the incoming request is a user request and
@@ -301,7 +299,7 @@ async def dashboard(request: Request) -> Any:
 
 
 @app.get("/system/last-activity")
-async def get_last_activity() -> dict:
+async def get_last_activity() -> Dict[str, str]:
     """Get the timestamp of the last user activity."""
     return {"last_user_activity": last_user_activity.isoformat()}
 
