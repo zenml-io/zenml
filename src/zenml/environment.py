@@ -257,11 +257,10 @@ class Environment(metaclass=SingletonMetaClass):
             return True
 
         try:
-            get_ipython  # type: ignore[name-defined]
+            ipython = get_ipython()  # type: ignore[name-defined]
         except NameError:
             return False
 
-        ipython = get_ipython()  # type: ignore[name-defined]
         if ipython.__class__.__name__ in [
             "TerminalInteractiveShell",
             "ZMQInteractiveShell",
