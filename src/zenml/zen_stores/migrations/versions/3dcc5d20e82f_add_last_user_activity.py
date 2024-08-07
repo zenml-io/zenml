@@ -29,7 +29,7 @@ def upgrade() -> None:
             sa.Column("last_user_activity", sa.DateTime(), nullable=True)
         )
 
-    session.exec(
+    session.execute(
         sa.text(
             """
             UPDATE server_settings
