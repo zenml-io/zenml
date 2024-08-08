@@ -5,10 +5,7 @@ description: Annotating data using Argilla.
 # Argilla
 
 [Argilla](https://github.com/argilla-io/argilla) is a collaboration tool for AI 
-engineers and domain experts who need to build high-quality datasets for their projects.
-It enables users to build robust language models through faster data curation using both 
-human and machine feedback, providing support for each step in the MLOps cycle, from data
-labeling to model monitoring.
+engineers and domain experts who need to build high-quality datasets for their projects. It enables users to build robust language models through faster data curation using both human and machine feedback, providing support for each step in the MLOps cycle, from data labeling to model monitoring.
 
 ![Argilla Annotator](../../.gitbook/assets/argilla_annotator.png)
 
