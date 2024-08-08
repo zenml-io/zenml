@@ -544,7 +544,7 @@ try:
                         creds.secret_key,
                         creds.token,
                     )
-            except Exception:
+            except ImportError:
                 pass
 
             logger.debug(
@@ -576,7 +576,7 @@ try:
                 session = boto3.Session()
                 if session.region_name:
                     return session.region_name  # type: ignore[no-any-return]
-            except Exception:
+            except ImportError:
                 pass
 
             logger.debug(
@@ -648,7 +648,7 @@ class ZenMLGCPAWSExternalAccountCredentials(gcp_aws.Credentials):  # type: ignor
                     "secret_access_key": creds.secret_key,
                     "security_token": creds.token,
                 }
-        except Exception:
+        except ImportError:
             pass
 
         logger.debug(
