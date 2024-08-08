@@ -43,11 +43,11 @@ on some guidelines on how to define your steps to enable this feature.
 * Upload code to artifact store by @schustmi in https://github.com/zenml-io/zenml/pull/2895
 * AzureML orchestrator by @bcdurak in https://github.com/zenml-io/zenml/pull/2873
 * Run steps defined in notebooks with remote orchestrators by @schustmi in https://github.com/zenml-io/zenml/pull/2899
-* Fix broken / unparseable md docs file by @strickvl in https://github.com/zenml-io/zenml/pull/2916
+* Fix broken / unparsable md docs file by @strickvl in https://github.com/zenml-io/zenml/pull/2916
 * Bump mlflow to 2.15.0 by @christianversloot in https://github.com/zenml-io/zenml/pull/2896
 * Remove extra button by @schustmi in https://github.com/zenml-io/zenml/pull/2918
 * Added last timestamp to zenserver by @htahir1 in https://github.com/zenml-io/zenml/pull/2913
-* A pipeline can't finish succesfully in this case by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2903
+* A pipeline can't finish successfully in this case by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2903
 * Fix the GCP Workload Identity Federation support in the GCP Service Connector by @stefannica in https://github.com/zenml-io/zenml/pull/2914
 * Embeddings finetuning guide for LLMOps guide by @strickvl in https://github.com/zenml-io/zenml/pull/2917
 
