@@ -7,7 +7,7 @@ previously while we were working on the RAG pipeline. We'll use this dataset
 to generate synthetic data with `distilabel`. You can inspect the data directly
 [on the Hugging Face dataset page](https://huggingface.co/datasets/zenml/rag_qa_embedding_questions_0_60_0).
 
-![](../../.gitbook/assets/rag-dataset-hf.png)
+![](../../../.gitbook/assets/rag-dataset-hf.png)
 
 As you can see, it is made up of some `page_content` (our chunks) as well as the
 source URL from where the chunk was taken from. With embeddings, what we're
@@ -18,7 +18,7 @@ use the `page_content` to generate questions.
 
 Our pipeline to generate synthetic data will look like this:
 
-![](../../.gitbook/assets/rag-synthetic-data-pipeline.png)
+![](../../../.gitbook/assets/rag-synthetic-data-pipeline.png)
 
 We'll load the Hugging Face dataset, then we'll use `distilabel` to generate the
 synthetic data. To finish off, we'll push the newly-generated data to a new
