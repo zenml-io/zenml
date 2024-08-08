@@ -60,7 +60,11 @@ The `finetune` step in the pipeline is responsible for finetuning the embeddings
 
 9. **Metadata Logging**: The code logs relevant metadata about the training process, including the training parameters, hardware information, and accelerator details.
 
-10. **Model Rehydration**: To handle materialization errors, the code saves the trained model to a temporary file, loads it back into a new `SentenceTransformer` instance, and returns the rehydrated model.
+10. **Model Rehydration**: To handle materialization errors, the code saves the
+    trained model to a temporary file, loads it back into a new
+    `SentenceTransformer` instance, and returns the rehydrated model.
+
+## Finetuning in code
 
 Here's a simplified code snippet highlighting the key parts of the finetuning process:
 
