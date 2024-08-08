@@ -159,9 +159,11 @@ def format_name_template(
         The formatted name template.
     """
     kwargs["date"] = kwargs.get(
-        "date", datetime.datetime.now(datetime.UTC).strftime("%Y_%m_%d")
+        "date",
+        datetime.datetime.now(datetime.timezone.utc).strftime("%Y_%m_%d"),
     )
     kwargs["time"] = kwargs.get(
-        "time", datetime.datetime.now(datetime.UTC).strftime("%H_%M_%S_%f")
+        "time",
+        datetime.datetime.now(datetime.timezone.utc).strftime("%H_%M_%S_%f"),
     )
     return name_template.format(**kwargs)
