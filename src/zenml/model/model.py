@@ -846,6 +846,8 @@ class Model(BaseModel):
         from zenml.client import Client
         from zenml.models import PipelineRunUpdate, StepRunUpdate
 
+        logs = ""
+
         if isinstance(self.version, str):
             if pipeline_run.start_time:
                 start_time = pipeline_run.start_time
@@ -856,34 +858,48 @@ class Model(BaseModel):
                 date=start_time.strftime("%Y_%m_%d"),
                 time=start_time.strftime("%H_%M_%S_%f"),
             )
-        model_version_response = self._get_or_create_model_version()
-
-        # update the configured model version id in runs accordingly
-        if step_run:
-            Client().zen_store.update_run_step(
-                step_run_id=step_run.id,
-                step_run_update=StepRunUpdate(
-                    configured_model_version_id=model_version_response.id
-                ),
-            )
-        else:
-            Client().zen_store.update_run(
-                run_id=pipeline_run.id,
-                run_update=PipelineRunUpdate(
-                    configured_model_version_id=model_version_response.id
-                ),
-            )
-
-        if return_logs:
-            from zenml.utils.cloud_utils import try_get_model_version_url
-
-            if logs_to_show := try_get_model_version_url(
-                model_version_response
+        for mv in [
+            pipeline_run.model_version,
+            step_run.model_version if step_run else None,
+        ]:
+            if (
+                mv is not None
+                and mv.model.name == self.name
+                and (mv.name == self.version or self.version is None)
             ):
-                return logs_to_show
-            else:
-                return (
-                    "Models can be viewed in the dashboard using ZenML Pro. Sign up "
-                    "for a free trial at https://www.zenml.io/pro/"
+                self.version = mv.name
+                self.model_version_id = mv.id
+                break
+
+        if self.model_version_id is None:
+            model_version_response = self._get_or_create_model_version()
+
+            # update the configured model version id in runs accordingly
+            if step_run:
+                Client().zen_store.update_run_step(
+                    step_run_id=step_run.id,
+                    step_run_update=StepRunUpdate(
+                        configured_model_version_id=model_version_response.id
+                    ),
                 )
-        return ""
+            else:
+                Client().zen_store.update_run(
+                    run_id=pipeline_run.id,
+                    run_update=PipelineRunUpdate(
+                        configured_model_version_id=model_version_response.id
+                    ),
+                )
+
+            if return_logs:
+                from zenml.utils.cloud_utils import try_get_model_version_url
+
+                if logs_to_show := try_get_model_version_url(
+                    model_version_response
+                ):
+                    logs = logs_to_show
+                else:
+                    logs = (
+                        "Models can be viewed in the dashboard using ZenML Pro. Sign up "
+                        "for a free trial at https://www.zenml.io/pro/"
+                    )
+        return logs
