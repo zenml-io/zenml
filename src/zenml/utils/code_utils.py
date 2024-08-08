@@ -297,6 +297,8 @@ def download_notebook_code(
     code_path = os.path.join(code_dir, file_name)
 
     if not fileio.exists(code_path):
-        raise FileNotFoundError(f"Notebook code at path {code_path} not found.")
+        raise FileNotFoundError(
+            f"Notebook code at path {code_path} not found."
+        )
 
     fileio.copy(code_path, download_path)

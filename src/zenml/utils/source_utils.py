@@ -21,9 +21,9 @@ import site
 import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
-from uuid import UUID
 from types import BuiltinFunctionType, FunctionType, ModuleType
-from typing import Any, Callable, Dict, Iterator, Optional, Type, Union, cast, Set
+from typing import Any, Callable, Dict, Iterator, Optional, Type, Union, cast
+from uuid import UUID
 
 from zenml.config.source import (
     CodeRepositorySource,
@@ -64,6 +64,7 @@ _CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
 _SHARED_TEMPDIR: Optional[str] = None
 _resolved_notebook_sources: Dict[str, str] = {}
 _notebook_modules: Dict[str, UUID] = {}
+
 
 def load(source: Union[Source, str]) -> Any:
     """Load a source or import path.
@@ -190,16 +191,6 @@ def resolve(
     if module_name == "__main__":
         module_name = _resolve_module(module)
 
-    global _notebook_modules
-    if module_name in _notebook_modules:
-        return NotebookSource(
-            module="__main__",
-            attribute=attribute_name,
-            replacement_module=module_name,
-            artifact_store_id=_notebook_modules[module_name],
-            type=SourceType.NOTEBOOK,
-        )
-    
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
@@ -241,14 +232,15 @@ def resolve(
             source_type = SourceType.UNKNOWN
     elif source_type == SourceType.NOTEBOOK:
         source = NotebookSource(
-            module=module_name,
+            module="__main__",
             attribute=attribute_name,
             type=source_type,
         )
 
-        if cell_code := notebook_utils.load_notebook_cell_code(obj):
-            global _resolved_notebook_sources
-
+        if module_name in _notebook_modules:
+            source.replacement_module = module_name
+            source.artifact_store_id = _notebook_modules[module_name]
+        elif cell_code := notebook_utils.load_notebook_cell_code(obj):
             replacement_module = (
                 notebook_utils.compute_cell_replacement_module_name(
                     cell_code=cell_code
@@ -400,6 +392,9 @@ def get_source_type(module: ModuleType) -> SourceType:
     Returns:
         The source type.
     """
+    if module.__name__ in _notebook_modules:
+        return SourceType.NOTEBOOK
+
     try:
         file_path = inspect.getfile(module)
     except (TypeError, OSError):
@@ -647,7 +642,6 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
 
             raise
         else:
-            global _notebook_modules
             _notebook_modules[source.replacement_module] = artifact_store.id
     try:
         module = _load_module(
@@ -782,6 +776,4 @@ def get_resolved_notebook_sources() -> Dict[str, str]:
     Returns:
         List of notebook sources.
     """
-    global _resolved_notebook_sources
-
     return _resolved_notebook_sources.copy()
