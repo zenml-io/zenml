@@ -1692,7 +1692,7 @@ class SqlZenStore(BaseZenStore):
 
     def _update_last_user_activity_timestamp(
         self, last_user_activity: datetime
-    ):
+    ) -> None:
         """Update the last user activity timestamp.
 
         Args:
