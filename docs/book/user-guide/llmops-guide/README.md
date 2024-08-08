@@ -28,7 +28,6 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Evaluating reranking performance](reranking/evaluating-reranking-performance.md)
 * [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
   * [Synthetic data generation](finetuning-embeddings/synthetic-data-generation.md)
-  * [Iterating on data with Argilla](finetuning-embeddings/iterating-on-data-with-argilla.md)
   * [Finetuning embeddings with Sentence Transformers](finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
   * [Evaluating finetuned embeddings](finetuning-embeddings/evaluating-finetuned-embeddings.md)
 * [Finetuning LLMs with ZenML](finetuning-llms/finetuning-llms.md)
