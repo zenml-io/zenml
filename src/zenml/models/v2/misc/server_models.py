@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML servers."""
 
-from typing import Dict
+from datetime import datetime
+from typing import Dict, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -101,6 +102,11 @@ class ServerModel(BaseModel):
     use_legacy_dashboard: bool = Field(
         False,
         title="Flag to indicate whether the server is using the legacy dashboard.",
+    )
+
+    last_user_activity: Optional[datetime] = Field(
+        None,
+        title="Timestamp of latest user activity traced on the server.",
     )
 
     def is_local(self) -> bool:
