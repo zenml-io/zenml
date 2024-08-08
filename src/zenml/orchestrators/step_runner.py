@@ -54,7 +54,6 @@ from zenml.orchestrators.utils import (
     is_setting_enabled,
 )
 from zenml.steps.step_context import StepContext, get_step_context
-from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
     OutputSignature,
     parse_return_type_annotations,
@@ -161,113 +160,109 @@ class StepRunner:
             output_annotations = parse_return_type_annotations(
                 func=step_instance.entrypoint
             )
-            with StepEnvironment(
+
+            self._stack.prepare_step_run(info=step_run_info)
+
+            # Initialize the step context singleton
+            StepContext._clear()
+            StepContext(
+                pipeline_run=pipeline_run,
+                step_run=step_run,
+                output_materializers=output_materializers,
+                output_artifact_uris=output_artifact_uris,
                 step_run_info=step_run_info,
                 cache_enabled=cache_enabled,
-            ):
-                self._stack.prepare_step_run(info=step_run_info)
+                output_artifact_configs={
+                    k: v.artifact_config for k, v in output_annotations.items()
+                },
+            )
+            # Prepare Model Context
+            self._prepare_model_context_for_step()
 
-                # Initialize the step context singleton
-                StepContext._clear()
-                StepContext(
-                    pipeline_run=pipeline_run,
-                    step_run=step_run,
-                    output_materializers=output_materializers,
-                    output_artifact_uris=output_artifact_uris,
-                    step_run_info=step_run_info,
-                    cache_enabled=cache_enabled,
-                    output_artifact_configs={
-                        k: v.artifact_config
-                        for k, v in output_annotations.items()
-                    },
+            # Parse the inputs for the entrypoint function.
+            function_params = self._parse_inputs(
+                args=spec.args,
+                annotations=spec.annotations,
+                input_artifacts=input_artifacts,
+            )
+
+            _link_pipeline_run_to_model_from_context(
+                pipeline_run_id=pipeline_run.id
+            )
+
+            step_failed = False
+            try:
+                return_values = step_instance.call_entrypoint(
+                    **function_params
                 )
-                # Prepare Model Context
-                self._prepare_model_context_for_step()
-
-                # Parse the inputs for the entrypoint function.
-                function_params = self._parse_inputs(
-                    args=spec.args,
-                    annotations=spec.annotations,
-                    input_artifacts=input_artifacts,
-                )
-
-                _link_pipeline_run_to_model_from_context(
-                    pipeline_run_id=pipeline_run.id
-                )
-
-                step_failed = False
-                try:
-                    return_values = step_instance.call_entrypoint(
-                        **function_params
-                    )
-                except BaseException as step_exception:  # noqa: E722
-                    step_failed = True
-                    if not handle_bool_env_var(
-                        ENV_ZENML_IGNORE_FAILURE_HOOK, False
+            except BaseException as step_exception:  # noqa: E722
+                step_failed = True
+                if not handle_bool_env_var(
+                    ENV_ZENML_IGNORE_FAILURE_HOOK, False
+                ):
+                    if (
+                        failure_hook_source
+                        := self.configuration.failure_hook_source
                     ):
-                        if (
-                            failure_hook_source
-                            := self.configuration.failure_hook_source
-                        ):
-                            logger.info("Detected failure hook. Running...")
-                            self.load_and_run_hook(
-                                failure_hook_source,
-                                step_exception=step_exception,
-                            )
-                    raise
-                finally:
-                    step_run_metadata = self._stack.get_step_run_metadata(
-                        info=step_run_info,
-                    )
-                    publish_step_run_metadata(
-                        step_run_id=step_run_info.step_run_id,
-                        step_run_metadata=step_run_metadata,
-                    )
-                    self._stack.cleanup_step_run(
-                        info=step_run_info, step_failed=step_failed
-                    )
-                    if not step_failed:
-                        if (
-                            success_hook_source
-                            := self.configuration.success_hook_source
-                        ):
-                            logger.info("Detected success hook. Running...")
-                            self.load_and_run_hook(
-                                success_hook_source,
-                                step_exception=None,
-                            )
+                        logger.info("Detected failure hook. Running...")
+                        self.load_and_run_hook(
+                            failure_hook_source,
+                            step_exception=step_exception,
+                        )
+                raise
+            finally:
+                step_run_metadata = self._stack.get_step_run_metadata(
+                    info=step_run_info,
+                )
+                publish_step_run_metadata(
+                    step_run_id=step_run_info.step_run_id,
+                    step_run_metadata=step_run_metadata,
+                )
+                self._stack.cleanup_step_run(
+                    info=step_run_info, step_failed=step_failed
+                )
+                if not step_failed:
+                    if (
+                        success_hook_source
+                        := self.configuration.success_hook_source
+                    ):
+                        logger.info("Detected success hook. Running...")
+                        self.load_and_run_hook(
+                            success_hook_source,
+                            step_exception=None,
+                        )
 
-                        # Store and publish the output artifacts of the step function.
-                        output_data = self._validate_outputs(
-                            return_values, output_annotations
-                        )
-                        artifact_metadata_enabled = is_setting_enabled(
-                            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-                        )
-                        artifact_visualization_enabled = is_setting_enabled(
-                            is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
-                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
-                        )
-                        output_artifact_ids = self._store_output_artifacts(
-                            output_data=output_data,
-                            output_artifact_uris=output_artifact_uris,
-                            output_materializers=output_materializers,
-                            output_annotations=output_annotations,
-                            artifact_metadata_enabled=artifact_metadata_enabled,
-                            artifact_visualization_enabled=artifact_visualization_enabled,
-                        )
-                        link_step_artifacts_to_model(
-                            artifact_version_ids=output_artifact_ids
-                        )
-                        _link_pipeline_run_to_model_from_artifacts(
-                            pipeline_run_id=pipeline_run.id,
-                            artifact_names=list(output_artifact_ids.keys()),
-                            external_artifacts=list(
-                                step_run.config.external_input_artifacts.values()
-                            ),
-                        )
-                    StepContext._clear()  # Remove the step context singleton
+                    # Store and publish the output artifacts of the step function.
+                    output_data = self._validate_outputs(
+                        return_values, output_annotations
+                    )
+                    artifact_metadata_enabled = is_setting_enabled(
+                        is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                        is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                    )
+                    artifact_visualization_enabled = is_setting_enabled(
+                        is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                        is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                    )
+                    output_artifact_ids = self._store_output_artifacts(
+                        output_data=output_data,
+                        output_artifact_uris=output_artifact_uris,
+                        output_materializers=output_materializers,
+                        output_annotations=output_annotations,
+                        artifact_metadata_enabled=artifact_metadata_enabled,
+                        artifact_visualization_enabled=artifact_visualization_enabled,
+                    )
+                    link_step_artifacts_to_model(
+                        artifact_version_ids=output_artifact_ids
+                    )
+                    _link_pipeline_run_to_model_from_artifacts(
+                        pipeline_run_id=pipeline_run.id,
+                        artifact_names=list(output_artifact_ids.keys()),
+                        external_artifacts=list(
+                            step_run.config.external_input_artifacts.values()
+                        ),
+                    )
+                StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.
             publish_successful_step_run(
