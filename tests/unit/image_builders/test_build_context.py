@@ -27,9 +27,9 @@ def test_adding_extra_files(tmp_path):
 
     build_context.add_file(str(extra_file_path), destination="indirect")
 
-    extra_files = build_context._get_extra_files()
-    assert extra_files[0] == ("direct", "file content as string")
-    assert extra_files[1] == ("indirect", "file content in file")
+    extra_files = build_context.get_extra_files()
+    assert extra_files["direct"] == "file content as string"
+    assert extra_files["indirect"] == "file content in file"
 
 
 def test_adding_extra_directory(tmp_path):
@@ -40,9 +40,9 @@ def test_adding_extra_directory(tmp_path):
     build_context = BuildContext()
     build_context.add_directory(str(tmp_path), destination="dir")
 
-    extra_files = build_context._get_extra_files()
-    assert ("dir/1", "file 1") in extra_files
-    assert ("dir/2", "file 2") in extra_files
+    extra_files = build_context.get_extra_files()
+    assert extra_files["dir/1"] == "file 1"
+    assert extra_files["dir/2"] == "file 2"
 
 
 def test_build_context_includes_and_excludes(tmp_path):
@@ -55,7 +55,10 @@ def test_build_context_includes_and_excludes(tmp_path):
     build_context = BuildContext(root=str(root))
     assert build_context.dockerignore_file is None
     assert build_context._get_exclude_patterns() == []
-    assert build_context._get_files() == {"1", "2"}
+    assert build_context.get_files() == {
+        "1": str(root / "1"),
+        "2": str(root / "2"),
+    }
 
     custom_dockerignore = tmp_path / "custom_dockerignore"
     custom_dockerignore.write_text("/1")
@@ -64,7 +67,7 @@ def test_build_context_includes_and_excludes(tmp_path):
     )
     build_context.dockerignore_file == str(custom_dockerignore)
     assert build_context._get_exclude_patterns() == ["/1", "!/.zen"]
-    assert build_context._get_files() == {"2"}
+    assert build_context.get_files() == {"2": str(root / "2")}
 
     zen_repo = root / ".zen" / "config.yaml"
     zen_repo.parent.mkdir()
@@ -74,8 +77,8 @@ def test_build_context_includes_and_excludes(tmp_path):
     build_context = BuildContext(root=str(root))
     build_context.dockerignore_file == str(default_dockerignore)
     assert build_context._get_exclude_patterns() == ["*", "!/.zen"]
-    assert build_context._get_files() == {
-        ".dockerignore",
-        ".zen",
-        os.path.join(".zen", "config.yaml"),
+    assert build_context.get_files() == {
+        ".dockerignore": str(default_dockerignore),
+        ".zen": str(root / ".zen"),
+        os.path.join(".zen", "config.yaml"): str(zen_repo),
     }

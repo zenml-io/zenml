@@ -8,8 +8,8 @@ description: Learn how to set, pause and stop a schedule for pipelines.
 Schedules don't work for all orchestrators. Here is a list of all supported orchestrators.
 {% endhint %}
 
-| Orchestrator                                                                                                                                                          | Scheduling Support |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| Orchestrator                                                                   | Scheduling Support |
+|--------------------------------------------------------------------------------|--------------------|
 | [LocalOrchestrator](../../component-guide/orchestrators/local.md)              | ⛔️                 |
 | [LocalDockerOrchestrator](../../component-guide/orchestrators/local-docker.md) | ⛔️                 |
 | [KubernetesOrchestrator](../../component-guide/orchestrators/kubernetes.md)    | ✅                  |
@@ -17,6 +17,7 @@ Schedules don't work for all orchestrators. Here is a list of all supported orch
 | [VertexOrchestrator](../../component-guide/orchestrators/vertex.md)            | ✅                  |
 | [TektonOrchestrator](../../component-guide/orchestrators/tekton.md)            | ⛔️                 |
 | [AirflowOrchestrator](../../component-guide/orchestrators/airflow.md)          | ✅                  |
+| [AzureMLOrchestrator](../../component-guide/orchestrators/azureml.md)          | ✅                  |
 
 ### Set a schedule
 

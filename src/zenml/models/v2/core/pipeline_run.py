@@ -206,6 +206,10 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
+    code_path: Optional[str] = Field(
+        default=None,
+        title="Optional path where the code is stored in the artifact store.",
+    )
     template_id: Optional[UUID] = Field(
         default=None,
         description="Template used for the pipeline run.",
@@ -424,6 +428,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_metadata().orchestrator_run_id
+
+    @property
+    def code_path(self) -> Optional[str]:
+        """The `code_path` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().code_path
 
     @property
     def template_id(self) -> Optional[UUID]:
