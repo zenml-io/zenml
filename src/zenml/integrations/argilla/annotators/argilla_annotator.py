@@ -106,7 +106,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             print(f"Failed to verify the Argilla instance: {str(e)}")
         return rg.Argilla(**init_kwargs)
 
-    def get_url_for_dataset(self, dataset_name: str, **kwargs) -> str:
+    def get_url_for_dataset(self, dataset_name: str, **kwargs: Any) -> str:
         """Gets the URL of the annotation interface for the given dataset.
 
         Args:
@@ -124,7 +124,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         ).id
         return f"{self.get_url()}/dataset/{dataset_id}/annotation-mode"
 
-    def get_datasets(self, **kwargs) -> List[Any]:
+    def get_datasets(self, **kwargs: Any) -> List[Any]:
         """Gets the datasets currently available for annotation.
 
         Args:
@@ -144,7 +144,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
 
         return datasets
 
-    def get_dataset_names(self, **kwargs) -> List[str]:
+    def get_dataset_names(self, **kwargs: Any) -> List[str]:
         """Gets the names of the datasets.
 
         Args:
@@ -195,7 +195,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         ).to_list()
 
     def get_dataset_stats(
-        self, dataset_name: str, **kwargs
+        self, dataset_name: str, **kwargs: Any
     ) -> Tuple[int, int]:
         """Gets the statistics of the given dataset.
 
@@ -299,9 +299,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
     def add_records(
         self,
         dataset_name: str,
-        records: Union[Any, Dict],
+        records: Union[Any, List[Dict[str, Any]]],
         workspace: Optional[str] = None,
-        mapping: Optional[Dict] = None,
+        mapping: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Add records to an Argilla dataset for annotation.
 
