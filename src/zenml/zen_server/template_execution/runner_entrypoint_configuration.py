@@ -17,7 +17,7 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.new.pipelines.run_utils import (
+from zenml.pipelines.run_utils import (
     deploy_pipeline,
     prepare_model_versions,
 )

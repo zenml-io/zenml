@@ -1285,7 +1285,7 @@ def generate_stack_component_deploy_command(
 
             stack_name: str = cli_params["stack_name"]  # type: ignore[assignment]
             cli_utils.declare(
-                f"Importing {component_type.value} component '{name}' into ZenML..."
+                f"Importing {component_type.value} component '{name}' into zenml.."
             )
             import_new_mlstacks_component(
                 stack_name=stack_name,

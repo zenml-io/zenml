@@ -351,7 +351,7 @@ class Model(BaseModel):
             RuntimeError: If the model version run metadata cannot be fetched.
         """
         from zenml.metadata.lazy_load import RunMetadataLazyGetter
-        from zenml.new.pipelines.pipeline_context import (
+        from zenml.pipelines.pipeline_context import (
             get_pipeline_context,
         )
 

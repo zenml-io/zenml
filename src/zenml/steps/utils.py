@@ -29,8 +29,7 @@ from zenml.client import Client
 from zenml.enums import MetadataResourceTypes
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.new.steps.step_context import get_step_context
-from zenml.steps.step_output import Output
+from zenml.steps.step_context import get_step_context
 from zenml.utils import source_code_utils, typing_utils
 
 logger = get_logger(__name__)
@@ -102,26 +101,7 @@ def parse_return_type_annotations(
         else:
             return_annotation = Any
 
-    # Return type annotated using deprecated `Output(...)`
-    if isinstance(return_annotation, Output):
-        logger.warning(
-            "Using the `Output` class to define the outputs of your steps is "
-            "deprecated. You should instead use the standard Python way of "
-            "type annotating your functions. Check out our documentation "
-            "https://docs.zenml.io/how-to/build-pipelines/step-output-typing-and-annotation "
-            "for more information on how to assign custom names to your step "
-            "outputs."
-        )
-        return {
-            output_name: OutputSignature(
-                resolved_annotation=resolve_type_annotation(output_type),
-                artifact_config=None,
-                has_custom_name=True,
-            )
-            for output_name, output_type in return_annotation.items()
-        }
-
-    elif typing_utils.get_origin(return_annotation) is tuple:
+    if typing_utils.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
         if requires_multiple_artifacts:
             output_signature: Dict[str, Any] = {}

@@ -44,7 +44,6 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.model.utils import (
     link_step_artifacts_to_model,
 )
-from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
     publish_successful_step_run,
@@ -54,6 +53,7 @@ from zenml.orchestrators.utils import (
     _link_pipeline_run_to_model_from_context,
     is_setting_enabled,
 )
+from zenml.steps.step_context import StepContext, get_step_context
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
     OutputSignature,
@@ -382,8 +382,6 @@ class StepRunner:
         Raises:
             TypeError: If hook function is passed a wrong parameter type.
         """
-        from zenml.steps import BaseParameters
-
         function_params: Dict[str, Any] = {}
 
         if args and args[0] == "self":
@@ -393,28 +391,8 @@ class StepRunner:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
-            # Parse the parameters
-            if issubclass(arg_type, BaseParameters):
-                step_params = arg_type.model_validate(
-                    self.configuration.parameters[arg]
-                )
-                function_params[arg] = step_params
-
-            # Parse the step context
-            elif issubclass(arg_type, StepContext):
-                step_name = self.configuration.name
-                logger.warning(
-                    "Passing a `StepContext` as an argument to a hook function "
-                    "is deprecated and will be removed in a future release. "
-                    f"Please adjust your '{step_name}' hook to instead import "
-                    "the `StepContext` inside your hook, as shown here: "
-                    "https://docs.zenml.io/how-to/track-metrics-metadata/fetch-metadata-within-steps"
-                )
-                function_params[arg] = get_step_context()
-
-            elif issubclass(arg_type, BaseException):
+            if issubclass(arg_type, BaseException):
                 function_params[arg] = step_exception
-
             else:
                 # It should not be of any other type
                 raise TypeError(

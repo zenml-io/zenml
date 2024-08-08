@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from zenml.client_lazy_loader import ClientLazyLoader
     from zenml.config.step_configurations import StepConfiguration
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
-    from zenml.new.pipelines.pipeline import Pipeline
+    from zenml.pipelines.pipeline import Pipeline
     from zenml.steps import BaseStep
     from zenml.steps.entrypoint_function_utils import StepArtifact
 

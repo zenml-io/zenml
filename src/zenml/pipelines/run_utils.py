@@ -22,8 +22,8 @@ from zenml.models import (
     PipelineRunResponse,
     StackResponse,
 )
-from zenml.new.pipelines.model_utils import NewModelRequest
 from zenml.orchestrators.utils import get_run_name
+from zenml.pipelines.model_utils import NewModelRequest
 from zenml.stack import Flavor, Stack
 from zenml.utils import cloud_utils, code_utils, notebook_utils
 from zenml.zen_stores.base_zen_store import BaseZenStore
