@@ -147,7 +147,67 @@ ZenML orchestrator. This helps [speed up the pace of iteration](https://www.zenm
 
 ## Data annotation with Argilla
 
+Once we've let the LLM generate the synthetic data, we'll want to inspect it
+and make sure it looks good. We'll do this by pushing the data to an Argilla
+instance. We add a few extra pieces of metadata to the data to make it easier to
+navigate and inspect within our data annotation tool. These include:
 
+- `parent_section`: This will be the section of the documentation that the chunk
+  is from.
+- `token_count`: This will be the number of tokens in the chunk.
+- `similarity-positive-negative`: This will be the cosine similarity between the
+  positive and negative queries.
+- `similarity-anchor-positive`: This will be the cosine similarity between the
+  anchor and positive queries.
+- `similarity-anchor-negative`: This will be the cosine similarity between the
+  anchor and negative queries.
+
+We'll also add the embeddings for the anchor column so that we can use these
+for retrieval. We'll use the base model (in our case,
+`Snowflake/snowflake-arctic-embed-large`) to generate the embeddings. We use
+this function to map the dataset and process all the metadata:
+
+```python
+def format_data(batch):
+    model = SentenceTransformer(
+        EMBEDDINGS_MODEL_ID_BASELINE,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+    )
+
+    def get_embeddings(batch_column):
+        vectors = model.encode(batch_column)
+        return [vector.tolist() for vector in vectors]
+
+    batch["anchor-vector"] = get_embeddings(batch["anchor"])
+    batch["question-vector"] = get_embeddings(batch["anchor"])
+    batch["positive-vector"] = get_embeddings(batch["positive"])
+    batch["negative-vector"] = get_embeddings(batch["negative"])
+
+    def get_similarities(a, b):
+        similarities = []
+
+        for pos_vec, neg_vec in zip(a, b):
+            similarity = cosine_similarity([pos_vec], [neg_vec])[0][0]
+            similarities.append(similarity)
+        return similarities
+
+    batch["similarity-positive-negative"] = get_similarities(
+        batch["positive-vector"], batch["negative-vector"]
+    )
+    batch["similarity-anchor-positive"] = get_similarities(
+        batch["anchor-vector"], batch["positive-vector"]
+    )
+    batch["similarity-anchor-negative"] = get_similarities(
+        batch["anchor-vector"], batch["negative-vector"]
+    )
+    return batch
+```
+
+The [rest of the `push_to_argilla` step](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/steps/push_to_argilla.py) is just setting up the Argilla
+dataset and pushing the data to it.
+
+Now that we've generated our data and made it available for
+inspection/annotation, we can move to Argilla to do that!
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
