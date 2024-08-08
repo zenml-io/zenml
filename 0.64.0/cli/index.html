@@ -1,0 +1,4100 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://sdkdocs.zenml.io/0.64.0/cli/">
+      
+      <link rel="icon" href="../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>CLI docs - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<script>
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  analytics.page();
+  }}();
+</script>
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI docs
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          CLI docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        CLI docs
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.cli" class="md-nav__link">
+    cli
+  </a>
+  
+    <nav class="md-nav" aria-label="cli">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--how-to-use-the-cli" class="md-nav__link">
+    How to use the CLI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--beginning-a-project" class="md-nav__link">
+    Beginning a Project
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--cleaning-up" class="md-nav__link">
+    Cleaning up
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--using-integrations" class="md-nav__link">
+    Using Integrations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--filtering-when-listing" class="md-nav__link">
+    Filtering when listing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--artifact-stores" class="md-nav__link">
+    Artifact Stores
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--orchestrators" class="md-nav__link">
+    Orchestrators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--container-registries" class="md-nav__link">
+    Container Registries
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--data-validators" class="md-nav__link">
+    Data Validators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--experiment-trackers" class="md-nav__link">
+    Experiment Trackers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--model-deployers" class="md-nav__link">
+    Model Deployers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--step-operators" class="md-nav__link">
+    Step Operators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--alerters" class="md-nav__link">
+    Alerters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--feature-stores" class="md-nav__link">
+    Feature Stores
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--annotators" class="md-nav__link">
+    Annotators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--image-builders" class="md-nav__link">
+    Image Builders
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--model-registries" class="md-nav__link">
+    Model Registries
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-your-stacks" class="md-nav__link">
+    Managing your Stacks
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-your-models" class="md-nav__link">
+    Managing your Models
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-your-pipelines-artifacts" class="md-nav__link">
+    Managing your Pipelines &amp; Artifacts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-the-local-zenml-dashboard" class="md-nav__link">
+    Managing the local ZenML Dashboard
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--connecting-to-a-zenml-server" class="md-nav__link">
+    Connecting to a ZenML Server
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--secrets-management" class="md-nav__link">
+    Secrets management
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--auth-management" class="md-nav__link">
+    Auth management
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-users" class="md-nav__link">
+    Managing users
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--service-accounts" class="md-nav__link">
+    Service Accounts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-code-repositories" class="md-nav__link">
+    Managing Code Repositories
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--building-an-image-without-runs" class="md-nav__link">
+    Building an image without Runs
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--tagging-your-resources-with-zenml" class="md-nav__link">
+    Tagging your resources with ZenML
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-the-global-configuration" class="md-nav__link">
+    Managing the Global Configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--deploying-zenml-to-the-cloud" class="md-nav__link">
+    Deploying ZenML to the cloud
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--deploying-stack-components" class="md-nav__link">
+    Deploying Stack Components
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Core code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Core code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-actions/" class="md-nav__link">
+        Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-alerter/" class="md-nav__link">
+        Alerter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-analytics/" class="md-nav__link">
+        Analytics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-annotators/" class="md-nav__link">
+        Annotators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-api/" class="md-nav__link">
+        Api
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-client/" class="md-nav__link">
+        Client
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-client_lazy_loader/" class="md-nav__link">
+        Client Lazy Loader
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-code_repositories/" class="md-nav__link">
+        Code Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-console/" class="md-nav__link">
+        Console
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-data_validators/" class="md-nav__link">
+        Data Validators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-entrypoints/" class="md-nav__link">
+        Entrypoints
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-event_hub/" class="md-nav__link">
+        Event Hub
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-event_sources/" class="md-nav__link">
+        Event Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-experiment_trackers/" class="md-nav__link">
+        Experiment Trackers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-feature_stores/" class="md-nav__link">
+        Feature Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-hooks/" class="md-nav__link">
+        Hooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-image_builders/" class="md-nav__link">
+        Image Builders
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-lineage_graph/" class="md-nav__link">
+        Lineage Graph
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-metadata/" class="md-nav__link">
+        Metadata
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-model_deployers/" class="md-nav__link">
+        Model Deployers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-model_registries/" class="md-nav__link">
+        Model Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-new/" class="md-nav__link">
+        New
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-service_connectors/" class="md-nav__link">
+        Service Connectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-services/" class="md-nav__link">
+        Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-stack_deployments/" class="md-nav__link">
+        Stack Deployments
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-step_operators/" class="md-nav__link">
+        Step Operators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-types/" class="md-nav__link">
+        Types
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-zen_server/" class="md-nav__link">
+        Zen Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core_code_docs/core-zen_stores/" class="md-nav__link">
+        Zen Stores
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Integration code docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Integration code docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Integration code docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-airflow/" class="md-nav__link">
+        Airflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-argilla/" class="md-nav__link">
+        Argilla
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-aws/" class="md-nav__link">
+        Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-bentoml/" class="md-nav__link">
+        Bentoml
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-bitbucket/" class="md-nav__link">
+        Bitbucket
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-comet/" class="md-nav__link">
+        Comet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-databricks/" class="md-nav__link">
+        Databricks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-deepchecks/" class="md-nav__link">
+        Deepchecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-discord/" class="md-nav__link">
+        Discord
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-evidently/" class="md-nav__link">
+        Evidently
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-facets/" class="md-nav__link">
+        Facets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-feast/" class="md-nav__link">
+        Feast
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-gcp/" class="md-nav__link">
+        Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-github/" class="md-nav__link">
+        Github
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-gitlab/" class="md-nav__link">
+        Gitlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-great_expectations/" class="md-nav__link">
+        Great Expectations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-huggingface/" class="md-nav__link">
+        Huggingface
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-hyperai/" class="md-nav__link">
+        Hyperai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-kaniko/" class="md-nav__link">
+        Kaniko
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-kubeflow/" class="md-nav__link">
+        Kubeflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-kubernetes/" class="md-nav__link">
+        Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-label_studio/" class="md-nav__link">
+        Label Studio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-langchain/" class="md-nav__link">
+        Langchain
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-lightgbm/" class="md-nav__link">
+        Lightgbm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-llama_index/" class="md-nav__link">
+        Llama Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-mlflow/" class="md-nav__link">
+        Mlflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-neptune/" class="md-nav__link">
+        Neptune
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-neural_prophet/" class="md-nav__link">
+        Neural Prophet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-openai/" class="md-nav__link">
+        Openai
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pigeon/" class="md-nav__link">
+        Pigeon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pillow/" class="md-nav__link">
+        Pillow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-polars/" class="md-nav__link">
+        Polars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-prodigy/" class="md-nav__link">
+        Prodigy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pycaret/" class="md-nav__link">
+        Pycaret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pytorch/" class="md-nav__link">
+        Pytorch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pytorch_lightning/" class="md-nav__link">
+        Pytorch Lightning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-registry/" class="md-nav__link">
+        Registry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-s3/" class="md-nav__link">
+        S3
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-scipy/" class="md-nav__link">
+        Scipy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-seldon/" class="md-nav__link">
+        Seldon
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-sklearn/" class="md-nav__link">
+        Sklearn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot/" class="md-nav__link">
+        Skypilot
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_aws/" class="md-nav__link">
+        Skypilot Aws
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_azure/" class="md-nav__link">
+        Skypilot Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_gcp/" class="md-nav__link">
+        Skypilot Gcp
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_lambda/" class="md-nav__link">
+        Skypilot Lambda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-slack/" class="md-nav__link">
+        Slack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-spark/" class="md-nav__link">
+        Spark
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-tekton/" class="md-nav__link">
+        Tekton
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-tensorboard/" class="md-nav__link">
+        Tensorboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-tensorflow/" class="md-nav__link">
+        Tensorflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-wandb/" class="md-nav__link">
+        Wandb
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-whylogs/" class="md-nav__link">
+        Whylogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-xgboost/" class="md-nav__link">
+        Xgboost
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.cli" class="md-nav__link">
+    cli
+  </a>
+  
+    <nav class="md-nav" aria-label="cli">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--how-to-use-the-cli" class="md-nav__link">
+    How to use the CLI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--beginning-a-project" class="md-nav__link">
+    Beginning a Project
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--cleaning-up" class="md-nav__link">
+    Cleaning up
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--using-integrations" class="md-nav__link">
+    Using Integrations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--filtering-when-listing" class="md-nav__link">
+    Filtering when listing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--artifact-stores" class="md-nav__link">
+    Artifact Stores
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--orchestrators" class="md-nav__link">
+    Orchestrators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--container-registries" class="md-nav__link">
+    Container Registries
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--data-validators" class="md-nav__link">
+    Data Validators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--experiment-trackers" class="md-nav__link">
+    Experiment Trackers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--model-deployers" class="md-nav__link">
+    Model Deployers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--step-operators" class="md-nav__link">
+    Step Operators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--alerters" class="md-nav__link">
+    Alerters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--feature-stores" class="md-nav__link">
+    Feature Stores
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--annotators" class="md-nav__link">
+    Annotators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--image-builders" class="md-nav__link">
+    Image Builders
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--model-registries" class="md-nav__link">
+    Model Registries
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-your-stacks" class="md-nav__link">
+    Managing your Stacks
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-your-models" class="md-nav__link">
+    Managing your Models
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-your-pipelines-artifacts" class="md-nav__link">
+    Managing your Pipelines &amp; Artifacts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-the-local-zenml-dashboard" class="md-nav__link">
+    Managing the local ZenML Dashboard
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--connecting-to-a-zenml-server" class="md-nav__link">
+    Connecting to a ZenML Server
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--secrets-management" class="md-nav__link">
+    Secrets management
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--auth-management" class="md-nav__link">
+    Auth management
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-users" class="md-nav__link">
+    Managing users
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--service-accounts" class="md-nav__link">
+    Service Accounts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-code-repositories" class="md-nav__link">
+    Managing Code Repositories
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--building-an-image-without-runs" class="md-nav__link">
+    Building an image without Runs
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--tagging-your-resources-with-zenml" class="md-nav__link">
+    Tagging your resources with ZenML
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--managing-the-global-configuration" class="md-nav__link">
+    Managing the Global Configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--deploying-zenml-to-the-cloud" class="md-nav__link">
+    Deploying ZenML to the cloud
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.cli--deploying-stack-components" class="md-nav__link">
+    Deploying Stack Components
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/zenml-io/zenml/docs/cli.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="cli">Cli</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.cli" class="doc doc-heading">
+        <code>zenml.cli</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>ZenML CLI.</p>
+<p>The ZenML CLI tool is usually downloaded and installed via PyPI and a
+<code>pip install zenml</code> command. Please see the Installation &amp; Setup
+section above for more information about that process.</p>
+<h4 id="zenml.cli--how-to-use-the-cli">How to use the CLI</h4>
+<p>Our CLI behaves similarly to many other CLIs for basic features. In
+order to find out which version of ZenML you are running, type:</p>
+<pre><code class="language-bash">   zenml version
+</code></pre>
+<p>If you ever need more information on exactly what a certain command will
+do, use the <code>--help</code> flag attached to the end of your command string.</p>
+<p>For example, to get a sense of all the commands available to you
+while using the <code>zenml</code> command, type:</p>
+<pre><code class="language-bash">   zenml --help
+</code></pre>
+<p>If you were instead looking to know more about a specific command, you
+can type something like this:</p>
+<pre><code class="language-bash">   zenml artifact-store register --help
+</code></pre>
+<p>This will give you information about how to register an artifact store.
+(See below for more on that).</p>
+<p>If you want to instead understand what the concept behind a group is, you 
+can use the <code>explain</code> sub-command. For example, to see more details behind 
+what a <code>artifact-store</code> is, you can type:</p>
+<pre><code class="language-bash">zenml artifact-store explain
+</code></pre>
+<p>This will give you an explanation of that concept in more detail.</p>
+<h4 id="zenml.cli--beginning-a-project">Beginning a Project</h4>
+<p>In order to start working on your project, initialize a ZenML repository
+within your current directory with ZenML's own config and resource management
+tools:</p>
+<pre><code class="language-bash">zenml init
+</code></pre>
+<p>This is all you need to begin using all the MLOps goodness that ZenML
+provides!</p>
+<p>By default, <code>zenml init</code> will install its own hidden <code>.zen</code> folder
+inside the current directory from which you are running the command.
+You can also pass in a directory path manually using the
+<code>--path</code> option:</p>
+<pre><code class="language-bash">zenml init --path /path/to/dir
+</code></pre>
+<p>If you wish to use one of <a href="https://docs.zenml.io/how-to/setting-up-a-project-repository/using-project-templates#list-of-zenml-project-templates">the available ZenML project templates</a>
+to generate a ready-to-use project scaffold in your repository, you can do so by
+passing the <code>--template</code> option:</p>
+<pre><code class="language-bash">zenml init --template &lt;name_of_template&gt;
+</code></pre>
+<p>Running the above command will result in input prompts being shown to you. If 
+you would like to rely on default values for the ZenML project template - 
+you can add <code>--template-with-defaults</code> to the same command, like this:</p>
+<pre><code class="language-bash">zenml init --template &lt;name_of_template&gt; --template-with-defaults
+</code></pre>
+<p>In a similar fashion, if you would like to quickly explore the capabilities
+of ZenML through a notebook, you can also use:</p>
+<pre><code class="language-bash">zenml go
+</code></pre>
+<h4 id="zenml.cli--cleaning-up">Cleaning up</h4>
+<p>If you wish to delete all data relating to your workspace from the
+directory, use the <code>zenml clean</code> command. This will:</p>
+<ul>
+<li>delete all pipelines, pipeline runs and associated metadata</li>
+<li>delete all artifacts</li>
+</ul>
+<h4 id="zenml.cli--using-integrations">Using Integrations</h4>
+<p>Integrations are the different pieces of a project stack that enable custom
+functionality. This ranges from bigger libraries like
+<a href="https://www.kubeflow.org/"><code>kubeflow</code></a> for orchestration down to smaller
+visualization tools like <a href="https://pair-code.github.io/facets/"><code>facets</code></a>. Our
+CLI is an easy way to get started with these integrations.</p>
+<p>To list all the integrations available to you, type:</p>
+<pre><code class="language-bash">zenml integration list
+</code></pre>
+<p>To see the requirements for a specific integration, use the <code>requirements</code>
+command:</p>
+<pre><code class="language-bash">zenml integration requirements INTEGRATION_NAME
+</code></pre>
+<p>If you wish to install the integration, using the requirements listed in the
+previous command, <code>install</code> allows you to do this for your local environment:</p>
+<pre><code class="language-bash">zenml integration install INTEGRATION_NAME
+</code></pre>
+<p>Note that if you don't specify a specific integration to be installed, the
+ZenML CLI will install <strong>all</strong> available integrations.</p>
+<p>If you want to install all integrations apart from one or multiple integrations,
+use the following syntax, for example, which will install all integrations
+except <code>feast</code> and <code>aws</code>:</p>
+<pre><code class="language-shell">zenml integration install -i feast -i aws
+</code></pre>
+<p>Uninstalling a specific integration is as simple as typing:</p>
+<pre><code class="language-bash">zenml integration uninstall INTEGRATION_NAME
+</code></pre>
+<p>For all these <code>zenml integration</code> commands, you can pass the <code>--uv</code> flag and we
+will use <code>uv</code> as the package manager instead of <code>pip</code>. This will resolve and
+install much faster than with <code>pip</code>, but note that it requires <code>uv</code> to be
+installed on your machine. This is an experimental feature and may not work on
+all systems. In particular, note that installing onto machines with GPU
+acceleration may not work as expected.</p>
+<p>If you would like to export the requirements of all ZenML integrations, you can
+use the command:</p>
+<pre><code class="language-bash">zenml integration export-requirements
+</code></pre>
+<p>Here, you can also select a list of integrations and write the result into and
+output file:</p>
+<pre><code class="language-bash">zenml integration export-requirements gcp kubeflow -o OUTPUT_FILE
+</code></pre>
+<h4 id="zenml.cli--filtering-when-listing">Filtering when listing</h4>
+<p>Certain CLI <code>list</code> commands allow you to filter their output. For example, all
+stack components allow you to pass custom parameters to the <code>list</code> command that
+will filter the output. To learn more about the available filters, a good quick
+reference is to use the <code>--help</code> command, as in the following example:</p>
+<pre><code class="language-shell">zenml orchestrator list --help
+</code></pre>
+<p>You will see a list of all the available filters for the <code>list</code> command along
+with examples of how to use them.</p>
+<p>The <code>--sort_by</code> option allows you to sort the output by a specific field and
+takes an <code>asc</code> or <code>desc</code> argument to specify the order. For example, to sort the
+output of the <code>list</code> command by the <code>name</code> field in ascending order, you would
+type:</p>
+<pre><code class="language-shell">zenml orchestrator list --sort_by &quot;asc:name&quot;
+</code></pre>
+<p>For fields marked as being of type <code>TEXT</code> or <code>UUID</code>, you can use the <code>contains</code>,
+<code>startswith</code> and <code>endswith</code> keywords along with their particular identifier. For
+example, for the orchestrator <code>list</code> command, you can use the following filter
+to find all orchestrators that contain the string <code>sagemaker</code> in their name:</p>
+<pre><code class="language-shell">zenml orchestrator list --name &quot;contains:sagemaker&quot;
+</code></pre>
+<p>For fields marked as being of type <code>BOOL</code>, you can use the 'True' or 'False'
+values to filter the output.</p>
+<p>Finally, for fields marked as being of type <code>DATETIME</code>, you can pass in datetime
+values in the <code>%Y-%m-%d %H:%M:%S</code> format. These can be combined with the <code>gte</code>,
+<code>lte</code>, <code>gt</code> and <code>lt</code> keywords (greater than or equal, less than or equal,
+greater than and less than respectively) to specify the range of the filter. For
+example, if I wanted to find all orchestrators that were created after the 1st
+of January 2021, I would type:</p>
+<pre><code class="language-shell">zenml orchestrator list --created &quot;gt:2021-01-01 00:00:00&quot;
+</code></pre>
+<p>This syntax can also be combined to create more complex filters using the <code>or</code>
+and <code>and</code> keywords.</p>
+<h4 id="zenml.cli--artifact-stores">Artifact Stores</h4>
+<p>In ZenML, <a href="https://docs.zenml.io/stack-components/artifact-stores">the artifact store</a>
+is where all the inputs and outputs of your pipeline steps are stored. By
+default, ZenML initializes your repository with an artifact store with
+everything kept on your local machine. You can get a better understanding
+about the concept of artifact stores by executing:</p>
+<pre><code class="language-bash">zenml artifact-store explain
+</code></pre>
+<p>If you wish to register a new artifact store, do so with the <code>register</code>
+command:</p>
+<pre><code class="language-bash">zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR [--OPTIONS]
+</code></pre>
+<p>You can also add any labels to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new artifact store,
+you have to choose a flavor. To see the full list of available artifact
+store flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml artifact-store flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml artifact-store flavor describe FLAVOR_NAME
+</code></pre>
+<p>If you wish to list the artifact stores that have already been registered
+within your ZenML:</p>
+<pre><code class="language-bash">zenml artifact-store list
+</code></pre>
+<p>If you want the name of the artifact store in the active stack, you can
+also use the <code>get</code> command:</p>
+<pre><code class="language-bash">zenml artifact-store get
+</code></pre>
+<p>For details about a particular artifact store, use the <code>describe</code> command.
+By default, (without a specific artifact store name passed in) it will describe
+the active or currently used artifact store:</p>
+<pre><code class="language-bash">zenml artifact-store describe ARTIFACT_STORE_NAME
+</code></pre>
+<p>If you wish to update/rename an artifact store, you can use the following
+commands respectively:</p>
+<pre><code class="language-bash">zenml artifact-store update ARTIFACT_STORE_NAME --property_to_update=new_value
+zenml artifact-store rename ARTIFACT_STORE_OLD_NAME ARTIFACT_STORE_NEW_NAME
+</code></pre>
+<p>If you wish to delete a particular artifact store, pass the name of the
+artifact store into the CLI with the following command:</p>
+<pre><code class="language-bash">zenml artifact-store delete ARTIFACT_STORE_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your artifact store to/from a service
+connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml artifact-store connect ARTIFACT_STORE_NAME -c CONNECTOR_NAME
+zenml artifact-store disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+artifact stores. In order to get a full list of available functions, use
+the command:</p>
+<pre><code class="language-bash">zenml artifact-store --help
+</code></pre>
+<h4 id="zenml.cli--orchestrators">Orchestrators</h4>
+<p>An <a href="https://docs.zenml.io/stack-components/orchestrators">orchestrator</a>
+is a special kind of backend that manages the running of each step of the
+pipeline. Orchestrators administer the actual pipeline runs. By default,
+ZenML initializes your repository with an orchestrator that runs everything
+on your local machine. In order to get a more detailed explanation, you can use
+the command:</p>
+<pre><code class="language-bash">zenml orchestrator explain
+</code></pre>
+<p>If you wish to register a new orchestrator, do so with the <code>register</code>
+command:</p>
+<pre><code class="language-bash">zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR [--ORCHESTRATOR_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new orchestrator,
+you have to choose a flavor. To see the full list of available orchestrator
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml orchestrator flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml orchestrator flavor describe FLAVOR_NAME
+</code></pre>
+<p>If you wish to list the orchestrators that have already been registered
+within your ZenML workspace / repository, type:</p>
+<pre><code class="language-bash">zenml orchestrator list
+</code></pre>
+<p>If you want the name of the orchestrator in the active stack, you can
+also use the <code>get</code> command:</p>
+<pre><code class="language-bash">zenml orchestrator get
+</code></pre>
+<p>For details about a particular orchestrator, use the <code>describe</code> command.
+By default, (without a specific orchestrator name passed in) it will describe
+the active or currently used orchestrator:</p>
+<pre><code class="language-bash">zenml orchestrator describe [ORCHESTRATOR_NAME]
+</code></pre>
+<p>If you wish to update/rename an orchestrator, you can use the following
+commands respectively:</p>
+<pre><code class="language-bash">zenml orchestrator update ORCHESTRATOR_NAME --property_to_update=new_value
+zenml orchestrator rename ORCHESTRATOR_OLD_NAME ORCHESTRATOR_NEW_NAME
+</code></pre>
+<p>If you wish to delete a particular orchestrator, pass the name of the
+orchestrator into the CLI with the following command:</p>
+<pre><code class="language-bash">zenml orchestrator delete ORCHESTRATOR_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your orchestrator to/from a service
+connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml orchestrator connect ORCHESTRATOR_NAME -c CONNECTOR_NAME
+zenml orchestrator disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+orchestrators. In order to get a full list of available functions, use
+the command:</p>
+<pre><code class="language-bash">zenml orchestrators --help
+</code></pre>
+<h4 id="zenml.cli--container-registries">Container Registries</h4>
+<p><a href="https://docs.zenml.io/stack-components/container-registries">The container registry</a>
+is where all the images that are used by a container-based orchestrator are
+stored. To get a better understanding regarding container registries, use
+the command:</p>
+<pre><code class="language-bash">zenml container-registry explain
+</code></pre>
+<p>By default, a default ZenML local stack will not register a container registry.
+If you wish to register a new container registry, do so with the <code>register</code>
+command:</p>
+<pre><code class="language-bash">zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR [--REGISTRY_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new container
+registry, you have to choose a flavor. To see the full list of available
+container registry flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml container-registry flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml container-registry flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all container registries available and registered for use, use the
+<code>list</code> command:</p>
+<pre><code class="language-bash">zenml container-registry list
+</code></pre>
+<p>If you want the name of the container registry in the active stack, you can
+also use the <code>get</code> command:</p>
+<pre><code class="language-bash">zenml container-registry get
+</code></pre>
+<p>For details about a particular container registry, use the <code>describe</code> command.
+By default, (without a specific registry name passed in) it will describe the
+active or currently used container registry:</p>
+<pre><code class="language-bash">zenml container-registry describe [CONTAINER_REGISTRY_NAME]
+</code></pre>
+<p>If you wish to update/rename a container registry, you can use the following
+commands respectively:</p>
+<pre><code class="language-bash">zenml container-registry update CONTAINER_REGISTRY_NAME --property_to_update=new_value
+zenml container-registry rename CONTAINER_REGISTRY_OLD_NAME CONTAINER_REGISTRY_NEW_NAME
+</code></pre>
+<p>To delete a container registry (and all of its contents), use the <code>delete</code>
+command:</p>
+<pre><code class="language-bash">zenml container-registry delete REGISTRY_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your container registry to/from a
+service connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml container-registry connect CONTAINER_REGISTRY_NAME -c CONNECTOR_NAME
+zenml container-registry disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+container registries. In order to get a full list of available functions,
+use the command:</p>
+<pre><code class="language-bash">zenml container-registry --help
+</code></pre>
+<h4 id="zenml.cli--data-validators">Data Validators</h4>
+<p>In ZenML, <a href="https://docs.zenml.io/stack-components/data-validators">data validators</a>
+help you profile and validate your data.</p>
+<p>By default, a default ZenML local stack will not register a data validator. If
+you wish to register a new data validator, do so with the <code>register</code> command:</p>
+<pre><code class="language-bash">zenml data-validator register DATA_VALIDATOR_NAME --flavor DATA_VALIDATOR_FLAVOR [--DATA_VALIDATOR_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml data-validator register DATA_VALIDATOR_NAME --flavor DATA_VALIDATOR_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new data validator,
+you have to choose a flavor. To see the full list of available data validator
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml data-validator flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml data-validator flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all data validators available and registered for use, use the <code>list</code>
+command:</p>
+<pre><code class="language-bash">zenml data-validator list
+</code></pre>
+<p>If you want the name of the data validator in the active stack, use the <code>get</code>
+command:</p>
+<pre><code class="language-bash">zenml data-validator get
+</code></pre>
+<p>For details about a particular data validator, use the <code>describe</code> command.
+By default, (without a specific data validator name passed in) it will describe
+the active or currently-used data validator:</p>
+<pre><code class="language-bash">zenml data-validator describe [DATA_VALIDATOR_NAME]
+</code></pre>
+<p>If you wish to update/rename a data validator, you can use the following
+commands respectively:</p>
+<pre><code class="language-bash">zenml data-validator update DATA_VALIDATOR_NAME --property_to_update=new_value
+zenml data-validator rename DATA_VALIDATOR_OLD_NAME DATA_VALIDATOR_NEW_NAME
+</code></pre>
+<p>To delete a data validator (and all of its contents), use the <code>delete</code> command:</p>
+<pre><code class="language-bash">zenml data-validator delete DATA_VALIDATOR_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your data validator to/from a service
+connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml data-validator connect DATA_VALIDATOR_NAME -c CONNECTOR_NAME
+zenml data-validator disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+data validators. In order to get a full list of available functions, use the
+command:</p>
+<pre><code class="language-bash">zenml data-validator --help
+</code></pre>
+<h4 id="zenml.cli--experiment-trackers">Experiment Trackers</h4>
+<p><a href="https://docs.zenml.io/stack-components/experiment-trackers">Experiment trackers</a>
+ let you track your ML experiments by logging the parameters
+and allow you to compare between different runs. To get a better
+understanding regarding experiment trackers, use the command:</p>
+<pre><code class="language-bash">zenml experiment-tracker explain
+</code></pre>
+<p>By default, a default ZenML local stack will not register an experiment tracker.
+If you want to use an experiment tracker in one of your stacks, you need to
+first register it:</p>
+<pre><code class="language-bash">zenml experiment-tracker register EXPERIMENT_TRACKER_NAME     --flavor=EXPERIMENT_TRACKER_FLAVOR [--EXPERIMENT_TRACKER_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml experiment-tracker register EXPERIMENT_TRACKER_NAME       --flavor=EXPERIMENT_TRACKER_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new experiment
+tracker, you have to choose a flavor. To see the full list of available
+experiment tracker flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml experiment-tracker flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml experiment-tracker flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all experiment trackers available and registered for use, use the
+<code>list</code> command:</p>
+<pre><code class="language-bash">zenml experiment-tracker list
+</code></pre>
+<p>If you want the name of the experiment tracker in the active stack, use the
+<code>get</code> command:</p>
+<pre><code class="language-bash">zenml experiment-tracker get
+</code></pre>
+<p>For details about a particular experiment tracker, use the <code>describe</code> command.
+By default, (without a specific experiment tracker name passed in) it will
+describe the active or currently-used experiment tracker:</p>
+<pre><code class="language-bash">zenml experiment-tracker describe [EXPERIMENT_TRACKER_NAME]
+</code></pre>
+<p>If you wish to update/rename an experiment tracker, you can use the following
+commands respectively:</p>
+<pre><code class="language-bash">zenml experiment-tracker update EXPERIMENT_TRACKER_NAME --property_to_update=new_value
+zenml experiment-tracker rename EXPERIMENT_TRACKER_OLD_NAME EXPERIMENT_TRACKER_NEW_NAME
+</code></pre>
+<p>To delete an experiment tracker, use the <code>delete</code> command:</p>
+<pre><code class="language-bash">zenml experiment-tracker delete EXPERIMENT_TRACKER_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your experiment tracker to/from a
+service connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml experiment-tracker connect EXPERIMENT_TRACKER_NAME -c CONNECTOR_NAME
+zenml experiment-tracker disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+experiment trackers. In order to get a full list of available functions,
+use the command:</p>
+<pre><code class="language-bash">zenml experiment-tracker --help
+</code></pre>
+<h4 id="zenml.cli--model-deployers">Model Deployers</h4>
+<p><a href="https://docs.zenml.io/stack-components/model-deployers">Model deployers</a>
+are stack components responsible for online model serving. They are responsible
+for deploying models to a remote server. Model deployers also act as a registry
+for models that are served with ZenML. To get a better understanding regarding
+model deployers, use the command:</p>
+<pre><code class="language-bash">zenml model-deployer explain
+</code></pre>
+<p>By default, a default ZenML local stack will not register a model deployer. If
+you wish to register a new model deployer, do so with the <code>register</code> command:</p>
+<pre><code class="language-bash">zenml model-deployer register MODEL_DEPLOYER_NAME --flavor MODEL_DEPLOYER_FLAVOR [--MODEL_DEPLOYER_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml model-deployer register MODEL_DEPLOYER_NAME --flavor MODEL_DEPLOYER_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new model deployer,
+you have to choose a flavor. To see the full list of available model deployer
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml model-deployer flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml model-deployer flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all model deployers available and registered for use, use the
+<code>list</code> command:</p>
+<pre><code class="language-bash">zenml model-deployer list
+</code></pre>
+<p>If you want the name of the model deployer in the active stack, use the <code>get</code>
+command:</p>
+<pre><code class="language-bash">zenml model-deployer get
+</code></pre>
+<p>For details about a particular model deployer, use the <code>describe</code> command.
+By default, (without a specific operator name passed in) it will describe the
+active or currently used model deployer:</p>
+<pre><code class="language-bash">zenml model-deployer describe [MODEL_DEPLOYER_NAME]
+</code></pre>
+<p>If you wish to update/rename a model deployer, you can use the following
+commands respectively:</p>
+<pre><code class="language-bash">zenml model-deployer update MODEL_DEPLOYER_NAME --property_to_update=new_value
+zenml model-deployer rename MODEL_DEPLOYER_OLD_NAME MODEL_DEPLOYER_NEW_NAME
+</code></pre>
+<p>To delete a model deployer (and all of its contents), use the <code>delete</code>
+command:</p>
+<pre><code class="language-bash">zenml model-deployer delete MODEL_DEPLOYER_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your model deployer to/from a
+service connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml model-deployer connect MODEL_DEPLOYER_NAME -c CONNECTOR_NAME
+zenml model-deployer disconnect
+</code></pre>
+<p>Moreover, ZenML features a set of CLI commands specific to the model deployer
+interface. If you want to simply see what models have been deployed within
+your stack, run the following command:</p>
+<pre><code class="language-bash">zenml model-deployer models list
+</code></pre>
+<p>This should give you a list of served models containing their <code>uuid</code>, the name
+of the pipeline that produced them including the run id and the step name as
+well as the status. This information should help you identify the different
+models.</p>
+<p>If you want further information about a specific model, simply copy the
+UUID and the following command.</p>
+<pre><code class="language-bash">zenml model-deployer models describe &lt;UUID&gt;
+</code></pre>
+<p>If you are only interested in the prediction url of the specific model you can
+also run:</p>
+<pre><code class="language-bash">zenml model-deployer models get-url &lt;UUID&gt;
+</code></pre>
+<p>Finally, you will also be able to start/stop the services using the following
+ two commands:</p>
+<pre><code class="language-bash">zenml model-deployer models start &lt;UUID&gt;
+zenml model-deployer models stop &lt;UUID&gt;
+</code></pre>
+<p>If you want to completely remove a served model you can also irreversibly delete
+ it using:</p>
+<pre><code class="language-bash">zenml model-deployer models delete &lt;UUID&gt;
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+model deployers. In order to get a full list of available functions,
+use the command:</p>
+<pre><code class="language-bash">zenml model-deployer --help
+</code></pre>
+<h4 id="zenml.cli--step-operators">Step Operators</h4>
+<p><a href="https://docs.zenml.io/stack-components/step-operators">Step operators</a>
+allow you to run individual steps in a custom environment different from the
+default one used by your active orchestrator. One example use-case is to run a
+training step of your pipeline in an environment with GPUs available. To get
+a better understanding regarding step operators, use the command:</p>
+<pre><code class="language-bash">zenml step-operator explain
+</code></pre>
+<p>By default, a default ZenML local stack will not register a step operator. If
+you wish to register a new step operator, do so with the <code>register</code> command:</p>
+<pre><code class="language-bash">zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new step operator,
+you have to choose a flavor. To see the full list of available step operator
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml step-operator flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml step-operator flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all step operators available and registered for use, use the
+<code>list</code> command:</p>
+<pre><code class="language-bash">zenml step-operator list
+</code></pre>
+<p>If you want the name of the step operator in the active stack, use the <code>get</code>
+command:</p>
+<pre><code class="language-bash">zenml step-operator get
+</code></pre>
+<p>For details about a particular step operator, use the <code>describe</code> command.
+By default, (without a specific operator name passed in) it will describe the
+active or currently used step operator:</p>
+<pre><code class="language-bash">zenml step-operator describe [STEP_OPERATOR_NAME]
+</code></pre>
+<p>If you wish to update/rename a step operator, you can use the following commands
+respectively:</p>
+<pre><code class="language-bash">zenml step-operator update STEP_OPERATOR_NAME --property_to_update=new_value
+zenml step-operator rename STEP_OPERATOR_OLD_NAME STEP_OPERATOR_NEW_NAME
+</code></pre>
+<p>To delete a step operator (and all of its contents), use the <code>delete</code>
+command:</p>
+<pre><code class="language-bash">zenml step-operator delete STEP_OPERATOR_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your step operator to/from a
+service connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml step-operator connect STEP_OPERATOR_NAME -c CONNECTOR_NAME
+zenml step-operator disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+step operators. In order to get a full list of available functions,
+use the command:</p>
+<pre><code class="language-bash">zenml step-operator --help
+</code></pre>
+<h4 id="zenml.cli--alerters">Alerters</h4>
+<p>In ZenML, <a href="https://docs.zenml.io/stack-components/alerters">alerters</a>
+allow you to send alerts from within your pipeline.</p>
+<p>By default, a default ZenML local stack will not register an alerter. If
+you wish to register a new alerter, do so with the <code>register</code> command:</p>
+<pre><code class="language-bash">zenml alerter register ALERTER_NAME --flavor ALERTER_FLAVOR [--ALERTER_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml alerter register ALERTER_NAME --flavor ALERTER_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new alerter,
+you have to choose a flavor. To see the full list of available alerter
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml alerter flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml alerter flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all alerters available and registered for use, use the <code>list</code> command:</p>
+<pre><code class="language-bash">zenml alerter list
+</code></pre>
+<p>If you want the name of the alerter in the active stack, use the <code>get</code>
+command:</p>
+<pre><code class="language-bash">zenml alerter get
+</code></pre>
+<p>For details about a particular alerter, use the <code>describe</code> command.
+By default, (without a specific alerter name passed in) it will describe
+the active or currently used alerter:</p>
+<pre><code class="language-bash">zenml alerter describe [ALERTER_NAME]
+</code></pre>
+<p>If you wish to update/rename an alerter, you can use the following commands
+respectively:</p>
+<pre><code class="language-bash">zenml alerter update ALERTER_NAME --property_to_update=new_value
+zenml alerter rename ALERTER_OLD_NAME ALERTER_NEW_NAME
+</code></pre>
+<p>To delete an alerter (and all of its contents), use the <code>delete</code> command:</p>
+<pre><code class="language-bash">zenml alerter delete ALERTER_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your alerter to/from a service
+connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml alerter connect ALERTER_NAME -c CONNECTOR_NAME
+zenml alerter disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+alerters. In order to get a full list of available functions, use the command:</p>
+<pre><code class="language-bash">zenml alerter --help
+</code></pre>
+<h4 id="zenml.cli--feature-stores">Feature Stores</h4>
+<p><a href="https://docs.zenml.io/stack-components/feature-stores">Feature stores</a>
+allow data teams to serve data via an offline store and an online low-latency
+store where data is kept in sync between the two. To get a better understanding
+regarding feature stores, use the command:</p>
+<pre><code class="language-bash">zenml feature-store explain
+</code></pre>
+<p>By default, a default ZenML local stack will not register a feature store. If
+you wish to register a new feature store, do so with the <code>register</code> command:</p>
+<pre><code class="language-bash">zenml feature-store register FEATURE_STORE_NAME --flavor FEATURE_STORE_FLAVOR [--FEATURE_STORE_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml feature-store register FEATURE_STORE_NAME --flavor FEATURE_STORE_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new feature store,
+you have to choose a flavor. To see the full list of available feature store
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml feature-store flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<p>Note: Currently, ZenML only supports connecting to a Redis-backed Feast feature
+store as a stack component integration.</p>
+<pre><code class="language-bash">zenml feature-store flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all feature stores available and registered for use, use the
+<code>list</code> command:</p>
+<pre><code class="language-bash">zenml feature-store list
+</code></pre>
+<p>If you want the name of the feature store in the active stack, use the <code>get</code>
+command:</p>
+<pre><code class="language-bash">zenml feature-store get
+</code></pre>
+<p>For details about a particular feature store, use the <code>describe</code> command.
+By default, (without a specific feature store name passed in) it will describe
+the active or currently-used feature store:</p>
+<pre><code class="language-bash">zenml feature-store describe [FEATURE_STORE_NAME]
+</code></pre>
+<p>If you wish to update/rename a feature store, you can use the following commands
+respectively:</p>
+<pre><code class="language-bash">zenml feature-store update FEATURE_STORE_NAME --property_to_update=new_value
+zenml feature-store rename FEATURE_STORE_OLD_NAME FEATURE_STORE_NEW_NAME
+</code></pre>
+<p>To delete a feature store (and all of its contents), use the <code>delete</code>
+command:</p>
+<pre><code class="language-bash">zenml feature-store delete FEATURE_STORE_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your feature store to/from a
+service connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml feature-store connect FEATURE_STORE_NAME -c CONNECTOR_NAME
+zenml feature-store disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+feature stores. In order to get a full list of available functions,
+use the command:</p>
+<pre><code class="language-bash">zenml feature-store --help
+</code></pre>
+<h4 id="zenml.cli--annotators">Annotators</h4>
+<p><a href="https://docs.zenml.io/stack-components/annotators">Annotators</a>
+enable the use of data annotation as part of your ZenML stack and pipelines.</p>
+<p>By default, a default ZenML local stack will not register an annotator. If
+you wish to register a new annotator, do so with the <code>register</code> command:</p>
+<pre><code class="language-bash">zenml annotator register ANNOTATOR_NAME --flavor ANNOTATOR_FLAVOR [--ANNOTATOR_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml annotator register ANNOTATOR_NAME --flavor ANNOTATOR_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new annotator,
+you have to choose a flavor. To see the full list of available annotator
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml annotator flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml annotator flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all annotator available and registered for use, use the <code>list</code> command:</p>
+<pre><code class="language-bash">zenml annotator list
+</code></pre>
+<p>If you want the name of the annotator in the active stack, use the <code>get</code>
+command:</p>
+<pre><code class="language-bash">zenml annotator get
+</code></pre>
+<p>For details about a particular annotator, use the <code>describe</code> command.
+By default, (without a specific annotator name passed in) it will describe
+the active or currently used annotator:</p>
+<pre><code class="language-bash">zenml annotator describe [ANNOTATOR_NAME]
+</code></pre>
+<p>If you wish to update/rename an annotator, you can use the following commands
+respectively:</p>
+<pre><code class="language-bash">zenml annotator update ANNOTATOR_NAME --property_to_update=new_value
+zenml annotator rename ANNOTATOR_OLD_NAME ANNOTATOR_NEW_NAME
+</code></pre>
+<p>To delete an annotator (and all of its contents), use the <code>delete</code> command:</p>
+<pre><code class="language-bash">zenml annotator delete ANNOTATOR_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your annotator to/from a service
+connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml annotator connect ANNOTATOR_NAME -c CONNECTOR_NAME
+zenml annotator disconnect
+</code></pre>
+<p>Finally, you can use the <code>dataset</code> command to interact with your annotation
+datasets:</p>
+<pre><code class="language-bash">zenml annotator dataset --help
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+annotator. In order to get a full list of available functions, use the command:</p>
+<pre><code class="language-bash">zenml annotator --help
+</code></pre>
+<h4 id="zenml.cli--image-builders">Image Builders</h4>
+<p>In ZenML, <a href="https://docs.zenml.io/stack-components/image-builders">image builders</a>
+allow you to build container images such
+that your machine-learning pipelines and steps can be executed in remote
+environments.</p>
+<p>By default, a default ZenML local stack will not register an image builder. If
+you wish to register a new image builder, do so with the <code>register</code> command:</p>
+<pre><code class="language-bash">zenml image-builder register IMAGE_BUILDER_NAME --flavor IMAGE_BUILDER_FLAVOR [--IMAGE_BUILDER_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml image-builder register IMAGE_BUILDER_NAME --flavor IMAGE_BUILDER_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new image builder,
+you have to choose a flavor. To see the full list of available image builder
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml image-builder flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml image-builder flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all image builders available and registered for use, use the <code>list</code>
+command:</p>
+<pre><code class="language-bash">zenml image-builder list
+</code></pre>
+<p>If you want the name of the image builder in the active stack, use the <code>get</code>
+command:</p>
+<pre><code class="language-bash">zenml image-builder get
+</code></pre>
+<p>For details about a particular image builder, use the <code>describe</code> command.
+By default, (without a specific image builder name passed in) it will describe
+the active or currently used image builder:</p>
+<pre><code class="language-bash">zenml image-builder describe [IMAGE_BUILDER_NAME]
+</code></pre>
+<p>If you wish to update/rename an image builder, you can use the following
+commands respectively:</p>
+<pre><code class="language-bash">zenml image-builder update IMAGE_BUILDER_NAME --property_to_update=new_value
+zenml image-builder rename IMAGE_BUILDER_OLD_NAME IMAGE_BUILDER_NEW_NAME
+</code></pre>
+<p>To delete a image builder (and all of its contents), use the <code>delete</code> command:</p>
+<pre><code class="language-bash">zenml image-builder delete IMAGE_BUILDER_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your image builder to/from a service
+connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml image-builder connect IMAGE_BUILDER_NAME -c CONNECTOR_NAME
+zenml image-builder disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+image builders. In order to get a full list of available functions, use the
+command:</p>
+<pre><code class="language-bash">zenml image-builder --help
+</code></pre>
+<h4 id="zenml.cli--model-registries">Model Registries</h4>
+<p><a href="https://docs.zenml.io/stack-components/model-registries">Model registries</a>
+are centralized repositories that facilitate the collaboration and management
+of machine learning models. To get a better understanding regarding model
+registries as a concept, use the command:</p>
+<pre><code class="language-bash">zenml model-registry explain
+</code></pre>
+<p>By default, a default ZenML local stack will not register a model registry. If
+you wish to register a new model registry, do so with the <code>register</code> command:</p>
+<pre><code class="language-bash">zenml model-registry register MODEL_REGISTRY_NAME --flavor MODEL_REGISTRY_FLAVOR [--MODEL_REGISTRY_OPTIONS]
+</code></pre>
+<p>You can also add any label to your stack component using the <code>--label</code> or <code>-l</code> flag:</p>
+<pre><code class="language-bash">zenml model-registry register MODEL_REGISTRY_NAME --flavor MODEL_REGISTRY_FLAVOR -l key1=value1 -l key2=value2
+</code></pre>
+<p>As you can see from the command above, when you register a new model registry,
+you have to choose a flavor. To see the full list of available model registry
+flavors, you can use the command:</p>
+<pre><code class="language-bash">zenml model-registry flavor list
+</code></pre>
+<p>This list will show you which integration these flavors belong to and which
+service connectors they are adaptable with. If you would like to get additional
+information regarding a specific flavor, you can utilize the command:</p>
+<pre><code class="language-bash">zenml model-registry flavor describe FLAVOR_NAME
+</code></pre>
+<p>To list all model registries available and registered for use, use the
+<code>list</code> command:</p>
+<pre><code class="language-bash">zenml model-registry list
+</code></pre>
+<p>If you want the name of the model registry in the active stack, use the <code>get</code>
+command:</p>
+<pre><code class="language-bash">zenml model-registry get
+</code></pre>
+<p>For details about a particular model registry, use the <code>describe</code> command.
+By default, (without a specific operator name passed in) it will describe the
+active or currently used model registry:</p>
+<pre><code class="language-bash">zenml model-registry describe [MODEL_REGISTRY_NAME]
+</code></pre>
+<p>If you wish to update/rename a model registry, you can use the following commands
+respectively:</p>
+<pre><code class="language-bash">zenml model-registry update MODEL_REGISTRY_NAME --property_to_update=new_value
+zenml model-registry rename MODEL_REGISTRY_OLD_NAME MODEL_REGISTRY_NEW_NAME
+</code></pre>
+<p>To delete a model registry (and all of its contents), use the <code>delete</code>
+command:</p>
+<pre><code class="language-bash">zenml model-registry delete MODEL_REGISTRY_NAME
+</code></pre>
+<p>If you would like to connect/disconnect your model registry to/from a
+service connector, you can use the following commands:</p>
+<pre><code class="language-bash">zenml model-registry connect MODEL_REGISTRY_NAME -c CONNECTOR_NAME
+zenml model-registry disconnect
+</code></pre>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+model registries. In order to get a full list of available functions,
+use the command:</p>
+<pre><code class="language-bash">zenml model-registry --help
+</code></pre>
+<h4 id="zenml.cli--managing-your-stacks">Managing your Stacks</h4>
+<p><a href="https://docs.zenml.io/user-guide/production-guide/understand-stacks">The stack</a>
+is a grouping of your artifact store, your orchestrator, and other
+optional MLOps tools like experiment trackers or model deployers.
+With the ZenML tool, switching from a local stack to a distributed cloud
+environment can be accomplished with just a few CLI commands.</p>
+<p>To register a new stack, you must already have registered the individual
+components of the stack using the commands listed above.</p>
+<p>Use the <code>zenml stack register</code> command to register your stack. It
+takes four arguments as in the following example:</p>
+<pre><code class="language-bash">zenml stack register STACK_NAME        -a ARTIFACT_STORE_NAME        -o ORCHESTRATOR_NAME
+</code></pre>
+<p>Each corresponding argument should be the name, id or even the first few letters
+ of the id that uniquely identify the artifact store or orchestrator.</p>
+<p>To create a new stack using the new service connector with a set of minimal components, 
+use the following command:</p>
+<pre><code class="language-bash">zenml stack register STACK_NAME        -p CLOUD_PROVIDER
+</code></pre>
+<p>To create a new stack using the existing service connector with a set of minimal components, 
+use the following command:</p>
+<pre><code class="language-bash">zenml stack register STACK_NAME        -sc SERVICE_CONNECTOR_NAME
+</code></pre>
+<p>To create a new stack using the existing service connector with existing components (
+important, that the components are already registered in the service connector), use the 
+following command:</p>
+<pre><code class="language-bash">zenml stack register STACK_NAME        -sc SERVICE_CONNECTOR_NAME        -a ARTIFACT_STORE_NAME        -o ORCHESTRATOR_NAME        ...
+</code></pre>
+<p>If you want to immediately set this newly created stack as your active stack,
+simply pass along the <code>--set</code> flag.</p>
+<pre><code class="language-bash">zenml stack register STACK_NAME ... --set
+</code></pre>
+<p>To list the stacks that you have registered within your current ZenML
+workspace, type:</p>
+<pre><code class="language-bash">zenml stack list
+</code></pre>
+<p>To delete a stack that you have previously registered, type:</p>
+<pre><code class="language-bash">zenml stack delete STACK_NAME
+</code></pre>
+<p>By default, ZenML uses a local stack whereby all pipelines run on your
+local computer. If you wish to set a different stack as the current
+active stack to be used when running your pipeline, type:</p>
+<pre><code class="language-bash">zenml stack set STACK_NAME
+</code></pre>
+<p>This changes a configuration property within your local environment.</p>
+<p>To see which stack is currently set as the default active stack, type:</p>
+<pre><code class="language-bash">zenml stack get
+</code></pre>
+<p>If you want to copy a stack, run the following command:</p>
+<pre><code class="language-shell">zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME
+</code></pre>
+<p>If you wish to transfer one of your stacks to another machine, you can do so
+by exporting the stack configuration and then importing it again.</p>
+<p>To export a stack to YAML, run the following command:</p>
+<pre><code class="language-bash">zenml stack export STACK_NAME FILENAME.yaml
+</code></pre>
+<p>This will create a FILENAME.yaml containing the config of your stack and all
+of its components, which you can then import again like this:</p>
+<pre><code class="language-bash">zenml stack import STACK_NAME -f FILENAME.yaml
+</code></pre>
+<p>If you wish to update a stack that you have already registered, first make sure
+you have registered whatever components you want to use, then use the following
+command:</p>
+<pre><code class="language-bash"># assuming that you have already registered a new orchestrator
+# with NEW_ORCHESTRATOR_NAME
+zenml stack update STACK_NAME -o NEW_ORCHESTRATOR_NAME
+</code></pre>
+<p>You can update one or many stack components at the same time out of the ones
+that ZenML supports. To see the full list of options for updating a stack, use
+the following command:</p>
+<pre><code class="language-bash">zenml stack update --help
+</code></pre>
+<p>To remove a stack component from a stack, use the following command:</p>
+<pre><code class="language-shell"># assuming you want to remove the image builder and the feature-store
+# from your stack
+zenml stack remove-component -i -f
+</code></pre>
+<p>If you wish to rename your stack, use the following command:</p>
+<pre><code class="language-shell">zenml stack rename STACK_NAME NEW_STACK_NAME
+</code></pre>
+<p>If you want to copy a stack component, run the following command:</p>
+<pre><code class="language-bash">zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME
+</code></pre>
+<p>If you wish to update a specific stack component, use the following command,
+switching out "STACK_COMPONENT" for the component you wish to update (i.e.
+'orchestrator' or 'artifact-store' etc.):</p>
+<pre><code class="language-shell">zenml STACK_COMPONENT update --some_property=NEW_VALUE
+</code></pre>
+<p>Note that you are not permitted to update the stack name or UUID in this way. To
+change the name of your stack component, use the following command:</p>
+<pre><code class="language-shell">zenml STACK_COMPONENT rename STACK_COMPONENT_NAME NEW_STACK_COMPONENT_NAME
+</code></pre>
+<p>If you wish to remove an attribute (or multiple attributes) from a stack
+component, use the following command:</p>
+<pre><code class="language-shell">zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME ATTRIBUTE_NAME [OTHER_ATTRIBUTE_NAME]
+</code></pre>
+<p>Note that you can only remove optional attributes.</p>
+<p>If you want to register secrets for all secret references in a stack, use the
+following command:</p>
+<pre><code class="language-shell">zenml stack register-secrets [&lt;STACK_NAME&gt;]
+</code></pre>
+<p>If you want to connect a service connector to a stack's components, you can use
+the <code>connect</code> command:</p>
+<pre><code class="language-shell">zenml stack connect STACK_NAME -c CONNECTOR_NAME
+</code></pre>
+<p>Note that this only connects the service connector to the current components
+of the stack and not to the stack itself, which means that you need to rerun
+the command after adding new components to the stack.</p>
+<p>The ZenML CLI provides a few more utility functions for you to manage your
+stacks. In order to get a full list of available functions, use the command:</p>
+<pre><code class="language-bash">zenml stack --help
+</code></pre>
+<h4 id="zenml.cli--managing-your-models">Managing your Models</h4>
+<p>ZenML provides several CLI commands to help you administer your models and
+their versions as part of <a href="https://docs.zenml.io/user-guide/starter-guide/track-ml-models">the Model Control Plane</a>.</p>
+<p>To register a new model, you can use the following CLI command:</p>
+<pre><code class="language-bash">zenml model register --name &lt;NAME&gt; [--MODEL_OPTIONS]
+</code></pre>
+<p>To list all registered models, use:</p>
+<pre><code class="language-bash">zenml model list [MODEL_FILTER_OPTIONS]
+</code></pre>
+<p>To update a model, use:</p>
+<pre><code class="language-bash">zenml model update &lt;MODEL_NAME_OR_ID&gt; [--MODEL_OPTIONS]
+</code></pre>
+<p>If you would like to add or remove tags from the model, use:</p>
+<pre><code class="language-bash">zenml model update &lt;MODEL_NAME_OR_ID&gt; --tag &lt;TAG&gt; --tag &lt;TAG&gt; ..
+   --remove-tag &lt;TAG&gt; --remove-tag &lt;TAG&gt; ..
+</code></pre>
+<p>To delete a model, use:</p>
+<pre><code class="language-bash">zenml model delete &lt;MODEL_NAME_OR_ID&gt;
+</code></pre>
+<p>The CLI interface for models also helps to navigate through artifacts linked to a specific model versions.</p>
+<pre><code class="language-bash">zenml model data_artifacts &lt;MODEL_NAME_OR_ID&gt; [-v &lt;VERSION&gt;]
+zenml model deployment_artifacts &lt;MODEL_NAME_OR_ID&gt; [-v &lt;VERSION&gt;]
+zenml model model_artifacts &lt;MODEL_NAME_OR_ID&gt; [-v &lt;VERSION&gt;]
+</code></pre>
+<p>You can also navigate the pipeline runs linked to a specific model versions:</p>
+<pre><code class="language-bash">zenml model runs &lt;MODEL_NAME_OR_ID&gt; [-v &lt;VERSION&gt;]
+</code></pre>
+<p>To list the model versions of a specific model, use:</p>
+<pre><code class="language-bash">zenml model version list [--model-name &lt;MODEL_NAME&gt; --name &lt;MODEL_VERSION_NAME&gt; OTHER_OPTIONS]
+</code></pre>
+<p>To delete a model version, use:</p>
+<pre><code class="language-bash">zenml model version delete &lt;MODEL_NAME_OR_ID&gt; &lt;VERSION&gt;
+</code></pre>
+<p>To update a model version, use:</p>
+<pre><code class="language-bash">zenml model version update &lt;MODEL_NAME_OR_ID&gt; &lt;VERSION&gt; [--MODEL_VERSION_OPTIONS]
+</code></pre>
+<p>These are some of the more common uses of model version updates:</p>
+<ul>
+<li>stage (i.e. promotion)</li>
+</ul>
+<pre><code class="language-bash">zenml model version update &lt;MODEL_NAME_OR_ID&gt; &lt;VERSION&gt; --stage &lt;STAGE&gt;
+</code></pre>
+<ul>
+<li>tags</li>
+</ul>
+<pre><code class="language-bash">zenml model version update &lt;MODEL_NAME_OR_ID&gt; &lt;VERSION&gt; --tag &lt;TAG&gt; --tag &lt;TAG&gt; ..
+   --remove-tag &lt;TAG&gt; --remove-tag &lt;TAG&gt; ..
+</code></pre>
+<h4 id="zenml.cli--managing-your-pipelines-artifacts">Managing your Pipelines &amp; Artifacts</h4>
+<p>ZenML provides several CLI commands to help you <a href="https://docs.zenml.io/user-guide/starter-guide/manage-artifacts">administer your pipelines and
+pipeline runs</a>.</p>
+<p>To explicitly register a pipeline you need to point to a pipeline instance
+in your Python code. Let's say you have a Python file called <code>run.py</code> and
+it contains the following code:</p>
+<pre><code class="language-python">from zenml import pipeline
+
+@pipeline
+def my_pipeline(...):
+   # Connect your pipeline steps here
+   pass
+</code></pre>
+<p>You can register your pipeline like this:</p>
+<pre><code class="language-bash">zenml pipeline register run.my_pipeline
+</code></pre>
+<p>To list all registered pipelines, use:</p>
+<pre><code class="language-bash">zenml pipeline list
+</code></pre>
+<p>To delete a pipeline, run:</p>
+<pre><code class="language-bash">zenml pipeline delete &lt;PIPELINE_NAME&gt;
+</code></pre>
+<p>This will delete the pipeline and change all corresponding
+pipeline runs to become unlisted (not linked to any pipeline).</p>
+<p>To list all pipeline runs that you have executed, use:</p>
+<pre><code class="language-bash">zenml pipeline runs list
+</code></pre>
+<p>To delete a pipeline run, use:</p>
+<pre><code class="language-bash">zenml pipeline runs delete &lt;PIPELINE_RUN_NAME_OR_ID&gt;
+</code></pre>
+<p>If you run any of your pipelines with <code>pipeline.run(schedule=...)</code>, ZenML keeps
+track of the schedule and you can list all schedules via:</p>
+<pre><code class="language-bash">zenml pipeline schedule list
+</code></pre>
+<p>To delete a schedule, use:</p>
+<pre><code class="language-bash">zenml pipeline schedule delete &lt;SCHEDULE_NAME_OR_ID&gt;
+</code></pre>
+<p>Note, however, that this will only delete the reference saved in ZenML and does
+NOT stop/delete the schedule in the respective orchestrator. This still needs to
+be done manually. For example, using the Airflow orchestrator you would have
+to open the web UI to manually click to stop the schedule from executing.</p>
+<p>Each pipeline run automatically saves its artifacts in the artifact store. To
+list all artifacts that have been saved, use:</p>
+<pre><code class="language-bash">zenml artifact list
+</code></pre>
+<p>Each artifact has one or several versions. To list artifact versions, use:</p>
+<pre><code class="language-bash">zenml artifact versions list
+</code></pre>
+<p>If you would like to rename an artifact or adjust the tags of an artifact or
+artifact version, use the corresponding <code>update</code> command:</p>
+<pre><code class="language-bash">zenml artifact update &lt;NAME&gt; -n &lt;NEW_NAME&gt;
+zenml artifact update &lt;NAME&gt; -t &lt;TAG1&gt; -t &lt;TAG2&gt; -r &lt;TAG_TO_REMOVE&gt;
+zenml artifact version update &lt;NAME&gt; -v &lt;VERSION&gt; -t &lt;TAG1&gt; -t &lt;TAG2&gt; -r &lt;TAG_TO_REMOVE&gt;
+</code></pre>
+<p>The metadata of artifacts or artifact versions stored by ZenML can only be
+deleted once they are no longer used by any pipeline runs. I.e., an artifact
+version can only be deleted if the run that produced it and all runs that used
+it as an input have been deleted. Similarly, an artifact can only be deleted if
+all its versions can be deleted.</p>
+<p>To delete all artifacts and artifact versions that are no longer linked to any
+pipeline runs, use:</p>
+<pre><code class="language-bash">zenml artifact prune
+</code></pre>
+<p>You might find that some artifacts throw errors when you try to prune them,
+likely because they were stored locally and no longer exist. If you wish to
+continue pruning and to ignore these errors, please add the <code>--ignore-errors</code>
+flag. Warning messages will still be output to the terminal during this
+process.</p>
+<p>Each pipeline run that requires Docker images also stores a build which
+contains the image names used for this run. To list all builds, use:</p>
+<pre><code class="language-bash">zenml pipeline builds list
+</code></pre>
+<p>To delete a specific build, use:</p>
+<pre><code class="language-bash">zenml pipeline builds delete &lt;BUILD_ID&gt;
+</code></pre>
+<h4 id="zenml.cli--managing-the-local-zenml-dashboard">Managing the local ZenML Dashboard</h4>
+<p>The ZenML dashboard is a web-based UI that allows you to visualize and navigate
+the stack configurations, pipelines and pipeline runs tracked by ZenML among
+other things. You can start the ZenML dashboard locally by running the following
+command:</p>
+<pre><code class="language-bash">zenml up
+</code></pre>
+<p>This will start the dashboard on your local machine where you can access it at
+the URL printed to the console.</p>
+<p>If you have closed the dashboard in your browser and want to open it again,
+you can run:</p>
+<pre><code class="language-bash">zenml show
+</code></pre>
+<p>If you want to stop the dashboard, simply run:</p>
+<pre><code class="language-bash">zenml down
+</code></pre>
+<p>The <code>zenml up</code> command has a few additional options that you can use to
+customize how the ZenML dashboard is running.</p>
+<p>By default, the dashboard is started as a background process. On some operating
+systems, this capability is not available. In this case, you can use the
+<code>--blocking</code> flag to start the dashboard in the foreground:</p>
+<pre><code class="language-bash">zenml up --blocking
+</code></pre>
+<p>This will block the terminal until you stop the dashboard with CTRL-C.</p>
+<p>Another option you can use, if you have Docker installed on your machine, is to
+run the dashboard in a Docker container. This is useful if you don't want to
+install all the Zenml server dependencies on your machine. To do so, simply run:</p>
+<pre><code class="language-bash">zenml up --docker
+</code></pre>
+<p>The TCP port and the host address that the dashboard uses to listen for
+connections can also be customized. Using an IP address that is not the default
+<code>localhost</code> or 127.0.0.1 is especially useful if you're running some type of
+local ZenML orchestrator, such as the k3d Kubeflow orchestrator or Docker
+orchestrator, that cannot directly connect to the local ZenML server.</p>
+<p>For example, to start the dashboard on port 9000 and have it listen
+on all locally available interfaces on your machine, run:</p>
+<pre><code class="language-bash">zenml up --port 9000 --ip-address 0.0.0.0
+</code></pre>
+<p>Note that the above 0.0.0.0 IP address also exposes your ZenML dashboard
+externally through your public interface. Alternatively, you can choose an
+explicit IP address that is configured on one of your local interfaces, such as
+the Docker bridge interface, which usually has the IP address <code>172.17.0.1</code>:</p>
+<pre><code class="language-bash">zenml up --port 9000 --ip-address 172.17.0.1
+</code></pre>
+<h4 id="zenml.cli--connecting-to-a-zenml-server">Connecting to a ZenML Server</h4>
+<p>The ZenML client can be <a href="https://docs.zenml.io/how-to/connecting-to-zenml">configured to connect to a remote database or ZenML
+server</a>
+with the <code>zenml connect</code> command. If no arguments are supplied, ZenML
+will attempt to connect to the last ZenML server deployed from the local host
+using the 'zenml deploy' command:</p>
+<pre><code class="language-bash">zenml connect
+</code></pre>
+<p>To connect to a ZenML server, you can either pass the configuration as command
+line arguments or as a YAML file:</p>
+<pre><code class="language-bash">zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
+</code></pre>
+<p>or</p>
+<pre><code class="language-bash">zenml connect --config=/path/to/zenml_server_config.yaml
+</code></pre>
+<p>The YAML file should have the following structure when connecting to a ZenML
+server:</p>
+<pre><code class="language-yaml">url: &lt;The URL of the ZenML server&gt;
+verify_ssl: |
+   &lt;Either a boolean, in which case it controls whether the
+   server's TLS certificate is verified, or a string, in which case it
+   must be a path to a CA certificate bundle to use or the CA bundle
+   value itself&gt;
+</code></pre>
+<p>Both options can be combined, in which case the command line arguments will
+override the values in the YAML file. For example:</p>
+<pre><code class="language-bash">zenml connect --no-verify-ssl --config=/path/to/zenml_server_config.yaml
+</code></pre>
+<p>You can open the ZenML dashboard of your currently connected ZenML server using
+the following command:</p>
+<pre><code class="language-bash">zenml show
+</code></pre>
+<p>If you would like to take a look at the logs for the ZenML server:</p>
+<pre><code class="language-bash">zenml logs
+</code></pre>
+<p>Note that if you have set your <code>AUTO_OPEN_DASHBOARD</code> environment variable to
+<code>false</code> then this will not open the dashboard until you set it back to <code>true</code>.
+To disconnect from the current ZenML server and revert to using the local
+default database, use the following command:</p>
+<pre><code class="language-bash">zenml disconnect
+</code></pre>
+<p>You can inspect the current ZenML configuration at any given time using the
+following command:</p>
+<pre><code class="language-bash">zenml status
+</code></pre>
+<p>Example output:</p>
+<pre><code> zenml status
+Running without an active repository root.
+Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
+The current user is: 'default'
+The active workspace is: 'default' (global)
+The active stack is: 'default' (global)
+The status of the local dashboard:
+              ZenML server 'local'
+┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ URL            │ http://172.17.0.1:9000      ┃
+┠────────────────┼─────────────────────────────┨
+┃ STATUS         │ ✅                          ┃
+┠────────────────┼─────────────────────────────┨
+┃ STATUS_MESSAGE │ Docker container is running ┃
+┠────────────────┼─────────────────────────────┨
+┃ CONNECTED      │                             ┃
+┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+</code></pre>
+<p>The <code>zenml connect</code> command can also be used to configure your client with
+more advanced options, such as connecting directly to a local or remote SQL
+database. In this case, the <code>--raw-config</code> flag must be passed to instruct the
+CLI to not validate or fill in the missing configuration fields. For example,
+to connect to a remote MySQL database, run:</p>
+<pre><code class="language-bash">zenml connect --raw-config --config=/path/to/mysql_config.yaml
+</code></pre>
+<p>with a YAML configuration file that looks like this:</p>
+<pre><code class="language-yaml">type: sql
+url: mysql://&lt;username&gt;:&lt;password&gt;@mysql.database.com/&lt;database_name&gt;
+ssl_ca: |
+   -----BEGIN CERTIFICATE-----
+   ...
+   -----END CERTIFICATE-----
+
+ssl_cert: null
+ssl_key: null
+ssl_verify_server_cert: false
+</code></pre>
+<p>Keep in mind, while connecting to a ZenML server, you will be provided with the
+option to <code>Trust this device</code>. If you opt out of it a 24-hour token will be
+issued for the authentication service. If you opt-in, you will be issued a 30-day token instead.</p>
+<p>If you would like to see a list of all trusted devices, you can use:</p>
+<pre><code class="language-bash">zenml authorized-device list
+</code></pre>
+<p>or if you would like to get the details regarding a specific device,
+you can use:</p>
+<pre><code class="language-bash">zenml authorized-device describe DEVICE_ID_OR_PREFIX
+</code></pre>
+<p>Alternatively, you can lock and unlock an authorized device by using the
+following commands:</p>
+<pre><code class="language-bash">zenml authorized-device lock DEVICE_ID_OR_PREFIX
+zenml authorized-device unlock DEVICE_ID_OR_PREFIX
+</code></pre>
+<p>Finally, you can remove an authorized device by using the <code>delete</code> command:</p>
+<pre><code class="language-bash">zenml authorized-device delete DEVICE_ID_OR_PREFIX
+</code></pre>
+<h4 id="zenml.cli--secrets-management">Secrets management</h4>
+<p>ZenML offers a way to <a href="https://docs.zenml.io/getting-started/deploying-zenml/manage-the-deployed-services/secret-management">securely store secrets associated with your other
+stack components and infrastructure</a>.
+A ZenML Secret is a collection or grouping of key-value pairs stored by the
+ZenML secrets store. ZenML Secrets are identified by a unique name which
+allows you to fetch or reference them in your pipelines and stacks.</p>
+<p>Depending on how you set up and deployed ZenML, the secrets store keeps secrets
+in the local database or uses the ZenML server your client is connected to:</p>
+<ul>
+<li>if you are using the default ZenML client settings, or if you connect your
+ZenML client to a local ZenML server started with <code>zenml up</code>, the secrets store
+is using the same local SQLite database as the rest of ZenML</li>
+<li>if you connect your ZenML client to a remote ZenML server, the
+secrets are no longer managed on your local machine, but through the remote
+server instead. Secrets are stored in whatever secrets store back-end the
+remote server is configured to use. This can be a SQL database, one of the
+managed cloud secrets management services, or even a custom back-end.</li>
+</ul>
+<p>To create a secret, use the <code>create</code> command and pass the key-value pairs
+as command-line arguments:</p>
+<pre><code class="language-bash">zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret create SECRET_NAME --values='{&quot;key1&quot;:&quot;value2&quot;,&quot;key2&quot;:&quot;value2&quot;,&quot;key3&quot;:&quot;value3&quot;}'
+</code></pre>
+<p>Note that when using the previous command the keys and values will be preserved in your <code>bash_history</code> file, so
+you may prefer to use the interactive <code>create</code> command instead:</p>
+<pre><code class="language-shell">zenml secret create SECRET_NAME -i
+</code></pre>
+<p>As an alternative to the interactive mode, also useful for values that
+are long or contain newline or special characters, you can also use the special
+<code>@</code> syntax to indicate to ZenML that the value needs to be read from a file:</p>
+<pre><code class="language-bash">zenml secret create SECRET_NAME    --aws_access_key_id=1234567890    --aws_secret_access_key=abcdefghij    --aws_session_token=@/path/to/token.txt
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing
+# key-value pairs in either JSON or YAML format.
+zenml secret create SECRET_NAME --values=@/path/to/token.txt
+</code></pre>
+<p>To list all the secrets available, use the <code>list</code> command:</p>
+<pre><code class="language-bash">zenml secret list
+</code></pre>
+<p>To get the key-value pairs for a particular secret, use the <code>get</code> command:</p>
+<pre><code class="language-bash">zenml secret get SECRET_NAME
+</code></pre>
+<p>To update a secret, use the <code>update</code> command:</p>
+<pre><code class="language-bash">zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret update SECRET_NAME --values='{&quot;key1&quot;:&quot;value2&quot;,&quot;key2&quot;:&quot;value2&quot;,&quot;key3&quot;:&quot;value3&quot;}'
+</code></pre>
+<p>Note that when using the previous command the keys and values will be preserved in your <code>bash_history</code> file, so
+you may prefer to use the interactive <code>update</code> command instead:</p>
+<pre><code class="language-shell">zenml secret update SECRET_NAME -i
+</code></pre>
+<p>Finally, to delete a secret, use the <code>delete</code> command:</p>
+<pre><code class="language-bash">zenml secret delete SECRET_NAME
+</code></pre>
+<p>Secrets can be scoped to a workspace or a user. By default, secrets
+are scoped to the current workspace. To scope a secret to a user, use the
+<code>--scope user</code> argument in the <code>register</code> command.</p>
+<h4 id="zenml.cli--auth-management">Auth management</h4>
+<p>Building and maintaining an MLOps workflow can involve numerous third-party
+libraries and external services. In most cases, this ultimately presents a
+challenge in configuring uninterrupted, secure access to infrastructure
+resources. In ZenML, Service Connectors streamline this process by abstracting
+away the complexity of authentication and help you connect your stack to your
+resources. You can find the full docs on the ZenML service connectors
+<a href="https://docs.zenml.io/how-to/auth-management">here</a>.</p>
+<p>The ZenML CLI features a variety of commands to help you manage your service
+connectors. First of all, to explore all the types of service connectors
+available in ZenML, you can use the following commands:</p>
+<pre><code class="language-bash"># To get the complete list
+zenml service-connector list-types
+
+# To get the details regarding a single type
+zenml service-connector describe-type
+</code></pre>
+<p>For each type of service connector, you will also see a list of supported
+resource types. These types provide a way for organizing different resources
+into logical classes based on the standard and/or protocol used to access them.
+In addition to the resource types, each type will feature a different set of
+authentication methods.</p>
+<p>Once you decided which service connector to use, you can create it with the
+<code>register</code> command as follows:</p>
+<pre><code class="language-bash">zenml service-connector register SERVICE_CONNECTOR_NAME     --type TYPE [--description DESCRIPTION] [--resource-type RESOURCE_TYPE]     [--auth-method AUTH_METHOD] ...
+</code></pre>
+<p>For more details on how to create a service connector, please refer to our
+<a href="https://docs.zenml.io/how-to/auth-management">docs</a>.</p>
+<p>To check if your service connector is registered properly, you can <code>verify</code> it.
+By doing this, you can both check if it is configured correctly and also, you
+can fetch the list of resources it has access to:</p>
+<pre><code class="language-bash">zenml service-connector verify SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
+</code></pre>
+<p>Some service connectors come equipped with the capability of configuring
+the clients and SDKs on your local machine with the credentials inferred from
+your service connector. To use this functionality, simply use the <code>login</code>
+command:</p>
+<pre><code class="language-bash">zenml service-connector login SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
+</code></pre>
+<p>To list all the service connectors that you have registered, you can use:</p>
+<pre><code class="language-bash">zenml service-connector list
+</code></pre>
+<p>Moreover, if you would like to list all the resources accessible by your
+service connectors, you can use the following command:</p>
+<pre><code class="language-bash">zenml service-connector list-resources [--resource-type RESOURCE_TYPE] /
+    [--connector-type CONNECTOR_TYPE] ...
+</code></pre>
+<p>This command can possibly take a long time depending on the number of service
+connectors you have registered. Consider using the right filters when you are
+listing resources.</p>
+<p>If you want to see the details about a specific service connector that you have
+registered, you can use the <code>describe</code> command:</p>
+<pre><code class="language-bash">zenml service-connector describe SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
+</code></pre>
+<p>You can update a registered service connector by using the <code>update</code> command.
+Keep in mind that all service connector updates are validated before being
+applied. If you want to disable this behaviour please use the <code>--no-verify</code>
+flag.</p>
+<pre><code class="language-bash">zenml service-connector update SERVICE_CONNECTOR_NAME_ID_OR_PREFIX ...
+</code></pre>
+<p>Finally, if you wish to remove a service connector, you can use the <code>delete</code>
+command:</p>
+<pre><code class="language-bash">zenml service-connector delete SERVICE_CONNECTOR_NAME_ID_OR_PREFIX
+</code></pre>
+<h4 id="zenml.cli--managing-users">Managing users</h4>
+<p>When using the ZenML service, you can manage permissions by managing users
+using the CLI. If you want to create a new user or delete an existing one,
+run either</p>
+<pre><code class="language-bash">zenml user create USER_NAME
+zenml user delete USER_NAME
+</code></pre>
+<p>To see a list of all users, run:</p>
+<pre><code class="language-bash">zenml user list
+</code></pre>
+<p>For detail about the particular user, use the <code>describe</code> command. By default,
+(without a specific user name passed in) it will describe the active user:</p>
+<pre><code class="language-bash">zenml user describe [USER_NAME]
+</code></pre>
+<p>If you want to update any properties of a specific user, you can use the
+<code>update</code> command. Use the <code>--help</code> flag to get a full list of available
+properties to update:</p>
+<pre><code class="language-bash">zenml user update --help
+</code></pre>
+<p>If you want to change the password of the current user account:</p>
+<pre><code class="language-bash">zenml user change-password --help
+</code></pre>
+<h4 id="zenml.cli--service-accounts">Service Accounts</h4>
+<p>ZenML supports the use of service accounts to authenticate clients to the
+ZenML server using API keys. This is useful for automating tasks such as
+running pipelines or deploying models.</p>
+<p>To create a new service account, run:</p>
+<pre><code class="language-bash">zenml service-account create SERVICE_ACCOUNT_NAME
+</code></pre>
+<p>This command creates a service account and an API key for it. The API key is
+displayed as part of the command output and cannot be retrieved later. You can
+then use the issued API key to connect your ZenML client to the server with the
+CLI:</p>
+<pre><code class="language-bash">zenml connect --url https://... --api-key &lt;API_KEY&gt;
+</code></pre>
+<p>or by setting the <code>ZENML_STORE_URL</code> and <code>ZENML_STORE_API_KEY</code> environment
+variables when you set up your ZenML client for the first time:</p>
+<pre><code class="language-bash">export ZENML_STORE_URL=https://...
+export ZENML_STORE_API_KEY=&lt;API_KEY&gt;
+</code></pre>
+<p>To see all the service accounts you've created and their API keys, use the
+following commands:</p>
+<pre><code class="language-bash">zenml service-account list
+zenml service-account api-key &lt;SERVICE_ACCOUNT_NAME&gt; list
+</code></pre>
+<p>Additionally, the following command allows you to more precisely inspect one of
+these service accounts and an API key:</p>
+<pre><code class="language-bash">zenml service-account describe &lt;SERVICE_ACCOUNT_NAME&gt;
+zenml service-account api-key &lt;SERVICE_ACCOUNT_NAME&gt; describe &lt;API_KEY_NAME&gt;
+</code></pre>
+<p>API keys don't have an expiration date. For increased security, we recommend
+that you regularly rotate the API keys to prevent unauthorized access to your
+ZenML server. You can do this with the ZenML CLI:</p>
+<pre><code class="language-bash">zenml service-account api-key &lt;SERVICE_ACCOUNT_NAME&gt; rotate &lt;API_KEY_NAME&gt;
+</code></pre>
+<p>Running this command will create a new API key and invalidate the old one. The
+new API key is displayed as part of the command output and cannot be retrieved
+later. You can then use the new API key to connect your ZenML client to the
+server just as described above.</p>
+<p>When rotating an API key, you can also configure a retention period for the old
+API key. This is useful if you need to keep the old API key for a while to
+ensure that all your workloads have been updated to use the new API key. You can
+do this with the <code>--retain</code> flag. For example, to rotate an API key and keep the
+old one for 60 minutes, you can run the following command:</p>
+<pre><code class="language-bash">zenml service-account api-key &lt;SERVICE_ACCOUNT_NAME&gt; rotate &lt;API_KEY_NAME&gt;       --retain 60
+</code></pre>
+<p>For increased security, you can deactivate a service account or an API key using
+one of the following commands:</p>
+<pre><code>zenml service-account update &lt;SERVICE_ACCOUNT_NAME&gt; --active false
+zenml service-account api-key &lt;SERVICE_ACCOUNT_NAME&gt; update &lt;API_KEY_NAME&gt;       --active false
+</code></pre>
+<p>Deactivating a service account or an API key will prevent it from being used to
+authenticate and has immediate effect on all workloads that use it.</p>
+<p>To permanently delete an API key for a service account, use the following
+command:</p>
+<pre><code class="language-bash">zenml service-account api-key &lt;SERVICE_ACCOUNT_NAME&gt; delete &lt;API_KEY_NAME&gt;
+</code></pre>
+<h4 id="zenml.cli--managing-code-repositories">Managing Code Repositories</h4>
+<p><a href="https://docs.zenml.io/user-guide/production-guide/connect-code-repository">Code repositories</a>
+enable ZenML to keep track of the code version that you use for your pipeline
+runs. Additionally, running a pipeline which is tracked in a registered code
+repository can decrease the time it takes Docker to build images for
+containerized stack components.</p>
+<p>To register a code repository, use the following CLI
+command:</p>
+<pre><code class="language-shell">zenml code-repository register &lt;NAME&gt; --type=&lt;CODE_REPOSITORY_TYPE]    [--CODE_REPOSITORY_OPTIONS]
+</code></pre>
+<p>ZenML currently supports code repositories of type <code>github</code> and <code>gitlab</code>, but
+you can also use your custom code repository implementation by passing the
+type <code>custom</code> and a source of your repository class.</p>
+<pre><code class="language-shell">zenml code-repository register &lt;NAME&gt; --type=custom    --source=&lt;CODE_REPOSITORY_SOURCE&gt; [--CODE_REPOSITORY_OPTIONS]
+</code></pre>
+<p>The <code>CODE_REPOSITORY_OPTIONS</code> depend on the configuration necessary for the
+type of code repository that you're using.</p>
+<p>If you want to list your registered code repositories, run:</p>
+<pre><code class="language-shell">zenml code-repository list
+</code></pre>
+<p>You can delete one of your registered code repositories like this:</p>
+<pre><code class="language-shell">zenml code-repository delete &lt;REPOSITORY_NAME_OR_ID&gt;
+</code></pre>
+<h4 id="zenml.cli--building-an-image-without-runs">Building an image without Runs</h4>
+<p>To build or run a pipeline from the CLI, you need to know the source path of
+your pipeline. Let's imagine you have defined your pipeline in a python file
+called <code>run.py</code> like this:</p>
+<pre><code class="language-python">from zenml import pipeline
+
+@pipeline
+def my_pipeline(...):
+   # Connect your pipeline steps here
+   pass
+</code></pre>
+<p>The source path of your pipeline will be <code>run.my_pipeline</code>. In a generalized
+way, this will be <code>&lt;MODULE_PATH&gt;.&lt;PIPELINE_FUNCTION_NAME&gt;</code>. If the python file
+defining the pipeline is not in your current directory, the module path consists
+of the full path to the file, separated by dots, e.g.
+<code>some_directory.some_file.my_pipeline</code>.</p>
+<p>To <a href="https://docs.zenml.io/how-to/customize-docker-builds">build Docker images for your pipeline</a>
+without actually running the pipeline, use:</p>
+<pre><code class="language-bash">zenml pipeline build &lt;PIPELINE_SOURCE_PATH&gt;
+</code></pre>
+<p>To specify settings for the Docker builds, use the <code>--config/-c</code> option of the
+command. For more information about the structure of this configuration file,
+check out the <code>zenml.pipelines.base_pipeline.BasePipeline.build(...)</code> method.</p>
+<pre><code class="language-bash">zenml pipeline build &lt;PIPELINE_SOURCE_PATH&gt; --config=&lt;PATH_TO_CONFIG_YAML&gt;
+</code></pre>
+<p>If you want to build the pipeline for a stack other than your current active
+stack, use the <code>--stack</code> option.</p>
+<pre><code class="language-bash">zenml pipeline build &lt;PIPELINE_SOURCE_PATH&gt; --stack=&lt;STACK_ID_OR_NAME&gt;
+</code></pre>
+<p>To run a pipeline that was previously registered, use:</p>
+<pre><code class="language-bash">zenml pipeline run &lt;PIPELINE_SOURCE_PATH&gt;
+</code></pre>
+<p>To specify settings for the pipeline, use the <code>--config/-c</code> option of the
+command. For more information about the structure of this configuration file,
+check out the <code>zenml.pipelines.base_pipeline.BasePipeline.run(...)</code> method.</p>
+<pre><code class="language-bash">zenml pipeline run &lt;PIPELINE_SOURCE_PATH&gt; --config=&lt;PATH_TO_CONFIG_YAML&gt;
+</code></pre>
+<p>If you want to run the pipeline on a stack different than your current active
+stack, use the <code>--stack</code> option.</p>
+<pre><code class="language-bash">zenml pipeline run &lt;PIPELINE_SOURCE_PATH&gt; --stack=&lt;STACK_ID_OR_NAME&gt;
+</code></pre>
+<h4 id="zenml.cli--tagging-your-resources-with-zenml">Tagging your resources with ZenML</h4>
+<p>When you are using ZenML, you can <a href="https://docs.zenml.io/how-to/handle-data-artifacts/tagging">use tags to organize and categorize your
+assets</a>.
+This way, you can streamline your workflows and enhance the discoverability of
+your resources more easily.</p>
+<p>Currently, you can use tags with artifacts, models and their versions:</p>
+<pre><code class="language-bash"># Tag the artifact
+zenml artifact update ARTIFACT_NAME -t TAG_NAME
+
+# Tag the artifact version
+zenml artifact version update ARTIFACT_NAME ARTIFACT_VERSION -t TAG_NAME
+
+# Tag an existing model
+zenml model update MODEL_NAME --tag TAG_NAME
+
+# Tag a specific model version
+zenml model version update MODEL_NAME VERSION_NAME --tag TAG_NAME
+</code></pre>
+<p>Besides these interactions, you can also create a new tag by using the
+<code>register</code> command:</p>
+<pre><code class="language-bash">zenml tag register -n TAG_NAME [-c COLOR]
+</code></pre>
+<p>If you would like to list all the tags that you have, you can use the command:</p>
+<pre><code class="language-bash">zenml tag list
+</code></pre>
+<p>To update the properties of a specific tag, you can use the <code>update</code> subcommand:</p>
+<pre><code class="language-bash">zenml tag update TAG_NAME_OR_ID [-n NEW_NAME] [-c NEW_COLOR]
+</code></pre>
+<p>Finally, in order to delete a tag, you can execute:</p>
+<pre><code class="language-bash">zenml tag delete TAG_NAME_OR_ID
+</code></pre>
+<h4 id="zenml.cli--managing-the-global-configuration">Managing the Global Configuration</h4>
+<p>The ZenML global configuration CLI commands cover options such as enabling or
+disabling the collection of anonymous usage statistics, changing the logging
+verbosity.</p>
+<p>In order to help us better understand how the community uses ZenML, the library
+reports anonymized usage statistics. You can always opt out by using the CLI
+command:</p>
+<pre><code class="language-bash">zenml analytics opt-out
+</code></pre>
+<p>If you want to opt back in, use the following command:</p>
+<pre><code class="language-bash">zenml analytics opt-in
+</code></pre>
+<p>The verbosity of the ZenML client output can be configured using the
+<code>zenml logging</code> command. For example, to set the verbosity to DEBUG, run:</p>
+<pre><code class="language-bash">zenml logging set-verbosity DEBUG
+</code></pre>
+<h4 id="zenml.cli--deploying-zenml-to-the-cloud">Deploying ZenML to the cloud</h4>
+<p>The ZenML CLI provides a simple way to deploy ZenML to the cloud. Simply run</p>
+<pre><code class="language-bash">zenml deploy
+</code></pre>
+<p>You will be prompted to provide a name for your deployment and details like what
+cloud provider you want to deploy to — and that's it! It creates the
+database and any VPCs, permissions, and more that are needed.</p>
+<p>In order to be able to run the deploy command, you should have your cloud
+provider's CLI configured locally with permissions to create resources like
+MySQL databases and networks.</p>
+<h4 id="zenml.cli--deploying-stack-components">Deploying Stack Components</h4>
+<p>Stack components can be deployed directly via the CLI. You can use the <code>deploy</code>
+subcommand for this. For example, you could deploy a GCP artifact store using
+the following command:</p>
+<pre><code class="language-shell">zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core basic_gcp_artifact_store
+</code></pre>
+<p>For full documentation on this functionality, please refer to <a href="https://docs.zenml.io/how-to/stack-deployment/deploy-a-stack-component">the dedicated
+documentation on stack component deploy</a>.</p>
+
+
+    </div>
+
+  </div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: ZenML" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              ZenML
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../core_code_docs/core-actions/" class="md-footer__link md-footer__link--next" aria-label="Next: Actions" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Actions
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH – <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+    
+  
+
+
+
+
+<h4>This website uses cookies</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        <label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout(function(){document.querySelector("[data-md-component=consent]").hidden=!1},250);var action,form=document.forms.consent;for(action of["submit","reset"])form.addEventListener(action,function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map(function(e){return[e,!0]}))),location.hash="",location.reload()})</script>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>
