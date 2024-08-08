@@ -1,7 +1,7 @@
 """add configured_model_version_id [bf2120261b5a].
 
 Revision ID: bf2120261b5a
-Revises: 3dcc5d20e82f
+Revises: 0.64.0
 Create Date: 2024-08-07 11:31:00.661089
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "bf2120261b5a"
-down_revision = "3dcc5d20e82f"
+down_revision = "0.64.0"
 branch_labels = None
 depends_on = None
 
