@@ -64,6 +64,10 @@ The `finetune` step in the pipeline is responsible for finetuning the embeddings
     trained model to a temporary file, loads it back into a new
     `SentenceTransformer` instance, and returns the rehydrated model.
 
+(*Thanks and credit to Phil Schmid for [his tutorial on finetuning embeddings](https://www.philschmid.de/fine-tune-embedding-model-for-rag) with Sentence
+Transformers and a Matryoshka loss function. This project uses many ideas and
+some code from his implementation.*)
+
 ## Finetuning in code
 
 Here's a simplified code snippet highlighting the key parts of the finetuning process:
