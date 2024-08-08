@@ -118,8 +118,16 @@ regenerate a new series of embeddings for our data and then rerun our RAG
 retrieval evaluations to see how they've improved in our hand-crafted and
 LLM-powered evaluations.
 
-The next section will cover LLM finetuning and deployment as the
-final part of our LLMops guide.
+The next section will cover [LLM finetuning and deployment](../finetuning-llms/finetuning-llms.md) as the
+final part of our LLMops guide. (This section is currently still a work in
+progress, but if you're eager to try out LLM finetuning with ZenML, you can use
+[our LoRA
+project](https://github.com/zenml-io/zenml-projects/blob/main/llm-lora-finetuning/README.md)
+to get started. We also have [a
+blogpost](https://www.zenml.io/blog/how-to-finetune-llama-3-1-with-zenml) guide which
+takes you through
+[all the steps you need to finetune Llama 3.1](https://www.zenml.io/blog/how-to-finetune-llama-3-1-with-zenml) using GCP's Vertex AI with ZenML,
+including one-click stack creation!)
 
 To try out the two pipelines, please follow the instructions in [the project
 repository README](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/README.md),
