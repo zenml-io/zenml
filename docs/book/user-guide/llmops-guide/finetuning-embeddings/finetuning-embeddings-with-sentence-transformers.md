@@ -83,9 +83,10 @@ trainer.model.push_to_hub(EMBEDDINGS_MODEL_ID_FINE_TUNED)
 
 The finetuning process leverages the capabilities of the Sentence Transformers library to efficiently train the embeddings model. The Matryoshka approach allows for learning embeddings at different dimensions simultaneously, enhancing the model's performance across various embedding sizes.
 
-## Model evaluation
-
-## Visualising results
+Our model is finetuned, saved in the Hugging Face Hub for easy access and
+reference in subsequent steps, but also versioned and tracked within ZenML for
+full observability. At this point the pipeline will evaluate the base and
+finetuned embeddings and visualise the results.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
