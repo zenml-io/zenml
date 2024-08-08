@@ -209,11 +209,10 @@ class StepLauncher:
                     workspace=client.active_workspace.id,
                     logs=logs_model,
                 )
+                prep_logs_to_show = ""
                 try:
-                    execution_needed, step_run, prep_logs_to_show = (
-                        self._prepare(
-                            step_run=step_run, pipeline_run=pipeline_run
-                        )
+                    execution_needed, step_run = self._prepare(
+                        step_run=step_run
                     )
                 except:
                     logger.exception(
@@ -227,9 +226,32 @@ class StepLauncher:
                         step_run
                     )
 
+                    # warm-up and register model version
+                    _step_run = None
+                    model = (
+                        self._deployment.step_configurations[
+                            step_run.name
+                        ].config.model
+                        or self._deployment.pipeline_configuration.model
+                    )
+                    if self._deployment.step_configurations[
+                        step_run.name
+                    ].config.model:
+                        _step_run = step_run_response
+
+                    if model:
+                        prep_logs_to_show = (
+                            model._prepare_model_version_inside_run(
+                                pipeline_run=pipeline_run,
+                                step_run=_step_run,
+                                return_logs=True,
+                            )
+                        )
+
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
-                    logger.info(prep_logs_to_show)
+                    if prep_logs_to_show:
+                        logger.info(prep_logs_to_show)
                     retries = 0
                     last_retry = True
                     max_retries = (
@@ -361,29 +383,20 @@ class StepLauncher:
     def _prepare(
         self,
         step_run: StepRunRequest,
-        pipeline_run: PipelineRunResponse,
-    ) -> Tuple[bool, StepRunRequest, str]:
+    ) -> Tuple[bool, StepRunRequest]:
         """Prepares running the step.
 
         Args:
             step_run: The step to run.
-            pipeline_run: The pipeline run that the step belongs to.
 
         Returns:
             Tuple that specifies whether the step needs to be executed as
-            well as the response model of the registered step run and the
-            logging message.
+            well as the response model of the registered step run.
         """
         model = (
             self._deployment.step_configurations[step_run.name].config.model
             or self._deployment.pipeline_configuration.model
         )
-        if model:
-            logs_to_show = model._prepare_model_version_inside_run(
-                pipeline_run=pipeline_run, return_logs=True
-            )
-        else:
-            logs_to_show = ""
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
             run_id=step_run.pipeline_run_id,
@@ -443,7 +456,7 @@ class StepLauncher:
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
-        return execution_needed, step_run, logs_to_show
+        return execution_needed, step_run
 
     def _run_step(
         self,

@@ -343,6 +343,7 @@ class ModelVersionResponse(
             version=self.name,
             was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
+            model_version_id=self.id,
         )
         mv.model_version_id = self.id
 

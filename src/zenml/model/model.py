@@ -42,6 +42,7 @@ if TYPE_CHECKING:
         ModelVersionResponse,
         PipelineRunResponse,
         RunMetadataResponse,
+        StepRunResponse,
     )
 
 logger = get_logger(__name__)
@@ -827,17 +828,24 @@ class Model(BaseModel):
         )
 
     def _prepare_model_version_inside_run(
-        self, pipeline_run: "PipelineRunResponse", return_logs: bool
+        self,
+        pipeline_run: "PipelineRunResponse",
+        step_run: Optional["StepRunResponse"],
+        return_logs: bool,
     ) -> str:
         """Prepares model version inside pipeline run.
 
         Args:
             pipeline_run: pipeline run
+            step_run: step run (passed only if model version is defined in a step explicitly)
             return_logs: whether to return logs or not
 
         Returns:
             Logs related to the Dashboard URL to show later.
         """
+        from zenml.client import Client
+        from zenml.models import PipelineRunUpdate, StepRunUpdate
+
         if isinstance(self.version, str):
             if pipeline_run.start_time:
                 start_time = pipeline_run.start_time
@@ -849,6 +857,22 @@ class Model(BaseModel):
                 time=start_time.strftime("%H_%M_%S_%f"),
             )
         model_version_response = self._get_or_create_model_version()
+
+        # update the configured model version id in runs accordingly
+        if step_run:
+            Client().zen_store.update_run_step(
+                step_run_id=step_run.id,
+                step_run_update=StepRunUpdate(
+                    configured_model_version_id=model_version_response.id
+                ),
+            )
+        else:
+            Client().zen_store.update_run(
+                run_id=pipeline_run.id,
+                run_update=PipelineRunUpdate(
+                    configured_model_version_id=model_version_response.id
+                ),
+            )
 
         if return_logs:
             from zenml.utils.cloud_utils import try_get_model_version_url

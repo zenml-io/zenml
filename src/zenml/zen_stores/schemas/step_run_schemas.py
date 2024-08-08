@@ -37,6 +37,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.step_run import StepRunResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
 )
@@ -48,6 +49,7 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+    from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
@@ -116,6 +118,14 @@ class StepRunSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+    configured_model_version_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=MODEL_VERSION_TABLENAME,
+        source_column="model_version_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
 
     # Relationships
     workspace: "WorkspaceSchema" = Relationship(back_populates="step_runs")
@@ -147,6 +157,9 @@ class StepRunSchema(NamedSchema, table=True):
             "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id",
         },
     )
+    configured_model_version: "ModelVersionSchema" = Relationship(
+        back_populates="step_runs",
+    )
 
     @classmethod
     def from_request(cls, request: StepRunRequest) -> "StepRunSchema":
@@ -172,6 +185,7 @@ class StepRunSchema(NamedSchema, table=True):
             cache_key=request.cache_key,
             code_hash=request.code_hash,
             source_code=request.source_code,
+            configured_model_version_id=request.configured_model_version_id,
         )
 
     def to_model(
@@ -249,6 +263,7 @@ class StepRunSchema(NamedSchema, table=True):
             outputs=output_artifacts,
             created=self.created,
             updated=self.updated,
+            configured_model_version_id=self.configured_model_version_id,
         )
         metadata = None
         if include_metadata:
@@ -273,18 +288,8 @@ class StepRunSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             model_version = None
-            if full_step_config.config.model:
-                # TODO: Why is there no ID check similar to
-                # PipelineRunSchema.to_model()?
-                try:
-                    model_version = (
-                        full_step_config.config.model._get_model_version(
-                            hydrate=False
-                        )
-                    )
-                except KeyError:
-                    # Unable to find the model version, it was probably deleted
-                    pass
+            if self.configured_model_version:
+                model_version = self.configured_model_version.to_model()
 
             resources = StepRunResponseResources(model_version=model_version)
 
@@ -312,6 +317,9 @@ class StepRunSchema(NamedSchema, table=True):
                 self.status = value.value
             if key == "end_time":
                 self.end_time = value
+            if key == "configured_model_version_id":
+                if value and self.configured_model_version_id is None:
+                    self.configured_model_version_id = value
 
         self.updated = datetime.utcnow()
 

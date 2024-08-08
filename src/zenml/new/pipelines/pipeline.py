@@ -71,7 +71,6 @@ from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
     deploy_pipeline,
-    prepare_model_versions,
     upload_notebook_cell_code_if_necessary,
 )
 from zenml.stack import Stack
@@ -685,8 +684,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             upload_notebook_cell_code_if_necessary(
                 deployment=deployment, stack=stack
             )
-
-            prepare_model_versions(deployment)
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()

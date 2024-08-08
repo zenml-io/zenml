@@ -177,10 +177,15 @@ class StepContext(metaclass=SingletonMetaClass):
         Raises:
             StepContextError: If the `Model` object is not set in `@step` or `@pipeline`.
         """
+        step_run = None
         if self.step_run.config.model is not None:
             model = self.step_run.config.model
+            step_run = self.step_run
         elif self.pipeline_run.config.model is not None:
-            model = self.pipeline_run.config.model
+            if self.pipeline_run.model_version:
+                model = self.pipeline_run.model_version.to_model_class()
+            else:
+                model = self.pipeline_run.config.model
         else:
             raise StepContextError(
                 f"Unable to get Model in step `{self.step_name}` of pipeline "
@@ -189,7 +194,9 @@ class StepContext(metaclass=SingletonMetaClass):
 
         # warm-up the model version
         model._prepare_model_version_inside_run(
-            pipeline_run=self.pipeline_run, return_logs=False
+            pipeline_run=self.pipeline_run,
+            step_run=step_run,
+            return_logs=False,
         )
 
         return model
