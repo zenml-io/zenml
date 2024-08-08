@@ -14,9 +14,7 @@
 """Pipeline build utilities."""
 
 import hashlib
-import os
 import platform
-import tempfile
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -29,7 +27,6 @@ from uuid import UUID
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     BuildItem,
@@ -40,9 +37,8 @@ from zenml.models import (
     PipelineDeploymentBase,
     StackResponse,
 )
-from zenml.new.pipelines.code_archive import CodeArchive
 from zenml.stack import Stack
-from zenml.utils import source_utils, string_utils
+from zenml.utils import source_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -487,8 +483,7 @@ def verify_local_repository_context(
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be downloaded from a "
-                    "code repository "
-                    "(`source_files=['download_from_code_repository']`), but "
+                    "code repository, but "
                     "there is no code repository active at your current source "
                     f"root `{source_utils.get_source_root()}`."
                 )
@@ -496,8 +491,7 @@ def verify_local_repository_context(
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be downloaded from a "
-                    "code repository "
-                    "(`source_files=['download_from_code_repository']`), but "
+                    "code repository, but "
                     "the code repository active at your current source root "
                     f"`{source_utils.get_source_root()}` has uncommitted "
                     "changes."
@@ -506,8 +500,7 @@ def verify_local_repository_context(
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be downloaded from a "
-                    "code repository "
-                    "(`source_files=['download_from_code_repository']`), but "
+                    "code repository, but "
                     "the code repository active at your current source root "
                     f"`{source_utils.get_source_root()}` has unpushed "
                     "changes."
@@ -578,7 +571,7 @@ def verify_custom_build(
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
                 "steps specify that code should be included in the Docker "
-                "image (`source_files=['include']`), but the build you "
+                "image, but the build you "
                 "specified requires code download. Either update your "
                 "`DockerSettings` or specify a different build and try "
                 "again."
@@ -591,8 +584,7 @@ def verify_custom_build(
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
                 "steps specify that code should be downloaded from a "
-                "code repository "
-                "(`source_files=['download_from_code_repository']`), but "
+                "code repository but "
                 "there is no code repository active at your current source "
                 f"root `{source_utils.get_source_root()}`."
             )
@@ -704,10 +696,10 @@ def should_upload_code(
         Whether the current code should be uploaded for the deployment.
     """
     if not build:
-        # No build means all the code is getting executed locally, which means
-        # we don't need to download any code
-        # TODO: This does not apply to e.g. Databricks, figure out a solution
-        # here
+        # No build means we don't need to download code into a Docker container
+        # for step execution. In other remote orchestrators that don't use
+        # Docker containers but instead use e.g. Wheels to run, the code should
+        # already be included.
         return False
 
     for step in deployment.step_configurations.values():
@@ -724,56 +716,3 @@ def should_upload_code(
             return True
 
     return False
-
-
-def upload_code_if_necessary() -> str:
-    """Upload code to the artifact store if necessary.
-
-    This function computes a hash of the code to be uploaded, and if an archive
-    with the same hash already exists it will not re-upload but instead return
-    the path to the existing archive.
-
-    Returns:
-        The path where to archived code is uploaded.
-    """
-    logger.info("Archiving code...")
-
-    code_archive = CodeArchive(root=source_utils.get_source_root())
-    artifact_store = Client().active_stack.artifact_store
-
-    with tempfile.NamedTemporaryFile(
-        mode="w+b", delete=False, suffix=".tar.gz"
-    ) as f:
-        code_archive.write_archive(f)
-
-        hash_ = hashlib.sha1()  # nosec
-
-        while True:
-            data = f.read(64 * 1024)
-            if not data:
-                break
-            hash_.update(data)
-
-        filename = f"{hash_.hexdigest()}.tar.gz"
-        upload_dir = os.path.join(artifact_store.path, "code_uploads")
-        fileio.makedirs(upload_dir)
-        upload_path = os.path.join(upload_dir, filename)
-
-        if not fileio.exists(upload_path):
-            archive_size = string_utils.get_human_readable_filesize(
-                os.path.getsize(f.name)
-            )
-            logger.info(
-                "Uploading code to `%s` (Size: %s).", upload_path, archive_size
-            )
-            fileio.copy(f.name, upload_path)
-            logger.info("Code upload finished.")
-        else:
-            logger.info(
-                "Code already exists in artifact store, skipping upload."
-            )
-
-    if os.path.exists(f.name):
-        os.remove(f.name)
-
-    return upload_path
