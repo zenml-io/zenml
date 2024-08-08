@@ -2,6 +2,11 @@
 description: Understand the Retrieval-Augmented Generation (RAG) technique and its benefits.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 LLMs are powerful but not without their limitations. They are prone to
 generating incorrect responses, especially when it's unclear what the input
 prompt is asking for. They are also limited in the amount of text they can
