@@ -2,7 +2,7 @@
 description: Finetune embeddings on custom synthetic data to improve retrieval performance.
 ---
 
-We previously learned [how to use RAG with ZenML](./rag-with-zenml/README.md) to
+We previously learned [how to use RAG with ZenML](../rag-with-zenml/README.md) to
 build a production-ready RAG pipeline. In this section, we will explore how to
 optimize and maintain your embedding models through synthetic data generation and
 human feedback. So far, we've been using off-the-shelf embeddings, which provide
@@ -18,10 +18,10 @@ the retrieval step and overall performance of the RAG pipeline.
 The work of finetuning embeddings based on synthetic data and human feedback is
 a multi-step process. We'll go through the following steps:
 
-- [generating synthetic data with `distilabel`](./finetuning-embeddings/synthetic-data-generation.md)
-- [iterating on data with Argilla (to improve data quality)](./finetuning-embeddings/iterating-on-data-with-argilla.md)
-- [finetuning embeddings with Sentence Transformers](./finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
-- [evaluating finetuned embeddings and using ZenML's model control plane to get a systematic overview](./finetuning-embeddings/evaluating-finetuned-embeddings.md)
+- [generating synthetic data with `distilabel`](synthetic-data-generation.md)
+- [iterating on data with Argilla (to improve data quality)](iterating-on-data-with-argilla.md)
+- [finetuning embeddings with Sentence Transformers](finetuning-embeddings-with-sentence-transformers.md)
+- [evaluating finetuned embeddings and using ZenML's model control plane to get a systematic overview](evaluating-finetuned-embeddings.md)
 
 Besides ZenML, we will do this by using two open source libraries:
 [`argilla`](https://github.com/argilla-io/argilla/) and
