@@ -44,7 +44,7 @@ from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
-    from zenml.pipelines.pipeline import Pipeline
+    from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps.step_invocation import StepInvocation
 

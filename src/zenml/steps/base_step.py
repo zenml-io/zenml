@@ -478,7 +478,7 @@ class BaseStep:
         Returns:
             The outputs of the entrypoint function call.
         """
-        from zenml.pipelines.pipeline import Pipeline
+        from zenml.pipelines.pipeline_definition import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
             # The step is being called outside the context of a pipeline,

@@ -29,27 +29,26 @@ from zenml.exceptions import (
 )
 from zenml.models import Page, PipelineBuildBase, PipelineDeploymentBase
 from zenml.pipelines import Schedule, pipeline
-from zenml.steps import BaseParameters, step
+from zenml.steps import step
 
+# def create_pipeline_with_param_value(param_value: int):
+#     """Creates pipeline instance with a step named 'step' which has a parameter named 'value'."""
 
-def create_pipeline_with_param_value(param_value: int):
-    """Creates pipeline instance with a step named 'step' which has a parameter named 'value'."""
+#     class Params(BaseParameters):
+#         value: int
 
-    class Params(BaseParameters):
-        value: int
+#     @step
+#     def step_with_params(params: Params) -> None:
+#         pass
 
-    @step
-    def step_with_params(params: Params) -> None:
-        pass
+#     @pipeline
+#     def some_pipeline(step_):
+#         step_()
 
-    @pipeline
-    def some_pipeline(step_):
-        step_()
-
-    pipeline_instance = some_pipeline(
-        step_=step_with_params(params=Params(value=param_value))
-    )
-    return pipeline_instance
+#     pipeline_instance = some_pipeline(
+#         step_=step_with_params(params=Params(value=param_value))
+#     )
+#     return pipeline_instance
 
 
 def test_initialize_pipeline_with_args(
@@ -410,7 +409,7 @@ def test_pipeline_configuration_with_steps_argument(
     mock_compile = mocker.patch.object(
         Compiler, "compile", wraps=Compiler().compile
     )
-    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance = one_step_pipeline(empty_step)
 
     step_configs = {"step_": {"enable_artifact_visualization": False}}
     pipeline_instance.with_options(steps=step_configs)()
@@ -430,7 +429,7 @@ def test_pipeline_configuration_with_duplicate_step_configurations(
     mock_compile = mocker.patch.object(
         Compiler, "compile", wraps=Compiler().compile
     )
-    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance = one_step_pipeline(empty_step)
 
     step_configs = {"step_": {"enable_artifact_visualization": False}}
     ignored_step_configs = {"step_": {"enable_artifact_metadata": False}}
@@ -543,8 +542,7 @@ def test_unique_identifier_considers_step_source_code(
     one_step_pipeline, empty_step, mocker
 ):
     """Tests that the unique pipeline ID depends on the step source code."""
-    step_instance = empty_step()
-    pipeline_instance = one_step_pipeline(step_instance)
+    pipeline_instance = one_step_pipeline(empty_step)
 
     pipeline_instance.prepare()
     spec = Compiler().compile_spec(pipeline=pipeline_instance)
@@ -583,224 +581,6 @@ def test_reusing_pipeline(
     result = pipeline_instance.register()
 
     assert result == pipeline_model
-
-
-# def test_loading_legacy_pipeline_from_model(create_pipeline_model):
-#     """Tests loading and running a pipeline from a model."""
-#     with open("my_steps.py", "w") as f:
-#         f.write(
-#             (
-#                 "from zenml.steps import step\n"
-#                 "@step\n"
-#                 "def s1() -> int:\n"
-#                 "  return 1\n\n"
-#                 "@step\n"
-#                 "def s2(inp: int) -> None:\n"
-#                 "  pass"
-#             )
-#         )
-
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#                 {
-#                     "source": "my_steps.s2",
-#                     "upstream_steps": ["step_1"],
-#                     "inputs": {
-#                         "inp": {"step_name": "step_1", "output_name": "output"}
-#                     },
-#                     "pipeline_parameter_name": "step_2",
-#                 },
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     pipeline_instance = BasePipeline.from_model(pipeline_model)
-#     assert Compiler().compile_spec(pipeline_instance) == spec
-#     assert pipeline_instance.name == pipeline_model.name
-
-#     with does_not_raise():
-#         pipeline_instance.run()
-
-#     # Invalid source
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "WRONG_MODULE.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     with pytest.raises(ImportError):
-#         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-#     # Missing upstream step
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": ["NONEXISTENT"],
-#                     "pipeline_parameter_name": "step_1",
-#                 }
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     with pytest.raises(RuntimeError):
-#         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-#     # Missing output
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#                 {
-#                     "source": "my_steps.s2",
-#                     "upstream_steps": ["step_1"],
-#                     "inputs": {
-#                         "inp": {
-#                             "step_name": "step_1",
-#                             "output_name": "NONEXISTENT",
-#                         }
-#                     },
-#                     "pipeline_parameter_name": "step_2",
-#                 },
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     with pytest.raises(RuntimeError):
-#         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-#     # Wrong inputs
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "version": "0.3",
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#                 {
-#                     "source": "my_steps.s2",
-#                     "upstream_steps": ["step_1"],
-#                     "inputs": {
-#                         "WRONG_INPUT_NAME": {
-#                             "step_name": "step_1",
-#                             "output_name": "output",
-#                         }
-#                     },
-#                     "pipeline_parameter_name": "step_2",
-#                 },
-#             ],
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     with pytest.raises(RuntimeError):
-#         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-
-# TODO: move to deserialization utils tests
-# def test_connect_method_generation(clean_workspace, create_pipeline_model):
-#     """Tests dynamically generating the connect method from a model."""
-#     with open("my_steps.py", "w") as f:
-#         f.write(
-#             (
-#                 "from zenml.steps import step\n"
-#                 "@step\n"
-#                 "def s1() -> int:\n"
-#                 "  return 1\n\n"
-#                 "@step\n"
-#                 "def s2(inp: int) -> None:\n"
-#                 "  pass"
-#             )
-#         )
-
-#     spec = PipelineSpec.model_validate(
-#         {
-#             "steps": [
-#                 {
-#                     "source": "my_steps.s1",
-#                     "upstream_steps": [],
-#                     "pipeline_parameter_name": "step_1",
-#                 },
-#                 {
-#                     "source": "my_steps.s2",
-#                     "upstream_steps": ["s1"],
-#                     "inputs": {
-#                         "inp": {"step_name": "s1", "output_name": "output"}
-#                     },
-#                     "pipeline_parameter_name": "step_2",
-#                 },
-#             ]
-#         }
-#     )
-#     pipeline_model = create_pipeline_model(spec=spec)
-
-#     connect_method = BasePipeline._generate_connect_method(pipeline_model)
-
-#     arg_spec = inspect.getfullargspec(connect_method)
-#     assert arg_spec.args == ["step_1", "step_2"]
-
-#     steps = {
-#         "step_1": BaseStep.load_from_source("my_steps.s1"),
-#         "step_2": BaseStep.load_from_source("my_steps.s2"),
-#     }
-
-#     # Missing steps
-#     with pytest.raises(TypeError):
-#         connect_method()
-
-#     # Additional arg
-#     wrong_steps = steps.copy()
-#     wrong_steps["step_3"] = wrong_steps["step_1"]
-#     with pytest.raises(TypeError):
-#         connect_method(**wrong_steps)
-
-#     with does_not_raise():
-#         connect_method(**steps)
-
-#     # Reconfigure step name
-#     steps = {
-#         "step_1": BaseStep.load_from_source("my_steps.s1"),
-#         "step_2": BaseStep.load_from_source("my_steps.s2"),
-#     }
-#     steps["step_1"].configure(name="new_name")
-#     with pytest.raises(RuntimeError):
-#         connect_method(**steps)
-
-
-# def test_loading_pipeline_from_old_spec_fails(create_pipeline_model):
-#     """Tests that loading a pipeline from a spec version <0.2 fails."""
-#     old_spec = PipelineSpec(version="0.1", steps=[])
-#     model = create_pipeline_model(spec=old_spec)
-
-#     with pytest.raises(ValueError):
-#         BasePipeline.from_model(model)
 
 
 def test_compiling_a_pipeline_merges_schedule(

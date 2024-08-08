@@ -334,7 +334,7 @@ def test_multiple_definitions_create_new_version_warns(
     clean_client: "Client", pipeline, expected_warning
 ):
     """Test that setting conflicting model versions are raise warnings to user."""
-    with mock.patch("zenml.new.pipelines.run_utils.logger.warning") as logger:
+    with mock.patch("zenml.pipelines.run_utils.logger.warning") as logger:
         pipeline()
         if expected_warning:
             logger.assert_called_once()

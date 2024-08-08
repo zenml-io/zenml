@@ -29,7 +29,7 @@ from zenml.logger import get_logger
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.model.model import Model
-    from zenml.pipelines.pipeline import Pipeline
+    from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.types import HookSpecification
 
     F = TypeVar("F", bound=Callable[..., None])
@@ -92,7 +92,7 @@ def pipeline(
     """
 
     def inner_decorator(func: "F") -> "Pipeline":
-        from zenml.pipelines.pipeline import Pipeline
+        from zenml.pipelines.pipeline_definition import Pipeline
 
         if model_version:
             logger.warning(

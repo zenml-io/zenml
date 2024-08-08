@@ -41,7 +41,7 @@ from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
-    from zenml.pipelines.pipeline import Pipeline
+    from zenml.pipelines.pipeline_definition import Pipeline
 
     MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
 

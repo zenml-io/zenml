@@ -94,7 +94,7 @@ def test_pipeline_config_from_file_not_overridden_for_extra(
     p = assert_extra_pipeline.with_options(config_path=str(config_path))
     assert p.configuration.extra == {"a": 1}
 
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch("zenml.pipelines.pipeline.logger.warning") as warning:
         p.configure(extra={"a": 2})
         warning.assert_called_once()
 
@@ -127,7 +127,7 @@ def test_pipeline_config_from_file_not_overridden_for_model(
     p = assert_model_pipeline.with_options(config_path=str(config_path))
     assert p.configuration.model.name == "bar"
 
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch("zenml.pipelines.pipeline.logger.warning") as warning:
         p.configure(
             model=Model(
                 name="foo",
@@ -177,7 +177,7 @@ def test_pipeline_config_from_file_not_warns_on_new_value(
     p = assert_extra_pipeline.with_options(config_path=str(config_path))
     assert p.configuration.extra == {}
 
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch("zenml.pipelines.pipeline.logger.warning") as warning:
         p.configure(extra={"a": 1})
         warning.assert_not_called()
 
@@ -221,7 +221,7 @@ def test_pipeline_config_from_file_works_with_pipeline_parameters(
     assert p.configuration.parameters == {"foo": "bar"}
 
     # this configuration would be not efficient and overridden by config with warning
-    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+    with patch("zenml.pipelines.pipeline.logger.warning") as warning:
         p.configure(parameters={"foo": 1})
         warning.assert_called_once()
 
