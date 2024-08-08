@@ -40,6 +40,7 @@ class LightningOrchestratorSettings(BaseSettings):
         username: Username.
         teamspace: Teamspace.
         organization: Organization.
+        async_mode: Whether to run the pipeline in async mode.
     """
 
     # Resources
@@ -49,6 +50,7 @@ class LightningOrchestratorSettings(BaseSettings):
     username: Optional[str] = None
     teamspace: Optional[str] = None
     organization: Optional[str] = None
+    async_mode: bool = False
 
 
 class LightningOrchestratorConfig(

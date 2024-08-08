@@ -13,15 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the Lightning orchestrator."""
 
-import itertools
 import os
-import re
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 from uuid import uuid4
 
 from lightning_sdk import Machine, Studio
 
-from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_CUSTOM_SOURCE_ROOT,
 )
@@ -32,14 +29,19 @@ from zenml.integrations.lightning.flavors.lightning_orchestrator_flavor import (
 from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_config import (
     LightningEntrypointConfiguration,
 )
+from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_configuration import (
+    LightningOrchestratorEntrypointConfiguration,
+)
+from zenml.integrations.lightning.orchestrators.utils import (
+    gather_requirements,
+    sanitize_studio_name,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -241,6 +243,9 @@ class LightningOrchestrator(WheeledOrchestrator):
         # Get deployment id
         deployment_id = deployment.id
 
+        pipeline_name = deployment.pipeline_configuration.name
+        orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
+
         # Copy the repository to a temporary directory and add a setup.py file
         repository_temp_dir = (
             self.copy_repository_to_temp_dir_and_add_setup_py()
@@ -262,68 +267,103 @@ class LightningOrchestrator(WheeledOrchestrator):
         export_command = "export " + " ".join(
             [f"{key}='{value}'" for key, value in env_vars.items()]
         )
-        steps = {}
-        for step_name, step in deployment.step_configurations.items():
-            # The arguments are passed to configure the entrypoint of the
-            # docker container when the step is called.
-            command = LightningEntrypointConfiguration.get_entrypoint_command()
-            arguments = (
-                LightningEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name,
-                    deployment_id=deployment_id,
-                    wheel_package=self.package_name,
+
+        # Gather the requirements
+        pipeline_docker_settings = (
+            deployment.pipeline_configuration.docker_settings
+        )
+        pipeline_requirements = gather_requirements(pipeline_docker_settings)
+        pipeline_requirements_to_string = " ".join(
+            f'"{req}"' for req in pipeline_requirements
+        )
+
+        def _construct_lightning_steps(
+            deployment: "PipelineDeploymentResponse",
+        ) -> Dict[str, Dict[str, Any]]:
+            """Construct the steps for the pipeline."""
+            steps = {}
+            for step_name, step in deployment.step_configurations.items():
+                # The arguments are passed to configure the entrypoint of the
+                # docker container when the step is called.
+                command = (
+                    LightningEntrypointConfiguration.get_entrypoint_command()
                 )
+                arguments = (
+                    LightningEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name,
+                        deployment_id=deployment_id,
+                        wheel_package=self.package_name,
+                    )
+                )
+                entrypoint = command + arguments
+                entrypoint_string = " ".join(entrypoint)
+
+                step_settings = cast(
+                    LightningOrchestratorSettings, self.get_settings(step)
+                )
+
+                # Gather the requirements
+                step_docker_settings = step.config.docker_settings
+                step_requirements = gather_requirements(step_docker_settings)
+                step_requirements_to_string = " ".join(
+                    f'"{req}"' for req in step_requirements
+                )
+
+                # Construct the command to run the step
+                run_command = f"{export_command} && {entrypoint_string}"
+                commands = [run_command]
+                steps[step_name] = {
+                    "commands": commands,
+                    "requirements": step_requirements_to_string,
+                    "machine": step_settings.machine_type
+                    if step_settings != settings
+                    else None,
+                }
+            return steps
+
+        if settings.async_mode:
+            command = LightningOrchestratorEntrypointConfiguration.get_entrypoint_command()
+            arguments = LightningOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
+                run_name=orchestrator_run_name,
+                deployment_id=deployment.id,
+                wheel_package=wheel_path,
             )
             entrypoint = command + arguments
             entrypoint_string = " ".join(entrypoint)
+            logger.info("Setting up Lightning AI client")
+            self._get_lightning_client(deployment)
 
-            step_settings = cast(
-                LightningOrchestratorSettings, self.get_settings(step)
+            studio_name = sanitize_studio_name(
+                f"zenml_{orchestrator_run_id}_async_studio_runner"
             )
+            logger.info(f"Creating main studio: {studio_name}")
+            studio = Studio(name=studio_name)
+            if settings.machine_type:
+                studio.start(Machine(settings.machine_type))
+            else:
+                studio.start()
 
-            docker_settings = step.config.docker_settings
-            docker_image_builder = PipelineDockerImageBuilder()
-
-            # Gather the requirements files
-            requirements_files = (
-                docker_image_builder.gather_requirements_files(
-                    docker_settings=docker_settings,
-                    stack=Client().active_stack,
-                    log=False,
-                )
+            logger.info(
+                "Uploading wheel package and installing dependencies on main studio"
             )
-
-            # Extract and clean the requirements
-            requirements = list(
-                itertools.chain.from_iterable(
-                    r[1].strip().split("\n") for r in requirements_files
-                )
+            studio.upload_file(wheel_path)
+            studio.run("pip install uv")
+            studio.run(f"uv pip install {pipeline_requirements_to_string}")
+            studio.run(
+                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
             )
-
-            # Remove empty items and duplicates
-            requirements = sorted(set(filter(None, requirements)))
-
-            requirements_to_string = " ".join(
-                f'"{req}"' for req in requirements
+            studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+            output = studio.run(f"{export_command} && {entrypoint_string}")
+            logger.info(f"Step output: {output}")
+        else:
+            self._upload_and_run_pipeline(
+                deployment,
+                orchestrator_run_id,
+                pipeline_requirements_to_string,
+                settings,
+                _construct_lightning_steps(deployment),
+                wheel_path,
             )
-            run_command = f"{export_command} && {entrypoint_string}"
-            commands = [run_command]
-            steps[step_name] = {
-                "commands": commands,
-                "requirements": requirements_to_string,
-                "machine": step_settings.machine_type
-                if step_settings != settings
-                else None,
-            }
-
-        self._upload_and_run_pipeline(
-            deployment,
-            orchestrator_run_id,
-            requirements_to_string,
-            settings,
-            steps,
-            wheel_path,
-        )
         fileio.rmtree(repository_temp_dir)
 
     def _upload_and_run_pipeline(
@@ -338,9 +378,10 @@ class LightningOrchestrator(WheeledOrchestrator):
         """Upload and run the pipeline on Lightning Studio.
 
         Args:
-            orchestrator_run_id: The id of the orchestrator run.
-            requirements: The requirements to install.
-            settings: The settings to use.
+            deployment: The pipeline deployment to prepare or run.
+            orchestrator_run_id: The orchestrator run id.
+            requirements: The requirements for the pipeline.
+            settings: The orchestrator settings.
             steps_commands: The commands to run for each step.
             wheel_path: The path to the wheel package.
         """
@@ -352,34 +393,39 @@ class LightningOrchestrator(WheeledOrchestrator):
         )
         logger.info(f"Creating main studio: {studio_name}")
         studio = Studio(name=studio_name)
-        if settings.machine_type:
-            studio.start(Machine(settings.machine_type))
-        else:
-            studio.start()
-
-        logger.info(
-            "Uploading wheel package and installing dependencies on main studio"
-        )
-        studio.upload_file(wheel_path)
-        studio.run("pip install uv")
-        studio.run(f"uv pip install {requirements}")
-        studio.run(
-            "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
-        )
-        studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
-
-        for step_name, details in steps_commands.items():
-            if details["machine"]:
-                logger.info(f"Executing step: {step_name} in new studio")
-                self._run_step_in_new_studio(
-                    orchestrator_run_id, step_name, details, wheel_path
-                )
+        try:
+            if settings.machine_type:
+                studio.start(Machine(settings.machine_type))
             else:
-                logger.info(f"Executing step: {step_name} in main studio")
-                self._run_step_in_main_studio(studio, details)
+                studio.start()
 
-        logger.info("Deleting main studio")
-        studio.delete()
+            logger.info(
+                "Uploading wheel package and installing dependencies on main studio"
+            )
+            studio.upload_file(wheel_path)
+            studio.run("pip install uv")
+            studio.run(f"uv pip install {requirements}")
+            studio.run(
+                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+            )
+            studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+
+            for step_name, details in steps_commands.items():
+                if details["machine"]:
+                    logger.info(f"Executing step: {step_name} in new studio")
+                    self._run_step_in_new_studio(
+                        orchestrator_run_id, step_name, details, wheel_path
+                    )
+                else:
+                    logger.info(f"Executing step: {step_name} in main studio")
+                    self._run_step_in_main_studio(studio, details)
+        except Exception as e:
+            logger.error(f"Error running pipeline: {e}")
+            raise e
+        finally:
+            if studio.status != studio.status.NotCreated:
+                logger.info("Deleting main studio")
+                studio.delete()
 
     def _run_step_in_new_studio(
         self,
@@ -414,17 +460,3 @@ class LightningOrchestrator(WheeledOrchestrator):
         for command in details["commands"]:
             output = studio.run(command)
             logger.info(f"Step output: {output}")
-
-
-def sanitize_studio_name(studio_name: str) -> str:
-    """Sanitize studio_names so they conform to Kubernetes studio naming convention.
-
-    Args:
-        studio_name: Arbitrary input studio_name.
-
-    Returns:
-        Sanitized pod name.
-    """
-    studio_name = re.sub(r"[^a-z0-9-]", "-", studio_name.lower())
-    studio_name = re.sub(r"^[-]+", "", studio_name)
-    return re.sub(r"[-]+", "-", studio_name)

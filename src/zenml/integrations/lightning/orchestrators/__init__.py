@@ -19,5 +19,8 @@ from zenml.integrations.lightning.orchestrators.lightning_orchestrator import ( 
 from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_config import (
     LightningEntrypointConfiguration,
 )
+from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_configuration import (
+    LightningOrchestratorEntrypointConfiguration,
+)
 
-__all__ = ["LightningOrchestrator", "LightningEntrypointConfiguration"]
+__all__ = ["LightningOrchestrator", "LightningEntrypointConfiguration", "LightningOrchestratorEntrypointConfiguration"]
