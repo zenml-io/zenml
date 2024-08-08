@@ -56,12 +56,12 @@
     * [Understanding reranking](user-guide/llmops-guide/reranking/understanding-reranking.md)
     * [Implementing reranking in ZenML](user-guide/llmops-guide/reranking/implementing-reranking.md)
     * [Evaluating reranking performance](user-guide/llmops-guide/reranking/evaluating-reranking-performance.md)
-  * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings.md)
+  * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
     * [Synthetic data generation](user-guide/llmops-guide/finetuning-embeddings/synthetic-data-generation.md)
     * [Iterating on data with Argilla](user-guide/llmops-guide/finetuning-embeddings/iterating-on-data-with-argilla.md)
     * [Finetuning embeddings with Sentence Transformers](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
     * [Evaluating finetuned embeddings](user-guide/llmops-guide/finetuning-embeddings/evaluating-finetuned-embeddings.md)
-  * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms.md)
+  * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
 
 ## How-To
 
