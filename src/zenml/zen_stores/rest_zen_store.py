@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
 
-import json
 import os
 import re
 from datetime import datetime
@@ -274,21 +273,6 @@ AnyWorkspaceScopedRequest = TypeVar(
     "AnyWorkspaceScopedRequest",
     bound=WorkspaceScopedRequest,
 )
-
-
-def _ensure_ascii(json_string: str) -> str:
-    """Ensure a json string only contains ascii characters.
-
-    We need to use this when sending data to fastapi, otherwise it fails to
-    parse the request body.
-
-    Args:
-        json_string: A json string
-
-    Returns:
-        The input string with only ascii characters.
-    """
-    return json.dumps(json.loads(json_string), ensure_ascii=True)
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -4311,7 +4295,7 @@ class RestZenStore(BaseZenStore):
         return self._request(
             "POST",
             self.url + API + VERSION_1 + path,
-            data=_ensure_ascii(body.model_dump_json()),
+            json=body.model_dump(mode="json"),
             params=params,
             timeout=timeout,
             **kwargs,
@@ -4338,15 +4322,13 @@ class RestZenStore(BaseZenStore):
             The response body.
         """
         logger.debug(f"Sending PUT request to {path}...")
-        data = (
-            _ensure_ascii(body.model_dump_json(exclude_unset=True))
-            if body
-            else None
+        json = (
+            body.model_dump(mode="json", exclude_unset=True) if body else None
         )
         return self._request(
             "PUT",
             self.url + API + VERSION_1 + path,
-            data=data,
+            json=json,
             params=params,
             timeout=timeout,
             **kwargs,
