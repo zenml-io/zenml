@@ -1,5 +1,63 @@
 <!-- markdown-link-check-disable -->
 
+# 0.64.0
+
+With this new release, we are excited to announce that ZenML is adding 
+[AzureML](https://azure.microsoft.com/en-gb/free/machine-learning) to its long
+list of supported orchestrators. If you already have an Azure account, you 
+can either follow [our new complete guide about setting up an Azure stack](https://docs.zenml.io/how-to/popular-integrations/azure-guide) 
+or dive into the [specific documentation about this new orchestrator](https://docs.zenml.io/stack-components/orchestrators/azureml) 
+in order to get your pipelines running on AzureML.
+
+We have also [released new Terraform modules on the Hashicorp registry](https://www.zenml.io/blog/mlops-terraform-zenml) 
+for provisioning a complete MLOps stack across all major cloud providers. These 
+modules automate the setup of the necessary infrastructure for deploying a 
+ZenML stack. They also handle the registration of all required configurations 
+back to a ZenML server, streamlining the deployment and management of your 
+MLOps infrastructure.
+
+Moreover, we now have [an option that uploads your code to the artifact 
+store to enable Docker build reuse](https://docs.zenml.io/how-to/customize-docker-builds/which-files-are-built-into-the-image).
+This should make it much quicker to iterate quickly while running on remote 
+stacks. This option is turned on by default, and you can disable it by setting 
+`DockerSettings.allow_download_from_artifact_store=False` for your steps or 
+pipelines.
+
+Finally, it is now possible to run ZenML steps defined in notebook cells with 
+remote orchestrators and step operators. Check out [our docs for more details](https://docs.zenml.io/v/docs/how-to/run-remote-pipelines-from-notebooks)
+on some guidelines on how to define your steps to enable this feature.
+
+## What's Changed
+
+* Add 0.63.0 to migration testing by @bcdurak in https://github.com/zenml-io/zenml/pull/2893
+* Document terraform stack deployment modules by @stefannica in https://github.com/zenml-io/zenml/pull/2898
+* README update by @htahir1 in https://github.com/zenml-io/zenml/pull/2901
+* Enable `Databricks` Unity Catalog for MLflow by @safoinme in https://github.com/zenml-io/zenml/pull/2900
+* Make urls pop out from the sea of purple/cyan in the logs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2894
+* Add terraform as a supported stack deployment provider by @stefannica in https://github.com/zenml-io/zenml/pull/2902
+* Fix `Model` imports in docs by @strickvl in https://github.com/zenml-io/zenml/pull/2907
+* Remove hub references by @schustmi in https://github.com/zenml-io/zenml/pull/2905
+* Bump NLP template by @avishniakov in https://github.com/zenml-io/zenml/pull/2912
+* Updated step operator docs by @htahir1 in https://github.com/zenml-io/zenml/pull/2908
+* Added lightning studio check by @htahir1 in https://github.com/zenml-io/zenml/pull/2910
+* Upload code to artifact store by @schustmi in https://github.com/zenml-io/zenml/pull/2895
+* AzureML orchestrator by @bcdurak in https://github.com/zenml-io/zenml/pull/2873
+* Run steps defined in notebooks with remote orchestrators by @schustmi in https://github.com/zenml-io/zenml/pull/2899
+* Fix broken / unparseable md docs file by @strickvl in https://github.com/zenml-io/zenml/pull/2916
+* Bump mlflow to 2.15.0 by @christianversloot in https://github.com/zenml-io/zenml/pull/2896
+* Remove extra button by @schustmi in https://github.com/zenml-io/zenml/pull/2918
+* Added last timestamp to zenserver by @htahir1 in https://github.com/zenml-io/zenml/pull/2913
+* A pipeline can't finish succesfully in this case by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2903
+* Fix the GCP Workload Identity Federation support in the GCP Service Connector by @stefannica in https://github.com/zenml-io/zenml/pull/2914
+* Embeddings finetuning guide for LLMOps guide by @strickvl in https://github.com/zenml-io/zenml/pull/2917
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot who contributed to 
+this release by bumping the `mlflow` version to 2.15.0
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.63.0...0.64.0
+
 # 0.63.0
 
 Moving forward from the last two releases, we have further improved the 
