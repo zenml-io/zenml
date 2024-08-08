@@ -26,8 +26,12 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Understanding reranking](reranking/understanding-reranking.md)
   * [Implementing reranking in ZenML](reranking/implementing-reranking.md)
   * [Evaluating reranking performance](reranking/evaluating-reranking-performance.md)
-* [Improve retrieval by finetuning embeddings](finetuning-embeddings.md)
-* [Finetuning LLMs with ZenML](finetuning-llms.md)
+* [Improve retrieval by finetuning embeddings](finetuning-embeddings/finetuning-embeddings.md)
+  * [Synthetic data generation](finetuning-embeddings/synthetic-data-generation.md)
+  * [Iterating on data with Argilla](finetuning-embeddings/iterating-on-data-with-argilla.md)
+  * [Finetuning embeddings with Sentence Transformers](finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
+  * [Evaluating finetuned embeddings](finetuning-embeddings/evaluating-finetuned-embeddings.md)
+* [Finetuning LLMs with ZenML](finetuning-llms/finetuning-llms.md)
 
 To follow along with the examples and tutorials in this guide, ensure you have a Python environment set up with ZenML installed. Familiarity with the concepts covered in the [Starter Guide](../starter-guide/README.md) and [Production Guide](../production-guide/README.md) is recommended.
 
