@@ -35,5 +35,10 @@ projects by allowing them to organize and explore data through within an
 interactive and engaging UI. Both libraries can be used individually but they
 work better together. We'll showcase their use via ZenML pipelines.
 
+To follow along with the example explained in this guide, please follow the
+instructions in [the `llm-complete-guide` repository](https://github.com/zenml-io/zenml-projects/llm-complete-guide/README.md) where the full code is also
+available. This specific section on embeddings finetuning can be run locally or
+using cloud compute as you prefer.
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
