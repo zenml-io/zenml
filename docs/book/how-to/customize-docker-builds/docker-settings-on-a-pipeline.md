@@ -2,6 +2,11 @@
 description: Using Docker images to run your pipeline.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Specify Docker settings for a pipeline
 
 When a [pipeline is run with a remote orchestrator](../configure-python-environments/README.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the Docker image using the [image builder](../configure-python-environments/README.md#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:

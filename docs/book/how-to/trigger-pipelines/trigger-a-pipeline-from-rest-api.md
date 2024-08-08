@@ -3,6 +3,11 @@ description: >-
   Trigger a pipeline from the rest API.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Trigger a pipeline from the REST API
 
 {% hint style="info" %}
