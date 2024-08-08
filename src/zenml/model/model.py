@@ -852,7 +852,7 @@ class Model(BaseModel):
             if pipeline_run.start_time:
                 start_time = pipeline_run.start_time
             else:
-                start_time = datetime.datetime.now(datetime.UTC)
+                start_time = datetime.datetime.now(datetime.timezone.utc)
             self.version = format_name_template(
                 self.version,
                 date=start_time.strftime("%Y_%m_%d"),

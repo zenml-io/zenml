@@ -144,7 +144,7 @@ def validate_name(model: BaseModel) -> None:
 def format_name_template(
     name_template: str,
     **kwargs: str,
-):
+) -> str:
     """Formats a name template with the given arguments.
 
     By default, ZenML support Date and Time placeholders.
