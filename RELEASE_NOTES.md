@@ -2,30 +2,51 @@
 
 # 0.64.0
 
-With this new release, we are excited to announce that ZenML is adding 
-[AzureML](https://azure.microsoft.com/en-gb/free/machine-learning) to its long
-list of supported orchestrators. If you already have an Azure account, you 
-can either follow [our new complete guide about setting up an Azure stack](https://docs.zenml.io/how-to/popular-integrations/azure-guide) 
-or dive into the [specific documentation about this new orchestrator](https://docs.zenml.io/stack-components/orchestrators/azureml) 
-in order to get your pipelines running on AzureML.
+## New Features and Improvements
 
-We have also [released new Terraform modules on the Hashicorp registry](https://www.zenml.io/blog/mlops-terraform-zenml) 
-for provisioning a complete MLOps stack across all major cloud providers. These 
-modules automate the setup of the necessary infrastructure for deploying a 
-ZenML stack. They also handle the registration of all required configurations 
-back to a ZenML server, streamlining the deployment and management of your 
-MLOps infrastructure.
+### Notebook Integration
 
-Moreover, we now have [an option that uploads your code to the artifact 
-store to enable Docker build reuse](https://docs.zenml.io/how-to/customize-docker-builds/which-files-are-built-into-the-image).
-This should make it much quicker to iterate quickly while running on remote 
-stacks. This option is turned on by default, and you can disable it by setting 
-`DockerSettings.allow_download_from_artifact_store=False` for your steps or 
-pipelines.
+ZenML now supports running steps defined in notebook cells with remote 
+orchestrators and step operators. This feature enhances the development 
+workflow by allowing seamless transition from experimentation to production.
 
-Finally, it is now possible to run ZenML steps defined in notebook cells with 
-remote orchestrators and step operators. Check out [our docs for more details](https://docs.zenml.io/v/docs/how-to/run-remote-pipelines-from-notebooks)
-on some guidelines on how to define your steps to enable this feature.
+- **Details**: [Running remote pipelines from notebooks](https://docs.zenml.io/v/docs/how-to/run-remote-pipelines-from-notebooks)
+
+### Reduced Docker Builds with Code Uploads
+
+We've introduced an option to upload code to the artifact store, enabling 
+Docker build reuse. This feature can significantly speed up iteration, 
+especially when working with remote stacks.
+
+- **Default**: Enabled
+- **Configuration**: To disable, set `DockerSettings.allow_download_from_artifact_store=False` 
+for steps or pipelines
+- **Benefits**: 
+  - Faster development cycles
+  - No need to register a code repository to reuse builds
+  - Builds only occur when requirements or DockerSettings change
+- **Documentation**: [Which files are built into the image](https://docs.zenml.io/how-to/customize-docker-builds/which-files-are-built-into-the-image)
+
+### AzureML Orchestrator Support
+
+ZenML now supports [AzureML](https://azure.microsoft.com/en-gb/free/machine-learning) 
+as an orchestrator, expanding our list of supported cloud platforms.
+
+- **Full Azure Guide**: [Setting up an Azure stack](https://docs.zenml.io/how-to/popular-integrations/azure-guide)
+- **Documentation**: [AzureML orchestrator](https://docs.zenml.io/stack-components/orchestrators/azureml)
+
+### Terraform Modules
+
+We've released new Terraform modules on the Hashicorp registry for 
+provisioning complete MLOps stacks across major cloud providers.
+
+- **Features**: 
+  - Automate infrastructure setup for ZenML stack deployment
+  - Handle registration of configurations to ZenML server
+- **More Information**: [MLOps Terraform ZenML blog post](https://www.zenml.io/blog/mlops-terraform-zenml)
+
+These updates aim to streamline the MLOps workflow, making it easier to 
+develop, deploy, and manage machine learning pipelines with ZenML.
 
 ## What's Changed
 
