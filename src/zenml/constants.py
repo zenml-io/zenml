@@ -165,7 +165,6 @@ ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT = "ZENML_SKIP_IMAGE_BUILDER_DEFAULT"
 ENV_ZENML_REQUIRES_CODE_DOWNLOAD = "ZENML_REQUIRES_CODE_DOWNLOAD"
 ENV_ZENML_SERVER = "ZENML_SERVER"
 ENV_ZENML_LOCAL_SERVER = "ZENML_LOCAL_SERVER"
-ENV_ZENML_HUB_URL = "ZENML_HUB_URL"
 ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
 ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
@@ -279,7 +278,6 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
 _csp_script_src_urls = ["https://widgets-v3.featureos.app"]
 _csp_connect_src_urls = [
     "https://sdkdocs.zenml.io",
-    "https://hubapi.zenml.io",
     "https://analytics.zenml.io",
 ]
 _csp_img_src_urls = [
@@ -315,6 +313,7 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS = (
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_REPORT_TO = "default"
 DEFAULT_ZENML_SERVER_USE_LEGACY_DASHBOARD = False
+DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS = 30
 
 # Configurations to decide which resources report their usage and check for
 # entitlement in the case of a cloud deployment. Expected Format is this:
@@ -494,3 +493,11 @@ BANNED_NAME_CHARACTERS = "\t\n\r\v\f"
 
 
 STACK_DEPLOYMENT_API_TOKEN_EXPIRATION = 60 * 6  # 6 hours
+
+# ZenML Pro
+ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT = (
+    "\nHINT: Since you are trying to communicate with the ZenML Pro Tenant, "
+    "please make sure that your tenant is in RUNNING state on your "
+    "Organization page. If the tenant is PAUSED you can `Resume` it via UI "
+    "and try again."
+)

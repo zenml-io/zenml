@@ -1,5 +1,6 @@
 """Utility functions for running pipelines."""
 
+import hashlib
 import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
@@ -8,11 +9,13 @@ from uuid import UUID
 from zenml import constants
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.source import SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
+    PipelineDeploymentBase,
     PipelineDeploymentResponse,
     PipelineRunRequest,
     PipelineRunResponse,
@@ -20,6 +23,7 @@ from zenml.models import (
 )
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Flavor, Stack
+from zenml.utils import code_utils, notebook_utils
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
@@ -245,3 +249,67 @@ def validate_run_config_is_runnable_from_server(
             raise ValueError(
                 "Can't set DockerSettings when running pipeline via Rest API."
             )
+
+
+def upload_notebook_cell_code_if_necessary(
+    deployment: "PipelineDeploymentBase", stack: "Stack"
+) -> None:
+    """Upload notebook cell code if necessary.
+
+    This function checks if any of the steps of the pipeline that will be
+    executed in a different process are defined in a notebook. If that is the
+    case, it will extract that notebook cell code into python files and upload
+    an archive of all the necessary files to the artifact store.
+
+    Args:
+        deployment: The deployment.
+        stack: The stack on which the deployment will happen.
+
+    Raises:
+        RuntimeError: If the code for one of the steps that will run out of
+            process cannot be extracted into a python file.
+    """
+    code_archive = code_utils.CodeArchive(root=None)
+    should_upload = False
+    sources_that_require_upload = []
+
+    for step in deployment.step_configurations.values():
+        source = step.spec.source
+
+        if source.type == SourceType.NOTEBOOK:
+            if (
+                stack.orchestrator.flavor != "local"
+                or step.config.step_operator
+            ):
+                should_upload = True
+                cell_code = getattr(step.spec.source, "_cell_code", None)
+
+                # Code does not run in-process, which means we need to
+                # extract the step code into a python file
+                if not cell_code:
+                    raise RuntimeError(
+                        f"Unable to run step {step.config.name}. This step is "
+                        "defined in a notebook and you're trying to run it "
+                        "in a remote environment, but ZenML was not able to "
+                        "detect the step code in the notebook. To fix "
+                        "this error, define your step in a python file instead "
+                        "of a notebook."
+                    )
+
+                notebook_utils.warn_about_notebook_cell_magic_commands(
+                    cell_code=cell_code
+                )
+
+                code_hash = hashlib.sha1(cell_code.encode()).hexdigest()  # nosec
+                module_name = f"extracted_notebook_code_{code_hash}"
+                file_name = f"{module_name}.py"
+                code_archive.add_file(source=cell_code, destination=file_name)
+
+                setattr(step.spec.source, "replacement_module", module_name)
+                sources_that_require_upload.append(source)
+
+    if should_upload:
+        logger.info("Archiving notebook code...")
+        code_path = code_utils.upload_code_if_necessary(code_archive)
+        for source in sources_that_require_upload:
+            setattr(source, "code_path", code_path)

@@ -42,6 +42,7 @@ class SourceType(Enum):
     INTERNAL = "internal"
     DISTRIBUTION_PACKAGE = "distribution_package"
     CODE_REPOSITORY = "code_repository"
+    NOTEBOOK = "notebook"
     UNKNOWN = "unknown"
 
 
@@ -225,6 +226,63 @@ class CodeRepositorySource(Source):
         """
         if value != SourceType.CODE_REPOSITORY:
             raise ValueError("Invalid source type.")
+
+        return value
+
+
+class NotebookSource(Source):
+    """Source representing an object defined in a notebook.
+
+    Attributes:
+        code_path: Path where the notebook cell code for this source is
+            uploaded.
+        replacement_module: Name of the module from which this source should
+            be loaded in case the code is not running in a notebook.
+    """
+
+    code_path: Optional[str] = None
+    replacement_module: Optional[str] = None
+    type: SourceType = SourceType.NOTEBOOK
+
+    # Private attribute that is used to store the code but should not be
+    # serialized
+    _cell_code: Optional[str] = None
+
+    @field_validator("type")
+    @classmethod
+    def _validate_type(cls, value: SourceType) -> SourceType:
+        """Validate the source type.
+
+        Args:
+            value: The source type.
+
+        Raises:
+            ValueError: If the source type is not `NOTEBOOK`.
+
+        Returns:
+            The source type.
+        """
+        if value != SourceType.NOTEBOOK:
+            raise ValueError("Invalid source type.")
+
+        return value
+
+    @field_validator("module")
+    @classmethod
+    def _validate_module(cls, value: str) -> str:
+        """Validate the module.
+
+        Args:
+            value: The module.
+
+        Raises:
+            ValueError: If the module is not `__main__`.
+
+        Returns:
+            The module.
+        """
+        if value != "__main__":
+            raise ValueError("Invalid module for notebook source.")
 
         return value
 

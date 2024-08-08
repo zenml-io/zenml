@@ -56,8 +56,11 @@
     * [Understanding reranking](user-guide/llmops-guide/reranking/understanding-reranking.md)
     * [Implementing reranking in ZenML](user-guide/llmops-guide/reranking/implementing-reranking.md)
     * [Evaluating reranking performance](user-guide/llmops-guide/reranking/evaluating-reranking-performance.md)
-  * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings.md)
-  * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms.md)
+  * [Improve retrieval by finetuning embeddings](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
+    * [Synthetic data generation](user-guide/llmops-guide/finetuning-embeddings/synthetic-data-generation.md)
+    * [Finetuning embeddings with Sentence Transformers](user-guide/llmops-guide/finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
+    * [Evaluating finetuned embeddings](user-guide/llmops-guide/finetuning-embeddings/evaluating-finetuned-embeddings.md)
+  * [Finetuning LLMs with ZenML](user-guide/llmops-guide/finetuning-llms/finetuning-llms.md)
 
 ## How-To
 
@@ -87,7 +90,7 @@
   * [Trigger a pipeline from Python Client](how-to/trigger-pipelines/trigger-a-pipeline-from-client.md)
   * [Trigger a pipeline from another pipeline](how-to/trigger-pipelines/trigger-a-pipeline-from-another.md)
   * [Trigger a pipeline from REST API](how-to/trigger-pipelines/trigger-a-pipeline-from-rest-api.md)
-* [🚨 Create and run templates](how-to/create-and-run-templates/README.md)
+* [▶️ Create and run templates](how-to/create-and-run-templates/README.md)
   * [Create a run template](how-to/create-and-run-templates/create-a-run-template.md)
   * [Run a template](how-to/create-and-run-templates/run-a-template.md)
 * [📃 Use configuration files](how-to/use-configuration-files/README.md)
@@ -158,6 +161,7 @@
 * [👨‍🎤 Popular integrations](how-to/popular-integrations/README.md)
   * [Run on AWS](how-to/popular-integrations/aws-guide.md)
   * [Run on GCP](how-to/popular-integrations/gcp-guide.md)
+  * [Run on Azure](how-to/popular-integrations/azure-guide.md)
   * [Kubeflow](how-to/popular-integrations/kubeflow.md)
   * [Kubernetes](how-to/popular-integrations/kubernetes.md)
   * [MLflow](how-to/popular-integrations/mlflow.md)
@@ -177,6 +181,8 @@
 * [🔌 Connect to a server](how-to/connecting-to-zenml/README.md)
   * [Connect in with your User (interactive)](how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md)
   * [Connect with a Service Account](how-to/connecting-to-zenml/connect-with-a-service-account.md)
+* [📔 Run remote pipelines from notebooks](how-to/run-remote-pipelines-from-notebooks/README.md)
+  * [Define steps in notebook cells](how-to/run-remote-pipelines-from-notebooks/define-steps-in-notebook-cells.md)
 * [🔐 Interact with secrets](how-to/interact-with-secrets.md)
 * [🐞 Debug and solve issues](how-to/debug-and-solve-issues.md)
 
@@ -190,6 +196,7 @@
   * [Kubernetes Orchestrator](component-guide/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](component-guide/orchestrators/vertex.md)
   * [AWS Sagemaker Orchestrator](component-guide/orchestrators/sagemaker.md)
+  * [AzureML Orchestrator](component-guide/orchestrators/azureml.md)
   * [Databricks Orchestrator](component-guide/orchestrators/databricks.md)
   * [Tekton Orchestrator](component-guide/orchestrators/tekton.md)
   * [Airflow Orchestrator](component-guide/orchestrators/airflow.md)

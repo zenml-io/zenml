@@ -28,6 +28,7 @@ from zenml.constants import (
     DEVICE_AUTHORIZATION,
     LOGIN,
     VERSION_1,
+    ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT,
 )
 from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
@@ -93,6 +94,11 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
     # Get rid of any trailing slashes to prevent issues when having double
     # slashes in the URL
     url = url.rstrip("/")
+    zenml_pro_extra = ""
+    if ".zenml.io" in url:
+        zenml_pro_extra = (
+            ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT
+        )
     try:
         auth_url = url + API + VERSION_1 + DEVICE_AUTHORIZATION
         response = requests.post(
@@ -111,6 +117,7 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
             logger.info(f"Error: {response.status_code} {response.text}")
             raise AuthorizationException(
                 "Could not connect to API server. Please check the URL."
+                + zenml_pro_extra
             )
     except (requests.exceptions.JSONDecodeError, ValueError, TypeError):
         logger.exception("Bad response received from API server.")
@@ -121,6 +128,7 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
         logger.exception("Could not connect to API server.")
         raise AuthorizationException(
             "Could not connect to API server. Please check the URL."
+            + zenml_pro_extra
         )
 
     # Open the verification URL in the user's browser

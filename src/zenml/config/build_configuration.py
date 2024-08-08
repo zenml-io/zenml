@@ -14,11 +14,13 @@
 """Build configuration class."""
 
 import hashlib
+import json
 from typing import TYPE_CHECKING, Dict, Optional
 
 from pydantic import BaseModel
 
-from zenml.config.docker_settings import DockerSettings, SourceFileMode
+from zenml.config.docker_settings import DockerSettings
+from zenml.utils import json_utils
 
 if TYPE_CHECKING:
     from zenml.code_repositories import BaseCodeRepository
@@ -60,7 +62,14 @@ class BuildConfiguration(BaseModel):
             The checksum.
         """
         hash_ = hashlib.md5()  # nosec
-        hash_.update(self.settings.model_dump_json().encode())
+        settings_json = json.dumps(
+            self.settings.model_dump(
+                mode="json", exclude={"prevent_build_reuse"}
+            ),
+            sort_keys=True,
+            default=json_utils.pydantic_encoder,
+        )
+        hash_.update(settings_json.encode())
         if self.entrypoint:
             hash_.update(self.entrypoint.encode())
 
@@ -72,7 +81,7 @@ class BuildConfiguration(BaseModel):
             PipelineDockerImageBuilder,
         )
 
-        pass_code_repo = self.should_download_files(
+        pass_code_repo = self.should_download_files_from_code_repository(
             code_repository=code_repository
         )
         requirements_files = (
@@ -101,16 +110,10 @@ class BuildConfiguration(BaseModel):
         Returns:
             Whether files should be included in the image.
         """
-        if self.settings.source_files == SourceFileMode.INCLUDE:
-            return True
+        if self.should_download_files(code_repository=code_repository):
+            return False
 
-        if (
-            self.settings.source_files == SourceFileMode.DOWNLOAD_OR_INCLUDE
-            and not code_repository
-        ):
-            return True
-
-        return False
+        return self.settings.allow_including_files_in_images
 
     def should_download_files(
         self,
@@ -125,10 +128,33 @@ class BuildConfiguration(BaseModel):
         Returns:
             Whether files should be downloaded in the image.
         """
-        if not code_repository:
-            return False
+        if self.should_download_files_from_code_repository(
+            code_repository=code_repository
+        ):
+            return True
 
-        return self.settings.source_files in {
-            SourceFileMode.DOWNLOAD,
-            SourceFileMode.DOWNLOAD_OR_INCLUDE,
-        }
+        if self.settings.allow_download_from_artifact_store:
+            return True
+
+        return False
+
+    def should_download_files_from_code_repository(
+        self,
+        code_repository: Optional["BaseCodeRepository"],
+    ) -> bool:
+        """Whether files should be downloaded from the code repository.
+
+        Args:
+            code_repository: Code repository that can be used to download files
+                inside the image.
+
+        Returns:
+            Whether files should be downloaded from the code repository.
+        """
+        if (
+            code_repository
+            and self.settings.allow_download_from_code_repository
+        ):
+            return True
+
+        return False

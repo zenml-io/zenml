@@ -585,6 +585,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             run_name: Orchestrator run name.
             settings: Pipeline level settings for this orchestrator.
             schedule: The schedule the pipeline will run on.
+
+        Raises:
+            RuntimeError: If the Vertex Orchestrator fails to provision or any other Runtime errors
         """
         # We have to replace the hyphens in the run name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
@@ -667,13 +670,15 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     run.wait()
 
         except google_exceptions.ClientError as e:
-            logger.warning(
-                "Failed to create the Vertex AI Pipelines job: %s", e
+            logger.error("Failed to create the Vertex AI Pipelines job: %s", e)
+            raise RuntimeError(
+                f"Failed to create the Vertex AI Pipelines job: {e}"
             )
         except RuntimeError as e:
             logger.error(
                 "The Vertex AI Pipelines job execution has failed: %s", e
             )
+            raise
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
