@@ -49,17 +49,12 @@ def train_model(
     per_device_train_batch_size: int,
     gradient_accumulation_steps: int,
     dataloader_num_workers: int,
-) -> Tuple[
-    Annotated[T5ForConditionalGeneration, "model", ArtifactConfig(is_model_artifact=True)],
-    Annotated[T5Tokenizer, "tokenizer"],
-]:
+) -> Annotated[T5ForConditionalGeneration, "model", ArtifactConfig(is_model_artifact=True)]:
     """Train the model and return the path to the saved model."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = T5ForConditionalGeneration.from_pretrained(model_type)
     model = model.to(device)
-
-    tokenizer = T5Tokenizer.from_pretrained(model_type)
 
     training_args = TrainingArguments(
         output_dir="./results",
@@ -85,4 +80,4 @@ def train_model(
 
     trainer.train()
 
-    return trainer.model, tokenizer
+    return trainer.model

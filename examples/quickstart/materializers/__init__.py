@@ -15,3 +15,4 @@
 # limitations under the License.
 #
 from .t5_materializer import T5Materializer
+from .dataset_materializer import DatasetMaterializer

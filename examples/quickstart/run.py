@@ -93,7 +93,7 @@ def main(
         config_folder, f"training_{orchestration_environment}.yaml"
     )
     english_translation_pipeline.with_options(**pipeline_args)(
-        model_type, **run_args_train
+        model_type=model_type, **run_args_train
     )
     logger.info("Training pipeline finished successfully!\n\n")
 

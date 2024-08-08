@@ -59,9 +59,23 @@ zenml connect --url=""
 python run.py --model_type=t5-small --orchestration_environment local
 ```
 
-## 🌵 Learning MLOps with ZenML
+## 🌵 Running Remotely
 
-This project is also a great source of learning about some fundamental MLOps concepts. 
+```
+zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
+python run.py --model_type=t5-large --orchestration_environment aws
+```
+```
+zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
+python run.py --model_type=t5-large --orchestration_environment gcp
+```
+
+```
+zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
+python run.py --model_type=t5-large --orchestration_environment azure
+```
+
+
 
 
 ## :bulb: Learn More

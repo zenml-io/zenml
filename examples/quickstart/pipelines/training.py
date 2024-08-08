@@ -19,7 +19,7 @@
 from steps import (
     evaluate_model,
     load_data,
-    test_random_sentences,
+    model_tester,
     tokenize_data,
     train_model,
 )
@@ -34,15 +34,15 @@ logger = get_logger(__name__)
 @pipeline
 def english_translation_pipeline(
     model_type: T5_Model,
-    num_train_epochs: int,
     per_device_train_batch_size: int,
     gradient_accumulation_steps: int,
     dataloader_num_workers: int,
+    num_train_epochs: int = 5,
 ):
     """Define a pipeline that connects the steps."""
-    dataset = load_data()
-    tokenized_dataset = tokenize_data(dataset)
-    model, tokenizer = train_model(
+    dataset, test_dataset = load_data()
+    tokenized_dataset, tokenizer = tokenize_data(dataset, model_type)
+    model = train_model(
         tokenized_dataset,
         model_type,
         num_train_epochs,
@@ -51,4 +51,4 @@ def english_translation_pipeline(
         dataloader_num_workers,
     )
     evaluate_model(model, tokenized_dataset)
-    test_random_sentences(model, tokenizer)
+    model_tester(model, tokenizer, test_dataset)

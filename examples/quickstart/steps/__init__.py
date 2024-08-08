@@ -28,5 +28,5 @@ from .model_evaluator import (
     evaluate_model
 )
 from .random_tester import (
-    test_random_sentences
+    model_tester
 )

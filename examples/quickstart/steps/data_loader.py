@@ -14,17 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Tuple, Annotated
 
 from datasets import Dataset
 
 from zenml import step
 from zenml.logger import get_logger
 
+from materializers.dataset_materializer import DatasetMaterializer
+
 logger = get_logger(__name__)
 
+PROMPT = ""  # In case you want to also use a prompt you can set it here
 
-@step
-def load_data() -> Dataset:
+@step(output_materializers=DatasetMaterializer)
+def load_data() -> Tuple[
+    Annotated[Dataset, "dataset"],
+    Annotated[Dataset, "test_dataset"],
+]:
     """Load and prepare the dataset."""
 
     def read_data(file_path):
@@ -35,7 +42,7 @@ def load_data() -> Dataset:
             for line in file:
                 old, modern = line.strip().split("|")
                 inputs.append(
-                    f"translate Old English to Modern English: {old}"
+                    f"{PROMPT}{old}"
                 )
                 targets.append(modern)
 
@@ -43,4 +50,6 @@ def load_data() -> Dataset:
 
     # Assuming your file is named 'translations.txt'
     data = read_data("translations.txt")
-    return Dataset.from_dict(data)
+    test_data = read_data("test-translations.txt")
+
+    return Dataset.from_dict(data), Dataset.from_dict(test_data)

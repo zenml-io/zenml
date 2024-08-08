@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import random
+from datasets import Dataset
 
 import torch
 from transformers import (
@@ -25,120 +25,24 @@ from transformers import (
 from zenml import step, log_model_metadata
 from zenml.logger import get_logger
 
+from .data_loader import PROMPT
 logger = get_logger(__name__)
-
-old_english_words = [
-    "Thrice",
-    "brinded",
-    "hath",
-    "mew'd",
-    "Tongue",
-    "adder's",
-    "fork",
-    "raven",
-    "hoarse",
-    "Unsex",
-    "fardels",
-    "Yond",
-    "lean",
-    "hungry",
-    "Zounds",
-    "pox",
-    "Alack",
-    "perfumes",
-    "Arabia",
-    "sweeten",
-    "wit's end",
-    "Ay",
-    "rub",
-    "Bacon-fed",
-    "knaves",
-    "Beggars",
-    "mounted",
-    "Bestride",
-    "Colossus",
-    "Brave",
-    "toil",
-    "trouble",
-    "yonder",
-    "pricking",
-    "thumbs",
-    "wicked",
-    "Havoc",
-    "bootless",
-    "cloistered",
-    "newt",
-    "frog",
-    "Fie",
-    "foh",
-    "fum",
-    "Flaming",
-    "youth",
-    "Foregone",
-    "Frailty",
-    "cradle",
-    "grave",
-    "Gild",
-    "lily",
-    "Hark",
-    "Hie",
-    "thee",
-    "hence",
-    "Howl",
-    "wink",
-    "dagger",
-    "idiot",
-    "green-eyed",
-    "monster",
-    "parlous",
-    "Methinks",
-    "doth",
-    "protest",
-    "bedfellows",
-    "kingdom",
-    "horse",
-    "stirring",
-    "flesh",
-    "melt",
-    "breach",
-    "villain",
-    "damned",
-    "spot",
-    "Plague",
-    "Valiant",
-    "Primrose",
-    "slaughter",
-    "budge",
-    "alarum-bell",
-    "eyeballs",
-    "heavens",
-    "Strumpet",
-    "fortune",
-    "Tartar's",
-    "bow",
-]
 
 
 @step
-def test_random_sentences(
-    model: T5ForConditionalGeneration, tokenizer: T5Tokenizer
+def model_tester(
+    model: T5ForConditionalGeneration, tokenizer: T5Tokenizer, test_dataset: Dataset
 ) -> None:
     """Test the model on some generated Old English-style sentences."""
 
     model.eval()  # Set the model to evaluation mode
 
-    def generate_old_english_sentence():
-        sentence_length = random.randint(5, 10)
-        return " ".join(
-            random.choice(old_english_words) for _ in range(sentence_length)
-        )
+    test_collection = {}
 
-    test_sentences = [generate_old_english_sentence() for _ in range(5)]
-
-    for index, sentence in enumerate(test_sentences):
-        input_text = f"Translate Old English to Modern English: {sentence}"
+    for index in range(len(test_dataset)):
+        sentence = test_dataset[index]['input']
         input_ids = tokenizer(
-            input_text,
+            sentence,
             return_tensors="pt",
             max_length=128,
             truncation=True,
@@ -158,11 +62,16 @@ def test_random_sentences(
 
         decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        logger.info(f"Generated Old English: {sentence}")
+        sentence_without_prompt = sentence.strip(PROMPT)
+
+        logger.info(f"Generated Old English: {sentence_without_prompt}")
         logger.info(f"Model Translation: {decoded_output} \n")
 
-        log_model_metadata(
-            {f"Example Prompt {index}: ": input_text,
-             f"Example Response {index}: ": decoded_output},
-        )
+        test_collection[f"Prompt {index}"] = {sentence_without_prompt: decoded_output}
+
+    print(test_collection)
+
+    log_model_metadata(
+        {"Example Prompts": test_collection}
+    )
 

@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Annotated, Tuple
+
 from datasets import Dataset
 from transformers import (
     T5Tokenizer,
@@ -22,13 +24,19 @@ from transformers import (
 from zenml import step
 from zenml.logger import get_logger
 
+from steps.model_trainer import T5_Model
+from materializers import T5Materializer, DatasetMaterializer
+
 logger = get_logger(__name__)
 
 
-@step
-def tokenize_data(dataset: Dataset) -> Dataset:
+@step(output_materializers=[T5Materializer, DatasetMaterializer])
+def tokenize_data(dataset: Dataset, model_type: T5_Model) -> Tuple[
+    Annotated[Dataset, "tokenized_dataset"],
+    Annotated[T5Tokenizer, "tokenizer"],
+]:
     """Tokenize the dataset."""
-    tokenizer = T5Tokenizer.from_pretrained("t5-small")
+    tokenizer = T5Tokenizer.from_pretrained(model_type)
 
     def tokenize_function(examples):
         model_inputs = tokenizer(
@@ -46,4 +54,4 @@ def tokenize_data(dataset: Dataset) -> Dataset:
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
-    return dataset.map(tokenize_function, batched=True)
+    return dataset.map(tokenize_function, batched=True), tokenizer
