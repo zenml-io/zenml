@@ -150,7 +150,7 @@ def pipeline():
 ### Run pipelines on a schedule
 
 The AzureML orchestrator supports running pipelines on a schedule using 
-its [JobSchedules](https://learn.microsoft.com/en-us/azure/templates/microsoft.automation/2023-11-01/automationaccounts/jobschedules?pivots=deployment-language-bicep). 
+its [JobSchedules](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-schedule-pipeline-job?view=azureml-api-2&tabs=python). 
 Both cron expression and intervals are supported.
 
 ```python
