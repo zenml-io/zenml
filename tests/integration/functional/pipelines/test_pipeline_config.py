@@ -25,9 +25,10 @@ from zenml.model.model import Model
 
 @step
 def assert_model_step():
-    model = get_step_context().pipeline_run.config.model
+    model = get_step_context().model
     assert model is not None
     assert model.name == "foo"
+    assert model.version == str(model.number)
     assert model.description == "description"
     assert model.license == "MIT"
     assert model.audience == "audience"
