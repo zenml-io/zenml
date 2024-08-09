@@ -33,7 +33,7 @@ from zenml.models import (
     PipelineRunFilter,
     ScheduleFilter,
 )
-from zenml.new.pipelines.pipeline import Pipeline
+from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 

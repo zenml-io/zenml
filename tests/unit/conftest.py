@@ -71,10 +71,10 @@ from zenml.models.v2.core.service import (
     ServiceResponseBody,
     ServiceResponseMetadata,
 )
-from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
+from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 from zenml.stack.stack import Stack
@@ -213,7 +213,7 @@ def _empty_step() -> None:
 @pytest.fixture
 def empty_step():
     """Pytest fixture that returns an empty (no input, no output) step."""
-    return _empty_step
+    return _empty_step.copy()
 
 
 @pytest.fixture
@@ -240,23 +240,29 @@ def generate_empty_steps():
 def one_step_pipeline():
     """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
 
-    @pipeline
-    def _pipeline(step_):
-        step_()
+    def _wrapper(step_):
+        @pipeline
+        def _pipeline():
+            step_()
 
-    return _pipeline
+        return _pipeline
+
+    return _wrapper
 
 
 @pytest.fixture
 def unconnected_two_step_pipeline():
     """Pytest fixture that returns a pipeline which takes two steps `step_1` and `step_2`. The steps are not connected to each other."""
 
-    @pipeline
-    def _pipeline(step_1, step_2):
-        step_1()
-        step_2()
+    def _wrapper(step_1, step_2):
+        @pipeline
+        def _pipeline():
+            step_1()
+            step_2()
 
-    return _pipeline
+        return _pipeline
+
+    return _wrapper
 
 
 @step

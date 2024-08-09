@@ -29,7 +29,7 @@ def test_materializer_with_subclassing_parameter():
         return MyFloatType(3.0)
 
     with does_not_raise():
-        some_step()()
+        some_step()
 
 
 def test_materializer_with_parameter_with_more_than_one_baseclass():
@@ -47,7 +47,7 @@ def test_materializer_with_parameter_with_more_than_one_baseclass():
         return MyFloatType(3.0)
 
     with does_not_raise():
-        some_step()()
+        some_step()
 
 
 class MyFirstType:
@@ -78,9 +78,8 @@ def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
     def some_step() -> MyConflictingType:
         return MyConflictingType()
 
-    step_instance = some_step()
     with does_not_raise():
-        step_instance._finalize_configuration(
+        some_step._finalize_configuration(
             input_artifacts={},
             external_artifacts={},
             model_artifacts_or_metadata={},
@@ -90,7 +89,7 @@ def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
     # The step uses the materializer registered for the earliest class in the
     # python MRO
     assert (
-        step_instance.configuration.outputs["output"]
+        some_step.configuration.outputs["output"]
         .materializer_source[0]
         .attribute
         == "MyFirstMaterializer"
@@ -107,4 +106,4 @@ def test_materializer_with_conflicting_parameter_and_explicit_materializer():
         return MyConflictingType()
 
     with does_not_raise():
-        some_step().configure(output_materializers=MyFirstMaterializer)()
+        some_step.configure(output_materializers=MyFirstMaterializer)()

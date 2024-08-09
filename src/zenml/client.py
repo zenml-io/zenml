@@ -2483,7 +2483,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             Model of the pipeline run.
         """
-        from zenml.new.pipelines.run_utils import (
+        from zenml.pipelines.run_utils import (
             validate_run_config_is_runnable_from_server,
             validate_stack_is_runnable_from_server,
             wait_for_pipeline_run_to_finish,

@@ -142,8 +142,8 @@ def connected_two_step_pipeline(step_1, step_2):
 
 
 pipeline_instance = connected_two_step_pipeline(
-    step_1=constant_int_output_test_step(),
-    step_2=int_plus_one_test_step(),
+    step_1=constant_int_output_test_step,
+    step_2=int_plus_one_test_step,
 )
 
 

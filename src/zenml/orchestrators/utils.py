@@ -33,7 +33,7 @@ from zenml.enums import StoreType
 from zenml.exceptions import StepContextError
 from zenml.model.utils import link_artifact_config_to_model
 from zenml.models.v2.core.step_run import StepRunRequest
-from zenml.new.steps.step_context import get_step_context
+from zenml.steps.step_context import get_step_context
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact_config import (

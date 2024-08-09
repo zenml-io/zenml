@@ -38,7 +38,7 @@ from zenml.models import (
     PipelineDeploymentBase,
     PipelineDeploymentResponse,
 )
-from zenml.new.pipelines import build_utils
+from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -367,7 +367,7 @@ def test_custom_build_verification(
         )
     )
     mocker.patch(
-        "zenml.new.pipelines.build_utils.requires_download_from_code_repository",
+        "zenml.pipelines.build_utils.requires_download_from_code_repository",
         return_value=True,
     )
 
@@ -433,7 +433,7 @@ def test_local_repo_verification(
         server_version=sample_deployment_response_model.server_version,
     )
     mocker.patch(
-        "zenml.new.pipelines.build_utils.requires_download_from_code_repository",
+        "zenml.pipelines.build_utils.requires_download_from_code_repository",
         return_value=False,
     )
 
@@ -451,7 +451,7 @@ def test_local_repo_verification(
     )
 
     mocker.patch(
-        "zenml.new.pipelines.build_utils.requires_download_from_code_repository",
+        "zenml.pipelines.build_utils.requires_download_from_code_repository",
         return_value=True,
     )
     mocker.patch.object(Stack, "get_docker_builds", return_value=[])
@@ -531,7 +531,7 @@ def test_finding_existing_build(mocker, sample_deployment_response_model):
         ),
     )
     mocker.patch(
-        "zenml.new.pipelines.build_utils.compute_build_checksum",
+        "zenml.pipelines.build_utils.compute_build_checksum",
         return_value="checksum",
     )
     mocker.patch.object(Stack, "get_docker_builds", return_value=[])

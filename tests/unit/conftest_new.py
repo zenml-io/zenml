@@ -1,7 +1,7 @@
 import pytest
 
 from zenml import pipeline, step
-from zenml.new.pipelines.pipeline import Pipeline
+from zenml.pipelines.pipeline_definition import Pipeline
 
 
 @step

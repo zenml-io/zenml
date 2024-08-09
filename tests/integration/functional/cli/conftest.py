@@ -50,9 +50,9 @@ def initialize_store():
 def clean_client_with_run(clean_client, connected_two_step_pipeline):
     """Fixture to get a clean workspace with an existing pipeline run in it."""
     connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
-    ).run()
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
+    )()
     return clean_client
 
 
@@ -61,9 +61,9 @@ def clean_client_with_scheduled_run(clean_client, connected_two_step_pipeline):
     """Fixture to get a clean workspace with an existing scheduled run in it."""
     schedule = Schedule(cron_expression="*/5 * * * *")
     connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
-    ).run(schedule=schedule)
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
+    ).with_options(schedule=schedule)()
     return clean_client
 
 

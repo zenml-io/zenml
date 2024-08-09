@@ -25,11 +25,14 @@ from zenml.types import HTMLString
 def one_step_pipeline():
     """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
 
-    @pipeline
-    def _pipeline(step_):
-        step_()
+    def _wrapper(step_):
+        @pipeline
+        def _pipeline():
+            step_()
 
-    return _pipeline
+        return _pipeline
+
+    return _wrapper
 
 
 @pytest.fixture
@@ -37,11 +40,14 @@ def connected_two_step_pipeline():
     """Pytest fixture that returns a pipeline which takes two steps
     `step_1` and `step_2` that are connected."""
 
-    @pipeline(name="connected_two_step_pipeline")
-    def _pipeline(step_1, step_2):
-        step_2(step_1())
+    def _wrapper(step_1, step_2):
+        @pipeline(name="connected_two_step_pipeline")
+        def _pipeline():
+            step_2(step_1())
 
-    return _pipeline
+        return _pipeline
+
+    return _wrapper
 
 
 @step
@@ -76,7 +82,7 @@ def step_with_logs() -> int:
 def clean_client_with_run(clean_client, connected_two_step_pipeline):
     """Fixture to get a clean client with an existing pipeline run in it."""
     connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
-    ).run()
+        step_1=constant_int_output_test_step,
+        step_2=int_plus_one_test_step,
+    )()
     return clean_client

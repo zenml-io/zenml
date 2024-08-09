@@ -13,10 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
-
-if TYPE_CHECKING:
-    from zenml.steps import BaseParameters
+from typing import Dict, Optional
 
 
 class ZenMLBaseException(Exception):
@@ -130,43 +127,6 @@ class ArtifactStoreInterfaceError(ZenMLBaseException):
 
 class PipelineConfigurationError(ZenMLBaseException):
     """Raises exceptions when a pipeline configuration contains invalid values."""
-
-
-class MissingStepParameterError(ZenMLBaseException):
-    """Raises exceptions when a step parameter is missing when running a pipeline."""
-
-    def __init__(
-        self,
-        step_name: str,
-        missing_parameters: List[str],
-        parameters_class: Type["BaseParameters"],
-    ):
-        """Initializes a MissingStepParameterError object.
-
-        Args:
-            step_name: Name of the step for which one or more parameters
-                are missing.
-            missing_parameters: Names of all parameters which are missing.
-            parameters_class: Class of the parameters object for which
-                the parameters are missing.
-        """
-        import textwrap
-
-        message = textwrap.fill(
-            textwrap.dedent(
-                f"""
-            Missing parameters {missing_parameters} for '{step_name}' step.
-            There are three ways to solve this issue:
-            (1) Specify a default value in the parameters class
-            `{parameters_class.__name__}`
-            (2) Specify the parameters in code when creating the pipeline:
-            `my_pipeline({step_name}(params={parameters_class.__name__}(...))`
-            (3) Specify the parameters in a yaml configuration file and pass
-            it to the pipeline: `my_pipeline(...).run(config_path='path_to_yaml')`
-            """
-            )
-        )
-        super().__init__(message)
 
 
 class IntegrationError(ZenMLBaseException):
