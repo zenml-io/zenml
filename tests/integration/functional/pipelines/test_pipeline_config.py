@@ -25,7 +25,7 @@ from zenml.model.model import Model
 
 @step
 def assert_model_step():
-    model = get_step_context().model
+    model = get_step_context().pipeline_run.config.model
     assert model is not None
     assert model.name == "foo"
     assert model.version == str(model.number)
@@ -100,8 +100,7 @@ def test_pipeline_config_from_file_not_overridden_for_extra(
 
     assert p.configuration.extra == {"a": 2}
 
-    with pytest.raises(ValueError):
-        p()
+    p()
 
 
 def test_pipeline_config_from_file_not_overridden_for_model(
@@ -157,7 +156,7 @@ def test_pipeline_config_from_file_not_overridden_for_model(
     assert p.configuration.model.ethics == "ethics"
     assert p.configuration.model.tags == ["tag"]
     assert p.configuration.model.save_models_to_registry
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         p()
 
 
@@ -178,7 +177,9 @@ def test_pipeline_config_from_file_appended_by_code(
         assert_extra_step()
 
     p = assert_extra_pipeline.with_options(config_path=str(config_path))
-    p.configure(model=Model(name="foo"))
+    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+        p.configure(model=Model(name="foo"))
+        warning.assert_not_called()
 
     p()
 

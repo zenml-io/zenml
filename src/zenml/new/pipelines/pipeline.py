@@ -463,29 +463,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 if k not in kwargs:
                     kwargs[k] = v_config
 
-        conflicting_configs = []
-        for conf_key in self._from_config_file:
-            if conf_key != "parameters":
-                if (
-                    getattr(
-                        self.configuration,
-                        conf_key,
-                    )
-                    != self._from_config_file[conf_key]
-                ):
-                    conflicting_configs.append(conf_key)
-
-        if conflicting_configs:
-            raise ValueError(
-                "We detected differences in configuration of the following "
-                f"pipeline configurations: {conflicting_configs}. This is "
-                "caused by the state of your YAML configuration file and "
-                "runtime state of the pipeline configuration. Please, make "
-                "sure that you configure your pipeline only in one place "
-                "(YAML file or Python code) to ensure consistency and avoid "
-                "this error message."
-            )
-
         with self:
             # Enter the context manager, so we become the active pipeline. This
             # means that all steps that get called while the entrypoint function
