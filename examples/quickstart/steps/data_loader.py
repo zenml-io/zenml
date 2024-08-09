@@ -17,6 +17,7 @@
 from typing import Tuple, Annotated
 
 from datasets import Dataset
+from fastapi import requests
 
 from zenml import step
 from zenml.logger import get_logger
@@ -27,6 +28,7 @@ logger = get_logger(__name__)
 
 PROMPT = ""  # In case you want to also use a prompt you can set it here
 
+
 @step(output_materializers=DatasetMaterializer)
 def load_data() -> Tuple[
     Annotated[Dataset, "dataset"],
@@ -34,22 +36,26 @@ def load_data() -> Tuple[
 ]:
     """Load and prepare the dataset."""
 
-    def read_data(file_path):
+    def read_data_from_url(url):
         inputs = []
         targets = []
 
-        with open(file_path, "r", encoding="utf-8") as file:
-            for line in file:
-                old, modern = line.strip().split("|")
-                inputs.append(
-                    f"{PROMPT}{old}"
-                )
-                targets.append(modern)
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad responses
+
+        for line in response.text.splitlines():
+            old, modern = line.strip().split("|")
+            inputs.append(f"{PROMPT}{old}")
+            targets.append(modern)
 
         return {"input": inputs, "target": targets}
 
-    # Assuming your file is named 'translations.txt'
-    data = read_data("translations.txt")
-    test_data = read_data("test-translations.txt")
+    # URLs for the data files
+    train_url = "https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt"
+    test_url = "https://storage.googleapis.com/zenml-public-bucket/quickstart-files/test-translations.txt"
+
+    # Fetch and process the data
+    data = read_data_from_url(train_url)
+    test_data = read_data_from_url(test_url)
 
     return Dataset.from_dict(data), Dataset.from_dict(test_data)

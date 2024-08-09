@@ -8,10 +8,8 @@ settings:
       - datasets
       - transformers[torch]
       - sentencepiece
-  orchestrator.vm_azure:
-    accelerators: 'V100'
-    memory: 32+
-    cpus: 8+
+#  orchestrator.vm_azure:
+#    instance_type: 'Standard_NC6'
 
 # configuration of the Model Control Plane
 model:
