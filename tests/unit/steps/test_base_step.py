@@ -23,8 +23,6 @@ from zenml.exceptions import StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import ArtifactVersionResponse
-from zenml.pipelines import pipeline
-from zenml.steps import step
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
@@ -399,8 +397,7 @@ def test_step_can_have_generic_input_types():
 
     @pipeline
     def p():
-        d, l = list_dict_output_step()
-        dict_list_input_step(d, l)
+        dict_list_input_step(*list_dict_output_step())
 
     with does_not_raise():
         p.with_options(unlisted=True)()
@@ -428,8 +425,7 @@ def test_step_can_have_subscripted_generic_input_types():
 
     @pipeline
     def p():
-        d, l = subscripted_generic_output_step()
-        subscripted_generic_input_step(d, l)
+        subscripted_generic_input_step(*subscripted_generic_output_step())
 
     with does_not_raise():
         p.with_options(unlisted=True)()
