@@ -25,7 +25,8 @@ You should use the AzureML orchestrator if:
 The ZenML AzureML orchestrator implementation uses [the Python SDK v2 of 
 AzureML](https://learn.microsoft.com/en-gb/python/api/overview/azure/ai-ml-readme?view=azure-python) 
 to allow our users to build their Machine Learning pipelines. For each ZenML step,
-it creates an AzureML `[CommandComponent](https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.commandcomponent?view=azure-python)` and brings them together in a pipeline.
+it creates an AzureML [CommandComponent](https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.commandcomponent?view=azure-python)
+and brings them together in a pipeline.
 
 ## How to deploy it
 
@@ -149,7 +150,8 @@ def pipeline():
 ### Run pipelines on a schedule
 
 The AzureML orchestrator supports running pipelines on a schedule using 
-its `[JobSchedules](https://learn.microsoft.com/en-us/azure/templates/microsoft.automation/2023-11-01/automationaccounts/jobschedules?pivots=deployment-language-bicep)`. Both cron expression and intervals are supported.
+its [JobSchedules](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-schedule-pipeline-job?view=azureml-api-2&tabs=python). 
+Both cron expression and intervals are supported.
 
 ```python
 from zenml.config.schedule import Schedule

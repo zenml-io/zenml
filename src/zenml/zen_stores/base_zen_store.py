@@ -39,6 +39,7 @@ from zenml.constants import (
     DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     IS_DEBUG_ENV,
+    ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT,
 )
 from zenml.enums import (
     SecretsStoreType,
@@ -171,9 +172,14 @@ class BaseZenStore(
             )
 
         except Exception as e:
+            zenml_pro_extra = ""
+            if ".zenml.io" in self.url:
+                zenml_pro_extra = (
+                    ZENML_PRO_CONNECTION_ISSUES_SUSPENDED_PAUSED_TENANT_HINT
+                )
             raise RuntimeError(
                 f"Error initializing {self.type.value} store with URL "
-                f"'{self.url}': {str(e)}"
+                f"'{self.url}': {str(e)}" + zenml_pro_extra
             ) from e
 
         if not skip_default_registrations:
