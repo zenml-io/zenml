@@ -1,5 +1,84 @@
 <!-- markdown-link-check-disable -->
 
+# 0.64.0
+
+## New Features and Improvements
+
+### Notebook Integration
+
+ZenML now supports running steps defined in notebook cells with remote 
+orchestrators and step operators. This feature enhances the development 
+workflow by allowing seamless transition from experimentation to production.
+
+- **Details**: [Running remote pipelines from notebooks](https://docs.zenml.io/v/docs/how-to/run-remote-pipelines-from-notebooks)
+
+### Reduced Docker Builds with Code Uploads
+
+We've introduced an option to upload code to the artifact store, enabling 
+Docker build reuse. This feature can significantly speed up iteration, 
+especially when working with remote stacks.
+
+- **Default**: Enabled
+- **Configuration**: To disable, set `DockerSettings.allow_download_from_artifact_store=False` 
+for steps or pipelines
+- **Benefits**: 
+  - Faster development cycles
+  - No need to register a code repository to reuse builds
+  - Builds only occur when requirements or DockerSettings change
+- **Documentation**: [Which files are built into the image](https://docs.zenml.io/how-to/customize-docker-builds/which-files-are-built-into-the-image)
+
+### AzureML Orchestrator Support
+
+ZenML now supports [AzureML](https://azure.microsoft.com/en-gb/free/machine-learning) 
+as an orchestrator, expanding our list of supported cloud platforms.
+
+- **Full Azure Guide**: [Setting up an Azure stack](https://docs.zenml.io/how-to/popular-integrations/azure-guide)
+- **Documentation**: [AzureML orchestrator](https://docs.zenml.io/stack-components/orchestrators/azureml)
+
+### Terraform Modules
+
+We've released new Terraform modules on the Hashicorp registry for 
+provisioning complete MLOps stacks across major cloud providers.
+
+- **Features**: 
+  - Automate infrastructure setup for ZenML stack deployment
+  - Handle registration of configurations to ZenML server
+- **More Information**: [MLOps Terraform ZenML blog post](https://www.zenml.io/blog/mlops-terraform-zenml)
+
+These updates aim to streamline the MLOps workflow, making it easier to 
+develop, deploy, and manage machine learning pipelines with ZenML.
+
+## What's Changed
+
+* Add 0.63.0 to migration testing by @bcdurak in https://github.com/zenml-io/zenml/pull/2893
+* Document terraform stack deployment modules by @stefannica in https://github.com/zenml-io/zenml/pull/2898
+* README update by @htahir1 in https://github.com/zenml-io/zenml/pull/2901
+* Enable `Databricks` Unity Catalog for MLflow by @safoinme in https://github.com/zenml-io/zenml/pull/2900
+* Make urls pop out from the sea of purple/cyan in the logs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2894
+* Add terraform as a supported stack deployment provider by @stefannica in https://github.com/zenml-io/zenml/pull/2902
+* Fix `Model` imports in docs by @strickvl in https://github.com/zenml-io/zenml/pull/2907
+* Remove hub references by @schustmi in https://github.com/zenml-io/zenml/pull/2905
+* Bump NLP template by @avishniakov in https://github.com/zenml-io/zenml/pull/2912
+* Updated step operator docs by @htahir1 in https://github.com/zenml-io/zenml/pull/2908
+* Added lightning studio check by @htahir1 in https://github.com/zenml-io/zenml/pull/2910
+* Upload code to artifact store by @schustmi in https://github.com/zenml-io/zenml/pull/2895
+* AzureML orchestrator by @bcdurak in https://github.com/zenml-io/zenml/pull/2873
+* Run steps defined in notebooks with remote orchestrators by @schustmi in https://github.com/zenml-io/zenml/pull/2899
+* Fix broken / unparsable md docs file by @strickvl in https://github.com/zenml-io/zenml/pull/2916
+* Bump mlflow to 2.15.0 by @christianversloot in https://github.com/zenml-io/zenml/pull/2896
+* Remove extra button by @schustmi in https://github.com/zenml-io/zenml/pull/2918
+* Added last timestamp to zenserver by @htahir1 in https://github.com/zenml-io/zenml/pull/2913
+* A pipeline can't finish successfully in this case by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2903
+* Fix the GCP Workload Identity Federation support in the GCP Service Connector by @stefannica in https://github.com/zenml-io/zenml/pull/2914
+* Embeddings finetuning guide for LLMOps guide by @strickvl in https://github.com/zenml-io/zenml/pull/2917
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot who contributed to 
+this release by bumping the `mlflow` version to 2.15.0
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.63.0...0.64.0
+
 # 0.63.0
 
 Moving forward from the last two releases, we have further improved the 
