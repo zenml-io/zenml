@@ -3,6 +3,9 @@ FROM zenmldocker/zenml-server:latest
 ENV ZENML_ANALYTICS_OPT_IN=true
 ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 
+# fixes iframe / CORS issue for HF deployments
+ENV ZENML_SERVER_SECURE_HEADERS_CSP="frame-ancestors *;"
+
 ################################################################################
 #
 # CONFIGURING YOUR ZENML HF SPACES SERVER

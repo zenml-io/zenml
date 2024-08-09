@@ -7,10 +7,10 @@ description: Deploying ZenML to Huggingface Spaces.
 A quick way to deploy ZenML and get started is to use [HuggingFace Spaces](https://huggingface.co/spaces). HuggingFace Spaces is a platform for hosting and sharing ML projects and workflows, and it also works to deploy ZenML. You can be up and running in minutes (for free) with a hosted ZenML server, so it's a good option if you want to try out ZenML without any infrastructure overhead.
 
 {% hint style="info" %}
-Note that it is not recommended to use HuggingFace Spaces for production use as by default the data stored there is non-persistent and the underlying machine is not as available to you as a dedicated machine. See our [other deployment options](./README.md) if you want to use ZenML in production.
+If you are planning to use HuggingFace Spaces for production use, make sure you have [persistent storage turned on](https://huggingface.co/docs/hub/en/spaces-storage) so as to prevent loss of data. See our [other deployment options](./README.md) if you want alternative options.
 {% endhint %}
 
-![ZenML on HuggingFace Spaces -- default deployment](../../../.gitbook/assets/hf\_spaces\_chart.png)
+![ZenML on HuggingFace Spaces -- default deployment](../../.gitbook/assets/hf-spaces-chart.png)
 
 In this diagram, you can see what the default deployment of ZenML on HuggingFace looks like.
 
@@ -47,10 +47,6 @@ zenml connect --url '<YOUR_HF_SPACES_DIRECT_URL>'
 ```
 
 You can also use the Direct URL in your browser to use the ZenML dashboard as a fullscreen application (i.e. without the HuggingFace Spaces wrapper around it).
-
-{% hint style="warning" %}
-The ZenML dashboard will currently not work when viewed from within the Huggingface webpage (i.e. wrapped in the main `https://huggingface.co/...` website). This is on account of a limitation in how cookies are handled between ZenML and Huggingface. You **must** view the dashboard from the 'Direct URL' (see above).
-{% endhint %}
 
 ## Extra configuration options
 
