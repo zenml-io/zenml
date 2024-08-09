@@ -90,43 +90,50 @@ To do this lets head over to the `Stack` section of your ZenML Dashboard. Here y
 #### AWS
 
 For AWS you will need to install some aws requirements in your local environment. You will also 
-need an AWS stack ()
+need an AWS stack registered in ZenML. 
 
 ```bash
 !zenml integration install aws s3 -y
 
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-large --orchestration_environment aws
+python run.py --model_type=t5-small --orchestration_environment aws
 ```
-```
+
+You can edit `configs/training_aws.yaml` to adjust the settings.
+
+#### GCP
+
+For GCP you will need to install some aws requirements in your local environment. You will also 
+need an AWS stack registered in ZenML. 
+```bash
+!zenml integration install gcp
+
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-large --orchestration_environment gcp
+python run.py --model_type=t5-small --orchestration_environment gcp
 ```
 
-```
+You can edit `configs/training_gcp.yaml` to adjust the settings.
+
+#### Azure
+```bash
+!zenml integration install azure skypilot
+
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-large --orchestration_environment azure
+python run.py --model_type=t5-small --orchestration_environment azure
 ```
 
+You can edit `configs/training_azure.yaml` to adjust the settings.
 
+## Further exploration
 
+This was just the tip of the iceberg of what ZenML can do; check out the [**docs**](https://docs.zenml.io/) to learn more
+about the capabilities of ZenML. For example, you might want to:
 
-## :bulb: Learn More
+- [Deploy ZenML](https://docs.zenml.io/user-guide/production-guide/connect-deployed-zenml) to collaborate with your colleagues.
+- Run the same pipeline on a [cloud MLOps stack in production](https://docs.zenml.io/user-guide/production-guide/cloud-stack).
+- Track your metrics in an experiment tracker like [MLflow](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers/mlflow).
 
-You're a legit MLOps engineer now! You trained two models, evaluated them against
-a test set, registered the best one with the ZenML model control plane,
-and served some predictions. You also learned how to iterate on your models and
-data by using some of the ZenML utility abstractions. You saw how to view your
-artifacts and stacks via the client as well as the ZenML Dashboard.
+## What next?
 
-If you want to learn more about ZenML as a tool, then the
-[:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) are the perfect place
-to get started. In particular, the [Production Guide](https://docs.zenml.io/user-guide/production-guide/)
-goes into more detail as to how to transition these same pipelines into production on the cloud.
-
-The best way to get a production ZenML instance up and running with all batteries included is the [ZenML Pro](https://zenml.io/pro). Check it out!
-
-Also, make sure to join our <a href="https://zenml.io/slack" target="_blank">
-    <img width="15" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
-    <b>Slack Community</b> 
-</a> to become part of the ZenML family!
+* If you have questions or feedback... join our [**Slack Community**](https://zenml.io/slack) and become part of the ZenML family!
+* If you want to quickly get started with ZenML, check out [ZenML Pro](https://zenml.io/pro).

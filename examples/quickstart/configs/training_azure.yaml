@@ -8,7 +8,7 @@ settings:
       - datasets
       - transformers[torch]
       - sentencepiece
-  orchestrator.skypilot:
+  orchestrator.vm_azure:
     accelerators: 'V100'
     memory: 32+
     cpus: 8+
