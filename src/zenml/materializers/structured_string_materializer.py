@@ -19,22 +19,23 @@ from typing import Dict, Type, Union
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.types import CSVString, HTMLString, MarkdownString
+from zenml.types import CSVString, HTMLString, JSONString, MarkdownString
 
 logger = get_logger(__name__)
 
 
-STRUCTURED_STRINGS = Union[CSVString, HTMLString, MarkdownString]
+STRUCTURED_STRINGS = Union[CSVString, HTMLString, MarkdownString, JSONString]
 
 HTML_FILENAME = "output.html"
 MARKDOWN_FILENAME = "output.md"
 CSV_FILENAME = "output.csv"
+JSON_FILENAME = "output.json"
 
 
 class StructuredStringMaterializer(BaseMaterializer):
     """Materializer for HTML or Markdown strings."""
 
-    ASSOCIATED_TYPES = (CSVString, HTMLString, MarkdownString)
+    ASSOCIATED_TYPES = (CSVString, HTMLString, MarkdownString, JSONString)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[STRUCTURED_STRINGS]) -> STRUCTURED_STRINGS:
@@ -94,6 +95,8 @@ class StructuredStringMaterializer(BaseMaterializer):
             filename = HTML_FILENAME
         elif issubclass(data_type, MarkdownString):
             filename = MARKDOWN_FILENAME
+        elif issubclass(data_type, JSONString):
+            filename = JSON_FILENAME
         else:
             raise ValueError(
                 f"Data type {data_type} is not supported by this materializer."
@@ -120,6 +123,8 @@ class StructuredStringMaterializer(BaseMaterializer):
             return VisualizationType.HTML
         elif issubclass(data_type, MarkdownString):
             return VisualizationType.MARKDOWN
+        elif issubclass(data_type, JSONString):
+            return VisualizationType.JSON
         else:
             raise ValueError(
                 f"Data type {data_type} is not supported by this materializer."
