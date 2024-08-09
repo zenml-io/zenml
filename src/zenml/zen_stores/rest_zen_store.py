@@ -67,7 +67,6 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
-    FULL_STACK,
     GET_OR_CREATE,
     INFO,
     LOGIN,
@@ -156,7 +155,6 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
-    FullStackRequest,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -2832,27 +2830,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
-        return self._create_workspace_scoped_resource(
-            resource=stack,
-            route=STACKS,
-            response_model=StackResponse,
-        )
-
-    def create_full_stack(self, full_stack: FullStackRequest) -> StackResponse:
-        """Register a full-stack.
-
-        Args:
-            full_stack: The full stack configuration.
-
-        Returns:
-            The registered stack.
-        """
-        assert full_stack.workspace is not None
+        assert stack.workspace is not None
 
         return self._create_resource(
-            resource=full_stack,
+            resource=stack,
             response_model=StackResponse,
-            route=f"{WORKSPACES}/{str(full_stack.workspace)}{FULL_STACK}",
+            route=f"{WORKSPACES}/{str(stack.workspace)}{STACKS}",
         )
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:

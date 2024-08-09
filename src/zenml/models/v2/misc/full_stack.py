@@ -13,15 +13,20 @@
 #  permissions and limitations under the License.
 """Models representing full stack requests."""
 
-from typing import Any, Dict, List, Optional, Union
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.base import BaseRequest
-from zenml.models.v2.core.component import ComponentResponse
+
+if TYPE_CHECKING:
+    from zenml.models.v2.core.component import ComponentResponse
+
+# TODO: This can be cleaned up even further I think:
+#   ServiceConnectorInfo -> simply a service connector request?
+#   ComponentInfo -> simply a component request?
+#      (the only thing we would miss here would be a matching between the
+#      connectors and the components.)
 
 
 class ServiceConnectorInfo(BaseModel):
@@ -47,57 +52,6 @@ class ComponentInfo(BaseModel):
     configuration: Dict[str, Any] = {}
 
 
-class FullStackRequest(BaseRequest):
-    """Request model for a full-stack."""
-
-    user: Optional[UUID] = None
-    workspace: Optional[UUID] = None
-
-    name: str = Field(
-        title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
-    )
-    description: Optional[str] = Field(
-        default="",
-        title="The description of the stack",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    labels: Optional[Dict[str, Any]] = Field(
-        default=None,
-        title="The stack labels.",
-    )
-    service_connectors: List[Union[UUID, ServiceConnectorInfo]] = Field(
-        default=[],
-        title="The service connectors dictionary for the full stack "
-        "registration.",
-        description="The UUID of an already existing service connector or "
-        "request information to create a service connector from "
-        "scratch.",
-    )
-    components: Dict[StackComponentType, Union[UUID, ComponentInfo]] = Field(
-        title="The mapping for the components of the full stack registration.",
-        description="The mapping from component types to either UUIDs of "
-        "existing components or request information for brand new "
-        "components.",
-    )
-
-    @model_validator(mode="after")
-    def _validate_indexes_in_components(self) -> "FullStackRequest":
-        for component in self.components.values():
-            if isinstance(component, ComponentInfo):
-                if component.service_connector_index is not None:
-                    if (
-                        component.service_connector_index < 0
-                        or component.service_connector_index
-                        >= len(self.service_connectors)
-                    ):
-                        raise ValueError(
-                            f"Service connector index {component.service_connector_index} "
-                            "is out of range. Please provide a valid index referring to "
-                            "the position in the list of service connectors."
-                        )
-        return self
-
-
 class ResourcesInfo(BaseModel):
     """Information about the resources needed for CLI and UI."""
 
@@ -107,7 +61,7 @@ class ResourcesInfo(BaseModel):
     use_resource_value_as_fixed_config: bool = False
 
     accessible_by_service_connector: List[str]
-    connected_through_service_connector: List[ComponentResponse]
+    connected_through_service_connector: List["ComponentResponse"]
 
     @model_validator(mode="after")
     def _validate_resource_info(self) -> "ResourcesInfo":
@@ -116,7 +70,8 @@ class ResourcesInfo(BaseModel):
             and len(self.required_configuration) > 1
         ):
             raise ValueError(
-                "Cannot use resource value as fixed config if more than one required configuration key is provided."
+                "Cannot use resource value as fixed config if more than "
+                "one required configuration key is provided."
             )
         return self
 
