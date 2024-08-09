@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from unittest.mock import ANY
+from unittest.mock import ANY, patch
 from uuid import uuid4
 
 import pytest
@@ -337,7 +337,10 @@ def test_run_configuration_in_code(
     pipeline_instance = one_step_pipeline(empty_step())
 
     schedule = Schedule(cron_expression="5 * * * *")
-    pipeline_instance.run(run_name="run_name", schedule=schedule)
+    with patch.object(
+        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    ):
+        pipeline_instance.run(run_name="run_name", schedule=schedule)
 
     expected_run_config = PipelineRunConfiguration(
         run_name="run_name", schedule=schedule
@@ -364,7 +367,10 @@ def test_run_configuration_from_file(
     )
     config_path.write_text(expected_run_config.yaml())
 
-    pipeline_instance.run(config_path=str(config_path))
+    with patch.object(
+        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    ):
+        pipeline_instance.run(config_path=str(config_path))
     mock_compile.assert_called_once_with(
         pipeline=ANY, stack=ANY, run_configuration=expected_run_config
     )
@@ -388,10 +394,13 @@ def test_run_configuration_from_code_and_file(
     )
     config_path.write_text(file_config.yaml())
 
-    pipeline_instance.run(
-        config_path=str(config_path),
-        run_name="run_name_in_code",
-    )
+    with patch.object(
+        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    ):
+        pipeline_instance.run(
+            config_path=str(config_path),
+            run_name="run_name_in_code",
+        )
 
     expected_run_config = PipelineRunConfiguration(
         run_name="run_name_in_code",
@@ -1028,7 +1037,7 @@ def test_failure_during_initialization_deletes_placeholder_run(
 
 def test_running_scheduled_pipeline_does_not_create_placeholder_run(
     mocker,
-    clean_client,
+    clean_client: "Client",
     empty_pipeline,  # noqa: F811
 ):
     """Tests that running a scheduled pipeline does not create a placeholder run
@@ -1040,10 +1049,13 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
     )
     pipeline_instance = empty_pipeline
 
-    scheduled_pipeline_instance = pipeline_instance.with_options(
-        schedule=Schedule(cron_expression="*/5 * * * *")
-    )
-    scheduled_pipeline_instance()
+    with patch.object(
+        clean_client.active_stack.orchestrator, "supports_scheduling", new=True
+    ):
+        scheduled_pipeline_instance = pipeline_instance.with_options(
+            schedule=Schedule(cron_expression="*/5 * * * *")
+        )
+        scheduled_pipeline_instance()
 
     mock_create_run.assert_called_once()
     run_request = mock_create_run.call_args[0][0]  # First arg

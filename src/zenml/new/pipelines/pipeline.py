@@ -637,8 +637,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             stack = Client().active_stack
             stack.validate()
 
-            # TODO: check whether orchestrator even support scheduling before
-            #   registering the schedule
             schedule_id = None
             if schedule:
                 if not stack.orchestrator.supports_scheduling:
@@ -769,6 +767,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         "Dashboard`. In order to try it locally, please run "
                         "`zenml up`."
                     )
+
+                if self.configuration.model:
+                    logs_of_model = self.configuration.model._prepare_model_version_inside_run(
+                        pipeline_run=run, step_run=None, return_logs=True
+                    )
+                    if logs_of_model:
+                        logger.info(logs_of_model)
 
             deploy_pipeline(
                 deployment=deployment_model, stack=stack, placeholder_run=run

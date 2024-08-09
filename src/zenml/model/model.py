@@ -848,31 +848,31 @@ class Model(BaseModel):
 
         logs = ""
 
-        if isinstance(self.version, str):
+        # copy Model instance to prevent corrupting configs of the
+        # subsequent runs, if they share the same config object
+        self_copy = self.model_copy()
+
+        # in case request is within the step and no self-configuration is provided
+        # try reuse what's in the pipeline run first
+        if step_run is None and pipeline_run.model_version is not None:
+            self_copy.version = pipeline_run.model_version.name
+            self_copy.model_version_id = pipeline_run.model_version.id
+        # otherwise try to fill the templated name, if needed
+        elif isinstance(self_copy.version, str):
             if pipeline_run.start_time:
                 start_time = pipeline_run.start_time
             else:
                 start_time = datetime.datetime.now(datetime.timezone.utc)
-            self.version = format_name_template(
-                self.version,
+            self_copy.version = format_name_template(
+                self_copy.version,
                 date=start_time.strftime("%Y_%m_%d"),
                 time=start_time.strftime("%H_%M_%S_%f"),
             )
-        for mv in [
-            pipeline_run.model_version,
-            step_run.model_version if step_run else None,
-        ]:
-            if (
-                mv is not None
-                and mv.model.name == self.name
-                and (mv.name == self.version or self.version is None)
-            ):
-                self.version = mv.name
-                self.model_version_id = mv.id
-                break
 
-        if self.model_version_id is None:
-            model_version_response = self._get_or_create_model_version()
+        # if exact model not yet defined - try to get/create and update it
+        # back to the run accordingly
+        if self_copy.model_version_id is None:
+            model_version_response = self_copy._get_or_create_model_version()
 
             # update the configured model version id in runs accordingly
             if step_run:

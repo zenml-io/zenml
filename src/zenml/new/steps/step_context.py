@@ -118,8 +118,16 @@ class StepContext(metaclass=SingletonMetaClass):
         """
         from zenml.client import Client
 
-        self.pipeline_run = Client().get_pipeline_run(pipeline_run.id)
-        self.step_run = Client().get_run_step(step_run.id)
+        try:
+            pipeline_run = Client().get_pipeline_run(pipeline_run.id)
+        except KeyError:
+            pass
+        self.pipeline_run = pipeline_run
+        try:
+            step_run = Client().get_run_step(step_run.id)
+        except KeyError:
+            pass
+        self.step_run = step_run
         self._step_run_info = step_run_info
         self._cache_enabled = cache_enabled
 
@@ -180,7 +188,6 @@ class StepContext(metaclass=SingletonMetaClass):
         shall_warm_up = True
         step_run = None
         if self.step_run.config.model is not None:
-            # self.step_run = Client().get_run_step(self.step_run.id)
             if self.step_run.model_version:
                 model = self.step_run.model_version.to_model_class()
                 shall_warm_up = False
@@ -188,7 +195,6 @@ class StepContext(metaclass=SingletonMetaClass):
                 model = self.step_run.config.model
                 step_run = self.step_run
         elif self.pipeline_run.config.model is not None:
-            # self.pipeline_run = Client().get_pipeline_run(self.pipeline_run.id)
             if self.pipeline_run.model_version:
                 model = self.pipeline_run.model_version.to_model_class()
                 shall_warm_up = False

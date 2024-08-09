@@ -439,6 +439,17 @@ class StepLauncher:
                 execution_needed = False
                 cached_outputs = cached_step_run.outputs
                 step_run.original_step_run_id = cached_step_run.id
+
+                if self._step.config.model is None:
+                    if (
+                        mv := Client()
+                        .get_pipeline_run(step_run.pipeline_run_id)
+                        .model_version
+                    ):
+                        model = mv.to_model_class()
+                    else:
+                        model = None
+
                 step_run.outputs = {
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()

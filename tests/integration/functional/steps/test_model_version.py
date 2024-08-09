@@ -617,19 +617,24 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
 
     # this will run all steps, including one requesting new version
     run_1 = f"run_{uuid4()}"
-    _inner_pipeline.with_options(run_name=run_1)()
+    # model is configured with latest stage, so a warm-up needed
+    with pytest.raises(RuntimeError):
+        _inner_pipeline.with_options(run_name=run_1)()
+    run_2 = f"run_{uuid4()}"
+    Model(name="step")._get_or_create_model_version()
+    _inner_pipeline.with_options(run_name=run_2)()
 
     # here the step requesting new version is cached
-    run_2 = f"run_{uuid4()}"
-    _inner_pipeline.with_options(run_name=run_2)()
+    run_3 = f"run_{uuid4()}"
+    _inner_pipeline.with_options(run_name=run_3)()
 
     model = clean_client.get_model(model_name_or_id="step")
     mvs = model.versions
-    assert len(mvs) == 2
-    # here we check which pipelines were attached to the model versions:
-    # - MV #1 was created during the first run and was used as LATEST in first run -> run 1
-    # - MV #2 was created during the second run in a step and was used as LATEST in second run -> runs 2
-    for mv, run_names in zip(mvs, ({run_1}, {run_2})):
+    assert len(mvs) == 3
+    # - MV #1 was created before the second run and was used as LATEST in second run -> run 2
+    # - MV #2 was created during second run in a step and was used as LATEST in third run -> runs 2&3
+    # - MV #3 was created during the third run and was not used in other pipelines -> run 3
+    for mv, run_names in zip(mvs, ({run_2}, {run_2, run_3}, {run_3})):
         pr_ids = clean_client.zen_store.get_model_version(
             mv.id
         ).pipeline_run_ids
@@ -642,10 +647,7 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run(
 ):
     """Test that if pipeline run gets deleted - it is removed from model version."""
 
-    @pipeline(
-        model=Model(name="step", version=ModelStages.LATEST),
-        enable_cache=False,
-    )
+    @pipeline(enable_cache=False)
     def _inner_pipeline():
         _this_step_produces_output.with_options(model=Model(name="step"))()
 
@@ -672,7 +674,6 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline(
     """Test that if pipeline gets deleted - runs are removed from model version."""
 
     @pipeline(
-        model=Model(name="step", version=ModelStages.LATEST),
         enable_cache=False,
         name="test_that_pipeline_run_is_removed_on_deletion_of_pipeline",
     )
@@ -705,10 +706,7 @@ def test_that_artifact_is_removed_on_deletion(
 ):
     """Test that if artifact gets deleted - it is removed from model version."""
 
-    @pipeline(
-        model=Model(name="step", version=ModelStages.LATEST),
-        enable_cache=False,
-    )
+    @pipeline(enable_cache=False)
     def _inner_pipeline():
         _this_step_produces_output.with_options(model=Model(name="step"))()
 
