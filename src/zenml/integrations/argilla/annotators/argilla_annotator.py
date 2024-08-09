@@ -103,7 +103,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         try:
             _ = rg.Argilla(**init_kwargs).me
         except ArgillaAPIError as e:
-            print(f"Failed to verify the Argilla instance: {str(e)}")
+            logger.error(f"Failed to verify the Argilla instance: {str(e)}")
         return rg.Argilla(**init_kwargs)
 
     def get_url_for_dataset(self, dataset_name: str, **kwargs: Any) -> str:
