@@ -100,7 +100,8 @@ def test_pipeline_config_from_file_not_overridden_for_extra(
 
     assert p.configuration.extra == {"a": 2}
 
-    p()
+    with pytest.raises(ValueError):
+        p()
 
 
 def test_pipeline_config_from_file_not_overridden_for_model(
@@ -156,8 +157,30 @@ def test_pipeline_config_from_file_not_overridden_for_model(
     assert p.configuration.model.ethics == "ethics"
     assert p.configuration.model.tags == ["tag"]
     assert p.configuration.model.save_models_to_registry
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         p()
+
+
+def test_pipeline_config_from_file_appended_by_code(
+    clean_client: "Client", tmp_path
+):
+    """Test that the pipeline can be configured by both
+    YAML file and Python code for non-overlapping configurations.
+
+    Here we set Extra from the YAML and Model from the code.
+    """
+    config_path = tmp_path / "config.yaml"
+    file_config = dict(run_name="run_name_in_file", extra={"a": 1})
+    config_path.write_text(yaml.dump(file_config))
+
+    @pipeline(enable_cache=False)
+    def assert_extra_pipeline():
+        assert_extra_step()
+
+    p = assert_extra_pipeline.with_options(config_path=str(config_path))
+    p.configure(model=Model(name="foo"))
+
+    p()
 
 
 def test_pipeline_config_from_file_not_warns_on_new_value(
