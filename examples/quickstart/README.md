@@ -8,12 +8,12 @@ This repository is a minimalistic MLOps project intended as a starting point to 
 
 This is a representation of how it will all come together: 
 
-<img src=".assets/pipeline_overview.png" width="70%" alt="Pipelines Overview">
+<img src=".assets/Overview.png" width="70%" alt="Pipelines Overview">
 
-Along the way we will also show you how to:
+We'll run a pipeline on our local environment to verify our pipeline works as intended. 
+Then we'll switch stack to a production environment and run our pipeline there.
 
-- Structure your code into MLOps pipelines.
-- Transition your ML models from local development environment to your cloud infrastructure.
+As a prerequisite to this guid you will need access to one of the big three cloud providers.
 
 ## 🏃 Run on Colab
 
@@ -45,23 +45,56 @@ jupyter notebook
 
 #### Option 2 - Execute the whole training pipeline from a Python script:
 
+To run this quickstart you need to connect to a ZenML Server. You can deploy it 
+[yourself on your own infrastructure](https://docs.zenml.io/getting-started/deploying-zenml) or try it
+out for free, no credit-card required in our [ZenML Pro managed service](https://zenml.io/pro).
+
 ```bash
 # Install required zenml integrations
-zenml integration install sklearn -y
+pip install -r requirements.txt
 
 # Initialize ZenML
 zenml init
 
 # Start the ZenServer to enable dashboard access
-zenml connect --url=""
+zenml connect --url="INSERT_YOUR_SERVER_URL_HERE"
+```
 
+To run our pipeline locally, you can do so with the following command. 
+To understand what this pipeline does, you can inspect the pipeline definition in the [pipelines](pipelines) directory.
+
+```bash
 # Run the pipeline locally
 python run.py --model_type=t5-small --orchestration_environment local
 ```
 
-## 🌵 Running Remotely
+As you can see the pipeline has run successfully. It also printed out some examples - however it seems the model is not 
+yet able to solve the task well. But we validated that the pipeline works.
 
-```
+<img src=".assets/DAG.png" width="50%" alt="Dashboard view">
+
+Above you can see what the dashboard view of the pipeline in the ZenML Dashboard.
+You can find the URL for this in the logs above. 
+
+### 🌵 Running Remotely
+
+Our last section confirmed to us, that the pipeline works. Let's now run the pipeline in the environment of your choice.
+
+For you to be able to try this next section, you will need to have access to a cloud environment (AWS, GCP, AZURE). ZenML wraps around all the major cloud providers and orchestration tools and lets you easily deploy your code onto them.
+
+To do this lets head over to the `Stack` section of your ZenML Dashboard. Here you'll be able to either connect to an existing or deploy a new environment. Choose on of the options presented to you there and come back when you have a stack ready to go. Then proceed to the appropirate section below. **Do not** run all three. Also be sure that you are running with a remote ZenML server (see Step 1 above).
+
+<img src=".assets/StackCreate.png" width="20%" alt="Stack creation in the ZenML Dashboard">
+
+
+#### AWS
+
+For AWS you will need to install some aws requirements in your local environment. You will also 
+need an AWS stack ()
+
+```bash
+!zenml integration install aws s3 -y
+
 zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
 python run.py --model_type=t5-large --orchestration_environment aws
 ```
