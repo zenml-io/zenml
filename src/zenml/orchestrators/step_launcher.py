@@ -209,6 +209,7 @@ class StepLauncher:
                     workspace=client.active_workspace.id,
                     logs=logs_model,
                 )
+                prep_logs_to_show = ""
                 try:
                     execution_needed, step_run = self._prepare(
                         step_run=step_run
@@ -225,8 +226,32 @@ class StepLauncher:
                         step_run
                     )
 
+                    # warm-up and register model version
+                    _step_run = None
+                    model = (
+                        self._deployment.step_configurations[
+                            step_run.name
+                        ].config.model
+                        or self._deployment.pipeline_configuration.model
+                    )
+                    if self._deployment.step_configurations[
+                        step_run.name
+                    ].config.model:
+                        _step_run = step_run_response
+
+                    if model:
+                        prep_logs_to_show = (
+                            model._prepare_model_version_inside_run(
+                                pipeline_run=pipeline_run,
+                                step_run=_step_run,
+                                return_logs=True,
+                            )
+                        )
+
                 logger.info(f"Step `{self._step_name}` has started.")
                 if execution_needed:
+                    if prep_logs_to_show:
+                        logger.info(prep_logs_to_show)
                     retries = 0
                     last_retry = True
                     max_retries = (
@@ -414,6 +439,17 @@ class StepLauncher:
                 execution_needed = False
                 cached_outputs = cached_step_run.outputs
                 step_run.original_step_run_id = cached_step_run.id
+
+                if self._step.config.model is None:
+                    if (
+                        mv := Client()
+                        .get_pipeline_run(step_run.pipeline_run_id)
+                        .model_version
+                    ):
+                        model = mv.to_model_class()
+                    else:
+                        model = None
+
                 step_run.outputs = {
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
@@ -426,7 +462,7 @@ class StepLauncher:
                 if self._step.config.model:
                     orchestrator_utils._link_pipeline_run_to_model_from_context(
                         pipeline_run_id=step_run.pipeline_run_id,
-                        model=self._step.config.model,
+                        model=model,
                     )
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time

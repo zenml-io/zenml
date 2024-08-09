@@ -94,7 +94,7 @@ def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not
     clean_client: "Client",
 ):
     producer_pipe(False)
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         consumer_pipe()
 
 

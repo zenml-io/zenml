@@ -24,13 +24,13 @@ from zenml.model.model import Model
 MODEL_NAME = "foo"
 
 
-@step(model=Model(name=MODEL_NAME))
+@step(model=Model(name=MODEL_NAME, version=ModelStages.LATEST))
 def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
     """Untyped single output linked as Artifact from step context."""
     return 1
 
 
-@step(model=Model(name=MODEL_NAME))
+@step(model=Model(name=MODEL_NAME, version=ModelStages.LATEST))
 def single_output_step_from_context_model() -> (
     Annotated[int, ArtifactConfig(is_model_artifact=True)]
 ):
@@ -38,7 +38,7 @@ def single_output_step_from_context_model() -> (
     return 1
 
 
-@step(model=Model(name=MODEL_NAME))
+@step(model=Model(name=MODEL_NAME, version=ModelStages.LATEST))
 def single_output_step_from_context_endpoint() -> (
     Annotated[int, ArtifactConfig(is_deployment_artifact=True)]
 ):
@@ -62,6 +62,9 @@ def test_link_minimalistic(clean_client: "Client"):
     """Test simple explicit linking from step context for 3 artifact types."""
     user = clean_client.active_user.id
     ws = clean_client.active_workspace.id
+
+    # warm-up
+    Model(name=MODEL_NAME)._get_or_create_model_version()
 
     simple_pipeline()
 

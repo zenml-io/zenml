@@ -4108,7 +4108,7 @@ class RestZenStore(BaseZenStore):
                 f"{self.config.url}` should solve this issue. "
                 "If you're seeing this error from an automated workload, "
                 "you should probably use a service account to start that "
-                "workload to prevent this error."
+                "workload to prevent this error"
             )
 
     @staticmethod

@@ -118,7 +118,15 @@ class StepContext(metaclass=SingletonMetaClass):
         """
         from zenml.client import Client
 
+        try:
+            pipeline_run = Client().get_pipeline_run(pipeline_run.id)
+        except KeyError:
+            pass
         self.pipeline_run = pipeline_run
+        try:
+            step_run = Client().get_run_step(step_run.id)
+        except KeyError:
+            pass
         self.step_run = step_run
         self._step_run_info = step_run_info
         self._cache_enabled = cache_enabled
@@ -177,10 +185,21 @@ class StepContext(metaclass=SingletonMetaClass):
         Raises:
             StepContextError: If the `Model` object is not set in `@step` or `@pipeline`.
         """
+        shall_warm_up = True
+        step_run = None
         if self.step_run.config.model is not None:
-            model = self.step_run.config.model
+            if self.step_run.model_version:
+                model = self.step_run.model_version.to_model_class()
+                shall_warm_up = False
+            else:
+                model = self.step_run.config.model
+                step_run = self.step_run
         elif self.pipeline_run.config.model is not None:
-            model = self.pipeline_run.config.model
+            if self.pipeline_run.model_version:
+                model = self.pipeline_run.model_version.to_model_class()
+                shall_warm_up = False
+            else:
+                model = self.pipeline_run.config.model
         else:
             raise StepContextError(
                 f"Unable to get Model in step `{self.step_name}` of pipeline "
@@ -188,7 +207,12 @@ class StepContext(metaclass=SingletonMetaClass):
             )
 
         # warm-up the model version
-        model._get_or_create_model_version()
+        if shall_warm_up:
+            model._prepare_model_version_inside_run(
+                pipeline_run=self.pipeline_run,
+                step_run=step_run,
+                return_logs=False,
+            )
 
         return model
 

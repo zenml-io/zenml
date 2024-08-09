@@ -44,6 +44,7 @@ from zenml.models import (
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -53,7 +54,7 @@ from zenml.zen_stores.schemas.utils import get_page_from_list
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ServiceSchema
+    from zenml.zen_stores.schemas import ServiceSchema, StepRunSchema
 
 
 class ModelSchema(NamedSchema, table=True):
@@ -180,7 +181,6 @@ class ModelSchema(NamedSchema, table=True):
 
         body = ModelResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
             tags=tags,
@@ -218,7 +218,7 @@ class ModelSchema(NamedSchema, table=True):
 class ModelVersionSchema(NamedSchema, table=True):
     """SQL Model for model version."""
 
-    __tablename__ = "model_version"
+    __tablename__ = MODEL_VERSION_TABLENAME
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -285,6 +285,12 @@ class ModelVersionSchema(NamedSchema, table=True):
             cascade="delete",
             overlaps="run_metadata",
         ),
+    )
+    pipeline_runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="configured_model_version"
+    )
+    step_runs: List["StepRunSchema"] = Relationship(
+        back_populates="configured_model_version"
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
