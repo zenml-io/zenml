@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Notebook utilities."""
 
+import hashlib
 from typing import Any, Callable, Optional, TypeVar, Union
 
 from zenml.environment import Environment
@@ -120,3 +121,16 @@ def warn_about_notebook_cell_magic_commands(cell_code: str) -> None:
             "of these lines contain Jupyter notebook magic commands, "
             "remove them and try again."
         )
+
+
+def compute_cell_replacement_module_name(cell_code: str) -> str:
+    """Compute the replacement module name for a given cell code.
+
+    Args:
+        cell_code: The code of the notebook cell.
+
+    Returns:
+        The replacement module name.
+    """
+    code_hash = hashlib.sha1(cell_code.encode()).hexdigest()  # nosec
+    return f"extracted_notebook_code_{code_hash}"
