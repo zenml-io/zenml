@@ -24,6 +24,7 @@ from zenml.annotators.base_annotator import (
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.argilla import ARGILLA_ANNOTATOR_FLAVOR
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
+from zenml.utils import deprecation_utils
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
@@ -53,6 +54,12 @@ class ArgillaAnnotatorSettings(BaseSettings):
     port: Optional[int] = DEFAULT_LOCAL_ARGILLA_PORT
     headers: Optional[str] = None
     httpx_extra_kwargs: Optional[str] = None
+
+    extra_headers: Optional[str] = None
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("extra_headers", "headers"),
+    )
 
     @field_validator("instance_url")
     @classmethod
