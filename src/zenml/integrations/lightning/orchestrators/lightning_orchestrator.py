@@ -336,7 +336,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             arguments = LightningOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
                 deployment_id=deployment.id,
-                wheel_package=wheel_path,
+                wheel_package=wheel_path.rsplit("/", 1)[-1],
             )
             entrypoint = command + arguments
             entrypoint_string = " ".join(entrypoint)

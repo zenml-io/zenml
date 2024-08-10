@@ -21,7 +21,6 @@ from lightning_sdk import Machine, Studio
 
 from zenml.client import Client
 from zenml.constants import (
-    ENV_ZENML_CUSTOM_SOURCE_ROOT,
     ENV_ZENML_WHEEL_PACKAGE_NAME,
 )
 from zenml.enums import ExecutionStatus
@@ -41,7 +40,6 @@ from zenml.integrations.lightning.orchestrators.utils import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
-from zenml.orchestrators.utils import get_config_environment_vars
 
 logger = get_logger(__name__)
 
@@ -89,6 +87,10 @@ def main() -> None:
             f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' or '{ENV_ZENML_WHEEL_PACKAGE_NAME}' is not set."
         )
 
+    logger.info(f"Orchestrator run id: {orchestrator_run_id}")
+    logger.info(f"Wheel package name: {wheel_package_name}")
+    logger.info(f"args: {args}")
+
     deployment = Client().get_deployment(args.deployment_id)
 
     pipeline_dag = {
@@ -121,7 +123,7 @@ def main() -> None:
     pipeline_requirements_to_string = " ".join(
         f'"{req}"' for req in pipeline_requirements
     )
-    
+
     unique_resource_configs: Dict[str, str] = {}
     main_studio_name = sanitize_studio_name(
         f"zenml_{orchestrator_run_id}_pipeline"
@@ -148,11 +150,17 @@ def main() -> None:
         f"Uploading wheel package {args.wheel_package.rsplit('/', 1)[-1]} and installing dependencies on main studio {main_studio_name}"
     )
     main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
-    main_studio.upload_file(".lightning_studio/.studiorc", remote_path=".lightning_studio/.studiorc")
+    main_studio.upload_file(
+        ".lightning_studio/.studiorc",
+        remote_path=".lightning_studio/.studiorc",
+    )
     main_studio.run("pip install uv")
     main_studio.run(f"uv pip install {pipeline_requirements_to_string}")
     main_studio.run(
         "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+    )
+    logger.info(
+        f"Installing wheel package {args.wheel_package.rsplit('/', 1)[-1]} on main studio {main_studio_name}"
     )
     main_studio.run(f"pip install {args.wheel_package.rsplit('/', 1)[-1]}")
 
@@ -174,7 +182,7 @@ def main() -> None:
         step_args = LightningEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name,
             deployment_id=args.deployment_id,
-            wheel_package=args.wheel_package,
+            wheel_package=wheel_package_name,
         )
         entrypoint = command + step_args
         entrypoint_string = " ".join(entrypoint)
@@ -205,7 +213,10 @@ def main() -> None:
             try:
                 studio.start(Machine(step_settings.machine_type))
                 studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
-                studio.upload_file(".lightning_studio/.studiorc", remote_path=".lightning_studio/.studiorc")
+                studio.upload_file(
+                    ".lightning_studio/.studiorc",
+                    remote_path=".lightning_studio/.studiorc",
+                )
                 studio.run("pip install uv")
                 studio.run(f"uv pip install {step_requirements_to_string}")
                 studio.run(
