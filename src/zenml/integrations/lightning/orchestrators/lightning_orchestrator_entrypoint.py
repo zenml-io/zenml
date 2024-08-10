@@ -80,6 +80,11 @@ def main() -> None:
     orchestrator_run_id = os.environ.get(
         ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID
     )
+    if not orchestrator_run_id:
+        raise ValueError(
+            f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' "
+            "is not set."
+        )
 
     deployment = Client().get_deployment(args.deployment_id)
 
@@ -143,20 +148,20 @@ def main() -> None:
     logger.info(f"Creating main studio: {main_studio_name}")
     main_studio = Studio(name=main_studio_name)
     if pipeline_settings.machine_type:
-        main_studio.start(Machine(pipeline_settings.machine_type))
+            main_studio.start(Machine(pipeline_settings.machine_type))
     else:
         main_studio.start()
 
     logger.info(
         "Uploading wheel package and installing dependencies on main studio"
     )
-    main_studio.upload_file(args.wheel_package)
+    main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
     main_studio.run("pip install uv")
     main_studio.run(f"uv pip install {pipeline_requirements_to_string}")
     main_studio.run(
         "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
     )
-    main_studio.run(f"pip install {args.wheel_package}")
+    main_studio.run(f"pip install {args.wheel_package.rsplit('/', 1)[-1]}")
 
     run = Client().list_pipeline_runs(
         sort_by="asc:created",
@@ -202,16 +207,22 @@ def main() -> None:
                 f"Creating separate studio for step: {unique_resource_configs[step_name]}"
             )
             studio = Studio(name=unique_resource_configs[step_name])
-            studio.start(Machine(step_settings.machine_type))
-            studio.upload_file(args.wheel_package)
-            studio.run("pip install uv")
-            studio.run(f"uv pip install {step_requirements_to_string}")
-            studio.run(
-                "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
-            )
-            studio.run(f"pip install {args.wheel_package}")
-            studio.run(run_command)
-            studio.delete()
+            try:
+                studio.start(Machine(step_settings.machine_type))
+                studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
+                studio.run("pip install uv")
+                studio.run(f"uv pip install {step_requirements_to_string}")
+                studio.run(
+                    "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
+                )
+                studio.run(f"pip install {args.wheel_package.rsplit('/', 1)[-1]}")
+                studio.run(run_command)
+            except Exception as e:
+                logger.error(f"Error running step {step_name} on studio {unique_resource_configs[step_name]}: {e}")
+                raise e
+            finally:
+                studio.delete()
+                main_studio.delete()
         else:
             main_studio.run(run_command)
 
