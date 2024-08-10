@@ -352,7 +352,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                 studio.start(Machine(settings.machine_type))
             else:
                 studio.start()
-
+                
             logger.info(
                 "Uploading wheel package and installing dependencies on main studio"
             )
@@ -366,7 +366,8 @@ class LightningOrchestrator(WheeledOrchestrator):
                 "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
             )
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
-            output = studio.run(f"{entrypoint_string}")
+            jobs_plugin = studio.installed_plugins["jobs"]
+            output = jobs_plugin.run(f"{entrypoint_string}", name=f"running_pipeline_{deployment.pipeline.name}_in_async_mode")
             logger.info(f"Step output: {output}")
         else:
             self._upload_and_run_pipeline(
