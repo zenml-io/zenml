@@ -20,7 +20,10 @@ from typing import Dict, cast
 from lightning_sdk import Machine, Studio
 
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
+from zenml.constants import (
+    ENV_ZENML_CUSTOM_SOURCE_ROOT,
+    ENV_ZENML_WHEEL_PACKAGE_NAME,
+)
 from zenml.enums import ExecutionStatus
 from zenml.integrations.lightning.flavors.lightning_orchestrator_flavor import (
     LightningOrchestratorSettings,
@@ -80,10 +83,10 @@ def main() -> None:
     orchestrator_run_id = os.environ.get(
         ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID
     )
-    if not orchestrator_run_id:
+    wheel_package_name = os.environ.get(ENV_ZENML_WHEEL_PACKAGE_NAME)
+    if not orchestrator_run_id or not wheel_package_name:
         raise ValueError(
-            f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' "
-            "is not set."
+            f"Environment variable '{ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID}' or '{ENV_ZENML_WHEEL_PACKAGE_NAME}' is not set."
         )
 
     deployment = Client().get_deployment(args.deployment_id)
@@ -104,6 +107,7 @@ def main() -> None:
 
     # Set up credentials
     orchestrator._get_lightning_client(deployment)
+    orchestrator.package_name = wheel_package_name
 
     pipeline_settings = cast(
         LightningOrchestratorSettings, orchestrator.get_settings(deployment)
@@ -117,19 +121,7 @@ def main() -> None:
     pipeline_requirements_to_string = " ".join(
         f'"{req}"' for req in pipeline_requirements
     )
-
-    # Get the environment variables
-    env = get_config_environment_vars()
-    env[ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
-    env[ENV_ZENML_CUSTOM_SOURCE_ROOT] = (
-        LIGHTNING_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
-    )
-
-    # Create a single export command with all environment variables
-    export_command = "export " + " ".join(
-        [f"{key}='{value}'" for key, value in env.items()]
-    )
-
+    
     unique_resource_configs: Dict[str, str] = {}
     main_studio_name = sanitize_studio_name(
         f"zenml_{orchestrator_run_id}_pipeline"
@@ -148,14 +140,15 @@ def main() -> None:
     logger.info(f"Creating main studio: {main_studio_name}")
     main_studio = Studio(name=main_studio_name)
     if pipeline_settings.machine_type:
-            main_studio.start(Machine(pipeline_settings.machine_type))
+        main_studio.start(Machine(pipeline_settings.machine_type))
     else:
         main_studio.start()
 
     logger.info(
-        "Uploading wheel package and installing dependencies on main studio"
+        f"Uploading wheel package {args.wheel_package.rsplit('/', 1)[-1]} and installing dependencies on main studio {main_studio_name}"
     )
     main_studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
+    main_studio.upload_file(".lightning_studio/.studiorc", remote_path=".lightning_studio/.studiorc")
     main_studio.run("pip install uv")
     main_studio.run(f"uv pip install {pipeline_requirements_to_string}")
     main_studio.run(
@@ -185,11 +178,13 @@ def main() -> None:
         )
         entrypoint = command + step_args
         entrypoint_string = " ".join(entrypoint)
-        run_command = f"{export_command} && {entrypoint_string}"
+        run_command = f"{entrypoint_string}"
 
         step = deployment.step_configurations[step_name]
-
         if unique_resource_configs[step_name] != main_studio_name:
+            logger.info(
+                f"Creating separate studio for step: {unique_resource_configs[step_name]}"
+            )
             # Get step settings
             step_settings = cast(
                 LightningOrchestratorSettings,
@@ -201,7 +196,7 @@ def main() -> None:
             step_requirements_to_string = " ".join(
                 f'"{req}"' for req in step_requirements
             )
-            run_command = f"{export_command} && {entrypoint_string}"
+            run_command = f"{entrypoint_string}"
 
             logger.info(
                 f"Creating separate studio for step: {unique_resource_configs[step_name]}"
@@ -210,15 +205,20 @@ def main() -> None:
             try:
                 studio.start(Machine(step_settings.machine_type))
                 studio.upload_file(args.wheel_package.rsplit("/", 1)[-1])
+                studio.upload_file(".lightning_studio/.studiorc", remote_path=".lightning_studio/.studiorc")
                 studio.run("pip install uv")
                 studio.run(f"uv pip install {step_requirements_to_string}")
                 studio.run(
                     "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
                 )
-                studio.run(f"pip install {args.wheel_package.rsplit('/', 1)[-1]}")
+                studio.run(
+                    f"pip install {args.wheel_package.rsplit('/', 1)[-1]}"
+                )
                 studio.run(run_command)
             except Exception as e:
-                logger.error(f"Error running step {step_name} on studio {unique_resource_configs[step_name]}: {e}")
+                logger.error(
+                    f"Error running step {step_name} on studio {unique_resource_configs[step_name]}: {e}"
+                )
                 raise e
             finally:
                 studio.delete()
