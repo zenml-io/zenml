@@ -357,7 +357,6 @@ class LightningOrchestrator(WheeledOrchestrator):
                 "Uploading wheel package and installing dependencies on main studio"
             )
             studio.upload_file(wheel_path)
-            breakpoint()
             studio.upload_file(
                 env_file_path, remote_path=".lightning_studio/.studiorc"
             )
@@ -424,7 +423,6 @@ class LightningOrchestrator(WheeledOrchestrator):
                 "Uploading wheel package and installing dependencies on main studio"
             )
             studio.upload_file(wheel_path)
-            breakpoint()
             studio.upload_file(
                 env_file_path, remote_path=".lightning_studio/.studiorc"
             )
