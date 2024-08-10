@@ -13,29 +13,65 @@
 #  permissions and limitations under the License.
 """AzureML step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from zenml.config.base_settings import BaseSettings
-from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
+from pydantic import Field, model_validator
+
+from zenml.integrations.azure import (
+    AZURE_RESOURCE_TYPE,
+    AZUREML_STEP_OPERATOR_FLAVOR,
+)
+from zenml.integrations.azure.flavors.azureml import (
+    AzureMLComputeSettings,
+    AzureMLComputeTypes,
+)
+from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.azure.step_operators import AzureMLStepOperator
 
 
-class AzureMLStepOperatorSettings(BaseSettings):
+class AzureMLStepOperatorSettings(AzureMLComputeSettings):
     """Settings for the AzureML step operator.
 
     Attributes:
-        environment_name: The name of the environment if there
-            already exists one.
+        compute_target_name: The name of the configured ComputeTarget.
+            Deprecated in favor of `compute_name`.
     """
 
-    environment_name: Optional[str] = None
+    compute_target_name: Optional[str] = Field(
+        default=None,
+        description="Name of the configured ComputeTarget. Deprecated in favor "
+        "of `compute_name`.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _migrate_compute_name(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Backward compatibility for compute_target_name.
+
+        Args:
+            data: The model data.
+
+        Returns:
+            The migrated data.
+        """
+        if (
+            "compute_target_name" in data
+            and "compute_name" not in data
+            and "mode" not in data
+        ):
+            data["compute_name"] = data.pop("compute_target_name")
+            data["mode"] = AzureMLComputeTypes.COMPUTE_INSTANCE
+
+        return data
 
 
 class AzureMLStepOperatorConfig(
@@ -48,19 +84,21 @@ class AzureMLStepOperatorConfig(
         resource_group: The resource group to which the AzureML workspace
             is deployed.
         workspace_name: The name of the AzureML Workspace.
-        compute_target_name: The name of the configured ComputeTarget.
-            An instance of it has to be created on the portal if it doesn't
-            exist already.
         tenant_id: The Azure Tenant ID.
         service_principal_id: The ID for the service principal that is created
             to allow apps to access secure resources.
         service_principal_password: Password for the service principal.
     """
 
-    subscription_id: str
-    resource_group: str
-    workspace_name: str
-    compute_target_name: str
+    subscription_id: str = Field(
+        description="Subscription ID that AzureML is running on."
+    )
+    resource_group: str = Field(
+        description="Name of the resource group that AzureML is running on.",
+    )
+    workspace_name: str = Field(
+        description="Name of the workspace that AzureML is running on."
+    )
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
@@ -93,6 +131,21 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
             The name of the flavor.
         """
         return AZUREML_STEP_OPERATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(resource_type=AZURE_RESOURCE_TYPE)
 
     @property
     def docs_url(self) -> Optional[str]:
