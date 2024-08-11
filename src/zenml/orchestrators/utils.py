@@ -15,7 +15,7 @@
 
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
 from uuid import UUID
 
 from zenml.client import Client
@@ -29,13 +29,16 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
-from zenml.enums import StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StepContextError
+from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_config_to_model
 from zenml.models.v2.core.step_run import StepRunRequest
 from zenml.new.steps.step_context import get_step_context
+from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.artifacts.external_artifact_config import (
         ExternalArtifactConfiguration,
     )
@@ -305,3 +308,95 @@ def _get_model_versions_from_artifacts(
             else:
                 break
     return models
+
+
+class artifact_store_handler:
+    """Context manager for the artifact_store/filesystem_registry dependency.
+
+    Even though it is rare, sometimes we bump into cases where we are trying to
+    load artifacts that belong to an artifact store which is different from
+    the active artifact store.
+
+    In cases like this, we will try to instantiate the target artifact store
+    by creating the corresponding artifact store Python object, which ends up
+    registering the right filesystem in the filesystem registry.
+
+    The problem is, the keys in the filesystem registry are schemes (such as
+    "s3://" or "gcs://"). If we have two artifact stores with the same set of
+    supported schemes, we might end up overwriting the filesystem that belongs
+    to the active artifact store (and its authentication). That's why we have
+    to re-instantiate the active artifact store again, so the correct filesystem
+    will be restored.
+    """
+
+    def __init__(self, target_artifact_store_id: Optional[UUID]) -> None:
+        """Initialization of the context manager.
+
+        Args:
+            target_artifact_store_id: the ID of the artifact store to load.
+        """
+        self.active_artifact_store_id = Client().active_stack.artifact_store.id
+        self.target_artifact_store_id = target_artifact_store_id
+
+    def __enter__(self) -> "BaseArtifactStore":
+        """Instantiate the target artifact store and return it.
+
+        Returns:
+            the python object
+        """
+        try:
+            if self.target_artifact_store_id is not None:
+                if (
+                    self.active_artifact_store_id
+                    != self.target_artifact_store_id
+                ):
+                    get_logger(__name__).warning(
+                        f"Trying to use the artifact store with ID:"
+                        f"'{self.target_artifact_store_id}'"
+                        f"which is currently not the active artifact store."
+                    )
+
+                artifact_store_model_response = Client().get_stack_component(
+                    component_type=StackComponentType.ARTIFACT_STORE,
+                    name_id_or_prefix=self.target_artifact_store_id,
+                )
+                return cast(
+                    "BaseArtifactStore",
+                    StackComponent.from_model(artifact_store_model_response),
+                )
+            else:
+                return Client().active_stack.artifact_store
+
+        except KeyError:
+            raise RuntimeError(
+                "Unable to fetch the artifact store with id: "
+                f"'{self.target_artifact_store_id}'. Check whether the artifact"
+                "store still exists and you have to right permissions to "
+                "access it."
+            )
+        except ImportError:
+            raise RuntimeError(
+                "Unable to load the implementation of the artifact store with"
+                f"id: '{self.target_artifact_store_id}'. Please make sure that "
+                "the environment that you are loading this artifact from "
+                "has the right dependencies."
+            )
+
+    def __exit__(
+        self,
+        exc_type: Optional[Any],
+        exc_value: Optional[Any],
+        traceback: Optional[Any],
+    ) -> None:
+        """Set it back to the original state.
+
+        Args:
+            exc_type: The class of the exception
+            exc_value: The instance of the exception
+            traceback: The traceback of the exception
+        """
+        active_artifact_store_response = Client().get_stack_component(
+            component_type=StackComponentType.ARTIFACT_STORE,
+            name_id_or_prefix=self.active_artifact_store_id,
+        )
+        _ = StackComponent.from_model(active_artifact_store_response)

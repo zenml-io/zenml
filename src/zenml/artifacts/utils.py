@@ -710,12 +710,19 @@ def _get_artifact_store_from_response_or_from_active_stack(
                 "BaseArtifactStore",
                 StackComponent.from_model(artifact_store_model),
             )
-        except (KeyError, ImportError):
-            logger.warning(
-                "Unable to restore artifact store while trying to load artifact "
-                "`%s`. If this artifact is stored in a remote artifact store, "
-                "this might lead to issues when trying to load the artifact.",
-                artifact.id,
+        except KeyError:
+            raise RuntimeError(
+                "Unable to fetch the artifact store with id: "
+                f"'{artifact.artifact_store_id}'. Check whether the artifact"
+                "store still exists and you have to right permissions to "
+                "access it."
+            )
+        except ImportError:
+            raise RuntimeError(
+                "Unable to load the implementation of the artifact store with"
+                f"id: '{artifact.artifact_store_id}'. Please make sure that "
+                "the environment that you are loading this artifact from "
+                "has the right dependencies."
             )
     return Client().active_stack.artifact_store
 

@@ -447,14 +447,22 @@ class StepRunner:
             # we use the datatype of the stored artifact
             data_type = source_utils.load(artifact.data_type)
 
+        from zenml.orchestrators.utils import artifact_store_handler
+
         materializer_class: Type[BaseMaterializer] = (
             source_utils.load_and_validate_class(
                 artifact.materializer, expected_class=BaseMaterializer
             )
         )
-        materializer: BaseMaterializer = materializer_class(artifact.uri)
-        materializer.validate_type_compatibility(data_type)
-        return materializer.load(data_type=data_type)
+
+        with artifact_store_handler(
+            artifact.artifact_store_id
+        ) as target_artifact_store:
+            materializer: BaseMaterializer = materializer_class(
+                uri=artifact.uri, artifact_store=target_artifact_store
+            )
+            materializer.validate_type_compatibility(data_type)
+            return materializer.load(data_type=data_type)
 
     def _validate_outputs(
         self,
