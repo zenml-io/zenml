@@ -3,13 +3,7 @@ settings:
   resources:
     memory: 64GB
   docker:
-    parent_image: "pytorch/pytorch:2.4.0-cuda11.8-cudnn9-runtime"
-    requirements:
-      - zenml
-      - pyarrow
-      - datasets
-      - transformers[torch]
-      - sentencepiece
+    parent_image: "zenml-quickstart:0.64.0-py3.11-gcp"
 #  orchestrator.vertex:
 #    node_selector_constraint: ["cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P4"]
 
