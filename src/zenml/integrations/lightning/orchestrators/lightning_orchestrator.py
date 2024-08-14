@@ -83,14 +83,14 @@ class LightningOrchestrator(WheeledOrchestrator):
                 if not component.config.is_local:
                     continue
 
-                return False, (
-                    f"The Lightning orchestrator runs pipelines remotely, "
-                    f"but the '{component.name}' {component.type.value} is "
-                    "a local stack component and will not be available in "
-                    "the Lightning step.\nPlease ensure that you always "
-                    "use non-local stack components with the Lightning "
-                    "orchestrator."
-                )
+                # return False, (
+                #    f"The Lightning orchestrator runs pipelines remotely, "
+                #    f"but the '{component.name}' {component.type.value} is "
+                #    "a local stack component and will not be available in "
+                #    "the Lightning step.\nPlease ensure that you always "
+                #    "use non-local stack components with the Lightning "
+                #    "orchestrator."
+                # )
 
             return True, ""
 
