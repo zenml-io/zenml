@@ -459,7 +459,7 @@ class StepLauncher:
                     step_run=step_run,
                     step_source=self._step.spec.source,
                 )
-                if self._step.config.model:
+                if model:
                     orchestrator_utils._link_pipeline_run_to_model_from_context(
                         pipeline_run_id=step_run.pipeline_run_id,
                         model=model,
