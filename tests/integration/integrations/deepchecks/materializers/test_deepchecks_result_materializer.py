@@ -50,9 +50,7 @@ def check_result():
     return DatasetSizeComparison().run(train_dataset, test_dataset)
 
 
-def test_deepchecks_dataset_materializer_with_check_result(
-    clean_client, check_result
-):
+def test_deepchecks_dataset_materializer_with_check_result(check_result):
     """Test the Deepchecks dataset materializer for a single check result."""
     with does_not_raise():
         _test_materializer(
@@ -62,9 +60,7 @@ def test_deepchecks_dataset_materializer_with_check_result(
         )
 
 
-def test_deepchecks_dataset_materializer_with_suite_result(
-    clean_client, check_result
-):
+def test_deepchecks_dataset_materializer_with_suite_result(check_result):
     """Test the Deepchecks dataset materializer for a suite result."""
     suite = SuiteResult(name="aria_wears_suites", results=[check_result])
     with does_not_raise():

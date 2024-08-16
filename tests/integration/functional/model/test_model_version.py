@@ -528,7 +528,6 @@ class TestModel:
         self,
     ):
         """Test that artifacts are linked only to model versions from the context."""
-
         with ModelContext(create_model=False) as (mdl_name, _, _):
 
             @pipeline(model=Model(name=mdl_name))
@@ -714,10 +713,7 @@ class TestModel:
             except KeyError:
                 pass
 
-    # TODO: Fix and re-enable this test
-    # def test_model_versions_parallel_creation_version_unspecific(
-    #     self, clean_client: "Client"
-    # ):
+    # def test_model_versions_parallel_creation_version_unspecific(self):
     #     """Test that model version creation can be parallelized."""
     #     process_count = 50
     #     args = [
@@ -729,12 +725,13 @@ class TestModel:
     #             iterable=args,
     #         )
 
+    #     client = Client()
     #     assert sum(results), (
     #         "Test was not parallel. "
     #         "Consider increasing the number of processes or pools."
     #     )
-    #     assert clean_client.get_model(MODEL_NAME).name == MODEL_NAME
-    #     mvs = clean_client.list_model_versions(
+    #     assert client.get_model(MODEL_NAME).name == MODEL_NAME
+    #     mvs = client.list_model_versions(
     #         model_name_or_id=MODEL_NAME, size=min(1000, process_count * 10)
     #     )
     #     assert len(mvs) == process_count

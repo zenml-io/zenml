@@ -208,7 +208,6 @@ def clean_client(
     configuration and isolated SQLite database for an individual test.
 
     Args:
-        request: Pytest FixtureRequest object
         tmp_path_factory: Pytest TempPathFactory in order to create a new
             temporary directory
 
@@ -229,7 +228,6 @@ def module_clean_client(
     configuration and isolated SQLite database for a test module.
 
     Args:
-        request: Pytest FixtureRequest object
         tmp_path_factory: Pytest TempPathFactory in order to create a new
             temporary directory
 

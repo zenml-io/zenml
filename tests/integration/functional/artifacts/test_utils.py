@@ -21,7 +21,7 @@ from zenml.client import Client
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 
-def test_save_load_artifact_outside_run(clean_client):
+def test_save_load_artifact_outside_run():
     """Test artifact saving and loading outside of runs."""
     save_artifact(42, "meaning_of_life")
     assert load_artifact("meaning_of_life") == 42
@@ -52,7 +52,7 @@ def manual_artifact_loading_step(
     assert loaded_value == expected_value
 
 
-def test_save_load_artifact_in_run(clean_client):
+def test_save_load_artifact_in_run():
     """Test artifact saving and loading inside runs."""
 
     @pipeline
@@ -116,8 +116,9 @@ def test_save_load_artifact_in_run(clean_client):
     )
 
 
-def test_log_artifact_metadata_existing(clean_client):
+def test_log_artifact_metadata_existing():
     """Test logging artifact metadata for existing artifacts."""
+    client = Client()
     save_artifact(42, "meaning_of_life")
     log_artifact_metadata(
         {"description": "Aria is great!"}, artifact_name="meaning_of_life"
@@ -143,9 +144,7 @@ def test_log_artifact_metadata_existing(clean_client):
         artifact_version="1",
     )
 
-    artifact_1 = clean_client.get_artifact_version(
-        "meaning_of_life", version="1"
-    )
+    artifact_1 = client.get_artifact_version("meaning_of_life", version="1")
     assert "description" in artifact_1.run_metadata
     assert artifact_1.run_metadata["description"].value == "Aria is great!"
     assert "description_3" in artifact_1.run_metadata
@@ -168,9 +167,7 @@ def test_log_artifact_metadata_existing(clean_client):
         else:
             assert each - 2.0 < 10e-6
 
-    artifact_2 = clean_client.get_artifact_version(
-        "meaning_of_life", version="43"
-    )
+    artifact_2 = client.get_artifact_version("meaning_of_life", version="43")
     assert "description_2" in artifact_2.run_metadata
     assert artifact_2.run_metadata["description_2"].value == "Blupus is great!"
 
@@ -186,7 +183,7 @@ def artifact_metadata_logging_step() -> str:
     return "42"
 
 
-def test_log_artifact_metadata_single_output(clean_client):
+def test_log_artifact_metadata_single_output():
     """Test logging artifact metadata for a single output."""
 
     @pipeline
@@ -215,7 +212,7 @@ def artifact_multi_output_metadata_logging_step() -> (
     return "42", 42
 
 
-def test_log_artifact_metadata_multi_output(clean_client):
+def test_log_artifact_metadata_multi_output():
     """Test logging artifact metadata for multiple outputs."""
 
     @pipeline
@@ -248,9 +245,7 @@ def wrong_artifact_multi_output_metadata_logging_step() -> (
     return "42", 42
 
 
-def test_log_artifact_metadata_raises_error_if_output_name_unclear(
-    clean_client,
-):
+def test_log_artifact_metadata_raises_error_if_output_name_unclear():
     """Test that `log_artifact_metadata` raises an error if the output name is unclear."""
 
     @pipeline
@@ -262,14 +257,14 @@ def test_log_artifact_metadata_raises_error_if_output_name_unclear(
 
 
 def test_download_artifact_files_from_response(
-    tmp_path, clean_client_with_run: "Client"
+    tmp_path, client_with_run: "Client"
 ):
     """Test that we can download artifact files from an artifact version."""
-    artifact: ArtifactResponse = clean_client_with_run.get_artifact(
+    artifact: ArtifactResponse = client_with_run.get_artifact(
         name_id_or_prefix="connected_two_step_pipeline::step_1::output"
     )
     artifact_version_id = list(artifact.versions.values())[0].id
-    av = clean_client_with_run.get_artifact_version(artifact_version_id)
+    av = client_with_run.get_artifact_version(artifact_version_id)
     # create temporary path ending in .zip
 
     zipfile_path = os.path.join(tmp_path, "some_file.zip")
@@ -287,16 +282,16 @@ def test_download_artifact_files_from_response(
 
 
 def test_download_artifact_files_from_response_fails_if_exists(
-    tmp_path, clean_client_with_run
+    tmp_path, client_with_run
 ):
     """Test that downloading artifact files from an artifact version fails.
 
     Failure when the file already exists and `overwrite` is False."""
-    artifact: ArtifactResponse = clean_client_with_run.get_artifact(
+    artifact: ArtifactResponse = client_with_run.get_artifact(
         name_id_or_prefix="connected_two_step_pipeline::step_1::output"
     )
     artifact_version_id = list(artifact.versions.values())[0].id
-    av = clean_client_with_run.get_artifact_version(artifact_version_id)
+    av = client_with_run.get_artifact_version(artifact_version_id)
     # create temporary path ending in .zip
 
     zipfile_path = os.path.join(tmp_path, "some_file.zip")
@@ -343,10 +338,11 @@ class MockedClient(Client):
         return self.a_s
 
 
-def test_parallel_artifact_creation(clean_client: Client):
+def test_parallel_artifact_creation():
     """Test that artifact version creation can be parallelized."""
+    client = Client()
     process_count = 20
-    args = [MockedClient(clean_client.active_stack)] * process_count
+    args = [MockedClient(client.active_stack)] * process_count
     with multiprocessing.get_context("spawn").Pool(5) as pool:
         results = pool.map(
             parallel_artifact_version_creation,
@@ -358,7 +354,7 @@ def test_parallel_artifact_creation(clean_client: Client):
         "Consider increasing the number of processes or pools."
     )
 
-    avs = clean_client.list_artifact_versions(
+    avs = client.list_artifact_versions(
         name="meaning_of_life", size=min(1000, process_count * 10)
     )
     assert len(avs) == process_count
