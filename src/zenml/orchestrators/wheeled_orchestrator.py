@@ -118,6 +118,8 @@ setup(
                     ),
                     None,
                 )
+                if wheel_file is None:
+                    raise RuntimeError("Failed to create wheel file.")
                 wheel_path = os.path.join(temp_dir, "dist", wheel_file)
 
             else:
@@ -132,13 +134,12 @@ setup(
                     ),
                     None,
                 )
+                if wheel_file is None:
+                    raise RuntimeError("Failed to create wheel file.")
                 wheel_path = os.path.join(temp_dir, wheel_file)
 
             logger.debug(f"Wheel creation stdout: {result.stdout.decode()}")
             logger.debug(f"Wheel creation stderr: {result.stderr.decode()}")
-
-            if wheel_file is None:
-                raise RuntimeError("Failed to create wheel file.")
 
             # Verify the wheel file is a valid zip file
             import zipfile
