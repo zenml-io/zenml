@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for the orchestrator."""
 
+import os
 import random
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
@@ -305,3 +306,20 @@ def _get_model_versions_from_artifacts(
             else:
                 break
     return models
+
+
+def find_local_packages(repo_path: str) -> List[str]:
+    """Finds all local packages in the repository.
+
+    Args:
+        repo_path: The path to the repository.
+
+    Returns:
+        A list of relative paths to local packages.
+    """
+    packages = []
+    for root, _, files in os.walk(repo_path):
+        if "pyproject.toml" in files or "setup.py" in files:
+            relative_path = os.path.relpath(root, repo_path)
+            packages.append(relative_path)
+    return packages

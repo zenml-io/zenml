@@ -23,6 +23,7 @@ from zenml import __version__
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import find_local_packages
 from zenml.utils.io_utils import copy_dir
 from zenml.utils.source_utils import get_source_root
 
@@ -62,6 +63,8 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
         with fileio.open(init_file_path, "w") as f:
             f.write("")
 
+        local_packages = find_local_packages(temp_repo_path)
+
         # Create a setup.py file
         setup_py_content = f"""
 from setuptools import setup, find_packages
@@ -70,6 +73,9 @@ setup(
     name="{self.package_name}",
     version="{self.package_version}",
     packages=find_packages(),
+    install_requires=[
+        {', '.join([f'"{package}"' for package in local_packages])}
+    ],
 )
 """
         setup_py_path = os.path.join(temp_dir, "setup.py")
@@ -93,29 +99,46 @@ setup(
         # Change to the temporary directory
         original_dir = os.getcwd()
         os.chdir(temp_dir)
+        local_packages = find_local_packages(temp_dir)
 
         try:
-            # Run the `pip wheel` command to create the wheel
-            result = subprocess.run(
-                ["pip", "wheel", "."], check=True, capture_output=True
-            )
+            # Depending on whether the package has local dependencies, create the wheel file
+            # using either `python setup.py bdist_wheel` or `pip wheel .`
+            if local_packages:
+                result = subprocess.run(
+                    ["python", "setup.py", "bdist_wheel"],
+                    check=True,
+                    capture_output=True,
+                )
+                wheel_file = next(
+                    (
+                        file
+                        for file in os.listdir(os.path.join(temp_dir, "dist"))
+                        if file.endswith(".whl")
+                    ),
+                    None,
+                )
+                wheel_path = os.path.join(temp_dir, "dist", wheel_file)
+
+            else:
+                result = subprocess.run(
+                    ["pip", "wheel", "."], check=True, capture_output=True
+                )
+                wheel_file = next(
+                    (
+                        file
+                        for file in os.listdir(temp_dir)
+                        if file.endswith(".whl")
+                    ),
+                    None,
+                )
+                wheel_path = os.path.join(temp_dir, wheel_file)
+
             logger.debug(f"Wheel creation stdout: {result.stdout.decode()}")
             logger.debug(f"Wheel creation stderr: {result.stderr.decode()}")
 
-            # Find the created wheel file
-            wheel_file = next(
-                (
-                    file
-                    for file in os.listdir(temp_dir)
-                    if file.endswith(".whl")
-                ),
-                None,
-            )
-
             if wheel_file is None:
                 raise RuntimeError("Failed to create wheel file.")
-
-            wheel_path = os.path.join(temp_dir, wheel_file)
 
             # Verify the wheel file is a valid zip file
             import zipfile
