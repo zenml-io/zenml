@@ -312,16 +312,18 @@ class StepLogsStorage:
                             "w",
                         ) as file:
                             for message in self.buffer:
+                                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
                                 file.write(
-                                    remove_ansi_escape_codes(message) + "\n"
+                                    f"[{timestamp}] {remove_ansi_escape_codes(message)}\n"
                                 )
                     else:
                         with self.artifact_store.open(
                             self.logs_uri, "a"
                         ) as file:
                             for message in self.buffer:
+                                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
                                 file.write(
-                                    remove_ansi_escape_codes(message) + "\n"
+                                    f"[{timestamp}] {remove_ansi_escape_codes(message)}\n"
                                 )
 
             except (OSError, IOError) as e:
