@@ -261,7 +261,7 @@ def install(
 
     if not uv and not is_pip_installed():
         error(
-            "Pip is not installed. Please install pip or use the uv flag for package installation."
+            "Pip is not installed. Please install pip or use the uv flag (--uv) for package installation."
         )
 
     if not integrations:
