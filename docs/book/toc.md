@@ -119,6 +119,7 @@
   * [Implement a custom stack component](how-to/stack-deployment/implement-a-custom-stack-component.md)
   * [Implement a custom integration](how-to/stack-deployment/implement-a-custom-integration.md)
 * [🚜 Train with GPUs](how-to/training-with-gpus/training-with-gpus.md)
+  * [Distributed Training with 🤗 Accelerate](how-to/training-with-gpus/accelerate-distributed-training.md)
 * [🌲 Control logging](how-to/control-logging/README.md)
   * [View logs on the dashboard](how-to/control-logging/view-logs-on-the-dasbhoard.md)
   * [Enable or disable logs storage](how-to/control-logging/enable-or-disable-logs-storing.md)
