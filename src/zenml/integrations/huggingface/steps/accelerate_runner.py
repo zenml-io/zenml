@@ -17,7 +17,8 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-from typing import Any, Callable, Optional, TypeVar, cast
+import inspect
+from typing import Any, Callable, Dict, TypeVar, cast
 
 import cloudpickle as pickle
 from accelerate.commands.launch import (  # type: ignore[import-untyped]
@@ -35,8 +36,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def run_with_accelerate(
     step_function: BaseStep,
-    num_processes: Optional[int] = None,
-    use_cpu: bool = False,
+    **kwargs: Any,
 ) -> BaseStep:
     """Run a function with accelerate.
 
@@ -57,14 +57,17 @@ def run_with_accelerate(
 
     Args:
         step_function: The step function to run.
-        num_processes: The number of processes to use.
-        use_cpu: Whether to use the CPU.
+        kwargs: Any additional arguments to pass to the accelerate arguments (num_processes, cpu, etc.).
 
     Returns:
         The accelerate-enabled version of the step.
+
+    Raises:
+        RuntimeError: If the decorator is misused.
+
     """
 
-    def _decorator(entrypoint: F) -> F:
+    def _decorator(entrypoint: F, accelerate_kwargs: Dict[str, Any]) -> F:
         @functools.wraps(entrypoint)
         def inner(*args: Any, **kwargs: Any) -> Any:
             if args:
@@ -72,7 +75,12 @@ def run_with_accelerate(
                     "Accelerated steps do not support positional arguments."
                 )
 
-            if not use_cpu:
+            num_processes = None
+            if np := kwargs.get("num_processes", None):
+                num_processes = np
+                del accelerate_kwargs["num_processes"]
+
+            if not accelerate_kwargs.get("cpu", False):
                 import torch
 
                 logger.info("Starting accelerate job...")
@@ -99,12 +107,6 @@ def run_with_accelerate(
                 output_path,
             ):
                 commands = ["--num_processes", str(_num_processes)]
-                if use_cpu:
-                    commands += [
-                        "--cpu",
-                        "--num_cpu_threads_per_process",
-                        "10",
-                    ]
                 commands.append(str(script_path.absolute()))
                 for k, v in kwargs.items():
                     k = _cli_arg_name(k)
@@ -116,11 +118,13 @@ def run_with_accelerate(
                             commands += [f"--{k}", f"{each}"]
                     else:
                         commands += [f"--{k}", f"{v}"]
-
                 logger.debug(commands)
 
                 parser = launch_command_parser()
                 args = parser.parse_args(commands)
+                for k, v in accelerate_kwargs.items():
+                    if k in args:
+                        setattr(args, k, v)
                 try:
                     launch_command(args)
                 except Exception as e:
@@ -138,6 +142,34 @@ def run_with_accelerate(
 
         return cast(F, inner)
 
-    setattr(step_function, "entrypoint", _decorator(step_function.entrypoint))
+    import __main__
+
+    if __main__.__file__ == inspect.getsourcefile(step_function.entrypoint):
+        raise RuntimeError(
+            f"`{run_with_accelerate.__name__}` decorator cannot be used "
+            "with steps defined inside the entrypoint script, please move "
+            f"your step `{step_function.name}` code to another file and retry."
+        )
+    if f"@{run_with_accelerate.__name__}" in inspect.getsource(
+        step_function.entrypoint
+    ):
+        raise RuntimeError(
+            f"`{run_with_accelerate.__name__}` decorator cannot be used "
+            "directly on steps using '@' syntax, please use a functional "
+            "decoration in your pipeline script instead.\n"
+            "Example (not allowed):\n"
+            f"@{run_with_accelerate.__name__}\n"
+            f"def {step_function.name}(...):\n"
+            "    ...\n"
+            "Example (allowed):\n"
+            "def my_pipeline(...):\n"
+            f"    run_with_accelerate({step_function.name})(...)\n"
+        )
+
+    setattr(
+        step_function,
+        "entrypoint",
+        _decorator(step_function.entrypoint, accelerate_kwargs=kwargs),
+    )
 
     return step_function
