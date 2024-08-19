@@ -100,11 +100,11 @@ steps:
           --build-arg PYTHON_VERSION=3.11 \
           --target client \
           -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.11
+          -t $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11
 
         # use latest tags only for official releases
         if [[ $TAG_NAME =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-          docker tag $$USERNAME/zenml-server:$TAG_NAME $$USERNAME/zenml-server:latest
+          docker tag $$USERNAME/zenml-public-pipelines:quickstart-$TAG_NAME-py3.11 $$USERNAME/zenml-public-pipelines:quickstart-latest
         fi         
 
     id: build-quickstart-3.11-gcp
