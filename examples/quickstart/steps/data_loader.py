@@ -20,7 +20,6 @@ from datasets import Dataset
 import requests
 
 from zenml import step
-from zenml.integrations.huggingface.materializers import HFDatasetMaterializer
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -28,7 +27,7 @@ logger = get_logger(__name__)
 PROMPT = ""  # In case you want to also use a prompt you can set it here
 
 
-@step(output_materializers=HFDatasetMaterializer)
+@step
 def load_data() -> Tuple[
     Annotated[Dataset, "dataset"],
     Annotated[Dataset, "test_dataset"],
