@@ -14,18 +14,18 @@
 """Image build context."""
 
 import os
-from pathlib import Path
-from typing import IO, Dict, List, Optional, Set, Tuple, cast
+from typing import IO, Dict, List, Optional, Set, cast
 
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, string_utils
+from zenml.utils.archivable import Archivable
 
 logger = get_logger(__name__)
 
 
-class BuildContext:
+class BuildContext(Archivable):
     """Image build context.
 
     This class is responsible for creating an archive of the files needed to
@@ -45,9 +45,9 @@ class BuildContext:
                 given, a file called `.dockerignore` in the build context root
                 directory will be used instead if it exists.
         """
+        super().__init__()
         self._root = root
         self._dockerignore_file = dockerignore_file
-        self._extra_files: Dict[str, str] = {}
 
     @property
     def dockerignore_file(self) -> Optional[str]:
@@ -68,70 +68,26 @@ class BuildContext:
 
         return None
 
-    def add_file(self, source: str, destination: str) -> None:
-        """Adds a file to the build context.
-
-        Args:
-            source: The source of the file to add. This can either be a path
-                or the file content.
-            destination: The path inside the build context where the file
-                should be added.
-        """
-        if fileio.exists(source):
-            with fileio.open(source) as f:
-                self._extra_files[destination] = f.read()
-        else:
-            self._extra_files[destination] = source
-
-    def add_directory(self, source: str, destination: str) -> None:
-        """Adds a directory to the build context.
-
-        Args:
-            source: Path to the directory.
-            destination: The path inside the build context where the directory
-                should be added.
-
-        Raises:
-            ValueError: If `source` does not point to a directory.
-        """
-        if not fileio.isdir(source):
-            raise ValueError(
-                f"Can't add directory {source} to the build context as it "
-                "does not exist or is not a directory."
-            )
-
-        for dir, _, files in fileio.walk(source):
-            dir_path = Path(fileio.convert_to_str(dir))
-            for file_name in files:
-                file_name = fileio.convert_to_str(file_name)
-                file_source = dir_path / file_name
-                file_destination = (
-                    Path(destination)
-                    / dir_path.relative_to(source)
-                    / file_name
-                )
-
-                with file_source.open("r") as f:
-                    self._extra_files[file_destination.as_posix()] = f.read()
-
-    def write_archive(self, output_file: IO[bytes], gzip: bool = True) -> None:
+    def write_archive(
+        self, output_file: IO[bytes], use_gzip: bool = True
+    ) -> None:
         """Writes an archive of the build context to the given file.
 
         Args:
             output_file: The file to write the archive to.
-            gzip: Whether to use `gzip` to compress the file.
+            use_gzip: Whether to use `gzip` to compress the file.
         """
         from docker.utils import build as docker_build_utils
 
-        files = self._get_files()
-        extra_files = self._get_extra_files()
+        files = self.get_files()
+        extra_files = self.get_extra_files()
 
         context_archive = docker_build_utils.create_archive(
             fileobj=output_file,
             root=self._root,
-            files=sorted(files),
-            gzip=gzip,
-            extra_files=extra_files,
+            files=sorted(files.keys()),
+            gzip=use_gzip,
+            extra_files=list(extra_files.items()),
         )
 
         build_context_size = os.path.getsize(context_archive.name)
@@ -151,33 +107,30 @@ class BuildContext:
                 os.path.join(self._root, ".dockerignore"),
             )
 
-    def _get_files(self) -> Set[str]:
-        """Gets all non-ignored files in the build context root directory.
+    def get_files(self) -> Dict[str, str]:
+        """Gets all regular files that should be included in the archive.
 
         Returns:
-            All build context files.
+            A dict {path_in_archive: path_on_filesystem} for all regular files
+            in the archive.
         """
         if self._root:
-            exclude_patterns = self._get_exclude_patterns()
             from docker.utils import build as docker_build_utils
 
-            return cast(
+            exclude_patterns = self._get_exclude_patterns()
+
+            archive_paths = cast(
                 Set[str],
                 docker_build_utils.exclude_paths(
                     self._root, patterns=exclude_patterns
                 ),
             )
+            return {
+                archive_path: os.path.join(self._root, archive_path)
+                for archive_path in archive_paths
+            }
         else:
-            return set()
-
-    def _get_extra_files(self) -> List[Tuple[str, str]]:
-        """Gets all extra files of the build context.
-
-        Returns:
-            A tuple (path, file_content) for all extra files in the build
-            context.
-        """
-        return list(self._extra_files.items())
+            return {}
 
     def _get_exclude_patterns(self) -> List[str]:
         """Gets all exclude patterns from the dockerignore file.

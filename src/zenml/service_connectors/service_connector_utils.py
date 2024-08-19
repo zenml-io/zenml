@@ -368,6 +368,20 @@ def get_resources_options_from_resource_model_for_full_stack(
                             flavor_display_name="Skypilot (VM)",
                         )
                     )
+                    orchestrators.append(
+                        _prepare_resource_info(
+                            connector_details=connector_details,
+                            resource_ids=each.resource_ids,
+                            stack_component_type=StackComponentType.ORCHESTRATOR,
+                            flavor="azureml",
+                            required_configuration={
+                                "subscription_id": "subscription ID",
+                                "resource_group": "resource group",
+                                "workspace": "workspace",
+                            },
+                            flavor_display_name="AzureML",
+                        )
+                    )
 
                 if each.resource_type == "kubernetes-cluster":
                     orchestrators.append(

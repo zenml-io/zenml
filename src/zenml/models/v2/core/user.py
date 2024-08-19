@@ -65,12 +65,6 @@ class UserBase(BaseModel):
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
     )
-    hub_token: Optional[str] = Field(
-        default=None,
-        title="JWT Token for the connected Hub account. Only relevant for user "
-        "accounts.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     password: Optional[str] = Field(
         default=None,
         title="A password for the user.",
@@ -296,12 +290,6 @@ class UserResponseMetadata(BaseResponseMetadata):
         "for user accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    hub_token: Optional[str] = Field(
-        default=None,
-        title="JWT Token for the connected Hub account. Only relevant for user "
-        "accounts.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     external_user_id: Optional[UUID] = Field(
         default=None,
         title="The external user ID associated with the account. Only relevant "
@@ -415,15 +403,6 @@ class UserResponse(
             the value of the property.
         """
         return self.get_metadata().email
-
-    @property
-    def hub_token(self) -> Optional[str]:
-        """The `hub_token` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().hub_token
 
     @property
     def external_user_id(self) -> Optional[UUID]:
