@@ -69,8 +69,6 @@ def model_tester(
 
         test_collection[f"Prompt {index}"] = {sentence_without_prompt: decoded_output}
 
-    print(test_collection)
-
     log_model_metadata(
         {"Example Prompts": test_collection}
     )

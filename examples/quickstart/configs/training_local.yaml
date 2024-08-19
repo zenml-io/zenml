@@ -1,4 +1,4 @@
-# configuration of the Model Control Plane
+# Model Control Plane configuration
 model:
   name: YeOldeEnglishTranslator
   description: Model to translate from old to modern english

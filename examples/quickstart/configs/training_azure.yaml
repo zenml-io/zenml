@@ -1,11 +1,12 @@
-# environment configuration
+# Environment configuration
 settings:
   docker:
-    parent_image: "zenml-quickstart:0.64.0-py3.11"
+    parent_image: "zenmldocker/zenml-public-pipelines:quickstart-0.64.0-py3.11"
+# Uncomment the following two lines to specify the accelerator for your skypilot vm orchestrator
 #  orchestrator.vm_azure:
 #    instance_type: 'Standard_NC6'
 
-# configuration of the Model Control Plane
+# Model Control Plane configuration
 model:
   name: YeOldeEnglishTranslator
   description: Model to translate from old to modern english
@@ -14,7 +15,7 @@ model:
 # Configure the pipeline
 parameters:
   # model_type: "t5-small"  # Choose between t5-small and t5-large
-  num_train_epochs: 3
+  num_train_epochs: 2
   per_device_train_batch_size: 16
   gradient_accumulation_steps: 4
   dataloader_num_workers: 0
