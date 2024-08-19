@@ -15,7 +15,7 @@ from zenml import step, pipeline
 from zenml.integrations.huggingface.steps import run_with_accelerate
 
 @step
-def training_step(some_param: int, ...):
+def training_step():
     # your training code here
     ...
 
