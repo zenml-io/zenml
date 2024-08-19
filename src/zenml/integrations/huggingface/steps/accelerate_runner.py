@@ -125,6 +125,10 @@ def run_with_accelerate(
                 for k, v in accelerate_kwargs.items():
                     if k in args:
                         setattr(args, k, v)
+                    else:
+                        logger.warning(
+                            f"You passed in Accelerate argument `{k}`, but it is not accepted by Accelerate."
+                        )
                 try:
                     launch_command(args)
                 except Exception as e:
