@@ -75,39 +75,13 @@ def run_with_accelerate(
                     "Accelerated steps do not support positional arguments."
                 )
 
-            num_processes = None
-            if np := kwargs.get("num_processes", None):
-                num_processes = np
-                del accelerate_kwargs["num_processes"]
-
-            if not accelerate_kwargs.get("cpu", False):
-                import torch
-
-                logger.info("Starting accelerate job...")
-
-                device_count = torch.cuda.device_count()
-                if num_processes is None:
-                    _num_processes = device_count
-                else:
-                    if num_processes > device_count:
-                        logger.warning(
-                            f"Number of processes ({num_processes}) is greater than "
-                            f"the number of available GPUs ({device_count}). Using all GPUs."
-                        )
-                        _num_processes = device_count
-                    else:
-                        _num_processes = num_processes
-            else:
-                _num_processes = num_processes or 1
-
             with create_cli_wrapped_script(
                 entrypoint, flavour="accelerate"
             ) as (
                 script_path,
                 output_path,
             ):
-                commands = ["--num_processes", str(_num_processes)]
-                commands.append(str(script_path.absolute()))
+                commands = [str(script_path.absolute())]
                 for k, v in kwargs.items():
                     k = _cli_arg_name(k)
                     if isinstance(v, bool):
