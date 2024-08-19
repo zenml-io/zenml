@@ -36,7 +36,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def run_with_accelerate(
     step_function: BaseStep,
-    **kwargs: Any,
+    **accelerate_launch_kwargs: Any,
 ) -> BaseStep:
     """Run a function with accelerate.
 
@@ -57,7 +57,11 @@ def run_with_accelerate(
 
     Args:
         step_function: The step function to run.
-        kwargs: Any additional arguments to pass to the accelerate arguments (num_processes, cpu, etc.).
+        accelerate_launch_kwargs: A dictionary of arguments to pass along to the
+            `accelerate launch` command, including hardware selection, resource
+            allocation, and training paradigm options. Visit
+            https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch
+            for more details.
 
     Returns:
         The accelerate-enabled version of the step.
@@ -67,7 +71,9 @@ def run_with_accelerate(
 
     """
 
-    def _decorator(entrypoint: F, accelerate_kwargs: Dict[str, Any]) -> F:
+    def _decorator(
+        entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
+    ) -> F:
         @functools.wraps(entrypoint)
         def inner(*args: Any, **kwargs: Any) -> Any:
             if args:
@@ -96,12 +102,14 @@ def run_with_accelerate(
 
                 parser = launch_command_parser()
                 args = parser.parse_args(commands)
-                for k, v in accelerate_kwargs.items():
+                for k, v in accelerate_launch_kwargs.items():
                     if k in args:
                         setattr(args, k, v)
                     else:
                         logger.warning(
-                            f"You passed in Accelerate argument `{k}`, but it is not accepted by Accelerate."
+                            f"You passed in `{k}` as an `accelerate launch` argument, but it was not accepted. "
+                            "Please check https://huggingface.co/docs/accelerate/en/package_reference/cli#accelerate-launch "
+                            "to find out more about supported arguments and retry."
                         )
                 try:
                     launch_command(args)
@@ -147,7 +155,10 @@ def run_with_accelerate(
     setattr(
         step_function,
         "entrypoint",
-        _decorator(step_function.entrypoint, accelerate_kwargs=kwargs),
+        _decorator(
+            step_function.entrypoint,
+            accelerate_launch_kwargs=accelerate_launch_kwargs,
+        ),
     )
 
     return step_function
