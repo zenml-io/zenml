@@ -23,63 +23,6 @@ steps:
     secretEnv:
       - USERNAME
 
-  # build client quickstart gcp image - python 3.8
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.8 \
-          --build-arg CLOUD_PROVIDER=gcp \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.8-gcp \
-
-    id: build-quickstart-3.8-gcp
-    waitFor: ['-']
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client quickstart aws image - python 3.8
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.8 \
-          --build-arg CLOUD_PROVIDER=aws \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.8-aws
-
-    id: build-quickstart-3.8-aws
-    waitFor: ['-']
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client quickstart azure image - python 3.8
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.8 \
-          --build-arg CLOUD_PROVIDER=azure \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.8-azure
-
-    id: build-quickstart-3.8-azure
-    waitFor: ['-']
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
   # build client base image - python 3.9
   - name: gcr.io/cloud-builders/docker
     args:
@@ -102,63 +45,6 @@ steps:
     secretEnv:
       - USERNAME
 
-  # build client quickstart gcp image - python 3.9
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.9 \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.9-gcp \
-
-    id: build-quickstart-3.9-gcp
-    waitFor: ['-']
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client quickstart aws image - python 3.9
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.9 \
-          --build-arg CLOUD_PROVIDER=aws \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.9-aws
-
-    id: build-quickstart-3.9-aws
-    waitFor: ['-']
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client quickstart azure image - python 3.9
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.9 \
-          --build-arg CLOUD_PROVIDER=azure \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.9-azure
-
-    id: build-quickstart-3.9-azure
-    waitFor: ['-']
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-      -
-  # build client base image - python 3.10
 
   # build client base image - python 3.10
   - name: gcr.io/cloud-builders/docker
@@ -182,68 +68,6 @@ steps:
     secretEnv:
       - USERNAME
 
-    # build base image - python 3.11
-
-
-  # build client quickstart gcp image - python 3.10
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.10 \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.10-gcp
-
-    id: build-quickstart-3.10-gcp
-    waitFor: [ '-' ]
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client quickstart aws image - python 3.10
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.10 \
-          --build-arg CLOUD_PROVIDER=aws \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.10-aws
-
-    id: build-quickstart-3.10-aws
-    waitFor: [ '-' ]
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client quickstart azure image - python 3.10
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.10 \
-          --build-arg CLOUD_PROVIDER=azure \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.10-azure
-
-    id: build-quickstart-3.10-gcp
-    waitFor: [ '-' ]
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client base image - python 3.11
-
-
   # build client base image - python 3.11
   - name: gcr.io/cloud-builders/docker
     args:
@@ -266,7 +90,7 @@ steps:
     secretEnv:
       - USERNAME
 
-  # build client quickstart gcp image - python 3.11
+  # build client quickstart image - python 3.11
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
@@ -276,47 +100,14 @@ steps:
           --build-arg PYTHON_VERSION=3.11 \
           --target client \
           -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.11-gcp
+          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.11
+
+        # use latest tags only for official releases
+        if [[ $TAG_NAME =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+          docker tag $$USERNAME/zenml-server:$TAG_NAME $$USERNAME/zenml-server:latest
+        fi         
 
     id: build-quickstart-3.11-gcp
-    waitFor: [ '-' ]
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client quickstart aws image - python 3.11
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.11 \
-          --build-arg CLOUD_PROVIDER=aws \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.11-aws
-
-    id: build-quickstart-3.11-aws
-    waitFor: [ '-' ]
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-
-  # build client quickstart azure image - python 3.11
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.11 \
-          --build-arg CLOUD_PROVIDER=azure \
-          --target client \
-          -f docker/zenml-quickstart.Dockerfile . \
-          -t $$USERNAME/zenml-quickstart:$TAG_NAME-py3.11-azure
-
-    id: build-quickstart-3.11-azure
     waitFor: [ '-' ]
     entrypoint: bash
     secretEnv:

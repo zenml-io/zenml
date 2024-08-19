@@ -1,7 +1,7 @@
 # environment configuration
 settings:
   docker:
-    parent_image: "zenml-quickstart:0.64.0-py3.11-gcp"
+    parent_image: "zenml-quickstart:0.64.0-py3.11"
 #  orchestrator.vm_azure:
 #    instance_type: 'Standard_NC6'
 

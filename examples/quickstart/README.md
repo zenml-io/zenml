@@ -9,7 +9,7 @@ production. At ZenML we believe that you should have the power to write your pip
 For experimentation the local (notebook) environment gives you the highest flexibility and development speed. But at 
 some point you will need to deploy this very same code to a remote execution environment. There can be many reasons for 
 this. You might want to leverage powerful cloud accelerators, you might want to automate your pipelines within your
-CI/CD flow and/or you might want to simply not have long-running training jobs on your machine. Whatever your reason is, 
+CI/CD flow and/or you might want to simply move long-running training jobs out of your machine. Whatever your reason is, 
 when you hit that point, ZenML ensures that the very same code you ran locally, can be ported to the environment of your
 choice.
 
@@ -69,8 +69,8 @@ zenml connect --url="INSERT_YOUR_SERVER_URL_HERE"
 ```
 
 As described above we have done the first step already and created an experimental pipeline. Feel free to check out 
-the individual steps in the [`steps`](steps) directory. The pipeline that connects these steps can be found in the [`pipeline`](pipelines)
-directory. 
+the individual steps in the [`steps`](steps) directory. The pipeline that connects these steps can be found in 
+the [`pipeline`](pipelines) directory. 
 
 And here is how to run it. When you run the pipeline with the following command you will be using the configuration
 [here](configs/training_local.yaml)
@@ -80,13 +80,15 @@ And here is how to run it. When you run the pipeline with the following command 
 python run.py --model_type=t5-small --orchestration_environment local
 ```
 
-As you can see the pipeline has run successfully. It also printed out some examples - however it seems the model is not 
-yet able to solve the task well. But we validated that the pipeline works.
-
 <img src=".assets/DAG.png" width="50%" alt="Dashboard view">
 
-Above you can see what the dashboard view of the pipeline in the ZenML Dashboard.
-You can find the URL for this in the logs above. 
+Above you can see the dashboard view of the pipeline we just ran in the ZenML Dashboard.
+You can find the URL for this within the logs produced by the command above. 
+
+As you can see the pipeline has run successfully. It also printed out some examples - however it seems the model is not 
+yet able to solve the task well. What we did so far was validate that the pipeline and its individual steps work
+well together.
+
 
 ### 🌵 Running Remotely
 
@@ -97,11 +99,10 @@ ZenML wraps around all the major cloud providers and orchestration tools and let
 
 To do this lets head over to the `Stack` section of your ZenML Dashboard. Here you'll be able to either connect to an
 existing or deploy a new environment. Choose on of the options presented to you there and come back when you have a 
-stack ready to go. Then proceed to the appropirate section below. **Do not** run all three. Also be sure that you 
+stack ready to go. Then proceed to the appropriate section below. **Do not** run all three. Also be sure that you 
 are running with a remote ZenML server (see Step 1 above).
 
 <img src=".assets/StackCreate.png" width="20%" alt="Stack creation in the ZenML Dashboard">
-
 
 #### AWS
 

@@ -22,15 +22,16 @@ from transformers import (
 )
 
 from zenml import step
+from zenml.integrations.huggingface.materializers import HFDatasetMaterializer
 from zenml.logger import get_logger
 
 from steps.model_trainer import T5_Model
-from materializers import T5Materializer, DatasetMaterializer
+from materializers import T5Materializer
 
 logger = get_logger(__name__)
 
 
-@step(output_materializers=[T5Materializer, DatasetMaterializer])
+@step(output_materializers=[T5Materializer, HFDatasetMaterializer])
 def tokenize_data(dataset: Dataset, model_type: T5_Model) -> Tuple[
     Annotated[Dataset, "tokenized_dataset"],
     Annotated[T5Tokenizer, "tokenizer"],

@@ -3,7 +3,7 @@ settings:
   resources:
     memory: 64GB
   docker:
-    parent_image: "zenml-quickstart:0.64.0-py3.11-gcp"
+    parent_image: "zenml-quickstart:0.64.0-py3.11"
 #  orchestrator.sagemaker:
 #    instance_type: ml.p3.2xlarge
 
