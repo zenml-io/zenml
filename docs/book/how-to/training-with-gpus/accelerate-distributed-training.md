@@ -4,7 +4,7 @@ description: Run distributed training with Hugging Face's Accelerate library in 
 
 # Distributed training with 🤗 Accelerate
 
-There are several reasons why you might want to scale your machine learning pipelines to utilize distributed training, such as leveraging multiple GPUs or training across multiple nodes. ZenML now integrates with Hugging Face's Accelerate library to make this process seamless and efficient.
+There are several reasons why you might want to scale your machine learning pipelines to utilize distributed training, such as leveraging multiple GPUs or training across multiple nodes. ZenML now integrates with [Hugging Face's Accelerate library](https://github.com/huggingface/accelerate) to make this process seamless and efficient.
 
 ## Use 🤗 Accelerate in your steps
 
@@ -39,7 +39,7 @@ The `run_with_accelerate` function accepts various arguments to configure your d
 - `multi_gpu`: Whether to launch distributed GPU training.
 - `mixed_precision`: Mixed precision training mode ('no', 'fp16', or 'bf16').
 
-### Important considerations
+### Important Usage Notes
 
 1. The `run_with_accelerate` function cannot be used directly on steps using the '@' syntax. Use it within your pipeline definition instead.
 
@@ -48,6 +48,10 @@ The `run_with_accelerate` function accepts various arguments to configure your d
 3. Accelerated steps do not support positional arguments. Use keyword arguments when calling your steps.
 
 4. If `run_with_accelerate` is misused, it will raise a `RuntimeError` with a helpful message explaining the correct usage.
+
+{% hint style="info" %}
+To see a full example where Accelerate is used within a ZenML pipeline, check out our <a href="https://github.com/zenml-io/zenml-projects/blob/main/llm-lora-finetuning/README.md">llm-lora-finetuning</a> project which leverages the distributed training functionalities while finetuning an LLM.
+{% endhint %}
 
 ## Ensure your container is Accelerate-ready
 
