@@ -66,9 +66,6 @@ def model_tester(
 
         sentence_without_prompt = sentence.strip(PROMPT)
 
-        logger.info(f"Generated Old English: {sentence_without_prompt}")
-        logger.info(f"Model Translation: {decoded_output} \n")
-
         test_collection[f"Prompt {index}"] = {
             sentence_without_prompt: decoded_output
         }
