@@ -14,24 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datasets import Dataset
-
 import torch
+from datasets import Dataset
 from transformers import (
     T5ForConditionalGeneration,
     T5Tokenizer,
 )
 
-from zenml import step, log_model_metadata
+from zenml import log_model_metadata, step
 from zenml.logger import get_logger
 
 from .data_loader import PROMPT
+
 logger = get_logger(__name__)
 
 
 @step
 def model_tester(
-    model: T5ForConditionalGeneration, tokenizer: T5Tokenizer, test_dataset: Dataset
+    model: T5ForConditionalGeneration,
+    tokenizer: T5Tokenizer,
+    test_dataset: Dataset,
 ) -> None:
     """Test the model on some generated Old English-style sentences."""
 
@@ -40,7 +42,7 @@ def model_tester(
     test_collection = {}
 
     for index in range(len(test_dataset)):
-        sentence = test_dataset[index]['input']
+        sentence = test_dataset[index]["input"]
         input_ids = tokenizer(
             sentence,
             return_tensors="pt",
@@ -67,9 +69,8 @@ def model_tester(
         logger.info(f"Generated Old English: {sentence_without_prompt}")
         logger.info(f"Model Translation: {decoded_output} \n")
 
-        test_collection[f"Prompt {index}"] = {sentence_without_prompt: decoded_output}
+        test_collection[f"Prompt {index}"] = {
+            sentence_without_prompt: decoded_output
+        }
 
-    log_model_metadata(
-        {"Example Prompts": test_collection}
-    )
-
+    log_model_metadata({"Example Prompts": test_collection})

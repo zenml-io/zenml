@@ -14,20 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from typing import Tuple
 
 import torch
 from datasets import Dataset
 from materializers import T5Materializer
 from transformers import (
     T5ForConditionalGeneration,
-    T5Tokenizer,
     Trainer,
     TrainingArguments,
 )
 from typing_extensions import Annotated
 
-from zenml import step, ArtifactConfig, log_model_metadata
+from zenml import ArtifactConfig, step
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
@@ -49,7 +47,9 @@ def train_model(
     per_device_train_batch_size: int,
     gradient_accumulation_steps: int,
     dataloader_num_workers: int,
-) -> Annotated[T5ForConditionalGeneration, "model", ArtifactConfig(is_model_artifact=True)]:
+) -> Annotated[
+    T5ForConditionalGeneration, "model", ArtifactConfig(is_model_artifact=True)
+]:
     """Train the model and return the path to the saved model."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

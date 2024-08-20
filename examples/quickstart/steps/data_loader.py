@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from typing import Tuple, Annotated
+from typing import Annotated, Tuple
 
-from datasets import Dataset
 import requests
+from datasets import Dataset
 
 from zenml import step
 from zenml.logger import get_logger
@@ -28,10 +28,12 @@ PROMPT = ""  # In case you want to also use a prompt you can set it here
 
 
 @step
-def load_data() -> Tuple[
-    Annotated[Dataset, "dataset"],
-    Annotated[Dataset, "test_dataset"],
-]:
+def load_data() -> (
+    Tuple[
+        Annotated[Dataset, "dataset"],
+        Annotated[Dataset, "test_dataset"],
+    ]
+):
     """Load and prepare the dataset."""
 
     def read_data_from_url(url):
