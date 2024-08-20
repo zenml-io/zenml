@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Lightning orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, List, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.lightning import LIGHTNING_ORCHESTRATOR_FLAVOR
@@ -34,6 +34,7 @@ class LightningOrchestratorSettings(BaseSettings):
     """Lightning orchestrator base settings.
 
     Attributes:
+        main_studio_name: Main studio name.
         machine_type: Machine type.
         user_id: User id.
         api_key: api_key.
@@ -41,9 +42,11 @@ class LightningOrchestratorSettings(BaseSettings):
         teamspace: Teamspace.
         organization: Organization.
         async_mode: Whether to run the pipeline in async mode.
+        custom_commands: Custom commands to run.
     """
 
     # Resources
+    main_studio_name: Optional[str] = None
     machine_type: Optional[str] = None
     user_id: str = SecretField(default=None)
     api_key: str = SecretField(default=None)
@@ -51,6 +54,7 @@ class LightningOrchestratorSettings(BaseSettings):
     teamspace: Optional[str] = None
     organization: Optional[str] = None
     async_mode: bool = False
+    custom_commands: Optional[List[str]] = None
 
 
 class LightningOrchestratorConfig(

@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import uuid4
 
 from lightning_sdk import Machine, Studio
@@ -410,17 +410,22 @@ class LightningOrchestrator(WheeledOrchestrator):
         logger.info("Setting up Lightning AI client")
         self._get_lightning_client(deployment)
 
-        studio_name = sanitize_studio_name(
-            f"zenml_{orchestrator_run_id}_pipeline"
-        )
-        logger.info(f"Creating main studio: {studio_name}")
-        studio = Studio(name=studio_name)
-        try:
+        if settings.main_studio_name:
+            studio_name = settings.main_studio_name
+            studio = Studio(name=studio_name)
+            if studio.machine != settings.machine_type:
+                studio.switch_machine(Machine(settings.machine_type))
+        else:
+            studio_name = sanitize_studio_name(
+                f"zenml_{orchestrator_run_id}_pipeline"
+            )
+            logger.info(f"Creating main studio: {studio_name}")
+            studio = Studio(name=studio_name)
             if settings.machine_type:
                 studio.start(Machine(settings.machine_type))
             else:
                 studio.start()
-
+        try:
             logger.info(
                 "Uploading wheel package and installing dependencies on main studio"
             )
@@ -434,6 +439,9 @@ class LightningOrchestrator(WheeledOrchestrator):
                 "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
             )
             studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+            for command in settings.custom_commands or []:
+                output = studio.run(command)
+                logger.info(f"Custom command output: {output}")
 
             for step_name, details in steps_commands.items():
                 if details["machine"]:
@@ -444,6 +452,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                         details,
                         wheel_path,
                         env_file_path,
+                        settings.custom_commands,
                     )
                 else:
                     logger.info(f"Executing step: {step_name} in main studio")
@@ -463,6 +472,7 @@ class LightningOrchestrator(WheeledOrchestrator):
         details: Dict[str, Any],
         wheel_path: str,
         env_file_path: str,
+        custom_commands: Optional[List[str]] = None,
     ) -> None:
         """Run a step in a new studio.
 
@@ -472,6 +482,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             details: The details of the step.
             wheel_path: The path to the wheel package.
             env_file_path: The path to the environment file.
+            custom_commands: Custom commands to run.
         """
         studio_name = sanitize_studio_name(
             f"zenml_{orchestrator_run_id}_{step_name}"
@@ -489,6 +500,9 @@ class LightningOrchestrator(WheeledOrchestrator):
             "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
         )
         studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+        for command in custom_commands or []:
+            output = studio.run(command)
+            logger.info(f"Custom command output: {output}")
         for command in details["commands"]:
             output = studio.run(command)
             logger.info(f"Step {step_name} output: {output}")
