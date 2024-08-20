@@ -429,7 +429,10 @@ class LightningOrchestrator(WheeledOrchestrator):
         if settings.main_studio_name:
             studio_name = settings.main_studio_name
             studio = Studio(name=studio_name)
-            if studio.machine != settings.machine_type:
+            if (
+                studio.machine != settings.machine_type
+                and settings.machine_type
+            ):
                 studio.switch_machine(Machine(settings.machine_type))
         else:
             studio_name = sanitize_studio_name(
@@ -486,7 +489,10 @@ class LightningOrchestrator(WheeledOrchestrator):
             logger.error(f"Error running pipeline: {e}")
             raise e
         finally:
-            if studio.status != studio.status.NotCreated:
+            if (
+                studio.status != studio.status.NotCreated
+                and settings.main_studio_name
+            ):
                 logger.info("Deleting main studio")
                 studio.delete()
 
