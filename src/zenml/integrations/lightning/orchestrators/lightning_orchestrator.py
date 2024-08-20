@@ -38,12 +38,11 @@ from zenml.integrations.lightning.orchestrators.utils import (
     gather_requirements,
     sanitize_studio_name,
 )
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
-from zenml.utils import io_utils
+from zenml.utils import code_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -249,12 +248,17 @@ class LightningOrchestrator(WheeledOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
 
         # Copy the repository to a temporary directory and add a setup.py file
-        repository_temp_dir = (
-            self.copy_repository_to_temp_dir_and_add_setup_py()
-        )
+        # repository_temp_dir = (
+        #    self.copy_repository_to_temp_dir_and_add_setup_py()
+        # )
 
         # Create a wheel for the package in the temporary directory
-        wheel_path = self.create_wheel(temp_dir=repository_temp_dir)
+        # wheel_path = self.create_wheel(temp_dir=repository_temp_dir)
+        code_archive = code_utils.CodeArchive(
+            root=source_utils.get_source_root()
+        )
+        logger.info("Archiving pipeline code...")
+        code_path, filename = code_utils.zip_and_hash_code(code_archive)
 
         # Construct the env variables for the pipeline
         env_vars = environment.copy()
@@ -336,7 +340,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             arguments = LightningOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
                 deployment_id=deployment.id,
-                wheel_package=wheel_path.rsplit("/", 1)[-1],
+                wheel_package=filename,
             )
             entrypoint = command + arguments
             entrypoint_string = " ".join(entrypoint)
@@ -356,7 +360,11 @@ class LightningOrchestrator(WheeledOrchestrator):
             logger.info(
                 "Uploading wheel package and installing dependencies on main studio"
             )
-            studio.upload_file(wheel_path)
+            studio.run("mkdir ./zenml_codes")
+            studio.upload_file(
+                code_path, remote_path=f"./zenml_codes/{filename}"
+            )
+            studio.run(f"unzip ./zenml_codes/{filename} -d ./zenml_codes")
             studio.upload_file(
                 env_file_path, remote_path=".lightning_studio/.studiorc"
             )
@@ -365,6 +373,11 @@ class LightningOrchestrator(WheeledOrchestrator):
             studio.run(
                 "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
             )
+            for command in settings.custom_commands or []:
+                output = studio.run(
+                    f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+                )
+                logger.info(f"Custom command output: {output}")
             # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             logger.info("Running pipeline in async mode")
             studio.run(f"nohup {entrypoint_string} > /dev/null 2>&1 &")
@@ -377,12 +390,13 @@ class LightningOrchestrator(WheeledOrchestrator):
                 pipeline_requirements_to_string,
                 settings,
                 _construct_lightning_steps(deployment),
-                wheel_path,
+                code_path,
+                filename,
                 env_file_path,
             )
 
         # Remove the temporary directory
-        fileio.rmtree(repository_temp_dir)
+        # fileio.rmtree(repository_temp_dir)
         # Remove the temporary file
         os.unlink(env_file_path)
 
@@ -393,7 +407,8 @@ class LightningOrchestrator(WheeledOrchestrator):
         requirements: str,
         settings: LightningOrchestratorSettings,
         steps_commands: Dict[str, Dict[str, Any]],
-        wheel_path: str,
+        code_path: str,
+        filename: str,
         env_file_path: str,
     ) -> None:
         """Upload and run the pipeline on Lightning Studio.
@@ -404,7 +419,8 @@ class LightningOrchestrator(WheeledOrchestrator):
             requirements: The requirements for the pipeline.
             settings: The orchestrator settings.
             steps_commands: The commands to run for each step.
-            wheel_path: The path to the wheel package.
+            code_path: The path to the wheel package.
+            filename: The name of the code archive.
             env_file_path: The path to the environment file.
         """
         logger.info("Setting up Lightning AI client")
@@ -426,10 +442,16 @@ class LightningOrchestrator(WheeledOrchestrator):
             else:
                 studio.start()
         try:
+            studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
+            studio.upload_file(
+                code_path, remote_path=f"/zenml_codes/{filename}"
+            )
+            studio.run(
+                f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+            )
             logger.info(
                 "Uploading wheel package and installing dependencies on main studio"
             )
-            studio.upload_file(wheel_path)
             studio.upload_file(
                 env_file_path, remote_path=".lightning_studio/.studiorc"
             )
@@ -438,9 +460,11 @@ class LightningOrchestrator(WheeledOrchestrator):
             studio.run(
                 "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
             )
-            studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+            # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
             for command in settings.custom_commands or []:
-                output = studio.run(command)
+                output = studio.run(
+                    f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+                )
                 logger.info(f"Custom command output: {output}")
 
             for step_name, details in steps_commands.items():
@@ -450,13 +474,14 @@ class LightningOrchestrator(WheeledOrchestrator):
                         orchestrator_run_id,
                         step_name,
                         details,
-                        wheel_path,
+                        code_path,
+                        filename,
                         env_file_path,
                         settings.custom_commands,
                     )
                 else:
                     logger.info(f"Executing step: {step_name} in main studio")
-                    self._run_step_in_main_studio(studio, details)
+                    self._run_step_in_main_studio(studio, details, filename)
         except Exception as e:
             logger.error(f"Error running pipeline: {e}")
             raise e
@@ -470,7 +495,8 @@ class LightningOrchestrator(WheeledOrchestrator):
         orchestrator_run_id: str,
         step_name: str,
         details: Dict[str, Any],
-        wheel_path: str,
+        code_path: str,
+        filename: str,
         env_file_path: str,
         custom_commands: Optional[List[str]] = None,
     ) -> None:
@@ -480,7 +506,8 @@ class LightningOrchestrator(WheeledOrchestrator):
             orchestrator_run_id: The orchestrator run id.
             step_name: The name of the step.
             details: The details of the step.
-            wheel_path: The path to the wheel package.
+            code_path: The path to the wheel package.
+            filename: The name of the code archive.
             env_file_path: The path to the environment file.
             custom_commands: Custom commands to run.
         """
@@ -490,7 +517,11 @@ class LightningOrchestrator(WheeledOrchestrator):
         logger.info(f"Creating new studio for step {step_name}: {studio_name}")
         studio = Studio(name=studio_name)
         studio.start(Machine(details["machine"]))
-        studio.upload_file(wheel_path)
+        studio.run(f"mkdir -p ./zenml_codes/{filename.rsplit('.', 2)[0]}")
+        studio.upload_file(code_path, remote_path=f"/zenml_codes/{filename}")
+        studio.run(
+            f"tar -xvzf zenml_codes/{filename} -C zenml_codes/{filename.rsplit('.', 2)[0]}"
+        )
         studio.upload_file(
             env_file_path, remote_path=".lightning_studio/.studiorc"
         )
@@ -499,24 +530,31 @@ class LightningOrchestrator(WheeledOrchestrator):
         studio.run(
             "pip uninstall zenml -y && pip install git+https://github.com/zenml-io/zenml.git@feature/lightening-studio-orchestrator"
         )
-        studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+        # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
         for command in custom_commands or []:
-            output = studio.run(command)
+            output = studio.run(
+                f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+            )
             logger.info(f"Custom command output: {output}")
         for command in details["commands"]:
-            output = studio.run(command)
+            output = studio.run(
+                f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+            )
             logger.info(f"Step {step_name} output: {output}")
         studio.delete()
 
     def _run_step_in_main_studio(
-        self, studio: Studio, details: Dict[str, Any]
+        self, studio: Studio, details: Dict[str, Any], filename: str
     ) -> None:
         """Run a step in the main studio.
 
         Args:
             studio: The studio to run the step in.
             details: The details of the step.
+            filename: The name of the code archive.
         """
         for command in details["commands"]:
-            output = studio.run(command)
+            output = studio.run(
+                f"cd zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
+            )
             logger.info(f"Step output: {output}")

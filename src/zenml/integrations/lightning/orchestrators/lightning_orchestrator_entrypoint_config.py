@@ -13,11 +13,7 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration for ZenML Lightning pipeline steps."""
 
-import os
-import sys
 from typing import Any, List, Set
-
-import pkg_resources
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -68,15 +64,15 @@ class LightningEntrypointConfiguration(StepEntrypointConfiguration):
             kwargs[WHEEL_PACKAGE_OPTION],
         ]
 
-    def run(self) -> None:
-        """Runs the step."""
-        # Get the wheel package and add it to the sys path
-        wheel_package = self.entrypoint_args[WHEEL_PACKAGE_OPTION]
-        distribution = pkg_resources.get_distribution(wheel_package)
-        project_root = os.path.join(distribution.location, wheel_package)
-        if project_root not in sys.path:
-            sys.path.insert(0, project_root)
-            sys.path.insert(-1, project_root)
+    # def run(self) -> None:
+    #     """Runs the step."""
+    #     # Get the wheel package and add it to the sys path
+    #     wheel_package = self.entrypoint_args[WHEEL_PACKAGE_OPTION]
+    #     distribution = pkg_resources.get_distribution(wheel_package)
+    #     project_root = os.path.join(distribution.location, wheel_package)
+    #     if project_root not in sys.path:
+    #         sys.path.insert(0, project_root)
+    #         sys.path.insert(-1, project_root)
 
-        # Run the step
-        super().run()
+    #     # Run the step
+    #     super().run()

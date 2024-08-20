@@ -16,14 +16,15 @@
 import hashlib
 import os
 import shutil
+import sys
 import tempfile
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Dict, Optional
+from typing import IO, TYPE_CHECKING, Dict, Optional, Tuple
 
 from zenml.client import Client
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import string_utils
+from zenml.utils import source_utils, string_utils
 from zenml.utils.archivable import Archivable
 
 if TYPE_CHECKING:
@@ -168,6 +169,34 @@ class CodeArchive(Archivable):
             )
 
 
+def zip_and_hash_code(code_archive: CodeArchive) -> Tuple[str, str]:
+    """Zip the code archive and compute its hash.
+
+    Args:
+        code_archive: The code archive to zip and hash.
+
+    Returns:
+        A tuple containing the temporary file path and the computed hash.
+    """
+    with tempfile.NamedTemporaryFile(
+        mode="w+b", delete=False, suffix=".tar.gz"
+    ) as f:
+        code_archive.write_archive(f)
+
+        hash_ = hashlib.sha1()  # nosec
+
+        f.seek(0)
+        while True:
+            data = f.read(64 * 1024)
+            if not data:
+                break
+            hash_.update(data)
+
+        filename = f"{hash_.hexdigest()}.tar.gz"
+
+    return f.name, filename
+
+
 def upload_code_if_necessary(code_archive: CodeArchive) -> str:
     """Upload code to the artifact store if necessary.
 
@@ -179,44 +208,30 @@ def upload_code_if_necessary(code_archive: CodeArchive) -> str:
         code_archive: The code archive to upload.
 
     Returns:
-        The path where to archived code is uploaded.
+        The path where the archived code is uploaded.
     """
     artifact_store = Client().active_stack.artifact_store
 
-    with tempfile.NamedTemporaryFile(
-        mode="w+b", delete=False, suffix=".tar.gz"
-    ) as f:
-        code_archive.write_archive(f)
+    temp_file, filename = zip_and_hash_code(code_archive)
 
-        hash_ = hashlib.sha1()  # nosec
+    upload_dir = os.path.join(artifact_store.path, "code_uploads")
+    fileio.makedirs(upload_dir)
+    upload_path = os.path.join(upload_dir, filename)
 
-        while True:
-            data = f.read(64 * 1024)
-            if not data:
-                break
-            hash_.update(data)
+    if not fileio.exists(upload_path):
+        archive_size = string_utils.get_human_readable_filesize(
+            os.path.getsize(temp_file)
+        )
+        logger.info(
+            "Uploading code to `%s` (Size: %s).", upload_path, archive_size
+        )
+        fileio.copy(temp_file, upload_path)
+        logger.info("Code upload finished.")
+    else:
+        logger.info("Code already exists in artifact store, skipping upload.")
 
-        filename = f"{hash_.hexdigest()}.tar.gz"
-        upload_dir = os.path.join(artifact_store.path, "code_uploads")
-        fileio.makedirs(upload_dir)
-        upload_path = os.path.join(upload_dir, filename)
-
-        if not fileio.exists(upload_path):
-            archive_size = string_utils.get_human_readable_filesize(
-                os.path.getsize(f.name)
-            )
-            logger.info(
-                "Uploading code to `%s` (Size: %s).", upload_path, archive_size
-            )
-            fileio.copy(f.name, upload_path)
-            logger.info("Code upload finished.")
-        else:
-            logger.info(
-                "Code already exists in artifact store, skipping upload."
-            )
-
-    if os.path.exists(f.name):
-        os.remove(f.name)
+    if os.path.exists(temp_file):
+        os.remove(temp_file)
 
     return upload_path
 
@@ -242,3 +257,25 @@ def download_and_extract_code(code_path: str, extract_dir: str) -> None:
 
     shutil.unpack_archive(filename=download_path, extract_dir=extract_dir)
     os.remove(download_path)
+
+
+def download_code_from_artifact_store(code_path: str) -> None:
+    """Download code from the artifact store.
+
+    Args:
+        code_path: Path where the code is stored.
+    """
+    logger.info("Downloading code from artifact store path `%s`.", code_path)
+
+    # Do not remove this line, we need to instantiate the artifact store to
+    # register the filesystem needed for the file download
+    _ = Client().active_stack.artifact_store
+
+    extract_dir = os.path.abspath("code")
+    os.makedirs(extract_dir)
+
+    download_and_extract_code(code_path=code_path, extract_dir=extract_dir)
+
+    source_utils.set_custom_source_root(extract_dir)
+    sys.path.insert(0, extract_dir)
+    os.chdir(extract_dir)
