@@ -24,12 +24,12 @@ from zenml.constants import (
     ENV_ZENML_CUSTOM_SOURCE_ROOT,
     ENV_ZENML_WHEEL_PACKAGE_NAME,
 )
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
+)
 from zenml.integrations.lightning.flavors.lightning_orchestrator_flavor import (
     LightningOrchestratorConfig,
     LightningOrchestratorSettings,
-)
-from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_config import (
-    LightningEntrypointConfiguration,
 )
 from zenml.integrations.lightning.orchestrators.lightning_orchestrator_entrypoint_configuration import (
     LightningOrchestratorEntrypointConfiguration,
@@ -299,14 +299,11 @@ class LightningOrchestrator(WheeledOrchestrator):
             for step_name, step in deployment.step_configurations.items():
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
-                command = (
-                    LightningEntrypointConfiguration.get_entrypoint_command()
-                )
+                command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
-                    LightningEntrypointConfiguration.get_entrypoint_arguments(
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
                         deployment_id=deployment_id,
-                        wheel_package=self.package_name,
                     )
                 )
                 entrypoint = command + arguments
