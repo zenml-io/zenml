@@ -24,6 +24,7 @@ from transformers import (
 
 from steps.model_trainer import T5_Model
 from zenml import step
+from zenml.integrations.huggingface.materializers import HFDatasetMaterializer
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -32,6 +33,7 @@ logger = get_logger(__name__)
 @step(
     output_materializers=[
         T5Materializer,
+        HFDatasetMaterializer
     ]
 )
 def tokenize_data(

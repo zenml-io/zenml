@@ -20,20 +20,24 @@ import requests
 from datasets import Dataset
 
 from zenml import step
+from zenml.integrations.huggingface.materializers import HFDatasetMaterializer
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 PROMPT = ""  # In case you want to also use a prompt you can set it here
+DEFAULT_TRAIN_DATA = "https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt"
+DEFAULT_TEST_DATA = "https://storage.googleapis.com/zenml-public-bucket/quickstart-files/test-translations.txt"
 
 
-@step
-def load_data() -> (
-    Tuple[
-        Annotated[Dataset, "dataset"],
-        Annotated[Dataset, "test_dataset"],
-    ]
-):
+@step(output_materializers=HFDatasetMaterializer)
+def load_data(
+    train_url: str = DEFAULT_TRAIN_DATA,
+    test_url: str = DEFAULT_TRAIN_DATA
+) -> Tuple[
+    Annotated[Dataset, "dataset"],
+    Annotated[Dataset, "test_dataset"],
+]:
     """Load and prepare the dataset."""
 
     def read_data_from_url(url):
@@ -49,10 +53,6 @@ def load_data() -> (
             targets.append(modern)
 
         return {"input": inputs, "target": targets}
-
-    # URLs for the data files
-    train_url = "https://storage.googleapis.com/zenml-public-bucket/quickstart-files/translations.txt"
-    test_url = "https://storage.googleapis.com/zenml-public-bucket/quickstart-files/test-translations.txt"
 
     # Fetch and process the data
     data = read_data_from_url(train_url)

@@ -1,40 +1,28 @@
-# :running: MLOps 101 with ZenML
+# ZenML Quickstart: Bridging Local Development and Cloud Deployment
 
-Build your first MLOps pipelines with ZenML.
+This repository demonstrates how ZenML streamlines the transition of machine learning workflows from local environments to cloud-scale operations.
 
-## :earth_americas: Overview
+Key advantages:
 
-Welcome to this minimalistic MLOps project, designed as an ideal starting point for anyone looking to master the art of
-deploying Machine Learning workflows in production environments. This repository serves as a practical guide to bridge
-the gap between local development and cloud-scale operations.
+Deploy to major cloud providers with minimal code changes
 
+* Connect directly to your existing infrastructure
+* Bridge the gap between ML and Ops teams
+* Gain deep insights into pipeline metadata via the ZenML Dashboard
 
-In today's fast-paced AI landscape, the ability to seamlessly transition from experimentation to deployment is not just
-a convenience—it's a necessity. ZenML empowers you to break free from the constraints of local computing and
-harness the power of cloud infrastructure with minimal friction.
+Unlike traditional MLOps tools, ZenML offers unparalleled flexibility and control. It integrates seamlessly with your infrastructure, allowing both ML and Ops teams to collaborate effectively without compromising on their specific requirements.
 
+The notebook guides you through adapting local code for cloud deployment, showcasing ZenML's ability to enhance workflow efficiency while maintaining reproducibility and auditability in production.
 
-Imagine developing your ML models on your laptop, then with just a few tweaks, watching them come to life on
-cutting-edge cloud platforms. This isn't just about scaling resources; it's about scaling your impact. You're not only
-optimizing your workflow but also setting your team up for the realities of modern ML engineering.
+Ready to unify your ML development and operations? Let's begin. The diagram below 
+describes what we'll show you in this example.
 
-
-Our notebook demonstrates how simple this can be. You'll witness firsthand how code written for local execution
-can be effortlessly adapted to run on major cloud providers. This isn't just a technical exercise — it's a paradigm 
-shift in how you approach ML development.
-
-
-However, ZenML is not just about deployment into compute. The ZenML Dashboard opens up a world of insights, allowing you
-to dive deep into the metadata of your runs. This level of observability is crucial for maintaining, debugging, 
-and optimizing your ML pipelines in production environments with full reproducibility and auditability. The diagram 
-below shows the steps that we will take to demonstrate this.
-
-<img src=".assets/Overview.png" width="70%" alt="Pipelines Overview">
+<img src=".assets/Overview.png" width="80%" alt="Pipelines Overview">
 
 1) We have done some of the experimenting for you already and created a simple finetuning pipeline for a text-to-text
    task.
 2) We will run this pipeline on your machine and a verify that everything works as expected.
-3) Now we'll connect ZenMl to your infrastructure and configure everything.
+3) Now we'll connect ZenML to your infrastructure and configure everything.
 4) Finally, we are ready to run our code remotely.
 
 ## 🏃 Run on Colab
